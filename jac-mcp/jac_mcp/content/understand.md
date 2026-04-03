@@ -69,12 +69,12 @@ Single .jac file = complete full-stack app. `sv {}` = server code. `cl {}` = cli
 triggers re-render. NEVER mutate directly (`items.append(x)` won't re-render - use
 `items = items + [x];`).
 **Effects**: `async can with entry { ... }` = useEffect on mount. `can with exit { ... }` = cleanup.
-**Events**: `onClick={lambda e: Any -> None { name = e.target.value; }}` - type annotation required.
+**Events**: `onChange={lambda e: ChangeEvent { name = e.target.value; }}` - use ambient DOM types (ChangeEvent, KeyboardEvent, FormEvent, etc.) -- no import needed.
 **Lists**: `{[<Item key={item._jac_id} item={item}/> for item in items]}` - use `_jac_id` for keys.
 
 **Calling server from client** (critical pattern):
   `sv import from ..main { my_walker }` - import server walker into client code
-  `response = root spawn my_walker(field=value);` - spawns walker via HTTP automatically
+  `response = root() spawn my_walker(field=value);` - spawns walker via HTTP automatically
   `data = response.reports[0][0];` - access walker report results
 
 **Client imports**: `cl import from react { useState }`,
