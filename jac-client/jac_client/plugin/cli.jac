@@ -19,6 +19,7 @@ glob registry = get_registry();
 # Import base target classes - this should trigger annex pass to auto-discover .impl.jac files
 import from jac_client.plugin.src.targets.desktop_target { DesktopTarget }
 import from jac_client.plugin.src.targets.web_target { WebTarget }
+import from jac_client.plugin.src.targets.mobile_target { MobileTarget }
 import from jac_client.plugin.src.targets.register { register_targets }
 
 with entry {
@@ -40,16 +41,16 @@ with entry {
             "client",
             typ=str,
             default="web",
-            help="Build client (web, desktop, pwa)",
-            choices=["web", "desktop", "pwa"],
+            help="Build client (web, desktop, pwa, mobile)",
+            choices=["web", "desktop", "pwa", "mobile"],
             short=""  # Disable auto-generated -t (may conflict with other plugins)
         ),
         Arg.create(
             "platform",
             typ=str,
             default=None,
-            help="Platform for desktop builds (windows, macos, linux, all)",
-            choices=["windows", "macos", "linux", "all"],
+            help="Platform for desktop/mobile builds (windows, macos, linux, all, android, ios)",
+            choices=["windows", "macos", "linux", "all", "android", "ios"],
             short="p"  # Use -p for platform
         ),
 
@@ -59,6 +60,7 @@ with entry {
         ("jac build main.jac", "Build specific file"),
         ("jac build --client pwa", "Build PWA (Progressive Web App)"),
         ("jac build --client desktop", "Build desktop app"),
+        ("jac build --client mobile --platform android", "Build Android mobile app"),
         ("jac build --client desktop --platform windows", "Build for Windows"),
 
     ],
@@ -95,8 +97,9 @@ def setup(target: str) -> int {
 class JacCmd {
     """Create Jac CLI cmds."""
     @hookimpl
+    """Extend core commands to add --npm flag for npm package management.""";
+
     static def create_cmd {
-        """Extend core commands to add --npm flag for npm package management.""";
         registry = get_registry();
 
         # Extend the core 'create' command with --skip flag for client template
@@ -167,8 +170,8 @@ class JacCmd {
                         "client",  # Use client to avoid conflict with jac-scale's --client
                         typ=str,
                         default="web",
-                        help="Client build target for dev server (web, desktop, pwa)",
-                        choices=["web", "desktop", "pwa"],
+                        help="Client build target for dev server (web, desktop, pwa, mobile)",
+                        choices=["web", "desktop", "pwa", "mobile"],
                         short=""  # Disable auto-generated short flag
                     ),
 
@@ -456,14 +459,26 @@ def _handle_start_target(ctx: HookContext) -> None {
     if target_name != "web" {
         # Check if target requires setup
         if target.requires_setup {
-            tauri_dir = project_dir / "src-tauri";
-            if not tauri_dir.exists() {
-                console.error(
-                    f"Target '{target_name}' not set up. Run 'jac setup {target_name}' first."
-                );
-                ctx.set_data("cancel_execution", True);
-                ctx.set_data("cancel_return_code", 1);
-                return;
+            if target_name == "desktop" {
+                tauri_dir = project_dir / "src-tauri";
+                if not tauri_dir.exists() {
+                    console.error(
+                        f"Target '{target_name}' not set up. Run 'jac setup {target_name}' first."
+                    );
+                    ctx.set_data("cancel_execution", True);
+                    ctx.set_data("cancel_return_code", 1);
+                    return;
+                }
+            } elif target_name == "mobile" {
+                android_dir = project_dir / "android";
+                if not android_dir.exists() {
+                    console.error(
+                        f"Target '{target_name}' not set up. Run 'jac setup {target_name}' first."
+                    );
+                    ctx.set_data("cancel_execution", True);
+                    ctx.set_data("cancel_return_code", 1);
+                    return;
+                }
             }
         }
         try {
@@ -554,6 +569,21 @@ def _handle_setup_target(ctx: HookContext) -> None {
                 );
                 console.print(
                     "This may indicate the setup function failed silently.",
+                    style="muted"
+                );
+                ctx.set_data("cancel_execution", True);
+                ctx.set_data("cancel_return_code", 1);
+                return;
+            }
+        }
+        if target_name == "mobile" {
+            android_dir = project_dir / "android";
+            if not android_dir.exists() {
+                console.error(
+                    f"Setup completed but Android directory not found at: {android_dir}"
+                );
+                console.print(
+                    "This may indicate mobile setup did not complete successfully.",
                     style="muted"
                 );
                 ctx.set_data("cancel_execution", True);
