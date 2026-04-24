@@ -1579,6 +1579,7 @@ jac-client supports building for multiple deployment targets from a single codeb
 |--------|---------|--------|----------------|
 | **Web** (default) | `jac build` | `.jac/client/dist/` | No |
 | **Desktop** (Tauri) | `jac build --client desktop` | Native installers | Yes |
+| **Mobile** (Capacitor) | `jac build --client mobile --platform android` | Android APK / iOS build products | Yes |
 | **PWA** | `jac build --client pwa` | Installable web app | No |
 
 ### Web Target (Default)
@@ -1768,7 +1769,7 @@ jac setup mobile
 
 # 2. Development: build and launch on device/simulator
 jac start main.jac --client mobile                    # Android (default)
-jac start main.jac --client mobile --platform ios      # iOS
+jac start main.jac --client mobile --mobile_platform ios
 
 # 3. Build for Android
 jac build --client mobile --platform android
@@ -1798,6 +1799,8 @@ ios_destination = "platform=iOS Simulator,name=iPhone 16,OS=latest"
 **Notes:**
 
 - `jac setup mobile` scaffolds **both** platforms in one pass. You can build for either platform afterward.
+- For dev networking control, use `--mobile_reach` (`auto`, `lan`, `emulator`, `usb`) and `--mobile_platform` (`android`, `ios`).
+- Android USB dev (`--mobile_reach usb`) auto-attempts `adb reverse` for Vite/API ports before launching Capacitor.
 - iOS device builds and App Store archives require Xcode provisioning profiles. Use `npx cap open ios` to open the project in Xcode for signing configuration.
 - Android release builds and signing require a keystore configured in `android/app/build.gradle`.
 - Native Capacitor plugins (camera, geolocation, etc.) can be added via `jac add --npm @capacitor/<plugin>` followed by `npx cap sync`.

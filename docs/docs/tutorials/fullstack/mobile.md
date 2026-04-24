@@ -79,6 +79,14 @@ jac start main.jac --client mobile
 
 This runs `cap sync android` followed by `cap run android`.
 
+For USB-connected Android devices, use:
+
+```bash
+jac start main.jac --client mobile --dev --mobile_reach usb
+```
+
+In USB mode, jac-client now auto-attempts `adb reverse` for the Vite and API ports before launching Capacitor, so manual `adb reverse` is usually not required.
+
 ### Production Build
 
 ```bash
@@ -114,7 +122,7 @@ android/app/build/outputs/apk/release/app-release.apk
 ### Dev Loop
 
 ```bash
-jac start main.jac --client mobile --platform ios
+jac start main.jac --client mobile --mobile_platform ios
 ```
 
 This syncs the web bundle and opens the project on the iOS Simulator via `cap run ios`.
@@ -167,10 +175,46 @@ npx cap sync
 - **Android**: Enable USB debugging on your device, connect via USB, and `cap run android` deploys directly.
 - **iOS**: Register your device in your Apple Developer account, select it in Xcode, and build.
 
+### Mobile Reach Modes (Dev)
+
+When using `jac start ... --client mobile --dev`, pick how the device reaches your machine:
+
+```bash
+# Android emulator
+jac start main.jac --client mobile --dev --mobile_reach emulator
+
+# USB-connected Android device
+jac start main.jac --client mobile --dev --mobile_reach usb
+
+# LAN device testing
+jac start main.jac --client mobile --dev --mobile_reach lan
+```
+
+You can force iOS or Android in dev with:
+
+```bash
+jac start main.jac --client mobile --dev --mobile_platform ios
+```
+
 ### Debugging
 
 - **Android**: Use Chrome DevTools -- navigate to `chrome://inspect` while the app is running on a device/emulator.
 - **iOS**: Use Safari Web Inspector -- enable it in Safari → Develop menu.
+
+### Troubleshooting
+
+If mobile dev starts but the app does not load correctly:
+
+1. Check `jac start` output for selected reach mode, host, and Vite port.
+2. For Android USB mode, confirm `adb devices` shows the target device as authorized.
+3. If port forwarding fails, run manual fallback:
+   - `adb reverse tcp:5173 tcp:5173`
+   - `adb reverse tcp:8000 tcp:8000`
+4. Re-run sync after plugin changes:
+   - `npx cap sync android`
+   - `npx cap sync ios`
+5. For iOS signing or provisioning issues, open Xcode:
+   - `npx cap open ios`
 
 ---
 

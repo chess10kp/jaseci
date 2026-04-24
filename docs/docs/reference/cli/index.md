@@ -168,7 +168,7 @@ jac run greet.jac --name Alice
 Start a Jac application as an HTTP API server. With the jac-scale plugin installed, use `--scale` to deploy to Kubernetes. Use `--dev` for Hot Module Replacement (HMR) during development.
 
 ```bash
-jac start [-h] [-p PORT] [-m] [--no-main] [-f] [--no-faux] [-d] [--no-dev] [-a API_PORT] [-n] [--no-no_client] [--profile PROFILE] [--client {web,desktop,pwa}] [--scale] [--no-scale] [-b] [--no-build] [filename]
+jac start [-h] [-p PORT] [-m] [--no-main] [-f] [--no-faux] [-d] [--no-dev] [-a API_PORT] [-n] [--no-no_client] [--profile PROFILE] [--client {web,desktop,pwa,mobile}] [--mobile_reach {auto,lan,emulator,usb}] [--mobile_host MOBILE_HOST] [--mobile_vite_port MOBILE_VITE_PORT] [--mobile_platform {auto,android,ios}] [--scale] [--no-scale] [-b] [--no-build] [filename]
 ```
 
 | Option | Description | Default |
@@ -181,7 +181,11 @@ jac start [-h] [-p PORT] [-m] [--no-main] [-f] [--no-faux] [-d] [--no-dev] [-a A
 | `--api_port` | Separate API port for HMR mode (0=same as port) | `0` |
 | `--no_client` | Skip client bundling/serving (API only) | `False` |
 | `--profile` | Configuration profile to load (e.g. prod, staging) | `""` |
-| `--client` | Client build target (`web`, `desktop`, `pwa`) | None |
+| `--client` | Client build target (`web`, `desktop`, `pwa`, `mobile`) | None |
+| `--mobile_reach` | Mobile dev reach mode for `--client mobile --dev` (`auto`, `lan`, `emulator`, `usb`) | `auto` |
+| `--mobile_host` | Override live-reload host/IP in mobile dev | `""` |
+| `--mobile_vite_port` | Vite port used for mobile live-reload | `5173` |
+| `--mobile_platform` | Mobile dev platform selector (`auto`, `android`, `ios`) | `auto` |
 | `--scale` | Deploy to Kubernetes (requires jac-scale) | `False` |
 | `-b, --build` | Build Docker image before deploy (with `--scale`) | `False` |
 
@@ -199,6 +203,15 @@ jac start --dev
 
 # HMR mode without client bundling (API only)
 jac start --dev --no_client
+
+# Mobile dev (Android default)
+jac start main.jac --client mobile --dev
+
+# Mobile dev on iOS simulator
+jac start main.jac --client mobile --dev --mobile_platform ios
+
+# Mobile dev on Android USB device
+jac start main.jac --client mobile --dev --mobile_reach usb
 
 # Deploy to Kubernetes (requires jac-scale plugin)
 jac start --scale
@@ -1561,7 +1574,7 @@ jac build [filename] [--client TARGET] [-p PLATFORM]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `filename` | Path to .jac file | `main.jac` |
-| `--client` | Build target (`web`, `desktop`, `mobile`) | `web` |
+| `--client` | Build target (`web`, `desktop`, `pwa`, `mobile`) | `web` |
 | `-p, --platform` | Desktop platform (`windows`, `macos`, `linux`, `all`) | Mobile platforms (`android`, `ios`) | Current platform |
 
 **Examples:**
