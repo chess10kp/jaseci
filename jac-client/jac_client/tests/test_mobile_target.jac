@@ -1,12 +1,14 @@
 """Tests for mobile target registration and discovery."""
 
+import os;
 import from pathlib { Path }
 
+glob _plugin_dir = Path(os.path.dirname(__file__)).parent / "plugin";
+
 test "mobile target files exist" {
-    plugin_dir = Path(__file__).parent.parent / "plugin";
-    mobile_target_jac = plugin_dir / "src" / "targets" / "mobile_target.jac";
+    mobile_target_jac = _plugin_dir / "src" / "targets" / "mobile_target.jac";
     mobile_target_impl = (
-        plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
+        _plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
     );
 
     assert mobile_target_jac.exists() , (
@@ -25,8 +27,7 @@ test "mobile target files exist" {
 }
 
 test "target type parser supports mobile" {
-    plugin_dir = Path(__file__).parent.parent / "plugin";
-    registry_path = plugin_dir / "src" / "targets" / "registry.jac";
+    registry_path = _plugin_dir / "src" / "targets" / "registry.jac";
     content = registry_path.read_text();
 
     assert 'MOBILE = "mobile"' in content;
@@ -35,11 +36,40 @@ test "target type parser supports mobile" {
 }
 
 test "target factory supports mobile target" {
-    plugin_dir = Path(__file__).parent.parent / "plugin";
-    impl_path = plugin_dir / "src" / "targets" / "impl" / "registry.impl.jac";
+    impl_path = _plugin_dir / "src" / "targets" / "impl" / "registry.impl.jac";
     content = impl_path.read_text();
 
     assert "elif target_type == TargetType.MOBILE" in content;
     assert "MobileTarget" in content;
     assert "TargetType.MOBILE" in content;
+}
+
+test "mobile_dev_host helper module exists" {
+    decl_path = _plugin_dir / "src" / "mobile_dev_host.jac";
+    assert decl_path.exists();
+    d = decl_path.read_text();
+    assert "def detect_lan_ipv4" in d;
+    assert "def resolve_mobile_dev_host" in d;
+    assert "8.8.8.8" in d;
+}
+
+test "JacCmd create_cmd has hookimpl on create_cmd" {
+    # Regression: @hookimpl must decorate static def create_cmd (not a docstring).
+    # Otherwise pluggy never registers the hook, extend_command never runs, and
+    # jac setup / jac build / jac start client integration silently no-op.
+    cli = (_plugin_dir / "cli.jac").read_text().replace("\r\n", "\n");
+    assert "@hookimpl\n    static def create_cmd" in cli;
+}
+
+test "cli exposes mobile dev flags and cap live-reload" {
+    cli = _plugin_dir / "cli.jac";
+    c = cli.read_text();
+    assert "mobile_reach" in c;
+    assert "mobile_vite_port" in c;
+    assert "JAC_MOBILE_DEV_REACH" in c;
+    mt = (
+        _plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
+    ).read_text();
+    assert "--live-reload" in mt;
+    assert "_mobile_start_backend_server" in mt;
 }

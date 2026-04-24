@@ -43,7 +43,10 @@ class ViteBundler {
         entry_file: Path,
         api_base_url_override: str = "",
         is_dev: bool = False,
-        api_port: int = 8000
+        api_port: int = 8000,
+        for_mobile_dev: bool = False,
+        mobile_hmr_host: str = "",
+        mobile_hmr_port: int = 0
     ) -> Path;
 
     def _get_plugin_var_name(self: ViteBundler, plugin_name: str) -> str;
@@ -61,7 +64,10 @@ class ViteBundler {
         is_dev: bool,
         entry_file: Path,
         api_base_url: str,
-        api_port: int = 8000
+        api_port: int = 8000,
+        for_mobile_dev: bool = False,
+        mobile_hmr_host: str = "",
+        mobile_hmr_port: int = 0
     ) -> str;
 
     def create_package_json(

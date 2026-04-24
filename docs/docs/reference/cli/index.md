@@ -1561,8 +1561,8 @@ jac build [filename] [--client TARGET] [-p PLATFORM]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `filename` | Path to .jac file | `main.jac` |
-| `--client` | Build target (`web`, `desktop`) | `web` |
-| `-p, --platform` | Desktop platform (`windows`, `macos`, `linux`, `all`) | Current platform |
+| `--client` | Build target (`web`, `desktop`, `mobile`) | `web` |
+| `-p, --platform` | Desktop platform (`windows`, `macos`, `linux`, `all`) | Mobile platforms (`android`, `ios`) | Current platform |
 
 **Examples:**
 
@@ -1575,6 +1575,12 @@ jac build --client desktop
 
 # Build for Windows
 jac build --client desktop --platform windows
+
+# Build mobile app for Android
+jac build --client mobile --platform android
+
+# Build mobile app for iOS
+jac build --client mobile --platform ios
 ```
 
 #### jac setup
@@ -1590,6 +1596,9 @@ jac setup <target>
 ```bash
 # Setup Tauri for desktop builds
 jac setup desktop
+
+# Setup Capacitor for mobile builds
+jac setup mobile
 ```
 
 #### Extended Flags

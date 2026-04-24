@@ -1,13 +1,20 @@
 """Implementation of MobileTarget methods."""
 import json;
+import re;
 import subprocess;
 import shutil;
 import os;
 import stat;
 import platform as platform_mod;
 import from pathlib { Path }
-import from typing { Optional }
+import from typing { Any, Optional, cast }
 import from jaclang.cli.console { console }
+import from jaclang.runtimelib.watcher { FileChangeEvent }
+import from jac_client.plugin.src.config_loader { JacClientConfig }
+import from jac_client.plugin.src.mobile_dev_host {
+    resolve_mobile_dev_host,
+    resolve_mobile_server_port
+}
 
 # ===============================================================================
 # Constants
@@ -33,6 +40,51 @@ def _check_command_available(
         }
     } except Exception { }
     return (False, None);
+}
+
+"""Parse major Java version from `java -version` / `javac -version` output.
+"""
+def _parse_java_major_from_version_output(text: str) -> int | None {
+    m = re.search(r'version "([^"]+)"', text);
+    if not m {
+        return None;
+    }
+    v = m.group(1);
+    parts = v.split(".");
+    if parts[0] == "1" and len(parts) > 1 {
+        try {
+            return int(parts[1]);
+        } except ValueError {
+            return None;
+        }
+    }
+    try {
+        return int(parts[0]);
+    } except (ValueError, IndexError) {
+        return None;
+    }
+}
+
+"""Return (ok, first_line, major) for the default java on PATH.
+"""
+def _get_java_runtime_details -> tuple[bool, str | None, int | None] {
+    try {
+        result = subprocess.run(
+            ["java", "-version"],
+            capture_output=True,
+            text=True,
+            timeout=SUBPROCESS_TIMEOUT_SHORT
+        );
+        out = (result.stderr or "") + (result.stdout or "");
+        if not out.strip() {
+            return (False, None, None);
+        }
+        first_line = out.strip().split("\n")[0];
+        major = _parse_java_major_from_version_output(out);
+        return (True, first_line, major);
+    } except Exception {
+        return (False, None, None);
+    }
 }
 
 """Normalize and validate mobile platform string.
@@ -108,22 +160,87 @@ def _run_install_cmd(project_dir: Path, packages: list[str], dev: bool = False) 
     subprocess.run(cmd, cwd=project_dir, check=True, capture_output=False);
 }
 
+"""Allow http:// LAN dev URLs in the WebView (Android 9+ blocks cleartext by default)."""
+def _ensure_android_cleartext_for_lan_dev(project_dir: Path) -> None {
+    man = project_dir / "android" / "app" / "src" / "main" / "AndroidManifest.xml";
+    if not man.exists() {
+        return;
+    }
+    t = man.read_text(encoding="utf-8");
+    if "usesCleartextTraffic" in t {
+        return;
+    }
+    new_t = re.sub(
+        r"([ \t]*<application[ \t]*\r?\n)([ \t]+)(android:)",
+        r'\1\2android:usesCleartextTraffic="true"\n\2\3',
+        t,
+        count=1
+    );
+    if new_t != t {
+        man.write_text(new_t, encoding="utf-8");
+        console.print(
+            "  ✔ Android: allowed cleartext HTTP for dev (usesCleartextTraffic); "
+            "rebuild applies on cap run",
+            style="success"
+        );
+    } else {
+        console.warning(
+            "  Could not auto-patch AndroidManifest for cleartext HTTP. "
+            "If the WebView will not load http://<PC-LAN-IP>:<port>, set "
+            "android:usesCleartextTraffic=\"true\" on <application>."
+        );
+    }
+}
+
 # ===============================================================================
 # Dependency Checking
 # ===============================================================================
 """Check and report on Android build prerequisites."""
 def _check_android_dependencies {
-    # Java / JDK (required for Gradle / Android builds)
-    (java_ok, java_ver) = _check_command_available(["java", "-version"]);
-    if not java_ok {
-        (java_ok, java_ver) = _check_command_available(["javac", "-version"]);
-    }
+    # Java / JDK (Capacitor Android Gradle modules target Java 21+)
+    (java_ok, java_line, java_major) = _get_java_runtime_details();
+    java_exe = shutil.which("java");
+    java_home = os.environ.get("JAVA_HOME", "");
     if java_ok {
-        console.print(f"  ✔ Java found: {java_ver or 'available'}", style="success");
+        console.print(f"  ✔ Java runtime: {java_line}", style="success");
+        if java_exe {
+            console.print(f"    java binary: {java_exe}", style="muted");
+        }
+        if java_home {
+            console.print(f"    JAVA_HOME: {java_home}", style="muted");
+        } else {
+            console.print(
+                "    JAVA_HOME: (not set — using java on PATH)", style="muted"
+            );
+        }
+        if java_major is not None {
+            if java_major < 21 {
+                console.print(
+                    f"  Java {java_major} is below 21. Capacitor Android / Gradle "
+                    "needs JDK 21+ to compile.",
+                    style="warning"
+                );
+                console.print(
+                    "    Set JAVA_HOME to a JDK 21 install, e.g. "
+                    "/usr/lib/jvm/java-21-openjdk (Linux).",
+                    style="muted"
+                );
+            } else {
+                console.print(
+                    f"    (JDK major {java_major} — OK for current Capacitor Android builds)",
+                    style="muted"
+                );
+            }
+        } else {
+            console.print(
+                "    (Could not parse Java version — ensure JDK 21+ for native Android builds)",
+                style="muted"
+            );
+        }
     } else {
-        console.warning("  ✖ Java/JDK not found");
+        console.warning("  ✖ Java runtime not found on PATH");
         console.print(
-            "    Install JDK 17+: https://adoptium.net or via your package manager",
+            "    Install JDK 21+ (e.g. OpenJDK 21): https://adoptium.net or your package manager",
             style="muted"
         );
     }
@@ -221,6 +338,22 @@ def _check_ios_dependencies -> None {
         );
         console.print("    Install with: brew install ios-deploy", style="muted");
     }
+
+    # iOS Simulator CLI (xcrun simctl) — for simulator dev/build
+    (simctl_ok, _) = _check_command_available(
+        ["xcrun", "simctl", "help"], timeout=SUBPROCESS_TIMEOUT_SHORT
+    );
+    if simctl_ok {
+        console.print(
+            "  ✔ iOS Simulator tools (xcrun simctl) available", style="success"
+        );
+    } else {
+        console.print(
+            "  ⚠ xcrun simctl not available (install full Xcode, not only CLT, "
+            "for the iOS Simulator)",
+            style="warning"
+        );
+    }
 }
 
 """Check and report on all mobile build prerequisites for a given platform."""
@@ -250,6 +383,29 @@ def _check_and_report_dependencies(plat: str = "android") {
     } elif plat == "ios" {
         _check_ios_dependencies();
     }
+}
+
+"""Run platform dependency check; log and continue on internal errors."""
+def _try_check_mobile_dependencies(plat: str) {
+    try {
+        _check_and_report_dependencies(plat);
+    } except Exception as e {
+        console.warning(f"  Dependency check encountered an issue: {e}");
+    }
+}
+
+"""iOS native workflows need macOS; fail fast on other hosts."""
+def _require_macos_for_ios(plat: str) -> None {
+    if _normalize_mobile_platform(plat) != "ios" {
+        return;
+    }
+    if platform_mod.system() == "Darwin" {
+        return;
+    }
+    raise RuntimeError(
+        "iOS native builds and `cap run ios` require macOS with Xcode. "
+        "Use a Mac or a macOS CI runner for the iOS target."
+    );
 }
 
 # ===============================================================================
@@ -558,6 +714,195 @@ def _build_ios(project_dir: Path, mobile_cfg: dict) -> Path {
 }
 
 # ===============================================================================
+# Mobile dev helpers (Vite HMR + Capacitor live-reload)
+# ===============================================================================
+"""Read [plugins.client.api] base_url for warnings and port resolution."""
+def _get_api_base_url_str(project_dir: Path) -> str {
+    loader = JacClientConfig(project_dir);
+    return loader.get_api_config().get("base_url", "") or "";
+}
+
+"""API connectivity for mobile dev."""
+def _warn_mobile_dev_api_url(project_dir: Path) {
+    base = _get_api_base_url_str(project_dir);
+    if base {
+        console.print(
+            f"  API mode: fixed base_url from jac.toml ({base})", style="muted"
+        );
+        if ("localhost" in base.lower()) or ("127.0.0.1" in base) {
+            console.warning(
+                "  Physical devices cannot reach localhost on your PC. "
+                "Clear [plugins.client.api] base_url for same-origin dev proxy, "
+                "or set base_url to your machine's LAN URL."
+            );
+        }
+    } else {
+        console.print(
+            "  API mode: same-origin — Vite proxies API routes to the Jac server",
+            style="muted"
+        );
+    }
+}
+
+"""Read mobile dev options set by jac-client CLI (see cli.jac)."""
+def _mobile_read_dev_env -> tuple[str, str, int, str] {
+    reach = os.environ.get("JAC_MOBILE_DEV_REACH", "auto");
+    host_ov = os.environ.get("JAC_MOBILE_DEV_HOST_OVERRIDE", "");
+    vps = os.environ.get("JAC_MOBILE_VITE_PORT", "");
+    try {
+        vite_port = int(vps) if vps and vps.strip() else 5173;
+    } except ValueError {
+        vite_port = 5173;
+    }
+    plat_mode = os.environ.get("JAC_MOBILE_PLATFORM", "auto");
+    return (reach, host_ov, vite_port, plat_mode);
+}
+
+"""Return True if watchdog is available (required for .jac → client HMR)."""
+def _mobile_ensure_watchdog -> bool {
+    try {
+        import watchdog;
+        return True;
+    } except ImportError {
+        console.warning(
+            "  watchdog not installed — saving .jac files will not refresh the WebView. "
+            "Install with: pip install 'watchdog>=3.0.0' (or add to [dev-dependencies]).",
+            style="muted"
+        );
+        return False;
+    }
+}
+
+"""Remove stale Jac modules from JacRuntime hub before mobile dev recompiles.
+
+The client bundle compiler reuses JacRuntime.program.mod.hub entries; without
+evicting changed modules, compile_module() may return stale JS and Vite reloads
+the same bytes.
+"""
+def _mobile_invalidate_runtime_module_cache(paths: list[str]) -> None {
+    try {
+        import from jaclang { JacRuntime as Jac }
+        program = Jac.program;
+        if not program or not program.mod or not program.mod.hub {
+            return;
+        }
+        hub = program.mod.hub;
+        norm_targets: set[str] = set();
+        for p in paths {
+            if not p {
+                continue;
+            }
+            try {
+                norm_targets.add(os.path.normcase(str(Path(p).resolve())));
+            } except Exception {
+                norm_targets.add(os.path.normcase(str(p)));
+            }
+        }
+        if not norm_targets {
+            return;
+        }
+        to_delete: list[str] = [];
+        for k in list(hub.keys()) {
+            if os.path.normcase(str(k)) in norm_targets {
+                to_delete.append(k);
+            }
+        }
+        for k in to_delete {
+            del hub[k];
+        }
+    } except Exception {
+        # Cache eviction is best-effort; compile still proceeds if this fails.
+        return;
+    }
+}
+
+"""Recompile the Vite client graph after a .jac file change (runs on watchdog thread).
+"""
+def _mobile_hmr_on_jac_changed(
+    event: FileChangeEvent, compiler: Any, entry_file: Path, project_dir: Path
+) -> None {
+    try {
+        pth = event.path or "";
+        if not pth {
+            return;
+        }
+        if not pth.endswith(".jac") {
+            return;
+        }
+        try {
+            Path(pth).resolve().relative_to(project_dir.resolve());
+        } except ValueError {
+            return;
+        }
+        _mobile_invalidate_runtime_module_cache([pth, str(entry_file)]);
+        (_, mod2, _) = compiler.jac_compiler.compile_module(entry_file);
+        if not mod2 {
+            return;
+        }
+        compiler.compile(mod2, entry_file);
+        try {
+            console.print("  ✔ Client recompiled after save", style="success");
+        } except Exception { }
+    } except Exception as e {
+        try {
+            console.error(f"  HMR recompile failed: {e}");
+        } except Exception { }
+    }
+}
+
+"""Forward HMR events from JacFileWatcher into the recompile helper."""
+impl _MobileHmrHandler.on_event(evt: FileChangeEvent) -> None {
+    _mobile_hmr_on_jac_changed(evt, self.compiler, self.entry_file, self.project_dir);
+}
+
+"""Start Jac API only for mobile dev."""
+def _mobile_start_backend_server(
+    entry_file: Path, project_dir: Path, port: int
+) -> Any {
+    import sys;
+    return subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "jaclang",
+            "start",
+            str(entry_file),
+            "--port",
+            str(port),
+            "--no_client"
+        ],
+        cwd=str(project_dir),
+        stdout=None,
+        stderr=None
+    );
+}
+
+"""Run cap with live-reload URL via CLI."""
+def _run_cap_run_live_reload(
+    project_dir: Path, plat: str, lr_host: str, lr_port: int, reach: str
+) -> int {
+    npx = _resolve_npx();
+    cmd = [
+        npx,
+        "cap",
+        "run",
+        plat,
+        "--live-reload",
+        "--host",
+        lr_host,
+        "--port",
+        str(lr_port)
+    ];
+    if reach == "usb" and plat == "android" {
+        cmd.extend(["--forwardPorts", f"{lr_port}:{lr_port}"]);
+    }
+    console.print(f"  Running: {' '.join(cmd)}", style="muted");
+    console.print("  (Press Ctrl+C to stop)\n", style="muted");
+    result = subprocess.run(cmd, cwd=project_dir, check=False);
+    return result.returncode;
+}
+
+# ===============================================================================
 # Target Implementation
 # ===============================================================================
 """Setup mobile target - install Capacitor and scaffold platform project.
@@ -621,10 +966,15 @@ impl MobileTarget.setup(project_dir: Path) -> None {
         console.success("Mobile target setup complete!");
         console.print("\nNext steps:", style="bold");
         console.print("  Android:");
-        console.print("    Dev:   jac start main.jac --client mobile");
+        console.print(
+            "    Dev:   jac start main.jac --client mobile --dev", style="muted"
+        );
         console.print("    Build: jac build --client mobile --platform android");
         console.print("  iOS:");
-        console.print("    Dev:   jac start main.jac --client mobile --platform ios");
+        console.print(
+            "    Dev:   jac start main.jac --client mobile --dev --mobile-platform ios",
+            style="muted"
+        );
         console.print("    Build: jac build --client mobile --platform ios");
     } finally {
         # Guarantee at least android/ dir exists even if something failed
@@ -651,6 +1001,9 @@ impl MobileTarget.build(
         f"\n📱 Building mobile app (Capacitor {selected_platform.capitalize()})",
         style="bold"
     );
+
+    _try_check_mobile_dependencies(selected_platform);
+    _require_macos_for_ios(selected_platform);
 
     # Ensure Capacitor scaffold exists
     self.setup(project_dir);
@@ -683,33 +1036,212 @@ impl MobileTarget.build(
     return artifact;
 }
 
-"""Start mobile dev flow - build web bundle and launch on device/simulator."""
+"""Start mobile dev: Vite HMR + Jac API + Capacitor live-reload."""
 impl MobileTarget.dev(
     entry_file: Path, project_dir: Path, api_port: int = 8000
 ) -> None {
-    # Determine platform from config, default to android
+    import from jac_client.plugin.src.vite_bundler { ViteBundler }
+    import from jac_client.plugin.client { JacClient }
+    import signal;
+    import sys;
+
+    hot_watcher: Any = None;
+    if api_port is None {
+        api_port = 8000;
+    }
+
+    (reach, host_override, vite_port, plat_mode) = _mobile_read_dev_env();
+    mobile_cfg = _load_mobile_config(project_dir);
+    if plat_mode and plat_mode != "auto" {
+        plat = _normalize_mobile_platform(plat_mode);
+    } else {
+        plat = _normalize_mobile_platform(
+            mobile_cfg.get("default_platform", "android")
+        );
+    }
+
+    console.print(
+        f"\nMobile dev (Capacitor + Vite HMR) — {plat.capitalize()}", style="bold"
+    );
+    _try_check_mobile_dependencies(plat);
+    _require_macos_for_ios(plat);
+    _warn_mobile_dev_api_url(project_dir);
+    self.setup(project_dir);
+
+    try {
+        visible_host = resolve_mobile_dev_host(reach, plat, host_override);
+    } except ValueError as e {
+        console.error(str(e));
+        raise;
+    }
+
+    console.print(
+        f"  Reach: {reach} → live-reload host: {visible_host}:{vite_port}",
+        style="muted"
+    );
+    if reach == "usb" and plat == "android" {
+        console.print(
+            f"  USB: also available: adb reverse tcp:{vite_port} tcp:{vite_port}",
+            style="muted"
+        );
+    }
+    if plat == "android" {
+        _ensure_android_cleartext_for_lan_dev(project_dir);
+    }
+
+    console.print("  Preparing compilation for Vite dev…", style="muted");
+    bundler = ViteBundler(
+        project_dir=project_dir, output_dir=None, minify=False, config_path=None
+    );
+    package_json_path = bundler._get_client_dir() / "configs" / "package.json";
+    if not package_json_path.exists() {
+        bundler.create_package_json();
+    }
+    builder = JacClient.get_client_bundle_builder();
+    if not builder.vite_package_json or not builder.vite_package_json.exists() {
+        builder.vite_package_json = package_json_path;
+    }
+    compiler = builder._get_compiler();
+    compiler.compiled_dir.mkdir(parents=True, exist_ok=True);
+    # Full compile graph (entry + all .jac deps) with add_runtime_imports per file,
+    # matching production dev — compiling only the entry leaves imported modules
+    # (e.g. components/*.js) without __jacJsx and causes "__jacJsx is not defined".
+    (_, mod, _) = compiler.jac_compiler.compile_module(entry_file);
+    if not mod {
+        raise RuntimeError(f"Failed to compile client entry module: {entry_file}");
+    }
+    compiler.compile(mod, entry_file);
+    console.print("  ✔ Client modules compiled for dev mode", style="success");
+
+    toml_base_url = _get_api_base_url_str(project_dir);
+    server_port = resolve_mobile_server_port(toml_base_url, api_port);
+
+    bundler.create_vite_config(
+        entry_file,
+        api_base_url_override="",
+        is_dev=True,
+        api_port=server_port,
+        for_mobile_dev=True,
+        mobile_hmr_host=visible_host,
+        mobile_hmr_port=vite_port
+    );
+
+    console.print(f"  Starting Vite dev server (port {vite_port})…", style="muted");
+    vite_process = bundler.start_dev_server(
+        port=vite_port, suppress_initial_output=True
+    );
+    if not vite_process {
+        raise RuntimeError("Failed to start Vite dev server");
+    }
+    console.print(
+        f"  ✔ Vite HMR — WebView loads http://{visible_host}:{vite_port}",
+        style="success"
+    );
+
+    # `jac start --dev` normally starts HotReloader, but the mobile pre-hook cancels that
+    # handler — so we watch .jac here and re-run the same ViteCompiler.compile graph Vite serves.
+    if _mobile_ensure_watchdog() {
+        import from jaclang.runtimelib.watcher { JacFileWatcher }
+
+        hmr_handler = _MobileHmrHandler(
+            compiler=compiler, entry_file=entry_file, project_dir=project_dir
+        );
+        hot_watcher = JacFileWatcher(watch_paths=[str(project_dir.resolve())]);
+        hot_watcher.add_callback(hmr_handler.on_event);
+        hot_watcher.start();
+        console.print(
+            "  👀 Watching **/*.jac — save to trigger recompile + reload", style="muted"
+        );
+    }
+
+    console.print(f"  Starting Jac API on port {server_port}…", style="muted");
+    server_process = _mobile_start_backend_server(entry_file, project_dir, server_port);
+
+    vite_p = vite_process;
+    srv_p = server_process;
+
+    def cleanup_servers {
+        console.print("\n  Stopping Vite and API server…", style="muted");
+        if hot_watcher {
+            try {
+                hot_watcher.stop();
+            } except Exception { }
+        }
+        if vite_p {
+            try {
+                vite_p.terminate();
+                vite_p.wait(timeout=SUBPROCESS_TIMEOUT_SHORT);
+            } except Exception {
+                vite_p.kill();
+            }
+        }
+        if srv_p {
+            try {
+                srv_p.terminate();
+                srv_p.wait(timeout=SUBPROCESS_TIMEOUT_SHORT);
+            } except Exception {
+                srv_p.kill();
+            }
+        }
+        console.print("  ✔ Stopped", style="success");
+    }
+
+    def on_signal(signum: int, frame: Any) {
+        sys.exit(0);
+    }
+    signal.signal(cast(int, signal.SIGINT), on_signal);
+    signal.signal(cast(int, signal.SIGTERM), on_signal);
+
+    web_dist_dir = Path(bundler.output_dir).resolve();
+    _ensure_capacitor_config(project_dir, web_dist_dir);
+    _ensure_placeholder_index(web_dist_dir);
+
+    try {
+        _run_cap_cmd(project_dir, ["sync", plat], f"cap sync {plat}");
+        rc = _run_cap_run_live_reload(
+            project_dir, plat, visible_host, vite_port, reach
+        );
+        if rc != 0 {
+            console.warning(f"  cap run exited with code {rc}");
+        }
+    } except KeyboardInterrupt {
+        console.print("\n  Interrupted.", style="muted");
+    } finally {
+        cleanup_servers();
+    }
+}
+
+"""Start mobile app: production web bundle, sync, run (no Vite HMR)."""
+impl MobileTarget.start(
+    entry_file: Path, project_dir: Path, api_port: int = 8000
+) -> None {
+    import from jac_client.plugin.src.vite_bundler { ViteBundler }
+
+    if api_port != 8000 {
+        console.print(
+            f"  Note: --port {api_port} applies to `jac start` flows; "
+            "`cap run` uses the baked web bundle only.",
+            style="muted"
+        );
+    }
     mobile_cfg = _load_mobile_config(project_dir);
     plat = mobile_cfg.get("default_platform", "android");
     plat = _normalize_mobile_platform(plat);
 
     console.print(
-        f"\n📱 Starting mobile dev flow (Capacitor {plat.capitalize()})", style="bold"
+        f"\n📱 Starting mobile app (Capacitor {plat.capitalize()})", style="bold"
     );
-
-    # Ensure scaffold
+    _try_check_mobile_dependencies(plat);
+    _require_macos_for_ios(plat);
     self.setup(project_dir);
-
-    # Build web bundle
+    console.print("  Building web bundle…", style="muted");
     web_bundle_path = super.build(entry_file, project_dir, None);
+    console.print(f"  ✔ Web bundle: {web_bundle_path}", style="success");
 
-    # Sync and run
+    bundler = ViteBundler(project_dir=project_dir);
+    web_dist_dir = Path(bundler.output_dir).resolve();
+    _ensure_capacitor_config(project_dir, web_dist_dir);
+
     _run_cap_cmd(project_dir, ["sync", plat], f"cap sync {plat}");
     _run_cap_cmd(project_dir, ["run", plat], f"cap run {plat}");
-}
-
-"""Start mobile app - build then run on device/simulator."""
-impl MobileTarget.start(
-    entry_file: Path, project_dir: Path, api_port: int = 8000
-) -> None {
-    self.dev(entry_file, project_dir, api_port);
 }
