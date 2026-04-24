@@ -758,6 +758,45 @@ def _mobile_read_dev_env -> tuple[str, str, int, str] {
     return (reach, host_ov, vite_port, plat_mode);
 }
 
+"""Best-effort ADB reverse for Android USB mobile dev."""
+def _mobile_setup_usb_port_reverse(vite_port: int, server_port: int) {
+    attempted = str(vite_port);
+    if server_port != vite_port {
+        attempted = attempted + ", " + str(server_port);
+    }
+    console.print(
+        f"  USB: auto-configuring adb reverse for ports {attempted}", style="muted"
+    );
+
+    def _try_adb_reverse_port(port: int) {
+        cmd = ["adb", "reverse", f"tcp:{port}", f"tcp:{port}"];
+        try {
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=SUBPROCESS_TIMEOUT_SHORT,
+                check=False
+            );
+            if result.returncode == 0 {
+                console.print(
+                    f"  ✔ adb reverse tcp:{port} tcp:{port}", style="success"
+                );
+            } else {
+                err = (result.stderr or "").strip() or "unknown adb error";
+                console.warning(f"  ⚠ adb reverse failed for tcp:{port} ({err})");
+            }
+        } except Exception as e {
+            console.warning(f"  ⚠ adb reverse failed for tcp:{port} ({e})");
+        }
+    }
+
+    _try_adb_reverse_port(vite_port);
+    if server_port != vite_port {
+        _try_adb_reverse_port(server_port);
+    }
+}
+
 """Return True if watchdog is available (required for .jac → client HMR)."""
 def _mobile_ensure_watchdog -> bool {
     try {
@@ -1079,12 +1118,6 @@ impl MobileTarget.dev(
         f"  Reach: {reach} → live-reload host: {visible_host}:{vite_port}",
         style="muted"
     );
-    if reach == "usb" and plat == "android" {
-        console.print(
-            f"  USB: also available: adb reverse tcp:{vite_port} tcp:{vite_port}",
-            style="muted"
-        );
-    }
     if plat == "android" {
         _ensure_android_cleartext_for_lan_dev(project_dir);
     }
@@ -1115,6 +1148,9 @@ impl MobileTarget.dev(
 
     toml_base_url = _get_api_base_url_str(project_dir);
     server_port = resolve_mobile_server_port(toml_base_url, api_port);
+    if reach == "usb" and plat == "android" {
+        _mobile_setup_usb_port_reverse(vite_port, server_port);
+    }
 
     bundler.create_vite_config(
         entry_file,

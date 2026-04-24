@@ -72,4 +72,8 @@ test "cli exposes mobile dev flags and cap live-reload" {
     ).read_text();
     assert "--live-reload" in mt;
     assert "_mobile_start_backend_server" in mt;
+    assert "def _mobile_setup_usb_port_reverse" in mt;
+    assert '["adb", "reverse"' in mt;
+    assert 'if reach == "usb" and plat == "android"' in mt;
+    assert "_mobile_setup_usb_port_reverse(vite_port, server_port)" in mt;
 }
