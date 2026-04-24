@@ -343,7 +343,10 @@ impl ViteBundler._generate_vite_config_content(
     is_dev: bool,
     entry_file: Path,
     api_base_url: str,
-    api_port: int = 8000
+    api_port: int = 8000,
+    for_mobile_dev: bool = False,
+    mobile_hmr_host: str = "",
+    mobile_hmr_port: int = 0
 ) -> str {
     build_dir = self._get_client_dir();
     vite_config_data = self.config_loader.get_vite_config();
@@ -428,6 +431,85 @@ impl ViteBundler._generate_vite_config_content(
         server_config_str = self._format_config_object(server_config, indent=2)
             if (isinstance(server_config, dict) and server_config)
             else '';
+        # Capacitor WebView: keep the HMR WebSocket alive so the full-reload plugin
+        # can push page reloads, but set explicit host/port so the device can connect.
+        if for_mobile_dev and mobile_hmr_host {
+            hmr_host = mobile_hmr_host;
+            hmr_port = mobile_hmr_port or 5173;
+            mobile_hmr_str = (
+                f'\n    hmr: {{ protocol: "ws", host: "{hmr_host}", port: {hmr_port}, clientPort: {hmr_port}, overlay: false }},'
+            );
+        } elif for_mobile_dev {
+            mobile_hmr_str = "\n    hmr: { overlay: false },";
+        } else {
+            mobile_hmr_str = "";
+        }
+        mobile_plug_in: str = "\n    jacMobileCompiledReload(),"
+            if for_mobile_dev
+            else "";
+        # After Jac writes compiled/*.js, push full-reload to the Capacitor WebView
+        mobile_compiled_block: str = (
+            r'''
+
+// When Jac recompiles, push full-reload to the WebView (Capacitor does not watch project files)
+function sendFullReload(server) {
+  let sent = false;
+  // Broadcast over the websocket first (works for both Vite 5 and Vite 6 clients).
+  try {
+    if (server.ws && typeof server.ws.send === "function") {
+      server.ws.send({ type: "full-reload", path: "*" });
+      sent = true;
+    }
+  } catch (e) {}
+  // Vite 6 environment fallback for runners that expose environment hot channels.
+  try {
+    const envs = server.environments;
+    if (envs && typeof envs === "object") {
+      for (const k of Object.keys(envs)) {
+        const env = envs[k];
+        if (env && env.hot && typeof env.hot.send === "function") {
+          env.hot.send({ type: "full-reload", path: "*" });
+          sent = true;
+        }
+      }
+    }
+  } catch (e) {}
+  return sent;
+}
+
+function jacMobileCompiledReload() {
+  return {
+    name: "jac-mobile-compiled-reload",
+    configureServer(server) {
+      const compiled = path.resolve(buildDir, "compiled");
+      try { server.watcher.add(compiled); } catch (e) {}
+      let timer = null;
+      const fire = (file) => {
+        if (typeof file !== "string") return;
+        const norm = file.split(path.sep).join("/");
+        if (!norm.includes("/compiled/") || !norm.endsWith(".js")) return;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          sendFullReload(server);
+        }, 300);
+      };
+      server.watcher.on("change", fire);
+      server.watcher.on("add", fire);
+    },
+    // Intercept hot updates for compiled files and force full-reload instead of module HMR
+    handleHotUpdate(ctx) {
+      const norm = ctx.file.split(path.sep).join("/");
+      if (norm.includes("/compiled/") && norm.endsWith(".js")) {
+        sendFullReload(ctx.server);
+        return [];
+      }
+    },
+  };
+}
+'''
+                if for_mobile_dev
+                else ""
+        );
         config_content = f'''import {{ defineConfig }} from "vite";
 import path from "path";
 import {{ fileURLToPath }} from "url";
@@ -463,7 +545,7 @@ function jacErrorReporter() {{
     }},
   }};
 }}
-
+{mobile_compiled_block}
 /**
  * Vite DEV configuration for HMR mode
  * Proxies API routes to Python server at localhost:{api_port}
@@ -473,7 +555,7 @@ export default defineConfig({{
 {define_str}
   }},
   plugins: [
-    jacErrorReporter(),{(newline + plugins_str + newline + '  ')
+    jacErrorReporter(),{mobile_plug_in}{(newline + plugins_str + newline + '  ')
             if plugins_str
             else ''}],
   root: buildDir,
@@ -531,7 +613,7 @@ export default defineConfig({{
         changeOrigin: true,
       }},
     }},
-{server_config_str}
+{server_config_str}{mobile_hmr_str}
   }},
   resolve: {{
     alias: {{
@@ -674,13 +756,17 @@ api_base_url_override: overrides jac.toml base_url for desktop targets
     where the CLI knows the backend port at startup time.
 is_dev: if True, creates dev config with HMR proxy, else build config.
 api_port: port for API proxy in dev mode.
+for_mobile_dev: if True, configure Vite HMR for Capacitor WebView full-reload.
 """
 impl ViteBundler.create_vite_config(
     self: ViteBundler,
     entry_file: Path,
     api_base_url_override: str = "",
     is_dev: bool = False,
-    api_port: int = 8000
+    api_port: int = 8000,
+    for_mobile_dev: bool = False,
+    mobile_hmr_host: str = "",
+    mobile_hmr_port: int = 0
 ) -> Path {
     build_dir = self._get_client_dir();
     build_dir.mkdir(parents=True, exist_ok=True);
@@ -693,7 +779,10 @@ impl ViteBundler.create_vite_config(
         is_dev=is_dev,
         entry_file=entry_file,
         api_base_url=api_base_url,
-        api_port=api_port
+        api_port=api_port,
+        for_mobile_dev=for_mobile_dev,
+        mobile_hmr_host=mobile_hmr_host,
+        mobile_hmr_port=mobile_hmr_port
     );
     config_path.write_text(config_content, encoding='utf-8');
     return config_path;

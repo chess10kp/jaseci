@@ -61,6 +61,7 @@ with entry {
         ("jac build --client pwa", "Build PWA (Progressive Web App)"),
         ("jac build --client desktop", "Build desktop app"),
         ("jac build --client mobile --platform android", "Build Android mobile app"),
+        ("jac build --client mobile --platform ios", "Build iOS mobile app"),
         ("jac build --client desktop --platform windows", "Build for Windows"),
 
     ],
@@ -95,10 +96,12 @@ def setup(target: str) -> int {
 
 """Jac CLI extensions for client-side development."""
 class JacCmd {
-    """Create Jac CLI cmds."""
-    @hookimpl
-    """Extend core commands to add --npm flag for npm package management.""";
+    """Create Jac CLI cmds.
 
+    Extends core commands (create/add/remove/start/build/setup) with client-side
+    behavior; see ``create_cmd`` implementation.
+    """
+    @hookimpl
     static def create_cmd {
         registry = get_registry();
 
@@ -173,6 +176,45 @@ class JacCmd {
                         help="Client build target for dev server (web, desktop, pwa, mobile)",
                         choices=["web", "desktop", "pwa", "mobile"],
                         short=""  # Disable auto-generated short flag
+                    ),
+                    Arg.create(
+                        "mobile_reach",
+                        typ=str,
+                        default="auto",
+                        help=(
+                            "Mobile dev (--client mobile --dev): how the device reaches this PC "
+                            "(auto, lan, emulator, usb). usb is Android-only; use adb reverse or cap forwardPorts."
+                        ),
+                        choices=["auto", "lan", "emulator", "usb"],
+                        short=""
+                    ),
+                    Arg.create(
+                        "mobile_host",
+                        typ=str,
+                        default="",
+                        help=(
+                            "Mobile dev: override dev-server host/IP shown to Capacitor live-reload "
+                            "(overrides --mobile-reach)"
+                        ),
+                        short=""
+                    ),
+                    Arg.create(
+                        "mobile_vite_port",
+                        typ=int,
+                        default=5173,
+                        help="Mobile dev: Vite dev server port (must match live-reload)",
+                        short=""
+                    ),
+                    Arg.create(
+                        "mobile_platform",
+                        typ=str,
+                        default="auto",
+                        help=(
+                            "Mobile dev: android or ios (auto = use [plugins.client.mobile] default_platform "
+                            "or android)"
+                        ),
+                        choices=["auto", "android", "ios"],
+                        short=""
                     ),
 
                 ],
@@ -454,6 +496,9 @@ def _handle_start_target(ctx: HookContext) -> None {
     ctx.set_data("start_client_target", target);
 
     api_port = ctx.get_arg("port", 8000);
+    if api_port is None {
+        api_port = 8000;
+    }
 
     # Handle non-web targets (desktop, pwa) - they override dev/start behavior
     if target_name != "web" {
@@ -471,7 +516,8 @@ def _handle_start_target(ctx: HookContext) -> None {
                 }
             } elif target_name == "mobile" {
                 android_dir = project_dir / "android";
-                if not android_dir.exists() {
+                ios_dir = project_dir / "ios";
+                if not android_dir.exists() and not ios_dir.exists() {
                     console.error(
                         f"Target '{target_name}' not set up. Run 'jac setup {target_name}' first."
                     );
@@ -483,6 +529,20 @@ def _handle_start_target(ctx: HookContext) -> None {
         }
         try {
             if dev_mode {
+                if target_name == "mobile" {
+                    os.environ["JAC_MOBILE_DEV_REACH"] = str(
+                        ctx.get_arg("mobile_reach", "auto")
+                    );
+                    os.environ["JAC_MOBILE_DEV_HOST_OVERRIDE"] = str(
+                        ctx.get_arg("mobile_host", "")
+                    );
+                    os.environ["JAC_MOBILE_VITE_PORT"] = str(
+                        ctx.get_arg("mobile_vite_port", 5173)
+                    );
+                    os.environ["JAC_MOBILE_PLATFORM"] = str(
+                        ctx.get_arg("mobile_platform", "auto")
+                    );
+                }
                 # Use target's dev() method (polymorphic dispatch)
                 target.dev(entry_path, project_dir, api_port=api_port);
             } else {
@@ -578,9 +638,10 @@ def _handle_setup_target(ctx: HookContext) -> None {
         }
         if target_name == "mobile" {
             android_dir = project_dir / "android";
-            if not android_dir.exists() {
+            ios_dir = project_dir / "ios";
+            if not android_dir.exists() and not ios_dir.exists() {
                 console.error(
-                    f"Setup completed but Android directory not found at: {android_dir}"
+                    "Setup completed but neither android/ nor ios/ directory was found."
                 );
                 console.print(
                     "This may indicate mobile setup did not complete successfully.",
