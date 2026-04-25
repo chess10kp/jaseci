@@ -232,11 +232,6 @@ def _check_android_dependencies {
                     "/usr/lib/jvm/java-21-openjdk (Linux).",
                     style="muted"
                 );
-            } else {
-                console.print(
-                    f"    (JDK major {java_major} — OK for current Capacitor Android builds)",
-                    style="muted"
-                );
             }
         } else {
             console.print(
@@ -284,11 +279,6 @@ def _check_android_dependencies {
     if gradle_ok {
         first_line = (gradle_ver or "").split("\n")[0];
         console.print(f"  ✔ Gradle found: {first_line}", style="success");
-    } else {
-        console.print(
-            "  ⚠ Gradle not found globally (will use android/gradlew wrapper if available)",
-            style="muted"
-        );
     }
 }
 
@@ -750,9 +740,6 @@ def _get_api_base_url_str(project_dir: Path) -> str {
 def _warn_mobile_dev_api_url(project_dir: Path) {
     base = _get_api_base_url_str(project_dir);
     if base {
-        console.print(
-            f"  API mode: fixed base_url from jac.toml ({base})", style="muted"
-        );
         if ("localhost" in base.lower()) or ("127.0.0.1" in base) {
             console.warning(
                 "  Physical devices cannot reach localhost on your PC. "
@@ -760,11 +747,6 @@ def _warn_mobile_dev_api_url(project_dir: Path) {
                 "or set base_url to your machine's LAN URL."
             );
         }
-    } else {
-        console.print(
-            "  API mode: same-origin — Vite proxies API routes to the Jac server",
-            style="muted"
-        );
     }
 }
 
@@ -781,9 +763,6 @@ def _mobile_setup_android_port_reverse(vite_port: int, server_port: int) {
     if server_port != vite_port {
         attempted = attempted + ", " + str(server_port);
     }
-    console.print(
-        f"  Android: checking adb reverse for ports {attempted}", style="muted"
-    );
 
     def _try_adb_reverse_port(port: int) {
         cmd = ["adb", "reverse", f"tcp:{port}", f"tcp:{port}"];
@@ -1036,7 +1015,6 @@ impl MobileTarget.setup(project_dir: Path) -> None {
     # Early return when required platform scaffolds already exist.
     if (not needs_android or android_dir.exists())
     and (not needs_ios or ios_dir.exists()) {
-        console.print("\n📱 Mobile target already set up. Skipping...", style="muted");
         return;
     }
 
@@ -1196,7 +1174,6 @@ impl MobileTarget.dev(
 
     visible_host = cast(str, resolve_mobile_dev_host(plat, host_override));
 
-    console.print(f"  Live-reload host: {visible_host}:{vite_port}", style="muted");
     if plat == "android" {
         _ensure_android_cleartext_for_lan_dev(project_dir);
     }
@@ -1248,10 +1225,6 @@ impl MobileTarget.dev(
     if not vite_process {
         raise RuntimeError("Failed to start Vite dev server");
     }
-    console.print(
-        f"  ✔ Vite HMR — WebView loads http://{visible_host}:{vite_port}",
-        style="success"
-    );
 
     # `jac start --dev` normally starts HotReloader, but the mobile pre-hook cancels that
     # handler — so we watch .jac here and re-run the same ViteCompiler.compile graph Vite serves.
@@ -1264,12 +1237,8 @@ impl MobileTarget.dev(
         hot_watcher = JacFileWatcher(watch_paths=[str(project_dir.resolve())]);
         hot_watcher.add_callback(hmr_handler.on_event);
         hot_watcher.start();
-        console.print(
-            "  👀 Watching **/*.jac — save to trigger recompile + reload", style="muted"
-        );
     }
 
-    console.print(f"  Starting Jac API on port {server_port}…", style="muted");
     server_process = _mobile_start_backend_server(entry_file, project_dir, server_port);
 
     vite_p = vite_process;

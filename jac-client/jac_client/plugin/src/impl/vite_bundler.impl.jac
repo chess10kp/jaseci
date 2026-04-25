@@ -1169,7 +1169,6 @@ impl ViteBundler.start_dev_server(
         config_rel = dev_config;
     }
     command = _build_vite_dev_command(config_rel, port, host=host);
-    logger.debug(f"Starting Vite dev server on port {port}");
     if suppress_initial_output {
         process = self._start_vite_with_output_capture(command, build_dir, sys);
     } else {
