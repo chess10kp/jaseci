@@ -24,6 +24,8 @@ glob DEFAULT_APP_ID = "com.jac.app",
      SUBPROCESS_TIMEOUT_SHORT: int = 5,
      SUBPROCESS_TIMEOUT_MEDIUM: int = 60,
      SUBPROCESS_TIMEOUT_BUILD: int = 600,
+     MOBILE_SETUP_PLATFORM_ENV = "JAC_MOBILE_SETUP_PLATFORM",
+     MOBILE_SETUP_MODES: list[str] = ["android", "ios", "all"],
      SUPPORTED_PLATFORMS: list[str] = ["android", "ios"];
 
 # ===============================================================================
@@ -427,6 +429,23 @@ def _load_mobile_config(project_dir: Path) -> dict {
     return {};
 }
 
+"""Resolve mobile setup mode (android, ios, all).
+
+Priority: explicit env override -> jac.toml default_platform -> host default.
+"""
+def _resolve_mobile_setup_mode(project_dir: Path, is_macos: bool) -> tuple[str, bool] {
+    requested = os.environ.get(MOBILE_SETUP_PLATFORM_ENV, "").strip().lower();
+    if requested in MOBILE_SETUP_MODES {
+        return (requested, True);
+    }
+    mobile_cfg = _load_mobile_config(project_dir);
+    default_platform = str(mobile_cfg.get("default_platform", "")).strip().lower();
+    if default_platform in SUPPORTED_PLATFORMS {
+        return (default_platform, False);
+    }
+    return ("ios", False) if is_macos else ("android", False);
+}
+
 """Add [plugins.client.mobile] section to jac.toml if not present."""
 def _add_mobile_config(project_dir: Path, app_name: str, app_id: str) -> None {
     toml_path = project_dir / "jac.toml";
@@ -745,27 +764,21 @@ def _warn_mobile_dev_api_url(project_dir: Path) {
 }
 
 """Read mobile dev options set by jac-client CLI (see cli.jac)."""
-def _mobile_read_dev_env -> tuple[str, str, int, str] {
-    reach = os.environ.get("JAC_MOBILE_DEV_REACH", "auto");
-    host_ov = os.environ.get("JAC_MOBILE_DEV_HOST_OVERRIDE", "");
-    vps = os.environ.get("JAC_MOBILE_VITE_PORT", "");
-    try {
-        vite_port = int(vps) if vps and vps.strip() else 5173;
-    } except ValueError {
-        vite_port = 5173;
-    }
+def _mobile_read_dev_env -> tuple[str, int, str] {
+    host_ov = os.environ.get("JAC_MOBILE_DEV_HOST", "");
+    vite_port = 5173;
     plat_mode = os.environ.get("JAC_MOBILE_PLATFORM", "auto");
-    return (reach, host_ov, vite_port, plat_mode);
+    return (host_ov, vite_port, plat_mode);
 }
 
-"""Best-effort ADB reverse for Android USB mobile dev."""
-def _mobile_setup_usb_port_reverse(vite_port: int, server_port: int) {
+"""Best-effort ADB reverse for Android mobile dev connectivity."""
+def _mobile_setup_android_port_reverse(vite_port: int, server_port: int) {
     attempted = str(vite_port);
     if server_port != vite_port {
         attempted = attempted + ", " + str(server_port);
     }
     console.print(
-        f"  USB: auto-configuring adb reverse for ports {attempted}", style="muted"
+        f"  Android: checking adb reverse for ports {attempted}", style="muted"
     );
 
     def _try_adb_reverse_port(port: int) {
@@ -916,25 +929,50 @@ def _mobile_start_backend_server(
     );
 }
 
-"""Run cap with live-reload URL via CLI."""
+"""Write server.url into capacitor.config.json for live-reload.
+
+During dev, the Capacitor WebView loads directly from the Vite dev server
+instead of the static webDir. We save the original config and restore it on exit.
+"""
+def _inject_capacitor_dev_url(project_dir: Path, dev_url: str) -> str | None {
+    config_path = project_dir / "capacitor.config.json";
+    if not config_path.exists() {
+        return None;
+    }
+    t = config_path.read_text(encoding="utf-8");
+    original = t;
+    try {
+        cfg = json.loads(t);
+    } except Exception {
+        return None;
+    }
+    server = cfg.get("server", {});
+    server["url"] = dev_url;
+    server["cleartext"] = True;
+    cfg["server"] = server;
+    config_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8");
+    console.print(
+        f"  ✔ capacitor.config.json → server.url = {dev_url}", style="success"
+    );
+    return original;
+}
+
+"""Restore capacitor.config.json to its pre-dev state."""
+def _restore_capacitor_config(project_dir: Path, original: str | None) -> None {
+    if original is None {
+        return;
+    }
+    config_path = project_dir / "capacitor.config.json";
+    config_path.write_text(original, encoding="utf-8");
+    console.print("  ✔ Restored capacitor.config.json", style="muted");
+}
+
+"""Run cap run (no --live-reload; server.url in config points to Vite)."""
 def _run_cap_run_live_reload(
-    project_dir: Path, plat: str, lr_host: str, lr_port: int, reach: str
+    project_dir: Path, plat: str, lr_host: str, lr_port: int
 ) -> int {
     npx = _resolve_npx();
-    cmd = [
-        npx,
-        "cap",
-        "run",
-        plat,
-        "--live-reload",
-        "--host",
-        lr_host,
-        "--port",
-        str(lr_port)
-    ];
-    if reach == "usb" and plat == "android" {
-        cmd.extend(["--forwardPorts", f"{lr_port}:{lr_port}"]);
-    }
+    cmd = [npx, "cap", "run", plat];
     console.print(f"  Running: {' '.join(cmd)}", style="muted");
     console.print("  (Press Ctrl+C to stop)\n", style="muted");
     result = subprocess.run(cmd, cwd=project_dir, check=False);
@@ -946,28 +984,70 @@ def _run_cap_run_live_reload(
 # ===============================================================================
 """Setup mobile target - install Capacitor and scaffold platform project.
 
-Sets up both Android and iOS platforms so the project is ready for either.
+Scaffolds selected platform(s):
+- explicit via JAC_MOBILE_SETUP_PLATFORM=android|ios|all
+- otherwise from [plugins.client.mobile].default_platform
+- otherwise host default (ios on macOS, android elsewhere)
 """
 impl MobileTarget.setup(project_dir: Path) -> None {
     android_dir = project_dir / "android";
     ios_dir = project_dir / "ios";
-
-    # Early return if both platforms already set up
-    if android_dir.exists() and ios_dir.exists() {
-        console.print(
-            "\n📱 Mobile target already set up (Android + iOS). Skipping...",
-            style="muted"
+    is_macos = platform_mod.system() == "Darwin";
+    (setup_mode, explicit_setup_mode) = _resolve_mobile_setup_mode(
+        project_dir, is_macos
+    );
+    platforms: list[str] = [];
+    if setup_mode == "all" {
+        if not is_macos and explicit_setup_mode {
+            console.warning(
+                "  iOS scaffold in --platform all requires macOS; using Android."
+            );
+        }
+        platforms = ["android", "ios"] if is_macos else ["android"];
+    } elif setup_mode == "android" {
+        platforms = ["android"];
+    } elif setup_mode == "ios" {
+        if is_macos {
+            platforms = ["ios"];
+        } elif explicit_setup_mode {
+            raise RuntimeError(
+                "iOS scaffold setup requires macOS. "
+                "Use --platform android on Linux/Windows."
+            );
+        } else {
+            console.warning(
+                "  default_platform is ios but host is not macOS; using Android scaffold."
+            );
+            platforms = ["android"];
+        }
+    } else {
+        raise ValueError(
+            f"Unsupported setup platform '{setup_mode}'. "
+            f"Supported: {', '.join(MOBILE_SETUP_MODES)}"
         );
+    }
+    needs_android = "android" in platforms;
+    needs_ios = "ios" in platforms;
+
+    # Early return when required platform scaffolds already exist.
+    if (not needs_android or android_dir.exists())
+    and (not needs_ios or ios_dir.exists()) {
+        console.print("\n📱 Mobile target already set up. Skipping...", style="muted");
         return;
     }
 
     console.print("\n📱 Setting up mobile target (Capacitor)", style="bold");
     console.print(f"  Project directory: {project_dir}", style="muted");
 
-    # Check prerequisites for both platforms
+    # Check prerequisites for selected platforms
     try {
-        _check_and_report_dependencies("android");
-        _check_and_report_dependencies("ios");
+        checked: set[str] = set();
+        for plat in platforms {
+            if plat not in checked {
+                _check_and_report_dependencies(plat);
+                checked.add(plat);
+            }
+        }
     } except Exception as e {
         console.warning(f"  Dependency check encountered an issue: {e}");
         console.print(
@@ -976,55 +1056,49 @@ impl MobileTarget.setup(project_dir: Path) -> None {
         );
     }
 
-    # Wrap in try/finally to guarantee platform dirs exist even if later steps fail
-    try {
-        import from jac_client.plugin.src.vite_bundler { ViteBundler }
-        bundler = ViteBundler(project_dir=project_dir);
-        web_dist_dir = Path(bundler.output_dir).resolve();
-        web_dist_dir.mkdir(parents=True, exist_ok=True);
+    import from jac_client.plugin.src.vite_bundler { ViteBundler }
+    bundler = ViteBundler(project_dir=project_dir);
+    web_dist_dir = Path(bundler.output_dir).resolve();
+    web_dist_dir.mkdir(parents=True, exist_ok=True);
 
-        _ensure_capacitor_deps(project_dir);
-        _ensure_capacitor_config(project_dir, web_dist_dir);
+    _ensure_capacitor_deps(project_dir);
+    _ensure_capacitor_config(project_dir, web_dist_dir);
 
-        # Scaffold both platforms
+    # Scaffold selected platforms.
+    if needs_android {
         _ensure_android_platform(project_dir, web_dist_dir);
+    }
+    if needs_ios {
         _ensure_ios_platform(project_dir, web_dist_dir);
+    }
 
-        # Write [plugins.client.mobile] into jac.toml
-        mobile_cfg = _load_mobile_config(project_dir);
-        app_name = mobile_cfg.get("app_name", DEFAULT_APP_NAME);
-        app_id = mobile_cfg.get("app_id", DEFAULT_APP_ID);
-        try {
-            _add_mobile_config(project_dir, app_name, app_id);
-        } except Exception as e {
-            console.warning(
-                f"  Failed to add [plugins.client.mobile] to jac.toml: {e}"
-            );
-        }
+    # Write [plugins.client.mobile] into jac.toml
+    mobile_cfg = _load_mobile_config(project_dir);
+    app_name = mobile_cfg.get("app_name", DEFAULT_APP_NAME);
+    app_id = mobile_cfg.get("app_id", DEFAULT_APP_ID);
+    try {
+        _add_mobile_config(project_dir, app_name, app_id);
+    } except Exception as e {
+        console.warning(f"  Failed to add [plugins.client.mobile] to jac.toml: {e}");
+    }
 
-        console.success("Mobile target setup complete!");
-        console.print("\nNext steps:", style="bold");
+    setup_label = ", ".join(platforms);
+    console.success(f"Mobile target setup complete ({setup_label}).");
+    console.print("\nNext steps:", style="bold");
+    if needs_android {
         console.print("  Android:");
         console.print(
             "    Dev:   jac start main.jac --client mobile --dev", style="muted"
         );
         console.print("    Build: jac build --client mobile --platform android");
+    }
+    if needs_ios {
         console.print("  iOS:");
         console.print(
-            "    Dev:   jac start main.jac --client mobile --dev --mobile-platform ios",
+            "    Dev:   jac start main.jac --client mobile --dev --platform ios",
             style="muted"
         );
         console.print("    Build: jac build --client mobile --platform ios");
-    } finally {
-        # Guarantee at least android/ dir exists even if something failed
-        if not android_dir.exists() {
-            try {
-                android_dir.mkdir(parents=True, exist_ok=True);
-                console.print(f"  ✔ Ensured {android_dir} exists", style="success");
-            } except Exception as e {
-                console.error(f"  CRITICAL: Could not create android directory: {e}");
-            }
-        }
     }
 }
 
@@ -1045,7 +1119,17 @@ impl MobileTarget.build(
     _require_macos_for_ios(selected_platform);
 
     # Ensure Capacitor scaffold exists
-    self.setup(project_dir);
+    prev_setup_platform = os.environ.get(MOBILE_SETUP_PLATFORM_ENV, None);
+    os.environ[MOBILE_SETUP_PLATFORM_ENV] = selected_platform;
+    try {
+        self.setup(project_dir);
+    } finally {
+        if prev_setup_platform is None {
+            os.environ.pop(MOBILE_SETUP_PLATFORM_ENV, None);
+        } else {
+            os.environ[MOBILE_SETUP_PLATFORM_ENV] = prev_setup_platform;
+        }
+    }
 
     console.print("  Step 1: Building web bundle...", style="muted");
     web_bundle_path = super.build(entry_file, project_dir, None);
@@ -1089,7 +1173,7 @@ impl MobileTarget.dev(
         api_port = 8000;
     }
 
-    (reach, host_override, vite_port, plat_mode) = _mobile_read_dev_env();
+    (host_override, vite_port, plat_mode) = _mobile_read_dev_env();
     mobile_cfg = _load_mobile_config(project_dir);
     if plat_mode and plat_mode != "auto" {
         plat = _normalize_mobile_platform(plat_mode);
@@ -1105,19 +1189,21 @@ impl MobileTarget.dev(
     _try_check_mobile_dependencies(plat);
     _require_macos_for_ios(plat);
     _warn_mobile_dev_api_url(project_dir);
-    self.setup(project_dir);
-
+    prev_setup_platform = os.environ.get(MOBILE_SETUP_PLATFORM_ENV, None);
+    os.environ[MOBILE_SETUP_PLATFORM_ENV] = plat;
     try {
-        visible_host = resolve_mobile_dev_host(reach, plat, host_override);
-    } except ValueError as e {
-        console.error(str(e));
-        raise;
+        self.setup(project_dir);
+    } finally {
+        if prev_setup_platform is None {
+            os.environ.pop(MOBILE_SETUP_PLATFORM_ENV, None);
+        } else {
+            os.environ[MOBILE_SETUP_PLATFORM_ENV] = prev_setup_platform;
+        }
     }
 
-    console.print(
-        f"  Reach: {reach} → live-reload host: {visible_host}:{vite_port}",
-        style="muted"
-    );
+    visible_host = cast(str, resolve_mobile_dev_host(plat, host_override));
+
+    console.print(f"  Live-reload host: {visible_host}:{vite_port}", style="muted");
     if plat == "android" {
         _ensure_android_cleartext_for_lan_dev(project_dir);
     }
@@ -1147,12 +1233,12 @@ impl MobileTarget.dev(
     console.print("  ✔ Client modules compiled for dev mode", style="success");
 
     toml_base_url = _get_api_base_url_str(project_dir);
-    server_port = resolve_mobile_server_port(toml_base_url, api_port);
-    if reach == "usb" and plat == "android" {
-        _mobile_setup_usb_port_reverse(vite_port, server_port);
+    server_port = cast(int, resolve_mobile_server_port(toml_base_url, api_port));
+    if plat == "android" {
+        _mobile_setup_android_port_reverse(vite_port, server_port);
     }
 
-    bundler.create_vite_config(
+    cast(Any, bundler).create_vite_config(
         entry_file,
         api_base_url_override="",
         is_dev=True,
@@ -1164,7 +1250,7 @@ impl MobileTarget.dev(
 
     console.print(f"  Starting Vite dev server (port {vite_port})…", style="muted");
     vite_process = bundler.start_dev_server(
-        port=vite_port, suppress_initial_output=True
+        port=vite_port, suppress_initial_output=True, host=visible_host
     );
     if not vite_process {
         raise RuntimeError("Failed to start Vite dev server");
@@ -1232,17 +1318,28 @@ impl MobileTarget.dev(
     _ensure_capacitor_config(project_dir, web_dist_dir);
     _ensure_placeholder_index(web_dist_dir);
 
+    dev_url = f"http://{visible_host}:{vite_port}";
+    original_cap_config = _inject_capacitor_dev_url(project_dir, dev_url);
+
     try {
         _run_cap_cmd(project_dir, ["sync", plat], f"cap sync {plat}");
-        rc = _run_cap_run_live_reload(
-            project_dir, plat, visible_host, vite_port, reach
-        );
+        rc = _run_cap_run_live_reload(project_dir, plat, visible_host, vite_port);
         if rc != 0 {
             console.warning(f"  cap run exited with code {rc}");
+        }
+        console.print(
+            f"\n  📱 App deployed. Vite + API servers running.", style="bold green"
+        );
+        console.print(f"  WebView loads: {dev_url}", style="muted");
+        console.print("  Press Ctrl+C to quit.\n", style="muted");
+        import from time { sleep }
+        while True {
+            sleep(1);
         }
     } except KeyboardInterrupt {
         console.print("\n  Interrupted.", style="muted");
     } finally {
+        _restore_capacitor_config(project_dir, original_cap_config);
         cleanup_servers();
     }
 }
@@ -1260,16 +1357,31 @@ impl MobileTarget.start(
             style="muted"
         );
     }
+    plat_mode = os.environ.get("JAC_MOBILE_PLATFORM", "auto");
     mobile_cfg = _load_mobile_config(project_dir);
-    plat = mobile_cfg.get("default_platform", "android");
-    plat = _normalize_mobile_platform(plat);
+    if plat_mode and plat_mode != "auto" {
+        plat = _normalize_mobile_platform(plat_mode);
+    } else {
+        plat = mobile_cfg.get("default_platform", "android");
+        plat = _normalize_mobile_platform(plat);
+    }
 
     console.print(
         f"\n📱 Starting mobile app (Capacitor {plat.capitalize()})", style="bold"
     );
     _try_check_mobile_dependencies(plat);
     _require_macos_for_ios(plat);
-    self.setup(project_dir);
+    prev_setup_platform = os.environ.get(MOBILE_SETUP_PLATFORM_ENV, None);
+    os.environ[MOBILE_SETUP_PLATFORM_ENV] = plat;
+    try {
+        self.setup(project_dir);
+    } finally {
+        if prev_setup_platform is None {
+            os.environ.pop(MOBILE_SETUP_PLATFORM_ENV, None);
+        } else {
+            os.environ[MOBILE_SETUP_PLATFORM_ENV] = prev_setup_platform;
+        }
+    }
     console.print("  Building web bundle…", style="muted");
     web_bundle_path = super.build(entry_file, project_dir, None);
     console.print(f"  ✔ Web bundle: {web_bundle_path}", style="success");

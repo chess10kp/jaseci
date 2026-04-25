@@ -26,7 +26,7 @@ def register_targets {
     pwa_target = PWATarget();
     registry.register(pwa_target);
 
-    # Register mobile target (Capacitor Android)
+    # Register mobile target (Capacitor)
     mobile_target = MobileTarget();
     registry.register(mobile_target);
 }

@@ -83,13 +83,26 @@ def build(
         Arg.create(
             "target", kind=ArgKind.POSITIONAL, help="Target to setup (e.g., desktop)"
         ),
+        Arg.create(
+            "platform",
+            typ=str,
+            default=None,
+            help="Platform for mobile setup (android, ios, all)",
+            choices=["android", "ios", "all"],
+            short="p"
+        ),
 
     ],
-    examples=[("jac setup desktop", "Setup desktop target (Tauri)"), ],
+    examples=[
+        ("jac setup desktop", "Setup desktop target (Tauri)"),
+        ("jac setup mobile", "Setup mobile target (default platform)"),
+        ("jac setup mobile --platform ios", "Setup iOS scaffold only"),
+        ("jac setup mobile --platform all", "Setup both Android and iOS (macOS)")
+    ],
     group="project",
     source="jac-client"
 )
-def setup(target: str) -> int {
+def setup(target: str, platform: str | None = None) -> int {
     # This will be handled by the pre_hook
     return 0;
 }
@@ -178,40 +191,22 @@ class JacCmd {
                         short=""  # Disable auto-generated short flag
                     ),
                     Arg.create(
-                        "mobile_reach",
-                        typ=str,
-                        default="auto",
-                        help=(
-                            "Mobile dev (--client mobile --dev): how the device reaches this PC "
-                            "(auto, lan, emulator, usb). usb is Android-only; use adb reverse or cap forwardPorts."
-                        ),
-                        choices=["auto", "lan", "emulator", "usb"],
-                        short=""
-                    ),
-                    Arg.create(
-                        "mobile_host",
+                        "host",
                         typ=str,
                         default="",
                         help=(
-                            "Mobile dev: override dev-server host/IP shown to Capacitor live-reload "
-                            "(overrides --mobile-reach)"
+                            "Mobile dev (--client mobile --dev): optional host/IP override for "
+                            "Capacitor live-reload. When omitted, jac auto-selects a host."
                         ),
                         short=""
                     ),
                     Arg.create(
-                        "mobile_vite_port",
-                        typ=int,
-                        default=5173,
-                        help="Mobile dev: Vite dev server port (must match live-reload)",
-                        short=""
-                    ),
-                    Arg.create(
-                        "mobile_platform",
+                        "platform",
                         typ=str,
                         default="auto",
                         help=(
-                            "Mobile dev: android or ios (auto = use [plugins.client.mobile] default_platform "
-                            "or android)"
+                            "Mobile start/dev: android or ios (auto = use [plugins.client.mobile] "
+                            "default_platform or android)"
                         ),
                         choices=["auto", "android", "ios"],
                         short=""
@@ -528,20 +523,14 @@ def _handle_start_target(ctx: HookContext) -> None {
             }
         }
         try {
+            if target_name == "mobile" {
+                os.environ["JAC_MOBILE_PLATFORM"] = str(
+                    ctx.get_arg("platform", "auto")
+                );
+            }
             if dev_mode {
                 if target_name == "mobile" {
-                    os.environ["JAC_MOBILE_DEV_REACH"] = str(
-                        ctx.get_arg("mobile_reach", "auto")
-                    );
-                    os.environ["JAC_MOBILE_DEV_HOST_OVERRIDE"] = str(
-                        ctx.get_arg("mobile_host", "")
-                    );
-                    os.environ["JAC_MOBILE_VITE_PORT"] = str(
-                        ctx.get_arg("mobile_vite_port", 5173)
-                    );
-                    os.environ["JAC_MOBILE_PLATFORM"] = str(
-                        ctx.get_arg("mobile_platform", "auto")
-                    );
+                    os.environ["JAC_MOBILE_DEV_HOST"] = str(ctx.get_arg("host", ""));
                 }
                 # Use target's dev() method (polymorphic dispatch)
                 target.dev(entry_path, project_dir, api_port=api_port);
@@ -614,7 +603,12 @@ def _handle_setup_target(ctx: HookContext) -> None {
     }
 
     # Setup using target's setup method (polymorphic dispatch)
+    setup_platform = ctx.get_arg("platform", None);
+    prev_setup_platform_env = os.environ.get("JAC_MOBILE_SETUP_PLATFORM", None);
     try {
+        if target_name == "mobile" and setup_platform {
+            os.environ["JAC_MOBILE_SETUP_PLATFORM"] = str(setup_platform);
+        }
         console.print(
             f"Setting up target '{target_name}' in: {project_dir}", style="muted"
         );
@@ -681,6 +675,14 @@ def _handle_setup_target(ctx: HookContext) -> None {
         console.print(traceback.format_exc(), style="muted");
         ctx.set_data("cancel_execution", True);
         ctx.set_data("cancel_return_code", 1);
+    } finally {
+        if target_name == "mobile" and setup_platform {
+            if prev_setup_platform_env is None {
+                os.environ.pop("JAC_MOBILE_SETUP_PLATFORM", None);
+            } else {
+                os.environ["JAC_MOBILE_SETUP_PLATFORM"] = prev_setup_platform_env;
+            }
+        }
     }
 }
 

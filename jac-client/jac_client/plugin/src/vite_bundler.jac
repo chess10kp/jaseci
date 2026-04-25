@@ -88,7 +88,10 @@ class ViteBundler {
         suppress_initial_output: If True, capture Vite's stdout until ready
     """
     def start_dev_server(
-        self: ViteBundler, port: int = 3000, suppress_initial_output: bool = False
+        self: ViteBundler,
+        port: int = 3000,
+        suppress_initial_output: bool = False,
+        host: str = ""
     ) -> Any;
 
     # Internal helpers for dev server

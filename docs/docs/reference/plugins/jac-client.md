@@ -1502,7 +1502,7 @@ jac build [filename] [--client TARGET] [-p PLATFORM]
 |--------|-------------|---------|
 | `filename` | Path to .jac file | `main.jac` |
 | `--client` | Build target (`web`, `desktop`, `pwa`, `mobile`) | `web` |
-| `-p, --platform` | Desktop platform (`windows`, `macos`, `linux`, `all`) | Mobile platform (`android`, `ios`) |  Current platform |
+| `-p, --platform` | Platform for desktop (`windows`, `macos`, `linux`, `all`) or mobile (`android`, `ios`) builds | Current platform |
 
 For desktop builds, the **client-only** variant (web bundle inside a Tauri shell, no bundled sidecar) is enabled by setting `client_only = true` under `[desktop]` in `jac.toml` rather than via a CLI flag -- see [Desktop Target → Client-Only Mode](#client-only-mode). In all desktop builds the build environment sets `JAC_BUILD=1` so import-time server starts stay inert.
 
@@ -1539,12 +1539,13 @@ jac build --client mobile --platform ios
 One-time initialization for a build target.
 
 ```bash
-jac setup <target>
+jac setup <target> [-p PLATFORM]
 ```
 
 | Option | Description |
 |--------|-------------|
 | `target` | Target to setup (`desktop`, `mobile`, `pwa`) |
+| `-p, --platform` | Mobile setup platform (`android`, `ios`, `all`) |
 
 **Examples:**
 
@@ -1554,6 +1555,12 @@ jac setup desktop
 
 # Setup PWA target (creates pwa_icons/ directory)
 jac setup pwa
+
+# Setup mobile target for one platform only
+jac setup mobile --platform ios
+
+# Setup both mobile platforms (macOS only)
+jac setup mobile --platform all
 ```
 
 ### Extended Core Commands
@@ -1758,18 +1765,23 @@ Native mobile applications for Android and iOS using [Capacitor](https://capacit
 **Prerequisites:**
 
 - Node.js (or Bun)
-- **Android**: Java/JDK 17+, Android SDK ([Android Studio](https://developer.android.com/studio))
+- **Android**: Java/JDK 21+, Android SDK ([Android Studio](https://developer.android.com/studio))
 - **iOS** (macOS only): Xcode, Xcode Command Line Tools, [CocoaPods](https://cocoapods.org/)
 
 **Setup & Build:**
 
 ```bash
-# 1. One-time setup (creates android/ and ios/ directories)
+# 1. One-time setup (defaults from config / host)
 jac setup mobile
+
+# Optional explicit setup platform
+jac setup mobile --platform android
+jac setup mobile --platform ios     # macOS only
+jac setup mobile --platform all     # both on macOS
 
 # 2. Development: build and launch on device/simulator
 jac start main.jac --client mobile                    # Android (default)
-jac start main.jac --client mobile --mobile_platform ios
+jac start main.jac --client mobile --platform ios
 
 # 3. Build for Android
 jac build --client mobile --platform android
@@ -1798,9 +1810,9 @@ ios_destination = "platform=iOS Simulator,name=iPhone 16,OS=latest"
 
 **Notes:**
 
-- `jac setup mobile` scaffolds **both** platforms in one pass. You can build for either platform afterward.
-- For dev networking control, use `--mobile_reach` (`auto`, `lan`, `emulator`, `usb`) and `--mobile_platform` (`android`, `ios`).
-- Android USB dev (`--mobile_reach usb`) auto-attempts `adb reverse` for Vite/API ports before launching Capacitor.
+- `jac setup mobile` uses `--platform` when provided, otherwise `[plugins.client.mobile].default_platform`, otherwise host default (`ios` on macOS, `android` elsewhere).
+- Mobile dev networking is auto-resolved by default; use `--host <ip>` only when you need to force a specific host.
+- Android mobile dev auto-attempts `adb reverse` for Vite/API ports before launching Capacitor.
 - iOS device builds and App Store archives require Xcode provisioning profiles. Use `npx cap open ios` to open the project in Xcode for signing configuration.
 - Android release builds and signing require a keystore configured in `android/app/build.gradle`.
 - Native Capacitor plugins (camera, geolocation, etc.) can be added via `jac add --npm @capacitor/<plugin>` followed by `npx cap sync`.

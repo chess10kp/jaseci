@@ -1,7 +1,5 @@
 """Main entry point for {{name}}."""
 
-import from typing { Any }
-
 cl import from .components.Button { Button }
 
 # Client-side component
@@ -17,12 +15,12 @@ def:pub app -> JsxElement {
             <div style={{"display": "flex", "gap": "1rem", "marginTop": "1rem"}}>
                 <Button
                     label="Increment"
-                    onClick={lambda _: Any { count = count + 1;}}
+                    onClick={lambda _: MouseEvent { count = count + 1;}}
                     variant="primary"
                 />
                 <Button
                     label="Reset"
-                    onClick={lambda _: Any { count = 0;}}
+                    onClick={lambda _: MouseEvent { count = 0;}}
                     variant="secondary"
                 />
             </div>

@@ -327,12 +327,10 @@ impl ViteBundler._format_define_entries(
     # Only add API base URL if explicitly set - skip for desktop builds where
     # Tauri injects it at runtime via initialization_script
     if api_base_url {
-        entries.append(
-            "    '" + JAC_API_BASE_URL_KEY + "': " + _to_js_expr(api_base_url)
-        );
+        entries.append(f"    '{JAC_API_BASE_URL_KEY}': {_to_js_expr(api_base_url)}");
     }
     for (key, value) in custom_defines.items() {
-        entries.append("    '" + key + "': " + _to_js_expr(value));
+        entries.append(f"    '{key}': {_to_js_expr(value)}");
     }
     return ',\n'.join(entries);
 }
@@ -566,7 +564,9 @@ export default defineConfig({{
     sourcemap: true, // Enable source maps for better error messages{build_overrides_str}
   }},
   server: {{
-    host: true,
+    host: {f'"{mobile_hmr_host}"'
+            if (for_mobile_dev and mobile_hmr_host)
+            else 'true'},
     watch: {{
       usePolling: true,
       interval: 100,
@@ -1069,18 +1069,16 @@ def _toml_config_from_raw(config_data: dict) -> str {
 }
 
 """Build the Vite dev server command."""
-def _build_vite_dev_command(config_rel: Path, port: int) -> list[str] {
+def _build_vite_dev_command(config_rel: Path, port: int, host: str = "") -> list[str] {
     bun = _require_bun();
-    return [
-        bun,
-        'x',
-        'vite',
-        '--config',
-        str(config_rel),
-        '--port',
-        str(port),
-        '--host'
-    ];
+    cmd = [bun, 'x', 'vite', '--config', str(config_rel), '--port', str(port)];
+    if host {
+        cmd.append('--host');
+        cmd.append(host);
+    } else {
+        cmd.append('--host');
+    }
+    return cmd;
 }
 
 """Check if a line indicates Vite server is ready."""
@@ -1139,7 +1137,10 @@ def _forward_vite_output(
 
 """Start Vite dev server as a subprocess."""
 impl ViteBundler.start_dev_server(
-    self: ViteBundler, port: int = 3000, suppress_initial_output: bool = False
+    self: ViteBundler,
+    port: int = 3000,
+    suppress_initial_output: bool = False,
+    host: str = ""
 ) -> Any {
     import sys;
     import time;
@@ -1167,7 +1168,7 @@ impl ViteBundler.start_dev_server(
         # Config is outside build_dir, use absolute path
         config_rel = dev_config;
     }
-    command = _build_vite_dev_command(config_rel, port);
+    command = _build_vite_dev_command(config_rel, port, host=host);
     logger.debug(f"Starting Vite dev server on port {port}");
     if suppress_initial_output {
         process = self._start_vite_with_output_capture(command, build_dir, sys);

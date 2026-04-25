@@ -6,7 +6,7 @@ This tutorial walks you through shipping an existing Jac full-stack app as a nat
 >
 > - Completed: [Project Setup](setup.md) -- you have a working `jac start` web app
 > - Installed: Node.js (or Bun)
-> - **Android**: Java/JDK 17+, Android SDK (via [Android Studio](https://developer.android.com/studio))
+> - **Android**: Java/JDK 21+, Android SDK (via [Android Studio](https://developer.android.com/studio))
 > - **iOS** (macOS only): Xcode, Xcode Command Line Tools, [CocoaPods](https://cocoapods.org/)
 > - Time: ~15 minutes for setup, longer on first build
 
@@ -33,7 +33,20 @@ From your project root:
 jac setup mobile
 ```
 
-This installs Capacitor dependencies, creates `capacitor.config.json`, and scaffolds both the `android/` and `ios/` platform directories. You only need to run this once per project.
+This installs Capacitor dependencies, creates `capacitor.config.json`, and scaffolds the selected platform. By default, setup follows `[plugins.client.mobile].default_platform` and falls back to `ios` on macOS or `android` elsewhere.
+
+You can force a specific scaffold explicitly:
+
+```bash
+# Android scaffold only
+jac setup mobile --platform android
+
+# iOS scaffold only (macOS only)
+jac setup mobile --platform ios
+
+# Both platforms (macOS only; Linux/Windows will scaffold Android)
+jac setup mobile --platform all
+```
 
 The setup also:
 
@@ -79,13 +92,13 @@ jac start main.jac --client mobile
 
 This runs `cap sync android` followed by `cap run android`.
 
-For USB-connected Android devices, use:
+If you need to force a specific host/IP for live reload, use:
 
 ```bash
-jac start main.jac --client mobile --dev --mobile_reach usb
+jac start main.jac --client mobile --dev --host 192.168.1.25
 ```
 
-In USB mode, jac-client now auto-attempts `adb reverse` for the Vite and API ports before launching Capacitor, so manual `adb reverse` is usually not required.
+jac-client auto-attempts `adb reverse` for the Vite and API ports before launching Capacitor on Android, so manual `adb reverse` is usually not required.
 
 ### Production Build
 
@@ -122,7 +135,7 @@ android/app/build/outputs/apk/release/app-release.apk
 ### Dev Loop
 
 ```bash
-jac start main.jac --client mobile --mobile_platform ios
+jac start main.jac --client mobile --platform ios
 ```
 
 This syncs the web bundle and opens the project on the iOS Simulator via `cap run ios`.
@@ -175,25 +188,25 @@ npx cap sync
 - **Android**: Enable USB debugging on your device, connect via USB, and `cap run android` deploys directly.
 - **iOS**: Register your device in your Apple Developer account, select it in Xcode, and build.
 
-### Mobile Reach Modes (Dev)
+### Mobile Dev Networking
 
-When using `jac start ... --client mobile --dev`, pick how the device reaches your machine:
+When using `jac start ... --client mobile --dev`, jac-client auto-selects a reachable host by default:
 
 ```bash
-# Android emulator
-jac start main.jac --client mobile --dev --mobile_reach emulator
-
-# USB-connected Android device
-jac start main.jac --client mobile --dev --mobile_reach usb
-
-# LAN device testing
-jac start main.jac --client mobile --dev --mobile_reach lan
+# Auto host selection (recommended)
+jac start main.jac --client mobile --dev
 ```
 
-You can force iOS or Android in dev with:
+Override host selection only when needed:
 
 ```bash
-jac start main.jac --client mobile --dev --mobile_platform ios
+jac start main.jac --client mobile --dev --host 192.168.1.25
+```
+
+You can still force iOS or Android in dev with:
+
+```bash
+jac start main.jac --client mobile --dev --platform ios
 ```
 
 ### Debugging
@@ -205,15 +218,16 @@ jac start main.jac --client mobile --dev --mobile_platform ios
 
 If mobile dev starts but the app does not load correctly:
 
-1. Check `jac start` output for selected reach mode, host, and Vite port.
-2. For Android USB mode, confirm `adb devices` shows the target device as authorized.
-3. If port forwarding fails, run manual fallback:
+1. Check `jac start` output for selected host and Vite port.
+2. If needed, set an explicit host with `--host <ip>`.
+3. Confirm `adb devices` shows your Android target as authorized.
+4. If port forwarding fails, run manual fallback:
    - `adb reverse tcp:5173 tcp:5173`
    - `adb reverse tcp:8000 tcp:8000`
-4. Re-run sync after plugin changes:
+5. Re-run sync after plugin changes:
    - `npx cap sync android`
    - `npx cap sync ios`
-5. For iOS signing or provisioning issues, open Xcode:
+6. For iOS signing or provisioning issues, open Xcode:
    - `npx cap open ios`
 
 ---
