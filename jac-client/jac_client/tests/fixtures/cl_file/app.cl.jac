@@ -20,7 +20,7 @@ def app -> JsxElement {
             <h2>My Todos</h2>
             <input
                 value={input}
-                onChange={lambda e: Any { setInput(e.target.value);}}
+                onChange={lambda e: Any { input = e.target.value;}}
                 onKeyPress={lambda e: Any { if e.key == "Enter" { addTodo(); }}}
             />
             <button onClick={addTodo}>Add Todo</button>

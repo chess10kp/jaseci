@@ -11,6 +11,10 @@ For creating client projects, use: `jac create --use client`
 import from jaclang.cli.registry { get_registry }
 import from jaclang.cli.command { Arg, ArgKind, HookContext }
 import from jaclang.jac0core.runtime { hookimpl }
+import from jac_client.plugin.src.mobile_setup_env {
+    mobile_setup_platform_env_restore,
+    mobile_setup_platform_env_swap
+}
 import os;
 
 glob registry = get_registry();
@@ -490,9 +494,15 @@ def _handle_start_target(ctx: HookContext) -> None {
     # Store target info in context
     ctx.set_data("start_client_target", target);
 
-    api_port = ctx.get_arg("port", 8000);
-    if api_port is None {
-        api_port = 8000;
+    # Match core `jac start`: in --dev, `port` is the Vite (frontend) port and `api_port` is
+    # the API port (0 = use port+1). In non-dev, `port` is the single server port (API / preview).
+    start_port = ctx.get_arg("port", 8000);
+    if start_port is None {
+        start_port = 8000;
+    }
+    start_api = ctx.get_arg("api_port", 0);
+    if start_api is None {
+        start_api = 0;
     }
 
     # Handle non-web targets (desktop, pwa) - they override dev/start behavior
@@ -533,10 +543,12 @@ def _handle_start_target(ctx: HookContext) -> None {
                     os.environ["JAC_MOBILE_DEV_HOST"] = str(ctx.get_arg("host", ""));
                 }
                 # Use target's dev() method (polymorphic dispatch)
-                target.dev(entry_path, project_dir, api_port=api_port);
+                target.dev(
+                    entry_path, project_dir, port=start_port, api_port=start_api
+                );
             } else {
                 # Use target's start() method (polymorphic dispatch)
-                target.start(entry_path, project_dir, api_port=api_port);
+                target.start(entry_path, project_dir, api_port=start_port);
             }
             ctx.set_data("cancel_execution", True);
             ctx.set_data("cancel_return_code", 0);
@@ -602,13 +614,14 @@ def _handle_setup_target(ctx: HookContext) -> None {
         return;
     }
 
-    # Setup using target's setup method (polymorphic dispatch)
+    # Setup using target's setup method (polymorphic dispatch).
+    # JAC_MOBILE_SETUP_PLATFORM is set/restored in mobile_setup_env (swap/restore).
     setup_platform = ctx.get_arg("platform", None);
-    prev_setup_platform_env = os.environ.get("JAC_MOBILE_SETUP_PLATFORM", None);
+    prev_setup_platform_env = None;
+    if target_name == "mobile" and setup_platform {
+        prev_setup_platform_env = mobile_setup_platform_env_swap(str(setup_platform));
+    }
     try {
-        if target_name == "mobile" and setup_platform {
-            os.environ["JAC_MOBILE_SETUP_PLATFORM"] = str(setup_platform);
-        }
         console.print(
             f"Setting up target '{target_name}' in: {project_dir}", style="muted"
         );
@@ -677,11 +690,7 @@ def _handle_setup_target(ctx: HookContext) -> None {
         ctx.set_data("cancel_return_code", 1);
     } finally {
         if target_name == "mobile" and setup_platform {
-            if prev_setup_platform_env is None {
-                os.environ.pop("JAC_MOBILE_SETUP_PLATFORM", None);
-            } else {
-                os.environ["JAC_MOBILE_SETUP_PLATFORM"] = prev_setup_platform_env;
-            }
+            mobile_setup_platform_env_restore(prev_setup_platform_env);
         }
     }
 }
