@@ -1,4 +1,4 @@
-"""Resolve dev-server host for Capacitor live reload (LAN, emulator, USB/adb)."""
+"""Resolve dev-server host for Capacitor live reload."""
 import socket;
 
 """Best-effort LAN IPv4 of this machine (connects outbound to discover primary route)."""
@@ -30,45 +30,20 @@ def resolve_mobile_server_port(toml_base_url: str, api_port: int) -> int {
     return api_port;
 }
 
-"""Pick the host string the device/emulator uses to reach the dev PC."""
-def resolve_mobile_dev_host(reach: str, plat: str, host_override: str = "") -> str {
+"""Pick the host string the mobile runtime uses to reach the dev machine."""
+def resolve_mobile_dev_host(plat: str, host_override: str = "") -> str {
     if host_override and host_override.strip() {
         return host_override.strip();
     }
-    r = reach.lower().strip() if reach else "auto";
-    if r == "" {
-        r = "auto";
-    }
     p = plat.lower().strip();
-    if r == "usb" {
-        if p == "ios" {
-            raise ValueError(
-                "Reach mode 'usb' is not supported for iOS in this version. "
-                "Use --mobile-reach lan with your Mac's LAN IP, or iOS Simulator with --mobile-reach emulator."
-            );
-        }
-        return "127.0.0.1";
+    if p not in ["android", "ios"] {
+        p = "android";
     }
-    if r == "emulator" {
-        if p == "android" {
-            return "10.0.2.2";
-        }
-        return "127.0.0.1";
-    }
-    if r == "lan" {
-        ip = detect_lan_ipv4();
-        if not ip {
-            raise RuntimeError(
-                "Could not detect a LAN IPv4 address. "
-                "Set --mobile-host explicitly or fix network connectivity."
-            );
-        }
-        return ip;
-    }
-    # auto
+    # Prefer a LAN IP when available so physical devices work out of the box.
     ip = detect_lan_ipv4();
     if ip {
         return ip;
     }
+    # Fallback for simulators/emulators and offline environments.
     return "127.0.0.1";
 }

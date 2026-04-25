@@ -64,16 +64,29 @@ test "JacCmd create_cmd has hookimpl on create_cmd" {
 test "cli exposes mobile dev flags and cap live-reload" {
     cli = _plugin_dir / "cli.jac";
     c = cli.read_text();
-    assert "mobile_reach" in c;
-    assert "mobile_vite_port" in c;
-    assert "JAC_MOBILE_DEV_REACH" in c;
+    assert 'Arg.create(\n                        "host"' in c;
+    assert "Mobile start/dev: android or ios" in c;
+    assert "JAC_MOBILE_DEV_HOST" in c;
+    assert 'ctx.get_arg("platform", "auto")' in c;
     mt = (
         _plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
     ).read_text();
     assert "--live-reload" in mt;
     assert "_mobile_start_backend_server" in mt;
-    assert "def _mobile_setup_usb_port_reverse" in mt;
+    assert "def _mobile_setup_android_port_reverse" in mt;
     assert '["adb", "reverse"' in mt;
-    assert 'if reach == "usb" and plat == "android"' in mt;
-    assert "_mobile_setup_usb_port_reverse(vite_port, server_port)" in mt;
+    assert "resolve_mobile_dev_host(plat, host_override)" in mt;
+    assert "_mobile_setup_android_port_reverse(vite_port, server_port)" in mt;
+    assert 'os.environ.get("JAC_MOBILE_PLATFORM", "auto")' in mt;
+}
+
+test "cli exposes mobile setup platform selector" {
+    cli = (_plugin_dir / "cli.jac").read_text();
+    assert "Platform for mobile setup (android, ios, all)" in cli;
+    assert "JAC_MOBILE_SETUP_PLATFORM" in cli;
+    mt = (
+        _plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
+    ).read_text();
+    assert "MOBILE_SETUP_PLATFORM_ENV" in mt;
+    assert "_resolve_mobile_setup_mode" in mt;
 }
