@@ -10,6 +10,7 @@ test "mobile target files exist" {
     mobile_target_impl = (
         _plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
     );
+    mobile_dir = _plugin_dir / "src" / "targets" / "mobile";
 
     assert mobile_target_jac.exists() , (
         f"mobile_target.jac not found at {mobile_target_jac}"
@@ -17,6 +18,13 @@ test "mobile target files exist" {
     assert mobile_target_impl.exists() , (
         f"mobile_target.impl.jac not found at {mobile_target_impl}"
     );
+    assert mobile_dir.is_dir();
+    assert (mobile_dir / "common.jac").exists();
+    assert (mobile_dir / "deps.jac").exists();
+    assert (mobile_dir / "config.jac").exists();
+    assert (mobile_dir / "scaffold.jac").exists();
+    assert (mobile_dir / "bundle.jac").exists();
+    assert (mobile_dir / "dev.jac").exists();
 
     mobile_content = mobile_target_jac.read_text();
     assert "obj MobileTarget" in mobile_content;
@@ -73,26 +81,28 @@ test "cli exposes mobile dev flags and cap live-reload" {
     assert "Mobile start/dev: android or ios" in c;
     assert "JAC_MOBILE_DEV_HOST" in c;
     assert 'ctx.get_arg("platform", "auto")' in c;
-    mt = (
+    mobile_impl = (
         _plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
     ).read_text();
-    assert "--live-reload" in mt;
-    assert "_mobile_start_backend_server" in mt;
-    assert "def _mobile_setup_android_port_reverse" in mt;
-    assert '["adb", "reverse"' in mt;
-    assert "resolve_mobile_dev_host(plat, host_override)" in mt;
-    assert "resolve_mobile_vite_port(project_dir, port)" in mt;
-    assert "_mobile_setup_android_port_reverse(vite_port, server_port)" in mt;
-    assert 'os.environ.get("JAC_MOBILE_PLATFORM", "auto")' in mt;
+    mobile_dev = (_plugin_dir / "src" / "targets" / "mobile" / "dev.jac").read_text();
+    mobile = mobile_impl + mobile_dev;
+    assert "--live-reload" in mobile;
+    assert "_mobile_start_backend_server" in mobile;
+    assert "def _mobile_setup_android_port_reverse" in mobile;
+    assert '["adb", "reverse"' in mobile;
+    assert "resolve_mobile_dev_host(plat, host_override)" in mobile_impl;
+    assert "resolve_mobile_vite_port(project_dir, port)" in mobile_impl;
+    assert "_mobile_setup_android_port_reverse(vite_port, server_port)" in mobile_impl;
+    assert 'os.environ.get("JAC_MOBILE_PLATFORM", "auto")' in mobile_dev;
 }
 
 test "cli exposes mobile setup platform selector" {
     cli = (_plugin_dir / "cli.jac").read_text();
     assert "Platform for mobile setup (android, ios, all)" in cli;
     assert "JAC_MOBILE_SETUP_PLATFORM" in cli;
-    mt = (
-        _plugin_dir / "src" / "targets" / "impl" / "mobile_target.impl.jac"
+    mobile_config = (
+        _plugin_dir / "src" / "targets" / "mobile" / "config.jac"
     ).read_text();
-    assert "MOBILE_SETUP_PLATFORM_ENV" in mt;
-    assert "_resolve_mobile_setup_mode" in mt;
+    assert "MOBILE_SETUP_PLATFORM_ENV" in mobile_config;
+    assert "_resolve_mobile_setup_mode" in mobile_config;
 }
