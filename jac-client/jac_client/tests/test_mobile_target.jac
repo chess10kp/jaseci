@@ -50,6 +50,8 @@ test "mobile_dev_host helper module exists" {
     d = decl_path.read_text();
     assert "def detect_lan_ipv4" in d;
     assert "def resolve_mobile_dev_host" in d;
+    assert "def resolve_mobile_vite_port" in d;
+    assert "JAC_MOBILE_VITE_PORT" in d;
     assert "8.8.8.8" in d;
 }
 
@@ -76,6 +78,7 @@ test "cli exposes mobile dev flags and cap live-reload" {
     assert "def _mobile_setup_android_port_reverse" in mt;
     assert '["adb", "reverse"' in mt;
     assert "resolve_mobile_dev_host(plat, host_override)" in mt;
+    assert "resolve_mobile_vite_port(project_dir, port)" in mt;
     assert "_mobile_setup_android_port_reverse(vite_port, server_port)" in mt;
     assert 'os.environ.get("JAC_MOBILE_PLATFORM", "auto")' in mt;
 }

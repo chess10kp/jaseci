@@ -13,7 +13,13 @@ import from jaclang.runtimelib.watcher { FileChangeEvent }
 import from jac_client.plugin.src.config_loader { JacClientConfig }
 import from jac_client.plugin.src.mobile_dev_host {
     resolve_mobile_dev_host,
-    resolve_mobile_server_port
+    resolve_mobile_server_port,
+    resolve_mobile_vite_port
+}
+import from jac_client.plugin.src.mobile_setup_env {
+    MOBILE_SETUP_PLATFORM_ENV,
+    mobile_setup_platform_env_restore,
+    mobile_setup_platform_env_swap
 }
 
 # ===============================================================================
@@ -24,7 +30,6 @@ glob DEFAULT_APP_ID = "com.jac.app",
      SUBPROCESS_TIMEOUT_SHORT: int = 5,
      SUBPROCESS_TIMEOUT_MEDIUM: int = 60,
      SUBPROCESS_TIMEOUT_BUILD: int = 600,
-     MOBILE_SETUP_PLATFORM_ENV = "JAC_MOBILE_SETUP_PLATFORM",
      MOBILE_SETUP_MODES: list[str] = ["android", "ios", "all"],
      SUPPORTED_PLATFORMS: list[str] = ["android", "ios"];
 
@@ -763,12 +768,11 @@ def _warn_mobile_dev_api_url(project_dir: Path) {
     }
 }
 
-"""Read mobile dev options set by jac-client CLI (see cli.jac)."""
-def _mobile_read_dev_env -> tuple[str, int, str] {
+"""Read mobile dev options set by jac-client CLI (see cli.jac). Vite port: resolve_mobile_vite_port."""
+def _mobile_read_dev_env -> tuple[str, str] {
     host_ov = os.environ.get("JAC_MOBILE_DEV_HOST", "");
-    vite_port = 5173;
     plat_mode = os.environ.get("JAC_MOBILE_PLATFORM", "auto");
-    return (host_ov, vite_port, plat_mode);
+    return (host_ov, plat_mode);
 }
 
 """Best-effort ADB reverse for Android mobile dev connectivity."""
@@ -1119,16 +1123,11 @@ impl MobileTarget.build(
     _require_macos_for_ios(selected_platform);
 
     # Ensure Capacitor scaffold exists
-    prev_setup_platform = os.environ.get(MOBILE_SETUP_PLATFORM_ENV, None);
-    os.environ[MOBILE_SETUP_PLATFORM_ENV] = selected_platform;
+    prev_setup_platform = mobile_setup_platform_env_swap(selected_platform);
     try {
         self.setup(project_dir);
     } finally {
-        if prev_setup_platform is None {
-            os.environ.pop(MOBILE_SETUP_PLATFORM_ENV, None);
-        } else {
-            os.environ[MOBILE_SETUP_PLATFORM_ENV] = prev_setup_platform;
-        }
+        mobile_setup_platform_env_restore(prev_setup_platform);
     }
 
     console.print("  Step 1: Building web bundle...", style="muted");
@@ -1159,9 +1158,10 @@ impl MobileTarget.build(
     return artifact;
 }
 
-"""Start mobile dev: Vite HMR + Jac API + Capacitor live-reload."""
+"""Start mobile dev: Vite HMR + Jac API + Capacitor live-reload.
+`port` = Vite dev server, `api_port` = Jac API (0 = port+1), same as core `jac start --dev`."""
 impl MobileTarget.dev(
-    entry_file: Path, project_dir: Path, api_port: int = 8000
+    entry_file: Path, project_dir: Path, port: int = 8000, api_port: int = 0
 ) -> None {
     import from jac_client.plugin.src.vite_bundler { ViteBundler }
     import from jac_client.plugin.client { JacClient }
@@ -1169,11 +1169,9 @@ impl MobileTarget.dev(
     import sys;
 
     hot_watcher: Any = None;
-    if api_port is None {
-        api_port = 8000;
-    }
-
-    (host_override, vite_port, plat_mode) = _mobile_read_dev_env();
+    (host_override, plat_mode) = _mobile_read_dev_env();
+    vite_port = resolve_mobile_vite_port(project_dir, port);
+    effective_api = api_port if api_port > 0 else port + 1;
     mobile_cfg = _load_mobile_config(project_dir);
     if plat_mode and plat_mode != "auto" {
         plat = _normalize_mobile_platform(plat_mode);
@@ -1189,16 +1187,11 @@ impl MobileTarget.dev(
     _try_check_mobile_dependencies(plat);
     _require_macos_for_ios(plat);
     _warn_mobile_dev_api_url(project_dir);
-    prev_setup_platform = os.environ.get(MOBILE_SETUP_PLATFORM_ENV, None);
-    os.environ[MOBILE_SETUP_PLATFORM_ENV] = plat;
+    prev_setup_platform = mobile_setup_platform_env_swap(plat);
     try {
         self.setup(project_dir);
     } finally {
-        if prev_setup_platform is None {
-            os.environ.pop(MOBILE_SETUP_PLATFORM_ENV, None);
-        } else {
-            os.environ[MOBILE_SETUP_PLATFORM_ENV] = prev_setup_platform;
-        }
+        mobile_setup_platform_env_restore(prev_setup_platform);
     }
 
     visible_host = cast(str, resolve_mobile_dev_host(plat, host_override));
@@ -1233,7 +1226,7 @@ impl MobileTarget.dev(
     console.print("  ✔ Client modules compiled for dev mode", style="success");
 
     toml_base_url = _get_api_base_url_str(project_dir);
-    server_port = cast(int, resolve_mobile_server_port(toml_base_url, api_port));
+    server_port = cast(int, resolve_mobile_server_port(toml_base_url, effective_api));
     if plat == "android" {
         _mobile_setup_android_port_reverse(vite_port, server_port);
     }
@@ -1371,16 +1364,11 @@ impl MobileTarget.start(
     );
     _try_check_mobile_dependencies(plat);
     _require_macos_for_ios(plat);
-    prev_setup_platform = os.environ.get(MOBILE_SETUP_PLATFORM_ENV, None);
-    os.environ[MOBILE_SETUP_PLATFORM_ENV] = plat;
+    prev_setup_platform = mobile_setup_platform_env_swap(plat);
     try {
         self.setup(project_dir);
     } finally {
-        if prev_setup_platform is None {
-            os.environ.pop(MOBILE_SETUP_PLATFORM_ENV, None);
-        } else {
-            os.environ[MOBILE_SETUP_PLATFORM_ENV] = prev_setup_platform;
-        }
+        mobile_setup_platform_env_restore(prev_setup_platform);
     }
     console.print("  Building web bundle…", style="muted");
     web_bundle_path = super.build(entry_file, project_dir, None);
