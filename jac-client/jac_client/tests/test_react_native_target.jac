@@ -13,6 +13,20 @@ import pytest;
 
 glob _plugin_dir = Path(os.path.dirname(__file__)).parent / "plugin";
 
+def _register_client_targets {
+    import from jac_client.plugin.src.targets.register { register_targets }
+    import from jac_client.plugin.src.targets.registry {
+        get_target_factory,
+        get_target_registry
+    }
+
+    registry = get_target_registry();
+    registry.clear();
+    factory = get_target_factory();
+    factory.clear_cache();
+    register_targets();
+}
+
 test "react native target files exist" {
     target_jac = _plugin_dir / "src" / "targets" / "react_native_target.jac";
     target_impl = (
@@ -59,9 +73,12 @@ test "target factory supports react native target" {
     impl_path = _plugin_dir / "src" / "targets" / "impl" / "registry.impl.jac";
     content = impl_path.read_text();
 
-    assert "elif target_type == TargetType.REACT_NATIVE" in content;
-    assert "ReactNativeTarget" in content;
-    assert "TargetType.REACT_NATIVE" in content;
+    # The factory is registry-backed, so React Native support comes from
+    # register_targets() populating the registry rather than a hardcoded branch.
+    assert "registry = get_target_registry();" in content;
+    assert "target = registry.get(target_name);" in content;
+    assert "available = [t.name for t in registry.get_all()]" in content;
+    assert "return self.create(target_type.value, project_dir);" in content;
 }
 
 test "register.jac registers the react native target and imports native entry" {
@@ -90,6 +107,7 @@ test "target factory resolves react-native by canonical name" {
     assert get_target_type("rn") == TargetType.REACT_NATIVE;
     assert get_target_type("REACT-NATIVE") == TargetType.REACT_NATIVE;
 
+    _register_client_targets();
     factory = get_target_factory();
     target = factory.create("react-native", Path.cwd());
     assert target.name == "react-native";
@@ -106,6 +124,7 @@ test "react native dev fails fast when scaffold is missing" {
     import tempfile;
     import from jac_client.plugin.src.targets.registry { get_target_factory }
 
+    _register_client_targets();
     factory = get_target_factory();
     with tempfile.TemporaryDirectory() as tmp {
         target = factory.create("react-native", Path(tmp));
@@ -168,6 +187,7 @@ test "react native target exposes the documented surface" {
     # output_dir points at the Android Gradle output location.
     import from jac_client.plugin.src.targets.registry { get_target_factory }
 
+    _register_client_targets();
     factory = get_target_factory();
     target = factory.create("react-native", Path.cwd());
 
@@ -1437,6 +1457,7 @@ test "build source has non-macOS error pointing at EAS Build" {
 test "build output_dir uses dist not platform-specific" {
     import from jac_client.plugin.src.targets.registry { get_target_factory }
 
+    _register_client_targets();
     factory = get_target_factory();
     target = factory.create("react-native", Path.cwd());
     assert "dist" in str(target.output_dir);
