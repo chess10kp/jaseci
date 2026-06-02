@@ -503,7 +503,7 @@ def strip_css_imports(compiled_dir: Path) -> int {
                 asset_file.unlink();
                 css_files_removed += 1;
             } except Exception {
-                pass;
+                _ = css_files_removed;
             }
         }
     }

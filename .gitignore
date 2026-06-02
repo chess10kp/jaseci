@@ -88,3 +88,4 @@ jactastic/**
 
 # Local reference checkouts (not part of the repo)
 reference/
+.pi/extensions/emdash-hook.ts

@@ -157,7 +157,7 @@ test "endpoint effects follow helper calls" {
 test "jac call function sends params directly" {
     jac_root = Path(jaclang.__file__).resolve().parent.parent.parent;
     runtime_path = (
-        jac_root / "jac-client" / "jac_client" / "plugin" / "impl" / "client_runtime.impl.jac"
+        jac_root / "jac-client" / "jac_client" / "plugin" / "impl" / "client_runtime_core.impl.jac"
     );
 
     if not runtime_path.exists() {
