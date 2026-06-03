@@ -407,7 +407,9 @@ test "react native scaffold writes Expo project files" {
         assert "@jac/runtime" in metro_content;
         assert "client_runtime.js" in metro_content;
         assert "jac-src" in metro_content;
-        assert ".jac/client/compiled" not in metro_content;
+        assert "const compiledDir" not in metro_content;
+        assert "config.watchFolders" not in metro_content;
+        assert "path.resolve(compiledDir, 'client_runtime.js')" not in metro_content;
         assert "@react-navigation/native" in pkg_content;
         assert "@react-navigation/native-stack" in pkg_content;
         assert "react-native-screens" in pkg_content;
