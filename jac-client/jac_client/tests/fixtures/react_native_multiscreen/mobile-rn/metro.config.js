@@ -3,24 +3,24 @@ const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
 const projectRoot = __dirname;
-const compiledDir = path.resolve(projectRoot, '../.jac/client/compiled');
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch the Jac-compiled JS bundle so edits to .cl.jac files
-// trigger Metro Fast Refresh once `jac start --dev` is wired up.
-config.watchFolders = [...(config.watchFolders || []), compiledDir];
-
-// Alias `@jac/runtime` -> compiled/client_runtime.js so the bundle's
-// import resolves to the native runtime that ReactNativeTarget.build wrote.
+// Resolve `@jac/runtime` to the *staged* native runtime that the
+// build copies into mobile-rn/jac-src/. This deliberately does NOT
+// point at the shared .jac/client/compiled dir: during `jac start
+// --dev` the Jac API backend rebuilds the *web* client into that
+// same dir, which would overwrite client_runtime.js with a
+// react-dom / react-router-dom bundle and break the native Metro
+// graph (`Unable to resolve react-dom/client`). jac-src lives inside
+// the Expo project and is only written by the native build/HMR, so
+// it stays isolated. Metro watches projectRoot by default, so
+// re-staging on a .cl.jac save still triggers Fast Refresh.
 config.resolver = config.resolver || {};
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules || {}),
-  '@jac/runtime': path.resolve(compiledDir, 'client_runtime.js'),
+  '@jac/runtime': path.resolve(projectRoot, 'jac-src', 'client_runtime.js'),
 };
-// Without ``nodeModulesPaths`` set explicitly Metro fails to resolve
-// React etc. from the aliased dir because they live in the Expo
-// project's node_modules, not in .jac/client/compiled.
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   ...(config.resolver.nodeModulesPaths || []),

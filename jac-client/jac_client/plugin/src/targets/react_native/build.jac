@@ -467,7 +467,8 @@ this import would cause Metro to error ("unable to resolve module").
 
 This function removes those import lines from every user JS file in
 ``compiled_dir`` and also deletes the copied CSS source files so Metro
-doesn't encounter them through ``watchFolders``.
+doesn't encounter them after the native build stages ``compiled_dir`` into
+``mobile-rn/jac-src/``.
 
 Returns the count of stripped import lines for logging / testing.
 """
@@ -495,8 +496,8 @@ def strip_css_imports(compiled_dir: Path) -> int {
         }
     }
 
-    # Remove copied CSS/SCSS/SASS/LESS files from compiled/ so Metro's
-    # watchFolders scan doesn't surface them as unresolvable modules.
+    # Remove copied CSS/SCSS/SASS/LESS files from compiled/ so the staged
+    # jac-src tree doesn't surface them as unresolvable native modules.
     for asset_file in compiled_dir.rglob("*") {
         if asset_file.is_file() and asset_file.suffix in css_asset_extensions {
             try {

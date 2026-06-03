@@ -381,7 +381,7 @@ test "target selection keeps web and native entry/runtime paths separate" {
 test "react native scaffold writes Expo project files" {
     # Smoke-test the scaffold writer end to end: setup an empty project dir,
     # run write_expo_scaffold, assert the canonical files exist and that the
-    # generated metro.config.js points @jac/runtime at the compiled runtime.
+    # generated metro.config.js points @jac/runtime at the staged native runtime.
     import tempfile;
     import from jac_client.plugin.src.targets.react_native.scaffold {
         write_expo_scaffold
@@ -406,7 +406,8 @@ test "react native scaffold writes Expo project files" {
         # bundle gets the native variant at resolution time.
         assert "@jac/runtime" in metro_content;
         assert "client_runtime.js" in metro_content;
-        assert "watchFolders" in metro_content;
+        assert "jac-src" in metro_content;
+        assert ".jac/client/compiled" not in metro_content;
         assert "@react-navigation/native" in pkg_content;
         assert "@react-navigation/native-stack" in pkg_content;
         assert "react-native-screens" in pkg_content;

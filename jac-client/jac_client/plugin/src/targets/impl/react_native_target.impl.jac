@@ -358,8 +358,8 @@ impl ReactNativeTarget.dev(
     );
 
     # Step 1: compile Jac + native runtime. Same path as `build` but no
-    # Gradle / prebuild — Metro reads the compiled JS directly via the
-    # watchFolders entry the scaffold wrote.
+    # Gradle / prebuild — Metro reads the staged jac-app.js / jac-src tree
+    # that lives inside the Expo project.
     console.print("  Step 1: Compiling Jac modules + native runtime...", style="muted");
     builder = JacClient.get_client_bundle_builder();
     vite_compiler = builder._get_compiler();

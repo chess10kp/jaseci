@@ -10,7 +10,7 @@ device/emulator in < 3s via Metro's existing Fast Refresh:
         │ writes refreshed JS into .jac/client/compiled/
         ▼
     stage_compiled_entry(...)  →  mobile-rn/jac-app.js
-        │ Metro picks up the file change via watchFolders (set by scaffold)
+        │ Metro picks up the refreshed jac-app.js / jac-src tree in-project
         ▼
     Metro Fast Refresh
         │ ships the new module to the device
