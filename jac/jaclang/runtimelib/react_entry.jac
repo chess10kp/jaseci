@@ -1,7 +1,10 @@
-"""Backward-compatible web entry-script generator.
+"""Built-in web entry-script generator.
 
-Older jac-client builds import `build_simple_react_entry_script` from here.
-The canonical implementation also lives in jac-client's `web_entry` module.
+Provides the default `build_simple_react_entry_script` for the "web" target.
+Registered in `entry_generators.jac` at import time so core features (eject,
+HMR) work without jac-client installed. When jac-client is loaded, its
+`web_entry` module overrides the registration with the canonical version —
+last-write-wins, so the plugin version takes precedence.
 """
 
 def build_simple_react_entry_script(

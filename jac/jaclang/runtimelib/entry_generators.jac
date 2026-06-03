@@ -7,12 +7,16 @@ React Native uses `AppRegistry.registerComponent`. Core stays target-neutral
 by looking generators up by name; concrete generators ship with the active
 jac-client plugin and register themselves at plugin load.
 
+A built-in "web" generator is lazy-registered on first lookup from
+`jaclang.runtimelib.react_entry` so core features (eject, HMR) work without
+the jac-client plugin installed. When jac-client loads, it overrides the
+registration with its own copy — last-write-wins.
+
 This file deliberately contains no React, DOM, or HTML knowledge.
 """
 
 import from typing { TypeAlias }
 
-# Signature: (entry_module: str, install_global_handlers: bool = True) -> str
 glob EntryGenerator: TypeAlias = Callable,
      _generators: dict[str, EntryGenerator] = {};
 
@@ -29,10 +33,11 @@ def register_entry_generator(target: str, fn: EntryGenerator) {
 """Look up the entry generator for `target`.
 
 Raises `LookupError` with a clear message if no generator is registered.
-We deliberately do not fall back to a default — silent fallbacks would
-reintroduce the DOM-in-core coupling that R2 removed.
+The built-in "web" generator is always available; other targets (e.g.
+"web:error_overlay", "native") require the jac-client plugin.
 """
 def get_entry_generator(target: str = "web") -> EntryGenerator {
+    _ensure_builtin_web();
     fn = _generators.get(target);
     if fn is None {
         raise LookupError(
@@ -52,4 +57,19 @@ def has_entry_generator(target: str) -> bool {
 call this. Exposed so the test suite can isolate cases."""
 def clear_entry_generators {
     _generators.clear();
+}
+
+"""Ensure the built-in web generator is registered.
+
+Lazy-imported from `react_entry` at call time (not at module load) to avoid
+circular bootstrap ordering with the Jac meta_importer. jac-client's
+`register_entry_generator` call overrides this registration when the plugin
+loads. The redundant import on subsequent calls is harmless — Python caches
+module imports.
+"""
+def _ensure_builtin_web {
+    if "web" not in _generators {
+        import from jaclang.runtimelib.react_entry { build_simple_react_entry_script }
+        register_entry_generator("web", build_simple_react_entry_script);
+    }
 }
