@@ -69,7 +69,7 @@ impl ViteCompiler.compile_and_bundle(
 
 """Create the main entry file for Vite bundling."""
 impl ViteCompiler.create_entry_file(self: ViteCompiler, module_path: Path) -> None {
-    import from jaclang.runtimelib.react_entry { build_simple_react_entry_script }
+    import from jaclang.runtimelib.entry_generators { get_entry_generator }
     # Use _entry.js to avoid conflict with compiled modules that may be named main.js
     entry_file = self.compiled_dir / '_entry.js';
     if self._has_pages {
@@ -77,7 +77,7 @@ impl ViteCompiler.create_entry_file(self: ViteCompiler, module_path: Path) -> No
         entry_content = self._create_pages_entry_content(module_path);
     } else {
         # Explicit routing mode: import app from entry module (original behavior)
-        entry_content = build_simple_react_entry_script(module_path.stem);
+        entry_content = get_entry_generator("web")(module_path.stem);
     }
     entry_file.write_text(entry_content, encoding='utf-8');
 }
@@ -333,25 +333,7 @@ impl ViteCompiler.compile_dependencies_recursively(
 
 """Compile client runtime utilities."""
 impl ViteCompiler.compile_runtime_utils(self: ViteCompiler) -> tuple[str, list[str]] {
-    if not self.runtime_path {
-        raise ClientBundleError('Runtime path not set');
-    }
-    runtime_utils_path = self.runtime_path.parent / 'client_runtime.cl.jac';
-    (runtimeutils_js, mod, runtimeutils_manifest) = self.jac_compiler.compile_module(
-        runtime_utils_path
-    );
-    runtimeutils_exports_list = self.jac_compiler.extract_exports(
-        runtimeutils_manifest
-    );
-    glob_names = list(runtimeutils_manifest.globals) if runtimeutils_manifest else [];
-    all_exports = sorted(
-        set(runtimeutils_exports_list + self.ROUTER_EXPORTS + glob_names)
-    );
-    self.compiled_dir.mkdir(parents=True, exist_ok=True);
-    runtime_out = self.compiled_dir / 'client_runtime.js';
-    runtime_out.write_text(runtimeutils_js, encoding='utf-8');
-    self._write_source_map(mod, str(runtime_utils_path), runtime_out, runtimeutils_js);
-    return (runtimeutils_js, all_exports);
+    return self.jac_client_compiler.compile_runtime_utils("client_runtime.cl.jac");
 }
 
 """Compile PWA runtime utilities (only when PWA is enabled)."""
