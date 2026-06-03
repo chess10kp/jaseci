@@ -9,8 +9,9 @@ jac-client plugin and register themselves at plugin load.
 
 A built-in "web" generator is lazy-registered on first lookup from
 `jaclang.runtimelib.react_entry` so core features (eject, HMR) work without
-the jac-client plugin installed. When jac-client loads, it overrides the
-registration with its own copy — last-write-wins.
+the jac-client plugin installed. When jac-client loads, it registers the
+same canonical web generator plus any plugin-only targets such as
+`"web:error_overlay"`.
 
 This file deliberately contains no React, DOM, or HTML knowledge.
 """
@@ -37,7 +38,9 @@ The built-in "web" generator is always available; other targets (e.g.
 "web:error_overlay", "native") require the jac-client plugin.
 """
 def get_entry_generator(target: str = "web") -> EntryGenerator {
-    _ensure_builtin_web();
+    if target == "web" {
+        _ensure_builtin_web();
+    }
     fn = _generators.get(target);
     if fn is None {
         raise LookupError(
@@ -63,9 +66,10 @@ def clear_entry_generators {
 
 Lazy-imported from `react_entry` at call time (not at module load) to avoid
 circular bootstrap ordering with the Jac meta_importer. jac-client's
-`register_entry_generator` call overrides this registration when the plugin
-loads. The redundant import on subsequent calls is harmless — Python caches
-module imports.
+`register_entry_generator` call may re-register `"web"` when the plugin
+loads and also adds plugin-only targets such as `"web:error_overlay"`. The
+redundant import on subsequent calls is harmless — Python caches module
+imports.
 """
 def _ensure_builtin_web {
     if "web" not in _generators {

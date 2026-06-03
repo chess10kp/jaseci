@@ -38,6 +38,20 @@ test "get_entry_generator raises LookupError when target is missing" {
     assert raised;
     assert "never_registered" in msg;
     assert "jac-client" in msg;
+    assert not has_entry_generator("web");
+}
+
+test "get_entry_generator lazy-registers the builtin web generator only for web" {
+    import jaclang.runtimelib.react_entry as builtin_web_entry;
+    clear_entry_generators();
+    assert not has_entry_generator("web");
+    fn = get_entry_generator("web");
+    assert has_entry_generator("web");
+    direct = builtin_web_entry.build_simple_react_entry_script(
+        "main", install_global_handlers=False
+    );
+    via_registry = fn("main", install_global_handlers=False);
+    assert direct == via_registry;
 }
 
 test "has_entry_generator reflects registration state" {
@@ -86,4 +100,17 @@ test "jac-client web generator is wired through the registry" {
     );
     via_registry = fn("main", install_global_handlers=True);
     assert direct == via_registry;
+}
+
+test "jac-client registration still works after builtin web fallback is used" {
+    import importlib;
+    clear_entry_generators();
+    builtin = get_entry_generator("web");
+    assert has_entry_generator("web");
+    import jac_client.plugin.src.entry_generators.web_entry as web_entry_mod;
+    importlib.reload(web_entry_mod);
+    fn = get_entry_generator("web");
+    assert has_entry_generator("web:error_overlay");
+    assert builtin("main") == fn("main");
+    assert fn("main") == web_entry_mod.build_simple_react_entry_script("main");
 }

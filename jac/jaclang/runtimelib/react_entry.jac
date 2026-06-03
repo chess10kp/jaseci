@@ -1,10 +1,10 @@
 """Built-in web entry-script generator.
 
 Provides the default `build_simple_react_entry_script` for the "web" target.
-Registered in `entry_generators.jac` at import time so core features (eject,
-HMR) work without jac-client installed. When jac-client is loaded, its
-`web_entry` module overrides the registration with the canonical version —
-last-write-wins, so the plugin version takes precedence.
+Lazy-registered by `entry_generators.jac` on first lookup so core features
+(eject, HMR) work without jac-client installed. jac-client reuses this same
+implementation when it registers its web generators, which keeps the builtin
+fallback and plugin path behaviorally aligned.
 """
 
 def build_simple_react_entry_script(
