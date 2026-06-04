@@ -15,6 +15,7 @@ import subprocess;
 import platform as platform_mod;
 import from typing { cast }
 import from jaclang.cli.console { console }
+import from jaclang.runtimelib.runtime { JacRuntime as Jac }
 import from jaclang.runtimelib.watcher { FileChangeEvent }
 import from jac_client.plugin.src.targets.react_native.common {
     DEFAULT_APP_ID,
@@ -141,9 +142,6 @@ This method also handles:
 impl ReactNativeTarget.build(
     entry_file: Path, project_dir: Path, platform: Optional[str] = None
 ) -> Path {
-    import from jac_client.plugin.src.jac_client_compiler { JacClientCompiler }
-    import from jac_client.plugin.client { JacClient }
-
     plat = (platform or "android").lower();
     if plat not in ["android", "ios"] {
         raise ValueError(
@@ -192,10 +190,9 @@ impl ReactNativeTarget.build(
     # ``create_entry_file``) — ViteCompiler is a thin orchestrator and its
     # ``compile`` would write a DOM-shaped _entry.js we don't want.
     console.print("  Step 1: Compiling Jac modules + native runtime...", style="muted");
-    builder = JacClient.get_client_bundle_builder();
-    # Some builders (the simple one) don't have a Vite package.json wired,
-    # but JacClient.get_client_bundle_builder returns the Vite variant
-    # which sets up `vite_package_json` lazily from project config.
+    builder = Jac.get_client_bundle_builder();
+    # Core's default builder is the Vite variant from make_client_bundle_builder,
+    # which wires jac-client's D9 runtime when the plugin is installed.
     vite_compiler = builder._get_compiler();
     jac_compiler = vite_compiler.jac_client_compiler;
     compiled_dir = jac_compiler.compiled_dir;
@@ -315,7 +312,6 @@ defaults assume Android):
 impl ReactNativeTarget.dev(
     entry_file: Path, project_dir: Path, port: int = 8000, api_port: int = 0
 ) -> None {
-    import from jac_client.plugin.client { JacClient }
     import signal;
     import sys;
 
@@ -361,7 +357,7 @@ impl ReactNativeTarget.dev(
     # Gradle / prebuild — Metro reads the staged jac-app.js / jac-src tree
     # that lives inside the Expo project.
     console.print("  Step 1: Compiling Jac modules + native runtime...", style="muted");
-    builder = JacClient.get_client_bundle_builder();
+    builder = Jac.get_client_bundle_builder();
     vite_compiler = builder._get_compiler();
     jac_compiler = vite_compiler.jac_client_compiler;
     compiled_dir = jac_compiler.compiled_dir;

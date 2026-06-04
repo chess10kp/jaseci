@@ -1,5 +1,23 @@
 import from jaclang.cli.console { console }
 
+"""Resolve jac-client's plugin directory (D9 runtime lives here)."""
+def _jac_client_plugin_dir -> Path {
+    import importlib;
+    plugin = importlib.import_module("jac_client.plugin");
+    paths = list(getattr(plugin, "__path__", []) or []);
+    if not paths {
+        raise ClientBundleError(
+            "jac-client plugin not installed; cannot locate D9 client runtime"
+        );
+    }
+    return Path(paths[0]);
+}
+
+"""Default web runtime path for jac-client's D9 split (core + platform)."""
+def jac_client_runtime_path -> Path {
+    return _jac_client_plugin_dir() / "client_runtime.cl.jac";
+}
+
 """Get the client build directory from project config."""
 impl JacClientCompiler._get_client_dir(self: JacClientCompiler) -> Path {
     try {
@@ -59,7 +77,7 @@ impl JacClientCompiler.compile(
         target_name=target_name
     );
     self.compile_runtime_utils(runtime_filename);
-    import from jac_client.plugin.src.config_loader { JacClientConfig as PwaConfig }
+    import from jaclang.runtimelib.client.config_loader { JacClientConfig as PwaConfig }
     pwa_config = PwaConfig(self.project_dir);
     if pwa_config.is_pwa_enabled() {
         self.compile_pwa_runtime();
@@ -425,7 +443,7 @@ impl JacClientCompiler.compile_runtime_utils(
     if not self.runtime_path {
         raise ClientBundleError('Runtime path not set');
     }
-    plugin_dir = self.runtime_path.parent;
+    plugin_dir = _jac_client_plugin_dir();
     core_path = plugin_dir / 'client_runtime_core.cl.jac';
     runtime_utils_path = plugin_dir / runtime_filename;
     if not core_path.exists() {
@@ -465,7 +483,10 @@ impl JacClientCompiler.compile_pwa_runtime(
     if runtime_path is None {
         return ('', []);
     }
-    pwa_runtime_path: Path = runtime_path.parent / 'pwa_runtime.cl.jac';
+    import jaclang;
+    pwa_runtime_path: Path = (
+        Path(jaclang.__file__).parent / "runtimelib" / "pwa_runtime.cl.jac"
+    );
     if not pwa_runtime_path.exists() {
         return ('', []);
     }

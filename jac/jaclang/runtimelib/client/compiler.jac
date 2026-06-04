@@ -11,12 +11,12 @@ import from pathlib { Path }
 import from types { ModuleType }
 import from typing { TYPE_CHECKING, Any }
 import from jaclang.runtimelib.client_bundle { ClientBundleError }
-import from .asset_processor { AssetProcessor }
-import from .import_processor { ImportProcessor }
-import from .jac_client_compiler { JacClientCompiler }
-import from .jac_to_js { JacToJSCompiler }
-import from .route_scanner { RouteScanner, RouteEntry }
-import from .vite_bundler { ViteBundler }
+import from jaclang.runtimelib.client.asset_processor { AssetProcessor }
+import from jaclang.runtimelib.client.import_processor { ImportProcessor }
+import from jac_client.plugin.src.jac_client_compiler { JacClientCompiler }
+import from jaclang.runtimelib.client.jac_to_js { JacToJSCompiler }
+import from jaclang.runtimelib.client.route_scanner { RouteScanner, RouteEntry }
+import from jaclang.runtimelib.client.vite_bundler { ViteBundler }
 
 with entry {
     if TYPE_CHECKING { }

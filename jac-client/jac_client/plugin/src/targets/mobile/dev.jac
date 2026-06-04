@@ -6,7 +6,7 @@ import from pathlib { Path }
 import from typing { Any, cast }
 import from jaclang.cli.console { console }
 import from jaclang.runtimelib.watcher { FileChangeEvent }
-import from jac_client.plugin.src.config_loader { JacClientConfig }
+import from jaclang.runtimelib.client.config_loader { JacClientConfig }
 import from jac_client.plugin.src.targets.mobile.common {
     SUBPROCESS_TIMEOUT_SHORT,
     _resolve_npx
@@ -28,7 +28,7 @@ def _get_api_base_url_str(project_dir: Path) -> str {
 
 The mobile dev flow reserves ports via adb reverse and rewrites
 capacitor.config.json with a fixed Vite URL. The API subprocess
-(`jaclang start`) silently bumps the port on EADDRINUSE — which leaves
+(`jaclang start`) silently bumps the port on EADDRINUSE - which leaves
 adb-reverse / cap-config pointing at a port nothing is listening on, so the
 device can never reach the API. Probing the port before we configure
 anything makes the failure mode explicit instead of arriving as a confusing
@@ -71,7 +71,7 @@ def _mobile_read_dev_env -> tuple[str, str] {
 
 """Best-effort ADB reverse for Android mobile dev connectivity.
 
-No-op when adb is not on PATH — adb only exists when the Android SDK platform
+No-op when adb is not on PATH - adb only exists when the Android SDK platform
 tools are installed, so a missing binary means there is no device to reverse
 ports to anyway. The previous implementation called subprocess unconditionally
 and emitted noisy "[Errno 2] No such file" warnings on every dev run on hosts
@@ -228,8 +228,8 @@ def _run_cap_run_live_reload(
 """Describe the user-facing outcome of `cap run`. Pure / no side effects.
 
 Returns a dict with:
-  ok       — True when rc == 0 (cap run succeeded).
-  messages — list[str] for the user. Must NOT claim deployment when rc != 0
+  ok       - True when rc == 0 (cap run succeeded).
+  messages - list[str] for the user. Must NOT claim deployment when rc != 0
              (the original code printed "📱 App deployed" unconditionally,
              misleading users when there was no device or no Android SDK).
 """
@@ -247,7 +247,7 @@ def _describe_cap_run_completion(rc: int, dev_url: str) -> dict {
     return {
         "ok": False,
         "messages": [
-            f"⚠ cap run exited with code {rc} — app was not deployed.",
+            f"⚠ cap run exited with code {rc} - app was not deployed.",
             f"Vite + API servers are still running at {dev_url}.",
             "Fix the underlying error (e.g. missing Android SDK / no device) and "
             "re-run `cap run` manually, or press Ctrl+C to stop."

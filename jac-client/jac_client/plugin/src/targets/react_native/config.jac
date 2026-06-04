@@ -8,7 +8,7 @@ Config knobs:
   - ``eas_update`` + ``eas_update_branch`` (opt-in OTA publish)
 """
 import from pathlib { Path }
-import from jac_client.plugin.src.config_loader { JacClientConfig }
+import from jaclang.runtimelib.client.config_loader { JacClientConfig }
 
 glob _RN_BUILDERS_ANDROID = {"gradle", "eas"},
      _RN_BUILDERS_IOS = {"xcodebuild", "eas"};

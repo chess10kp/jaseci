@@ -283,7 +283,8 @@ test "JacClientCompiler accepts runtime_filename to select native runtime" {
     assert "target_name" in src_content;
     assert "target_name" in impl_content;
     assert ".native.cl.jac" in src_content;
-    assert ".native.cl.jac" in (_plugin_dir / "src" / "compiler.jac").read_text();
+    core_compiler_jac = Path(__file__).resolve().parents[3] / "jac" / "jaclang" / "runtimelib" / "client" / "compiler.jac";
+    assert ".native.cl.jac" in core_compiler_jac.read_text();
     assert src_content.index(".native.cl.jac") < src_content.index(".cl.jac") , (
         "COMPOUND_EXTENSIONS must put .native.cl.jac before .cl.jac so "
         "Header.native.cl.jac maps to Header.js (not Header.native.js)."
@@ -326,7 +327,7 @@ test "target selection keeps web and native entry/runtime paths separate" {
     rn_impl_src = (
         _plugin_dir / "src" / "targets" / "impl" / "react_native_target.impl.jac"
     );
-    web_compiler_impl = _plugin_dir / "src" / "impl" / "compiler.impl.jac";
+    web_compiler_impl = Path(__file__).resolve().parents[3] / "jac" / "jaclang" / "runtimelib" / "client" / "impl" / "compiler.impl.jac";
 
     rn_build_content = rn_build_src.read_text();
     rn_impl_content = rn_impl_src.read_text();
@@ -854,7 +855,7 @@ test "native entry generator omits web-only imports" {
 
 test "client config supports target-scoped npm table for react native" {
     import tempfile;
-    import from jac_client.plugin.src.config_loader { JacClientConfig }
+    import from jaclang.runtimelib.client.config_loader { JacClientConfig }
 
     with tempfile.TemporaryDirectory() as tmp {
         project_dir = Path(tmp);
@@ -893,7 +894,7 @@ test "react native common does not import mobile private helpers" {
 
 test "client config getters expose mobile and react-native tables" {
     import tempfile;
-    import from jac_client.plugin.src.config_loader { JacClientConfig }
+    import from jaclang.runtimelib.client.config_loader { JacClientConfig }
 
     with tempfile.TemporaryDirectory() as tmp {
         project_dir = Path(tmp);
@@ -1135,7 +1136,7 @@ test "compiler resolves .native.cl.jac when target is react-native" {
     # .native.cl.jac, compile with target_name="react-native", and
     # verify the native variant was chosen.
     import tempfile;
-    import from jac_client.plugin.src.config_loader { JacClientConfig }
+    import from jaclang.runtimelib.client.config_loader { JacClientConfig }
 
     fixture_dir = Path(__file__).parent / "fixtures" / "react_native_dual_platform";
 
@@ -1145,8 +1146,8 @@ test "compiler resolves .native.cl.jac when target is react-native" {
         shutil.copytree(fixture_dir, project_dir);
         entry_file = project_dir / "main.jac";
         # Compile with target_name="react-native".
-        import from jac_client.plugin.client { JacClient }
-        builder = JacClient.get_client_bundle_builder();
+        import from jaclang.runtimelib.runtime { JacRuntime as Jac }
+        builder = Jac.get_client_bundle_builder();
         vite_compiler = builder._get_compiler();
         jac_compiler = vite_compiler.jac_client_compiler;
         compiled_dir = jac_compiler.compiled_dir;
