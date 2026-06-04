@@ -9,31 +9,36 @@ import from jaclang.runtimelib.entry_generators {
     has_entry_generator,
     clear_entry_generators
 }
-import from jaclang.runtimelib.react_entry { build_simple_react_entry_script }
 import from jac_client.plugin.src.entry_generators.web_entry {
-    register_web_entry_generators,
+    build_simple_react_entry_script,
     build_web_error_overlay_entry_script
+}
+import from jac_client.plugin.src.entry_generators.web_entry {
+    register_web_entry_generators
 }
 import from jac_client.plugin.src.entry_generators.native_entry {
     register_native_entry_generators,
     build_native_entry_script
 }
 
-test "web plugin registration adds only plugin-owned generators" {
+test "web plugin registration aligns canonical web generators" {
     clear_entry_generators();
     assert not has_entry_generator("web");
     assert not has_entry_generator("web:error_overlay");
 
     register_web_entry_generators();
 
-    assert not has_entry_generator("web");
+    assert has_entry_generator("web");
     assert has_entry_generator("web:error_overlay");
-    direct = build_web_error_overlay_entry_script("app.jac", "boom");
-    via_registry = get_entry_generator("web:error_overlay")("app.jac", "boom");
-    assert direct == via_registry;
+    web_fn = get_entry_generator("web");
+    overlay_fn = get_entry_generator("web:error_overlay");
+    assert web_fn("main") == build_simple_react_entry_script("main");
+    assert overlay_fn("app.jac", "boom") == build_web_error_overlay_entry_script(
+        "app.jac", "boom"
+    );
 }
 
-test "web plugin registration composes with builtin web generator" {
+test "web plugin registration composes with builtin lazy fallback" {
     clear_entry_generators();
     builtin = get_entry_generator("web");
     assert has_entry_generator("web");

@@ -253,17 +253,6 @@ def rn_hmr_on_jac_changed(
         compiled_dir = compiler.compiled_dir;
         if compiled_dir is not None {
             try {
-                stage_native_image_assets(compiled_dir, rn_dir);
-            } except Exception as asset_err {
-                console.warning(f"  HMR asset stage warning: {asset_err}");
-            }
-            try {
-                stage_compiled_entry(compiled_dir, rn_dir, entry_module);
-            } except Exception as stage_err {
-                console.error(f"  HMR stage failed: {stage_err}");
-                return;
-            }
-            try {
                 lint_unmapped_tags(compiled_dir);
             } except Exception { }
             try {
@@ -272,6 +261,17 @@ def rn_hmr_on_jac_changed(
             try {
                 strip_css_imports(compiled_dir);
             } except Exception { }
+            try {
+                stage_compiled_entry(compiled_dir, rn_dir, entry_module);
+            } except Exception as stage_err {
+                console.error(f"  HMR stage failed: {stage_err}");
+                return;
+            }
+            try {
+                stage_native_image_assets(rn_dir / "jac-src", rn_dir);
+            } except Exception as asset_err {
+                console.warning(f"  HMR asset stage warning: {asset_err}");
+            }
         }
         try {
             console.print(

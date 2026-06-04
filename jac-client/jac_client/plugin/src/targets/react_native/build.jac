@@ -36,41 +36,11 @@ import from jac_client.plugin.src.targets.react_native.common {
     SUBPROCESS_TIMEOUT_BUILD,
     resolve_npx
 }
+import from jac_client.plugin.src.targets.react_native.html_tag_map {
+    supported_rn_html_tags
+}
 
-# Tag map (D10) — keep this list aligned with the native renderer so the
-# compile-time lint pass matches runtime behavior.
-glob _SUPPORTED_HTML_TAGS = {
-         "div",
-         "section",
-         "main",
-         "article",
-         "header",
-         "footer",
-         "nav",
-         "aside",
-         "ul",
-         "ol",
-         "li",
-         "form",
-         "span",
-         "p",
-         "h1",
-         "h2",
-         "h3",
-         "h4",
-         "h5",
-         "h6",
-         "label",
-         "strong",
-         "em",
-         "small",
-         "button",
-         "input",
-         "textarea",
-         "img",
-         "a"
-     },
-     _RUNTIME_JS_FILES = {"client_runtime.js", "pwa_runtime.js"},
+glob _RUNTIME_JS_FILES = {"client_runtime.js", "pwa_runtime.js"},
      _WEB_ONLY_GLOBALS = ["window", "document", "localStorage"],
      _RN_ASSET_TOKEN_PREFIX = "__jac_rn_asset__:",
      _IMG_SRC_ALLOWED_PREFIXES = [
@@ -183,12 +153,17 @@ def stage_compiled_entry(compiled_dir: Path, rn_dir: Path, entry_module: str) ->
 
 """Stage relative image assets for Metro ``require()`` parity.
 
-Scans compiled JS for ``__jacJsx("img", {src: "..."})`` with relative sources,
-copies resolvable files into ``mobile-rn/jac-assets/``, rewrites source strings
-to deterministic tokens, and emits ``mobile-rn/jac-asset-registry.js`` with
-static ``require(...)`` entries consumed by the native runtime.
+Scans ``js_tree_dir`` (typically ``mobile-rn/jac-src/`` after
+``stage_compiled_entry``) for ``__jacJsx("img", {src: "..."})`` with relative
+sources, copies resolvable files into ``mobile-rn/jac-assets/``, rewrites
+source strings to deterministic tokens in that tree only, and emits
+``mobile-rn/jac-asset-registry.js`` with static ``require(...)`` entries
+consumed by the native runtime.
+
+Callers must not pass ``.jac/client/compiled/`` here — that directory is shared
+with the web target and must keep original relative ``src`` paths.
 """
-def stage_native_image_assets(compiled_dir: Path, rn_dir: Path) {
+def stage_native_image_assets(js_tree_dir: Path, rn_dir: Path) {
     import re;
     import hashlib;
 
@@ -200,7 +175,7 @@ def stage_native_image_assets(compiled_dir: Path, rn_dir: Path) {
     unresolved = set();
     rewritten_refs = 0;
 
-    for js_file in _iter_user_js_files(compiled_dir) {
+    for js_file in _iter_user_js_files(js_tree_dir) {
         try {
             text = js_file.read_text(encoding="utf-8");
         } except Exception {
@@ -314,7 +289,7 @@ def lint_unmapped_tags(compiled_dir: Path) -> list[str] {
         }
         for match in pattern.finditer(text) {
             tag = match.group(1);
-            if tag not in _SUPPORTED_HTML_TAGS {
+            if tag not in supported_rn_html_tags() {
                 seen_unmapped.add(tag);
             }
         }

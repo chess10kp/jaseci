@@ -42,15 +42,28 @@ test "get_entry_generator raises LookupError when target is missing" {
 }
 
 test "get_entry_generator lazy-registers the builtin web generator only for web" {
-    import jaclang.runtimelib.react_entry as builtin_web_entry;
+    import from jac_client.plugin.src.entry_generators.web_entry {
+        build_simple_react_entry_script
+    }
     clear_entry_generators();
     assert not has_entry_generator("web");
     fn = get_entry_generator("web");
     assert has_entry_generator("web");
-    direct = builtin_web_entry.build_simple_react_entry_script(
-        "main", install_global_handlers=False
-    );
+    direct = build_simple_react_entry_script("main", install_global_handlers=False);
     via_registry = fn("main", install_global_handlers=False);
+    assert direct == via_registry;
+}
+
+test "get_entry_generator lazy-registers the builtin web error overlay generator" {
+    import from jac_client.plugin.src.entry_generators.web_entry {
+        build_web_error_overlay_entry_script
+    }
+    clear_entry_generators();
+    assert not has_entry_generator("web:error_overlay");
+    fn = get_entry_generator("web:error_overlay");
+    assert has_entry_generator("web:error_overlay");
+    direct = build_web_error_overlay_entry_script("app.jac", "boom");
+    via_registry = fn("app.jac", "boom");
     assert direct == via_registry;
 }
 

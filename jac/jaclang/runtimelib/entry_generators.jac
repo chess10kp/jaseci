@@ -7,11 +7,10 @@ React Native uses `AppRegistry.registerComponent`. Core stays target-neutral
 by looking generators up by name; concrete generators ship with the active
 jac-client plugin and register themselves at plugin load.
 
-A built-in "web" generator is lazy-registered on first lookup from
-`jaclang.runtimelib.react_entry` so core features (eject, HMR) work without
-the jac-client plugin installed. When jac-client loads, it registers the
-same canonical web generator plus any plugin-only targets such as
-`"web:error_overlay"`.
+When jac-client is installed, built-in web generators lazy-register from
+``jac_client.plugin.src.entry_generators.web_entry`` on first lookup so core
+features (eject, HMR) work. When jac-client loads, it re-registers the same
+implementations at plugin bootstrap.
 
 This file deliberately contains no React, DOM, or HTML knowledge.
 """
@@ -34,12 +33,15 @@ def register_entry_generator(target: str, fn: EntryGenerator) {
 """Look up the entry generator for `target`.
 
 Raises `LookupError` with a clear message if no generator is registered.
-The built-in "web" generator is always available; other targets (e.g.
-"web:error_overlay", "native") require the jac-client plugin.
+The built-in "web" and "web:error_overlay" generators lazy-register from
+jac-client when available; other targets (e.g. "react-native") require the
+jac-client plugin.
 """
 def get_entry_generator(target: str = "web") -> EntryGenerator {
     if target == "web" {
         _ensure_builtin_web();
+    } elif target == "web:error_overlay" {
+        _ensure_builtin_web_error_overlay();
     }
     fn = _generators.get(target);
     if fn is None {
@@ -62,18 +64,24 @@ def clear_entry_generators {
     _generators.clear();
 }
 
-"""Ensure the built-in web generator is registered.
-
-Lazy-imported from `react_entry` at call time (not at module load) to avoid
-circular bootstrap ordering with the Jac meta_importer. jac-client's
-`register_entry_generator` call may re-register `"web"` when the plugin
-loads and also adds plugin-only targets such as `"web:error_overlay"`. The
-redundant import on subsequent calls is harmless — Python caches module
-imports.
-"""
+"""Ensure the built-in web generator is registered from jac-client."""
 def _ensure_builtin_web {
     if "web" not in _generators {
-        import from jaclang.runtimelib.react_entry { build_simple_react_entry_script }
+        import from jac_client.plugin.src.entry_generators.web_entry {
+            build_simple_react_entry_script
+        }
         register_entry_generator("web", build_simple_react_entry_script);
+    }
+}
+
+"""Ensure the built-in web error-overlay generator is registered from jac-client."""
+def _ensure_builtin_web_error_overlay {
+    if "web:error_overlay" not in _generators {
+        import from jac_client.plugin.src.entry_generators.web_entry {
+            build_web_error_overlay_entry_script
+        }
+        register_entry_generator(
+            "web:error_overlay", build_web_error_overlay_entry_script
+        );
     }
 }

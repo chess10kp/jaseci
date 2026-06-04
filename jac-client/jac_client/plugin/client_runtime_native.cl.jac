@@ -29,41 +29,17 @@ import from client_runtime_core {
     useJacForm,
     __jacReportError
 }
+import from jac_client.plugin.src.targets.react_native.html_tag_map {
+    RN_HTML_VIEW_TAGS as _VIEW_TAGS,
+    RN_HTML_TEXT_TAGS as _TEXT_TAGS
+}
 
 def:pub __jacGetRenderer -> any;
 def:pub __jacNativeCreate(
     tag: any, props: dict = {}, children: any = []
 ) -> JsxElement;
 
-glob _VIEW_TAGS = [
-         "div",
-         "section",
-         "main",
-         "article",
-         "header",
-         "footer",
-         "nav",
-         "aside",
-         "ul",
-         "ol",
-         "li",
-         "form"
-     ],
-     _TEXT_TAGS = [
-         "span",
-         "p",
-         "h1",
-         "h2",
-         "h3",
-         "h4",
-         "h5",
-         "h6",
-         "label",
-         "strong",
-         "em",
-         "small"
-     ],
-     _UNMAPPED_WARNED = {},
+glob _UNMAPPED_WARNED = {},
      _RELATIVE_IMG_SRC_WARNED = {},
      _JAC_NATIVE_OUTLET_CONTEXT = React.createContext(None),
      _JAC_NATIVE_STACK = jacCreateNativeStackNavigator();

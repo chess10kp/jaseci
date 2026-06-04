@@ -223,11 +223,11 @@ impl ReactNativeTarget.build(
     lint_unmapped_tags(compiled_dir);
     lint_native_incompatible_usage(compiled_dir);
     strip_css_imports(compiled_dir);
-    stage_native_image_assets(compiled_dir, rn_dir);
 
     # Step 2: stage compiled entry + write index.ts so Metro picks them up.
     entry_module: str = entry_file.stem;
     stage_compiled_entry(compiled_dir, rn_dir, entry_module);
+    stage_native_image_assets(rn_dir / "jac-src", rn_dir);
     write_native_entry(rn_dir);
 
     # Step 3: expo prebuild — generates android/ or ios/ from app.json.
@@ -386,11 +386,11 @@ impl ReactNativeTarget.dev(
     lint_unmapped_tags(compiled_dir);
     lint_native_incompatible_usage(compiled_dir);
     strip_css_imports(compiled_dir);
-    stage_native_image_assets(compiled_dir, rn_dir);
 
     # Step 2: stage entry + index.ts so the running Metro picks them up.
     entry_module: str = entry_file.stem;
     stage_compiled_entry(compiled_dir, rn_dir, entry_module);
+    stage_native_image_assets(rn_dir / "jac-src", rn_dir);
     write_native_entry(rn_dir);
 
     # Step 3: inject dev API URL into app.json. Constants.expoConfig
