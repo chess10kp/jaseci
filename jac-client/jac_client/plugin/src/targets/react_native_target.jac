@@ -11,11 +11,6 @@ import from typing { Optional }
 import from jaclang.runtimelib.watcher { FileChangeEvent }
 import from jac_client.plugin.src.targets.registry { ClientTarget }
 
-# Side-effect import: registers "react-native" (plus legacy "native")
-# in `jaclang.runtimelib.entry_generators` for compatibility/test paths.
-# Production RN builds write Expo's registerRootComponent entry directly.
-import jac_client.plugin.src.entry_generators.native_entry;
-
 """Binds JacClientCompiler state for JacFileWatcher (decl only; see impl).
 
 Mirrors ``_MobileHmrHandler`` in ``mobile_target.jac`` — the watchdog

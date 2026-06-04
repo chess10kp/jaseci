@@ -11,8 +11,8 @@ This module keeps the same ``entry_generators`` contract as the web target
 The body registers the compiled module directly via ``AppRegistry`` and is
 not written to ``mobile-rn/index.ts``.
 
-The generator self-registers under ``react-native`` (and legacy ``native``)
-at import time.
+The generator registers under ``react-native`` (and legacy ``native``)
+when jac-client bootstraps its client targets.
 """
 
 import from jaclang.runtimelib.entry_generators { register_entry_generator }
@@ -51,9 +51,8 @@ def build_native_entry_script(
     return "\n".join(lines);
 }
 
-# Self-register at module load. Keep ``native`` as a legacy alias for
-# compatibility with any downstream code that looked up the old key.
-with entry {
+"""Register the React Native runtime entry generators."""
+def register_native_entry_generators {
     register_entry_generator("react-native", build_native_entry_script);
     register_entry_generator("native", build_native_entry_script);
 }

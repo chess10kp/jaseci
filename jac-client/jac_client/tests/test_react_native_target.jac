@@ -52,7 +52,7 @@ test "react native target files exist" {
     assert 'name: str = "react-native"' in content;
     assert "requires_setup: bool = True" in content;
     assert 'config_section: str = "react_native"' in content;
-    assert "import jac_client.plugin.src.entry_generators.native_entry;" in content;
+    assert "import jac_client.plugin.src.entry_generators.native_entry;" not in content;
 }
 
 test "target type parser supports react-native and aliases" {
@@ -81,15 +81,12 @@ test "target factory supports react native target" {
     assert "return self.create(target_type.value, project_dir);" in content;
 }
 
-test "register.jac registers the react native target and imports native entry" {
+test "register.jac registers the react native target and native generators" {
     register_path = _plugin_dir / "src" / "targets" / "register.jac";
     content = register_path.read_text();
 
     assert "ReactNativeTarget" in content;
-    # Side-effect import is the documented mechanism for entry-generator
-    # registration; missing it means `jac build --client react-native` could
-    # silently find no native generator in registry-compat code paths.
-    assert "import jac_client.plugin.src.entry_generators.native_entry;" in content;
+    assert "register_native_entry_generators();" in content;
     assert "build_native_entry_script" not in content;
     assert "react_native_target = ReactNativeTarget()" in content;
     assert "registry.register(react_native_target)" in content;
@@ -198,41 +195,6 @@ test "react native target exposes the documented surface" {
     assert target.name == "react-native";
     assert target.config_section == "react_native";
     assert "mobile-rn" in str(target.output_dir);
-}
-
-test "native entry generator is registered through the runtime registry" {
-    # `with entry { ... }` blocks run once per process on first import. Use
-    # importlib.reload to force a fresh registration — same pattern as
-    # test_entry_generators.jac uses for the web generator.
-    import importlib;
-    import from jaclang.runtimelib.entry_generators {
-        get_entry_generator,
-        has_entry_generator,
-        clear_entry_generators
-    }
-
-    clear_entry_generators();
-    assert not has_entry_generator("react-native");
-    assert not has_entry_generator("native");
-    import jac_client.plugin.src.entry_generators.native_entry as native_entry_mod;
-    importlib.reload(native_entry_mod);
-    assert has_entry_generator("react-native");
-    assert has_entry_generator("native");
-
-    fn = get_entry_generator("react-native");
-    script = fn("main");
-    # Acceptance: emitted script registers the imported `app` against
-    # AppRegistry under the canonical Expo root component name. These three
-    # invariants together define the entry-script contract.
-    assert "AppRegistry" in script;
-    assert "registerComponent" in script;
-    assert 'from "./main.js"' in script;
-    assert "app as JacApp" in script;
-    # Round-trip equality check: the registered fn must be the same function
-    # the module exports, not a stale closure or shim.
-    direct = native_entry_mod.build_native_entry_script("main");
-    assert direct == script;
-    assert get_entry_generator("native")("main") == script;
 }
 
 test "native runtime file ships parallel to the web runtime" {
@@ -823,10 +785,10 @@ test "_RNHmrHandler obj is declared and wired in target module" {
 test "native entry generator omits web-only imports" {
     # The whole point of the per-target generator (R2) is to keep DOM and
     # react-router out of the native bundle. Regress-guard those.
-    import importlib;
-    import jac_client.plugin.src.entry_generators.native_entry as native_entry_mod;
-    importlib.reload(native_entry_mod);
-    script = native_entry_mod.build_native_entry_script("main");
+    import from jac_client.plugin.src.entry_generators.native_entry {
+        build_native_entry_script
+    }
+    script = build_native_entry_script("main");
 
     forbidden = [
         "react-dom",

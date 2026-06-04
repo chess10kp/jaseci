@@ -12,15 +12,12 @@ import from jac_client.plugin.src.targets.web_target { WebTarget }
 import from jac_client.plugin.src.targets.pwa_target { PWATarget }
 import from jac_client.plugin.src.targets.mobile_target { MobileTarget }
 import from jac_client.plugin.src.targets.react_native_target { ReactNativeTarget }
-
-# Side-effect imports: each entry-generator module registers itself with
-# `jaclang.runtimelib.entry_generators` under its target key. Importing the
-# module from here guarantees the registration happens before any target's
-# build flow runs.
 import from jac_client.plugin.src.entry_generators.web_entry {
-    build_simple_react_entry_script
+    register_web_entry_generators
 }
-import jac_client.plugin.src.entry_generators.native_entry;
+import from jac_client.plugin.src.entry_generators.native_entry {
+    register_native_entry_generators
+}
 
 # Note: Jac's annex pass should auto-discover .impl.jac files automatically
 # The impl files in impl/ directory should be loaded when the base classes are imported
@@ -47,6 +44,8 @@ Called from ``JacCmd.create_cmd`` after jac-client runtime plugins are loaded.
 def register_targets {
     import from jac_client.plugin.client_plugin { load_client_plugins }
     load_client_plugins();
+    register_web_entry_generators();
+    register_native_entry_generators();
     registry = get_target_registry();
     registry.register(WebTarget());
     registry.register(PWATarget());

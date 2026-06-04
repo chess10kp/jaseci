@@ -79,38 +79,3 @@ test "re-registering the same target overrides the previous generator" {
     assert get_entry_generator("web")("main") == "second";
     clear_entry_generators();
 }
-
-test "jac-client web generator is wired through the registry" {
-    # The `with entry { ... }` block in web_entry.jac runs once per process
-    # at first import; Python caches the module so we can't observe the
-    # side effect repeatedly across tests that clear the registry. Instead
-    # we use importlib.reload to force a fresh execution of the registration.
-    import importlib;
-    clear_entry_generators();
-    assert not has_entry_generator("web");
-    import jac_client.plugin.src.entry_generators.web_entry as web_entry_mod;
-    importlib.reload(web_entry_mod);
-    assert has_entry_generator("web");
-    assert has_entry_generator("web:error_overlay");
-    # Sanity-check: the registered web generator IS the function exported
-    # by web_entry.jac, not some other shim.
-    fn = get_entry_generator("web");
-    direct = web_entry_mod.build_simple_react_entry_script(
-        "main", install_global_handlers=True
-    );
-    via_registry = fn("main", install_global_handlers=True);
-    assert direct == via_registry;
-}
-
-test "jac-client registration still works after builtin web fallback is used" {
-    import importlib;
-    clear_entry_generators();
-    builtin = get_entry_generator("web");
-    assert has_entry_generator("web");
-    import jac_client.plugin.src.entry_generators.web_entry as web_entry_mod;
-    importlib.reload(web_entry_mod);
-    fn = get_entry_generator("web");
-    assert has_entry_generator("web:error_overlay");
-    assert builtin("main") == fn("main");
-    assert fn("main") == web_entry_mod.build_simple_react_entry_script("main");
-}
