@@ -157,7 +157,7 @@ test "endpoint effects follow helper calls" {
 test "jac call function sends params directly" {
     # The canonical @jac/runtime now lives in core runtimelib.
     runtime_path = (
-        jac_root / "jac-client" / "jac_client" / "plugin" / "impl" / "client_runtime_core.impl.jac"
+        Path(JAC_ROOT) / "jac-client" / "jac_client" / "plugin" / "impl" / "client_runtime_core.impl.jac"
     );
 
     if not runtime_path.exists() {
