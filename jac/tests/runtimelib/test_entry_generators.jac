@@ -6,6 +6,7 @@ exercise it in isolation — they do not need a built bundle or a running
 plugin, only the contract surface in `jaclang.runtimelib.entry_generators`.
 """
 
+import pytest;
 import from jaclang.runtimelib.entry_generators {
     register_entry_generator,
     get_entry_generator,
@@ -42,8 +43,12 @@ test "get_entry_generator raises LookupError when target is missing" {
 }
 
 test "get_entry_generator lazy-registers the builtin web generator only for web" {
-    import from jac_client.plugin.src.entry_generators.web_entry {
-        build_simple_react_entry_script
+    try {
+        import from jac_client.plugin.src.entry_generators.web_entry {
+            build_simple_react_entry_script
+        }
+    } except ModuleNotFoundError {
+        pytest.skip("jac-client plugin not installed");
     }
     clear_entry_generators();
     assert not has_entry_generator("web");
@@ -55,8 +60,12 @@ test "get_entry_generator lazy-registers the builtin web generator only for web"
 }
 
 test "get_entry_generator lazy-registers the builtin web error overlay generator" {
-    import from jac_client.plugin.src.entry_generators.web_entry {
-        build_web_error_overlay_entry_script
+    try {
+        import from jac_client.plugin.src.entry_generators.web_entry {
+            build_web_error_overlay_entry_script
+        }
+    } except ModuleNotFoundError {
+        pytest.skip("jac-client plugin not installed");
     }
     clear_entry_generators();
     assert not has_entry_generator("web:error_overlay");
