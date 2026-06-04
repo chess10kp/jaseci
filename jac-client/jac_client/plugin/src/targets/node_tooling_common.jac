@@ -4,6 +4,7 @@ import json;
 import subprocess;
 import from pathlib { Path }
 import from jaclang.cli.console { console }
+import from jaclang.runtimelib.client { get_bun }
 import from jac_client.plugin.src.targets.build_common { SUBPROCESS_TIMEOUT_SHORT }
 
 """Check if a command is available and optionally return its version."""
@@ -41,14 +42,9 @@ def run_manifest_install(project_dir: Path) {
     if npm_ok {
         cmd = ["npm", "install"];
     } else {
-        (bun_ok, _) = check_command_available(["bun", "--version"]);
-        if not bun_ok {
-            raise RuntimeError(
-                "Neither npm nor bun is installed. Install Node.js "
-                "(https://nodejs.org) or Bun (https://bun.sh)."
-            );
-        }
-        cmd = ["bun", "install"];
+        # Fall back to bun (auto-installs to .jac/bin if not on PATH).
+        bun = get_bun();
+        cmd = [bun or "bun", "install"];
     }
     console.print(f"  Installing dependencies in {project_dir.name}...", style="muted");
     subprocess.run(cmd, cwd=project_dir, check=True, capture_output=False);
@@ -84,14 +80,9 @@ def run_install_cmd(
         }
         cmd.extend(packages);
     } else {
-        (bun_ok, _) = check_command_available(["bun", "--version"]);
-        if not bun_ok {
-            raise RuntimeError(
-                "Neither npm nor bun is installed. Install Node.js "
-                "(https://nodejs.org) or Bun (https://bun.sh)."
-            );
-        }
-        cmd = ["bun", "add"];
+        # Fall back to bun (auto-installs to .jac/bin if not on PATH).
+        bun = get_bun();
+        cmd = [bun or "bun", "add"];
         if dev {
             cmd.append("--dev");
         }
