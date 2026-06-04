@@ -36,16 +36,29 @@ def resolve_npx_or_bunx -> str {
     );
 }
 
-"""Install all dependencies from an existing package.json manifest."""
-def run_manifest_install(project_dir: Path) {
+"""Resolve the package manager command name, preferring npm and falling back to bun.
+
+When bun is selected, get_bun() ensures the binary exists and prepends its
+parent directory to PATH, so subprocesses can invoke it as plain `bun`.
+"""
+def resolve_package_manager -> str {
     (npm_ok, _) = check_command_available(["npm", "--version"]);
     if npm_ok {
-        cmd = ["npm", "install"];
-    } else {
-        # Fall back to bun (auto-installs to .jac/bin if not on PATH).
-        bun = get_bun();
-        cmd = [bun or "bun", "install"];
+        return "npm";
     }
+    bun_path = get_bun();
+    if bun_path is not None {
+        return "bun";
+    }
+    raise RuntimeError(
+        "npm or bun not found. Install Node.js (https://nodejs.org) "
+        "or Bun (https://bun.sh)."
+    );
+}
+
+"""Install all dependencies from an existing package.json manifest."""
+def run_manifest_install(project_dir: Path) {
+    cmd = [resolve_package_manager(), "install"];
     console.print(f"  Installing dependencies in {project_dir.name}...", style="muted");
     subprocess.run(cmd, cwd=project_dir, check=True, capture_output=False);
 }
@@ -72,22 +85,20 @@ def run_install_cmd(
         run_manifest_install(project_dir);
         return;
     }
-    (npm_ok, _) = check_command_available(["npm", "--version"]);
-    if npm_ok {
+    pkg_mgr = resolve_package_manager();
+    cmd: list[str];
+    if pkg_mgr == "npm" {
         cmd = ["npm", "install"];
         if dev {
             cmd.append("--save-dev");
         }
-        cmd.extend(packages);
     } else {
-        # Fall back to bun (auto-installs to .jac/bin if not on PATH).
-        bun = get_bun();
-        cmd = [bun or "bun", "add"];
+        cmd = ["bun", "add"];
         if dev {
             cmd.append("--dev");
         }
-        cmd.extend(packages);
     }
+    cmd.extend(packages);
     console.print(f"  Installing: {' '.join(packages)}", style="muted");
     subprocess.run(cmd, cwd=project_dir, check=True, capture_output=False);
 }
