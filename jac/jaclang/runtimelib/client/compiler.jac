@@ -13,13 +13,16 @@ import from typing { TYPE_CHECKING, Any }
 import from jaclang.runtimelib.client_bundle { ClientBundleError }
 import from jaclang.runtimelib.client.asset_processor { AssetProcessor }
 import from jaclang.runtimelib.client.import_processor { ImportProcessor }
-import from jac_client.plugin.src.jac_client_compiler { JacClientCompiler }
+# JacClientCompiler is imported at runtime inside ViteCompiler.init (compiler.impl.jac)
+# to avoid a hard dependency on jac_client at module load time.
 import from jaclang.runtimelib.client.jac_to_js { JacToJSCompiler }
 import from jaclang.runtimelib.client.route_scanner { RouteScanner, RouteEntry }
 import from jaclang.runtimelib.client.vite_bundler { ViteBundler }
 
 with entry {
-    if TYPE_CHECKING { }
+    if TYPE_CHECKING {
+        import from jac_client.plugin.src.jac_client_compiler { JacClientCompiler }
+    }
 }
 
 """Orchestrates web/Vite compilation: JacClientCompiler + ViteBundler."""
