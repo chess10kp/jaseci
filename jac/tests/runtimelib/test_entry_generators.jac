@@ -59,6 +59,39 @@ test "get_entry_generator lazy-registers the builtin web generator only for web"
     assert direct == via_registry;
 }
 
+test "core web fallback matches jac-client canonical simple react bootstrap" {
+    try {
+        import from jac_client.plugin.src.entry_generators.web_entry {
+            build_simple_react_entry_script
+        }
+    } except ModuleNotFoundError {
+        pytest.skip("jac-client plugin not installed");
+    }
+    import from jaclang.runtimelib.entry_generators { _build_simple_react_entry_script }
+    assert _build_simple_react_entry_script("main") == build_simple_react_entry_script(
+        "main"
+    );
+    assert _build_simple_react_entry_script("main", install_global_handlers=False) == build_simple_react_entry_script(
+        "main", install_global_handlers=False
+    );
+}
+
+test "core web fallback matches jac-client canonical error overlay bootstrap" {
+    try {
+        import from jac_client.plugin.src.entry_generators.web_entry {
+            build_web_error_overlay_entry_script
+        }
+    } except ModuleNotFoundError {
+        pytest.skip("jac-client plugin not installed");
+    }
+    import from jaclang.runtimelib.entry_generators {
+        _build_web_error_overlay_entry_script
+    }
+    assert _build_web_error_overlay_entry_script("app.jac", "boom") == (
+        build_web_error_overlay_entry_script("app.jac", "boom")
+    );
+}
+
 test "get_entry_generator lazy-registers the builtin web error overlay generator" {
     try {
         import from jac_client.plugin.src.entry_generators.web_entry {
