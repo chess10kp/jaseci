@@ -26,7 +26,48 @@ import from jaclang.jac0core.diagnostics { E5026, E5060, E5090 }
 # change that adds the codegen support. Only list a module once its members
 # are genuinely lowered — listing it early re-introduces the silent-wrong
 # failure this guard exists to prevent.
-glob NATIVE_SUPPORTED_STDLIB: set[str] = {"sys"};
+glob NATIVE_SUPPORTED_STDLIB: set[str] = {"sys", "math", "time", "os", "random"};
+
+# time-module function names lowered by _emit_time_call. Gated explicitly (not
+# via a None return) because time.sleep legitimately produces a void result.
+glob NATIVE_TIME_FUNCS: set[str] = {
+         "time",
+         "monotonic",
+         "perf_counter",
+         "time_ns",
+         "monotonic_ns",
+         "perf_counter_ns",
+         "sleep",
+
+     };
+
+# os-module function names lowered by _emit_os_call. Gated explicitly because
+# most are void (chdir/mkdir/rmdir/remove/unlink/rename) — None ≠ unhandled.
+glob NATIVE_OS_FUNCS: set[str] = {
+         "getpid",
+         "getcwd",
+         "getenv",
+         "chdir",
+         "mkdir",
+         "rmdir",
+         "remove",
+         "unlink",
+         "rename",
+         "system",
+
+     };
+
+# random-module function names lowered by _emit_random_call. Gated explicitly
+# because random.seed is void (None ≠ unhandled).
+glob NATIVE_RANDOM_FUNCS: set[str] = {
+         "seed",
+         "random",
+         "getrandbits",
+         "randint",
+         "randrange",
+         "uniform",
+
+     };
 
 # ── Sentinel refcount value for static (immortal) strings.
 # INT64_MAX = 0x7FFFFFFFFFFFFFFF — never reaches 0 even if accidentally decremented.
@@ -159,6 +200,11 @@ obj NaIRGenPass(ModuleCodegenPass) {
         # File I/O support (Phase 15)
         _file_struct_type: (object | None) = None,
         _file_helpers_emitted: bool = False,
+        # Iterator protocol (#6403): boxed JacIter + per-kind state structs.
+        _jac_iter_type: (object | None) = None,
+        _iter_structs_registered: bool = False,
+        _iter_next_fns: dict[str, ir.Function] = {},
+        _iter_uid: int = 0,
         # Primitive emitter singletons
         _native_emitters: (dict[str, object] | None) = None,
         _native_builtin_emitter: (object | None) = None,
@@ -193,6 +239,8 @@ obj NaIRGenPass(ModuleCodegenPass) {
         # Lazily initialized tracking sets
         _struct_bodies_done: set[str] = set(),
         _native_stdlib_modules: set[str] = set(),
+        # names of one-time stdlib runtime-helper groups already emitted (#6404)
+        _stdlib_helpers_emitted: set[str] = set(),
         _global_origins: dict[str, str] = {},
         _clib_paths: list[str] = [],
         # Maps each clib function's C name to the library path it was imported
@@ -474,6 +522,18 @@ obj NaIRGenPass(ModuleCodegenPass) {
     # Native stdlib: sys module
     def _emit_sys_argv -> (ir.Value | None);
     def _emit_sys_exit(args: list[ir.Value]) -> (ir.Value | None);
+    # Native stdlib: math module (libm intercepts, issue #6404)
+    def _emit_math_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
+    def _emit_math_const(name: str) -> (ir.Value | None);
+    # Native stdlib: time module (clock_gettime/nanosleep intercepts, #6404)
+    def _emit_time_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
+    def _emit_clock_gettime(clock_id: int) -> tuple;
+    # Native stdlib: os / os.path modules (libc intercepts, issue #6404)
+    def _emit_os_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
+    def _emit_ospath_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
+    # Native stdlib: random module (CPython-faithful MT19937, issue #6404)
+    def _mt_ensure -> None;
+    def _emit_random_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
     # Phase 8: Entry Block
     def _codegen_entry(nd: uni.ModuleCode) -> None;
     # Phase 9: Tuples
@@ -606,6 +666,32 @@ obj NaIRGenPass(ModuleCodegenPass) {
     def _get_file_struct_type -> ir.Type;
     def _emit_file_helpers -> None;
     def _emit_open(nd: uni.FuncCall) -> (ir.Value | None);
+    # Iterator protocol (#6403)
+    def _ensure_iter_types -> None;
+    def _register_iter_struct(
+        name: str, field_names: list[str], field_types: list[ir.Type]
+    ) -> None;
+
+    def _alloc_iter_struct(name: str) -> ir.Value;
+    def _make_jac_iter(next_fn: ir.Function, state_ptr: ir.Value) -> ir.Value;
+    def _emit_iter_advance(
+        b: ir.IRBuilder, iter_val: ir.Value, out_ptr: ir.Value
+    ) -> ir.Value;
+
+    def _list_iter_next_fn(elem_type_name: str, elem_type: ir.Type) -> ir.Function;
+    def _str_iter_next_fn -> ir.Function;
+    def _make_list_iter(
+        list_val: ir.Value, elem_type_name: str, elem_type: ir.Type
+    ) -> ir.Value;
+
+    def _make_str_iter(str_val: ir.Value) -> ir.Value;
+    def _make_iter_from_value(val: ir.Value, expr: uni.UniNode) -> (tuple | None);
+    def _build_iter_from_expr(expr: uni.UniNode) -> (tuple | None);
+    def _make_map_iter(up: tuple, fn: ir.Function) -> (tuple | None);
+    def _make_filter_iter(up: tuple, pred: ir.Function) -> (tuple | None);
+    def _make_enumerate_iter(up: tuple) -> (tuple | None);
+    def _make_zip_iter(up_a: tuple, up_b: tuple) -> (tuple | None);
+    def _try_iter_protocol_for(nd: uni.InForStmt) -> bool;
     # Phase 16: Context Managers
     def _codegen_with(nd: uni.WithStmt) -> None;
     def _codegen_with_recursive(exprs: object, idx: int, body: object) -> None;
