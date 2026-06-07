@@ -86,7 +86,6 @@ class ViteCompiler {
     ) -> None;
 
     def copy_root_assets(self: ViteCompiler) -> None;
-
     def _emit_na_wasm(self: ViteCompiler, module_path: Path) -> None;
     def create_entry_file(self: ViteCompiler, module_path: Path) -> None;
     def _create_pages_entry_content(self: ViteCompiler, module_path: Path) -> str;

@@ -50,7 +50,7 @@ cl {
         }
 
         # Test ping via walker spawn
-        async def testWalkerPing {
+        async def testWalkerPing {  # jac:ignore[W3005]
             loading = True;
             pingResult = "";
             pingError = "";
@@ -64,7 +64,7 @@ cl {
         }
 
         # Test direct fetch to API
-        async def testDirectFetch {
+        async def testDirectFetch {  # jac:ignore[W3005]
             loading = True;
             fetchResult = "";
             fetchError = "";
@@ -86,7 +86,7 @@ cl {
         }
 
         # Test fetch to root
-        async def testRootFetch {
+        async def testRootFetch {  # jac:ignore[W3005]
             loading = True;
             fetchResult = "";
             fetchError = "";

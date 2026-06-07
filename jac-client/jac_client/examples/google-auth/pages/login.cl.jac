@@ -13,10 +13,7 @@ cl def:pub Login -> JsxElement {
     }
 
     # Handle Google login - redirects to backend
-    def handleGoogleLogin {
-        auth.handleLogin('google');
-    }
-    ;
+    handleGoogleLogin = lambda { auth.handleLogin('google'); };
 
     return (
         <div

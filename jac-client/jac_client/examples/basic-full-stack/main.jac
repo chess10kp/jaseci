@@ -70,13 +70,11 @@ cl {
         }
 
         # Clear all completed todos
-        def clearCompleted {
-            todos = [
-                todo
-                for todo in todos
-                if not todo.done
-            ];
-        }
+        clearCompleted = lambda { todos = [
+            todo
+            for todo in todos
+            if not todo.done
+        ]; };
 
         # Filter todos based on current filter
         def getFilteredTodos -> list {

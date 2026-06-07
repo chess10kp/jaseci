@@ -489,7 +489,7 @@ cl async def handle_signup(event: any) -> None {
 }
 
 # Handle logout
-cl def logout_action {
+cl def logout_action {  # jac:ignore[W3005]
     jacLogout();
     navigate("/login");
 }
