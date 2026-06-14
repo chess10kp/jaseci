@@ -1,15 +1,11 @@
 """Shared constants and helpers for the React Native (Expo) target."""
 
-import subprocess;
 import from pathlib { Path }
-import from jaclang.cli.console { console }
 import from jac_client.plugin.src.targets.build_common {
     SUBPROCESS_TIMEOUT_BUILD_NATIVE
 }
 import from jac_client.plugin.src.targets.node_tooling_common {
-    check_command_available as _node_check_command_available,
     resolve_npx_or_bunx as _node_resolve_npx_or_bunx,
-    run_install_cmd as _node_run_install_cmd,
     run_manifest_install as _node_run_manifest_install
 }
 import from jac_client.plugin.src.targets.react_native.config {
@@ -30,34 +26,14 @@ glob DEFAULT_PROJECT_DIR_NAME = "mobile-rn",
      REACT_NATIVE_VERSION = "0.81.4",
      SUBPROCESS_TIMEOUT_BUILD: int = SUBPROCESS_TIMEOUT_BUILD_NATIVE;
 
-# Mirrors Capacitor target's install-tool detection. We accept either npm
-# or bun. yarn/pnpm not exercised; can be added when a user asks.
-def _check_command_available(cmd: list[str], timeout: int = 5) -> bool {
-    (ok, _) = _node_check_command_available(cmd, timeout=timeout);
-    return ok;
-}
-
 """Resolve npx or bunx for one-off CLI invocations."""
 def resolve_npx -> str {
     return _node_resolve_npx_or_bunx();
 }
 
-"""Install npm packages into the Expo project dir using npm or bun."""
-def run_install_cmd(project_dir: Path, packages: list[str], dev: bool = False) {
-    _node_run_install_cmd(
-        project_dir, packages, dev=dev, default_package_name=DEFAULT_APP_SLUG
-    );
-}
-
 """Install all dependencies from the Expo project's package.json."""
 def run_manifest_install(project_dir: Path) {
     _node_run_manifest_install(project_dir);
-}
-
-"""Run a shell command inside a directory, raising on non-zero exit."""
-def run_in_dir(cmd: list[str], cwd: Path, label: str) {
-    console.print(f"  Running {label}: {' '.join(cmd)}", style="muted");
-    subprocess.run(cmd, cwd=cwd, check=True, capture_output=False);
 }
 
 """Project directory for the Expo scaffold, honoring config overrides (D11).

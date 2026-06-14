@@ -155,8 +155,9 @@ def _build_package_json(app_slug: str) -> str {
             # babel.config.js uses the `babel-preset-expo` preset. Under
             # SDK 53 it resolved transitively via expo; SDK 54's install
             # layout no longer hoists it, so pin it explicitly or Metro
-            # fails with "Cannot find module 'babel-preset-expo'".
-            "babel-preset-expo": "~54.0.0",
+            # fails with "Cannot find module 'babel-preset-expo'". Tracks
+            # the Expo SDK major, so derive it from EXPO_SDK_VERSION.
+            "babel-preset-expo": f"~{EXPO_SDK_VERSION}.0.0",
             "@types/react": "~19.1.0",
             "typescript": "~5.9.2"
         }

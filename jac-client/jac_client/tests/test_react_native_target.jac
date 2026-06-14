@@ -639,7 +639,6 @@ test "dev helpers exist and are importable" {
         DEFAULT_METRO_PORT,
         JAC_RN_DEV_HOST_ENV,
         JAC_RN_METRO_PORT_ENV,
-        assert_rn_port_available,
         build_expo_start_argv,
         ensure_watchdog,
         inject_dev_api_base_url,

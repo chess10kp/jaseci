@@ -49,7 +49,6 @@ import from jac_client.plugin.src.targets.react_native.build {
     write_native_entry
 }
 import from jac_client.plugin.src.targets.client_dev_common {
-    assert_port_available,
     ensure_watchdog_common,
     resolve_port_or_next_available,
     setup_android_port_reverse_common,
@@ -114,22 +113,6 @@ def setup_android_port_reverse(metro_port: int, api_port: int) {
         ports.append(api_port);
     }
     setup_android_port_reverse_common(ports);
-}
-
-"""Assert that an exact port is available.
-
-Kept for test/debug call sites that want strict behavior instead of the
-auto-increment fallback used by the react-native dev loop.
-"""
-def assert_rn_port_available(port: int, role: str) {
-    assert_port_available(
-        port,
-        role,
-        "The react-native dev loop needs deterministic ports so adb reverse "
-        "and the API base-URL injected into app.json match what's actually "
-        "listening. Stop the conflicting process or pass a different port "
-        f"(e.g. --port {port + 100})."
-    );
 }
 
 # ---------------------------------------------------------------------------

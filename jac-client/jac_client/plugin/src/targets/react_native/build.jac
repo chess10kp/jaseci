@@ -28,6 +28,7 @@ Fast Refresh uses the same helpers, so the target implementation can stay orches
 import shutil;
 import subprocess;
 import os;
+import re;
 import from pathlib { Path }
 import from typing { Optional }
 import from jaclang.cli.console { console }
@@ -52,6 +53,13 @@ glob _RUNTIME_JS_FILES = {"client_runtime.js", "pwa_runtime.js"},
          "asset:/",
          "/"
      ];
+
+# Single source of truth for the compiled-JS shape the client emits for
+# ``<img src="...">``. Both the asset-staging and the lint passes scan for it,
+# so keep the pattern here to stop the two copies from drifting.
+glob _IMG_SRC_PATTERN = re.compile(
+         r"""__jacJsx\(\s*['"]img['"]\s*,\s*\{[\s\S]*?\bsrc\s*:\s*['"]([^'"]+)['"]"""
+     );
 
 """Yield compiled app JS files, excluding runtime helper modules."""
 def _iter_user_js_files(compiled_dir: Path) -> list[Path] {
@@ -164,12 +172,9 @@ Callers must not pass ``.jac/client/compiled/`` here — that directory is share
 with the web target and must keep original relative ``src`` paths.
 """
 def stage_native_image_assets(js_tree_dir: Path, rn_dir: Path) {
-    import re;
     import hashlib;
 
-    img_src_pattern = re.compile(
-        r"""__jacJsx\(\s*['"]img['"]\s*,\s*\{[\s\S]*?\bsrc\s*:\s*['"]([^'"]+)['"]"""
-    );
+    img_src_pattern = _IMG_SRC_PATTERN;
     replacements_by_file = {};
     token_to_asset = {};
     unresolved = set();
@@ -311,7 +316,7 @@ def lint_unmapped_tags(compiled_dir: Path) -> list[str] {
 
 """Warn on web-only patterns in RN bundles.
 
-Two non-fatal checks:
+Three non-fatal checks:
   1. CSS imports (RN ignores CSS files; use inline ``style={{...}}`` or
      ``.native.cl.jac`` overrides).
   2. Web-only globals (``window``, ``document``, ``localStorage``).
@@ -324,9 +329,7 @@ def lint_native_incompatible_usage(compiled_dir: Path) -> dict[(str, list[str])]
     css_pattern = re.compile(
         r"""import\s+(?:[^'"]+from\s+)?['"]([^'"]+\.(?:css|scss|sass|less))['"]"""
     );
-    img_src_pattern = re.compile(
-        r"""__jacJsx\(\s*['"]img['"]\s*,\s*\{[\s\S]*?\bsrc\s*:\s*['"]([^'"]+)['"]"""
-    );
+    img_src_pattern = _IMG_SRC_PATTERN;
     css_hits: set[str] = set();
     global_hits: set[str] = set();
     relative_img_src_hits: set[str] = set();
@@ -598,11 +601,6 @@ def run_gradle_assemble(rn_dir: Path, release: bool = False) -> Path {
     }
     candidates.sort(key=artifact_mtime, reverse=True);
     return candidates[0];
-}
-
-"""Backward-compatible wrapper for old call sites."""
-def run_gradle_assemble_debug(rn_dir: Path) -> Path {
-    return run_gradle_assemble(rn_dir, release=False);
 }
 
 """Build iOS via xcodebuild and return a packaged ``.ipa`` path.
