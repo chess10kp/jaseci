@@ -1,5 +1,5 @@
-import from "clsx" { clsx }
-import from "tailwind-merge" { twMerge }
+cl import from "clsx" { clsx }
+cl import from "tailwind-merge" { twMerge }
 
 def:pub cn(
     a: any = None,

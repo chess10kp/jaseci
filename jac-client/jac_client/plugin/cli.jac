@@ -5,7 +5,7 @@ client-side (frontend) package management:
 - `jac add --npm`: Add npm dependencies
 - `jac remove --npm`: Remove npm dependencies
 
-For creating client projects, use: `jac create --kind fullstack`
+For creating client projects, use: `jac create --use client`
 """
 
 import from jaclang.cli.registry { get_registry }
@@ -45,11 +45,8 @@ import from pathlib { Path }
             "client",
             typ=str,
             default="web",
-            help=(
-                "Build client target (web, pwa, mobile, desktop). "
-                "Choices reflect installed targets (desktop requires jac-desktop)."
-            ),
-            choices=["web", "pwa", "mobile"],
+            help="Build client (web, desktop, pwa, mobile, react-native)",
+            choices=["web", "desktop", "pwa", "mobile", "react-native"],
             short=""  # Disable auto-generated -t (may conflict with other plugins)
         ),
         Arg.create(
@@ -130,7 +127,7 @@ class JacCmd {
                     "skip",
                     typ=bool,
                     default=False,
-                    help="Skip npm package installation (when creating client kinds: fullstack/wasm/mobile)"
+                    help="Skip npm package installation (for --use client)"
                 ),
 
             ],
@@ -208,10 +205,10 @@ class JacCmd {
                         typ=str,
                         default="web",
                         help=(
-                            "Client build target for dev server (web, pwa, mobile, desktop). "
-                            "Choices reflect installed targets (desktop requires jac-desktop)."
+                            "Client build target for dev server "
+                            "(web, desktop, pwa, mobile, react-native)"
                         ),
-                        choices=["web", "pwa", "mobile"],
+                        choices=["web", "desktop", "pwa", "mobile", "react-native"],
                         short=""  # Disable auto-generated short flag
                     ),
                     Arg.create(
@@ -442,7 +439,16 @@ def _handle_build_target(ctx: HookContext) -> None {
         ctx.set_data("cancel_execution", True);
         ctx.set_data("cancel_return_code", 0);
     } except NotImplementedError as e {
-        console.error(f"Target '{target_name}' is not yet implemented.");
+        # Surface the underlying message — Phase-1-stub targets (e.g. the
+        # react-native ReactNativeTarget skeleton) point users at the
+        # roadmap doc and the specific phase, which is more useful than a
+        # generic "not yet implemented" line.
+        detail = str(e).strip();
+        if detail {
+            console.error(f"Target '{target_name}' build failed: {detail}");
+        } else {
+            console.error(f"Target '{target_name}' is not yet implemented.");
+        }
         ctx.set_data("cancel_execution", True);
         ctx.set_data("cancel_return_code", 1);
     } except Exception as e {
@@ -678,7 +684,12 @@ def _handle_setup_target(ctx: HookContext) -> None {
         ctx.set_data("cancel_execution", True);
         ctx.set_data("cancel_return_code", 0);
     } except NotImplementedError as e {
-        console.error(f"Target '{target_name}' setup is not yet implemented.");
+        detail = str(e).strip();
+        if detail {
+            console.error(f"Target '{target_name}' setup failed: {detail}");
+        } else {
+            console.error(f"Target '{target_name}' setup is not yet implemented.");
+        }
         ctx.set_data("cancel_execution", True);
         ctx.set_data("cancel_return_code", 1);
     } except Exception as e {

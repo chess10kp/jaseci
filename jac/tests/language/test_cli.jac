@@ -12,14 +12,7 @@ import tempfile;
 import traceback;
 import from pathlib { Path }
 import jaclang;
-import from jaclang.cli.commands {
-    analysis,
-    cli_helpers,
-    execution,
-    project,
-    tools,
-    transform
-}
+import from jaclang.cli.commands { analysis, execution, project, tools, transform }
 import from jaclang.cli.commands { config as config_cmd }
 import from jaclang.cli.registry { get_registry }
 import from jaclang.jac0core.diagnostic_utils { resolve_diagnostic_tokens }
@@ -134,32 +127,6 @@ test "jac cli run" {
     assert "Hello World!" in stdout_value;
 }
 
-test "proc_file strips compound codespace suffixes to bare module stem" {
-    # Issue #6696: `jac run`/`jac start` failed on `.sv.jac` / `.cl.jac`
-    # entries because proc_file stripped only the trailing `.jac`, leaving
-    # e.g. `main.sv`, which the meta-importer misread as the package `main.sv`
-    # ("No module named 'main.sv'"). Every compound codespace suffix must
-    # collapse to the bare stem so the meta-importer can resolve it.
-    cases = [
-        ("proj/main.jac", "main"),
-        ("proj/main.na.jac", "main"),
-        ("proj/main.sv.jac", "main"),
-        ("proj/main.cl.jac", "main"),
-        ("proj/server.py", "server"),
-
-    ];
-    for (filename, expected) in cases {
-        (base, mod, mach) = cli_helpers.proc_file(filename);
-        try {
-            assert mod == expected , (
-                f"proc_file({filename!r}) -> module {mod!r}, expected {expected!r}"
-            );
-        } finally {
-            mach.close();
-        }
-    }
-}
-
 test "diagnostics flag" {
     err_file = os.path.join(
         JAC_ROOT, "tests", "compiler", "fixtures", "new_keyword_err.jac"
@@ -232,32 +199,6 @@ test "jac cli run python file" {
     assert "Result: 42" in stdout_value;
     assert "Python execution completed." in stdout_value;
     assert "10" in stdout_value;
-}
-
-test "jac run with no filename and no resolvable entry errors cleanly" {
-    # `jac run` with no file is now project-aware: it climbs to the nearest
-    # jac.toml and dispatches on the project kind. JAC_ROOT's project declares
-    # no entry-point, so this must fail with a clear message (not a crash).
-    env = dict(os.environ);
-    env["PYTHONPATH"] = JAC_ROOT;
-    result = subprocess.run(
-        [sys.executable, "-m", "jaclang", "run"],
-        cwd=JAC_ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
-    );
-    combined = result.stdout + result.stderr;
-    assert result.returncode != 0 , (
-        f"Expected non-zero exit for bare jac run; got:\n{combined}"
-    );
-    assert ("entry-point" in combined) or ("jac.toml" in combined) , (
-        f"Expected a project-aware run error; got:\n{combined}"
-    );
-    assert "NoneType" not in combined , (
-        f"Should not crash with TypeError; got:\n{combined}"
-    );
 }
 
 test "jac run py fstr" {
@@ -1261,7 +1202,7 @@ test "install editable resolves config from target package when outside project 
             "jaclang.publish.builder.WheelBuilder.install_editable",
             fake_install_editable
         ) {
-            result = project.install(editable=[[str(pkg_dir)]]);
+            result = project.install(editable=str(pkg_dir));
         }
 
         assert result == 0 , f"Expected success, got exit code {result}";
@@ -1297,7 +1238,7 @@ test "install editable resolves config from cwd when given dot path" {
             "jaclang.publish.builder.WheelBuilder.install_editable",
             fake_install_editable
         ) {
-            result = project.install(editable=[["."]]);
+            result = project.install(editable=".");
         }
 
         assert result == 0 , f"Expected success, got exit code {result}";
@@ -1309,122 +1250,6 @@ test "install editable resolves config from cwd when given dot path" {
         _reset_config();
         os.chdir(original_cwd);
         shutil.rmtree(_tmpdir, ignore_errors=True);
-    }
-}
-
-test "jac install -e accepts space-separated and repeated flag forms" {
-    _tmpdir = tempfile.mkdtemp();
-    try {
-        pkg_a = (Path(_tmpdir) / "pkg-a").resolve();
-        pkg_b = (Path(_tmpdir) / "pkg-b").resolve();
-        pkg_c = (Path(_tmpdir) / "pkg-c").resolve();
-        pkg_a.mkdir();
-        pkg_b.mkdir();
-        pkg_c.mkdir();
-        (pkg_a / "jac.toml").write_text(
-            '[project]\nname = "pkg-a"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
-        );
-        (pkg_b / "jac.toml").write_text(
-            '[project]\nname = "pkg-b"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
-        );
-        (pkg_c / "jac.toml").write_text(
-            '[project]\nname = "pkg-c"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
-        );
-
-        # -e pkg_a pkg_b exercises space-separated; -e pkg_c exercises repeated flag
-        process = subprocess.Popen(
-            [
-                "jac",
-                "install",
-                "-e",
-                str(pkg_a),
-                str(pkg_b),
-                "-e",
-                str(pkg_c),
-                "--dry-run"
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        );
-        (stdout, stderr) = process.communicate();
-        combined = stdout + stderr;
-
-        assert process.returncode == 0 , (
-            f"Expected exit 0, got {process.returncode}.\n{combined}"
-        );
-        assert "pkg-a" in combined , f"pkg-a not mentioned in output:\n{combined}";
-        assert "pkg-b" in combined , f"pkg-b not mentioned in output:\n{combined}";
-        assert "pkg-c" in combined , f"pkg-c not mentioned in output:\n{combined}";
-    } finally {
-        shutil.rmtree(_tmpdir, ignore_errors=True);
-    }
-}
-
-test "jac install -e links all packages for space-separated and repeated flag forms" {
-    import from unittest.mock { patch }
-
-    _tmpdir = tempfile.mkdtemp();
-    original_cwd = os.getcwd();
-    try {
-        pkg_a = (Path(_tmpdir) / "pkg-a").resolve();
-        pkg_b = (Path(_tmpdir) / "pkg-b").resolve();
-        pkg_c = (Path(_tmpdir) / "pkg-c").resolve();
-        pkg_a.mkdir();
-        pkg_b.mkdir();
-        pkg_c.mkdir();
-        (pkg_a / "jac.toml").write_text(
-            '[project]\nname = "pkg-a"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
-        );
-        (pkg_b / "jac.toml").write_text(
-            '[project]\nname = "pkg-b"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
-        );
-        (pkg_c / "jac.toml").write_text(
-            '[project]\nname = "pkg-c"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
-        );
-        os.chdir(_tmpdir);
-
-        linked: list = [];
-        def fake_install_editable(self: object, src_dir: object, site_pkgs: object) {
-            linked.append(src_dir);
-        }
-
-        with patch(
-            "jaclang.publish.builder.WheelBuilder.install_editable",
-            fake_install_editable
-        ) {
-            # [[pkg_a, pkg_b], [pkg_c]] mirrors: -e pkg_a pkg_b -e pkg_c
-            result = project.install(editable=[[str(pkg_a), str(pkg_b)], [str(pkg_c)]]);
-        }
-
-        assert result == 0 , f"Expected exit 0, got {result}";
-        assert len(linked) == 3 , f"Expected install_editable called 3 times, got {len(
-            linked
-        )}";
-        assert pkg_a in linked , f"pkg-a not linked; linked={linked}";
-        assert pkg_b in linked , f"pkg-b not linked; linked={linked}";
-        assert pkg_c in linked , f"pkg-c not linked; linked={linked}";
-    } finally {
-        _reset_config();
-        os.chdir(original_cwd);
-        shutil.rmtree(_tmpdir, ignore_errors=True);
-    }
-}
-
-test "jac install <pkg> routes package names through argparse" {
-    # Verifies CLI wiring: argparse maps positional args into packages,
-    # bypasses jac.toml, and --dry-run keeps it network/disk-free.
-    with tempfile.TemporaryDirectory() as tmp {
-        result = subprocess.run(
-            ["jac", "install", "numpy", "pandas", "--dry-run"],
-            capture_output=True,
-            text=True,
-            cwd=str(tmp)
-        );
-        combined = result.stdout + result.stderr;
-        assert result.returncode == 0 , f"Expected exit 0:\n{combined}";
-        assert "No jac.toml found" not in combined;
-        assert "Dry run complete" in combined;
     }
 }
 
@@ -2383,58 +2208,6 @@ test "jir cache preserves impl defined instance variables" {
         ]}";
     }
 }
-
-"""Regression: JIR-reloaded FuncCall must keep its postinit fields.
-
-jaseci-labs/jaseci#6656 (Ask #2): the JIR reader builds nodes via
-`cls.__new__(cls)`, skipping postinit, then re-seeds postinit defaults per
-node type. FuncCall's `callee_decl`/`call_kind` had no such branch, so a
-FuncCall reloaded from JIR had no attribute at all -- native and client/JS
-codegen, which read `.callee_decl` off the call node, then crashed with
-`'FuncCall' object has no attribute 'callee_decl'` on a warm build.
-"""
-test "jir reload preserves FuncCall callee_decl and call_kind" {
-    import from jaclang.jac0core.program { JacProgram }
-    import from jaclang.jac0core { unitree as uni }
-    import from jaclang.jac0core.jir_passes { JirWriter, JirReader }
-
-    with tempfile.TemporaryDirectory() as tmpdir {
-        src = os.path.join(tmpdir, "calls.jac");
-        with open(src, "w") as f {
-            f.write(
-                "def helper(x: int) -> int { return x + 1; }\n"
-                "def caller(x: int) -> int { return helper(x) + helper(x); }\n"
-            );
-        }
-        mod = JacProgram().compile(file_path=src);
-        fresh = mod.get_all_sub_nodes(uni.FuncCall);
-        assert len(fresh) >= 2 , f"expected FuncCalls in fresh AST, got {len(fresh)}";
-        for fc in fresh {
-            assert hasattr(fc, "callee_decl");
-            assert hasattr(fc, "call_kind");
-        }
-        # Round-trip the module AST through JIR and re-check.
-        reloaded = JirReader().read_module(JirWriter().write_module(mod));
-        assert reloaded is not None , "JIR reload returned None";
-        reborn = reloaded.get_all_sub_nodes(uni.FuncCall);
-        assert len(reborn) == len(fresh) , (
-            f"FuncCall count changed across JIR roundtrip: "
-            f"{len(fresh)} -> {len(reborn)}"
-        );
-        for fc in reborn {
-            # The crux: the attribute must exist (seeded to None), not be absent.
-            assert hasattr(fc, "callee_decl") , (
-                "JIR-reloaded FuncCall lost `callee_decl` (#6656 Ask #2)"
-            );
-            assert hasattr(fc, "call_kind") , (
-                "JIR-reloaded FuncCall lost `call_kind` (#6656 Ask #2)"
-            );
-            assert fc.callee_decl is None;
-            assert fc.call_kind is None;
-        }
-    }
-}
-
 
 """Regression: JIR cache must compute MRO for subtype checking.
 

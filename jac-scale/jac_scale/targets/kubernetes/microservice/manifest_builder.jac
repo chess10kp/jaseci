@@ -82,28 +82,6 @@ obj MicroserviceManifestBuilder {
         if ingress is not None {
             bundle["ingress"] = ingress;
         }
-        # Ops Console: read-only namespace Role + RoleBinding on the
-        # gateway SA (opt-in). Mutation verbs only when ops_console_mutations.
-        if getattr(self.k8s_config, "ops_console", False) {
-            import from jac_scale.targets.kubernetes.microservice.ops_rbac {
-                build_ops_rbac
-            }
-            bundle["ops_rbac"] = build_ops_rbac(
-                self.k8s_config.app_name,
-                self.k8s_config.namespace,
-                self._service_account_name(),
-                bool(getattr(self.k8s_config, "ops_console_mutations", False))
-            );
-        } elif getattr(self.k8s_config, "ops_console_mutations", False) {
-            # Mutations need the parent flag; warn instead of shipping no Role.
-            if self.logger {
-                self.logger.warning(
-                    "[plugins.scale.kubernetes].ops_console_mutations is set but "
-                    "ops_console is false; no Ops Console RBAC will be provisioned. "
-                    "Set ops_console = true to enable it."
-                );
-            }
-        }
         return bundle;
     }
 
@@ -603,23 +581,14 @@ obj MicroserviceManifestBuilder {
 
     """Autoscaler config for a service; None if autoscaling is disabled."""
     def _get_autoscaler_config(svc_name: str) -> dict[str, any] | None {
-        svc: dict[str, any] = self._service_config(svc_name);
-        # 'hpa' block name is historical — applies to whichever autoscaler_engine is active
-        hpa: dict[str, any] = svc.get("hpa", {});
-        if not hpa.get("enabled", True) {
+        cfg: dict[str, any] = self._service_config(svc_name).get("hpa", {});
+        if not cfg.get("enabled", True) {
             return None;
         }
-        raw_triggers: list[dict[str, any]] = [];
-        for item in svc.get("triggers", []) {
-            if isinstance(item, dict) {
-                raw_triggers.append(dict(item));
-            }
-        }
         return {
-            "min": int(hpa.get("min", 1)),
-            "max": int(hpa.get("max", 3)),
-            "cpu_target": int(hpa.get("cpu_target", DEFAULT_CPU_UTILIZATION_TARGET)),
-            "triggers": raw_triggers
+            "min": int(cfg.get("min", 1)),
+            "max": int(cfg.get("max", 3)),
+            "cpu_target": int(cfg.get("cpu_target", DEFAULT_CPU_UTILIZATION_TARGET))
         };
     }
 
@@ -729,25 +698,14 @@ obj MicroserviceManifestBuilder {
         drain_t: int = self._drain_timeout();
         svc_cfg = self._service_config(svc_name);
         entry = self._pod_entrypoint();
-        resolved_image: str = self._resolve_image(image, svc_cfg);
-        # JAC_IMAGE_REF (B-01): the resolved ref incl. K-29's content-id
-        # suffix, surfaced so an in-pod self-check can report "running build X"
-        # with zero RBAC. Strip any user-set copy first so the rendered YAML
-        # has a single, system-owned entry (no duplicate-env reliance).
-        env_list = [
-            e
-            for e in self._build_env(svc_name, svc_cfg)
-            if e["name"] != "JAC_IMAGE_REF"
-        ];
-        env_list.append({"name": "JAC_IMAGE_REF", "value": resolved_image});
         # Container name must be DNS-1123 (no underscores); JAC_SV_NAME
         # env carries the raw name.
         container: dict[str, any] = {
             "name": k8s_safe_name(svc_name),
-            "image": resolved_image,
+            "image": self._resolve_image(image, svc_cfg),
             "command": entry["command"],
             "args": entry["args"],
-            "env": env_list,
+            "env": self._build_env(svc_name, svc_cfg),
             "ports": [{"containerPort": self.k8s_config.container_port}],
             "readinessProbe": self._build_readiness_probe(),
             "livenessProbe": self._build_liveness_probe(),

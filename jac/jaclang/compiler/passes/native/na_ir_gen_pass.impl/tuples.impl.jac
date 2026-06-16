@@ -12,26 +12,6 @@ impl NaIRGenPass._codegen_tuple_val(nd: uni.TupleVal) -> (ir.Value | None) {
     # Evaluate all elements
     elem_vals: list[ir.Value] = [];
     elem_types: list[ir.Type] = [];
-    # Return-position fact read off the tree (replaces the old
-    # _return_tuple_ctx emission flag threaded through _codegen_return).
-    # The ReturnStmt must be reachable through TupleVal ancestors ONLY:
-    # the returned value is this tuple (possibly via tuple nesting). A
-    # tuple that is a call argument or a list element inside a return
-    # (`return f((a, b))`, `return [(a, b)]`) is NOT the returned value -
-    # its consumer owns the element discipline, and retaining here would
-    # leak one reference per borrowed element.
-    _in_return = False;
-    _anc = nd.parent;
-    while _anc is not None {
-        if isinstance(_anc, uni.ReturnStmt) {
-            _in_return = True;
-            break;
-        }
-        if not isinstance(_anc, uni.TupleVal) {
-            break;
-        }
-        _anc = _anc.parent;
-    }
     for val in nd.values {
         v = self._codegen_expr(val);
         if v is None {
@@ -45,7 +25,9 @@ impl NaIRGenPass._codegen_tuple_val(nd: uni.TupleVal) -> (ir.Value | None) {
         # their single ref into the tuple, and owned temporaries already hold a
         # ref that scope cleanup leaves alone.
         if (
-            _in_return and isinstance(v.type, ir.PointerType) and not self._is_owned(v)
+            self._return_tuple_ctx
+            and isinstance(v.type, ir.PointerType)
+            and not self._is_owned(v)
         ) {
             is_named_local = isinstance(val, uni.Name)
             and val.sym_name in self.local_vars
@@ -84,23 +66,20 @@ Returns None when the source isn't an identifiable list. See #6435.
 """
 impl NaIRGenPass._infer_unpack_struct_ptr(nd: object) -> (ir.Type | None) {
     list_name: (str | None) = None;
-    list_expr: (object | None) = None;
     if isinstance(nd, uni.FuncCall) {
         tgt = nd.target;
         if isinstance(tgt, uni.AtomTrailer) and tgt.is_attr {
             list_name = self._get_name(tgt.target);
-            list_expr = tgt.target;
         }
     } elif isinstance(nd, uni.AtomTrailer) and not nd.is_attr and nd.right?.slices {
         list_name = self._get_name(nd.target);
-        list_expr = nd.target;
     }
     if list_name is None {
         return None;
     }
-    # 1. Typed `list[tuple[...]]` — recover from the checked list type.
-    cast = self._list_elem_llvm_of(list_expr);
-    if cast is not None and isinstance(cast, ir.PointerType) {
+    # 1. Typed `list[tuple[...]]` — recover from the declared annotation.
+    cast = self._resolve_ptr_elem_cast_type(self.var_type_node.get(list_name));
+    if cast is not None {
         return cast;
     }
     # 2. Bare `list` — recover the boxed-tuple struct tracked at literal time.
@@ -235,41 +214,6 @@ impl NaIRGenPass._box_value_tuple(val: ir.Value, loc: str = "") -> ir.Value {
     # Set type tag so RC debug log shows "tuple" instead of "raw".
     self._emit_set_type_tag(self.builder, raw, "tuple");
     return ptr;
-}
-
-"""Coerce a value tuple to a target struct layout, boxing/unboxing each field
-as needed (e.g. a concrete `int` field into an `any`/`JacVal` slot).
-
-A bare `list` erases its elements to `any`, so a tuple stored in it has a fixed
-physical layout (recovered by the unpack side from the list's element-struct).
-A tuple literal built from concrete values (`(7, 0)` -> `{i64, i64}`) does not
-match a layout whose slot is `any` (`{JacVal, i64}`) unless its scalar fields
-are boxed first. This reconciles the two so producer and consumer agree on the
-in-list layout.
-
-Returns the value unchanged when it is not a struct, the target is not a struct,
-the layouts already match, or the arities differ. See #6511."""
-impl NaIRGenPass._coerce_tuple_to_struct(
-    val: ir.Value, target_struct: ir.Type
-) -> ir.Value {
-    if not isinstance(val.type, ir.LiteralStructType)
-    or not isinstance(target_struct, ir.LiteralStructType) {
-        return val;
-    }
-    if val.type == target_struct
-    or len(val.type.elements) != len(target_struct.elements) {
-        return val;
-    }
-    out = ir.Constant(target_struct, ir.Undefined);
-    for i in range(len(target_struct.elements)) {
-        fld = self.builder.extract_value(val, i, name=f"tcoerce.{i}");
-        tgt_ty = target_struct.elements[i];
-        if fld.type != tgt_ty {
-            fld = self._coerce_type(fld, tgt_ty);
-        }
-        out = self.builder.insert_value(out, fld, i, name=f"tcoerce.ins.{i}");
-    }
-    return out;
 }
 
 """Index into a tuple: tuple[i] -> element value. Handles both value and pointer tuples."""

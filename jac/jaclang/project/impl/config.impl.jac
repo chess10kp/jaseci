@@ -451,11 +451,12 @@ impl JacConfig.merge_from_toml_file(toml_path: Path) -> None {
 
 impl JacConfig.get_plugin_deps(dep_type: str) -> dict[str, any] {
     deps = self.plugin_dependencies.get(dep_type, {});
-    # Filter out the "dev" key which holds dev dependencies
+    # Filter out nested plugin tables (e.g. target-scoped subtables like
+    # [dependencies.npm.react_native]) and the reserved "dev" key.
     return {
         k: v
         for (k, v) in deps.items()
-        if k != "dev"
+        if k != "dev" and not isinstance(v, dict)
     };
 }
 
@@ -470,14 +471,9 @@ impl JacConfig.get_build_dir -> Path {
     return base / self.build.dir;
 }
 
-"""Get the cache directory ([build].dir / [cache].dir, default .jac/cache).
-
-The `[cache] dir` subdirectory name is honored here (defaulting to "cache"),
-so an absolute override relocates the cache wholesale while a relative one
-nests it under the build dir.
-"""
+"""Get the bytecode cache directory (.jac/cache)."""
 impl JacConfig.get_cache_dir -> Path {
-    return self.get_build_dir() / self.cache.dir;
+    return self.get_build_dir() / "cache";
 }
 
 """Get the virtual environment directory (.jac/venv)."""
@@ -819,7 +815,6 @@ impl _parse_toml_data(
             requires_python=proj.get("requires-python", ""),
             jac_version=proj.get("jac-version", ""),
             entry_point=proj.get("entry-point", "main.jac"),
-            kind=proj.get("kind", ""),
             urls=proj.get("urls", {}),
             include=_parse_include(proj.get("include", {}))
         );
@@ -930,7 +925,8 @@ impl _parse_toml_data(
     if "cache" in data {
         cache_data = data["cache"];
         config.cache = CacheConfig(
-            enabled=cache_data.get("enabled", True), dir=cache_data.get("dir", "cache")
+            enabled=cache_data.get("enabled", True),
+            dir=cache_data.get("dir", ".jac_cache")
         );
     }
     if "storage" in data {

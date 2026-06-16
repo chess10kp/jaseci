@@ -12,9 +12,7 @@ impl Scheduler.instance -> Scheduler {
 impl Scheduler.register(
     name: str, target: Callable, spec: ScheduleSpec, is_walker: bool
 ) -> None {
-    # All scheduling comparisons happen in UTC so behavior is identical across
-    # deployments regardless of the container/process local timezone.
-    now = datetime.datetime.now(datetime.timezone.utc);
+    now = datetime.datetime.now();
     next_run = self._compute_next_run(spec, now);
     if next_run is None {
         return;
@@ -98,7 +96,7 @@ impl Scheduler._run_loop -> None {
             continue;
         }
         (next_ts, idx, task) = heap[0];
-        delay = next_ts - datetime.datetime.now(datetime.timezone.utc).timestamp();
+        delay = next_ts - datetime.datetime.now().timestamp();
         if delay > 0 {
             self._stop_event.wait(timeout=delay);
         }
@@ -106,7 +104,7 @@ impl Scheduler._run_loop -> None {
             break;
         }
         heapq.heappop(heap);
-        now = datetime.datetime.now(datetime.timezone.utc);
+        now = datetime.datetime.now();
         task.last_run = now;
         threading.Thread(target=self._execute, args=(task, ), daemon=True).start();
         new_next = self._compute_next_run(task.spec, now);
@@ -160,13 +158,6 @@ impl Scheduler._compute_date(
     } except (ValueError, TypeError) {
         logger.warning(f"Invalid date format: {date_str}");
         return None;
-    }
-    run_at_aware = run_at.tzinfo is not None;
-    now_aware = now.tzinfo is not None;
-    if now_aware and not run_at_aware {
-        run_at = run_at.astimezone(datetime.timezone.utc);
-    } elif run_at_aware and not now_aware {
-        run_at = run_at.replace(tzinfo=None);
     }
     if run_at > now {
         return run_at;

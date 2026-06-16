@@ -45,8 +45,6 @@ def _get_llm -> LLMModel;
 
 def _get_archetype_alias -> Callable[..., any];
 
-def _get_schema_builder(name: str) -> Callable[..., any];
-
 def __getattr__(name: str) -> object;
 
 def printgraph(
@@ -111,9 +109,5 @@ glob __all__ = [
          'ScheduleTrigger',
          'APIProtocol',
          'archetype_alias',
-         'schema_was',
-         'schema_alias',
-         'schema_drop',
-         'schema_upgrade',
          'unsafe_html'
      ];

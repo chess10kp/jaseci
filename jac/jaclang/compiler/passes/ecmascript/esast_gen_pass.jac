@@ -28,7 +28,6 @@ import jaclang.jac0core.unitree as uni;
 import from jaclang.compiler.passes.ecmascript.es_unparse { es_to_js }
 import from jaclang.jac0core.constant { CodeContext, SymbolType }
 import from jaclang.jac0core.constant { Tokens as Tok }
-import from jaclang.jac0core.osp_model { OspAnalysis, OspModel }
 import from jaclang.jac0core.passes.ast_gen { BaseAstGenPass }
 import from jaclang.jac0core.passes.ast_gen.jsx_processor { EsJsxProcessor }
 import from jaclang.jac0core.codeinfo { ClientManifest }
@@ -45,7 +44,6 @@ import from jaclang.jac0core.diagnostics {
     E5010,
     E5011,
     E5012,
-    E5016,
     W5013,
     W5014,
     W5015,
@@ -225,19 +223,29 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
         needs_jac_runtime: bool = False,
         # OSP local-kernel lowering: set when a local walker is spawned via the
         # portable kernel (not `__jacSpawn` RPC). Triggers kernel + descriptor
-        # injection in exit_module. The OSP "program facts" (kinds, tags, is_a,
-        # dispatch slots) are NOT stored here: they are derived once by
-        # OspAnalysis.compute and held on the single store `gen.osp_model`
-        # (reached via `_osp_model`).
+        # injection in exit_module. `_osp_slots` collects one record per OSP
+        # ability: {owner, kind, name, trigger_names (list, empty = untyped),
+        # is_entry}. `_osp_arch_names` is the set of local node/edge/walker
+        # archetypes that need a compile-time type tag.
         needs_osp_kernel: bool = False,
         # Set when a connect op / edge ref is lowered: pulls in the cl OSP graph
         # runtime (`__ospConn` / `__ospRefs`).
         needs_osp_graph: bool = False,
+        _osp_slots: list[dict] = [],
+        _osp_arch_names: list[str] = [],
+        # Memoized {archetype name -> kind} for every local walker/node/edge in a
+        # module that has local OSP (any event ability). Includes edge types with
+        # no abilities (e.g. used only in connects/refs) so they still get a type
+        # tag + field constructor. Computed up front so emission order doesn't
+        # matter; empty for non-OSP modules.
+        _osp_prescan: (dict | None) = None,
         # Memoized {variable name -> local archetype name} for `x = Arch(...)`
         # bindings, so a spawn whose walker is held in a variable (`w spawn n`)
-        # can identify the walker side without type inference. (Variable bindings,
-        # not an OSP fact -- ES-local.)
+        # can identify the walker side without type inference.
         _osp_var_arch_cache: (dict | None) = None,
+        # Memoized {archetype name -> direct local base archetype names}, for the
+        # subtype `is_a` table (a `with Base entry` ability firing on a `Sub`).
+        _osp_bases_cache: (dict | None) = None,
         # Primitive emitter instances for codegen dispatch (lazily initialized to avoid circular imports)
         _primitive_emitters: (dict[str, object] | None) = None,
         _builtin_emitter: (object | None) = None,
@@ -296,10 +304,8 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
         nd: uni.BinaryExpr, parts: SpawnCallParts
     ) -> es.AwaitExpression;
 
-    # The single OSP-fact store for this compile (memoized on `gen.osp_model`);
-    # every OSP helper reads it, none re-derives.
-    def _osp_model -> OspModel;
     def _osp_ability_info(nd: uni.Ability) -> (dict | None);
+    def _osp_trigger_names(expr: (uni.Expr | None)) -> list[str];
     def _osp_const_decl(
         name: str, `init: es.Expression, nd: uni.UniNode
     ) -> es.VariableDeclaration;
@@ -311,6 +317,7 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
     def _osp_arch_kinds -> dict[str, str];
     def _osp_arch_set -> set[str];
     def _osp_var_arch -> dict[str, str];
+    def _osp_arch_bases -> dict[str, list[str]];
     def _spawn_walker_arch(expr: uni.Expr) -> (str | None);
     def _spawn_target_is_local_node(expr: uni.Expr) -> bool;
     def _build_osp_graph_call(
@@ -358,7 +365,6 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
     def _has_import(name: str) -> bool;
     def _inject_runtime_import(name: str, nd: uni.UniNode) -> None;
     def _ref_head_name(expr: (uni.UniNode | None)) -> (str | None);
-    def _ref_forward_param(nd: uni.Ability) -> (uni.ParamVar | None);
     def _register_jac_runtime_import -> None;
     def _transform_to_useeffect(nd: uni.Ability) -> None;
     def exit_jsx_element(nd: uni.JsxElement) -> None;
@@ -470,17 +476,6 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
     def _resolve_source_module(nd: uni.Import) -> (uni.Module | None);
     def _ability_from_symbol(sym: (uni.Symbol | None)) -> (uni.Ability | None);
     def _resolve_call_ability(nd: uni.FuncCall) -> (uni.Ability | None);
-    def _return_type_includes_jsx_element(rt: uni.Expr) -> bool;
-    def _component_call_abi(ability_node: uni.Ability) -> str;
-    def _build_props_spread_component_call(
-        nd: uni.FuncCall,
-        callee_expr: es.Expression,
-        ability_node: uni.Ability,
-        args: list[(es.Expression | es.SpreadElement)],
-        props: list[(es.Property | es.SpreadElement)]
-    ) -> es.Expression;
-
-    def _pos_params_from_ability(ability_node: uni.Ability) -> list[uni.ParamVar];
     def _param_names_from_ability(ability_node: uni.Ability) -> list[str];
     def _param_type_map_from_ability(ability_node: uni.Ability) -> dict[(str, str)];
     def _wrap_to_wire_if_boundary(
@@ -572,7 +567,6 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
     def exit_cast_expr(nd: uni.CastExpr) -> None;
     def exit_null(nd: uni.Null) -> None;
     def exit_name(nd: uni.Name) -> None;
-    def exit_builtin_type(nd: uni.BuiltinType) -> None;
     def exit_global_vars(nd: uni.GlobalVars) -> None;
     def exit_non_local_stmt(nd: uni.NonLocalStmt) -> None;
     def exit_module_code(nd: uni.ModuleCode) -> None;

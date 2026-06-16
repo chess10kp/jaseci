@@ -39,6 +39,8 @@ glob _ANSI_ROLES: dict = {
          'highlight': CYAN,
          'url': BRIGHT_BLUE + UNDERLINE,
          'time': GREEN,
+         'cyan': CYAN,
+         'dim': DIM,
          'bright_white': BRIGHT_WHITE
      };
 
@@ -220,7 +222,7 @@ impl ConsoleRenderer.urls(items: list, symbol: str = '') -> None {
         self.emit(
             [
                 Span("  ", None),
-                Span(sym, 'highlight'),
+                Span(sym, 'cyan'),
                 Span("  ", None),
                 Span(padded_label, 'muted'),
                 Span(" ", None),
@@ -235,7 +237,7 @@ impl ConsoleRenderer.next_steps(steps: list[str], title: str = 'Next Steps') -> 
     self.emit([Span("", None)]);
     self.emit([Span(f"{title}:", 'bright_white')]);
     for (i, step) in enumerate(steps, 1) {
-        self.emit([Span(f"  {i}.", 'highlight'), Span(f" {step}", None)]);
+        self.emit([Span(f"  {i}.", 'cyan'), Span(f" {step}", None)]);
     }
     self.emit([Span("", None)]);
 }
@@ -259,19 +261,19 @@ impl ConsoleRenderer.table(
     header_spans: list[Span] = [];
     for (idx, (h, w)) in enumerate(zip(headers, col_widths)) {
         if idx > 0 {
-            header_spans.append(Span(" | ", 'muted'));
+            header_spans.append(Span(" | ", 'dim'));
         }
         header_spans.append(Span(h.ljust(w), 'bright_white'));
     }
     self.emit(header_spans);
     sep_len = sum(col_widths) + (len(col_widths) - 1) * 3;
-    self.emit([Span('-' * sep_len, 'muted')]);
+    self.emit([Span('-' * sep_len, 'dim')]);
     # Data rows: cells emitted verbatim, only the separators styled.
     for row in rows {
         row_spans: list[Span] = [];
         for (i, cell) in enumerate(row) {
             if i > 0 {
-                row_spans.append(Span(" | ", 'muted'));
+                row_spans.append(Span(" | ", 'dim'));
             }
             width = col_widths[i] if i < len(col_widths) else 0;
             row_spans.append(Span(str(cell).ljust(width), None));

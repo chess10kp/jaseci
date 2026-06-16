@@ -2,10 +2,8 @@
 libwebview.so
 *.o
 .build/
-.jac/
-*.jir
-*.jbc
 .jac_ir/
+.jac/
 __pycache__/
 .webkit_module
 .pytest_cache/

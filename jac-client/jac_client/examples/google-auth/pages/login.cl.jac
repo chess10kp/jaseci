@@ -3,7 +3,7 @@ import from "@jac/runtime" { Navigate, useNavigate }
 import from '..lib.auth' { AuthContext }
 import from '..components.Button' { Button }
 
-def:pub Login -> JsxElement {
+cl def:pub Login -> JsxElement {
     auth = useContext(AuthContext);
     navigate = useNavigate();
 
@@ -13,10 +13,7 @@ def:pub Login -> JsxElement {
     }
 
     # Handle Google login - redirects to backend
-    def handleGoogleLogin {
-        auth.handleLogin('google');
-    }
-    ;
+    handleGoogleLogin = lambda { auth.handleLogin('google'); };
 
     return (
         <div

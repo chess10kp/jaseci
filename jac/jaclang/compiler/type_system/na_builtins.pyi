@@ -13,21 +13,7 @@ type-checks accurately instead of degrading to UnknownType.
 
 from __future__ import annotations
 
-from typing import Literal, Protocol, TypeVar, overload
-
-__all__ = ["File", "BinaryFile", "open", "Iterable", "Iterator", "iter", "next"]
-
-_T = TypeVar("_T")
-
-class Iterable(Protocol[_T]):
-    def __iter__(self) -> Iterator[_T]: ...
-
-class Iterator(Iterable[_T], Protocol[_T]):
-    def __iter__(self) -> Iterator[_T]: ...
-    def __next__(self) -> _T: ...
-
-def iter(__o: Iterable[_T]) -> Iterator[_T]: ...
-def next(__i: Iterator[_T]) -> _T: ...
+__all__ = ["File", "open"]
 
 class File:
     # Fields backing the emitted struct (handle is opaque and intentionally
@@ -46,48 +32,4 @@ class File:
         self, exc_type: object, exc_val: object, traceback: object
     ) -> bool: ...
 
-class BinaryFile:
-    # open(path, "rb"/"wb"/...) -> binary file: read()/readline() yield a
-    # length-aware bytes value, write() takes bytes (mirrors CPython's
-    # BufferedReader/Writer split from TextIOWrapper).
-    path: str
-    mode: str
-    closed: bool
-
-    def read(self) -> bytes: ...
-    def readline(self) -> bytes: ...
-    def write(self, data: bytes) -> int: ...
-    def close(self) -> None: ...
-    def flush(self) -> None: ...
-    def __enter__(self) -> BinaryFile: ...
-    def __exit__(
-        self, exc_type: object, exc_val: object, traceback: object
-    ) -> bool: ...
-
-# A binary mode literal (containing "b") selects BinaryFile; any other mode is
-# a text File. The codegen reads the same literal to pick the struct, so the
-# static type and emitted object always agree (#6404).
-@overload
-def open(
-    path: str,
-    mode: Literal[
-        "rb",
-        "br",
-        "rb+",
-        "r+b",
-        "wb",
-        "bw",
-        "wb+",
-        "w+b",
-        "ab",
-        "ba",
-        "ab+",
-        "a+b",
-        "xb",
-        "bx",
-        "xb+",
-        "x+b",
-    ],
-) -> BinaryFile: ...
-@overload
 def open(path: str, mode: str = "r") -> File: ...

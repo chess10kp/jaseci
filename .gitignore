@@ -37,6 +37,10 @@ share/python-wheels/
 MANIFEST
 .venv/
 
+# Local tooling / scratch (not part of the repo)
+.jackal/
+/TODO.md
+
 # Others #
 .coverage
 .session
@@ -81,3 +85,7 @@ CLAUDE.local.md
 jactastic/**
 .mcp.json
 .gstack/
+
+# Local reference checkouts (not part of the repo)
+reference/
+.pi/extensions/emdash-hook.ts

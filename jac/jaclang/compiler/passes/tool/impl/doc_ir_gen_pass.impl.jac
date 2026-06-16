@@ -992,11 +992,7 @@ impl DocIRGenPass.exit_disconnect_op(nd: uni.DisconnectOp) -> None {
 
 """Generate DocIR for connect operator."""
 impl DocIRGenPass.exit_connect_op(nd: uni.ConnectOp) -> None {
-    # Format the operator body compactly (no inner spaces) so a typed
-    # connect reads `+>:Edge:+>` / `+>:Edge:weight=5:+>`, matching the
-    # traversal edge-op ref (`->:Edge:->`) and disconnect (`del ->:Edge:->`)
-    # forms. Spacing around the operands is added by the enclosing BinaryExpr.
-    self._assign_group_concat(nd);
+    self._assign_space_group(nd);
 }
 
 """Generate DocIR for visit statements."""
@@ -2429,12 +2425,6 @@ impl DocIRGenPass.exit_archetype(nd: uni.Archetype) -> None {
             parts.pop();
             parts.append(i.gen.doc_ir);
         } elif (isinstance(i, uni.Token) and (i.name == Tok.RPAREN)) {
-            parts.pop();
-            parts.append(i.gen.doc_ir);
-            parts.append(self.space());
-        } elif (isinstance(i, uni.Token) and (i.name == Tok.COLON)) {
-            # Edge endpoint clause `: Src --> Tgt` -- bind the colon tight to the
-            # preceding name/base list, as `Name: Src --> Tgt` (issue #6657).
             parts.pop();
             parts.append(i.gen.doc_ir);
             parts.append(self.space());

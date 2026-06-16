@@ -150,25 +150,12 @@ impl nacompile(
     output: str = "",
     scrub: bool = False,
     target: str = "",
-    shared: bool = False,
-    debug: bool = False
+    shared: bool = False
 ) -> int {
     # Validate input
     if not filename.endswith(".na.jac") and not filename.endswith(".jac") {
         console.error("Input must be a .jac or .na.jac file.");
         return 1;
-    }
-
-    # -g/--debug: emit DWARF line tables, DISubprograms and a .symtab so the
-    # ELF linker preserves them into a section-header table (gated on the IR
-    # carrying debug metadata). NaIRGenPass and the linker both gate on this
-    # env var, so set it before compiling. The metadata only appears on a fresh
-    # compile, so imply --scrub: a cached non-debug build would otherwise be
-    # reused and silently yield a binary GDB can't read.
-    _prev_native_debug = os.environ.get("JAC_NATIVE_DEBUG") if debug else None;
-    if debug {
-        os.environ["JAC_NATIVE_DEBUG"] = "1";
-        scrub = True;
     }
     if not os.path.exists(filename) {
         console.error(f"File not found: {filename}");
@@ -209,13 +196,19 @@ impl nacompile(
         );
     }
 
-    # Scrub: wipe cached compilation artifacts under the source tree
+    # Scrub: wipe all .jac_ir/ cache directories under the source tree
     if scrub {
-        import from jaclang.jac0core.jir { scrub_cache_dirs }
+        import glob as _glob;
+        import shutil;
         src_root = os.path.dirname(os.path.abspath(filename)) or ".";
-        _scrubbed = scrub_cache_dirs(src_root);
-        if _scrubbed {
-            console.print(f"  Scrubbed {_scrubbed} cache dir(s).");
+        cache_dirs = _glob.glob(
+            os.path.join(src_root, "**", ".jac_ir"), recursive=True
+        );
+        for cache_dir in cache_dirs {
+            shutil.rmtree(cache_dir, ignore_errors=True);
+        }
+        if cache_dirs {
+            console.print(f"  Scrubbed {len(cache_dirs)} .jac_ir cache dir(s).");
         }
     }
 
@@ -274,19 +267,6 @@ impl nacompile(
         import traceback;
         traceback.print_exc();
         return 1;
-    } finally {
-        # Contain the JAC_NATIVE_DEBUG side-effect: restore the prior value once the
-        # IR is generated (NaIRGenPass only reads the env var during compile; the
-        # ELF linker keys off the .debug_* sections already baked into the IR). This
-        # keeps a later same-process nacompile() call without -g byte-identical to a
-        # standalone non-debug build.
-        if debug {
-            if _prev_native_debug is None {
-                os.environ.pop("JAC_NATIVE_DEBUG", None);
-            } else {
-                os.environ["JAC_NATIVE_DEBUG"] = _prev_native_debug;
-            }
-        }
     }
 
     # Abort immediately if the pass infrastructure recorded any ERROR-level
@@ -295,11 +275,7 @@ impl nacompile(
     # write a broken binary while printing no error.
     if prog.errors_had {
         for _err in prog.errors_had {
-            # `pretty_print` (not `str`) renders the source-location span AND
-            # the diagnostic's `help_text` — the same renderer `jac check` /
-            # `jac run` use. `str(_err)` drops help, so native E5090 guidance
-            # (unsupported import / cross-module OSP) never reached the user.
-            console.print(_err.pretty_print());
+            console.print(str(_err));
         }
         return 1;
     }
@@ -317,7 +293,7 @@ impl nacompile(
         }
         if prog.errors_had {
             for err in prog.errors_had {
-                console.error(err.pretty_print());
+                console.error(f"  {err}");
             }
         }
         return 1;

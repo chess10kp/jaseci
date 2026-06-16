@@ -25,7 +25,6 @@ impl HotReloader.start -> None {
     # Start watching
     self.watcher.start();
     self._running = True;
-    HotReloader._active = self;
     logger.debug(f"Hot reloader started for module: {self.module_name}");
 }
 
@@ -35,48 +34,9 @@ impl HotReloader.stop -> None {
         return;
     }
     self._running = False;
-    if HotReloader._active is self {
-        HotReloader._active = None;
-    }
     # Stop the watcher
     self.watcher.stop();
     logger.debug("Hot reloader stopped");
-}
-
-"""Build-health snapshot served over HTTP (see get_build_status)."""
-impl HotReloader.build_status -> dict {
-    with HotReloader._build_lock {
-        error = {"file": self._build_error_file, "message": self._build_error}
-            if self._build_status is BuildStatus.ERROR
-            else None;
-        return {"status": self._build_status.value, "error": error};
-    }
-}
-
-"""Mark the build healthy and clear any recorded error."""
-impl HotReloader.record_ok -> None {
-    with HotReloader._build_lock {
-        self._build_status = BuildStatus.OK;
-        self._build_error_file = "";
-        self._build_error = "";
-    }
-}
-
-"""Mark the build broken with the failing file and message."""
-impl HotReloader.record_error(file_path: str, message: str) -> None {
-    with HotReloader._build_lock {
-        self._build_status = BuildStatus.ERROR;
-        self._build_error_file = file_path;
-        self._build_error = message;
-    }
-}
-
-impl get_build_status -> dict {
-    reloader = HotReloader._active;
-    if not reloader {
-        return {"status": BuildStatus.UNAVAILABLE.value, "error": None};
-    }
-    return reloader.build_status();
 }
 
 """Callback for file change events from the watcher."""
@@ -88,26 +48,8 @@ impl HotReloader.on_file_change(event: any) -> None {
     self._process_change(event.path);
 }
 
-"""Process a file change, tracking build health across the rebuild."""
+"""Process a file change by classifying declarations and taking action."""
 impl HotReloader._process_change(file_path: str) -> None {
-    with HotReloader._build_lock {
-        self._build_status = BuildStatus.COMPILING;
-    }
-    try {
-        self._dispatch_change(file_path);
-    } except Exception as e {
-        # An uncaught dispatch failure must not leave the status stuck at COMPILING.
-        self.record_error(file_path, f"{type(e).__name__}: {e}");
-        raise;
-    }
-    # Still COMPILING means no error path fired -> the build is good.
-    if self._build_status is BuildStatus.COMPILING {
-        self.record_ok();
-    }
-}
-
-"""Classify the changed file's declarations and take the matching action."""
-impl HotReloader._dispatch_change(file_path: str) -> None {
     # Check if this is a frontend file
     if file_path.endswith(
         tuple(
@@ -176,18 +118,15 @@ impl HotReloader._reload_server_module(file_path: str) -> None {
             f"Syntax error in {file_path}{line_info}: {e?.msg or str(e)}",
             hint="Fix the error and save to retry"
         );
-        self.record_error(file_path, f"Syntax error{line_info}: {e?.msg or str(e)}");
     } except ImportError as e {
         # Import error (missing dependency, etc.)
         console.error(f"Import error in {file_path}: {e}");
         self._emit_client_error_overlay(file_path, str(e));
-        self.record_error(file_path, f"Import error: {e}");
     } except Exception as e {
         # Other errors
         error_type = type(e).__name__;
         console.error(f"{error_type} in {file_path}: {e}");
         self._emit_client_error_overlay(file_path, str(e));
-        self.record_error(file_path, f"{error_type}: {e}");
     }
 }
 
@@ -250,7 +189,6 @@ impl HotReloader._recompile_client_code(
                 );
                 console.error(f"Compile error in {file_path}:\n{errors}");
                 self._emit_client_error_overlay(file_path, errors);
-                self.record_error(file_path, errors);
             } else {
                 console.warning(f"Errors compiling dependency {file_path}, skipping");
             }
@@ -302,7 +240,6 @@ impl HotReloader._recompile_client_code(
     } except Exception as e {
         if force {
             console.error(f"Compile error in {file_path}: {e}");
-            self.record_error(file_path, str(e));
         } else {
             console.warning(f"Could not compile dependency {file_path}: {e}");
         }
@@ -406,12 +343,17 @@ impl HotReloader._path_to_module(file_path: str) -> str {
 
 """Emit a client-side error overlay for compilation errors."""
 impl HotReloader._emit_client_error_overlay(file_path: str, errors: str) -> None {
+    import from jaclang.runtimelib.entry_generators { get_entry_generator }
     output_base = Path(self.base_path) / self._client_output_dir;
     output_dir = output_base;
     output_dir.mkdir(parents=True, exist_ok=True);
     js_filename = "_entry.js";
     output_path = output_dir / js_filename;
-    entry_content = f'import React from "react";\nimport {{ createRoot }} from "react-dom/client";\nimport {{ errorOverlay }} from "@jac/runtime";\n\nconst root = createRoot(document.getElementById("root"));\nroot.render(errorOverlay("{file_path} ", ` {errors}`), null);\n';
+    # Target-specific overlay script. Web emits a react-dom mount; native
+    # will emit an RN ErrorBoundary screen in a later phase.
+    entry_content: str = str(
+        get_entry_generator("web:error_overlay")(file_path, errors)
+    );
     # Update the entry point to show the error overlay
     output_path.write_text(entry_content, encoding='utf-8');
     # Mark that have an overlay entry
@@ -440,7 +382,6 @@ impl HotReloader._copy_frontend_files(file_path: str) -> None {
                 console.warning(f"Removed deleted frontend file: {rel_path}");
             }
             self._emit_client_error_overlay(file_path, f"No module in {rel_path}");
-            self.record_error(file_path, f"No module in {rel_path}");
             return;
         }
         try {
@@ -454,20 +395,21 @@ impl HotReloader._copy_frontend_files(file_path: str) -> None {
         console.success(f"Copied: {rel_path}");
     } except Exception as e {
         console.error(f"Copy error in {file_path}: {e}");
-        self.record_error(file_path, f"Copy error: {e}");
     }
 }
 
 """Update the entry point to reflect changes in modules."""
 impl HotReloader._update_entry_point -> None {
-    import from jaclang.runtimelib.react_entry { build_simple_react_entry_script }
+    import from jaclang.runtimelib.entry_generators { get_entry_generator }
     output_base = Path(self.base_path) / self._client_output_dir;
     output_base.mkdir(parents=True, exist_ok=True);
     output_path = output_base / "_entry.js";
     # Skip __jacInstallErrorHandlers — handlers were bound to window during the
     # initial mount and persist across HMR re-renders.
-    entry_content = build_simple_react_entry_script(
-        self.module_name, install_global_handlers=False
+    # str() cast: the registry's EntryGenerator alias is Callable so the
+    # checker sees the call result as Unknown. Runtime contract is str.
+    entry_content: str = str(
+        get_entry_generator("web")(self.module_name, install_global_handlers=False)
     );
     output_path.write_text(entry_content, encoding='utf-8');
     self._overlay_entry = False;

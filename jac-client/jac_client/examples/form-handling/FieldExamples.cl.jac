@@ -1,5 +1,5 @@
-import from "@jac/runtime" { JacForm, JacSchema }
-import ".assets.jacform-default.css";
+cl import from "@jac/runtime" { JacForm, JacSchema }
+cl import ".assets.jacform-default.css";
 
 def:pub FieldExamples -> any {
     schema = JacSchema(

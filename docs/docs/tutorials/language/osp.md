@@ -304,7 +304,7 @@ Inside a walker ability:
 |----------|---------|
 | `here` | The current node |
 | `self` | The walker instance |
-| `visitor` | Only defined in *node* abilities, where it names the visiting walker. Using it inside a walker ability is a runtime `NameError` |
+| `visitor` | Same as `self` (alias) |
 
 ```jac
 node Room {
@@ -445,10 +445,9 @@ walker DataProcessor {
         visit [-->];
     }
 
-    # Runs only at the spawn location -- a generic `with entry`
-    # does NOT fire on every visited node
+    # Runs when visiting any node
     can default with entry {
-        print("At spawn location");
+        print("At unknown node type");
         visit [-->];
     }
 }

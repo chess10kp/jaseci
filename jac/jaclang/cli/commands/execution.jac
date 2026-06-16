@@ -14,17 +14,7 @@ glob registry = get_registry();
     help="Run a Jac program",
     args=[
         Arg.create(
-            "filename",
-            kind=ArgKind.POSITIONAL,
-            default="",
-            help="Path to .jac or .py file (omit to use the project's jac.toml)"
-        ),
-        Arg.create(
-            "show",
-            typ=bool,
-            default=False,
-            help="Print the resolved project-kind run plan without executing it",
-            short="s"
+            "filename", kind=ArgKind.POSITIONAL, help="Path to .jac or .py file"
         ),
         Arg.create(
             "main", typ=bool, default=True, help="Treat module as __main__", short="m"
@@ -58,8 +48,6 @@ glob registry = get_registry();
     ],
     examples=[
         ("jac run hello.jac", "Run a simple program"),
-        ("jac run", "Run the current project per its jac.toml kind"),
-        ("jac run --show", "Print what the project would run/build, without doing it"),
         ("jac run --no-cache app.jac", "Run without caching"),
         ("jac run --autonative app.jac", "Run with native auto-promotion"),
         ("jac run --profile prod app.jac", "Run with production profile"),
@@ -71,8 +59,7 @@ glob registry = get_registry();
     group="execution"
 )
 def run(
-    filename: str = "",
-    show: bool = False,
+    filename: str,
     main: bool = True,
     cache: bool = True,
     autonative: bool = False,

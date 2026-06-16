@@ -594,7 +594,7 @@ impl ProcessTools.run_jac_cli(subcommand: str, path: str) -> str {
     }
 }
 
-sem ProcessTools.run_command = "Run a shell command in the project directory and return its combined output. Use this to scaffold a new project (`jac create --kind fullstack <name>`), install dependencies (`jac install`), run a file (`jac run <file>`), run tests, or any other shell task. `jac create --kind <kind>` kinds: cli (default), fullstack, api-service, native-binary, pypi-package, and more (run `jac create --list_jacpacks` for the full list).";
+sem ProcessTools.run_command = "Run a shell command in the project directory and return its combined output. Use this to scaffold a new project (`jac create --use fullstack <name>`), install dependencies (`jac install`), run a file (`jac run <file>`), run tests, or any other shell task. `jac create` templates: default, client, fullstack.";
 sem ProcessTools.run_command.command = "The shell command to run.";
 impl ProcessTools.run_command(command: str) -> str {
     # `jac start` / `jac serve` are long-lived servers: run through run_command
@@ -2131,7 +2131,7 @@ impl PhaseState.tools -> list {
 
 sem Plan = "the PLANNING state: understand the request and the existing project before writing anything. Use project_map for an unfamiliar project, find_symbol / find_uses / context_slice to navigate by meaning, read_file to read what you will change, and the guides for unfamiliar Jac (read at least the one for the kind of code you will write -- e.g. jac-cl-components for a UI). Do not write or edit files here. Finish by stating a short, concrete plan: whether to scaffold (and which template -- client for a browser-only UI, fullstack for server/data, default for a script), the files to create or change, and what each is for.";
 
-sem Build = "the BUILDING state: carry out the plan. For a new app, scaffold it ONCE with `jac create --kind <kind> <name>` via run_command, then `cd <name>` so every later tool works inside the project (the cd persists). Pick the SIMPLEST kind that fits: `wasm` for a browser-only UI with no server or saved data (a calculator, a unit converter, a static page); `fullstack` only when you need server endpoints or persistent/multi-user data; `cli` for a non-web script. To create a NEW file, call write_file with its FULL contents -- never create files with shell redirection (`echo >`, `cat <<EOF`, `touch`) and never try to edit a file that does not exist yet. Use edit_file only to change a file that already exists, and read it first. Every write reports the compiler errors it introduced; fix them before moving on. Keep files focused; split large archetypes into impl files.";
+sem Build = "the BUILDING state: carry out the plan. For a new app, scaffold it ONCE with `jac create --use <template> <name>` via run_command, then `cd <name>` so every later tool works inside the project (the cd persists). Pick the SIMPLEST template that fits: `client` for a browser-only UI with no server or saved data (a calculator, a unit converter, a static page); `fullstack` only when you need server endpoints or persistent/multi-user data; `default` for a non-web script. To create a NEW file, call write_file with its FULL contents -- never create files with shell redirection (`echo >`, `cat <<EOF`, `touch`) and never try to edit a file that does not exist yet. Use edit_file only to change a file that already exists, and read it first. Every write reports the compiler errors it introduced; fix them before moving on. Keep files focused; split large archetypes into impl files.";
 
 sem QA = "the QA state: verify the work end to end and fix what you find. Run `jac check .` (zero errors required). For a runnable app, start_app and confirm it boots cleanly. For a web or fullstack app, drive the built-in browser: call serve(entry) to start the dev server -- it waits until the server is actually ready and returns its URL (the first start is slow, as it installs client deps and builds the client). Then browse_open that URL, browse_snapshot to read the page, exercise the main flows with browse_click / browse_fill / browse_type / browse_press (snapshotting after each), check for errors with browse_eval, then browse_close and stop_server. If serve reports the server failed to start, read the log tail it returns and go back to Build to fix the cause -- do not conclude the app works until you have actually run and exercised it.";
 
@@ -2429,15 +2429,15 @@ impl build_pipeline -> Plan {
     build = Build();
     qa = QA();
     done = Done();
-    plan +>:Flow:+> build;
+    plan +>: Flow :+> build;
     # Read-only fast path: a pure question or inspection that needs no file
     # changes finishes straight from Plan, so it never enters Build (and its
     # wrote-nothing nudge loop) or QA. Build remains the default Plan successor.
-    plan +>:Flow:+> done;
-    build +>:Flow:+> qa;
-    qa +>:Flow:+> build;
-    qa +>:Flow:+> plan;
-    qa +>:Flow:+> done;
+    plan +>: Flow :+> done;
+    build +>: Flow :+> qa;
+    qa +>: Flow :+> build;
+    qa +>: Flow :+> plan;
+    qa +>: Flow :+> done;
     # Materialize each state's tool affordances as Exposes edges from the single
     # TOOL_SPECS registry, in registry order (the order tools are offered to the
     # model). Built fresh per pipeline, so edges never accumulate across turns;
@@ -2445,7 +2445,7 @@ impl build_pipeline -> Plan {
     for ph in [plan, build, qa] {
         for spec in TOOL_SPECS {
             if type(ph) in spec.phases {
-                ph +>:Exposes:+> Tool(
+                ph +>: Exposes :+> Tool(
                     fn=spec.fn, category=spec.category, serialize=spec.serialize
                 );
             }

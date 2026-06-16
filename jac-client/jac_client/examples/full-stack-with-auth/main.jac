@@ -553,7 +553,7 @@ cl {
         # Load todos on mount
         useEffect(
             lambda {
-                async def loadTodos {
+                async def loadTodos {  # jac:ignore[W3005]
                     result = root spawn read_todos();
                     todos = result.reports or [];
                 }

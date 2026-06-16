@@ -1,4 +1,10 @@
-"""Main compilation orchestration module."""
+"""Web/Vite compilation orchestrator.
+
+Thin wrapper that composes a platform-neutral ``JacClientCompiler`` with the
+web-only ``ViteBundler`` and entry generator. The core compile-to-JS pipeline
+lives in ``jac_client_compiler.jac`` and is shared with future native (Metro)
+targets.
+"""
 import contextlib;
 import from collections.abc { Callable }
 import from pathlib { Path }
@@ -7,15 +13,19 @@ import from typing { TYPE_CHECKING, Any }
 import from jaclang.runtimelib.client_bundle { ClientBundleError }
 import from jaclang.runtimelib.client.asset_processor { AssetProcessor }
 import from jaclang.runtimelib.client.import_processor { ImportProcessor }
+# JacClientCompiler is imported at runtime inside ViteCompiler.init (compiler.impl.jac)
+# to avoid a hard dependency on jac_client at module load time.
 import from jaclang.runtimelib.client.jac_to_js { JacToJSCompiler }
-import from .route_scanner { RouteScanner, RouteEntry }
+import from jaclang.runtimelib.client.route_scanner { RouteScanner, RouteEntry }
 import from jaclang.runtimelib.client.vite_bundler { ViteBundler }
 
 with entry {
-    if TYPE_CHECKING { }
+    if TYPE_CHECKING {
+        import from jac_client.plugin.src.jac_client_compiler { JacClientCompiler }
+    }
 }
 
-"""Orchestrates the compilation process for Vite client bundles."""
+"""Orchestrates web/Vite compilation: JacClientCompiler + ViteBundler."""
 class ViteCompiler {
     with entry {
         ROUTER_EXPORTS = [
@@ -28,12 +38,12 @@ class ViteCompiler {
             'useNavigate',
             'useLocation',
             'useParams',
-            'AuthGuard'
+            'AuthGuard',
+            'JacClientErrorBoundary'
         ];
-        COMPOUND_EXTENSIONS = ['.cl.jac', '.impl.jac', '.test.jac'];
+        COMPOUND_EXTENSIONS = ['.native.cl.jac', '.cl.jac', '.impl.jac', '.test.jac'];
     }
 
-    def _jac_path_to_js(self: ViteCompiler, rel_str: str) -> str;
     def init(
         self: ViteCompiler,
         vite_package_json: Path,
@@ -45,6 +55,11 @@ class ViteCompiler {
         extract_globals_func: Callable[([any, ModuleType], dict[(str, Any)])]
     );
 
+    has jac_client_compiler: JacClientCompiler;
+
+    # ---- forwarders to inner JacClientCompiler (back-compat surface) ----
+    def _get_client_dir(self: ViteCompiler) -> Path;
+    def _jac_path_to_js(self: ViteCompiler, rel_str: str) -> str;
     def compile_runtime_utils(self: ViteCompiler) -> tuple[str, list[str]];
     def compile_pwa_runtime(self: ViteCompiler) -> tuple[str, list[str]];
     def _write_source_map(
@@ -64,7 +79,6 @@ class ViteCompiler {
         source_root: (Path | None) = None
     ) -> None;
 
-    def _get_client_dir(self: ViteCompiler) -> Path;
     def _copy_js_file(self: ViteCompiler, js_path: Path, source_root: Path) -> None;
     def _copy_ts_file(self: ViteCompiler, ts_path: Path, source_root: Path) -> None;
     def _copy_asset_file(
@@ -83,6 +97,9 @@ class ViteCompiler {
     ) -> bool;
 
     def _generate_routes_manifest(self: ViteCompiler) -> None;
+    # ---- web-specific ----
+    def create_entry_file(self: ViteCompiler, module_path: Path) -> None;
+    def _create_pages_entry_content(self: ViteCompiler, module_path: Path) -> str;
     def compile_and_bundle(
         self: ViteCompiler, module: ModuleType, module_path: Path
     ) -> tuple[str, str, list[str], list[str]];

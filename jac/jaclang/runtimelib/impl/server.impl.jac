@@ -54,7 +54,6 @@ impl UserManager._ensure_connection -> None {
 impl UserManager.create_user(username: str, password: str) -> dict[str, str] {
     import from jaclang.jac0core.constructs { Root }
     self._ensure_connection();
-    assert self._conn is not None;
     with self._lock {
         # Check if user already exists
         cursor = self._conn.execute(
@@ -86,7 +85,6 @@ impl UserManager.authenticate(
     username: str, password: str
 ) -> (dict[(str, str)] | None) {
     self._ensure_connection();
-    assert self._conn is not None;
     password_hash = hashlib.sha256(password.encode()).hexdigest();
     with self._lock {
         cursor = self._conn.execute(
@@ -104,7 +102,6 @@ impl UserManager.authenticate(
 """Validate token and return username."""
 impl UserManager.validate_token(token: str) -> (str | None) {
     self._ensure_connection();
-    assert self._conn is not None;
     with self._lock {
         cursor = self._conn.execute(
             "SELECT username FROM users WHERE token = ?", (token, )
@@ -117,7 +114,6 @@ impl UserManager.validate_token(token: str) -> (str | None) {
 """Get user's root node ID."""
 impl UserManager.get_root_id(username: str) -> (str | None) {
     self._ensure_connection();
-    assert self._conn is not None;
     with self._lock {
         cursor = self._conn.execute(
             "SELECT root_id FROM users WHERE username = ?", (username, )
@@ -135,7 +131,6 @@ impl UserManager.aget_root_id(username: str) -> (str | None) {
 """Get user data by username."""
 impl UserManager.get_user(username: str) -> (dict[(str, str)] | None) {
     self._ensure_connection();
-    assert self._conn is not None;
     with self._lock {
         cursor = self._conn.execute(
             "SELECT token, root_id FROM users WHERE username = ?", (username, )
@@ -151,7 +146,6 @@ impl UserManager.get_user(username: str) -> (dict[(str, str)] | None) {
 """Check if a user exists."""
 impl UserManager.user_exists(username: str) -> bool {
     self._ensure_connection();
-    assert self._conn is not None;
     with self._lock {
         cursor = self._conn.execute(
             "SELECT 1 FROM users WHERE username = ?", (username, )
@@ -166,7 +160,6 @@ impl UserManager.update_username(
 ) -> dict[str, str] {
     import hashlib;
     self._ensure_connection();
-    assert self._conn is not None;
     with self._lock {
         # Check if new username already exists
         cursor = self._conn.execute(
@@ -199,7 +192,6 @@ impl UserManager.update_password(
 ) -> dict[str, str] {
     import hashlib;
     self._ensure_connection();
-    assert self._conn is not None;
     with self._lock {
         # Verify current password
         current_password_hash = hashlib.sha256(current_password.encode()).hexdigest();
@@ -361,7 +353,7 @@ Internal callers should prefer `execute_function_sync` / `execute_function_async
 impl ExecutionManager.execute_function(
     func: Callable[(..., Any)], args: dict[(str, Any)], username: str
 ) -> dict[str, JsonValue] {
-    if asyncio.iscoroutinefunction(func) {
+    if inspect.iscoroutinefunction(func) {
         return await self.execute_function_async(func, args, username);
     }
     return await self.execute_function_sync(func, args, username);
@@ -394,10 +386,6 @@ impl ExecutionManager.execute_function_sync(
         }
         return await self._finalize_call_response(call_state, result);
     } except Exception as e {
-        # Abort-on-error: a failed call must not half-mutate the graph.
-        # Discard its uncommitted unit of work instead of leaving it in
-        # the shared working set for the next commit to flush (#6619).
-        ctx.mem.abort();
         return {'error': str(e)};
     } finally {
         ctx.call_state.reset(call_token);
@@ -424,10 +412,6 @@ impl ExecutionManager.execute_function_async(
         result = await func(**args);
         return await self._finalize_call_response(call_state, result);
     } except Exception as e {
-        # Abort-on-error: a failed call must not half-mutate the graph.
-        # Discard its uncommitted unit of work instead of leaving it in
-        # the shared working set for the next commit to flush (#6619).
-        ctx.mem.abort();
         return {'error': str(e)};
     } finally {
         ctx.call_state.reset(call_token);
@@ -489,10 +473,6 @@ impl ExecutionManager.spawn_walker_sync(
         return await self._finalize_call_response(call_state, result);
     } except Exception as e {
         import traceback;
-        # Abort-on-error: a failed walker must not half-mutate the graph.
-        # Discard its uncommitted unit of work instead of leaving it in
-        # the shared working set for the next commit to flush (#6619).
-        ctx.mem.abort();
         return {'error': str(e), 'traceback': traceback.format_exc()};
     } finally {
         ctx.call_state.reset(call_token);
@@ -536,10 +516,6 @@ impl ExecutionManager.spawn_walker_async(
         return await self._finalize_call_response(call_state, result);
     } except Exception as e {
         import traceback;
-        # Abort-on-error: a failed walker must not half-mutate the graph.
-        # Discard its uncommitted unit of work instead of leaving it in
-        # the shared working set for the next commit to flush (#6619).
-        ctx.mem.abort();
         return {'error': str(e), 'traceback': traceback.format_exc()};
     } finally {
         ctx.call_state.reset(call_token);
@@ -646,22 +622,6 @@ impl ModuleIntrospector._extract_access_levels -> None {
     self._walker_access = {};
     mod_path = self._module?.__file__;
     main_mod = Jac.program.find_module(os.path.abspath(mod_path)) if mod_path else None;
-    # A bytecode-only cache hit leaves the entry module out of the hub; compile
-    # it so its access map is available rather than defaulting all to auth.
-    if not main_mod and mod_path {
-        try {
-            main_mod = Jac.program.compile(os.path.abspath(mod_path));
-        } except Exception as e {
-            import logging;
-            logging.getLogger(__name__).warning(
-                "serve: fallback compile of %s failed; access table will be "
-                "empty and endpoints default to auth-required: %s",
-                mod_path,
-                e
-            );
-            main_mod = None;
-        }
-    }
     if not main_mod {
         return;
     }
@@ -696,29 +656,11 @@ impl ModuleIntrospector._extract_access_levels -> None {
             }
         }
     }
-    import from jaclang.jac0core.compiler { get_boundary_analysis_sched }
     for src_mod in sources {
         if not (src_mod and src_mod.gen and src_mod.gen.interop_manifest) {
             continue;
         }
         man = src_mod.gen.interop_manifest;
-        # BoundaryAnalysisPass runs on a compile's entry module, not on the
-        # providers it imports -- so a provider's access map is empty until we
-        # run the pass on it here (a no-op when it declares no endpoints).
-        if not (man.walker_access or man.func_access) {
-            try {
-                Jac.program.run_schedule(src_mod, get_boundary_analysis_sched());
-            } except Exception as e {
-                import logging;
-                logging.getLogger(__name__).warning(
-                    "serve: boundary analysis of %s failed; its imported "
-                    "endpoints will default to auth-required: %s",
-                    src_mod?.loc?.mod_path,
-                    e
-                );
-            }
-            man = src_mod.gen.interop_manifest;
-        }
         for (name, auth) in man.func_access.items() {
             if name not in self._function_access {
                 self._function_access[name] = auth;
@@ -834,20 +776,7 @@ impl ModuleIntrospector._collect_cross_boundary_endpoints -> None {
             if imported {
                 return getattr(imported[0], name, None);
             }
-        } except Exception as e {
-            # Fail loud: a cross-boundary endpoint whose provider module fails
-            # to import would otherwise vanish from the API with no trace (the
-            # #6507 debugging trap). Surface it on the server log so a broken
-            # module is visible instead of silently dropping its endpoints.
-            import logging;
-            logging.getLogger("jaclang.serve").warning(
-                "cross-boundary endpoint '%s' unavailable: server module %r "
-                "failed to import (%s: %s)",
-                name,
-                src_path,
-                type(e).__name__,
-                e
-            );
+        } except Exception {
             return None;
         }
         return None;
@@ -1605,16 +1534,6 @@ impl ExecutionHandler.spawn_walker(
 impl JacAPIServer.postinit -> None {
     import from jaclang.runtimelib.scheduler { Scheduler }
     self.user_manager = Jac.get_user_manager(base_path=self.base_path);
-    # Back `root.shared`: map the internal guest user to its root id, creating
-    # the guest account on first use (request paths create it lazily too).
-    _um = self.user_manager;
-    def _shared_root_id -> (str | None) {
-        if not _um.user_exists(Con.GUEST.value) {
-            _um.create_user(Con.GUEST.value, '__no_password__');
-        }
-        return _um.get_root_id(Con.GUEST.value);
-    }
-    Jac.set_shared_root_resolver(_shared_root_id);
     self.introspector = ModuleIntrospector(self.module_name, self.base_path);
     self.execution_manager = ExecutionManager(
         base_path=self.base_path, user_manager=self.user_manager
@@ -1831,14 +1750,6 @@ impl JacAPIServer.create_handler -> type[BaseHTTPRequestHandler] {
                 } except RuntimeError as exc {
                     Jac.send_json(self, 500, {'error': str(exc)});
                 }
-                return;
-            }
-            if (path == '/__build_status') {
-                # Dev-mode build health for external tooling — HTTP 200 alone
-                # can't tell a clean build from a broken one (compile errors
-                # still serve the error-overlay page).
-                import from jaclang.runtimelib.hmr { get_build_status }
-                Jac.send_json(self, 200, get_build_status());
                 return;
             }
             is_static_path = path.startswith('/static/');
@@ -2450,11 +2361,6 @@ impl JacAPIServer.start(
     cl_route_prefix = config.serve.cl_route_prefix if config else "cl";
     configured_root = config.serve.base_route_app if config else "";
     base_route_app = self.introspector.resolve_root_app(configured_root);
-    if self.server is None {
-        raise RuntimeError(
-            "Cannot start server: no socket was bound (test mode, port=0)"
-        );
-    }
     with self.server as httpd {
         console.print(f"Jac API Server running on http://0.0.0.0:{self.port}");
         console.print(f"Module: {self.module_name}");

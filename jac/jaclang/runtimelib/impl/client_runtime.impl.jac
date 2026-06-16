@@ -93,15 +93,10 @@ impl __getApiBaseUrl -> str {
 impl __getEndpointEffects -> dict {
     if not globalThis.__jacEndpointEffects__ {
         initEl = None;
-        # Bare `document` throws ReferenceError outside the browser (Node test
-        # harness), and `except Exception` does not catch JS errors - probe via
-        # globalThis instead.
-        if globalThis.document {
-            try {
-                initEl = document.getElementById("__jac_init__");
-            } except Exception as e {
-                console.warn("[jac-client] Failed to find __jac_init__ element:", e);
-            }
+        try {
+            initEl = document.getElementById("__jac_init__");
+        } except Exception as e {
+            console.warn("[jac-client] Failed to find __jac_init__ element:", e);
         }
         if initEl {
             try {
@@ -455,7 +450,13 @@ impl jacLogin(
             console.warn("Failed to extract login token:", e);
         }
         if token {
-            jacSetToken(token);
+            # Clear cache on auth change
+            state = __getCacheState();
+            for key in Object.keys(state["cache"]) {
+                Reflect.deleteProperty(state["cache"], key);
+            }
+            state["order"].splice(0, state["order"].length);
+            __setLocalStorage("jac_token", token);
             return True;
         }
     }
@@ -463,113 +464,18 @@ impl jacLogin(
 }
 
 impl jacLogout -> None {
-    __jacClearCache();
-    __removeLocalStorage("jac_token");
-    broker = __jacDesktopBroker();
-    if broker {
-        # Desktop: also drop the broker's *persisted* (on-disk) session so a
-        # later login can't poll up this user's token. Best-effort and
-        # non-blocking -- logout must not hang on the loopback server, and the
-        # next login's `oauth/start` clears it again regardless.
-        try {
-            fetch(f"{broker}/session", {"method": "DELETE"}).catch(
-                lambda e: any { console.warn(
-                    "[jac-client] broker session clear failed:", e
-                ); }
-            );
-        } except e {
-            console.warn("[jac-client] broker session clear failed:", e);
-        }
-    }
-}
-
-impl jacIsLoggedIn -> bool {
-    token = __getLocalStorage("jac_token");
-    return token != None and token != "";
-}
-
-impl __jacClearCache -> None {
-    # Drop every cached walker/function response; an auth change makes them
-    # belong to a different principal.
+    # Clear cache on auth change
     state = __getCacheState();
     for key in Object.keys(state["cache"]) {
         Reflect.deleteProperty(state["cache"], key);
     }
     state["order"].splice(0, state["order"].length);
+    __removeLocalStorage("jac_token");
 }
 
-impl jacSetToken(token: str) -> None {
-    __jacClearCache();
-    __setLocalStorage("jac_token", token);
-}
-
-impl __jacDesktopBroker -> str {
-    # Set by the desktop host's document-start bootstrap (see
-    # native_desktop_target). Absent in a normal web build, so this is "".
-    if window.__JAC_DESKTOP__ and window.__JAC_BROKER__ {
-        return window.__JAC_BROKER__;
-    }
-    return "";
-}
-
-impl __jacSleep(ms: int) -> None {
-    await Reflect.construct(
-        Promise, [lambda resolve: any { setTimeout(resolve, ms); }]
-    );
-}
-
-impl __jacPollBrokerSession(broker: str, timeout_ms: int, interval_ms: int) -> str {
-    deadline = Date.now() + timeout_ms;
-    while Date.now() < deadline {
-        try {
-            resp = await fetch(f"{broker}/session");
-            if resp.ok {
-                data = await resp.json();
-                token = data["token"] or "";
-                if token {
-                    return token;
-                }
-            }
-        } except e {
-            # Catch-all (incl. a native fetch TypeError): the browser may still be
-            # open or the server momentarily busy -- keep polling, don't abort.
-            console.warn("[jac-client] session poll failed:", e);
-        }
-        await __jacSleep(interval_ms);
-    }
-    return "";
-}
-
-impl jacSsoLogin(platform: str, api_base: str = "", operation: str = "login") -> bool {
-    base = api_base or __getApiBaseUrl();
-    broker = __jacDesktopBroker();
-    if broker {
-        # Desktop: the broker opens the *system* browser (OAuth providers refuse
-        # embedded webviews) and the server redirects the token back to the
-        # broker's loopback callback; we poll the broker session store for it.
-        start_url = (
-            f"{broker}/oauth/start?platform={encodeURIComponent(platform)}" + f"&operation={encodeURIComponent(
-                operation
-            )}" + f"&api_base={encodeURIComponent(base)}"
-        );
-        started = await fetch(start_url);
-        if not started.ok {
-            console.warn("[jac-client] oauth/start failed:", started.status);
-            return False;
-        }
-        token = await __jacPollBrokerSession(broker, 300000, 1000);
-        if token {
-            jacSetToken(token);
-            return True;
-        }
-        return False;
-    }
-    # Web: hand off to the server's SSO endpoint; it redirects back to the SPA's
-    # configured callback route with `?token=...` (handled by the callback page).
-    window.location.href = f"{base}/sso/{encodeURIComponent(platform)}/{encodeURIComponent(
-        operation
-    )}";
-    return True;
+impl jacIsLoggedIn -> bool {
+    token = __getLocalStorage("jac_token");
+    return token != None and token != "";
 }
 
 impl __getLocalStorage(key: str) -> str {
@@ -1057,9 +963,8 @@ impl JacForm(props: dict) -> JsxElement {
         fieldSchema = schemaShape[fieldName];
         config = field_config[fieldName] if field_config[fieldName] else {};
 
-        # field_config entries carry the input kind under a "type" key
-        # (e.g. {type: "email"}); read it straight through.
-        fieldType = config.type or "text";
+        # Note: "type" gets compiled to "key" in JavaScript to avoid conflicts with React's type prop
+        fieldType = config.key or "text";
         label = config.label or fieldName;
         fieldClassName = config.className or "";
         labelClassName = config.labelClassName or "";

@@ -25,7 +25,8 @@ def scan_jac_files(project_root: str = ".") -> list[str] {
         "node_modules",
         ".git",
         "dist",
-        "build"
+        "build",
+        "__jac_gen__"
     };
     jac_files: list[str] = [];
 

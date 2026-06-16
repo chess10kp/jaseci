@@ -30,11 +30,25 @@ impl make_client_bundle_builder(
     } else {
         package_json_path = generated_package_json.resolve();
     }
-    return ViteClientBundleBuilder(
+    builder = ViteClientBundleBuilder(
         vite_package_json=package_json_path,
         vite_output_dir=client_dir / 'dist',
         vite_minify=False
     );
+    # jac-client ships the D9 split runtime (core + web/native adapters).
+    # Prefer it over the monolithic runtimelib runtime when the plugin is present.
+    try {
+        import importlib;
+        plugin = importlib.import_module("jac_client.plugin");
+        paths = list(getattr(plugin, "__path__", []) or []);
+        if paths {
+            runtime_path = Path(paths[0]) / "client_runtime.cl.jac";
+            if runtime_path.exists() {
+                builder.runtime_path = runtime_path;
+            }
+        }
+    } except ImportError { }
+    return builder;
 }
 
 """Clean up the compiled directory and its contents."""

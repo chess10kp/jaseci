@@ -14,7 +14,7 @@ import from jaclang.compiler.passes.native.linker_common {
     _build_strtab,
     _append_to_blob,
     _resolve_seg_vaddr,
-    _resolve_patch_site,
+    _find_patch_target,
     _find_entry_vaddr
 }
 
@@ -1162,9 +1162,8 @@ impl MachOLinker.build_executable -> bytes {
             }
         }
 
-        # Determine patch buffer, in-buffer offset, and final vaddr.
-        site = _resolve_patch_site(
-            rel.address,
+        # Determine patch buffer
+        _pt = _find_patch_target(
             rel.target_sec,
             code_sections,
             rodata_sections,
@@ -1176,10 +1175,13 @@ impl MachOLinker.build_executable -> bytes {
             const_sec_vaddr,
             data_sec_vaddr
         );
-        if site is None {
+        if _pt is None {
             continue;
         }
-        (patch_buf, patch_off, patch_vaddr) = site;
+        (patch_buf, sec_off_in_blob, patch_base_vaddr) = _pt;
+
+        patch_off = sec_off_in_blob + rel.address;
+        patch_vaddr = patch_base_vaddr + rel.address;
 
         if is_arm64 {
             _arm64_apply_reloc(
@@ -2113,8 +2115,7 @@ impl MachOLinker.build_shared_object -> bytes {
                 );
             }
         }
-        site = _resolve_patch_site(
-            rel.address,
+        _pt = _find_patch_target(
             rel.target_sec,
             code_sections,
             rodata_sections,
@@ -2126,10 +2127,12 @@ impl MachOLinker.build_shared_object -> bytes {
             const_sec_vaddr,
             data_sec_vaddr
         );
-        if site is None {
+        if _pt is None {
             continue;
         }
-        (patch_buf, patch_off, patch_vaddr) = site;
+        (patch_buf, sec_off_in_blob, patch_base_vaddr) = _pt;
+        patch_off = sec_off_in_blob + rel.address;
+        patch_vaddr = patch_base_vaddr + rel.address;
         if is_arm64 {
             _arm64_apply_reloc(
                 rel.rtype, patch_buf, patch_off, sym_addr, rel.addend, patch_vaddr

@@ -7,8 +7,6 @@ import inspect;
 import json;
 import os;
 import secrets;
-import sqlite3;
-import threading;
 import from collections.abc { Callable }
 import from contextlib { suppress }
 import from http.server { BaseHTTPRequestHandler, HTTPServer }
@@ -26,6 +24,7 @@ import from urllib.parse { parse_qs, urlparse }
 import from jaclang.runtimelib.client_bundle { ClientBundleError }
 import from jaclang.runtimelib.context { CallState, ExecutionContext }
 import from jaclang.runtimelib.transport {
+    BaseTransport,
     TransportRequest,
     TransportResponse,
     HTTPTransport,
@@ -70,8 +69,8 @@ driver (aiosqlite) or per-thread connection pool would obviate this.
 obj UserManager {
     has base_path: str,
         _db_path: str by postinit,
-        _conn: (sqlite3.Connection | None) by postinit,
-        _lock: threading.RLock by postinit;
+        _conn: any by postinit,
+        _lock: any by postinit;
 
     def postinit -> None;
     def _ensure_connection -> None;
@@ -272,7 +271,8 @@ obj JacAPIServer {
         auth_handler: AuthHandler by postinit,
         introspection_handler: IntrospectionHandler by postinit,
         execution_handler: ExecutionHandler by postinit,
-        server: (HTTPServer | None) by postinit,
+        transport: BaseTransport by postinit,
+        server: any by postinit,
         scheduler: Scheduler by postinit;
 
     obj RestSpecs {

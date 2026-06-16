@@ -26,7 +26,7 @@ def greet(name: str) -> str {
 }
 
 # No return value
-def log(message: str) {
+def log(message: str) -> None {
     print(f"[LOG] {message}");
 }
 ```
@@ -74,7 +74,7 @@ def complete_example(
     kw_only: str,              # 6. Keyword-only (after * or *args)
     kw_default: bool = True,   # 7. Keyword-only with default
     **kwargs: any              # 8. Variadic keyword (must be last)
-) {
+) -> None {
     print("called");
 }
 ```
@@ -95,7 +95,7 @@ with entry {
 **Keyword-only parameters (after `*`):**
 
 ```jac
-def configure(*, host: str, port: int = 8080) {
+def configure(*, host: str, port: int = 8080) -> None {
     print(f"Connecting to {host}:{port}");
 }
 
@@ -120,7 +120,7 @@ def build_config(**options: object) -> dict {
 }
 
 # Combined
-def flexible(required: int, *args: int, **kwargs: object) {
+def flexible(required: int, *args: int, **kwargs: object) -> None {
     print(f"Required: {required}");
     print(f"Extra positional: {args}");
     print(f"Extra keyword: {kwargs}");
@@ -204,7 +204,7 @@ obj Calculator {
         return self.total;
     }
 
-    def reset() {
+    def reset() -> None {
         self.total = 0.0;
     }
 }
@@ -229,7 +229,7 @@ obj Counter {
     }
 
     # Instance method -- self is the instance
-    def increment() {
+    def increment() -> None {
         Counter.count += 1;
     }
 }
@@ -393,7 +393,7 @@ with entry {
 ```jac
 obj Counter {
     has count: int;
-    def inc { self.count += 1; }
+    def inc -> None { self.count += 1; }
     def get -> int  { return self.count; }
 }
 
@@ -432,12 +432,12 @@ def decorator_with_args(arg1: object, arg2: object) -> object {
 }
 
 @decorator
-def my_function {
+def my_function -> None {
     print("decorated");
 }
 
 @decorator_with_args("a", "b")
-def another_function {
+def another_function -> None {
     print("decorated with args");
 }
 ```
@@ -446,13 +446,13 @@ def another_function {
 
 ```jac
 # Public (default, accessible everywhere)
-def:pub public_func { }
+def:pub public_func -> None { }
 
 # Private (accessible only within the module)
-def:priv _private_func { }
+def:priv _private_func -> None { }
 
 # Protected (accessible within module and subclasses)
-def:protect _protected_func { }
+def:protect _protected_func -> None { }
 ```
 
 ??? example "Try it: Functions complete example"
@@ -496,7 +496,7 @@ obj Person {
     has name: str;
     has age: int;
 
-    def postinit() {
+    def postinit() -> None {
         # Called after the auto-generated init completes
         print(f"Created {self.name}");
     }
@@ -573,11 +573,11 @@ Even when using `class` for Python compatibility, you should avoid dynamic assig
 
 ```jac
 class Dog {
-    def rename() {
+    def rename() -> None {
         self.secret = "oops"; # Dynamic assignment - Avoid!
     }
 
-    def train() {
+    def train() -> None {
         self.trick = "sit"; # Dynamic assignment - Avoid!
     }
 }
@@ -590,11 +590,11 @@ obj Dog {
     has secret: str = "",
         trick: str = "";
 
-    def rename() {
+    def rename() -> None {
         self.secret = "oops";
     }
 
-    def train() {
+    def train() -> None {
         self.trick = "sit";
     }
 }

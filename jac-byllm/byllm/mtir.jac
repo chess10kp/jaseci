@@ -67,5 +67,4 @@ obj MTRuntime {
     def get_tool(tool_name: str) -> Tool | McpTool | None;
     def get_tool_list -> list[dict];
     def get_output_schema -> dict | None;
-    def get_typed_output_schema -> dict | None;
 }

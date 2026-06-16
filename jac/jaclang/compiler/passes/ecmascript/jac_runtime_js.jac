@@ -1143,50 +1143,7 @@ glob JAC_RUNTIME_JS_OBJECT: str = r"""{
     filter(fn, iterable) {
       return [...iterable].filter(fn || (x => x));
     },
-    // Python subclass relation over builtin-type *tags* -- the string names
-    // (`"str"`, `"int"`, ...) that `exit_builtin_type` lowers builtin types to.
-    // `object` is the universal base and `bool` is a subclass of `int`; `tuple`
-    // and `frozenset` share JS representations with `list`/`set`, so fold those
-    // aliases to their runtime tag first. One source of truth so isinstance and
-    // issubclass can never disagree.
-    _tagSubclass(subTag, superTag) {
-      const fold = (t) => t === "tuple" ? "list" : t === "frozenset" ? "set" : t;
-      const sub = fold(subTag), sup = fold(superTag);
-      if (sup === "object") return true;
-      if (sub === sup) return true;
-      if (sup === "int" && sub === "bool") return true;
-      return false;
-    },
-    isinstance(o, classinfo) {
-      // isinstance(x, (A, B, ...)) -- the tuple of types lowers to a JS array;
-      // match if `o` is an instance of any member.
-      if (Array.isArray(classinfo)) {
-        for (const c of classinfo) {
-          if (_jac.builtin.isinstance(o, c)) return true;
-        }
-        return false;
-      }
-      // Builtin types lower to a string tag (their Python type name): compare
-      // the value's runtime type against it via the shared subclass relation.
-      if (typeof classinfo === "string") {
-        return _jac.builtin._tagSubclass(_jac.poly._typename(o), classinfo);
-      }
-      // User archetype / JS constructor.
-      if (typeof classinfo === "function") return o instanceof classinfo;
-      return false;
-    },
     issubclass(cls, classinfo) {
-      if (Array.isArray(classinfo)) {
-        for (const c of classinfo) {
-          if (_jac.builtin.issubclass(cls, c)) return true;
-        }
-        return false;
-      }
-      // When either side is a builtin-type tag, compare by the shared subclass
-      // relation (covers `object`, `bool` ⊂ `int`, and identity).
-      if (typeof cls === "string" || typeof classinfo === "string") {
-        return _jac.builtin._tagSubclass(cls, classinfo);
-      }
       if (cls === classinfo) return true;
       let proto = cls;
       while (proto) {
@@ -1354,13 +1311,8 @@ glob JAC_RUNTIME_JS_OBJECT: str = r"""{
 """Build the `_jac.exc` IIFE from the canonical exception hierarchy.
 
 Emits one JS class per exception (in topological order so each `extends`
-references an already-declared parent), plus a `matches(e, name)` predicate that
-the try/except codegen calls to decide whether a caught value is handled. The
-predicate encodes Python catch semantics — crucially, that native JS errors
-(`SyntaxError`, interop `TypeError`, host/library `Error`, thrown non-Errors)
-are caught by `except Exception` / `except BaseException` even though they are
-not part of the `_jac.exc` class hierarchy. The whole thing is derived from
-JAC_TYPE_REGISTRY so the hierarchy lives in exactly one place.
+references an already-declared parent) and returns the export map, all derived
+from JAC_TYPE_REGISTRY so the hierarchy lives in exactly one place.
 """
 def _build_exc_runtime_js -> str {
     import from jaclang.compiler.type_registry { JAC_TYPE_REGISTRY }
@@ -1380,24 +1332,7 @@ def _build_exc_runtime_js -> str {
             (name + ": " + local) if name in _JS_RESERVED_EXC_NAMES else name
         );
     }
-    lines.append("    const _all = { " + ", ".join(exports) + " };");
-    # `matches` is the single source of truth for except-clause membership.
-    # - BaseException (and bare `except`) catches everything thrown.
-    # - Exception catches every Jac Exception PLUS any non-Jac throw (native JS
-    #   errors, host errors, thrown non-Errors): i.e. everything except the Jac
-    #   BaseException-only types (KeyboardInterrupt/SystemExit/GeneratorExit).
-    #   This is exactly Python's `except Exception`.
-    # - Any other builtin: hierarchy-aware `instanceof` against its Jac class
-    #   (a native error is intentionally NOT caught by a narrow builtin type).
-    lines.append("    function matches(e, name) {");
-    lines.append("      if (name === 'BaseException') return true;");
-    lines.append(
-        "      if (name === 'Exception') return (e instanceof _all.Exception) || !(e instanceof _all.BaseException);"
-    );
-    lines.append("      const cls = _all[name];");
-    lines.append("      return cls ? (e instanceof cls) : false;");
-    lines.append("    }");
-    lines.append("    return Object.assign(_all, { matches });");
+    lines.append("    return { " + ", ".join(exports) + " };");
     lines.append("  })()");
     return "\n".join(lines);
 }

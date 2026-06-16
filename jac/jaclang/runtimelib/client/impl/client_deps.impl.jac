@@ -34,7 +34,7 @@ def prompt_install_client_deps(config_loader: object) -> bool {
         console.error(
             "\n  To configure manually, add [dependencies.npm] to your jac.toml."
         );
-        console.error("  Or create a new project with: jac create --kind fullstack\n");
+        console.error("  Or create a new project with: jac create --use client\n");
         return False;
     }
     # Default runtime dependencies

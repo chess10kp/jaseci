@@ -16,113 +16,37 @@ import from jaclang.project.config { JacConfig }
 impl create(
     name: str = '',
     force: bool = False,
-    kind: str = "",
     use: str = "default",
     list_jacpacks: bool = False
 ) -> int {
     import from jaclang.project.config { find_project_root }
-    import from jaclang.project.template_registry {
-        get_template_registry,
-        initialize_template_registry
-    }
+    import from jaclang.project.template_registry { get_template_registry }
     import from jaclang.project.template_loader {
         load_template_from_json,
         load_template_from_directory
     }
-    import from jaclang.project.kinds {
-        is_valid_kind,
-        kind_required_plugin,
-        VALID_KINDS
-    }
     registry = get_template_registry();
-    # Ensure the registry is populated even when create() is called outside the
-    # normal CLI bootstrap (library use, tests). Idempotent.
-    if registry.is_empty() {
-        initialize_template_registry();
-    }
-    # Handle --list_jacpacks: show the project kinds, then any named variants.
+    # Handle --list-jacpacks
     if list_jacpacks {
-        kinds = registry.list_kinds();
-        if kinds {
-            console.print(
-                "\nProject kinds (jac create --kind <kind>):\n", style="info"
-            );
-            for (kname, desc) in kinds {
-                plugin = kind_required_plugin(kname);
-                suffix = f"  [needs {plugin}]" if plugin else "";
-                console.print(f"  {kname}: {desc}{suffix}");
-            }
+        templates = registry.list_templates();
+        if not templates {
+            console.info("No jacpack templates available.");
+            return 0;
         }
-        variants = [
-            (tname, desc)
-            for (tname, desc) in registry.list_templates()
-            if not is_valid_kind(tname)
-        ];
-        if variants {
-            console.print(
-                "\nNamed variants (jac create --use <name>):\n", style="info"
-            );
-            for (tname, desc) in variants {
-                console.print(f"  {tname}: {desc}");
-            }
-        }
-        if not kinds and not variants {
-            console.info("No project templates available.");
+        console.print("\nAvailable templates:\n", style="info");
+        for (tname, desc) in templates {
+            console.print(f"  {tname}: {desc}");
         }
         return 0;
     }
-    # Resolve the template. `--kind` selects the canonical template for a kind;
-    # `--use` (a path/URL/variant name) selects a custom template. They are
-    # mutually exclusive.
-    explicit_use = use != "default";
-    if kind and explicit_use {
-        console.error(
-            "Use either --kind or --use, not both.",
-            hint="--kind <kind> scaffolds a built-in kind; --use <path|url> a custom template."
+    # Resolve template from --use (supports: registered names, file paths, URLs)
+    tmpl = _resolve_template(use, registry);
+    if tmpl is None {
+        console.error(f"Unknown template: {use}");
+        console.print(
+            "Use --list-templates to see available templates.", style="muted"
         );
         return 1;
-    }
-    if explicit_use {
-        # Custom template (file path, URL, or named variant like jac-shadcn).
-        tmpl = _resolve_template(use, registry);
-        if tmpl is None {
-            console.error(f"Unknown template: {use}");
-            console.print(
-                "Use --list_jacpacks to see available kinds and templates.",
-                style="muted"
-            );
-            return 1;
-        }
-    } else {
-        # Kind-based scaffolding (default: cli).
-        target_kind = kind or "cli";
-        if not is_valid_kind(target_kind) {
-            console.error(
-                f"Unknown project kind '{target_kind}'.",
-                hint=f"Valid kinds: {', '.join(VALID_KINDS)}"
-            );
-            return 1;
-        }
-        plugin = kind_required_plugin(target_kind);
-        if plugin and not _plugin_available(plugin) {
-            console.error(
-                f"Project kind '{target_kind}' requires the {plugin} plugin, which is not installed.",
-                hint=f"Install it (e.g. `pip install {plugin}` / `jac add {plugin}`), then retry."
-            );
-            return 1;
-        }
-        tmpl = registry.get_by_kind(target_kind);
-        if tmpl is None {
-            console.error(
-                f"No template registered for kind '{target_kind}'.",
-                hint=(
-                    f"The {plugin} plugin provides it -- ensure it is installed."
-                        if plugin
-                        else "This is unexpected for a core kind; please report it."
-                )
-            );
-            return 1;
-        }
     }
     cwd = Path.cwd();
     create_subdir = bool(name);
@@ -172,16 +96,8 @@ impl create(
     start_time = time.time();
     console.print("\n✨ Creating new Jac project...\n", style="bold cyan");
     console.print("  📁 Setting up project structure", style="muted");
-    # Guarantee `[project] kind` is stamped so the scaffolded project's bare
-    # `jac run` dispatches deterministically. Core templates already carry it;
-    # this also covers custom templates that omit it. Render from a deep copy so
-    # stamping a custom template without a kind never mutates the shared,
-    # in-registry `ProjectTemplate.config`.
-    import copy;
-    render_config = copy.deepcopy(tmpl.config);
-    _stamp_kind(render_config, tmpl.kind);
     # Generate jac.toml from config dict
-    toml_content = _render_config_to_toml(render_config, project_name);
+    toml_content = _render_config_to_toml(tmpl.config, project_name);
     with open(toml_path, "w", encoding="utf-8") as f {
         f.write(toml_content);
     }
@@ -240,64 +156,11 @@ impl create(
     if create_subdir {
         steps.append(f"cd {name}");
     }
-    steps.append("jac install           Install dependencies");
-    steps.append(f"jac run               {_run_blurb(tmpl.kind)}");
+    steps.append("jac install         Install dependencies");
+    steps.append("jac start main.jac    Start development");
     console.print_next_steps(steps);
     console.print("\n🚀 Happy coding!\n", style="bold green");
     return 0;
-}
-
-"""One-line description of what a bare `jac run` does for a project kind.
-
-Keeps the scaffolder's next-steps honest: the same kind that was stamped into
-jac.toml drives `jac run` dispatch, so we tell the user exactly what it does.
-"""
-def _run_blurb(kind: str) -> str {
-    import from jaclang.project.kinds { VALID_KINDS }
-    blurbs: dict[str, str] = {
-        "cli": "Execute the project",
-        "native-app": "Native-compile and run",
-        "native-binary": "Build a native binary into dist/",
-        "shared-library": "Build a shared library",
-        "api-service": "Serve the headless API",
-        "microservices": "Serve the microservice",
-        "pypi-package": "Build a wheel into dist/",
-        "npm-package": "Build an npm package into dist/",
-        "fullstack": "Serve the app (dev mode)",
-        "wasm": "Serve the wasm page",
-        "desktop": "Run the desktop app",
-        "mobile": "Build the mobile app"
-    };
-    # Guard against silent drift from KIND_SPECS: every kind must have a blurb.
-    assert set(blurbs.keys()) >= set(VALID_KINDS) , (
-        f"_run_blurb missing kinds: {set(VALID_KINDS) - set(blurbs.keys())}"
-    );
-    return blurbs.get(kind, "Run the project");
-}
-
-"""Ensure `config['project']['kind']` is set (used to stamp custom templates)."""
-def _stamp_kind(config: dict, kind: str) -> None {
-    if not kind {
-        return;
-    }
-    proj = config.get("project");
-    if not isinstance(proj, dict) {
-        proj = {};
-        config["project"] = proj;
-    }
-    if not proj.get("kind") {
-        proj["kind"] = kind;
-    }
-}
-
-"""True if an optional plugin package (e.g. 'jac-client') is importable."""
-def _plugin_available(pkg: str) -> bool {
-    import importlib.util;
-    try {
-        return importlib.util.find_spec(pkg.replace("-", "_")) is not None;
-    } except (ImportError, ValueError) {
-        return False;
-    }
 }
 
 """Write an AGENTS.md that points AI coding agents at `jac guide`.
@@ -332,13 +195,7 @@ Start with `jac guide jac-core-cheatsheet` and `jac guide jac-types`.
 
 - `jac check <file>` -- type-check and lint. Compiler diagnostics link to the
   relevant guide; follow the `-> run 'jac guide ...'` hints.
-- `jac run <file>` -- execute a Jac script.
-- `jac start --dev main.jac` -- start a fullstack app or service in dev mode
-  (hot-reload for client files; restart for server changes). Use this instead
-  of `jac run` for apps.
-- `jac browse <action>` -- QA a running app in a headless browser:
-  `jac browse open localhost:8000`, then `snapshot` (accessibility tree with
-  `@e1`-style refs), `click @e5`, `fill '#email' user@example.com`, `screenshot`, `close`.
+- `jac run <file>` -- execute a Jac program.
 
 _Generated by `jac create`._
 """;
@@ -431,7 +288,7 @@ def _resolve_template(use: str, registry: any) -> any {
     tmpl = registry.get(use);
     if tmpl is None {
         console.error(f"Unknown jacpack template: {use}");
-        console.error("Use --list_jacpacks to see available templates.");
+        console.error("Use --list-jacpacks to see available templates.");
         console.error("You can also specify a path to a .jacpack file or a URL.");
         return None;
     }
@@ -532,10 +389,9 @@ def _create_root_gitignore(project_path: Path, entries: list[str]) {
     console.print(f"  ✔ .gitignore", style="success");
 }
 
-"""Install all dependencies from jac.toml, or packages into the activated environment."""
+"""Install all dependencies from jac.toml."""
 impl install(
-    packages: list = [],
-    editable: list = [],
+    editable: str = "",
     dev: bool = False,
     extras: list = [],
     verbose: bool = False,
@@ -545,14 +401,28 @@ impl install(
     dry_run: bool = False,
     no_deps: bool = False,
     quiet: bool = False,
-    prefer_binary: bool = False,
-    no_uv: bool = False
+    prefer_binary: bool = False
 ) -> int {
     import from pathlib { Path }
     import from jaclang.project.config { get_config }
-    import from jaclang.project.dependencies { DependencyInstaller, pip_command }
+    import from jaclang.project.dependencies { DependencyInstaller }
     import from jaclang.project.dep_registry { get_dependency_registry }
 
+    # force_discover bypasses the module-level cache, which may already hold
+    # the calling project's config when invoked from outside the target dir.
+    if editable {
+        src_dir: Path = Path(editable).resolve();
+        config = get_config(start_path=src_dir, force_discover=True);
+    } else {
+        config = get_config();
+    }
+    if config is None {
+        hint = "Clone the library repo and run 'jac install -e .' inside it."
+            if editable
+            else "Run 'jac create' to create a project first.";
+        console.error("No jac.toml found", hint=hint);
+        return 1;
+    }
     flag_defs: list = [
         (force_reinstall, "--force-reinstall"),
         (no_cache_dir, "--no-cache-dir"),
@@ -568,125 +438,39 @@ impl install(
         for (enabled, flag) in flag_defs
         if enabled
     ];
-    # ── Direct install into activated environment ─────────────────────────────
-    if packages {
-        if editable {
-            console.error(
-                "Cannot mix package names with -e/--editable in a single command. "
-                "Run them separately: 'jac install <pkg>' then 'jac install -e <path>'."
-            );
-            return 1;
-        }
-        if dev or extras {
-            console.warning(
-                "--dev and --extras have no effect with package names. "
-                "Use 'jac add <pkg> --dev' to track packages in jac.toml."
-            );
-        }
+    installer = DependencyInstaller(
+        config=config, verbose=verbose, install_flags=install_flags
+    );
+    # ── Editable install ──────────────────────────────────────────────────────
+    if editable {
+        import sys;
+        import site;
+        import subprocess;
+        import from jaclang.publish.builder { WheelBuilder }
         console.print(
-            f"\n📦 Installing {len(packages)} package(s) into activated environment",
+            f"\n📦 Editable install: {config.project.name} " f"from {src_dir}",
             style="bold"
         );
-        cmd: list[str] = [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--upgrade"
-        ] + install_flags + packages;
-        if verbose {
-            console.print(f"  Running: {' '.join(cmd)}", style="muted");
-        }
-        result = subprocess.run(cmd, capture_output=not verbose, text=True);
-        if result.returncode != 0 {
-            err_detail: str = result.stderr or result.stdout or "(see output above)";
-            console.error(f"Install failed:\n{err_detail}");
-            return 1;
-        }
-        if dry_run {
-            if result.stdout {
-                console.print(result.stdout, style="dim");
-            }
-            console.success("Dry run complete (nothing installed).");
-            return 0;
-        }
-        if not verbose {
-            for pkg in packages {
-                console.print(f"  ✔ {pkg}", style="success");
-            }
-        }
-        console.success("Package(s) installed");
-        return 0;
-    }
-    # ── Editable install ──────────────────────────────────────────────────────
-    # Flatten nested lists produced by action="append" with nargs="+":
-    #   -e ./a ./b -e ./c  →  [["./a","./b"],["./c"]]  →  ["./a","./b","./c"]
-    editable = [p for group in (editable or []) for p in group];
-    if editable {
-        import site;
-        import from jaclang.publish.builder { WheelBuilder }
 
-        # Phase 1 — collect all dep specs for a single unified pip call.
-        editable_targets: list = [];
-        all_dep_specs: list[str] = [];
-        for editable_path in editable {
-            src_dir: Path = Path(editable_path).resolve();
-            if not src_dir.is_dir() {
-                console.error(
-                    f"'{editable_path}' is not a directory.",
-                    hint=f"Use 'jac install {editable_path}' to install from PyPI, or pass a local path to -e."
-                );
+        dep_specs = installer.get_pip_package_specs(include_dev=dev);
+        if extras {
+            try {
+                extra_specs = installer.get_extra_package_specs(extras);
+            } except ValueError as e {
+                console.error(str(e));
                 return 1;
             }
-            config = get_config(start_path=src_dir, force_discover=True);
-            if config is None {
-                console.error(
-                    "No jac.toml found",
-                    hint=f"Make sure {src_dir} contains a jac.toml."
-                );
-                return 1;
+            if extra_specs {
+                console.print(f"  Extras: {', '.join(extras)}", style="muted");
             }
-            installer = DependencyInstaller(
-                config=config,
-                verbose=verbose,
-                install_flags=install_flags,
-                use_uv=not no_uv
-            );
-            dep_specs = installer.get_pip_package_specs(include_dev=dev);
-            if extras {
-                try {
-                    extra_specs = installer.get_extra_package_specs(extras);
-                    if extra_specs {
-                        dep_specs.extend(extra_specs);
-                    }
-                } except ValueError as e {
-                    # Extras group absent in this package — warn and skip rather
-                    # than aborting the whole multi-package install.
-                    console.warning(
-                        f"  Skipping extras for {config.project.name}: {e}"
-                    );
-                }
-            }
-            all_dep_specs.extend(dep_specs);
-            editable_targets.append((config, src_dir));
-            console.print(
-                f"\n📦 Editable: {config.project.name} ({src_dir})", style="bold"
-            );
+            dep_specs.extend(extra_specs);
         }
-
-        # Phase 2 — single pip call for all combined deps (unified resolver)
-        if all_dep_specs {
+        if dep_specs {
             console.print(
-                f"\n  Installing {len(all_dep_specs)} dependencies...", style="muted"
+                f"  Installing {len(dep_specs)} dependencies...", style="muted"
             );
             result = subprocess.run(
-                pip_command(
-                    sys.executable,
-                    ["install", "--upgrade"] + (
-                        installer.install_flags or []
-                    ) + all_dep_specs,
-                    installer.use_uv
-                ),
+                [sys.executable, "-m", "pip", "install", "--upgrade"] + installer.install_flags + dep_specs,
                 capture_output=not verbose,
                 text=True,
             );
@@ -702,27 +486,12 @@ impl install(
             console.print("  ✔ Dry run complete (nothing installed).", style="success");
             return 0;
         }
-
-        # Phase 3 — link each package as editable
         site_pkgs = Path(site.getsitepackages()[0]);
-        for (config, src_dir) in editable_targets {
-            WheelBuilder(config=config).install_editable(src_dir, site_pkgs);
-            console.print(f"  ✔ Linked {src_dir}", style="success");
-        }
+        WheelBuilder(config=config).install_editable(src_dir, site_pkgs);
+        console.print(f"  ✔ Linked {src_dir}", style="success");
         console.print("  ✔ Editable install complete.", style="success");
         return 0;
     }
-    # ── Normal (non-editable) install ─────────────────────────────────────────
-    config = get_config();
-    if config is None {
-        console.error(
-            "No jac.toml found", hint="Run 'jac create' to create a project first."
-        );
-        return 1;
-    }
-    installer = DependencyInstaller(
-        config=config, verbose=verbose, install_flags=install_flags, use_uv=not no_uv
-    );
     console.print(
         f"\n📦 Installing dependencies for {config.project.name}", style="bold"
     );
@@ -1376,14 +1145,12 @@ def _run_precompile_in_venv(
             venv_python = str(venv_dir / "bin" / "python");
             venv_jac = str(venv_dir / "bin" / "jac");
         }
-        import from jaclang.project.dependencies { pip_command }
-        use_uv: bool = not bool(os.environ.get("JAC_NO_UV"));
         jac_install = subprocess.run(
-            pip_command(venv_python, ["install", jac_spec, "--quiet"], use_uv),
+            [venv_python, "-m", "pip", "install", jac_spec, "--quiet"],
             capture_output=True
         );
         if jac_install.returncode != 0 {
-            return f"install {jac_spec} failed:\n{jac_install.stderr.decode(
+            return f"pip install {jac_spec} failed:\n{jac_install.stderr.decode(
                 errors='replace'
             )}";
         }
@@ -1400,11 +1167,11 @@ def _run_precompile_in_venv(
         }
         if dep_specs {
             deps_install = subprocess.run(
-                pip_command(venv_python, ["install"] + dep_specs + ["--quiet"], use_uv),
+                [venv_python, "-m", "pip", "install"] + dep_specs + ["--quiet"],
                 capture_output=True
             );
             if deps_install.returncode != 0 {
-                return f"install project deps failed:\n{deps_install.stderr.decode(
+                return f"pip install project deps failed:\n{deps_install.stderr.decode(
                     errors='replace'
                 )}";
             }

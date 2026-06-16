@@ -140,13 +140,11 @@ impl NaIRGenPass._codegen_list_val(nd: uni.ListVal) -> (ir.Value | None) {
     # is a boxed tuple so the enclosing assignment can seed var_list_elem_struct.
     self._pending_list_elem_struct = None;
     if not nd.values {
-        # Empty list: the checker stamps the literal with the expected
-        # type (bidirectional inference from the assignment target or the
-        # declared return type), so the element spec comes off the tree.
+        # Empty list: infer type from context
         elem_type_name = "i64";
-        _own_spec = self._elem_spec_of(nd);
-        if _own_spec is not None {
-            elem_type_name = _own_spec;
+        # 1. Check the type hint set by assignment/field context
+        if self._list_type_hint is not None {
+            elem_type_name = self._list_type_hint;
         } elif self._builder and self._builder.function {
             # 2. Fallback: infer from function return type
             ret_type = self.builder.function.return_value.type;
@@ -173,10 +171,11 @@ impl NaIRGenPass._codegen_list_val(nd: uni.ListVal) -> (ir.Value | None) {
             _empty_loc = f"{os.path.basename(self.ir_in.loc.mod_path)}:{nd.loc.first_line
                 if nd.loc
                 else 0}";
-            # Fresh allocation: ownership applied at the _codegen_expr seam.
-            return self._rc_call_with_ctx(
+            _empty = self._rc_call_with_ctx(
                 helpers["new"], [], op="new", loc=_empty_loc, name="list.empty"
             );
+            self._mark_owned(_empty);
+            return _empty;
         }
         return None;
     }
@@ -241,18 +240,6 @@ impl NaIRGenPass._codegen_list_val(nd: uni.ListVal) -> (ir.Value | None) {
     for i in range(1, len(nd.values)) {
         val = self._codegen_expr(nd.values[i]);
         if val is not None {
-            # The first element fixed this list's boxed-tuple layout; coerce later
-            # tuple elements to match so a concrete scalar landing in an `any`
-            # slot is boxed (e.g. `[(seed, 0), (7, 0)]` with `seed: any`). #6511.
-            if self._pending_list_elem_struct is not None
-            and isinstance(self._pending_list_elem_struct, ir.PointerType)
-            and isinstance(
-                self._pending_list_elem_struct.pointee, ir.LiteralStructType
-            ) {
-                val = self._coerce_tuple_to_struct(
-                    val, self._pending_list_elem_struct.pointee
-                );
-            }
             _orig_val = val;
             val = self._box_value_tuple(val, loc=_linit_loc);
             _boxed_val = val;  # Save post-box, pre-bitcast for check
@@ -275,7 +262,8 @@ impl NaIRGenPass._codegen_list_val(nd: uni.ListVal) -> (ir.Value | None) {
             }
         }
     }
-    # Fresh allocation: ownership applied at the _codegen_expr seam.
+    # List literal is a fresh allocation — mark as owned so callers don't double-retain.
+    self._mark_owned(list_val);
     return list_val;
 }
 

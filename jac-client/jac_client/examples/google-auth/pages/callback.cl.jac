@@ -1,5 +1,5 @@
 import from react { useEffect, useContext }
-import from "@jac/runtime" { useNavigate, useLocation, jacSetToken }
+import from "@jac/runtime" { useNavigate, useLocation }
 import from '..lib.auth' { AuthContext }
 
 def:pub OAuthCallback -> JsxElement {
@@ -30,9 +30,8 @@ def:pub OAuthCallback -> JsxElement {
                 }
 
                 if token {
-                    # Store under the runtime's canonical key (`jac_token`) so
-                    # walker/function calls and jacIsLoggedIn pick it up.
-                    jacSetToken(str(token));
+                    # Store the token
+                    localStorage.setItem('auth_token', token);
                     # Decode token to get user info for logging
                     try {
                         payload = JSON.parse(atob(token.split('.')[1]));
