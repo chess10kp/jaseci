@@ -472,6 +472,45 @@ impl JacClientCompiler.compile_runtime_utils(
     (self.compiled_dir / 'client_runtime.js').write_text(
         runtimeutils_js, encoding='utf-8'
     );
+    # Stage plugin-relative runtime deps the bundle still imports. The runtime
+    # bundle inlines only core + platform; a sibling import such as
+    # ``html_tag_map`` (pulled in by the native runtime) would otherwise dangle
+    # in the staged native ``jac-src`` tree (Metro: "Unable to resolve
+    # ./.../html_tag_map.js"). Compile each to the exact relative path the
+    # bundle imports so ``shutil.copytree`` stages it for Metro. No-op for the
+    # web runtime, which does not import these siblings.
+    import re;
+    import json;
+    import importlib;
+    for _m in re.finditer(
+        r'from\s+[\'"](\./[^\'"]*html_tag_map\.js)[\'"]', runtimeutils_js
+    ) {
+        rel = _m.group(1)[2:];
+        # ``html_tag_map`` is a plain ``.jac`` module (constant string arrays);
+        # the ES codegen only emits JS for ``.cl.jac`` client modules, so
+        # ``compile_module`` returns empty here. Generate the ESM module from
+        # the Python-imported values instead — robust and self-contained.
+        htm = importlib.import_module(
+            "jac_client.plugin.src.targets.react_native.html_tag_map"
+        );
+        dep_js = "";
+        for const_name in [
+            "RN_HTML_VIEW_TAGS",
+            "RN_HTML_TEXT_TAGS",
+            "RN_HTML_SPECIAL_TAGS"
+        ] {
+            vals = list(getattr(htm, const_name, []));
+            dep_js += f"export const {const_name} = {json.dumps(vals)};\n";
+        }
+        dep_out = self.compiled_dir / rel;
+        dep_out.parent.mkdir(parents=True, exist_ok=True);
+        dep_out.write_text(dep_js, encoding='utf-8');
+    }
+    # Emit the JacSX ``@jac/ui`` primitive module alongside the runtime. Doing
+    # it here (rather than in ``compile()``) covers BOTH the web ViteCompiler
+    # path — which calls ``compile_runtime_utils`` directly — and the native
+    # path, so ``compiled/client_ui.js`` always exists for the ``@jac/ui`` alias.
+    self.compile_ui_utils();
     return (runtimeutils_js, all_exports);
 }
 
@@ -497,6 +536,26 @@ impl JacClientCompiler.compile_pwa_runtime(
     self.compiled_dir.mkdir(parents=True, exist_ok=True);
     (self.compiled_dir / 'pwa_runtime.js').write_text(pwa_js, encoding='utf-8');
     return (pwa_js, all_exports);
+}
+
+"""Compile the JacSX ``@jac/ui`` primitive module to ``compiled/client_ui.js``.
+
+Emitted as a plain ESM re-export module so the bundler's ``@jac/ui`` alias
+resolves to it directly. No-op if the source file is missing.
+"""
+impl JacClientCompiler.compile_ui_utils(
+    self: JacClientCompiler
+) -> tuple[str, list[str]] {
+    plugin_dir = _jac_client_plugin_dir();
+    ui_path = plugin_dir / 'client_ui.cl.jac';
+    if not ui_path.exists() {
+        return ('', []);
+    }
+    (ui_js, _mod, ui_manifest) = self.jac_compiler.compile_module(ui_path);
+    glob_names = list(ui_manifest.globals) if ui_manifest else [];
+    self.compiled_dir.mkdir(parents=True, exist_ok=True);
+    (self.compiled_dir / 'client_ui.js').write_text(ui_js, encoding='utf-8');
+    return (ui_js, glob_names);
 }
 
 """Scan pages/ directory, compile page files, generate _routes.js manifest."""

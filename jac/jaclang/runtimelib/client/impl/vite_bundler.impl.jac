@@ -365,14 +365,17 @@ impl ViteBundler._generate_vite_config_content(
     if entry_relative.endswith('/build/main.js') {
         compiled_utils_relative = entry_relative[:-13] + '/compiled/client_runtime.js';
         compiled_pwa_relative = entry_relative[:-13] + '/compiled/pwa_runtime.js';
+        compiled_ui_relative = entry_relative[:-13] + '/compiled/client_ui.js';
         compiled_assets_relative = entry_relative[:-13] + '/compiled/assets';
     } elif entry_relative.endswith('build/main.js') {
         compiled_utils_relative = 'compiled/client_runtime.js';
         compiled_pwa_relative = 'compiled/pwa_runtime.js';
+        compiled_ui_relative = 'compiled/client_ui.js';
         compiled_assets_relative = 'compiled/assets';
     } else {
         compiled_utils_relative = 'compiled/client_runtime.js';
         compiled_pwa_relative = 'compiled/pwa_runtime.js';
+        compiled_ui_relative = 'compiled/client_ui.js';
         compiled_assets_relative = 'compiled/assets';
     }
     # Check if PWA is enabled to add @jac/pwa alias
@@ -631,6 +634,8 @@ export default defineConfig({{
   resolve: {{
     alias: {{
       "@jac/runtime": path.resolve(buildDir, "{compiled_utils_relative}"),{pwa_alias_str}
+      "@jac/ui": path.resolve(buildDir, "{compiled_ui_relative}"),
+      "react-native": "react-native-web",
       "@jac-client/assets": path.resolve(buildDir, "{compiled_assets_relative}"),{user_aliases_str}
     }},
     extensions: [{extensions_str}],
@@ -753,6 +758,8 @@ export default defineConfig({{
 {server_section}  resolve: {{
       alias: {{
         "@jac/runtime": path.resolve(buildDir, "{compiled_utils_relative}"),{pwa_alias_str}
+        "@jac/ui": path.resolve(buildDir, "{compiled_ui_relative}"),
+        "react-native": "react-native-web",
         "@jac-client/assets": path.resolve(buildDir, "{compiled_assets_relative}"),{user_aliases_str}
       }},
       extensions: [{extensions_str}],

@@ -64,6 +64,16 @@ class JacClientCompiler {
     ) -> tuple[str, list[str]];
 
     def compile_pwa_runtime(self: JacClientCompiler) -> tuple[str, list[str]];
+    """Compile the JacSX ``@jac/ui`` primitive module to ``compiled/client_ui.js``.
+
+    Unlike the runtime bundle, this is emitted as a plain ESM re-export module
+    (imports + ``export { View, Text }``) so the bundler's ``@jac/ui`` alias
+    resolves to it directly. Platform-neutral: the same source is emitted for
+    web and react-native; only the ``react-native`` -> ``react-native-web``
+    web alias differs. No-op if ``client_ui.cl.jac`` is absent.
+    """
+    def compile_ui_utils(self: JacClientCompiler) -> tuple[str, list[str]];
+
     def compile_dependencies_recursively(
         self: JacClientCompiler,
         module_path: Path,
