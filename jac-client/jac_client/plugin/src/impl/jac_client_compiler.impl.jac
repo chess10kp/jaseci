@@ -553,6 +553,11 @@ impl JacClientCompiler.compile_ui_utils(
     }
     (ui_js, _mod, ui_manifest) = self.jac_compiler.compile_module(ui_path);
     glob_names = list(ui_manifest.globals) if ui_manifest else [];
+
+    shims_path = plugin_dir / 'client_ui.shims.js';
+    if shims_path.exists() {
+        ui_js += '\n' + shims_path.read_text(encoding='utf-8');
+    }
     self.compiled_dir.mkdir(parents=True, exist_ok=True);
     (self.compiled_dir / 'client_ui.js').write_text(ui_js, encoding='utf-8');
     return (ui_js, glob_names);
