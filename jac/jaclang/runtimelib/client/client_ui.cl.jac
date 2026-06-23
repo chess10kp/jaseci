@@ -51,3 +51,8 @@ glob:pub View = RNView,
      StyleSheet = RNStyleSheet,
      Animated = RNAnimated,
      Easing = RNEasing;
+
+# Factory helpers — implementations live in client_ui.shims.js (appended at
+# compile time); the declarations here surface them on the @jac/ui import surface.
+def:pub createAnimatedValue(initial: int = 0) -> any;
+def:pub createAnimatedValueXY(initial: (dict | None) = None) -> any;

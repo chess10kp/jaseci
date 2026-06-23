@@ -18,14 +18,11 @@ cl {
         TextInput,
         Image,
         ScrollView,
-        StyleSheet
+        StyleSheet,
+        Animated,
+        createAnimatedValue
     }
-
-    # NOTE: the original feat/react-native demo also exercised ``Animated``
-    # (an entrance fade via ``createAnimatedValue``). That helper lives in
-    # ``client_ui.shims.js`` but is not yet surfaced through the core
-    # ``@jac/ui`` module surface, so the Animated entrance is omitted here.
-    # See ``jac/examples/universal_tags`` for the full primitive vocabulary.
+    import from "@jac/runtime" { useEffect }
 
     glob color = {
              bg: "#1e1e2f",
@@ -76,40 +73,53 @@ cl {
 
     def:pub app -> JsxElement {
         has count: int = 0,
-            name: str = "";
+            name: str = "",
+            fadeAnim: any = createAnimatedValue(0);
+
+        useEffect(
+            lambda { Animated.timing(
+                fadeAnim, {toValue: 1, duration: 600, useNativeDriver: False}
+            ).start(); },
+            []
+        );
 
         return
-            <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-                <View style={styles.card}>
-                    <Text style={styles.title}>JacSX primitives</Text>
-                </View>
-                <View style={styles.card}>
-                    <Text style={styles.label}>Image</Text>
-                    <Image
-                        source={{uri: "https://reactnative.dev/img/tiny_logo.png"}}
-                        style={styles.avatar}
-                    />
-                </View>
-                <View style={styles.card}>
-                    <Text style={styles.label}>Pressable + state</Text>
-                    <Text style={styles.value}>Count: {count}</Text>
-                    <Pressable
-                        style={styles.button}
-                        onPress={lambda { count = count + 1; }}
-                    >
-                        <Text style={styles.buttonLabel}>Increment</Text>
-                    </Pressable>
-                </View>
-                <View style={styles.card}>
-                    <Text style={styles.label}>TextInput (controlled)</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={name}
-                        placeholder="Type your name"
-                        onChangeText={lambda t: str { name = t; }}
-                    />
-                    <Text style={styles.value}>Hello, {name}</Text>
-                </View>
-            </ScrollView>;
+            <Animated.View style={{opacity: fadeAnim, flex: 1}}>
+                <ScrollView
+                    style={styles.screen}
+                    contentContainerStyle={styles.content}
+                >
+                    <View style={styles.card}>
+                        <Text style={styles.title}>JacSX primitives</Text>
+                    </View>
+                    <View style={styles.card}>
+                        <Text style={styles.label}>Image</Text>
+                        <Image
+                            source={{uri: "https://reactnative.dev/img/tiny_logo.png"}}
+                            style={styles.avatar}
+                        />
+                    </View>
+                    <View style={styles.card}>
+                        <Text style={styles.label}>Pressable + state</Text>
+                        <Text style={styles.value}>Count: {count}</Text>
+                        <Pressable
+                            style={styles.button}
+                            onPress={lambda { count = count + 1; }}
+                        >
+                            <Text style={styles.buttonLabel}>Increment</Text>
+                        </Pressable>
+                    </View>
+                    <View style={styles.card}>
+                        <Text style={styles.label}>TextInput (controlled)</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={name}
+                            placeholder="Type your name"
+                            onChangeText={lambda t: str { name = t; }}
+                        />
+                        <Text style={styles.value}>Hello, {name}</Text>
+                    </View>
+                </ScrollView>
+            </Animated.View>;
     }
 }
