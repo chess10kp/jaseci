@@ -64,6 +64,7 @@ obj DocIRGenPass(UniPass) {
     ) -> None;
 
     def is_within(kid_node: uni.UniNode, block: Sequence[uni.UniNode]) -> bool;
+    def is_body_member(kid_node: uni.UniNode, block: Sequence[uni.UniNode]) -> bool;
     def trim_trailing_line(parts: list[doc.DocType]) -> None;
     """Prettier's jsxWhitespace: a literal space when flat, a `{" "}` marker
     plus a line break when broken, so a significant space survives a break."""

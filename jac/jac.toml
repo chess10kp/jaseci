@@ -7,7 +7,10 @@ description = "Jac programming language - Python-like syntax, compiles to Python
 license = "MIT"
 readme = "README.md"
 requires_python = ">=3.14"
-dependencies = ["llvmlite>=0.47.0"]  # cp314 wheels for the bundled Python 3.14
+dependencies = [
+    "llvmlite>=0.47.0",  # cp314 wheels for the bundled Python 3.14
+    "pycparser>=2.22",
+]
 
 [project.urls]
 Repository = "https://github.com/jaseci-labs/jaseci"

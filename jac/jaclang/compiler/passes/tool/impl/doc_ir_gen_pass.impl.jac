@@ -2109,7 +2109,7 @@ impl DocIRGenPass.exit_else_stmt(nd: uni.ElseStmt) -> None {
     parts: list[doc.DocType] = [];
     body_parts: list[doc.DocType] = [self.hard_line()];
     for i in nd.kid {
-        if (isinstance(nd.body, Sequence) and self.is_within(i, nd.body)) {
+        if (isinstance(nd.body, Sequence) and self.is_body_member(i, nd.body)) {
             if (i == nd.body[0]) {
                 parts.append(self.indent(self.concat(body_parts), ast_node=nd));
                 parts.append(self.hard_line());
@@ -2134,7 +2134,7 @@ impl DocIRGenPass.exit_else_if(nd: uni.ElseIf) -> None {
     parts: list[doc.DocType] = [];
     body_parts: list[doc.DocType] = [self.hard_line()];
     for i in nd.kid {
-        if (isinstance(nd.body, Sequence) and self.is_within(i, nd.body)) {
+        if (isinstance(nd.body, Sequence) and self.is_body_member(i, nd.body)) {
             if (i == nd.body[0]) {
                 parts.append(self.indent(self.concat(body_parts), ast_node=nd));
                 parts.append(self.hard_line());
@@ -2186,7 +2186,9 @@ impl DocIRGenPass.exit_if_stmt(nd: uni.IfStmt) -> None {
             } elif (isinstance(i, uni.Token) and (i.name == Tok.RBRACE)) {
                 parts.append(self.line());
                 parts.append(i.gen.doc_ir);
-            } elif (isinstance(nd.body, Sequence) and self.is_within(i, nd.body)) {
+            } elif (
+                isinstance(nd.body, Sequence) and self.is_body_member(i, nd.body)
+            ) {
                 if not body_placed {
                     parts.append(
                         self.indent(
@@ -2207,7 +2209,7 @@ impl DocIRGenPass.exit_if_stmt(nd: uni.IfStmt) -> None {
     body_parts: list[doc.DocType] = [self.hard_line()];
     prev_body_item: (uni.UniNode | None) = None;
     for i in nd.kid {
-        if (isinstance(nd.body, Sequence) and self.is_within(i, nd.body)) {
+        if (isinstance(nd.body, Sequence) and self.is_body_member(i, nd.body)) {
             if (i == nd.body[0]) {
                 parts.append(self.indent(self.concat(body_parts), ast_node=nd));
                 parts.append(self.hard_line());
@@ -2759,6 +2761,29 @@ impl DocIRGenPass.is_within(
     return (first and last);
 }
 
+"""Whether a kid is a body statement of this block, by identity.
+
+`is_within` decides body membership from source spans, which breaks when a node
+carries approximate or zero line numbers — e.g. IR synthesized by a front-end
+(c2jac) or any future producer. A structural delimiter that happens to share the
+body's line gets misclassified as a body item, and a zero-line body item poisons
+the span anchors for its siblings. Identity membership is immune: a delimiter is
+never an element of `block`, and a body item always is, regardless of coords.
+For normally-parsed Jac this yields the same partition as `is_within` (the body
+elements are exactly the kids whose spans fall inside the block), so it is a
+robustness upgrade, not a behavior change.
+"""
+impl DocIRGenPass.is_body_member(
+    kid_node: uni.UniNode, block: Sequence[uni.UniNode]
+) -> bool {
+    for member in block {
+        if (kid_node is member) {
+            return True;
+        }
+    }
+    return False;
+}
+
 """Add a body statement preserving single blank lines from source."""
 impl DocIRGenPass.add_body_stmt_with_spacing(
     body_parts: list[doc.DocType], current: uni.UniNode, previous: (uni.UniNode | None)
@@ -2830,7 +2855,7 @@ impl DocIRGenPass.format_simple_stmt_with_body(
     body_parts: list[doc.DocType] = [self.hard_line()];
     prev_body_item: (uni.UniNode | None) = None;
     for i in nd.kid {
-        if (isinstance(body, Sequence) and self.is_within(i, body)) {
+        if (isinstance(body, Sequence) and self.is_body_member(i, body)) {
             if (body and (i == body[0])) {
                 parts.append(self.indent(self.concat(body_parts), ast_node=nd));
                 parts.append(self.hard_line());
