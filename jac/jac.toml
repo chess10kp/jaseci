@@ -11,6 +11,7 @@ requires_python = ">=3.14"
 # (jac/native + `zig build fetch-llvm`), not the llvmlite wheel — no llvmlite dep.
 dependencies = [
     "pycparser>=2.22",  # c2jac C-source front-end parser
+    "pcpp>=1.30",  # c2jac C preprocessor (pure-Python; no system toolchain needed)
 ]
 
 [project.urls]
