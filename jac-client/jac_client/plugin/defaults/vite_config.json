@@ -5,7 +5,7 @@
       "react": "import react from \"@vitejs/plugin-react\";"
     }
   },
-  "extensions": [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"],
+  "extensions": [".web.mjs", ".web.js", ".web.mts", ".web.ts", ".web.jsx", ".web.tsx", ".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"],
   "build": {
     "rollupOptions": {
       "output": {

@@ -20,7 +20,7 @@ import from '@react-navigation/native-stack' {
     createNativeStackNavigator as jacCreateNativeStackNavigator
 }
 import from 'expo-secure-store' { * as SecureStore }
-import from 'expo-constants' { * as ExpoConstants }
+import from 'expo-constants' { default as ExpoConstants }
 import from 'react-error-boundary' { ErrorBoundary }
 import from 'zod' { z }
 import from client_runtime_core {
