@@ -1528,11 +1528,8 @@ impl NativeStrEmitter.emit_format(
             b.call(snprintf_fn, [buf, ir.Constant(i64, 32), fmt_s, arg]);
             str_args.append(buf);
         } elif isinstance(arg.type, ir.DoubleType) {
-            # Float: snprintf("%g", val)
-            buf = b.call(rc_alloc_fn, [ir.Constant(i64, 32)], name="fmt.fbuf");
-            fmt_s = p._make_global_string("%g");
-            b.call(snprintf_fn, [buf, ir.Constant(i64, 32), fmt_s, arg]);
-            str_args.append(buf);
+            # Float: CPython's shortest round-trip repr (#6978 0.3), not %g.
+            str_args.append(p._emit_float_repr(arg));
         } else {
             # Already i8* (string or pointer)
             str_args.append(arg);
@@ -5861,6 +5858,13 @@ impl NativeBuiltinEmitter.emit_str(
     # pointer address.
     if isinstance(arg_val.type, ir.PointerType) {
         if arg_val.type != i8p {
+            # str(obj): dispatch to the user object's __str__ (or a default
+            # repr), instead of bitcasting the struct pointer to garbage (#7003).
+            # The builtin-arg release at the call site (calls.impl) owns `arg_val`.
+            obj_s = p._emit_obj_str(arg_val);
+            if obj_s is not None {
+                return obj_s;
+            }
             return b.bitcast(arg_val, i8p, name="str.identity");
         }
         # str(None): None lowers to a null i8*; CPython prints "None". Guard the
@@ -5873,18 +5877,18 @@ impl NativeBuiltinEmitter.emit_str(
         );
         return b.select(is_null, none_s, arg_val, name="str.ornone");
     }
+    # str(float): CPython's shortest round-trip repr (#6978 0.3), not %g.
+    if isinstance(arg_val.type, ir.DoubleType) {
+        return p._emit_float_repr(arg_val);
+    }
     rc_alloc_fn = p.rc_alloc_fn;
     buf_ptr = b.call(rc_alloc_fn, [ir.Constant(ir.IntType(64), 32)], name="str.buf");
     snprintf = p._get_or_declare_extern(
         "snprintf", ir.IntType(32), [i8p, ir.IntType(64), i8p], var_arg=True
     );
-    if isinstance(arg_val.type, ir.IntType) {
-        fmt = p._get_snprintf_fmt("%ld");
-    } elif isinstance(arg_val.type, ir.DoubleType) {
-        fmt = p._get_snprintf_fmt("%g");
-    } else {
-        fmt = p._get_snprintf_fmt("%ld");
-    }
+    # Remaining scalar path is integer-like; floats/pointers/bools/bytes/None
+    # were all handled above.
+    fmt = p._get_snprintf_fmt("%ld");
     fmt_ptr = b.bitcast(fmt, i8p, name="str.fmt.ptr");
     b.call(
         snprintf,
