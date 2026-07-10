@@ -82,6 +82,13 @@ glob registry = get_registry();
             short="",
             help="With 'reuse': add git tandem-edit + divergence evidence"
         ),
+        Arg.create(
+            "windows",
+            typ=bool,
+            default=False,
+            short="",
+            help="With 'reuse': also mine repeated statement-window blocks"
+        ),
 
     ],
     examples=[
@@ -110,5 +117,6 @@ def prune(
     model: str = "heuristic",
     group: str = "",
     probe: bool = False,
-    history: bool = False
+    history: bool = False,
+    windows: bool = False
 ) -> int;

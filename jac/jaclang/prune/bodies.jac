@@ -23,7 +23,8 @@ obj BodyFact {
         line_count: int,
         size_band: int,
         completeness: str = "complete",
-        vector: str = "";
+        vector: str = "",
+        stmt_seq: str = "";
 }
 
 
@@ -173,6 +174,60 @@ def _stmt_span(body: list) -> tuple[int, int] {
 }
 
 
+def _sig_walk(nd: any, local_ids: set, toks: list) {
+    kids = list(nd.kid);
+    if not kids {
+        if isinstance(nd, (uni.Int, uni.Float, uni.String, uni.Bool, uni.Null)) {
+            toks.append("<lit>");
+            return;
+        }
+        if isinstance(nd, uni.Name) {
+            nm = str(nd.sym_name);
+            s = nd.sym;
+            is_local = (s is not None and id(s) in local_ids)
+            or nm == "self"
+            or nm == "here";
+            toks.append("<ID>" if is_local else "N:" + nm);
+            return;
+        }
+        txt = "";
+        try {
+            txt = str(nd.value);
+        } except Exception {
+            txt = type(nd).__name__;
+        }
+        toks.append(txt);
+        return;
+    }
+    for k in kids {
+        _sig_walk(k, local_ids, toks);
+    }
+}
+
+
+def _stmt_seq(body: list, local_ids: set) -> str {
+    rows: list[str] = [];
+    for stmt in body {
+        toks: list = [];
+        _sig_walk(stmt, local_ids, toks);
+        h = hashlib.sha256("".join(toks).encode("utf-8")).hexdigest()[:12];
+        loc = stmt.loc;
+        rows.append(
+            "\x1f".join(
+                [
+                    h,
+                    str(int(loc.pos_start)),
+                    str(int(loc.pos_end)),
+                    str(int(loc.first_line)),
+                    str(int(loc.last_line))
+                ]
+            )
+        );
+    }
+    return "\n".join(rows);
+}
+
+
 def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
     out: list[BodyFact] = [];
     for ab in mod.get_all_sub_nodes(uni.Ability) {
@@ -224,7 +279,8 @@ def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
                 stmt_count=stmt_count,
                 line_count=blines,
                 size_band=_size_band(stmt_count),
-                vector="\n".join(vec)
+                vector="\n".join(vec),
+                stmt_seq=_stmt_seq(body, local_ids)
             )
         );
     }

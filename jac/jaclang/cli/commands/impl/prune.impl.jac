@@ -93,7 +93,8 @@ impl prune(
     model: str = "heuristic",
     group: str = "",
     probe: bool = False,
-    history: bool = False
+    history: bool = False,
+    windows: bool = False
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
@@ -120,7 +121,9 @@ impl prune(
     } elif parsed_action == PruneAction.ANALYZE {
         return _run_analyze(campaign, model=model);
     } elif parsed_action == PruneAction.REUSE {
-        return _run_reuse(campaign, group=group, probe=probe, history=history);
+        return _run_reuse(
+            campaign, group=group, probe=probe, history=history, windows=windows
+        );
     }
     return 2;
 }
@@ -170,7 +173,11 @@ def _reorder_by_tandem(groups: list, histories: dict) -> list {
 
 
 def _run_reuse(
-    campaign: Campaign, group: str = "", probe: bool = False, history: bool = False
+    campaign: Campaign,
+    group: str = "",
+    probe: bool = False,
+    history: bool = False,
+    windows: bool = False
 ) -> int {
     import json;
     import from jaclang.prune.clones {
@@ -182,6 +189,11 @@ def _run_reuse(
     }
     import from jaclang.prune.probe { probe_group, probe_groups }
     import from jaclang.prune.history { git_root, group_history, annotate_histories }
+    import from jaclang.prune.windows {
+        find_stmt_windows,
+        window_summary,
+        window_packet
+    }
     import from jaclang.prune.validate { snapshot_baseline }
 
     start = time();
@@ -203,6 +215,25 @@ def _run_reuse(
     }
 
     groups = find_clone_groups(store);
+
+    if group and group.startswith("reuse:win:") {
+        wins = find_stmt_windows(store);
+        wtarget = None;
+        for w in wins {
+            if w.window_id == group {
+                wtarget = w;
+            }
+        }
+        store.close();
+        if wtarget is None {
+            console.print("{}")
+                if as_json
+                else console.error(f"No statement window with id '{group}'.");
+            return 2;
+        }
+        console.print(json.dumps(window_packet(wtarget), indent=2));
+        return 0;
+    }
 
     if group {
         target = None;
@@ -262,6 +293,11 @@ def _run_reuse(
         }
     }
 
+    win_groups: list = [];
+    if windows {
+        win_groups = find_stmt_windows(store);
+    }
+
     rollups = find_class_rollups(groups);
     if as_json {
         payload = {
@@ -272,47 +308,69 @@ def _run_reuse(
             ],
             "rollups": [rollup_summary(r) for r in rollups]
         };
+        if windows {
+            payload["windows"] = [window_summary(w) for w in win_groups];
+        }
         store.close();
         console.print(json.dumps(payload, indent=2));
         return 0;
     }
 
     store.close();
-    if not groups {
+    if not groups and not win_groups {
         console.success("No structural duplicates found. 🎉");
         console.print_elapsed_time(time() - start);
         return 0;
     }
-    rows: list[list[str]] = [];
-    for g in groups {
-        members = ", ".join([f"{m.owner_name or '<mod>'}.{m.name}" for m in g.members]);
-        row = [g.kind, str(len(g.members)), str(g.lines_saved), f"{g.payoff:.2f}"];
+    if groups {
+        rows: list[list[str]] = [];
+        for g in groups {
+            members = ", ".join(
+                [f"{m.owner_name or '<mod>'}.{m.name}" for m in g.members]
+            );
+            row = [g.kind, str(len(g.members)), str(g.lines_saved), f"{g.payoff:.2f}"];
+            if probe {
+                pr = probes.get(g.group_id);
+                row.append(pr.get("status", "-") if pr is not None else "-");
+            }
+            if history {
+                h = histories.get(g.group_id);
+                if h is not None and h.get("available") {
+                    row.append(str(h.get("tandem_commits", 0)));
+                } else {
+                    row.append("-");
+                }
+            }
+            row.append(members);
+            rows.append(row);
+        }
+        header = ["kind", "copies", "~lines", "payoff"];
         if probe {
-            pr = probes.get(g.group_id);
-            row.append(pr.get("status", "-") if pr is not None else "-");
+            header.append("probe");
         }
         if history {
-            h = histories.get(g.group_id);
-            if h is not None and h.get("available") {
-                row.append(str(h.get("tandem_commits", 0)));
-            } else {
-                row.append("-");
-            }
+            header.append("tandem");
         }
-        row.append(members);
-        rows.append(row);
+        header.append("members");
+        console.print_table(
+            header, rows, title=f"Structural-duplicate candidates ({len(groups)})"
+        );
     }
-    header = ["kind", "copies", "~lines", "payoff"];
-    if probe {
-        header.append("probe");
+    if win_groups {
+        wrows = [
+            [
+                str(w.length),
+                str(len(w.sites)),
+                f"{w.payoff:.2f}",
+                ", ".join([f"{s.owner_name or '<mod>'}.{s.name}" for s in w.sites])
+            ] for w in win_groups
+        ];
+        console.print_table(
+            ["stmts", "sites", "payoff", "functions"],
+            wrows,
+            title=f"Repeated statement-window blocks ({len(win_groups)})"
+        );
     }
-    if history {
-        header.append("tandem");
-    }
-    header.append("members");
-    console.print_table(
-        header, rows, title=f"Structural-duplicate candidates ({len(groups)})"
-    );
     if rollups {
         rrows = [
             [", ".join(r.class_names), str(r.shared_method_count), str(r.lines_saved)]

@@ -15,7 +15,7 @@ import from jaclang.prune.extract {
 import from jaclang.prune.bodies { BodyFact }
 
 
-glob FACT_SCHEMA_VERSION = "4",
+glob FACT_SCHEMA_VERSION = "5",
      _DATA_TABLES = [
          "modules",
          "module_deps",
@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS bodies (
     line_count      INTEGER,
     size_band       INTEGER,
     completeness    TEXT,
-    vector          TEXT
+    vector          TEXT,
+    stmt_seq        TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_refs_used      ON refs(used_id, kind);
 CREATE INDEX IF NOT EXISTS idx_refs_using     ON refs(using_id, kind);
@@ -350,8 +351,8 @@ obj FactStore {
             "owner_name, body_file, body_pos_start, body_pos_end, "
             "stmt_pos_start, stmt_pos_end, exact_hash, "
             "structural_hash, arity, is_async, is_gen, stmt_count, line_count, "
-            "size_band, completeness, vector) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "size_band, completeness, vector, stmt_seq) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     bd.symbol_id,
@@ -373,7 +374,8 @@ obj FactStore {
                     bd.line_count,
                     bd.size_band,
                     bd.completeness,
-                    bd.vector
+                    bd.vector,
+                    bd.stmt_seq
                 ) for bd in bodies
             ]
         );
@@ -789,6 +791,31 @@ obj FactStore {
             "SELECT 1 FROM bodies WHERE symbol_id = ? LIMIT 1", (symbol_id, )
         );
         return cur.fetchone() is not None;
+    }
+
+    def stmt_sequences -> list[dict] {
+        cur = self.conn.execute(
+            "SELECT symbol_id, name, owner_id, owner_name, module_path, "
+            "body_file, stmt_seq FROM bodies "
+            "WHERE completeness = 'complete' AND stmt_seq != ''" + _scope(
+                "module_path"
+            ) + " ORDER BY module_path, symbol_id"
+        );
+        out: list[dict] = [];
+        for row in cur.fetchall() {
+            out.append(
+                {
+                    "symbol_id": row[0],
+                    "name": row[1],
+                    "owner_id": row[2],
+                    "owner_name": row[3],
+                    "module_path": row[4],
+                    "body_file": row[5],
+                    "stmt_seq": row[6]
+                }
+            );
+        }
+        return out;
     }
 
     def counts -> dict[str, int] {
