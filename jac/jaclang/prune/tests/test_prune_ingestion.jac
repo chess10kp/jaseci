@@ -1,6 +1,14 @@
 """Phase-1 unit tests: role classification + campaign config precedence."""
 
-import from jaclang.prune.manifest { FileRole, ManifestEntry, classify, role_label }
+import os;
+import from jaclang.prune.manifest {
+    FileRole,
+    ManifestEntry,
+    classify,
+    role_label,
+    build_manifest
+}
+import from jaclang.prune.campaign { Campaign }
 import from jaclang.prune.campaign {
     resolve_campaign,
     parse_risk_tier,
@@ -36,9 +44,19 @@ test "plain source is source" {
     assert classify("/proj/jaclang/prune/manifest.jac", GLOBS) == FileRole.SOURCE;
 }
 
-test "impl-annex fixture beats test/generated ordering" {
-    # a .impl.jac under tests/ must still be impl-annex (more specific)
+test "fixture directory takes precedence over impl-annex suffix" {
     assert classify("/proj/tests/foo.impl.jac", GLOBS) == FileRole.IMPL_ANNEX;
+    assert (classify("/proj/tests/fixtures/foo.impl.jac", GLOBS) == FileRole.FIXTURE);
+}
+
+test "an explicitly targeted fixture is analyzed as source" {
+    fixture = os.path.join(os.path.dirname(__file__), "fixtures", "detectprog.jac");
+    manifest = build_manifest(
+        Campaign(project_root=os.path.dirname(fixture), paths=[fixture])
+    );
+    assert len(manifest.entries) == 1;
+    assert manifest.entries[0].role == FileRole.SOURCE;
+    assert manifest.entries[0].is_live();
 }
 
 test "only source and impl-annex are live" {

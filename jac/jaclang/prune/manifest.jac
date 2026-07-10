@@ -1,5 +1,6 @@
 import os;
 import hashlib;
+import from typing { LiteralString, cast }
 import from fnmatch { fnmatch }
 
 import from jaclang.prune.campaign { Campaign }
@@ -139,16 +140,17 @@ def classify(path: str, generated_globs: list[str]) -> FileRole {
     if "/vendor/" in norm or "vendor" in parts {
         return FileRole.VENDORED;
     }
-    if base.endswith(".impl.jac") {
-        return FileRole.IMPL_ANNEX;
-    }
     if "fixtures" in parts or "fixture" in parts {
         return FileRole.FIXTURE;
+    }
+    if base.endswith(".impl.jac") {
+        return FileRole.IMPL_ANNEX;
     }
     if (base.endswith(".test.jac") or base.startswith("test_") or "tests" in parts) {
         return FileRole.TEST;
     }
-    if any(fnmatch(base, g) for g in generated_globs) or _has_generated_marker(path) {
+    if any(fnmatch(base, cast(LiteralString, g)) for g in generated_globs)
+    or _has_generated_marker(path) {
         return FileRole.GENERATED;
     }
     if "docs" in parts {
@@ -200,12 +202,22 @@ def _excluded(path: str, project_root: str, patterns: list[str]) -> bool {
     } except Exception {
         rel = norm;
     }
-    return bool(any(fnmatch(norm, p) or fnmatch(rel, p) for p in patterns));
+    return bool(
+        any(
+            fnmatch(norm, cast(LiteralString, p))
+            or fnmatch(rel, cast(LiteralString, p)) for p in patterns
+        )
+    );
 }
 
 
 def build_manifest(campaign: Campaign) -> Manifest {
     manifest = Manifest(project_root=campaign.project_root);
+    explicit_files = {
+        os.path.abspath(path)
+        for path in campaign.scope_paths()
+        if os.path.isfile(path)
+    };
     for path in _iter_jac_paths(campaign.scope_paths()) {
         if _excluded(path, campaign.project_root, campaign.exclude) {
             continue;
@@ -215,6 +227,10 @@ def build_manifest(campaign: Campaign) -> Manifest {
             continue;
         }
         role = classify(path, campaign.generated_globs);
+
+        if role == FileRole.FIXTURE and os.path.abspath(path) in explicit_files {
+            role = FileRole.SOURCE;
+        }
         manifest.entries.append(
             ManifestEntry(
                 path=os.path.abspath(path),

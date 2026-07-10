@@ -12,7 +12,7 @@ glob registry = get_registry();
             "action",
             kind=ArgKind.POSITIONAL,
             default="report",
-            help="Action: report, facts, fix"
+            help="Action: report, facts, fix, analyze"
         ),
         Arg.create(
             "paths",
@@ -56,6 +56,12 @@ glob registry = get_registry();
             short="",
             help="With 'fix': write changes, validate, revert on failure"
         ),
+        Arg.create(
+            "model",
+            default="heuristic",
+            short="",
+            help="With 'analyze': redundancy judge (heuristic, none)"
+        ),
 
     ],
     examples=[
@@ -64,6 +70,7 @@ glob registry = get_registry();
         ("jac prune facts", "Extract and summarize the fact store"),
         ("jac prune fix --preview", "Preview safe fixes as diffs"),
         ("jac prune fix --apply", "Apply and validate safe fixes"),
+        ("jac prune analyze", "Report agent redundancy findings (report-only)"),
 
     ],
     group="analysis"
@@ -76,5 +83,6 @@ def prune(
     risk_ceiling: str = "",
     output: str = "",
     preview: bool = False,
-    apply: bool = False
+    apply: bool = False,
+    model: str = "heuristic"
 ) -> int;

@@ -1,5 +1,4 @@
 import os;
-import from pathlib { Path }
 
 
 enum RiskTier { SAFE = 1, MODERATE = 2, RISKY = 3, FORBIDDEN = 4, }
@@ -9,6 +8,22 @@ enum Disposition { AUTO_FIX = 1, PR_ONLY = 2, REPORT_ONLY = 3, }
 
 
 enum OutputFormat { TABLE = 1, JSON = 2, SARIF = 3, }
+
+
+enum PruneAction { REPORT = 1, FACTS = 2, FIX = 3, ANALYZE = 4, }
+
+
+def parse_prune_action(name: str) -> (PruneAction | None) {
+    key = name.strip().lower();
+    table = {
+        "report": PruneAction.REPORT,
+        "facts": PruneAction.FACTS,
+        "fix": PruneAction.FIX,
+        "analyze": PruneAction.ANALYZE,
+
+    };
+    return table.get(key);
+}
 
 
 glob RISK_TIER_LABELS: dict[RiskTier, str] = {

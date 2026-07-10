@@ -9,6 +9,7 @@ behaviour is checked without a compile.
 
 import os;
 import hashlib;
+import from typing { LiteralString, cast }
 import from jaclang.jac0core.program { JacProgram }
 import from jaclang.jac0core.compile_options { CompileOptions }
 import from jaclang.prune.manifest { Manifest, ManifestEntry, FileRole }
@@ -42,7 +43,7 @@ def _extract_fixture -> FactSet {
     key = FIX_PATH;
     for k in prog.mod.hub.keys() {
         if k.endswith("factprog.jac") {
-            key = k;
+            key = cast(LiteralString, k);
         }
     }
     with open(key, "rb") as f {
@@ -84,6 +85,7 @@ test "def-use: a helper called twice has use_count 2" {
     facts = _extract_fixture();
     helper = _sym_by_name(facts, "used_helper");
     assert helper is not None;
+    helper = cast(SymbolFact, helper);
     store = FactStore(db_path=":memory:");
     store.open();
     store.sync(facts);
@@ -97,6 +99,10 @@ test "read/write split: write-only field has zero reads" {
     facts = _extract_fixture();
     stored = _sym_by_name(facts, "stored");
     writeonly = _sym_by_name(facts, "writeonly");
+    assert stored is not None;
+    assert writeonly is not None;
+    stored = cast(SymbolFact, stored);
+    writeonly = cast(SymbolFact, writeonly);
     store = FactStore(db_path=":memory:");
     store.open();
     store.sync(facts);
@@ -116,6 +122,7 @@ test "import resolution: an unused resolved import is flagged" {
         }
     }
     assert sqrt_sym is not None;
+    sqrt_sym = cast(ImportFact, sqrt_sym);
     assert sqrt_sym.resolved_id != "";
     store = FactStore(db_path=":memory:");
     store.open();
@@ -136,7 +143,8 @@ def _mini_factset(mod_hash: str) -> FactSet {
             module_name="m",
             content_hash=mod_hash,
             role="source",
-            deps=[]
+            deps=[],
+            fact_hash=mod_hash
         )
     );
     fs.symbols.append(

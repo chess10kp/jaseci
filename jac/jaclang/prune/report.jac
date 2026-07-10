@@ -1,0 +1,137 @@
+import os;
+import json;
+import difflib;
+
+import from jaclang.prune.finding { Candidate, disposition_label }
+import from jaclang.prune.campaign { risk_tier_label, Disposition }
+
+
+def _rel(path: str, root_dir: str) -> str {
+    try {
+        return os.path.relpath(path, root_dir);
+    } except Exception {
+        return path;
+    }
+}
+
+
+def _disp_order(d: Disposition) -> int {
+    if d == Disposition.AUTO_FIX {
+        return 0;
+    }
+    if d == Disposition.PR_ONLY {
+        return 1;
+    }
+    return 2;
+}
+
+
+def sort_key(c: Candidate) -> tuple {
+    f = c.finding;
+    return (_disp_order(c.disposition), f.detector, f.module_path, f.line);
+}
+
+
+def sorted_candidates(cands: list[Candidate]) -> list[Candidate] {
+    return sorted(cands, key=sort_key);
+}
+
+
+def summarize(cands: list[Candidate]) -> dict[str, int] {
+    out: dict[str, int] = {"auto-fix": 0, "pr-only": 0, "report-only": 0};
+    for c in cands {
+        k = disposition_label(c.disposition);
+        out[k] = out.get(k, 0) + 1;
+    }
+    return out;
+}
+
+
+def table_rows(cands: list[Candidate], root_dir: str) -> list[list[str]] {
+    rows: list[list[str]] = [];
+    for c in sorted_candidates(cands) {
+        f = c.finding;
+        loc = f"{_rel(f.module_path, root_dir)}:{f.line}";
+        rows.append(
+            [
+                f.detector,
+                risk_tier_label(c.risk),
+                disposition_label(c.disposition),
+                loc,
+                f.message
+            ]
+        );
+    }
+    return rows;
+}
+
+
+def render_diff(path: str, before: bytes, after: bytes, root_dir: str) -> str {
+    rel = _rel(path, root_dir);
+    a = before.decode("utf-8", errors="replace").splitlines(keepends=True);
+    b = after.decode("utf-8", errors="replace").splitlines(keepends=True);
+    lines = list(difflib.unified_diff(a, b, fromfile=f"a/{rel}", tofile=f"b/{rel}"));
+    return "".join(lines);
+}
+
+
+def to_json(cands: list[Candidate]) -> str {
+    return json.dumps([c.as_dict() for c in sorted_candidates(cands)], indent=2);
+}
+
+
+def _sarif_level(c: Candidate) -> str {
+    return "note" if c.disposition == Disposition.REPORT_ONLY else "warning";
+}
+
+
+def to_sarif(cands: list[Candidate], root_dir: str) -> str {
+    ordered = sorted_candidates(cands);
+    rule_ids = sorted({c.finding.detector for c in ordered});
+    results: list[dict] = [];
+    for c in ordered {
+        f = c.finding;
+        results.append(
+            {
+                "ruleId": f.detector,
+                "level": _sarif_level(c),
+                "message": {"text": f.message},
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {"uri": _rel(f.module_path, root_dir)},
+                            "region": {
+                                "startLine": f.line,
+                                "charOffset": f.pos_start,
+                                "charLength": max(0, f.pos_end - f.pos_start)
+                            }
+                        }
+                    }
+                ],
+                "properties": {
+                    "risk": risk_tier_label(c.risk),
+                    "disposition": disposition_label(c.disposition),
+                    "fingerprint": f.fingerprint(),
+                    "symbol_id": f.symbol_id
+                }
+            }
+        );
+    }
+    sarif = {
+        "version": "2.1.0",
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "jac-prune",
+                        "informationUri": "https://jac-lang.org",
+                        "rules": [{"id": rid} for rid in rule_ids]
+                    }
+                },
+                "results": results
+            }
+        ]
+    };
+    return json.dumps(sarif, indent=2);
+}

@@ -3,11 +3,21 @@ import from time { time }
 import from jaclang.cli.console { console }
 import from jaclang.prune.campaign {
     Campaign,
+    Disposition,
+    OutputFormat,
+    PruneAction,
     resolve_campaign,
     load_prune_config,
+    parse_prune_action,
     risk_tier_label
 }
 import from jaclang.prune.manifest { Manifest, FileRole, build_manifest, role_label }
+import from jaclang.prune.pipeline {
+    Analysis,
+    build_analysis,
+    compile_scope,
+    facts_db_path
+}
 
 
 def _resolve_root(paths: list[str]) -> str {
@@ -79,98 +89,160 @@ impl prune(
     risk_ceiling: str = "",
     output: str = "",
     preview: bool = False,
-    apply: bool = False
+    apply: bool = False,
+    model: str = "heuristic"
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
         paths = [paths];
     }
+    parsed_action = parse_prune_action(action);
+    if parsed_action is None {
+        console.error(
+            f"Unknown prune action '{action}'.",
+            hint="Available actions: report, facts, fix, analyze"
+        );
+        return 2;
+    }
     campaign = _make_campaign(
         paths, exclude or [], recipes or [], risk_ceiling, output
     );
 
-    if action == "report" {
+    if parsed_action == PruneAction.REPORT {
         return _run_report(campaign);
-    } elif action == "facts" {
+    } elif parsed_action == PruneAction.FACTS {
         return _run_facts(campaign);
-    } elif action == "fix" {
+    } elif parsed_action == PruneAction.FIX {
         return _run_fix(campaign, preview=preview, apply=apply);
+    } elif parsed_action == PruneAction.ANALYZE {
+        return _run_analyze(campaign, model=model);
     }
-    console.error(
-        f"Unknown prune action '{action}'.",
-        hint="Available actions: report, facts, fix"
-    );
     return 2;
 }
 
 
 def _run_report(campaign: Campaign) -> int {
+    import from jaclang.prune.report { to_json, to_sarif }
+
     start = time();
-    console.print_header("jac prune — report");
-    console.info(f"project root: {campaign.project_root}");
-    console.info(f"recipes: {', '.join(campaign.recipes)}");
-    console.info(f"risk ceiling: {risk_tier_label(campaign.risk_ceiling)}");
+
+    quiet = campaign.output_format != OutputFormat.TABLE;
+    if not quiet {
+        console.print_header("jac prune - report");
+        console.info(f"project root: {campaign.project_root}");
+        console.info(f"recipes: {', '.join(campaign.recipes)}");
+        console.info(f"risk ceiling: {risk_tier_label(campaign.risk_ceiling)}");
+    }
 
     manifest = build_manifest(campaign);
     if not manifest.entries {
-        console.warning("No .jac files found in scope.");
+        if not quiet {
+            console.warning("No .jac files found in scope.");
+        } else {
+            console.print(
+                "[]" if campaign.output_format == OutputFormat.JSON else "{}"
+            );
+        }
         return 0;
     }
-    _print_manifest_summary(manifest);
 
-    (prog, errs, warns, compiled) = _compile_scope(campaign, manifest);
+    analysis = build_analysis(campaign, manifest);
+    candidates = analysis.candidates;
+    suppressed = analysis.suppressed;
+    (errs, warns, compiled) = (analysis.errs, analysis.warns, analysis.compiled);
+
+    if campaign.output_format == OutputFormat.JSON {
+        console.print(to_json(candidates));
+        return 0;
+    }
+    if campaign.output_format == OutputFormat.SARIF {
+        console.print(to_sarif(candidates, campaign.project_root));
+        return 0;
+    }
+
+    _print_manifest_summary(manifest);
     console.print("");
-    console.info(
-        f"compiled {compiled} entry module(s): {errs} error(s), {warns} warning(s)"
-    );
-    console.print("");
-    console.warning(
-        "Detectors not wired yet (Phase 3). This is the Phase-1 ingestion stub."
-    );
+    console.info(f"compiled {compiled} module(s): {errs} error(s), {warns} warning(s)");
+    _print_findings(campaign, candidates, suppressed);
     console.print_elapsed_time(time() - start);
     return 0;
 }
 
 
-def _compile_scope(
-    campaign: Campaign, manifest: Manifest
-) -> tuple[any, int, int, int] {
-    import from jaclang.jac0core.program { JacProgram }
-    import from jaclang.jac0core.compile_options { CompileOptions }
-
-    prog = JacProgram();
-    prog._track_dependencies = True;
-    compiled = 0;
-    for entry in manifest.by_role(FileRole.SOURCE) {
-        if entry.path in prog.mod.hub {
-            continue;
+def _print_findings(campaign: Campaign, candidates: list, suppressed_count: int) {
+    import from jaclang.prune.report { table_rows, summarize }
+    console.print("");
+    if not candidates {
+        console.success("No findings. Nothing to prune. 🎉");
+        if suppressed_count > 0 {
+            console.info(f"({suppressed_count} finding(s) suppressed)");
         }
-        try {
-            prog.compile(
-                file_path=entry.path,
-                options=CompileOptions(
-                    type_check=True, no_cgen=True, force_target_program=True
-                )
-            );
-            compiled += 1;
-        } except Exception as e {
-            console.warning(f"compile failed: {entry.module_name}: {e}");
-        }
+        return;
     }
-    return (prog, len(prog.errors_had), len(prog.warnings_had), compiled);
+    rows = table_rows(candidates, campaign.project_root);
+    console.print_table(
+        ["detector", "risk", "disposition", "location", "message"],
+        rows,
+        title=f"Findings ({len(candidates)})"
+    );
+    summary = summarize(candidates);
+    console.info(
+        f"{summary.get('auto-fix', 0)} auto-fix · "
+        f"{summary.get('pr-only', 0)} pr-only · "
+        f"{summary.get('report-only', 0)} report-only" + (
+            f" · {suppressed_count} suppressed" if suppressed_count > 0 else ""
+        )
+    );
 }
 
 
-def _facts_db_path(campaign: Campaign) -> str {
-    cache_dir = os.path.join(campaign.project_root, ".jac");
-    if not os.path.isdir(cache_dir) {
-        try {
-            os.makedirs(cache_dir, exist_ok=True);
-        } except Exception {
-            return os.path.join(campaign.project_root, "prune.db");
-        }
+def _run_analyze(campaign: Campaign, model: str = "heuristic") -> int {
+    import from jaclang.prune.agent { parse_agent_judge, build_judge }
+    import from jaclang.prune.report { to_json }
+
+    start = time();
+    judge = build_judge(parse_agent_judge(model));
+    quiet = campaign.output_format != OutputFormat.TABLE;
+    if not quiet {
+        console.print_header("jac prune - analyze (agent redundancy, report-only)");
+        console.info(f"project root: {campaign.project_root}");
+        console.info(f"judge: {model}");
     }
-    return os.path.join(cache_dir, "prune.db");
+
+    manifest = build_manifest(campaign);
+    if not manifest.entries {
+        if not quiet {
+            console.warning("No .jac files found in scope.");
+        } else {
+            console.print("[]");
+        }
+        return 0;
+    }
+
+    analysis = build_analysis(campaign, manifest, agent=True, judge=judge);
+    candidates = analysis.candidates;
+
+    if campaign.output_format == OutputFormat.JSON {
+        console.print(to_json(candidates));
+        return 0;
+    }
+
+    console.info(
+        f"compiled {analysis.compiled} module(s); "
+        f"{analysis.detector_input} detector finding(s) fed to the loop"
+    );
+    _print_findings(campaign, candidates, 0);
+    console.info(
+        f"{analysis.agent_ledger} hypotheses judged "
+        f"({len(candidates)} confirmed, "
+        f"{analysis.agent_ledger - len(candidates)} abstained/rejected/dropped)"
+    );
+    console.info(
+        "Agent findings are advisory (report-only / pr-only) - every claim cites "
+        "verified fact IDs; none can auto-fix."
+    );
+    console.print_elapsed_time(time() - start);
+    return 0;
 }
 
 
@@ -179,7 +251,7 @@ def _run_facts(campaign: Campaign) -> int {
     import from jaclang.prune.factstore { FactStore }
 
     start = time();
-    console.print_header("jac prune — facts");
+    console.print_header("jac prune - facts");
     console.info(f"project root: {campaign.project_root}");
 
     manifest = build_manifest(campaign);
@@ -189,11 +261,16 @@ def _run_facts(campaign: Campaign) -> int {
     }
     _print_manifest_summary(manifest);
 
-    (prog, errs, warns, compiled) = _compile_scope(campaign, manifest);
+    def on_compile_error(path: str, err: any) {
+        console.warning(f"compile failed: {path}: {err}");
+    }
+    (prog, errs, warns, compiled) = compile_scope(
+        campaign, manifest, on_error=on_compile_error
+    );
     console.info(f"compiled {compiled} module(s): {errs} error(s), {warns} warning(s)");
 
     facts = extract_facts(prog, manifest);
-    db_path = _facts_db_path(campaign);
+    db_path = facts_db_path(campaign);
     store = FactStore(db_path=db_path);
     store.open();
     (refreshed, skipped) = store.sync(facts);
@@ -222,10 +299,199 @@ def _run_facts(campaign: Campaign) -> int {
 }
 
 
+def _write(path: str, data: bytes) {
+    with open(path, "wb") as fh {
+        fh.write(data);
+    }
+}
+
+
 def _run_fix(campaign: Campaign, preview: bool = False, apply: bool = False) -> int {
-    console.error(
-        "Fix mode is not implemented yet (Phases 4-5).",
-        hint="Use 'jac prune report' for the current ingestion stub."
+    import from jaclang.prune.planner { build_plan }
+    import from jaclang.prune.spanedit { apply_edits }
+    import from jaclang.prune.report { render_diff }
+
+    start = time();
+    do_apply = apply and not preview;
+    mode = "apply" if do_apply else "preview";
+    console.print_header(f"jac prune - fix ({mode})");
+    console.info(f"project root: {campaign.project_root}");
+
+    manifest = build_manifest(campaign);
+    if not manifest.entries {
+        console.warning("No .jac files found in scope.");
+        return 0;
+    }
+
+    analysis = build_analysis(campaign, manifest);
+    autofix = [
+        c
+        for c in analysis.candidates
+        if c.disposition == Disposition.AUTO_FIX
+    ];
+    console.info(
+        f"{len(analysis.candidates)} finding(s); {len(autofix)} auto-fix eligible"
     );
-    return 2;
+    if not autofix {
+        console.success("Nothing to auto-fix. 🎉");
+        return 0;
+    }
+
+    plan = build_plan(autofix);
+    for reason in plan.skipped {
+        console.warning(f"skipped: {reason}");
+    }
+    if plan.edit_count() == 0 {
+        console.warning("No applicable edits after planning.");
+        return 0;
+    }
+    console.info(
+        f"planned {plan.edit_count()} edit(s) across {plan.file_count()} file(s)"
+    );
+
+    befores: dict = {};
+    patched: dict = {};
+    failed = 0;
+    for (path, fe) in plan.files.items() {
+        try {
+            with open(path, "rb") as fh {
+                before = fh.read();
+            }
+        } except Exception as e {
+            console.error(f"cannot read {path}: {e}");
+            failed += 1;
+            continue;
+        }
+        result = apply_edits(before, fe.edits);
+        if not result.ok {
+            console.error(f"edit failed for {os.path.basename(path)}:");
+            for err in result.errors {
+                console.print(f"    {err}");
+            }
+            failed += 1;
+            continue;
+        }
+        diff = render_diff(path, before, result.data, campaign.project_root);
+        console.print("");
+        console.print(diff or "(no textual change)");
+        befores[path] = before;
+        patched[path] = result.data;
+    }
+
+    if not do_apply {
+        console.print("");
+        console.info(
+            f"preview only - {plan.edit_count()} edit(s) across "
+            f"{plan.file_count()} file(s). Re-run with --apply to write."
+        );
+        _log_feedback(campaign, autofix, "previewed");
+        console.print_elapsed_time(time() - start);
+        return 1 if failed else 0;
+    }
+
+    (rc, fate) = _apply_validated(
+        campaign, manifest, analysis, befores, patched, failed
+    );
+    _log_feedback(campaign, autofix, fate);
+    console.print_elapsed_time(time() - start);
+    return rc;
+}
+
+
+def _log_feedback(campaign: Campaign, candidates: list, outcome: str) {
+    import from jaclang.prune.feedback { FeedbackLog, entry_from_candidate }
+    if not candidates {
+        return;
+    }
+    log = FeedbackLog(
+        path=os.path.join(campaign.project_root, ".jac", "prune-feedback.jsonl")
+    );
+    log.record_all([entry_from_candidate(c, outcome) for c in candidates]);
+}
+
+
+def _apply_validated(
+    campaign: Campaign,
+    manifest: Manifest,
+    analysis: Analysis,
+    befores: dict,
+    patched: dict,
+    failed: int
+) -> tuple[int, str] {
+    import from jaclang.prune.validate {
+        snapshot_baseline,
+        validate_batch,
+        bisect_culprit
+    }
+
+    touched = sorted(patched.keys());
+    if not touched {
+        console.warning("No applicable edits after planning.");
+        return ((1 if failed else 0), "skipped");
+    }
+
+    source_paths = [e.path for e in manifest.by_role(FileRole.SOURCE)];
+    console.print("");
+    console.info("validating (baseline snapshot -> apply -> parse -> typecheck)…");
+    baseline = snapshot_baseline(source_paths);
+
+    for path in touched {
+        _write(path, patched[path]);
+    }
+    res = validate_batch(touched, source_paths, baseline, run_format=False);
+
+    if res.ok {
+        n_tests = _affected_test_count(manifest, analysis, touched);
+        console.success(
+            f"validated + applied to {len(touched)} file(s): " + " -> ".join(
+                [f"{s.stage}✓" for s in res.stages]
+            )
+        );
+        if n_tests > 0 {
+            console.info(
+                f"{n_tests} affected test file(s) selected - run them "
+                "(and your suite by risk policy) before committing."
+            );
+        }
+        return ((1 if failed else 0), "applied");
+    }
+
+    for path in touched {
+        _write(path, befores[path]);
+    }
+    console.error(
+        f"validation failed at stage '{res.failed_stage()}' - batch reverted."
+    );
+    for key in res.new_diags[:8] {
+        console.print(f"    new: {key}");
+    }
+
+    def validates(subset: list) -> bool {
+        for p in subset {
+            _write(p, patched[p]);
+        }
+        r = validate_batch(subset, source_paths, baseline, run_format=False);
+        for p in subset {
+            _write(p, befores[p]);
+        }
+        return r.ok;
+    }
+
+    culprits = bisect_culprit(touched, validates);
+    if culprits {
+        console.error("culprit file(s):");
+        for c in culprits {
+            console.print(f"    {os.path.relpath(c, campaign.project_root)}");
+        }
+    }
+    return (1, "validation-failed");
+}
+
+
+def _affected_test_count(
+    manifest: Manifest, analysis: Analysis, touched: list[str]
+) -> int {
+    import from jaclang.prune.validate { select_affected_tests_from_prog }
+    test_paths = [e.path for e in manifest.by_role(FileRole.TEST)];
+    return len(select_affected_tests_from_prog(analysis.prog, touched, test_paths));
 }
