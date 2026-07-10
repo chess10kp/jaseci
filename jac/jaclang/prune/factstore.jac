@@ -12,9 +12,10 @@ import from jaclang.prune.extract {
     EXTRACTOR_VERSION,
     dep_fact_id
 }
+import from jaclang.prune.bodies { BodyFact }
 
 
-glob FACT_SCHEMA_VERSION = "2",
+glob FACT_SCHEMA_VERSION = "3",
      _DATA_TABLES = [
          "modules",
          "module_deps",
@@ -22,7 +23,8 @@ glob FACT_SCHEMA_VERSION = "2",
          "refs",
          "imports",
          "field_accesses",
-         "branches"
+         "branches",
+         "bodies"
      ],
      SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -99,6 +101,26 @@ CREATE TABLE IF NOT EXISTS branches (
     cond_pos_end  INTEGER,
     line          INTEGER
 );
+CREATE TABLE IF NOT EXISTS bodies (
+    symbol_id       TEXT,
+    name            TEXT,
+    module_path     TEXT,
+    owner_id        TEXT,
+    owner_name      TEXT,
+    body_file       TEXT,
+    body_pos_start  INTEGER,
+    body_pos_end    INTEGER,
+    exact_hash      TEXT,
+    structural_hash TEXT,
+    arity           INTEGER,
+    is_async        INTEGER,
+    is_gen          INTEGER,
+    stmt_count      INTEGER,
+    line_count      INTEGER,
+    size_band       INTEGER,
+    completeness    TEXT,
+    vector          TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_refs_used      ON refs(used_id, kind);
 CREATE INDEX IF NOT EXISTS idx_refs_using     ON refs(using_id, kind);
 CREATE INDEX IF NOT EXISTS idx_refs_mod       ON refs(module_path);
@@ -110,6 +132,11 @@ CREATE INDEX IF NOT EXISTS idx_imp_mod        ON imports(module_path);
 CREATE INDEX IF NOT EXISTS idx_dep_from       ON module_deps(from_path);
 CREATE INDEX IF NOT EXISTS idx_dep_to         ON module_deps(to_path);
 CREATE INDEX IF NOT EXISTS idx_dep_id         ON module_deps(id);
+CREATE INDEX IF NOT EXISTS idx_body_exact     ON bodies(exact_hash);
+CREATE INDEX IF NOT EXISTS idx_body_struct    ON bodies(structural_hash);
+CREATE INDEX IF NOT EXISTS idx_body_sym       ON bodies(symbol_id);
+CREATE INDEX IF NOT EXISTS idx_body_mod       ON bodies(module_path);
+CREATE INDEX IF NOT EXISTS idx_body_bucket    ON bodies(arity, is_async, size_band);
 """;
 
 
@@ -185,7 +212,14 @@ obj FactStore {
     }
 
     def _clear_module(path: str) {
-        for tbl in ["symbols", "refs", "imports", "field_accesses", "branches"] {
+        for tbl in [
+            "symbols",
+            "refs",
+            "imports",
+            "field_accesses",
+            "branches",
+            "bodies"
+        ] {
             self.conn.execute(f"DELETE FROM {tbl} WHERE module_path = ?", (path, ));
         }
         self.conn.execute("DELETE FROM module_deps WHERE from_path = ?", (path, ));
@@ -198,7 +232,8 @@ obj FactStore {
         refs: list[ReferenceFact],
         imports: list[ImportFact],
         fields: list[FieldAccessFact],
-        branches: list[BranchFact] = []
+        branches: list[BranchFact] = [],
+        bodies: list[BodyFact] = []
     ) {
         self._clear_module(mod.path);
         self.conn.execute(
@@ -308,6 +343,35 @@ obj FactStore {
                 ) for br in branches
             ]
         );
+        self.conn.executemany(
+            "INSERT INTO bodies(symbol_id, name, module_path, owner_id, "
+            "owner_name, body_file, body_pos_start, body_pos_end, exact_hash, "
+            "structural_hash, arity, is_async, is_gen, stmt_count, line_count, "
+            "size_band, completeness, vector) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    bd.symbol_id,
+                    bd.name,
+                    bd.module_path,
+                    bd.owner_id,
+                    bd.owner_name,
+                    bd.body_file,
+                    bd.body_pos_start,
+                    bd.body_pos_end,
+                    bd.exact_hash,
+                    bd.structural_hash,
+                    bd.arity,
+                    1 if bd.is_async else 0,
+                    1 if bd.is_gen else 0,
+                    bd.stmt_count,
+                    bd.line_count,
+                    bd.size_band,
+                    bd.completeness,
+                    bd.vector
+                ) for bd in bodies
+            ]
+        );
     }
 
     def sync(facts: FactSet) -> tuple[list[str], list[str]] {
@@ -323,7 +387,7 @@ obj FactStore {
                 }
                 bundle = grouped.get(mod.path);
                 if bundle is None {
-                    self.write_module(mod, [], [], [], [], []);
+                    self.write_module(mod, [], [], [], [], [], []);
                 } else {
                     self.write_module(
                         mod,
@@ -331,7 +395,8 @@ obj FactStore {
                         cast(list[ReferenceFact], bundle[1]),
                         cast(list[ImportFact], bundle[2]),
                         cast(list[FieldAccessFact], bundle[3]),
-                        cast(list[BranchFact], bundle[4])
+                        cast(list[BranchFact], bundle[4]),
+                        cast(list[BodyFact], bundle[5])
                     );
                 }
                 refreshed.append(mod.path);
@@ -674,6 +739,50 @@ obj FactStore {
         ];
     }
 
+    def candidate_bodies -> list[dict] {
+        cur = self.conn.execute(
+            "SELECT symbol_id, name, module_path, owner_id, owner_name, "
+            "body_file, body_pos_start, body_pos_end, exact_hash, "
+            "structural_hash, arity, is_async, is_gen, stmt_count, line_count, "
+            "size_band, completeness, vector FROM bodies "
+            "WHERE completeness = 'complete'" + _scope("module_path") + " ORDER BY structural_hash, exact_hash, module_path, "
+            "body_pos_start, symbol_id"
+        );
+        out: list[dict] = [];
+        for row in cur.fetchall() {
+            out.append(
+                {
+                    "symbol_id": row[0],
+                    "name": row[1],
+                    "module_path": row[2],
+                    "owner_id": row[3],
+                    "owner_name": row[4],
+                    "body_file": row[5],
+                    "body_pos_start": row[6],
+                    "body_pos_end": row[7],
+                    "exact_hash": row[8],
+                    "structural_hash": row[9],
+                    "arity": row[10],
+                    "is_async": bool(row[11]),
+                    "is_gen": bool(row[12]),
+                    "stmt_count": row[13],
+                    "line_count": row[14],
+                    "size_band": row[15],
+                    "completeness": row[16],
+                    "vector": row[17]
+                }
+            );
+        }
+        return out;
+    }
+
+    def body_exists(symbol_id: str) -> bool {
+        cur = self.conn.execute(
+            "SELECT 1 FROM bodies WHERE symbol_id = ? LIMIT 1", (symbol_id, )
+        );
+        return cur.fetchone() is not None;
+    }
+
     def counts -> dict[str, int] {
         out: dict[str, int] = {};
         for tbl in [
@@ -683,7 +792,8 @@ obj FactStore {
             "imports",
             "field_accesses",
             "branches",
-            "module_deps"
+            "module_deps",
+            "bodies"
         ] {
             cur = self.conn.execute(f"SELECT COUNT(*) FROM {tbl}");
             out[tbl] = int(cur.fetchone()[0]);

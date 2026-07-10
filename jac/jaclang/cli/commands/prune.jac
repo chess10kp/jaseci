@@ -62,6 +62,12 @@ glob registry = get_registry();
             short="",
             help="With 'analyze': redundancy judge (heuristic, none)"
         ),
+        Arg.create(
+            "group",
+            default="",
+            short="",
+            help="With 'reuse': emit the full evidence packet for one group id"
+        ),
 
     ],
     examples=[
@@ -71,6 +77,8 @@ glob registry = get_registry();
         ("jac prune fix --preview", "Preview safe fixes as diffs"),
         ("jac prune fix --apply", "Apply and validate safe fixes"),
         ("jac prune analyze", "Report agent redundancy findings (report-only)"),
+        ("jac prune reuse -o json", "Rank structural-duplicate candidate groups"),
+        ("jac prune reuse --group <id> -o json", "Full evidence packet for a group"),
 
     ],
     group="analysis"
@@ -84,5 +92,6 @@ def prune(
     output: str = "",
     preview: bool = False,
     apply: bool = False,
-    model: str = "heuristic"
+    model: str = "heuristic",
+    group: str = ""
 ) -> int;

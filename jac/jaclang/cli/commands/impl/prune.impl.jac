@@ -90,7 +90,8 @@ impl prune(
     output: str = "",
     preview: bool = False,
     apply: bool = False,
-    model: str = "heuristic"
+    model: str = "heuristic",
+    group: str = ""
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
@@ -100,7 +101,7 @@ impl prune(
     if parsed_action is None {
         console.error(
             f"Unknown prune action '{action}'.",
-            hint="Available actions: report, facts, fix, analyze"
+            hint="Available actions: report, facts, fix, analyze, reuse"
         );
         return 2;
     }
@@ -116,8 +117,138 @@ impl prune(
         return _run_fix(campaign, preview=preview, apply=apply);
     } elif parsed_action == PruneAction.ANALYZE {
         return _run_analyze(campaign, model=model);
+    } elif parsed_action == PruneAction.REUSE {
+        return _run_reuse(campaign, group=group);
     }
     return 2;
+}
+
+
+def _reuse_store(campaign: Campaign) -> (any | None) {
+    import from jaclang.prune.extract { extract_facts }
+    import from jaclang.prune.factstore { FactStore }
+    manifest = build_manifest(campaign);
+    if not manifest.entries {
+        return None;
+    }
+    def on_compile_error(path: str, err: any) {
+        console.warning(f"compile failed: {path}: {err}");
+    }
+    (prog, errs, warns, compiled) = compile_scope(
+        campaign, manifest, on_error=on_compile_error
+    );
+    facts = extract_facts(prog, manifest);
+    store = FactStore(db_path=facts_db_path(campaign));
+    store.open();
+    store.sync(facts);
+    return store;
+}
+
+
+def _run_reuse(campaign: Campaign, group: str = "") -> int {
+    import json;
+    import from jaclang.prune.clones {
+        find_clone_groups,
+        find_class_rollups,
+        group_summary,
+        group_packet,
+        rollup_summary
+    }
+
+    start = time();
+    as_json = campaign.output_format == OutputFormat.JSON;
+    quiet = campaign.output_format != OutputFormat.TABLE;
+    if not quiet {
+        console.print_header("jac prune - reuse (structural duplicates, report-only)");
+        console.info(f"project root: {campaign.project_root}");
+    }
+
+    store = _reuse_store(campaign);
+    if store is None {
+        if as_json {
+            console.print("[]");
+        } else {
+            console.warning("No .jac files found in scope.");
+        }
+        return 0;
+    }
+
+    groups = find_clone_groups(store);
+
+    if group {
+        target = None;
+        for g in groups {
+            if g.group_id == group {
+                target = g;
+            }
+        }
+        if target is None {
+            store.close();
+            if as_json {
+                console.print("{}");
+            } else {
+                console.error(f"No clone group with id '{group}'.");
+            }
+            return 2;
+        }
+        packet = group_packet(store, target);
+        store.close();
+        console.print(json.dumps(packet, indent=2));
+        return 0;
+    }
+
+    rollups = find_class_rollups(groups);
+    if as_json {
+        payload = {
+            "groups": [group_summary(g) for g in groups],
+            "rollups": [rollup_summary(r) for r in rollups]
+        };
+        store.close();
+        console.print(json.dumps(payload, indent=2));
+        return 0;
+    }
+
+    store.close();
+    if not groups {
+        console.success("No structural duplicates found. 🎉");
+        console.print_elapsed_time(time() - start);
+        return 0;
+    }
+    rows: list[list[str]] = [];
+    for g in groups {
+        members = ", ".join([f"{m.owner_name or '<mod>'}.{m.name}" for m in g.members]);
+        rows.append(
+            [
+                g.kind,
+                str(len(g.members)),
+                str(g.lines_saved),
+                f"{g.payoff:.2f}",
+                members
+            ]
+        );
+    }
+    console.print_table(
+        ["kind", "copies", "~lines", "payoff", "members"],
+        rows,
+        title=f"Structural-duplicate candidates ({len(groups)})"
+    );
+    if rollups {
+        rrows = [
+            [", ".join(r.class_names), str(r.shared_method_count), str(r.lines_saved)]
+            for r in rollups
+        ];
+        console.print_table(
+            ["classes", "shared methods", "~lines"],
+            rrows,
+            title=f"Class-hoist rollups ({len(rollups)})"
+        );
+    }
+    console.info(
+        "Report-only by construction: every group cites verified fact IDs; the "
+        "tool loads no model and applies nothing."
+    );
+    console.print_elapsed_time(time() - start);
+    return 0;
 }
 
 

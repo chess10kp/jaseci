@@ -100,6 +100,34 @@ are contained by construction:
 without an LLM; the loop is model-agnostic (an LLM judge slots into the same
 interface).
 
+## Structural-duplicate detection (`jac prune reuse`)
+
+Where `analyze` reasons over the call graph, `reuse` reasons over **bodies**. It
+renders each callable's body into two hashes - an exact hash (trivia stripped,
+names and literals kept) and a structural hash (local names alpha-renamed,
+literal constants abstracted, callees and attributes kept concrete) - and groups
+callables that collide. Byte-identical bodies form **exact** groups; bodies that
+differ only in constants or local naming form **structural** groups, with the
+differing constants captured as a per-member delta vector. Body extraction is
+impl-annex aware: a body living in a `.impl.jac` is hashed there but attributed
+to its declaration.
+
+Groups spanning two or more sibling classes are rolled up into **class-hoist**
+candidates (the shape of "extract a shared base class"). Everything is ranked by
+a payoff score (lines saved, copies saved, caller reach) and is **report-only by
+construction** - the tool loads no model and applies nothing.
+
+```bash
+jac prune reuse -o json                  # ranked candidate groups + rollups
+jac prune reuse --group <id> -o json     # full evidence packet for one group
+```
+
+The evidence packet carries each member's decl, owner, body span (the annex file
+when applicable), visibility, delta vector, callers/callees, and citations as
+typed fact IDs (`sym:`/`body:`) verifiable through the tool surface. A consuming
+agent Reads the cited spans and decides `identical` / `equivalent` /
+`not-a-duplicate`; the tool never reaches a verdict.
+
 ## Feedback ledger
 
 Every finding's fate - `reported`, `previewed`, `applied`, `reverted`,
@@ -112,7 +140,7 @@ mining.
 
 | Flag | Meaning |
 |---|---|
-| `action` (positional) | `report` (default), `facts`, `fix`, `analyze` |
+| `action` (positional) | `report` (default), `facts`, `fix`, `analyze`, `reuse` |
 | `paths…` | paths to analyze (default: project root) |
 | `--exclude <glob>` | glob patterns to exclude (repeatable) |
 | `--recipe <name>` | restrict to named detectors (repeatable) |
@@ -121,3 +149,4 @@ mining.
 | `--preview` | with `fix`: print diffs without writing |
 | `--apply` | with `fix`: write, validate, revert on failure |
 | `--model {heuristic,none}` | with `analyze`: the redundancy judge |
+| `--group <id>` | with `reuse`: emit the full evidence packet for one group |

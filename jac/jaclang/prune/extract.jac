@@ -4,9 +4,10 @@ import from typing { cast }
 import jaclang.jac0core.unitree as uni;
 
 import from jaclang.prune.manifest { Manifest, FileRole, role_label }
+import from jaclang.prune.bodies { BodyFact, extract_bodies }
 
 
-glob EXTRACTOR_VERSION = "1";
+glob EXTRACTOR_VERSION = "2";
 
 
 obj ModuleFact {
@@ -101,12 +102,13 @@ obj FactSet {
         refs: list[ReferenceFact] = [],
         imports: list[ImportFact] = [],
         field_accesses: list[FieldAccessFact] = [],
-        branches: list[BranchFact] = [];
+        branches: list[BranchFact] = [],
+        bodies: list[BodyFact] = [];
 
     def by_module -> dict[str, tuple] {
         out: dict[str, tuple] = {};
         for m in self.modules {
-            out[m.path] = ([], [], [], [], []);
+            out[m.path] = ([], [], [], [], [], []);
         }
         def bucket(path: str) -> (tuple | None) {
             return out.get(path);
@@ -139,6 +141,12 @@ obj FactSet {
             b = bucket(br.module_path);
             if b is not None {
                 b[4].append(br);
+            }
+        }
+        for bd in self.bodies {
+            b = bucket(bd.module_path);
+            if b is not None {
+                b[5].append(bd);
             }
         }
         return out;
@@ -525,8 +533,8 @@ def _module_fact_hash(mod: ModuleFact, bundle: (tuple | None)) -> str {
         f"status={mod.status}",
         f"errors={mod.error_count}"
     ];
-    (syms, refs, imports, fields, branches) = (
-        bundle if bundle is not None else ([], [], [], [], [])
+    (syms, refs, imports, fields, branches, bodies) = (
+        bundle if bundle is not None else ([], [], [], [], [], [])
     );
     for s in sorted(syms, key=(lambda x : x.id)) {
         parts.append(
@@ -558,6 +566,13 @@ def _module_fact_hash(mod: ModuleFact, bundle: (tuple | None)) -> str {
     }
     for br in sorted(branches, key=(lambda x : (x.if_pos_start, x.cond_value))) {
         parts.append("B|" + str(br.if_pos_start) + "|" + br.cond_value);
+    }
+    for bd in sorted(bodies, key=(lambda x : x.symbol_id)) {
+        parts.append(
+            "Y|" + "|".join(
+                [bd.symbol_id, bd.exact_hash, bd.structural_hash, bd.completeness]
+            )
+        );
     }
     for dep in sorted(mod.deps) {
         parts.append("D|" + dep);
@@ -595,6 +610,7 @@ def extract_facts(prog: any, manifest: Manifest) -> FactSet {
         );
         _extract_imports(mod, facts, in_scope_paths);
         _extract_branches(mod, facts, in_scope_paths);
+        facts.bodies.extend(extract_bodies(mod, stable_symbol_id));
     }
 
     deps_by_source: dict[str, list[str]] = {};
@@ -616,11 +632,17 @@ def extract_facts(prog: any, manifest: Manifest) -> FactSet {
         errs_by_path[apath] = errs_by_path.get(apath, 0) + 1;
     }
 
+    for bd in facts.bodies {
+        if errs_by_path.get(bd.module_path, 0) > 0 {
+            bd.completeness = "error";
+        }
+    }
+
     grouped: dict[str, tuple] = {};
     def _bucket(p: str) -> tuple {
         b = grouped.get(p);
         if b is None {
-            b = ([], [], [], [], []);
+            b = ([], [], [], [], [], []);
             grouped[p] = b;
         }
         return b;
@@ -639,6 +661,9 @@ def extract_facts(prog: any, manifest: Manifest) -> FactSet {
     }
     for br in facts.branches {
         _bucket(br.module_path)[4].append(br);
+    }
+    for bd in facts.bodies {
+        _bucket(bd.module_path)[5].append(bd);
     }
 
     for (path, role) in role_by_path.items() {

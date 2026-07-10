@@ -118,6 +118,9 @@ obj ToolSurface {
         if citation.startswith("sym:") {
             return self.store.symbol_exists(citation[4:]);
         }
+        if citation.startswith("body:") {
+            return self.store.body_exists(citation[5:]);
+        }
         return self.store.symbol_exists(citation);
     }
 
