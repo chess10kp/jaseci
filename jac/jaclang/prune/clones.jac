@@ -15,6 +15,8 @@ obj CloneMember {
         body_file: str,
         body_pos_start: int,
         body_pos_end: int,
+        stmt_pos_start: int,
+        stmt_pos_end: int,
         exact_hash: str,
         line_count: int,
         stmt_count: int,
@@ -113,6 +115,8 @@ def _build_member(store: FactStore, row: dict) -> CloneMember {
         body_file=str(row["body_file"]),
         body_pos_start=int(row["body_pos_start"]),
         body_pos_end=int(row["body_pos_end"]),
+        stmt_pos_start=int(row["stmt_pos_start"]),
+        stmt_pos_end=int(row["stmt_pos_end"]),
         exact_hash=str(row["exact_hash"]),
         line_count=int(row["line_count"]),
         stmt_count=int(row["stmt_count"]),
@@ -303,8 +307,8 @@ def _member_citations(m: CloneMember) -> list[str] {
 }
 
 
-def group_summary(g: CloneGroup) -> dict {
-    return {
+def group_summary(g: CloneGroup, probe: dict | None = None) -> dict {
+    out = {
         "group_id": g.group_id,
         "kind": g.kind,
         "arity": g.arity,
@@ -320,10 +324,14 @@ def group_summary(g: CloneGroup) -> dict {
         "reach": g.reach,
         "payoff": g.payoff
     };
+    if probe is not None {
+        out["probe"] = probe.get("status", "");
+    }
+    return out;
 }
 
 
-def group_packet(store: FactStore, g: CloneGroup) -> dict {
+def group_packet(store: FactStore, g: CloneGroup, probe: dict | None = None) -> dict {
     members: list[dict] = [];
     citations: list[str] = [];
     for m in g.members {
@@ -341,6 +349,8 @@ def group_packet(store: FactStore, g: CloneGroup) -> dict {
                 "body_file": m.body_file,
                 "body_pos_start": m.body_pos_start,
                 "body_pos_end": m.body_pos_end,
+                "stmt_pos_start": m.stmt_pos_start,
+                "stmt_pos_end": m.stmt_pos_end,
                 "visibility": access,
                 "completeness": m.completeness,
                 "line_count": m.line_count,
@@ -354,6 +364,10 @@ def group_packet(store: FactStore, g: CloneGroup) -> dict {
         );
     }
     canonical = g.members[0].vector if g.members else [];
+    evidence = {"tier": g.kind, "structural_hash": g.structural_hash};
+    if probe is not None {
+        evidence["probe"] = probe;
+    }
     return {
         "group_id": g.group_id,
         "kind": g.kind,
@@ -364,7 +378,9 @@ def group_packet(store: FactStore, g: CloneGroup) -> dict {
         "size_band": g.size_band,
         "exact_subgroups": g.exact_subgroups,
         "canonical_vector": canonical,
+        "canonical_member": g.members[0].symbol_id if g.members else "",
         "members": members,
+        "evidence": evidence,
         "payoff": {
             "score": g.payoff,
             "copies_saved": g.copies_saved,

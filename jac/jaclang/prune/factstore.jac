@@ -15,7 +15,7 @@ import from jaclang.prune.extract {
 import from jaclang.prune.bodies { BodyFact }
 
 
-glob FACT_SCHEMA_VERSION = "3",
+glob FACT_SCHEMA_VERSION = "4",
      _DATA_TABLES = [
          "modules",
          "module_deps",
@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS bodies (
     body_file       TEXT,
     body_pos_start  INTEGER,
     body_pos_end    INTEGER,
+    stmt_pos_start  INTEGER,
+    stmt_pos_end    INTEGER,
     exact_hash      TEXT,
     structural_hash TEXT,
     arity           INTEGER,
@@ -345,10 +347,11 @@ obj FactStore {
         );
         self.conn.executemany(
             "INSERT INTO bodies(symbol_id, name, module_path, owner_id, "
-            "owner_name, body_file, body_pos_start, body_pos_end, exact_hash, "
+            "owner_name, body_file, body_pos_start, body_pos_end, "
+            "stmt_pos_start, stmt_pos_end, exact_hash, "
             "structural_hash, arity, is_async, is_gen, stmt_count, line_count, "
             "size_band, completeness, vector) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     bd.symbol_id,
@@ -359,6 +362,8 @@ obj FactStore {
                     bd.body_file,
                     bd.body_pos_start,
                     bd.body_pos_end,
+                    bd.stmt_pos_start,
+                    bd.stmt_pos_end,
                     bd.exact_hash,
                     bd.structural_hash,
                     bd.arity,
@@ -742,7 +747,8 @@ obj FactStore {
     def candidate_bodies -> list[dict] {
         cur = self.conn.execute(
             "SELECT symbol_id, name, module_path, owner_id, owner_name, "
-            "body_file, body_pos_start, body_pos_end, exact_hash, "
+            "body_file, body_pos_start, body_pos_end, stmt_pos_start, "
+            "stmt_pos_end, exact_hash, "
             "structural_hash, arity, is_async, is_gen, stmt_count, line_count, "
             "size_band, completeness, vector FROM bodies "
             "WHERE completeness = 'complete'" + _scope("module_path") + " ORDER BY structural_hash, exact_hash, module_path, "
@@ -760,16 +766,18 @@ obj FactStore {
                     "body_file": row[5],
                     "body_pos_start": row[6],
                     "body_pos_end": row[7],
-                    "exact_hash": row[8],
-                    "structural_hash": row[9],
-                    "arity": row[10],
-                    "is_async": bool(row[11]),
-                    "is_gen": bool(row[12]),
-                    "stmt_count": row[13],
-                    "line_count": row[14],
-                    "size_band": row[15],
-                    "completeness": row[16],
-                    "vector": row[17]
+                    "stmt_pos_start": row[8],
+                    "stmt_pos_end": row[9],
+                    "exact_hash": row[10],
+                    "structural_hash": row[11],
+                    "arity": row[12],
+                    "is_async": bool(row[13]),
+                    "is_gen": bool(row[14]),
+                    "stmt_count": row[15],
+                    "line_count": row[16],
+                    "size_band": row[17],
+                    "completeness": row[18],
+                    "vector": row[19]
                 }
             );
         }

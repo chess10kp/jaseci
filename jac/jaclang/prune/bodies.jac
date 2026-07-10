@@ -12,6 +12,8 @@ obj BodyFact {
         body_file: str,
         body_pos_start: int,
         body_pos_end: int,
+        stmt_pos_start: int,
+        stmt_pos_end: int,
         exact_hash: str,
         structural_hash: str,
         arity: int,
@@ -164,6 +166,13 @@ def _body_span(ab: any) -> tuple[str, int, int, int] {
 }
 
 
+def _stmt_span(body: list) -> tuple[int, int] {
+    first = body[0].loc;
+    last = body[-1].loc;
+    return (int(first.pos_start), int(last.pos_end));
+}
+
+
 def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
     out: list[BodyFact] = [];
     for ab in mod.get_all_sub_nodes(uni.Ability) {
@@ -186,6 +195,7 @@ def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
         exact = hashlib.sha256("".join(ex).encode("utf-8")).hexdigest()[:16];
         struct = hashlib.sha256("".join(st).encode("utf-8")).hexdigest()[:16];
         (bfile, bstart, bend, blines) = _body_span(ab);
+        (sstart, send) = _stmt_span(body);
         owner = ab.method_owner;
         owner_id = "";
         owner_name = "";
@@ -204,6 +214,8 @@ def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
                 body_file=bfile,
                 body_pos_start=bstart,
                 body_pos_end=bend,
+                stmt_pos_start=sstart,
+                stmt_pos_end=send,
                 exact_hash=exact,
                 structural_hash=struct,
                 arity=_arity(ab),

@@ -68,6 +68,13 @@ glob registry = get_registry();
             short="",
             help="With 'reuse': emit the full evidence packet for one group id"
         ),
+        Arg.create(
+            "probe",
+            typ=bool,
+            default=False,
+            short="",
+            help="With 'reuse': dry-run the consolidation (parse+typecheck, revert)"
+        ),
 
     ],
     examples=[
@@ -79,6 +86,7 @@ glob registry = get_registry();
         ("jac prune analyze", "Report agent redundancy findings (report-only)"),
         ("jac prune reuse -o json", "Rank structural-duplicate candidate groups"),
         ("jac prune reuse --group <id> -o json", "Full evidence packet for a group"),
+        ("jac prune reuse --probe -o json", "Dry-run consolidation of the top groups"),
 
     ],
     group="analysis"
@@ -93,5 +101,6 @@ def prune(
     preview: bool = False,
     apply: bool = False,
     model: str = "heuristic",
-    group: str = ""
+    group: str = "",
+    probe: bool = False
 ) -> int;

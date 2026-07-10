@@ -91,7 +91,8 @@ impl prune(
     preview: bool = False,
     apply: bool = False,
     model: str = "heuristic",
-    group: str = ""
+    group: str = "",
+    probe: bool = False
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
@@ -118,18 +119,18 @@ impl prune(
     } elif parsed_action == PruneAction.ANALYZE {
         return _run_analyze(campaign, model=model);
     } elif parsed_action == PruneAction.REUSE {
-        return _run_reuse(campaign, group=group);
+        return _run_reuse(campaign, group=group, probe=probe);
     }
     return 2;
 }
 
 
-def _reuse_store(campaign: Campaign) -> (any | None) {
+def _reuse_context(campaign: Campaign) -> tuple {
     import from jaclang.prune.extract { extract_facts }
     import from jaclang.prune.factstore { FactStore }
     manifest = build_manifest(campaign);
     if not manifest.entries {
-        return None;
+        return (None, None, None);
     }
     def on_compile_error(path: str, err: any) {
         console.warning(f"compile failed: {path}: {err}");
@@ -141,11 +142,18 @@ def _reuse_store(campaign: Campaign) -> (any | None) {
     store = FactStore(db_path=facts_db_path(campaign));
     store.open();
     store.sync(facts);
-    return store;
+    return (store, prog, manifest);
 }
 
 
-def _run_reuse(campaign: Campaign, group: str = "") -> int {
+def _reuse_scope_paths(manifest: Manifest) -> tuple[list[str], list[str]] {
+    source_paths = [e.path for e in manifest.by_role(FileRole.SOURCE)];
+    test_paths = [e.path for e in manifest.by_role(FileRole.TEST)];
+    return (source_paths, test_paths);
+}
+
+
+def _run_reuse(campaign: Campaign, group: str = "", probe: bool = False) -> int {
     import json;
     import from jaclang.prune.clones {
         find_clone_groups,
@@ -154,6 +162,8 @@ def _run_reuse(campaign: Campaign, group: str = "") -> int {
         group_packet,
         rollup_summary
     }
+    import from jaclang.prune.probe { probe_group, probe_groups }
+    import from jaclang.prune.validate { snapshot_baseline }
 
     start = time();
     as_json = campaign.output_format == OutputFormat.JSON;
@@ -163,7 +173,7 @@ def _run_reuse(campaign: Campaign, group: str = "") -> int {
         console.info(f"project root: {campaign.project_root}");
     }
 
-    store = _reuse_store(campaign);
+    (store, prog, manifest) = _reuse_context(campaign);
     if store is None {
         if as_json {
             console.print("[]");
@@ -191,16 +201,33 @@ def _run_reuse(campaign: Campaign, group: str = "") -> int {
             }
             return 2;
         }
-        packet = group_packet(store, target);
+        probe_dict = None;
+        if probe {
+            (source_paths, test_paths) = _reuse_scope_paths(manifest);
+            baseline = snapshot_baseline(source_paths);
+            probe_dict = probe_group(
+                target, source_paths, test_paths, prog, baseline
+            ).as_dict();
+        }
+        packet = group_packet(store, target, probe=probe_dict);
         store.close();
         console.print(json.dumps(packet, indent=2));
         return 0;
     }
 
+    probes: dict = {};
+    if probe {
+        (source_paths, test_paths) = _reuse_scope_paths(manifest);
+        gp = probe_groups(groups, source_paths, test_paths, prog);
+        for (gid, res) in gp.items() {
+            probes[gid] = res.as_dict();
+        }
+    }
+
     rollups = find_class_rollups(groups);
     if as_json {
         payload = {
-            "groups": [group_summary(g) for g in groups],
+            "groups": [group_summary(g, probe=probes.get(g.group_id)) for g in groups],
             "rollups": [rollup_summary(r) for r in rollups]
         };
         store.close();
@@ -217,20 +244,21 @@ def _run_reuse(campaign: Campaign, group: str = "") -> int {
     rows: list[list[str]] = [];
     for g in groups {
         members = ", ".join([f"{m.owner_name or '<mod>'}.{m.name}" for m in g.members]);
-        rows.append(
-            [
-                g.kind,
-                str(len(g.members)),
-                str(g.lines_saved),
-                f"{g.payoff:.2f}",
-                members
-            ]
-        );
+        row = [g.kind, str(len(g.members)), str(g.lines_saved), f"{g.payoff:.2f}"];
+        if probe {
+            pr = probes.get(g.group_id);
+            row.append(pr.get("status", "-") if pr is not None else "-");
+        }
+        row.append(members);
+        rows.append(row);
     }
+    header = ["kind", "copies", "~lines", "payoff"];
+    if probe {
+        header.append("probe");
+    }
+    header.append("members");
     console.print_table(
-        ["kind", "copies", "~lines", "payoff", "members"],
-        rows,
-        title=f"Structural-duplicate candidates ({len(groups)})"
+        header, rows, title=f"Structural-duplicate candidates ({len(groups)})"
     );
     if rollups {
         rrows = [
