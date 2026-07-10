@@ -307,7 +307,9 @@ def _member_citations(m: CloneMember) -> list[str] {
 }
 
 
-def group_summary(g: CloneGroup, probe: dict | None = None) -> dict {
+def group_summary(
+    g: CloneGroup, probe: dict | None = None, history: dict | None = None
+) -> dict {
     out = {
         "group_id": g.group_id,
         "kind": g.kind,
@@ -327,11 +329,20 @@ def group_summary(g: CloneGroup, probe: dict | None = None) -> dict {
     if probe is not None {
         out["probe"] = probe.get("status", "");
     }
+    if history is not None and history.get("available") {
+        out["tandem_commits"] = history.get("tandem_commits", 0);
+        out["tandem_ratio"] = history.get("tandem_ratio", 0.0);
+    }
     return out;
 }
 
 
-def group_packet(store: FactStore, g: CloneGroup, probe: dict | None = None) -> dict {
+def group_packet(
+    store: FactStore,
+    g: CloneGroup,
+    probe: dict | None = None,
+    history: dict | None = None
+) -> dict {
     members: list[dict] = [];
     citations: list[str] = [];
     for m in g.members {
@@ -367,6 +378,9 @@ def group_packet(store: FactStore, g: CloneGroup, probe: dict | None = None) -> 
     evidence = {"tier": g.kind, "structural_hash": g.structural_hash};
     if probe is not None {
         evidence["probe"] = probe;
+    }
+    if history is not None {
+        evidence["history"] = history;
     }
     return {
         "group_id": g.group_id,

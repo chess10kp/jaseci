@@ -75,6 +75,13 @@ glob registry = get_registry();
             short="",
             help="With 'reuse': dry-run the consolidation (parse+typecheck, revert)"
         ),
+        Arg.create(
+            "history",
+            typ=bool,
+            default=False,
+            short="",
+            help="With 'reuse': add git tandem-edit + divergence evidence"
+        ),
 
     ],
     examples=[
@@ -102,5 +109,6 @@ def prune(
     apply: bool = False,
     model: str = "heuristic",
     group: str = "",
-    probe: bool = False
+    probe: bool = False,
+    history: bool = False
 ) -> int;

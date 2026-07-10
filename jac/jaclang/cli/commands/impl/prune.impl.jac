@@ -92,7 +92,8 @@ impl prune(
     apply: bool = False,
     model: str = "heuristic",
     group: str = "",
-    probe: bool = False
+    probe: bool = False,
+    history: bool = False
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
@@ -119,7 +120,7 @@ impl prune(
     } elif parsed_action == PruneAction.ANALYZE {
         return _run_analyze(campaign, model=model);
     } elif parsed_action == PruneAction.REUSE {
-        return _run_reuse(campaign, group=group, probe=probe);
+        return _run_reuse(campaign, group=group, probe=probe, history=history);
     }
     return 2;
 }
@@ -153,7 +154,24 @@ def _reuse_scope_paths(manifest: Manifest) -> tuple[list[str], list[str]] {
 }
 
 
-def _run_reuse(campaign: Campaign, group: str = "", probe: bool = False) -> int {
+def _reorder_by_tandem(groups: list, histories: dict) -> list {
+    def key(g: any) -> tuple {
+        h = histories.get(g.group_id);
+        ratio = 0.0;
+        tandem = 0;
+        if h is not None and h.get("available") {
+            ratio = h.get("tandem_ratio", 0.0);
+            tandem = h.get("tandem_commits", 0);
+        }
+        return (-ratio, -tandem, -g.payoff, g.group_id);
+    }
+    return sorted(groups, key=key);
+}
+
+
+def _run_reuse(
+    campaign: Campaign, group: str = "", probe: bool = False, history: bool = False
+) -> int {
     import json;
     import from jaclang.prune.clones {
         find_clone_groups,
@@ -163,6 +181,7 @@ def _run_reuse(campaign: Campaign, group: str = "", probe: bool = False) -> int 
         rollup_summary
     }
     import from jaclang.prune.probe { probe_group, probe_groups }
+    import from jaclang.prune.history { git_root, group_history, annotate_histories }
     import from jaclang.prune.validate { snapshot_baseline }
 
     start = time();
@@ -209,7 +228,14 @@ def _run_reuse(campaign: Campaign, group: str = "", probe: bool = False) -> int 
                 target, source_paths, test_paths, prog, baseline
             ).as_dict();
         }
-        packet = group_packet(store, target, probe=probe_dict);
+        history_dict = None;
+        if history {
+            repo = git_root(campaign.project_root);
+            if repo is not None {
+                history_dict = group_history(target, repo).as_dict();
+            }
+        }
+        packet = group_packet(store, target, probe=probe_dict, history=history_dict);
         store.close();
         console.print(json.dumps(packet, indent=2));
         return 0;
@@ -224,10 +250,26 @@ def _run_reuse(campaign: Campaign, group: str = "", probe: bool = False) -> int 
         }
     }
 
+    histories: dict = {};
+    if history {
+        repo = git_root(campaign.project_root);
+        if repo is not None {
+            hs = annotate_histories(groups, repo);
+            for (gid, h) in hs.items() {
+                histories[gid] = h.as_dict();
+            }
+            groups = _reorder_by_tandem(groups, histories);
+        }
+    }
+
     rollups = find_class_rollups(groups);
     if as_json {
         payload = {
-            "groups": [group_summary(g, probe=probes.get(g.group_id)) for g in groups],
+            "groups": [
+                group_summary(
+                    g, probe=probes.get(g.group_id), history=histories.get(g.group_id)
+                ) for g in groups
+            ],
             "rollups": [rollup_summary(r) for r in rollups]
         };
         store.close();
@@ -249,12 +291,23 @@ def _run_reuse(campaign: Campaign, group: str = "", probe: bool = False) -> int 
             pr = probes.get(g.group_id);
             row.append(pr.get("status", "-") if pr is not None else "-");
         }
+        if history {
+            h = histories.get(g.group_id);
+            if h is not None and h.get("available") {
+                row.append(str(h.get("tandem_commits", 0)));
+            } else {
+                row.append("-");
+            }
+        }
         row.append(members);
         rows.append(row);
     }
     header = ["kind", "copies", "~lines", "payoff"];
     if probe {
         header.append("probe");
+    }
+    if history {
+        header.append("tandem");
     }
     header.append("members");
     console.print_table(
