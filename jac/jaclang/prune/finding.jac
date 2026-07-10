@@ -142,6 +142,18 @@ def _base_disposition(
         trace.append("literal-condition branch -> moderate/pr-only");
         return (RiskTier.MODERATE, Disposition.PR_ONLY);
     }
+    if detector == "single-caller-inline" {
+        trace.append(
+            "single-caller inline candidate (advisory) -> moderate/report-only"
+        );
+        return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
+    }
+    if detector == "visibility-tightening" {
+        trace.append(
+            "visibility-tightening candidate (advisory) -> moderate/report-only"
+        );
+        return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
+    }
     if detector == "private-dead-defs" {
         nested = ">" in f.scope_chain;
         if f.kind in _ARCHETYPE_KINDS {

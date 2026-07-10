@@ -5,7 +5,8 @@ import from jaclang.prune.finding { Finding, Evidence, Polarity }
 import from jaclang.prune.veto { VetoIndex }
 
 
-glob _SKIP_NAMES = {"self", "super", "init", "postinit"},
+glob _INLINE_MAX_STMTS = 3,
+     _SKIP_NAMES = {"self", "super", "init", "postinit"},
      _DETECTABLE_KINDS = {
          "variable",
          "mod_var",
@@ -204,6 +205,121 @@ def detect_literal_dead_branches(store: FactStore, veto: VetoIndex) -> list[Find
 }
 
 
+def detect_single_caller_inline(store: FactStore, veto: VetoIndex) -> list[Finding] {
+    out: list[Finding] = [];
+    for s in store.private_callable_bodies() {
+        d: any = s;
+        name = str(d["name"]);
+        kind = str(d["kind"]);
+        if name in _SKIP_NAMES or _is_dunder(name) {
+            continue;
+        }
+        stmt_count = int(d["stmt_count"]);
+        if stmt_count > _INLINE_MAX_STMTS {
+            continue;
+        }
+        sid = str(d["id"]);
+        callers: list[str] = [];
+        for c in store.callers_of(sid) {
+            if c != sid {
+                callers.append(c);
+            }
+        }
+        if len(callers) != 1 {
+            continue;
+        }
+        f = Finding(
+            detector="single-caller-inline",
+            symbol_id=sid,
+            name=name,
+            module_path=str(d["module_path"]),
+            kind=kind,
+            message=f"private {kind} '{name}' has a single caller and a {stmt_count}-statement body - inline and delete",
+            pos_start=int(d["decl_pos_start"]),
+            pos_end=int(d["decl_pos_end"]),
+            line=int(d["decl_line"]),
+            access=str(d["access"]),
+            scope_chain=str(d["scope_chain"]),
+            citations=["sym:" + sid],
+            related=["sym:" + callers[0]]
+        );
+        f.add(
+            Evidence(
+                kind="single-caller",
+                polarity=Polarity.SUPPORTS,
+                detail=f"exactly 1 caller, {stmt_count}-statement body"
+            )
+        );
+        for ev in veto.check_symbol(name, str(d["module_path"])) {
+            f.add(ev);
+        }
+        out.append(f);
+    }
+    return out;
+}
+
+
+glob _TIGHTEN_KINDS = {"mod_var", "ability", "method", "object", "node", "edge"};
+
+
+def detect_visibility_tightening(store: FactStore, veto: VetoIndex) -> list[Finding] {
+    out: list[Finding] = [];
+    for s in store.symbols_for_detection() {
+        d: any = s;
+        name = str(d["name"]);
+        kind = str(d["kind"]);
+        mod = str(d["module_path"]);
+        if name in _SKIP_NAMES or _is_dunder(name) {
+            continue;
+        }
+        if kind not in _TIGHTEN_KINDS {
+            continue;
+        }
+        if str(d["access"]) != "public" {
+            continue;
+        }
+        if os.path.basename(mod) == "__init__.jac" {
+            continue;
+        }
+        sid = str(d["id"]);
+        if store.is_reexported(sid) {
+            continue;
+        }
+        if store.cross_module_use_count(sid) != 0 {
+            continue;
+        }
+        internal = store.use_count(sid);
+        f = Finding(
+            detector="visibility-tightening",
+            symbol_id=sid,
+            name=name,
+            module_path=mod,
+            kind=kind,
+            message=f"public {kind} '{name}' has no cross-module references; demote from :pub (or delete if not exported API)",
+            pos_start=int(d["decl_pos_start"]),
+            pos_end=int(d["decl_pos_end"]),
+            line=int(d["decl_line"]),
+            access="public",
+            scope_chain=str(d["scope_chain"]),
+            citations=["sym:" + sid],
+            plan_meta={"internal_uses": internal, "exported": False}
+        );
+        f.add(
+            Evidence(
+                kind="no-cross-module-refs",
+                polarity=Polarity.SUPPORTS,
+                detail=f"0 references outside module; {internal} in-module use(s)"
+            )
+        );
+        for ev in veto.check_symbol(name, mod) {
+            f.add(ev);
+        }
+        out.append(f);
+    }
+    return out;
+}
+
+
 def run_detectors(
     store: FactStore, veto: VetoIndex, recipes: list[str]
 ) -> list[Finding] {
@@ -217,6 +333,10 @@ def run_detectors(
             out.extend(detect_write_only_fields(store, veto));
         } elif name == "literal-dead-branch" {
             out.extend(detect_literal_dead_branches(store, veto));
+        } elif name == "single-caller-inline" {
+            out.extend(detect_single_caller_inline(store, veto));
+        } elif name == "visibility-tightening" {
+            out.extend(detect_visibility_tightening(store, veto));
         }
     }
     return out;

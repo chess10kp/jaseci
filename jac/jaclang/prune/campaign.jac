@@ -91,6 +91,7 @@ glob DEFAULT_RECIPES = [
          "private-dead-defs",
          "write-only-fields",
          "literal-dead-branch",
+         "single-caller-inline",
 
      ],
      DEFAULT_GENERATED_GLOBS = ["*_gen.jac", "gen_*.jac", "*.gen.jac"];

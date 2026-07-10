@@ -446,6 +446,38 @@ obj FactStore {
         return int(cur2.fetchone()[0]);
     }
 
+    def cross_module_use_count(symbol_id: str) -> int {
+        cur = self.conn.execute(
+            "SELECT s.module_path FROM symbols s WHERE s.id = ?", (symbol_id, )
+        );
+        row = cur.fetchone();
+        if not row {
+            return 0;
+        }
+        cur2 = self.conn.execute(
+            "SELECT COUNT(*) FROM refs WHERE used_id = ? AND module_path != ?" + _scope(
+                "module_path"
+            ),
+            (symbol_id, row[0])
+        );
+        return int(cur2.fetchone()[0]);
+    }
+
+    def is_reexported(symbol_id: str) -> bool {
+        cur = self.conn.execute(
+            "SELECT i.module_path FROM imports i WHERE i.resolved_id = ?" + _scope(
+                "i.module_path"
+            ),
+            (symbol_id, )
+        );
+        for row in cur.fetchall() {
+            if str(row[0]).endswith("__init__.jac") {
+                return True;
+            }
+        }
+        return False;
+    }
+
     def field_rw_counts(field_id: str) -> tuple[int, int] {
         cur = self.conn.execute(
             "SELECT kind, COUNT(*) FROM field_accesses WHERE field_id = ?" + _scope(
@@ -744,6 +776,37 @@ obj FactStore {
                 "scope_chain": row[5]
             } for row in cur.fetchall()
         ];
+    }
+
+    def private_callable_bodies -> list[dict] {
+        cur = self.conn.execute(
+            "SELECT s.id, s.module_path, s.name, s.kind, s.access, "
+            "s.scope_chain, s.decl_pos_start, s.decl_pos_end, s.decl_line, "
+            "b.stmt_count, b.line_count "
+            "FROM symbols s JOIN bodies b ON s.id = b.symbol_id "
+            "WHERE s.imported = 0 AND s.kind IN ('ability', 'method') "
+            "AND s.access IN ('private', 'protected') "
+            "AND b.completeness = 'complete'" + _scope("s.module_path") + " ORDER BY s.module_path, s.decl_pos_start, s.id"
+        );
+        out: list[dict] = [];
+        for row in cur.fetchall() {
+            out.append(
+                {
+                    "id": row[0],
+                    "module_path": row[1],
+                    "name": row[2],
+                    "kind": row[3],
+                    "access": row[4],
+                    "scope_chain": row[5],
+                    "decl_pos_start": row[6],
+                    "decl_pos_end": row[7],
+                    "decl_line": row[8],
+                    "stmt_count": row[9],
+                    "line_count": row[10]
+                }
+            );
+        }
+        return out;
     }
 
     def candidate_bodies -> list[dict] {
