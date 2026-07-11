@@ -85,6 +85,13 @@ obj Finding {
         key = f"{self.detector}|{anchor}";
         return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16];
     }
+
+    def packet_citations -> list[str] {
+        if self.citations {
+            return self.citations;
+        }
+        return ["sym:" + self.symbol_id] if self.symbol_id else [];
+    }
 }
 
 
@@ -296,7 +303,7 @@ obj Candidate {
             "source": f.source,
             "evidence": [e.as_dict() for e in f.evidence],
             "verify": verify_questions(f),
-            "citations": f.citations,
+            "citations": f.packet_citations(),
             "cite_index": idx,
             "related": f.related,
             "trace": self.trace

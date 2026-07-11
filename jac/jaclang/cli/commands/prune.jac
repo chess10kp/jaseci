@@ -12,7 +12,7 @@ glob registry = get_registry();
             "action",
             kind=ArgKind.POSITIONAL,
             default="report",
-            help="Action: report, facts, fix, analyze, reuse, list, show"
+            help="Action: report, facts, fix, analyze, reuse, list, show, verdict"
         ),
         Arg.create(
             "paths",
@@ -103,6 +103,30 @@ glob registry = get_registry();
             short="",
             help="With 'list': max rows to show before rank-suppressing the tail"
         ),
+        Arg.create(
+            "decision",
+            default="",
+            short="",
+            help="With 'verdict': accept, reject, or contested"
+        ),
+        Arg.create(
+            "cite",
+            default="",
+            short="",
+            help="With 'verdict': comma-separated fact IDs (must exist in the packet)"
+        ),
+        Arg.create(
+            "note",
+            default="",
+            short="",
+            help="With 'verdict': one-line justification recorded in the ledger"
+        ),
+        Arg.create(
+            "fate",
+            default="",
+            short="",
+            help="With 'verdict': landed-unchanged, landed-modified, abandoned, reverted"
+        ),
 
     ],
     examples=[
@@ -125,6 +149,16 @@ glob registry = get_registry();
             "jac prune show <fingerprint> -o json",
             "Full v2 packet for one finding or reuse group"
         ),
+        (
+            "jac prune verdict <fingerprint> --decision accept --cite sym:a,ref:b "
+            "--note \"confirmed dead\"",
+            "Record an agent verdict (citation-gated) in the ledger"
+        ),
+        (
+            "jac prune verdict <fingerprint> --decision reject --cite sym:a "
+            "--note \"registry-dispatched\"",
+            "Reject a finding and permanently suppress it"
+        ),
 
     ],
     group="analysis"
@@ -144,5 +178,9 @@ def prune(
     history: bool = False,
     windows: bool = False,
     fuzzy: bool = False,
-    limit: int = 200
+    limit: int = 200,
+    decision: str = "",
+    cite: str = "",
+    note: str = "",
+    fate: str = ""
 ) -> int;

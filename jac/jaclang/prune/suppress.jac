@@ -63,6 +63,41 @@ def _resolve_suppression_path(campaign: Campaign) -> str {
 }
 
 
+def suppression_write_path(campaign: Campaign) -> str {
+    path = campaign.suppression_file;
+    if path {
+        if not os.path.isabs(path) {
+            path = os.path.join(campaign.project_root, path);
+        }
+        return path;
+    }
+    return os.path.join(campaign.project_root, ".jac", "prune-suppress.txt");
+}
+
+
+def append_suppression_token(path: str, token: str) -> bool {
+    if not token {
+        return False;
+    }
+    existing = load_suppression_file(path);
+    if token in existing.tokens {
+        return True;
+    }
+    try {
+        parent = os.path.dirname(path);
+        if parent and not os.path.isdir(parent) {
+            os.makedirs(parent, exist_ok=True);
+        }
+        with open(path, "a", encoding="utf-8") as fh {
+            fh.write(f"{token}\n");
+        }
+    } except Exception {
+        return False;
+    }
+    return True;
+}
+
+
 def _module_lines(path: str, line_cache: dict) -> list {
     cached = line_cache.get(path);
     if cached is not None {

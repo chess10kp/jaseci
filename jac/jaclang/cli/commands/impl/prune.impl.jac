@@ -96,7 +96,11 @@ impl prune(
     history: bool = False,
     windows: bool = False,
     fuzzy: bool = False,
-    limit: int = 200
+    limit: int = 200,
+    decision: str = "",
+    cite: str = "",
+    note: str = "",
+    fate: str = ""
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
@@ -112,7 +116,7 @@ impl prune(
     }
 
     show_target = "";
-    if parsed_action == PruneAction.SHOW {
+    if parsed_action == PruneAction.SHOW or parsed_action == PruneAction.VERDICT {
         if paths {
             show_target = paths[0];
             paths = paths[1:];
@@ -146,6 +150,10 @@ impl prune(
         return _run_list(campaign, limit=limit);
     } elif parsed_action == PruneAction.SHOW {
         return _run_show(campaign, show_target);
+    } elif parsed_action == PruneAction.VERDICT {
+        return _run_verdict(
+            campaign, show_target, decision=decision, cite=cite, note=note, fate=fate
+        );
     }
     return 2;
 }
@@ -694,7 +702,7 @@ def _show_finding(campaign: Campaign, fingerprint: str) -> int {
         }
         return 2;
     }
-    idx = cite_index(analysis.store, target.finding.citations)
+    idx = cite_index(analysis.store, target.finding.packet_citations())
         if analysis.store is not None
         else {};
     console.print(json.dumps(target.as_dict(idx), indent=2));
@@ -746,6 +754,194 @@ def _show_reuse(campaign: Campaign, target: str) -> int {
         return 2;
     }
     console.print(json.dumps(packet, indent=2));
+    return 0;
+}
+
+
+def _verdict_finding_packet(campaign: Campaign, fingerprint: str) -> dict | None {
+    import from jaclang.prune.factquery { cite_index }
+    manifest = build_manifest(campaign);
+    if not manifest.entries {
+        return None;
+    }
+    analysis = build_analysis(campaign, manifest);
+    for c in analysis.candidates {
+        if c.finding.fingerprint() == fingerprint {
+            idx = cite_index(analysis.store, c.finding.packet_citations())
+                if analysis.store is not None
+                else {};
+            return c.as_dict(idx);
+        }
+    }
+    return None;
+}
+
+
+def _verdict_reuse_packet(campaign: Campaign, target: str) -> dict | None {
+    import from jaclang.prune.clones { find_clone_groups, group_packet }
+    import from jaclang.prune.windows { find_stmt_windows, window_packet }
+    import from jaclang.prune.fuzzy { find_fuzzy_clone_groups, fuzzy_packet }
+
+    (store, prog, manifest) = _reuse_context(campaign);
+    if store is None {
+        return None;
+    }
+    packet = None;
+    if target.startswith("reuse:win:") {
+        for w in find_stmt_windows(store) {
+            if w.window_id == target {
+                packet = window_packet(w, store);
+            }
+        }
+    } elif target.startswith("reuse:fzy:") {
+        (fz_groups, _skipped) = find_fuzzy_clone_groups(store);
+        for fg in fz_groups {
+            if fg.group_id == target {
+                packet = fuzzy_packet(store, fg);
+            }
+        }
+    } else {
+        for g in find_clone_groups(store) {
+            if g.group_id == target {
+                packet = group_packet(store, g);
+            }
+        }
+    }
+    store.close();
+    return packet;
+}
+
+
+def _verdict_meta(target: str, packet: dict) -> dict {
+    p: any = packet;
+    if target.startswith("reuse:") {
+        members = p.get("members", []);
+        first: any = members[0] if members else {};
+        return {
+            "fingerprint": target,
+            "detector": f"reuse-{p.get('kind', 'window')}",
+            "symbol_id": str(p.get("canonical_member", "")),
+            "name": target,
+            "module_path": str(first.get("module_path", "")),
+            "risk": "moderate",
+            "disposition": "report-only",
+            "source": "reuse"
+        };
+    }
+    return {
+        "fingerprint": str(p.get("fingerprint", target)),
+        "detector": str(p.get("detector", "")),
+        "symbol_id": str(p.get("symbol_id", "")),
+        "name": str(p.get("name", "")),
+        "module_path": str(p.get("module_path", "")),
+        "risk": str(p.get("risk", "")),
+        "disposition": str(p.get("disposition", "")),
+        "source": str(p.get("source", ""))
+    };
+}
+
+
+def _run_verdict(
+    campaign: Campaign,
+    target: str,
+    decision: str = "",
+    cite: str = "",
+    note: str = "",
+    fate: str = ""
+) -> int {
+    import from jaclang.prune.feedback {
+        FeedbackLog,
+        verdict_entry,
+        valid_decision,
+        valid_fate,
+        citation_gate
+    }
+    import from jaclang.prune.suppress {
+        suppression_write_path,
+        append_suppression_token
+    }
+
+    if not target {
+        console.error(
+            "verdict requires a target.",
+            hint="jac prune verdict <fingerprint|group_id> --decision … --cite …"
+        );
+        return 2;
+    }
+    if not valid_decision(decision) {
+        console.error(
+            f"invalid --decision '{decision}'.",
+            hint="one of: accept, reject, contested"
+        );
+        return 2;
+    }
+    if not valid_fate(fate) {
+        console.error(
+            f"invalid --fate '{fate}'.",
+            hint="one of: landed-unchanged, landed-modified, abandoned, reverted"
+        );
+        return 2;
+    }
+    cited = [
+        c.strip()
+        for c in cite.split(",")
+        if c.strip()
+    ];
+    if not cited {
+        console.error(
+            "a verdict must cite at least one fact ID.",
+            hint="--cite sym:…,ref:… (IDs from the finding's packet)"
+        );
+        return 2;
+    }
+
+    packet = _verdict_reuse_packet(campaign, target)
+        if target.startswith("reuse:")
+        else _verdict_finding_packet(campaign, target);
+    if packet is None {
+        console.error(
+            f"no finding or reuse group with id '{target}'.",
+            hint="run 'jac prune list' (or 'reuse') to get valid ids"
+        );
+        return 2;
+    }
+
+    missing = citation_gate(cited, packet);
+    if missing {
+        console.error(
+            "citation gate: cited fact ID(s) not present in the packet — "
+            f"{', '.join(missing)}",
+            hint="every --cite must appear in the packet's citations/cite_index"
+        );
+        return 2;
+    }
+
+    meta = _verdict_meta(target, packet);
+    entry = verdict_entry(meta, decision, cited, note=note, fate=fate);
+    log = FeedbackLog(
+        path=os.path.join(campaign.project_root, ".jac", "prune-feedback.jsonl")
+    );
+    if not log.record_all([entry]) {
+        console.error("failed to write the verdict to the ledger.");
+        return 1;
+    }
+
+    console.success(
+        f"recorded verdict-{decision.strip().lower()} on {target} "
+        f"({len(cited)} citation(s))."
+    );
+    if fate.strip() {
+        console.info(f"fate: {fate.strip().lower()}");
+    }
+    if decision.strip().lower() == "reject" {
+        m: any = meta;
+        sp = suppression_write_path(campaign);
+        if append_suppression_token(sp, str(m.get("fingerprint", target))) {
+            console.info(f"suppressed permanently -> {sp}");
+        } else {
+            console.warning("could not append the rejection to the suppression file.");
+        }
+    }
     return 0;
 }
 

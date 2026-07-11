@@ -4,6 +4,20 @@ import from typing { cast }
 import from jaclang.prune.finding { Candidate }
 
 
+glob VERDICT_DECISIONS = {"accept", "reject", "contested"},
+     FATE_OUTCOMES = {"landed-unchanged", "landed-modified", "abandoned", "reverted", };
+
+
+def valid_decision(decision: str) -> bool {
+    return decision.strip().lower() in VERDICT_DECISIONS;
+}
+
+
+def valid_fate(fate: str) -> bool {
+    return (not fate.strip()) or fate.strip().lower() in FATE_OUTCOMES;
+}
+
+
 obj FeedbackEntry {
     has fingerprint: str,
         detector: str,
@@ -14,7 +28,9 @@ obj FeedbackEntry {
         disposition: str,
         source: str,
         outcome: str,
-        reason: str = "";
+        reason: str = "",
+        citations: list[str] = [],
+        fate: str = "";
 
     def as_dict -> dict {
         return {
@@ -27,9 +43,56 @@ obj FeedbackEntry {
             "disposition": self.disposition,
             "source": self.source,
             "outcome": self.outcome,
-            "reason": self.reason
+            "reason": self.reason,
+            "citations": self.citations,
+            "fate": self.fate
         };
     }
+}
+
+
+def packet_citation_ids(packet: dict) -> set {
+    p: any = packet;
+    ids: set = set();
+    for c in p.get("citations", []) {
+        ids.add(str(c));
+    }
+    idx: any = p.get("cite_index", {});
+    for cid in idx.keys() {
+        ids.add(str(cid));
+    }
+    return ids;
+}
+
+
+def citation_gate(cited: list[str], packet: dict) -> list[str] {
+    available = packet_citation_ids(packet);
+    return [
+        c
+        for c in cited
+        if c not in available
+    ];
+}
+
+
+def verdict_entry(
+    meta: dict, decision: str, citations: list[str], note: str = "", fate: str = ""
+) -> FeedbackEntry {
+    d: any = meta;
+    return FeedbackEntry(
+        fingerprint=str(d.get("fingerprint", "")),
+        detector=str(d.get("detector", "")),
+        symbol_id=str(d.get("symbol_id", "")),
+        name=str(d.get("name", "")),
+        module_path=str(d.get("module_path", "")),
+        risk=str(d.get("risk", "")),
+        disposition=str(d.get("disposition", "")),
+        source=str(d.get("source", "")),
+        outcome=f"verdict-{decision.strip().lower()}",
+        reason=note,
+        citations=citations,
+        fate=fate.strip().lower()
+    );
 }
 
 

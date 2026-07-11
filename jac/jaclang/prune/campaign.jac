@@ -18,6 +18,7 @@ enum PruneAction {
     REUSE = 5,
     LIST = 6,
     SHOW = 7,
+    VERDICT = 8,
 }
 
 
@@ -31,6 +32,7 @@ def parse_prune_action(name: str) -> (PruneAction | None) {
         "reuse": PruneAction.REUSE,
         "list": PruneAction.LIST,
         "show": PruneAction.SHOW,
+        "verdict": PruneAction.VERDICT,
 
     };
     return table.get(key);
