@@ -54,6 +54,54 @@ Detectors are deliberately conservative: only `:priv`/`:protect` symbols are
 deletion candidates - a default-access (public) symbol is treated as package API
 and is out of scope for automatic deletion.
 
+## Dead-code advisories (Tier 3, opt-in)
+
+| Detector | Fires on | Disposition |
+|---|---|---|
+| `dead-enum-variants` | an enum variant with 0 references outside its own declaration - never constructed, read, or matched | pr-only |
+
+Unlike the Tier-1 dead-code detectors, `dead-enum-variants` also considers
+public variants (an unused variant of a public enum may still be external API),
+so it is **opt-in** (`--recipe dead-enum-variants`) and never auto-fix - always
+pr-only for human review.
+
+## Reuse advisories (Tier 3)
+
+These detectors surface duplication rather than dead code. They never edit and
+carry no auto-fix planner - every finding is **report-only**, meant for a human
+or a harness agent to act on. They are **opt-in**: pass `--recipe <name>` to run
+them (they are not in the default recipe set, since a large tree can hold many
+intentional lookup tables or boilerplate docs).
+
+| Detector | Fires on | Disposition |
+|---|---|---|
+| `duplicated-constant-blobs` | one string/collection literal (value-hashed, so quote style is ignored) repeated across ≥2 sites above a size floor - invisible to callable-body hashing | report-only |
+| `duplicate-docstrings` | an identical docstring or byLLM `sem` string attached to ≥2 distinct symbols (decl+impl on the same symbol does not count); docstrings and `sem` strings with the same text group together | report-only |
+
+Each finding groups its member sites: `related` carries the member symbol ids
+(`sym:<id>`) and `plan_meta` records the site/module counts and the shared hash.
+
+## Module-cohesion advisories (Tier 4, opt-in)
+
+`--recipe module-cohesion` surfaces *architectural* seams rather than dead code
+or duplication. It builds the symbol-to-symbol reference graph already in the
+fact store (`symbol_ref_edges`, resolved endpoints only) and reports two
+LCOM-style shapes. Like the reuse advisories it is **opt-in** and every finding
+is **report-only** - seam-review wording ("consider splitting / merging"), never
+an edit, and (being report-only) always sorted below the auto-fix and pr-only
+findings so it never crowds the top of a report.
+
+| Detector | Fires on | Disposition |
+|---|---|---|
+| `module-cohesion` (split) | one module whose internal symbols form ≥2 clusters with no reference edge between them - the module is really two units sharing a file | report-only |
+| `module-cohesion` (merge) | two modules whose cross-reference count exceeds **both** modules' internal edge counts - the seam between them is tighter than either module's own cohesion | report-only |
+
+`plan_meta.shape` is `split` or `merge`. A **split** finding's `related` cites one
+representative symbol per cluster (`sym:<id>`); a **merge** finding's `related`
+cites the two modules (`mod:<path>`). Both citation forms are verifiable through
+the tool surface (`verify_citations`). The detector needs no schema change or
+re-extraction - it is a pure query over facts already stored.
+
 ## Safety: veto, suppression, risk
 
 - **Dynamic-use veto** - a read-once scan for standalone identifier string
@@ -120,6 +168,7 @@ construction** - the tool loads no model and applies nothing.
 ```bash
 jac prune reuse -o json                  # ranked candidate groups + rollups
 jac prune reuse --group <id> -o json     # full evidence packet for one group
+jac prune reuse --fuzzy -o json          # + fuzzy (token-overlap) near-clones
 ```
 
 The evidence packet carries each member's decl, owner, body span (the annex file
@@ -127,6 +176,25 @@ when applicable), visibility, delta vector, callers/callees, and citations as
 typed fact IDs (`sym:`/`body:`) verifiable through the tool surface. A consuming
 agent Reads the cited spans and decides `identical` / `equivalent` /
 `not-a-duplicate`; the tool never reaches a verdict.
+
+### Fuzzy near-clones (`--fuzzy`)
+
+The exact and structural hashes are all-or-nothing: a single inserted guard or
+one extra statement changes the hash and the pair no longer collides. `--fuzzy`
+adds the **token-overlap tier**. Within each `(arity, async, generator,
+size-band)` bucket it compares every body's normalized token stream pairwise
+with Jaccard over k-gram shingles (default threshold `0.8`) and links matches
+into groups. This catches **gapped / Type-3 clones** - near-identical bodies
+that drifted by a guard, a broadened condition, or an added statement.
+
+A fuzzy group is only reported when its members span **more than one structural
+hash** (otherwise it is just a structural group restated) and at least two
+distinct sites, so the tier only ever adds information the exact/structural
+tiers missed. Each group's packet (`--group reuse:fzy:<id>`) carries the
+minimum and mean pairwise similarity as evidence alongside the usual per-member
+citations. Buckets larger than an internal cap are skipped to bound the
+pairwise cost and reported under `fuzzy_skipped_buckets` (never dropped
+silently). Report-only, like the rest of `reuse`.
 
 ## Feedback ledger
 
@@ -150,3 +218,7 @@ mining.
 | `--apply` | with `fix`: write, validate, revert on failure |
 | `--model {heuristic,none}` | with `analyze`: the redundancy judge |
 | `--group <id>` | with `reuse`: emit the full evidence packet for one group |
+| `--probe` | with `reuse`: dry-run the consolidation (parse + typecheck, revert) |
+| `--history` | with `reuse`: add git tandem-edit + divergence evidence |
+| `--windows` | with `reuse`: also mine repeated statement-window blocks |
+| `--fuzzy` | with `reuse`: also surface fuzzy (token-overlap) near-clones |

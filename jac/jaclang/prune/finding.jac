@@ -166,6 +166,10 @@ def _base_disposition(
         trace.append("duplicate-docstrings (advisory) -> moderate/report-only");
         return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
     }
+    if detector == "module-cohesion" {
+        trace.append("module-cohesion seam-review (advisory) -> moderate/report-only");
+        return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
+    }
     if detector == "private-dead-defs" {
         nested = ">" in f.scope_chain;
         if f.kind in _ARCHETYPE_KINDS {

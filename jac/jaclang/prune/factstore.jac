@@ -721,6 +721,13 @@ obj FactStore {
         return cur.fetchone() is not None;
     }
 
+    def module_exists(module_path: str) -> bool {
+        cur = self.conn.execute(
+            "SELECT 1 FROM modules WHERE path = ? LIMIT 1", (module_path, )
+        );
+        return cur.fetchone() is not None;
+    }
+
     def callers_of(symbol_id: str) -> list[str] {
         cur = self.conn.execute(
             "SELECT DISTINCT using_id FROM refs "
@@ -835,6 +842,26 @@ obj FactStore {
             ) + " ORDER BY from_path, to_path"
         );
         return [(str(row[0]), str(row[1])) for row in cur.fetchall()];
+    }
+
+    def symbol_ref_edges -> list[dict] {
+        cur = self.conn.execute(
+            "SELECT DISTINCT r.using_id, su.module_path, r.used_id, sd.module_path "
+            "FROM refs r "
+            "JOIN symbols su ON su.id = r.using_id AND su.imported = 0 "
+            "JOIN symbols sd ON sd.id = r.used_id AND sd.imported = 0 "
+            "WHERE r.using_id != '' AND r.used_id != '' AND r.using_id != r.used_id" + _scope(
+                "r.module_path"
+            ) + " ORDER BY su.module_path, r.using_id, r.used_id"
+        );
+        return [
+            {
+                "using_id": str(row[0]),
+                "using_mod": str(row[1]),
+                "used_id": str(row[2]),
+                "used_mod": str(row[3])
+            } for row in cur.fetchall()
+        ];
     }
 
     def callable_symbols -> list[dict] {

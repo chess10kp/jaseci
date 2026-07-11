@@ -115,6 +115,9 @@ obj ToolSurface {
         if citation.startswith("dep:") {
             return self.store.dep_exists(citation);
         }
+        if citation.startswith("mod:") {
+            return self.store.module_exists(citation[4:]);
+        }
         if citation.startswith("sym:") {
             return self.store.symbol_exists(citation[4:]);
         }

@@ -19,7 +19,10 @@ glob _INLINE_MAX_STMTS = 3,
          "walker",
          "enum"
      },
-     _PRIVATE_ACCESS = {"private", "protected"};
+     _PRIVATE_ACCESS = {"private", "protected"},
+     _SPLIT_MIN_CLUSTER = 2,
+     _SPLIT_MIN_CLUSTERS = 2,
+     _MERGE_MIN_CROSS = 3;
 
 
 def _is_dunder(name: str) -> bool {
@@ -491,6 +494,170 @@ def detect_duplicate_docstrings(store: FactStore, veto: VetoIndex) -> list[Findi
 }
 
 
+def _connected_components(nodes: set, adj: dict) -> list[list[str]] {
+    seen: set = set();
+    comps: list[list[str]] = [];
+    for start in sorted(nodes) {
+        if start in seen {
+            continue;
+        }
+        comp: list[str] = [];
+        stack: list[str] = [start];
+        seen.add(start);
+        while stack {
+            cur = str(stack.pop());
+            comp.append(cur);
+            for nxt in cast(set, adj.get(cur, set())) {
+                n = str(nxt);
+                if n not in seen {
+                    seen.add(n);
+                    stack.append(n);
+                }
+            }
+        }
+        comps.append(sorted(comp));
+    }
+    return comps;
+}
+
+
+def detect_module_cohesion(store: FactStore, veto: VetoIndex) -> list[Finding] {
+    out: list[Finding] = [];
+    edges = store.symbol_ref_edges();
+
+    intra_adj: dict = {};
+    intra_nodes: dict = {};
+    intra_count: dict = {};
+    cross_count: dict = {};
+
+    def _touch_intra(mod: str) {
+        if mod not in intra_adj {
+            intra_adj[mod] = {};
+            intra_nodes[mod] = set();
+            intra_count[mod] = 0;
+        }
+    }
+
+    for e in edges {
+        um = str(e["using_mod"]);
+        dm = str(e["used_mod"]);
+        ui = str(e["using_id"]);
+        di = str(e["used_id"]);
+        if um == dm {
+            _touch_intra(um);
+            adj: any = intra_adj[um];
+            if ui not in adj {
+                adj[ui] = set();
+            }
+            if di not in adj {
+                adj[di] = set();
+            }
+            adj[ui].add(di);
+            adj[di].add(ui);
+            cast(set, intra_nodes[um]).add(ui);
+            cast(set, intra_nodes[um]).add(di);
+            intra_count[um] = int(intra_count[um]) + 1;
+        } else {
+            _touch_intra(um);
+            _touch_intra(dm);
+            pair = (um, dm) if um < dm else (dm, um);
+            cross_count[pair] = int(cross_count.get(pair, 0)) + 1;
+        }
+    }
+
+    for mod_raw in sorted(intra_adj.keys()) {
+        mod = str(mod_raw);
+        comps = _connected_components(
+            cast(set, intra_nodes[mod]), cast(dict, intra_adj[mod])
+        );
+        clusters = [
+            c
+            for c in comps
+            if len(c) >= _SPLIT_MIN_CLUSTER
+        ];
+        if len(clusters) < _SPLIT_MIN_CLUSTERS {
+            continue;
+        }
+        sizes = sorted([len(c) for c in clusters], reverse=True);
+        related: set = set();
+        for c in clusters {
+            related.add("sym:" + c[0]);
+        }
+        f = Finding(
+            detector="module-cohesion",
+            symbol_id="",
+            name=f"split:{mod}",
+            module_path=mod,
+            kind="module",
+            message=f"module '{mod}' has {len(
+                clusters
+            )} disconnected symbol clusters (sizes {sizes}) - consider splitting along the seam",
+            pos_start=0,
+            pos_end=0,
+            line=1,
+            related=sorted(related),
+            plan_meta={
+                "shape": "split",
+                "cluster_count": len(clusters),
+                "cluster_sizes": sizes,
+                "intra_edges": int(intra_count[mod])
+            }
+        );
+        f.add(
+            Evidence(
+                kind="module-split",
+                polarity=Polarity.SUPPORTS,
+                detail=f"{len(
+                    clusters
+                )} internal clusters with no call/reference edges between them"
+            )
+        );
+        out.append(f);
+    }
+
+    for pair in sorted(cross_count.keys()) {
+        cross = int(cross_count[pair]);
+        if cross < _MERGE_MIN_CROSS {
+            continue;
+        }
+        a = str(pair[0]);
+        b = str(pair[1]);
+        ia = int(intra_count.get(a, 0));
+        ib = int(intra_count.get(b, 0));
+        if not (cross > ia and cross > ib) {
+            continue;
+        }
+        f = Finding(
+            detector="module-cohesion",
+            symbol_id="",
+            name=f"merge:{a}|{b}",
+            module_path=a,
+            kind="module",
+            message=f"modules '{a}' and '{b}' are coupled by {cross} cross-references, more than either's internal cohesion ({ia}/{ib}) - consider merging or moving the shared seam",
+            pos_start=0,
+            pos_end=0,
+            line=1,
+            related=[f"mod:{a}", f"mod:{b}"],
+            plan_meta={
+                "shape": "merge",
+                "cross_edges": cross,
+                "intra_a": ia,
+                "intra_b": ib
+            }
+        );
+        f.add(
+            Evidence(
+                kind="module-merge",
+                polarity=Polarity.SUPPORTS,
+                detail=f"{cross} cross-module edges vs {ia}/{ib} intra-module edges"
+            )
+        );
+        out.append(f);
+    }
+    return out;
+}
+
+
 def run_detectors(
     store: FactStore, veto: VetoIndex, recipes: list[str]
 ) -> list[Finding] {
@@ -514,6 +681,8 @@ def run_detectors(
             out.extend(detect_duplicated_constant_blobs(store, veto));
         } elif name == "duplicate-docstrings" {
             out.extend(detect_duplicate_docstrings(store, veto));
+        } elif name == "module-cohesion" {
+            out.extend(detect_module_cohesion(store, veto));
         }
     }
     return out;
