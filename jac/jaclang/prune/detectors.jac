@@ -1,4 +1,5 @@
 import os;
+import re;
 import from typing { cast }
 
 import from jaclang.prune.factstore { FactStore }
@@ -139,9 +140,67 @@ def _in_probe_guard(text: str, stmt_pos: int) -> bool {
 }
 
 
+glob _TYPE_PREV = {":", "[", "|", ">"},
+     _TYPE_NEXT = {"]", "|"},
+     _NOISE_RE: any = re.compile(
+         r"(?s)'''.*?'''|\"\"\".*?\"\"\"|'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|#[^\n]*"
+     );
+
+
+def _side_effect_import(
+    item_name: str, resolved_path: str, is_from: bool, module_leaves: set
+) -> bool {
+    leaf = item_name.rsplit(".", 1)[-1];
+    if not is_from {
+        return ("." in item_name) or (leaf in module_leaves);
+    }
+    if leaf in module_leaves {
+        return True;
+    }
+    if not resolved_path {
+        return False;
+    }
+    base = os.path.basename(resolved_path);
+    if base == f"{item_name}.jac" {
+        return True;
+    }
+    if base == "__init__.jac" {
+        return os.path.basename(os.path.dirname(resolved_path)) == item_name;
+    }
+    return False;
+}
+
+
+def _used_as_type(name: str, text: str) -> bool {
+    if not name or not text {
+        return False;
+    }
+    stripped = _NOISE_RE.sub(" ", text);
+    n = len(stripped);
+    pat = re.compile(r"(?<![\w.])" + re.escape(name) + r"(?![\w])");
+    for m in pat.finditer(stripped) {
+        p = m.start() - 1;
+        while p >= 0 and stripped[p] in " \t" {
+            p -= 1;
+        }
+        prev = stripped[p] if p >= 0 else "";
+        q = m.end();
+        while q < n and stripped[q] in " \t" {
+            q += 1;
+        }
+        nxt = stripped[q] if q < n else "";
+        if prev in _TYPE_PREV or nxt in _TYPE_NEXT {
+            return True;
+        }
+    }
+    return False;
+}
+
+
 def detect_unused_imports(store: FactStore, veto: VetoIndex) -> list[Finding] {
     out: list[Finding] = [];
     src_cache: dict = {};
+    module_leaves = store.module_leaf_names();
     for item in store.unused_import_items() {
         d: any = item;
         name = str(d["item_name"]);
@@ -185,6 +244,27 @@ def detect_unused_imports(store: FactStore, veto: VetoIndex) -> list[Finding] {
                     kind="probe-import",
                     polarity=Polarity.VETOES,
                     detail="import sits inside a try/except importability guard (probe import)"
+                )
+            );
+        }
+        if _side_effect_import(
+            name, str(d["resolved_path"]), bool(d["is_from"]), module_leaves
+        ) {
+            f.add(
+                Evidence(
+                    kind="side-effect-import",
+                    polarity=Polarity.VETOES,
+                    detail="module imported for import-time side effects (registration/plugin), not a used name binding"
+                )
+            );
+        }
+        if _used_as_type(alias or name, str(src_cache[mod])) {
+            f.add(
+                Evidence(
+                    kind="signature-type-use",
+                    polarity=Polarity.VETOES,
+                    detail=f"'{alias
+                    or name}' appears in a type-annotation position (likely a decl-signature use the ref extractor missed)"
                 )
             );
         }

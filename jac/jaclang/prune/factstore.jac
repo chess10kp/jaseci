@@ -1,3 +1,4 @@
+import os;
 import sqlite3;
 import from typing { cast }
 
@@ -579,7 +580,7 @@ obj FactStore {
         cur = self.conn.execute(
             "SELECT i.module_path, i.item_name, i.alias, i.resolved_id, "
             "i.pos_start, i.pos_end, i.line, i.stmt_pos_start, i.stmt_pos_end, "
-            "i.n_items, i.is_from "
+            "i.n_items, i.is_from, i.resolved_path "
             "FROM imports i WHERE i.resolved_id != ''" + _scope("i.module_path") + " AND (SELECT COUNT(*) FROM refs r WHERE r.used_id = i.resolved_id" + _scope(
                 "r.module_path"
             ) + ") = 0 " "ORDER BY i.module_path, i.pos_start"
@@ -598,9 +599,27 @@ obj FactStore {
                     "stmt_pos_start": row[7],
                     "stmt_pos_end": row[8],
                     "n_items": row[9],
-                    "is_from": bool(row[10])
+                    "is_from": bool(row[10]),
+                    "resolved_path": row[11]
                 }
             );
+        }
+        return out;
+    }
+
+    def module_leaf_names -> set {
+        out: set = set();
+        for row in self.conn.execute(
+            "SELECT module_name, path FROM modules"
+        ).fetchall() {
+            mod_name = str(row[0] or "");
+            if mod_name {
+                out.add(mod_name.rsplit(".", 1)[-1]);
+            }
+            base = os.path.basename(str(row[1] or ""));
+            if base.endswith(".jac") {
+                out.add(base[:-4]);
+            }
         }
         return out;
     }
