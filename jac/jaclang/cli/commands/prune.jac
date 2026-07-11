@@ -12,7 +12,7 @@ glob registry = get_registry();
             "action",
             kind=ArgKind.POSITIONAL,
             default="report",
-            help="Action: report, facts, fix, analyze"
+            help="Action: report, facts, fix, analyze, reuse, list, show"
         ),
         Arg.create(
             "paths",
@@ -96,6 +96,13 @@ glob registry = get_registry();
             short="",
             help="With 'reuse': also surface fuzzy (token-overlap) near-clones"
         ),
+        Arg.create(
+            "limit",
+            typ=int,
+            default=200,
+            short="",
+            help="With 'list': max rows to show before rank-suppressing the tail"
+        ),
 
     ],
     examples=[
@@ -111,6 +118,12 @@ glob registry = get_registry();
         (
             "jac prune reuse --fuzzy -o json",
             "Also surface fuzzy token-overlap near-clones"
+        ),
+        ("jac prune list", "Ranked one-line index of all findings"),
+        ("jac prune list -o json --limit 50", "Top 50 findings as JSON"),
+        (
+            "jac prune show <fingerprint> -o json",
+            "Full v2 packet for one finding or reuse group"
         ),
 
     ],
@@ -130,5 +143,6 @@ def prune(
     probe: bool = False,
     history: bool = False,
     windows: bool = False,
-    fuzzy: bool = False
+    fuzzy: bool = False,
+    limit: int = 200
 ) -> int;

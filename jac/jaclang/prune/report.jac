@@ -68,6 +68,90 @@ def table_rows(cands: list[Candidate], root_dir: str) -> list[list[str]] {
 }
 
 
+def confidence_of(c: Candidate) -> float {
+    if c.finding.has_veto() {
+        return 0.2;
+    }
+    if c.disposition == Disposition.AUTO_FIX {
+        return 0.9;
+    }
+    if c.disposition == Disposition.PR_ONLY {
+        return 0.7;
+    }
+    return 0.5;
+}
+
+
+def rank_key(c: Candidate) -> tuple {
+    f = c.finding;
+    return (
+        _disp_order(c.disposition),
+        -confidence_of(c),
+        f.detector,
+        f.module_path,
+        f.line
+    );
+}
+
+
+def ranked_candidates(cands: list[Candidate]) -> list[Candidate] {
+    return sorted(cands, key=rank_key);
+}
+
+
+def list_rows(
+    cands: list[Candidate], root_dir: str, limit: int
+) -> tuple[list[list[str]], int] {
+    ordered = ranked_candidates(cands);
+    shown = ordered[:limit] if limit > 0 else ordered;
+    rows: list[list[str]] = [];
+    for c in shown {
+        f = c.finding;
+        loc = f"{_rel(f.module_path, root_dir)}:{f.line}";
+        rows.append(
+            [
+                f.fingerprint(),
+                disposition_label(c.disposition),
+                f"{confidence_of(c):.2f}",
+                loc,
+                f.message
+            ]
+        );
+    }
+    return (rows, max(0, len(ordered) - len(shown)));
+}
+
+
+def list_json(cands: list[Candidate], root_dir: str, limit: int) -> str {
+    ordered = ranked_candidates(cands);
+    shown = ordered[:limit] if limit > 0 else ordered;
+    out: list[dict] = [];
+    for c in shown {
+        f = c.finding;
+        out.append(
+            {
+                "fingerprint": f.fingerprint(),
+                "detector": f.detector,
+                "disposition": disposition_label(c.disposition),
+                "risk": risk_tier_label(c.risk),
+                "confidence": confidence_of(c),
+                "location": f"{_rel(f.module_path, root_dir)}:{f.line}",
+                "message": f.message
+            }
+        );
+    }
+    return json.dumps(
+        {
+            "findings": out,
+            "shown": len(shown),
+            "total": len(ordered),
+            "suppressed": max(0, len(ordered) - len(shown))
+        },
+        indent=2
+    );
+}
+
+
 def render_diff(path: str, before: bytes, after: bytes, root_dir: str) -> str {
     rel = _rel(path, root_dir);
     a = before.decode("utf-8", errors="replace").splitlines(keepends=True);

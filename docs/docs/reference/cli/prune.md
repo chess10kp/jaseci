@@ -135,6 +135,29 @@ checked). A harness agent runs them before issuing a verdict; reuse packets ask
 the merge-worthiness questions (shared owner/base, delta class, drift), and the
 fuzzy tier adds a contiguity (LCS) check to kill coincidental shingle matches.
 
+## Paginated triage (`list` / `show`)
+
+Hundreds of findings must never land in an agent's context at once. `list` is a
+ranked one-line index; `show` drills into exactly one packet:
+
+```
+jac prune list                       # ranked index, one row per finding
+jac prune list -o json --limit 50    # top 50 as JSON (with total/suppressed)
+jac prune show <fingerprint>         # full v2 packet for one finding
+jac prune show <group_id>            # ... or one reuse/window/fuzzy group
+```
+
+`list` ranks by disposition (auto-fix first), then a confidence proxy, then
+location, and caps output at `--limit` (default 200) while reporting how many
+rows the rank suppressed. Each row is `fingerprint  disposition  confidence
+location  message`; the stable `fingerprint` is the handle you pass to `show`.
+
+`show` re-derives the single packet on demand and prints the same v2 structure
+`report -o json` emits (`evidence`, `verify`, `citations`, `cite_index`,
+`trace`). It accepts a finding fingerprint or any reuse group id (`reuse:grp:`,
+`reuse:win:`, `reuse:fzy:`); the older `reuse --group <id>` remains an alias.
+Pass paths after the id to scope the re-derivation (`jac prune show <id> jac/`).
+
 ## The validation gate (`fix --apply`)
 
 Applying is never blind. For a batch of auto-fix edits:
@@ -228,7 +251,7 @@ mining.
 
 | Flag | Meaning |
 |---|---|
-| `action` (positional) | `report` (default), `facts`, `fix`, `analyze`, `reuse` |
+| `action` (positional) | `report` (default), `facts`, `fix`, `analyze`, `reuse`, `list`, `show` |
 | `paths…` | paths to analyze (default: project root) |
 | `--exclude <glob>` | glob patterns to exclude (repeatable) |
 | `--recipe <name>` | restrict to named detectors (repeatable) |
@@ -242,3 +265,4 @@ mining.
 | `--history` | with `reuse`: add git tandem-edit + divergence evidence |
 | `--windows` | with `reuse`: also mine repeated statement-window blocks |
 | `--fuzzy` | with `reuse`: also surface fuzzy (token-overlap) near-clones |
+| `--limit <n>` | with `list`: max rows before rank-suppressing the tail (default 200) |

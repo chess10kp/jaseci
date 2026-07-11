@@ -10,7 +10,15 @@ enum Disposition { AUTO_FIX = 1, PR_ONLY = 2, REPORT_ONLY = 3, }
 enum OutputFormat { TABLE = 1, JSON = 2, SARIF = 3, }
 
 
-enum PruneAction { REPORT = 1, FACTS = 2, FIX = 3, ANALYZE = 4, REUSE = 5, }
+enum PruneAction {
+    REPORT = 1,
+    FACTS = 2,
+    FIX = 3,
+    ANALYZE = 4,
+    REUSE = 5,
+    LIST = 6,
+    SHOW = 7,
+}
 
 
 def parse_prune_action(name: str) -> (PruneAction | None) {
@@ -21,6 +29,8 @@ def parse_prune_action(name: str) -> (PruneAction | None) {
         "fix": PruneAction.FIX,
         "analyze": PruneAction.ANALYZE,
         "reuse": PruneAction.REUSE,
+        "list": PruneAction.LIST,
+        "show": PruneAction.SHOW,
 
     };
     return table.get(key);

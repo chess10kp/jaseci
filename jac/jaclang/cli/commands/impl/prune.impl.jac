@@ -95,7 +95,8 @@ impl prune(
     probe: bool = False,
     history: bool = False,
     windows: bool = False,
-    fuzzy: bool = False
+    fuzzy: bool = False,
+    limit: int = 200
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
@@ -105,10 +106,21 @@ impl prune(
     if parsed_action is None {
         console.error(
             f"Unknown prune action '{action}'.",
-            hint="Available actions: report, facts, fix, analyze, reuse"
+            hint="Available actions: report, facts, fix, analyze, reuse, list, show"
         );
         return 2;
     }
+
+    show_target = "";
+    if parsed_action == PruneAction.SHOW {
+        if paths {
+            show_target = paths[0];
+            paths = paths[1:];
+        } else {
+            show_target = group;
+        }
+    }
+
     campaign = _make_campaign(
         paths, exclude or [], recipes or [], risk_ceiling, output
     );
@@ -130,6 +142,10 @@ impl prune(
             windows=windows,
             fuzzy=fuzzy
         );
+    } elif parsed_action == PruneAction.LIST {
+        return _run_list(campaign, limit=limit);
+    } elif parsed_action == PruneAction.SHOW {
+        return _run_show(campaign, show_target);
     }
     return 2;
 }
@@ -579,6 +595,157 @@ def _run_analyze(campaign: Campaign, model: str = "heuristic") -> int {
         "verified fact IDs; none can auto-fix."
     );
     console.print_elapsed_time(time() - start);
+    return 0;
+}
+
+
+def _run_list(campaign: Campaign, limit: int = 200) -> int {
+    import from jaclang.prune.report { list_rows, list_json }
+
+    start = time();
+    as_json = campaign.output_format == OutputFormat.JSON;
+    quiet = campaign.output_format != OutputFormat.TABLE;
+    if not quiet {
+        console.print_header("jac prune - list (ranked finding index)");
+        console.info(f"project root: {campaign.project_root}");
+    }
+
+    manifest = build_manifest(campaign);
+    if not manifest.entries {
+        if as_json {
+            console.print('{"findings": [], "shown": 0, "total": 0, "suppressed": 0}');
+        } else {
+            console.warning("No .jac files found in scope.");
+        }
+        return 0;
+    }
+
+    analysis = build_analysis(campaign, manifest);
+    candidates = analysis.candidates;
+
+    if as_json {
+        console.print(list_json(candidates, campaign.project_root, limit));
+        return 0;
+    }
+
+    (rows, suppressed) = list_rows(candidates, campaign.project_root, limit);
+    if not rows {
+        console.success("No findings. Nothing to prune. 🎉");
+        console.print_elapsed_time(time() - start);
+        return 0;
+    }
+    console.print_table(
+        ["fingerprint", "disposition", "confidence", "location", "message"],
+        rows,
+        title=f"Ranked findings ({len(candidates)})"
+    );
+    if suppressed > 0 {
+        console.info(
+            f"{suppressed} more suppressed by rank; raise --limit to see them."
+        );
+    }
+    console.info("Drill into any row with: jac prune show <fingerprint> -o json");
+    console.print_elapsed_time(time() - start);
+    return 0;
+}
+
+
+def _run_show(campaign: Campaign, target: str) -> int {
+    if not target {
+        console.error(
+            "show requires a target.", hint="jac prune show <fingerprint|group_id>"
+        );
+        return 2;
+    }
+    if target.startswith("reuse:") {
+        return _show_reuse(campaign, target);
+    }
+    return _show_finding(campaign, target);
+}
+
+
+def _show_finding(campaign: Campaign, fingerprint: str) -> int {
+    import json;
+    import from jaclang.prune.factquery { cite_index }
+
+    as_json = campaign.output_format != OutputFormat.TABLE;
+    manifest = build_manifest(campaign);
+    if not manifest.entries {
+        if as_json {
+            console.print("{}");
+        } else {
+            console.warning("No .jac files found in scope.");
+        }
+        return 2;
+    }
+
+    analysis = build_analysis(campaign, manifest);
+    target = None;
+    for c in analysis.candidates {
+        if c.finding.fingerprint() == fingerprint {
+            target = c;
+        }
+    }
+    if target is None {
+        if as_json {
+            console.print("{}");
+        } else {
+            console.error(f"No finding with fingerprint '{fingerprint}'.");
+        }
+        return 2;
+    }
+    idx = cite_index(analysis.store, target.finding.citations)
+        if analysis.store is not None
+        else {};
+    console.print(json.dumps(target.as_dict(idx), indent=2));
+    return 0;
+}
+
+
+def _show_reuse(campaign: Campaign, target: str) -> int {
+    import json;
+    import from jaclang.prune.clones { find_clone_groups, group_packet }
+    import from jaclang.prune.windows { find_stmt_windows, window_packet }
+    import from jaclang.prune.fuzzy { find_fuzzy_clone_groups, fuzzy_packet }
+
+    (store, prog, manifest) = _reuse_context(campaign);
+    if store is None {
+        console.print("{}");
+        return 2;
+    }
+
+    packet = None;
+    if target.startswith("reuse:win:") {
+        for w in find_stmt_windows(store) {
+            if w.window_id == target {
+                packet = window_packet(w, store);
+            }
+        }
+    } elif target.startswith("reuse:fzy:") {
+        (fz_groups, _skipped) = find_fuzzy_clone_groups(store);
+        for fg in fz_groups {
+            if fg.group_id == target {
+                packet = fuzzy_packet(store, fg);
+            }
+        }
+    } else {
+        for g in find_clone_groups(store) {
+            if g.group_id == target {
+                packet = group_packet(store, g);
+            }
+        }
+    }
+    store.close();
+
+    if packet is None {
+        if campaign.output_format == OutputFormat.TABLE {
+            console.error(f"No reuse group with id '{target}'.");
+        } else {
+            console.print("{}");
+        }
+        return 2;
+    }
+    console.print(json.dumps(packet, indent=2));
     return 0;
 }
 
