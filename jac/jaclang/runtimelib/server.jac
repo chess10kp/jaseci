@@ -144,6 +144,10 @@ obj ResponseBuilder {
 
     static def send_javascript(handler: BaseHTTPRequestHandler, code: str) -> None;
     static def send_css(handler: BaseHTTPRequestHandler, css: str) -> None;
+    static def _send_asset(
+        handler: BaseHTTPRequestHandler, body: str, content_type: str
+    ) -> None;
+
     static def _add_cors_headers(handler: BaseHTTPRequestHandler) -> None;
     static def _add_custom_headers(handler: BaseHTTPRequestHandler) -> None;
 }

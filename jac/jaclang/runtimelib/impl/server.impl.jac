@@ -1246,21 +1246,19 @@ impl ResponseBuilder.send_html(
 impl ResponseBuilder.send_javascript(
     handler: BaseHTTPRequestHandler, code: str
 ) -> None {
-    payload = code.encode('utf-8');
-    handler.send_response(200);
-    handler.send_header('Content-Type', 'application/javascript; charset=utf-8');
-    handler.send_header('Content-Length', str(len(payload)));
-    handler.send_header('Cache-Control', 'no-cache');
-    ResponseBuilder._add_cors_headers(handler);
-    ResponseBuilder._add_custom_headers(handler);
-    handler.end_headers();
-    handler.wfile.write(payload);
+    ResponseBuilder._send_asset(handler, code, 'application/javascript; charset=utf-8');
 }
 
 impl ResponseBuilder.send_css(handler: BaseHTTPRequestHandler, css: str) -> None {
-    payload = css.encode('utf-8');
+    ResponseBuilder._send_asset(handler, css, 'text/css; charset=utf-8');
+}
+
+impl ResponseBuilder._send_asset(
+    handler: BaseHTTPRequestHandler, body: str, content_type: str
+) -> None {
+    payload = body.encode('utf-8');
     handler.send_response(200);
-    handler.send_header('Content-Type', 'text/css; charset=utf-8');
+    handler.send_header('Content-Type', content_type);
     handler.send_header('Content-Length', str(len(payload)));
     handler.send_header('Cache-Control', 'no-cache');
     ResponseBuilder._add_cors_headers(handler);
