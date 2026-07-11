@@ -77,9 +77,32 @@ def table_rows(cands: list[Candidate], root_dir: str) -> list[list[str]] {
 }
 
 
+"""Calibrate a visibility-tightening finding's confidence from the two signals
+the dogfood ledger surfaced: an `_`-prefixed public symbol is internal by
+naming convention, so "demote from :pub" is almost certainly right; a
+non-underscore public symbol under a partial scope may be exported API consumed
+outside the analyzed set, so its "no cross-module refs" verdict is unreliable."""
+def _visibility_confidence(c: Candidate) -> float {
+    f = c.finding;
+    base = 0.5;
+    underscore = f.name.startswith("_");
+    partial = bool(f.plan_meta.get("scope_partial", False));
+    if underscore {
+        base += 0.2;
+    }
+    if partial {
+        base -= 0.05 if underscore else 0.25;
+    }
+    return max(0.05, min(0.95, base));
+}
+
+
 def confidence_of(c: Candidate) -> float {
     if c.finding.has_veto() {
         return 0.2;
+    }
+    if c.finding.detector == "visibility-tightening" {
+        return _visibility_confidence(c);
     }
     if c.disposition == Disposition.AUTO_FIX {
         return 0.9;

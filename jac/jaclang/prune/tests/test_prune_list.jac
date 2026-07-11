@@ -50,6 +50,44 @@ test "list: confidence ranks auto-fix above report-only above vetoed" {
 }
 
 
+def _vis(name: str, partial: bool) -> any {
+    f = _finding("visibility-tightening", "s_" + name, name);
+    if partial {
+        f.plan_meta["scope_partial"] = True;
+    }
+    return classify(f, RiskTier.RISKY);
+}
+
+
+# Calibration (dogfood step 6): an `_`-prefixed public symbol is internal by
+# naming convention -> high confidence its demote is right; a non-underscore
+# public symbol under a partial scope may be exported API used out of scope ->
+# lowest confidence. Ordering must reflect that.
+test "confidence: visibility calibration ranks internal-named above public" {
+    internal_full = _vis("_helper", False);
+    public_full = _vis("PublicApi", False);
+    public_partial = _vis("PublicApi", True);
+    internal_partial = _vis("_helper", True);
+    # internal naming boosts; partial scope on a public name is the biggest hit
+    assert confidence_of(internal_full) > confidence_of(public_full);
+    assert confidence_of(public_full) > confidence_of(public_partial);
+    assert confidence_of(public_partial) < 0.5;
+    # an internal-named symbol stays confident even under partial scope
+    assert confidence_of(internal_partial) > confidence_of(public_full);
+}
+
+
+test "confidence: a veto still floors visibility confidence below advisory" {
+    vetoed_f = _finding("visibility-tightening", "s_v", "PublicApi");
+    vetoed_f.plan_meta["scope_partial"] = True;
+    vetoed_f.add(
+        Evidence(kind="method-dispatched", polarity=Polarity.VETOES, detail="x")
+    );
+    vetoed = classify(vetoed_f, RiskTier.RISKY);
+    assert confidence_of(vetoed) == 0.2;
+}
+
+
 test "list: ranked order puts the auto-fix candidate first" {
     cands = [_cand("single-caller-inline", "b"), _cand("unused-imports", "a")];
     ordered = ranked_candidates(cands);
