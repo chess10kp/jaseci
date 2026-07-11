@@ -13,9 +13,11 @@ import from jaclang.prune.extract {
     dep_fact_id
 }
 import from jaclang.prune.bodies { BodyFact }
+import from jaclang.prune.literals { LiteralFact }
+import from jaclang.prune.docstrings { DocstringFact }
 
 
-glob FACT_SCHEMA_VERSION = "5",
+glob FACT_SCHEMA_VERSION = "7",
      _DATA_TABLES = [
          "modules",
          "module_deps",
@@ -24,7 +26,9 @@ glob FACT_SCHEMA_VERSION = "5",
          "imports",
          "field_accesses",
          "branches",
-         "bodies"
+         "bodies",
+         "literals",
+         "docstrings"
      ],
      SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -122,7 +126,32 @@ CREATE TABLE IF NOT EXISTS bodies (
     size_band       INTEGER,
     completeness    TEXT,
     vector          TEXT,
-    stmt_seq        TEXT
+    stmt_seq        TEXT,
+    struct_tokens   TEXT
+);
+CREATE TABLE IF NOT EXISTS literals (
+    module_path  TEXT,
+    value_hash   TEXT,
+    value_repr   TEXT,
+    literal_kind TEXT,
+    size         INTEGER,
+    owner_id     TEXT,
+    owner_name   TEXT,
+    pos_start    INTEGER,
+    pos_end      INTEGER,
+    line         INTEGER
+);
+CREATE TABLE IF NOT EXISTS docstrings (
+    symbol_id   TEXT,
+    name        TEXT,
+    module_path TEXT,
+    kind        TEXT,
+    text_hash   TEXT,
+    text        TEXT,
+    length      INTEGER,
+    pos_start   INTEGER,
+    pos_end     INTEGER,
+    line        INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_refs_used      ON refs(used_id, kind);
 CREATE INDEX IF NOT EXISTS idx_refs_using     ON refs(using_id, kind);
@@ -140,6 +169,10 @@ CREATE INDEX IF NOT EXISTS idx_body_struct    ON bodies(structural_hash);
 CREATE INDEX IF NOT EXISTS idx_body_sym       ON bodies(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_body_mod       ON bodies(module_path);
 CREATE INDEX IF NOT EXISTS idx_body_bucket    ON bodies(arity, is_async, size_band);
+CREATE INDEX IF NOT EXISTS idx_lit_hash       ON literals(value_hash);
+CREATE INDEX IF NOT EXISTS idx_lit_mod        ON literals(module_path);
+CREATE INDEX IF NOT EXISTS idx_doc_hash       ON docstrings(text_hash);
+CREATE INDEX IF NOT EXISTS idx_doc_mod        ON docstrings(module_path);
 """;
 
 
@@ -221,7 +254,9 @@ obj FactStore {
             "imports",
             "field_accesses",
             "branches",
-            "bodies"
+            "bodies",
+            "literals",
+            "docstrings"
         ] {
             self.conn.execute(f"DELETE FROM {tbl} WHERE module_path = ?", (path, ));
         }
@@ -236,7 +271,9 @@ obj FactStore {
         imports: list[ImportFact],
         fields: list[FieldAccessFact],
         branches: list[BranchFact] = [],
-        bodies: list[BodyFact] = []
+        bodies: list[BodyFact] = [],
+        literals: list[LiteralFact] = [],
+        docstrings: list[DocstringFact] = []
     ) {
         self._clear_module(mod.path);
         self.conn.execute(
@@ -351,8 +388,8 @@ obj FactStore {
             "owner_name, body_file, body_pos_start, body_pos_end, "
             "stmt_pos_start, stmt_pos_end, exact_hash, "
             "structural_hash, arity, is_async, is_gen, stmt_count, line_count, "
-            "size_band, completeness, vector, stmt_seq) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "size_band, completeness, vector, stmt_seq, struct_tokens) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     bd.symbol_id,
@@ -375,8 +412,47 @@ obj FactStore {
                     bd.size_band,
                     bd.completeness,
                     bd.vector,
-                    bd.stmt_seq
+                    bd.stmt_seq,
+                    bd.struct_tokens
                 ) for bd in bodies
+            ]
+        );
+        self.conn.executemany(
+            "INSERT INTO literals(module_path, value_hash, value_repr, "
+            "literal_kind, size, owner_id, owner_name, pos_start, pos_end, line) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    lit.module_path,
+                    lit.value_hash,
+                    lit.value_repr,
+                    lit.literal_kind,
+                    lit.size,
+                    lit.owner_id,
+                    lit.owner_name,
+                    lit.pos_start,
+                    lit.pos_end,
+                    lit.line
+                ) for lit in literals
+            ]
+        );
+        self.conn.executemany(
+            "INSERT INTO docstrings(symbol_id, name, module_path, kind, "
+            "text_hash, text, length, pos_start, pos_end, line) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    dc.symbol_id,
+                    dc.name,
+                    dc.module_path,
+                    dc.kind,
+                    dc.text_hash,
+                    dc.text,
+                    dc.length,
+                    dc.pos_start,
+                    dc.pos_end,
+                    dc.line
+                ) for dc in docstrings
             ]
         );
     }
@@ -394,7 +470,7 @@ obj FactStore {
                 }
                 bundle = grouped.get(mod.path);
                 if bundle is None {
-                    self.write_module(mod, [], [], [], [], [], []);
+                    self.write_module(mod, [], [], [], [], [], [], [], []);
                 } else {
                     self.write_module(
                         mod,
@@ -403,7 +479,9 @@ obj FactStore {
                         cast(list[ImportFact], bundle[2]),
                         cast(list[FieldAccessFact], bundle[3]),
                         cast(list[BranchFact], bundle[4]),
-                        cast(list[BodyFact], bundle[5])
+                        cast(list[BodyFact], bundle[5]),
+                        cast(list[LiteralFact], bundle[6]),
+                        cast(list[DocstringFact], bundle[7])
                     );
                 }
                 refreshed.append(mod.path);
@@ -815,7 +893,7 @@ obj FactStore {
             "body_file, body_pos_start, body_pos_end, stmt_pos_start, "
             "stmt_pos_end, exact_hash, "
             "structural_hash, arity, is_async, is_gen, stmt_count, line_count, "
-            "size_band, completeness, vector FROM bodies "
+            "size_band, completeness, vector, struct_tokens FROM bodies "
             "WHERE completeness = 'complete'" + _scope("module_path") + " ORDER BY structural_hash, exact_hash, module_path, "
             "body_pos_start, symbol_id"
         );
@@ -842,7 +920,8 @@ obj FactStore {
                     "line_count": row[16],
                     "size_band": row[17],
                     "completeness": row[18],
-                    "vector": row[19]
+                    "vector": row[19],
+                    "struct_tokens": row[20]
                 }
             );
         }
@@ -881,6 +960,104 @@ obj FactStore {
         return out;
     }
 
+    def duplicated_literals(min_size: int, min_sites: int = 2) -> list[dict] {
+        cur = self.conn.execute(
+            "SELECT value_hash, literal_kind, size, module_path, owner_id, "
+            "owner_name, pos_start, pos_end, line FROM literals "
+            "WHERE size >= ?" + _scope("module_path") + " ORDER BY value_hash, module_path, pos_start",
+            (min_size, )
+        );
+        groups: dict[str, dict] = {};
+        order: list[str] = [];
+        for row in cur.fetchall() {
+            vh = str(row[0]);
+            if vh not in groups {
+                groups[vh] = {
+                    "value_hash": vh,
+                    "literal_kind": str(row[1]),
+                    "size": int(row[2]),
+                    "sites": []
+                };
+                order.append(vh);
+            }
+            cast(list, groups[vh]["sites"]).append(
+                {
+                    "module_path": str(row[3]),
+                    "owner_id": str(row[4]),
+                    "owner_name": str(row[5]),
+                    "pos_start": int(row[6]),
+                    "pos_end": int(row[7]),
+                    "line": int(row[8])
+                }
+            );
+        }
+        out: list[dict] = [];
+        for vh in order {
+            g = groups[vh];
+            if len(cast(list, g["sites"])) >= min_sites {
+                out.append(g);
+            }
+        }
+        return out;
+    }
+
+    def duplicate_docstrings(min_length: int = 0) -> list[dict] {
+        cur = self.conn.execute(
+            "SELECT text_hash, symbol_id, name, module_path, kind, length, "
+            "pos_start, pos_end, line FROM docstrings "
+            "WHERE length >= ?" + _scope("module_path") + " ORDER BY text_hash, symbol_id, module_path, pos_start",
+            (min_length, )
+        );
+        groups: dict[str, dict] = {};
+        order: list[str] = [];
+        for row in cur.fetchall() {
+            th = str(row[0]);
+            sid = str(row[1]);
+            if th not in groups {
+                groups[th] = {
+                    "text_hash": th,
+                    "length": int(row[5]),
+                    "kinds": set(),
+                    "seen": set(),
+                    "sites": []
+                };
+                order.append(th);
+            }
+            g = groups[th];
+            cast(set, g["kinds"]).add(str(row[4]));
+            if sid in cast(set, g["seen"]) {
+                continue;
+            }
+            cast(set, g["seen"]).add(sid);
+            cast(list, g["sites"]).append(
+                {
+                    "symbol_id": sid,
+                    "name": str(row[2]),
+                    "module_path": str(row[3]),
+                    "kind": str(row[4]),
+                    "pos_start": int(row[6]),
+                    "pos_end": int(row[7]),
+                    "line": int(row[8])
+                }
+            );
+        }
+        out: list[dict] = [];
+        for th in order {
+            g = groups[th];
+            if len(cast(list, g["sites"])) >= 2 {
+                out.append(
+                    {
+                        "text_hash": g["text_hash"],
+                        "length": g["length"],
+                        "kinds": sorted(cast(set, g["kinds"])),
+                        "sites": g["sites"]
+                    }
+                );
+            }
+        }
+        return out;
+    }
+
     def counts -> dict[str, int] {
         out: dict[str, int] = {};
         for tbl in [
@@ -891,7 +1068,9 @@ obj FactStore {
             "field_accesses",
             "branches",
             "module_deps",
-            "bodies"
+            "bodies",
+            "literals",
+            "docstrings"
         ] {
             cur = self.conn.execute(f"SELECT COUNT(*) FROM {tbl}");
             out[tbl] = int(cur.fetchone()[0]);

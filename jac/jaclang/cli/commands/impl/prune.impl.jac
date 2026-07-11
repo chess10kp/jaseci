@@ -94,7 +94,8 @@ impl prune(
     group: str = "",
     probe: bool = False,
     history: bool = False,
-    windows: bool = False
+    windows: bool = False,
+    fuzzy: bool = False
 ) -> int {
     paths = paths or [];
     if isinstance(paths, str) {
@@ -122,7 +123,12 @@ impl prune(
         return _run_analyze(campaign, model=model);
     } elif parsed_action == PruneAction.REUSE {
         return _run_reuse(
-            campaign, group=group, probe=probe, history=history, windows=windows
+            campaign,
+            group=group,
+            probe=probe,
+            history=history,
+            windows=windows,
+            fuzzy=fuzzy
         );
     }
     return 2;
@@ -177,7 +183,8 @@ def _run_reuse(
     group: str = "",
     probe: bool = False,
     history: bool = False,
-    windows: bool = False
+    windows: bool = False,
+    fuzzy: bool = False
 ) -> int {
     import json;
     import from jaclang.prune.clones {
@@ -193,6 +200,11 @@ def _run_reuse(
         find_stmt_windows,
         window_summary,
         window_packet
+    }
+    import from jaclang.prune.fuzzy {
+        find_fuzzy_clone_groups,
+        fuzzy_summary,
+        fuzzy_packet
     }
     import from jaclang.prune.validate { snapshot_baseline }
 
@@ -232,6 +244,27 @@ def _run_reuse(
             return 2;
         }
         console.print(json.dumps(window_packet(wtarget), indent=2));
+        return 0;
+    }
+
+    if group and group.startswith("reuse:fzy:") {
+        (fz_groups, _fz_skipped) = find_fuzzy_clone_groups(store);
+        ftarget = None;
+        for fg in fz_groups {
+            if fg.group_id == group {
+                ftarget = fg;
+            }
+        }
+        if ftarget is None {
+            store.close();
+            console.print("{}")
+                if as_json
+                else console.error(f"No fuzzy clone group with id '{group}'.");
+            return 2;
+        }
+        packet = fuzzy_packet(store, ftarget);
+        store.close();
+        console.print(json.dumps(packet, indent=2));
         return 0;
     }
 
@@ -298,6 +331,12 @@ def _run_reuse(
         win_groups = find_stmt_windows(store);
     }
 
+    fuzzy_groups: list = [];
+    fuzzy_skipped: list = [];
+    if fuzzy {
+        (fuzzy_groups, fuzzy_skipped) = find_fuzzy_clone_groups(store);
+    }
+
     rollups = find_class_rollups(groups);
     if as_json {
         payload = {
@@ -311,13 +350,17 @@ def _run_reuse(
         if windows {
             payload["windows"] = [window_summary(w) for w in win_groups];
         }
+        if fuzzy {
+            payload["fuzzy"] = [fuzzy_summary(fg) for fg in fuzzy_groups];
+            payload["fuzzy_skipped_buckets"] = fuzzy_skipped;
+        }
         store.close();
         console.print(json.dumps(payload, indent=2));
         return 0;
     }
 
     store.close();
-    if not groups and not win_groups {
+    if not groups and not win_groups and not fuzzy_groups {
         console.success("No structural duplicates found. 🎉");
         console.print_elapsed_time(time() - start);
         return 0;
@@ -370,6 +413,28 @@ def _run_reuse(
             wrows,
             title=f"Repeated statement-window blocks ({len(win_groups)})"
         );
+    }
+    if fuzzy_groups {
+        frows = [
+            [
+                str(len(fg.members)),
+                f"{fg.min_similarity:.2f}",
+                str(fg.lines_saved),
+                f"{fg.payoff:.2f}",
+                ", ".join([f"{m.owner_name or '<mod>'}.{m.name}" for m in fg.members])
+            ] for fg in fuzzy_groups
+        ];
+        console.print_table(
+            ["copies", "min~sim", "~lines", "payoff", "members"],
+            frows,
+            title=f"Fuzzy near-clone candidates ({len(fuzzy_groups)})"
+        );
+        if fuzzy_skipped {
+            console.warning(
+                f"{len(fuzzy_skipped)} oversized bucket(s) skipped for fuzzy "
+                "comparison (bound the cost); re-run scoped to inspect them."
+            );
+        }
     }
     if rollups {
         rrows = [
@@ -559,7 +624,10 @@ def _run_facts(campaign: Campaign) -> int {
         "refs",
         "imports",
         "field_accesses",
-        "module_deps"
+        "module_deps",
+        "bodies",
+        "literals",
+        "docstrings"
     ] {
         rows.append([tbl, str(row_counts.get(tbl, 0))]);
     }

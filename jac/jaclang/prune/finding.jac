@@ -138,6 +138,10 @@ def _base_disposition(
         trace.append("write-only private field -> moderate/pr-only");
         return (RiskTier.MODERATE, Disposition.PR_ONLY);
     }
+    if detector == "dead-enum-variants" {
+        trace.append("dead enum variant (may be external API) -> moderate/pr-only");
+        return (RiskTier.MODERATE, Disposition.PR_ONLY);
+    }
     if detector == "literal-dead-branch" {
         trace.append("literal-condition branch -> moderate/pr-only");
         return (RiskTier.MODERATE, Disposition.PR_ONLY);
@@ -152,6 +156,14 @@ def _base_disposition(
         trace.append(
             "visibility-tightening candidate (advisory) -> moderate/report-only"
         );
+        return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
+    }
+    if detector == "duplicated-constant-blobs" {
+        trace.append("duplicated-constant-blob (advisory) -> moderate/report-only");
+        return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
+    }
+    if detector == "duplicate-docstrings" {
+        trace.append("duplicate-docstrings (advisory) -> moderate/report-only");
         return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
     }
     if detector == "private-dead-defs" {

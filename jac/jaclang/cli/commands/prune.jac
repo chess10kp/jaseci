@@ -89,6 +89,13 @@ glob registry = get_registry();
             short="",
             help="With 'reuse': also mine repeated statement-window blocks"
         ),
+        Arg.create(
+            "fuzzy",
+            typ=bool,
+            default=False,
+            short="",
+            help="With 'reuse': also surface fuzzy (token-overlap) near-clones"
+        ),
 
     ],
     examples=[
@@ -101,6 +108,10 @@ glob registry = get_registry();
         ("jac prune reuse -o json", "Rank structural-duplicate candidate groups"),
         ("jac prune reuse --group <id> -o json", "Full evidence packet for a group"),
         ("jac prune reuse --probe -o json", "Dry-run consolidation of the top groups"),
+        (
+            "jac prune reuse --fuzzy -o json",
+            "Also surface fuzzy token-overlap near-clones"
+        ),
 
     ],
     group="analysis"
@@ -118,5 +129,6 @@ def prune(
     group: str = "",
     probe: bool = False,
     history: bool = False,
-    windows: bool = False
+    windows: bool = False,
+    fuzzy: bool = False
 ) -> int;

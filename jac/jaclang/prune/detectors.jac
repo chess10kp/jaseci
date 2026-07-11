@@ -1,4 +1,5 @@
 import os;
+import from typing { cast }
 
 import from jaclang.prune.factstore { FactStore }
 import from jaclang.prune.finding { Finding, Evidence, Polarity }
@@ -106,6 +107,49 @@ def detect_private_dead_defs(store: FactStore, veto: VetoIndex) -> list[Finding]
                 kind="zero-external-refs",
                 polarity=Polarity.SUPPORTS,
                 detail="0 references outside own definition"
+            )
+        );
+        for ev in veto.check_symbol(name, str(d["module_path"])) {
+            f.add(ev);
+        }
+        out.append(f);
+    }
+    return out;
+}
+
+
+def detect_dead_enum_variants(store: FactStore, veto: VetoIndex) -> list[Finding] {
+    out: list[Finding] = [];
+    for s in store.symbols_for_detection() {
+        d: any = s;
+        if str(d["kind"]) != "enum_member" {
+            continue;
+        }
+        name = str(d["name"]);
+        if _is_dunder(name) {
+            continue;
+        }
+        if store.external_use_count(str(d["id"])) != 0 {
+            continue;
+        }
+        f = Finding(
+            detector="dead-enum-variants",
+            symbol_id=str(d["id"]),
+            name=name,
+            module_path=str(d["module_path"]),
+            kind="enum_member",
+            message=f"enum variant '{name}' is never constructed, read, or matched - dead speculative generality",
+            pos_start=int(d["decl_pos_start"]),
+            pos_end=int(d["decl_pos_end"]),
+            line=int(d["decl_line"]),
+            access=str(d["access"]),
+            scope_chain=str(d["scope_chain"])
+        );
+        f.add(
+            Evidence(
+                kind="zero-refs",
+                polarity=Polarity.SUPPORTS,
+                detail="0 references to the enum variant"
             )
         );
         for ev in veto.check_symbol(name, str(d["module_path"])) {
@@ -320,6 +364,133 @@ def detect_visibility_tightening(store: FactStore, veto: VetoIndex) -> list[Find
 }
 
 
+glob _BLOB_MIN_SIZE = 40,
+     _DOC_MIN_LENGTH = 40;
+
+
+def detect_duplicated_constant_blobs(
+    store: FactStore, veto: VetoIndex
+) -> list[Finding] {
+    out: list[Finding] = [];
+    for group in store.duplicated_literals(_BLOB_MIN_SIZE, 2) {
+        g: any = group;
+        sites = cast(list, g["sites"]);
+        value_hash = str(g["value_hash"]);
+        kind = str(g["literal_kind"]);
+        size = int(g["size"]);
+        site_count = len(sites);
+        modules: set = {str(s["module_path"]) for s in sites};
+        module_count = len(modules);
+        related: set = set();
+        related_lines: list[str] = [];
+        for s in sites {
+            oid = str(s["owner_id"]);
+            if oid {
+                related.add("sym:" + oid);
+            }
+            related_lines.append(f"{s['module_path']}:{s['line']}");
+        }
+        first: any = sites[0];
+        f = Finding(
+            detector="duplicated-constant-blobs",
+            symbol_id="",
+            name=f"{kind}:{value_hash}",
+            module_path=str(first["module_path"]),
+            kind="literal",
+            message=f"{kind} literal ({size} chars) duplicated across {site_count} sites in {module_count} module(s) - hoist to a shared constant",
+            pos_start=int(first["pos_start"]),
+            pos_end=int(first["pos_end"]),
+            line=int(first["line"]),
+            related=sorted(related),
+            plan_meta={
+                "value_hash": value_hash,
+                "size": size,
+                "literal_kind": kind,
+                "site_count": site_count,
+                "module_count": module_count,
+                "sites": related_lines
+            }
+        );
+        f.add(
+            Evidence(
+                kind="duplicate-blob",
+                polarity=Polarity.SUPPORTS,
+                detail=f"{site_count} occurrences across {module_count} module(s); ~{(
+                    site_count - 1
+                )} copies removable"
+            )
+        );
+        out.append(f);
+    }
+    return out;
+}
+
+
+def detect_duplicate_docstrings(store: FactStore, veto: VetoIndex) -> list[Finding] {
+    out: list[Finding] = [];
+    for group in store.duplicate_docstrings(_DOC_MIN_LENGTH) {
+        g: any = group;
+        sites = cast(list, g["sites"]);
+        text_hash = str(g["text_hash"]);
+        length = int(g["length"]);
+        kinds = cast(list, g["kinds"]);
+        site_count = len(sites);
+        modules: set = {str(s["module_path"]) for s in sites};
+        module_count = len(modules);
+        related: set = set();
+        names: list[str] = [];
+        for s in sites {
+            related.add("sym:" + str(s["symbol_id"]));
+            names.append(str(s["name"]));
+        }
+        namelist = ", ".join(sorted(set(names))[:4]);
+        source = "/".join(kinds);
+        first: any = sites[0];
+        f = Finding(
+            detector="duplicate-docstrings",
+            symbol_id="",
+            name=f"{source}:{text_hash}",
+            module_path=str(first["module_path"]),
+            kind="docstring",
+            message=f"identical {source} text on {site_count} symbols ({namelist}) - likely the same concept implemented twice",
+            pos_start=int(first["pos_start"]),
+            pos_end=int(first["pos_end"]),
+            line=int(first["line"]),
+            related=sorted(related),
+            plan_meta={
+                "text_hash": text_hash,
+                "length": length,
+                "site_count": site_count,
+                "module_count": module_count,
+                "kinds": kinds
+            }
+        );
+        f.add(
+            Evidence(
+                kind="duplicate-doc",
+                polarity=Polarity.SUPPORTS,
+                detail=f"{site_count} symbols share identical {source} text"
+            )
+        );
+        checked: set = set();
+        for s in sites {
+            nm = str(s["name"]);
+            mp = str(s["module_path"]);
+            ck = (nm, mp);
+            if ck in checked {
+                continue;
+            }
+            checked.add(ck);
+            for ev in veto.check_symbol(nm, mp) {
+                f.add(ev);
+            }
+        }
+        out.append(f);
+    }
+    return out;
+}
+
+
 def run_detectors(
     store: FactStore, veto: VetoIndex, recipes: list[str]
 ) -> list[Finding] {
@@ -329,6 +500,8 @@ def run_detectors(
             out.extend(detect_unused_imports(store, veto));
         } elif name == "private-dead-defs" {
             out.extend(detect_private_dead_defs(store, veto));
+        } elif name == "dead-enum-variants" {
+            out.extend(detect_dead_enum_variants(store, veto));
         } elif name == "write-only-fields" {
             out.extend(detect_write_only_fields(store, veto));
         } elif name == "literal-dead-branch" {
@@ -337,6 +510,10 @@ def run_detectors(
             out.extend(detect_single_caller_inline(store, veto));
         } elif name == "visibility-tightening" {
             out.extend(detect_visibility_tightening(store, veto));
+        } elif name == "duplicated-constant-blobs" {
+            out.extend(detect_duplicated_constant_blobs(store, veto));
+        } elif name == "duplicate-docstrings" {
+            out.extend(detect_duplicate_docstrings(store, veto));
         }
     }
     return out;

@@ -24,7 +24,8 @@ obj BodyFact {
         size_band: int,
         completeness: str = "complete",
         vector: str = "",
-        stmt_seq: str = "";
+        stmt_seq: str = "",
+        struct_tokens: str = "";
 }
 
 
@@ -280,7 +281,8 @@ def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
                 line_count=blines,
                 size_band=_size_band(stmt_count),
                 vector="\n".join(vec),
-                stmt_seq=_stmt_seq(body, local_ids)
+                stmt_seq=_stmt_seq(body, local_ids),
+                struct_tokens="\x1f".join(st)
             )
         );
     }
