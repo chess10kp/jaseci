@@ -1,5 +1,6 @@
 import hashlib;
 import from jaclang.prune.factstore { FactStore }
+import from jaclang.prune.factquery { cite_index }
 import from jaclang.prune.finding { reuse_verify_questions }
 
 
@@ -239,7 +240,7 @@ def window_summary(w: WindowGroup) -> dict {
 }
 
 
-def window_packet(w: WindowGroup) -> dict {
+def window_packet(w: WindowGroup, store: FactStore | None = None) -> dict {
     citations: list[str] = [];
     sites: list[dict] = [];
     for s in w.sites {
@@ -271,6 +272,7 @@ def window_packet(w: WindowGroup) -> dict {
         "payoff": w.payoff,
         "verify": reuse_verify_questions("window"),
         "sites": sites,
-        "citations": citations
+        "citations": citations,
+        "cite_index": cite_index(store, citations) if store is not None else {}
     };
 }

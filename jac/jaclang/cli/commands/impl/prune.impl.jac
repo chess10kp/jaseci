@@ -236,14 +236,16 @@ def _run_reuse(
                 wtarget = w;
             }
         }
-        store.close();
         if wtarget is None {
+            store.close();
             console.print("{}")
                 if as_json
                 else console.error(f"No statement window with id '{group}'.");
             return 2;
         }
-        console.print(json.dumps(window_packet(wtarget), indent=2));
+        packet = window_packet(wtarget, store);
+        store.close();
+        console.print(json.dumps(packet, indent=2));
         return 0;
     }
 
@@ -487,7 +489,7 @@ def _run_report(campaign: Campaign) -> int {
     (errs, warns, compiled) = (analysis.errs, analysis.warns, analysis.compiled);
 
     if campaign.output_format == OutputFormat.JSON {
-        console.print(to_json(candidates));
+        console.print(to_json(candidates, analysis.store));
         return 0;
     }
     if campaign.output_format == OutputFormat.SARIF {
@@ -558,7 +560,7 @@ def _run_analyze(campaign: Campaign, model: str = "heuristic") -> int {
     candidates = analysis.candidates;
 
     if campaign.output_format == OutputFormat.JSON {
-        console.print(to_json(candidates));
+        console.print(to_json(candidates, analysis.store));
         return 0;
     }
 

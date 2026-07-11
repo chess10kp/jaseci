@@ -1,5 +1,6 @@
 import hashlib;
 import from jaclang.prune.factstore { FactStore }
+import from jaclang.prune.factquery { cite_index }
 import from jaclang.prune.finding { reuse_verify_questions }
 
 
@@ -403,7 +404,8 @@ def group_packet(
             "lines_saved": g.lines_saved,
             "reach": g.reach
         },
-        "citations": citations
+        "citations": citations,
+        "cite_index": cite_index(store, citations)
     };
 }
 

@@ -962,6 +962,36 @@ obj FactStore {
         return cur.fetchone() is not None;
     }
 
+    def body_stmt_count(symbol_id: str) -> int {
+        cur = self.conn.execute(
+            "SELECT stmt_count FROM bodies WHERE symbol_id = ? LIMIT 1", (symbol_id, )
+        );
+        row = cur.fetchone();
+        return int(row[0]) if row and row[0] is not None else 0;
+    }
+
+    def ref_row(ref_id: str) -> (dict | None) {
+        cur = self.conn.execute(
+            "SELECT id, used_id, using_id, module_path, pos_start, pos_end, "
+            "line, kind FROM refs WHERE id = ? LIMIT 1",
+            (ref_id, )
+        );
+        row = cur.fetchone();
+        if not row {
+            return None;
+        }
+        return {
+            "id": row[0],
+            "used_id": row[1],
+            "using_id": row[2],
+            "module_path": row[3],
+            "pos_start": row[4],
+            "pos_end": row[5],
+            "line": row[6],
+            "kind": row[7]
+        };
+    }
+
     def stmt_sequences -> list[dict] {
         cur = self.conn.execute(
             "SELECT symbol_id, name, owner_id, owner_name, module_path, "

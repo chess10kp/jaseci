@@ -4,6 +4,8 @@ import difflib;
 
 import from jaclang.prune.finding { Candidate, disposition_label }
 import from jaclang.prune.campaign { risk_tier_label, Disposition }
+import from jaclang.prune.factstore { FactStore }
+import from jaclang.prune.factquery { cite_index }
 
 
 def _rel(path: str, root_dir: str) -> str {
@@ -75,8 +77,13 @@ def render_diff(path: str, before: bytes, after: bytes, root_dir: str) -> str {
 }
 
 
-def to_json(cands: list[Candidate]) -> str {
-    return json.dumps([c.as_dict() for c in sorted_candidates(cands)], indent=2);
+def to_json(cands: list[Candidate], store: FactStore | None = None) -> str {
+    out: list[dict] = [];
+    for c in sorted_candidates(cands) {
+        idx = cite_index(store, c.finding.citations) if store is not None else {};
+        out.append(c.as_dict(idx));
+    }
+    return json.dumps(out, indent=2);
 }
 
 

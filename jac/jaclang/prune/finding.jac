@@ -277,8 +277,9 @@ obj Candidate {
         disposition: Disposition,
         trace: list[str] = [];
 
-    def as_dict -> dict {
+    def as_dict(cite_index: dict | None = None) -> dict {
         f = self.finding;
+        idx = cite_index if cite_index is not None else {};
         return {
             "detector": f.detector,
             "fingerprint": f.fingerprint(),
@@ -296,6 +297,7 @@ obj Candidate {
             "evidence": [e.as_dict() for e in f.evidence],
             "verify": verify_questions(f),
             "citations": f.citations,
+            "cite_index": idx,
             "related": f.related,
             "trace": self.trace
         };

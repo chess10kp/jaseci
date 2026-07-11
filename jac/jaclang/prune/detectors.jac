@@ -30,8 +30,118 @@ def _is_dunder(name: str) -> bool {
 }
 
 
+glob _PROBE_EXCEPTIONS = ("ImportError", "ModuleNotFoundError", "Exception");
+
+
+def _read_source(path: str) -> str {
+    try {
+        with open(path, "r", encoding="latin-1") as f {
+            return f.read();
+        }
+    } except Exception {
+        return "";
+    }
+}
+
+
+def _match_brace(text: str, open_idx: int) -> int {
+    depth = 0;
+    i = open_idx;
+    n = len(text);
+    while i < n {
+        ch = text[i];
+        if ch == "{" {
+            depth += 1;
+        } elif ch == "}" {
+            depth -= 1;
+            if depth == 0 {
+                return i;
+            }
+        }
+        i += 1;
+    }
+    return -1;
+}
+
+
+def _has_probe_except(text: str, close_idx: int) -> bool {
+    n = len(text);
+    k = close_idx + 1;
+    while True {
+        while k < n and text[k] in " \t\r\n" {
+            k += 1;
+        }
+        if not text.startswith("except", k) {
+            return False;
+        }
+        brace = text.find("{", k);
+        if brace == -1 {
+            return False;
+        }
+        header = text[k + len("except"):brace];
+        if header.strip() == "" {
+            return True;
+        }
+        for exc in _PROBE_EXCEPTIONS {
+            if exc in header {
+                return True;
+            }
+        }
+        eclose = _match_brace(text, brace);
+        if eclose == -1 {
+            return False;
+        }
+        k = eclose + 1;
+    }
+    return False;
+}
+
+
+def _in_probe_guard(text: str, stmt_pos: int) -> bool {
+    if not text {
+        return False;
+    }
+    n = len(text);
+    search_from = 0;
+    while True {
+        idx = text.find("try", search_from);
+        if idx == -1 {
+            break;
+        }
+        search_from = idx + 3;
+
+        if idx > 0 and (text[idx - 1].isalnum() or text[idx - 1] == "_") {
+            continue;
+        }
+        after = idx + 3;
+        if after < n and (text[after].isalnum() or text[after] == "_") {
+            continue;
+        }
+        j = after;
+        while j < n and text[j] in " \t\r\n" {
+            j += 1;
+        }
+        if j >= n or text[j] != "{" {
+            continue;
+        }
+        close = _match_brace(text, j);
+        if close == -1 {
+            continue;
+        }
+        if not (j < stmt_pos and stmt_pos < close) {
+            continue;
+        }
+        if _has_probe_except(text, close) {
+            return True;
+        }
+    }
+    return False;
+}
+
+
 def detect_unused_imports(store: FactStore, veto: VetoIndex) -> list[Finding] {
     out: list[Finding] = [];
+    src_cache: dict = {};
     for item in store.unused_import_items() {
         d: any = item;
         name = str(d["item_name"]);
@@ -65,6 +175,19 @@ def detect_unused_imports(store: FactStore, veto: VetoIndex) -> list[Finding] {
                 detail="0 references to the imported symbol"
             )
         );
+
+        if mod not in src_cache {
+            src_cache[mod] = _read_source(mod);
+        }
+        if _in_probe_guard(str(src_cache[mod]), int(d["stmt_pos_start"])) {
+            f.add(
+                Evidence(
+                    kind="probe-import",
+                    polarity=Polarity.VETOES,
+                    detail="import sits inside a try/except importability guard (probe import)"
+                )
+            );
+        }
         for ev in veto.check_symbol(alias or name, mod) {
             f.add(ev);
         }

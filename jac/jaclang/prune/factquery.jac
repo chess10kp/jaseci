@@ -2,6 +2,61 @@ import from jaclang.prune.factstore { FactStore }
 import from jaclang.prune.finding { Finding }
 
 
+def cite_one(store: FactStore, citation: str) -> str {
+    if citation.startswith("mod:") {
+        path = citation[4:];
+        if not store.module_exists(path) {
+            return "unresolved citation";
+        }
+        return f"module {store.module_name(path)} — {path}";
+    }
+    if citation.startswith("ref:") {
+        row = store.ref_row(citation);
+        if row is None {
+            return "unresolved citation";
+        }
+        mod = str(row["module_path"]);
+        line = row["line"];
+        if line is not None and int(line) > 0 {
+            return f"reference — {mod}:{int(line)}";
+        }
+        return f"reference in {mod}";
+    }
+    if citation.startswith("dep:") {
+        if not store.dep_exists(citation) {
+            return "unresolved citation";
+        }
+        return f"module dependency {citation}";
+    }
+    sid = citation[5:]
+        if citation.startswith("body:")
+        else (citation[4:] if citation.startswith("sym:") else citation);
+    row = store.symbol_row(sid);
+    if row is None {
+        return "unresolved citation";
+    }
+    kind = str(row["kind"]);
+    name = str(row["name"]);
+    mod = str(row["module_path"]);
+    line = int(row["decl_line"]);
+    access = str(row["access"]);
+    if citation.startswith("body:") {
+        n = store.body_stmt_count(sid);
+        return f"body of {name} — {mod}:{line} ({n} stmts)";
+    }
+    return f"{kind} {name} — {mod}:{line} ({access})";
+}
+
+
+def cite_index(store: FactStore, citations: list[str]) -> dict {
+    out: dict = {};
+    for cid in sorted(set(citations)) {
+        out[cid] = cite_one(store, cid);
+    }
+    return out;
+}
+
+
 obj SymbolView {
     has id: str,
         name: str,
