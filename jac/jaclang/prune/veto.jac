@@ -9,6 +9,8 @@ glob _STRING_LIT_RE: any = re.compile(
      ),
      _WORD_RE: any = re.compile(r"[A-Za-z_][A-Za-z0-9_]*"),
      _IDENTIFIER_RE: any = re.compile(r"[A-Za-z_][A-Za-z0-9_]*"),
+     _ATTR_RE: any = re.compile(r"\.\s*([A-Za-z_][A-Za-z0-9_]*)"),
+     _METHOD_KINDS = {"ability", "method"},
      _DYNAMIC_MARKERS = ["getattr(", "::py::", "globals()", "locals()", "vars("];
 
 
@@ -52,7 +54,12 @@ obj VetoIndex {
     has string_names_by_module: dict[str, set[str]] = {},
         fixture_words: set = set(),
         config_words: set = set(),
-        dynamic_modules: set = set();
+        dynamic_modules: set = set(),
+        attribute_names: set = set();
+
+    def method_dispatched(name: str, kind: str) -> bool {
+        return kind in _METHOD_KINDS and name in self.attribute_names;
+    }
 
     def _mention_evidence(name: str, module_path: str) -> (Evidence | None) {
         local_names = self.string_names_by_module.get(module_path, set());
@@ -117,6 +124,7 @@ def build_veto_index(manifest: Manifest, project_root: str = "") -> VetoIndex {
         }
 
         idx.string_names_by_module[entry.path] = _string_literal_identifiers(text);
+        idx.attribute_names |= set(_ATTR_RE.findall(text));
         if any(m in text for m in _DYNAMIC_MARKERS) {
             idx.dynamic_modules.add(entry.path);
         }

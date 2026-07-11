@@ -14,6 +14,32 @@ Pure over the helpers (no compilation).
 """
 
 import from jaclang.prune.detectors { _side_effect_import, _used_as_type }
+import from jaclang.prune.veto { VetoIndex }
+
+
+# ---------------------------------------------------------------------------
+# method-dispatch veto: a method/ability whose name is accessed as `.name`
+# somewhere cannot be proven dead (receiver-type dispatch the extractor misses)
+# ---------------------------------------------------------------------------
+test "method-dispatch: an attribute-accessed method name is not a deadness candidate" {
+    idx = VetoIndex(attribute_names={"from_dict", "schedule"});
+    assert idx.method_dispatched("from_dict", "ability");
+    assert idx.method_dispatched("schedule", "method");
+}
+
+
+test "method-dispatch: a never-accessed method name stays a candidate" {
+    idx = VetoIndex(attribute_names={"from_dict"});
+    assert not idx.method_dispatched("unsafe_html", "ability");
+}
+
+
+test "method-dispatch: only method/ability kinds are guarded, not objects/vars" {
+    idx = VetoIndex(attribute_names={"Widget", "count"});
+    # an object or mod_var is referenced by name (constructor/type) - reliable
+    assert not idx.method_dispatched("Widget", "object");
+    assert not idx.method_dispatched("count", "mod_var");
+}
 
 
 # ---------------------------------------------------------------------------

@@ -289,6 +289,9 @@ def detect_private_dead_defs(store: FactStore, veto: VetoIndex) -> list[Finding]
         if kind not in _DETECTABLE_KINDS {
             continue;
         }
+        if veto.method_dispatched(name, kind) {
+            continue;
+        }
         if str(d["access"]) not in _PRIVATE_ACCESS {
             continue;
         }
@@ -523,6 +526,9 @@ def detect_visibility_tightening(store: FactStore, veto: VetoIndex) -> list[Find
             continue;
         }
         if kind not in _TIGHTEN_KINDS {
+            continue;
+        }
+        if veto.method_dispatched(name, kind) {
             continue;
         }
         if str(d["access"]) != "public" {
