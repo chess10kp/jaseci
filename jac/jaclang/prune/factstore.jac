@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS imports (
     alias          TEXT,
     resolved_id    TEXT,
     resolved_path  TEXT,
+    source_module_path TEXT,
     pos_start      INTEGER,
     pos_end        INTEGER,
     line           INTEGER,
@@ -332,9 +333,9 @@ obj FactStore {
         );
         self.conn.executemany(
             "INSERT INTO imports(module_path, item_name, alias, resolved_id, "
-            "resolved_path, pos_start, pos_end, line, is_from, "
+            "resolved_path, source_module_path, pos_start, pos_end, line, is_from, "
             "stmt_pos_start, stmt_pos_end, n_items) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     im.module_path,
@@ -342,6 +343,7 @@ obj FactStore {
                     im.alias,
                     im.resolved_id,
                     im.resolved_path,
+                    im.source_module_path,
                     im.pos_start,
                     im.pos_end,
                     im.line,
@@ -505,9 +507,23 @@ obj FactStore {
         return int(cur.fetchone()[0]);
     }
 
+    def _alias_use_count(module_path: str, name: str) -> int {
+        if not module_path or not name {
+            return 0;
+        }
+        cur = self.conn.execute(
+            "SELECT COUNT(*) FROM refs r JOIN imports i "
+            "ON r.used_id = i.resolved_id AND r.module_path = i.module_path "
+            "WHERE i.source_module_path = ? AND i.item_name = ? "
+            "AND i.resolved_id != ''" + _scope("r.module_path"),
+            (module_path, name)
+        );
+        return int(cur.fetchone()[0]);
+    }
+
     def external_use_count(symbol_id: str) -> int {
         cur = self.conn.execute(
-            "SELECT s.module_path, s.decl_pos_start, s.decl_pos_end "
+            "SELECT s.module_path, s.decl_pos_start, s.decl_pos_end, s.name "
             "FROM symbols s WHERE s.id = ?",
             (symbol_id, )
         );
@@ -522,12 +538,14 @@ obj FactStore {
             ),
             (symbol_id, row[0], row[1], row[2])
         );
-        return int(cur2.fetchone()[0]);
+        return int(cur2.fetchone()[0]) + self._alias_use_count(
+            str(row[0]), str(row[3])
+        );
     }
 
     def cross_module_use_count(symbol_id: str) -> int {
         cur = self.conn.execute(
-            "SELECT s.module_path FROM symbols s WHERE s.id = ?", (symbol_id, )
+            "SELECT s.module_path, s.name FROM symbols s WHERE s.id = ?", (symbol_id, )
         );
         row = cur.fetchone();
         if not row {
@@ -539,18 +557,29 @@ obj FactStore {
             ),
             (symbol_id, row[0])
         );
-        return int(cur2.fetchone()[0]);
+        return int(cur2.fetchone()[0]) + self._alias_use_count(
+            str(row[0]), str(row[1])
+        );
     }
 
     def is_reexported(symbol_id: str) -> bool {
         cur = self.conn.execute(
-            "SELECT i.module_path FROM imports i WHERE i.resolved_id = ?" + _scope(
+            "SELECT module_path, name FROM symbols WHERE id = ?", (symbol_id, )
+        );
+        row = cur.fetchone();
+        if not row {
+            return False;
+        }
+
+        cur2 = self.conn.execute(
+            "SELECT i.module_path FROM imports i WHERE "
+            "(i.source_module_path = ? AND i.item_name = ?) OR i.resolved_id = ?" + _scope(
                 "i.module_path"
             ),
-            (symbol_id, )
+            (str(row[0]), str(row[1]), symbol_id)
         );
-        for row in cur.fetchall() {
-            if str(row[0]).endswith("__init__.jac") {
+        for r in cur2.fetchall() {
+            if str(r[0]).endswith("__init__.jac") {
                 return True;
             }
         }

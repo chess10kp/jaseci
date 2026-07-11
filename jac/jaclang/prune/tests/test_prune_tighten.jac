@@ -70,12 +70,17 @@ def _store -> FactStore {
             _sym("s_internal", "InternalOnly", "public"),
             _sym("s_cross", "CrossUsed", "public"),
             _sym("s_reexport", "Reexported", "public"),
-            _sym("s_priv", "PrivThing", "private")
+            _sym("s_priv", "PrivThing", "private"),
+            _sym("s_aliascross", "AliasCrossUsed", "public"),
+            _sym("s_reexbridge", "ReexportBridged", "public")
         ],
         refs=[
             _ref("s_internal", _MOD_A),
             _ref("s_cross", _MOD_B),
-            _ref("s_priv", _MOD_A)
+            _ref("s_priv", _MOD_A),
+            # Real extraction records the cross-module use against the local
+            # import alias id ("alias_b"), never the declaring symbol.
+            _ref("alias_b", _MOD_B)
         ],
         imports=[
             ImportFact(
@@ -84,6 +89,35 @@ def _store -> FactStore {
                 alias="",
                 resolved_id="s_reexport",
                 resolved_path="",
+                source_module_path="",
+                pos_start=0,
+                pos_end=10,
+                line=1,
+                is_from=True
+            ),
+            # Alias bridge: a plain cross-module from-import of AliasCrossUsed
+            # into b.jac, binding the local alias "alias_b".
+            ImportFact(
+                module_path=_MOD_B,
+                item_name="AliasCrossUsed",
+                alias="",
+                resolved_id="alias_b",
+                resolved_path="",
+                source_module_path=_MOD_A,
+                pos_start=0,
+                pos_end=10,
+                line=1,
+                is_from=True
+            ),
+            # Alias bridge for a barrel re-export: __init__ re-exports
+            # ReexportBridged from a.jac, binding the local alias "alias_init".
+            ImportFact(
+                module_path=_INIT,
+                item_name="ReexportBridged",
+                alias="",
+                resolved_id="alias_init",
+                resolved_path="",
+                source_module_path=_MOD_A,
                 pos_start=0,
                 pos_end=10,
                 line=1,
@@ -147,5 +181,31 @@ test "store: cross_module_use_count and is_reexported" {
     assert store.cross_module_use_count("s_cross") == 1;
     assert store.is_reexported("s_reexport");
     assert not store.is_reexported("s_internal");
+    store.close();
+}
+
+
+# Alias bridge: a cross-module use recorded against the importing module's local
+# import alias must be attributed back to the declaring symbol via
+# (source_module_path, item_name), not lost. Regressing this re-opens the
+# extraction gap that made a library's public API look dead.
+test "an alias-recorded cross-module use suppresses the demote candidate" {
+    fs = _names();
+    assert "AliasCrossUsed" not in fs , list(fs.keys());
+}
+
+
+test "an alias-bridged barrel re-export suppresses the demote candidate" {
+    fs = _names();
+    assert "ReexportBridged" not in fs , list(fs.keys());
+}
+
+
+test "store: alias bridge attributes cross-module and re-export via source path" {
+    store = _store();
+    assert store.cross_module_use_count("s_aliascross") == 1;
+    assert store.external_use_count("s_aliascross") == 1;
+    assert store.is_reexported("s_reexbridge");
+    assert not store.is_reexported("s_aliascross");
     store.close();
 }

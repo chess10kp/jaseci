@@ -9,7 +9,7 @@ import from jaclang.prune.literals { LiteralFact, extract_literals }
 import from jaclang.prune.docstrings { DocstringFact, extract_docstrings }
 
 
-glob EXTRACTOR_VERSION = "2";
+glob EXTRACTOR_VERSION = "3";
 
 
 obj ModuleFact {
@@ -73,7 +73,8 @@ obj ImportFact {
         is_from: bool,
         stmt_pos_start: int = 0,
         stmt_pos_end: int = 0,
-        n_items: int = 1;
+        n_items: int = 1,
+        source_module_path: str = "";
 }
 
 obj FieldAccessFact {
@@ -414,6 +415,7 @@ def _emit_uses(
 
 
 def _extract_imports(mod: any, facts: FactSet, in_scope_paths: set) {
+    import from pathlib { Path }
     for imp in mod.get_all_sub_nodes(uni.Import) {
         loc = imp.loc;
         imp_mod = str(loc.mod_path);
@@ -421,6 +423,18 @@ def _extract_imports(mod: any, facts: FactSet, in_scope_paths: set) {
             continue;
         }
         is_from = imp.from_loc is not None;
+        source_path = "";
+        if imp.from_loc is not None {
+            try {
+                source_path = str(
+                    Path(
+                        cast(uni.ModulePath, imp.from_loc).resolve_relative_path()
+                    ).resolve()
+                );
+            } except Exception {
+                source_path = "";
+            }
+        }
         stmt_start = loc.pos_start;
         stmt_end = loc.pos_end;
         n_items = len(cast(list, imp.items));
@@ -441,6 +455,7 @@ def _extract_imports(mod: any, facts: FactSet, in_scope_paths: set) {
                         alias=alias,
                         resolved_id=resolved_id,
                         resolved_path=str(item.abs_path or ""),
+                        source_module_path=source_path,
                         pos_start=int(iloc.pos_start),
                         pos_end=int(iloc.pos_end),
                         line=int(iloc.first_line),
@@ -462,6 +477,7 @@ def _extract_imports(mod: any, facts: FactSet, in_scope_paths: set) {
                         alias=alias,
                         resolved_id=resolved_id,
                         resolved_path=str(item.abs_path or ""),
+                        source_module_path=source_path,
                         pos_start=int(iloc.pos_start),
                         pos_end=int(iloc.pos_end),
                         line=int(iloc.first_line),
@@ -574,7 +590,15 @@ def _module_fact_hash(mod: ModuleFact, bundle: (tuple | None)) -> str {
     }
     for im in sorted(imports, key=(lambda x : (x.pos_start, x.pos_end, x.item_name))) {
         parts.append(
-            "I|" + "|".join([im.item_name, im.alias, im.resolved_id, str(im.pos_start)])
+            "I|" + "|".join(
+                [
+                    im.item_name,
+                    im.alias,
+                    im.resolved_id,
+                    im.source_module_path,
+                    str(im.pos_start)
+                ]
+            )
         );
     }
     for fa in sorted(fields, key=(lambda x : (x.field_id, x.pos_start, x.kind))) {
