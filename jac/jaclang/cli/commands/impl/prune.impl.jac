@@ -524,6 +524,10 @@ def _run_report(campaign: Campaign) -> int {
     _print_manifest_summary(manifest);
     console.print("");
     console.info(f"compiled {compiled} module(s): {errs} error(s), {warns} warning(s)");
+    scope_note = analysis.scope_warning();
+    if scope_note {
+        console.warning(scope_note);
+    }
     _print_findings(campaign, candidates, suppressed);
     console.print_elapsed_time(time() - start);
     return 0;

@@ -1,10 +1,17 @@
 import os;
 
 import from jaclang.prune.campaign { Campaign }
-import from jaclang.prune.manifest { Manifest, FileRole }
-import from jaclang.prune.finding { Candidate, classify }
+import from jaclang.prune.manifest { Manifest, FileRole, ScopeCoverage, scope_coverage }
+import from jaclang.prune.finding { Candidate, Finding, classify }
 import from jaclang.prune.factstore { FactStore }
 import from jaclang.prune.agent { AgentModel }
+
+
+# Detectors whose verdict depends on cross-module reference counting: a symbol
+# used only from OUTSIDE the analyzed scope reads as dead to these. A partial
+# scope therefore inflates their false-positive rate; findings are stamped with
+# `scope_partial` so the report and confidence model can hedge them.
+glob _SCOPE_SENSITIVE_DETECTORS = {"visibility-tightening"};
 
 
 obj Analysis {
@@ -17,7 +24,56 @@ obj Analysis {
         compiled: int,
         store: (FactStore | None) = None,
         detector_input: int = 0,
-        agent_ledger: int = 0;
+        agent_ledger: int = 0,
+        coverage: (ScopeCoverage | None) = None;
+
+    def scope_partial -> bool {
+        return self.coverage is not None and self.coverage.is_partial();
+    }
+
+    def scope_partial_findings -> int {
+        return sum(
+            1
+            for c in self.candidates
+            if bool(c.finding.plan_meta.get("scope_partial", False))
+        );
+    }
+
+    """One-line caveat when cross-module findings were produced under a scope
+    that excludes potential consumers; empty when coverage is complete or no
+    scope-sensitive detector ran."""
+    def scope_warning -> str {
+        if self.coverage is None or not self.scope_partial() {
+            return "";
+        }
+        if self.scope_partial_findings() == 0 {
+            return "";
+        }
+        cov = self.coverage;
+        return (
+            f"partial scope: {cov.in_scope_live} of {cov.project_live} project "
+            f"module(s) analyzed; {cov.outside_count()} outside scope may reference "
+            "in-scope symbols. Cross-module findings (visibility-tightening) can "
+            "over-report exported API used elsewhere; re-run without a path "
+            "argument for full coverage."
+        );
+    }
+}
+
+
+"""Mark cross-module findings produced under a partial scope so downstream
+consumers (report warning, confidence model, JSON packet) can hedge them."""
+def _stamp_scope_partial(findings: list[Finding], coverage: ScopeCoverage) {
+    if not coverage.is_partial() {
+        return;
+    }
+    outside = coverage.outside_count();
+    for f in findings {
+        if f.detector in _SCOPE_SENSITIVE_DETECTORS {
+            f.plan_meta["scope_partial"] = True;
+            f.plan_meta["scope_outside_modules"] = outside;
+        }
+    }
 }
 
 
@@ -101,6 +157,8 @@ def build_analysis(
     store.sync(facts);
     veto = build_veto_index(manifest, campaign.project_root);
     det_findings = run_detectors(store, veto, campaign.recipes);
+    coverage = scope_coverage(campaign, manifest);
+    _stamp_scope_partial(det_findings, coverage);
     (kept, suppressed) = filter_suppressed(det_findings, campaign);
 
     findings = kept;
@@ -129,6 +187,7 @@ def build_analysis(
         compiled=compiled,
         store=store,
         detector_input=detector_input,
-        agent_ledger=agent_ledger
+        agent_ledger=agent_ledger,
+        coverage=coverage
     );
 }

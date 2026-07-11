@@ -315,6 +315,7 @@ obj Candidate {
             "citations": f.packet_citations(),
             "cite_index": idx,
             "related": f.related,
+            "scope_partial": bool(f.plan_meta.get("scope_partial", False)),
             "trace": self.trace
         };
     }

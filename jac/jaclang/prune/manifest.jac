@@ -242,3 +242,48 @@ def build_manifest(campaign: Campaign) -> Manifest {
     }
     return manifest;
 }
+
+
+obj ScopeCoverage {
+    has in_scope_live: int,
+        project_live: int;
+
+    def is_partial -> bool {
+        return self.project_live > self.in_scope_live;
+    }
+
+    def outside_count -> int {
+        return max(0, self.project_live - self.in_scope_live);
+    }
+}
+
+
+"""Count the project's live (source + impl-annex) `.jac` files without hashing
+or compiling, so a scoped run can tell whether consumers live outside its scope.
+A subtree scoped without its consumers makes cross-module detectors
+(visibility-tightening) read as mass-dead; this is the coverage signal that
+lets the report say so."""
+def scope_coverage(campaign: Campaign, manifest: Manifest) -> ScopeCoverage {
+    in_scope = len(manifest.live_entries());
+    if not campaign.paths {
+        # No explicit paths -> scope already spans the whole project root.
+        return ScopeCoverage(in_scope_live=in_scope, project_live=in_scope);
+    }
+    project_live = 0;
+    for path in _iter_jac_paths([campaign.project_root]) {
+        if _excluded(path, campaign.project_root, campaign.exclude) {
+            continue;
+        }
+        if campaign.include_globs
+        and not _excluded(path, campaign.project_root, campaign.include_globs) {
+            continue;
+        }
+        role = classify(path, campaign.generated_globs);
+        if role == FileRole.SOURCE or role == FileRole.IMPL_ANNEX {
+            project_live += 1;
+        }
+    }
+    return ScopeCoverage(
+        in_scope_live=in_scope, project_live=max(in_scope, project_live)
+    );
+}
