@@ -11,7 +11,7 @@ import from jaclang.prune.factstore { FactStore }
 import from jaclang.prune.factquery { ToolSurface }
 import from jaclang.prune.veto { VetoIndex }
 import from jaclang.prune.detectors { detect_module_cohesion }
-import from jaclang.prune.finding { classify }
+import from jaclang.prune.finding { Finding, classify }
 import from jaclang.prune.campaign { RiskTier, Disposition }
 
 
@@ -220,4 +220,44 @@ test "no merge when cross-coupling does not exceed internal cohesion" {
     for f in fs {
         assert str(f.plan_meta["shape"]) != "merge" , f.name;
     }
+}
+
+
+def _cohesion_finding(name: str, module_path: str) -> Finding {
+    return Finding(
+        detector="module-cohesion",
+        symbol_id="",
+        name=name,
+        module_path=module_path,
+        kind="module",
+        message="advisory",
+        pos_start=0,
+        pos_end=0,
+        line=0
+    );
+}
+
+
+test "module-cohesion fingerprints do not collide across split and merge" {
+    split_f = _cohesion_finding("split:a.jac", "a.jac");
+    merge_ab = _cohesion_finding("merge:a.jac|b.jac", "a.jac");
+    merge_ac = _cohesion_finding("merge:a.jac|c.jac", "a.jac");
+    assert split_f.fingerprint() != merge_ab.fingerprint();
+    assert merge_ab.fingerprint() != merge_ac.fingerprint();
+}
+
+
+test "symbol-anchored fingerprint is unchanged by name in the empty-id fallback" {
+    f = Finding(
+        detector="unused-imports",
+        symbol_id="sym:abc",
+        name="Foo",
+        module_path="/pkg/m.jac",
+        kind="import",
+        message="unused",
+        pos_start=0,
+        pos_end=5,
+        line=1
+    );
+    assert f.fingerprint() == "6f59c04f6dc47e0b";
 }

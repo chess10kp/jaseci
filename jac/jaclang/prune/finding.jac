@@ -89,7 +89,7 @@ obj Finding {
 
     def fingerprint -> str {
         anchor = self.symbol_id
-        or f"{self.module_path}:{self.pos_start}-{self.pos_end}";
+        or f"{self.module_path}:{self.name}:{self.pos_start}-{self.pos_end}";
         key = f"{self.detector}|{anchor}";
         return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16];
     }
