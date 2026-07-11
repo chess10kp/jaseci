@@ -531,7 +531,7 @@ def _run_report(campaign: Campaign) -> int {
 
 
 def _print_findings(campaign: Campaign, candidates: list, suppressed_count: int) {
-    import from jaclang.prune.report { table_rows, summarize }
+    import from jaclang.prune.report { table_rows, summarize, summarize_categories }
     console.print("");
     if not candidates {
         console.success("No findings. Nothing to prune. 🎉");
@@ -545,6 +545,11 @@ def _print_findings(campaign: Campaign, candidates: list, suppressed_count: int)
         ["detector", "risk", "disposition", "location", "message"],
         rows,
         title=f"Findings ({len(candidates)})"
+    );
+    cats = summarize_categories(candidates);
+    console.info(
+        f"{cats.get('deletion', 0)} deletion-bearing (reduce LOC) · "
+        f"{cats.get('hygiene', 0)} hygiene/advisory (encapsulation/cohesion, 0 LOC)"
     );
     summary = summarize(candidates);
     console.info(

@@ -30,6 +30,14 @@ def disposition_label(d: Disposition) -> str {
 }
 
 
+glob _HYGIENE_DETECTORS = {"visibility-tightening", "module-cohesion"};
+
+
+def finding_category(detector: str) -> str {
+    return "hygiene" if detector in _HYGIENE_DETECTORS else "deletion";
+}
+
+
 obj Evidence {
     has kind: str,
         polarity: Polarity,
@@ -289,6 +297,7 @@ obj Candidate {
         idx = cite_index if cite_index is not None else {};
         return {
             "detector": f.detector,
+            "category": finding_category(f.detector),
             "fingerprint": f.fingerprint(),
             "symbol_id": f.symbol_id,
             "name": f.name,

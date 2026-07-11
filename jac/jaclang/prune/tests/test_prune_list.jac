@@ -12,8 +12,10 @@ import from jaclang.prune.report {
     confidence_of,
     ranked_candidates,
     list_rows,
-    list_json
+    list_json,
+    summarize_categories
 }
+import from jaclang.prune.finding { finding_category }
 
 
 def _finding(detector: str, sym: str, name: str = "thing") -> Finding {
@@ -72,6 +74,43 @@ test "list: a limit at or above the count suppresses nothing" {
     (rows, suppressed) = list_rows(cands, "pkg", 200);
     assert len(rows) == 3;
     assert suppressed == 0;
+}
+
+
+test "category: hygiene detectors don't reduce LOC, deletion detectors do" {
+    assert finding_category("visibility-tightening") == "hygiene";
+    assert finding_category("module-cohesion") == "hygiene";
+    for det in [
+        "unused-imports",
+        "private-dead-defs",
+        "dead-enum-variants",
+        "write-only-fields",
+        "single-caller-inline",
+        "duplicated-constant-blobs"
+    ] {
+        assert finding_category(det) == "deletion" , det;
+    }
+}
+
+
+test "category: as_dict carries the finding category" {
+    c = _cand("visibility-tightening", "v");
+    assert c.as_dict()["category"] == "hygiene";
+    assert _cand("unused-imports", "u").as_dict()["category"] == "deletion";
+}
+
+
+test "category: summary splits deletion-bearing from hygiene/advisory" {
+    cands = [
+        _cand("unused-imports", "a"),
+        _cand("dead-enum-variants", "b"),
+        _cand("visibility-tightening", "c"),
+        _cand("module-cohesion", "d"),
+        _cand("visibility-tightening", "e")
+    ];
+    cats = summarize_categories(cands);
+    assert cats["deletion"] == 2 , cats;
+    assert cats["hygiene"] == 3 , cats;
 }
 
 

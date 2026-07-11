@@ -2,7 +2,7 @@ import os;
 import json;
 import difflib;
 
-import from jaclang.prune.finding { Candidate, disposition_label }
+import from jaclang.prune.finding { Candidate, disposition_label, finding_category }
 import from jaclang.prune.campaign { risk_tier_label, Disposition }
 import from jaclang.prune.factstore { FactStore }
 import from jaclang.prune.factquery { cite_index }
@@ -44,6 +44,15 @@ def summarize(cands: list[Candidate]) -> dict[str, int] {
     for c in cands {
         k = disposition_label(c.disposition);
         out[k] = out.get(k, 0) + 1;
+    }
+    return out;
+}
+
+
+def summarize_categories(cands: list[Candidate]) -> dict[str, int] {
+    out: dict[str, int] = {"deletion": 0, "hygiene": 0};
+    for c in cands {
+        out[finding_category(c.finding.detector)] += 1;
     }
     return out;
 }
