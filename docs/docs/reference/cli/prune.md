@@ -115,6 +115,26 @@ re-extraction - it is a pure query over facts already stored.
   table in `jac.toml`) caps how risky a finding may be and still act; anything
   over the ceiling is `report-only`.
 
+## Verification questions in every packet
+
+Each finding and reuse-group packet (`-o json`, `reuse --group`) carries a
+`verify` block: 1-4 detector-authored checks the detector could **not** settle
+itself - its forward-looking blind spots - each phrased as an executable check
+with an expected answer:
+
+```json
+"verify": [
+  {"q": "Is 'load_template' referenced dynamically (string literal / getattr)?",
+   "how": "grep -rn '\"load_template\"' --include='*.jac' <root>",
+   "expect": "no hits outside the decl module; any hit = dynamic-dispatch risk"}
+]
+```
+
+They complement the backward-looking `evidence` rows (what the detector already
+checked). A harness agent runs them before issuing a verdict; reuse packets ask
+the merge-worthiness questions (shared owner/base, delta class, drift), and the
+fuzzy tier adds a contiguity (LCS) check to kill coincidental shingle matches.
+
 ## The validation gate (`fix --apply`)
 
 Applying is never blind. For a batch of auto-fix edits:

@@ -1,5 +1,6 @@
 import hashlib;
 import from jaclang.prune.factstore { FactStore }
+import from jaclang.prune.finding { reuse_verify_questions }
 
 
 glob REUSE_QUERY_VERSION = "1",
@@ -395,6 +396,7 @@ def group_packet(
         "canonical_member": g.members[0].symbol_id if g.members else "",
         "members": members,
         "evidence": evidence,
+        "verify": reuse_verify_questions(g.kind),
         "payoff": {
             "score": g.payoff,
             "copies_saved": g.copies_saved,

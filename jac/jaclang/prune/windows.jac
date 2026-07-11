@@ -1,5 +1,6 @@
 import hashlib;
 import from jaclang.prune.factstore { FactStore }
+import from jaclang.prune.finding { reuse_verify_questions }
 
 
 glob WINDOW_QUERY_VERSION = "1",
@@ -268,6 +269,7 @@ def window_packet(w: WindowGroup) -> dict {
         "distinct_owners": w.distinct_owners,
         "same_owner_only": w.same_owner_only,
         "payoff": w.payoff,
+        "verify": reuse_verify_questions("window"),
         "sites": sites,
         "citations": citations
     };

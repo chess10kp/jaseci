@@ -1,5 +1,6 @@
 import hashlib;
 import from jaclang.prune.factstore { FactStore }
+import from jaclang.prune.finding { reuse_verify_questions }
 import from jaclang.prune.clones {
     CloneMember,
     _build_member,
@@ -304,6 +305,7 @@ def fuzzy_packet(store: FactStore, g: FuzzyGroup) -> dict {
             "mean_similarity": g.mean_similarity,
             "structural_hashes": g.structural_hashes
         },
+        "verify": reuse_verify_questions("fuzzy"),
         "payoff": {
             "score": g.payoff,
             "copies_saved": g.copies_saved,

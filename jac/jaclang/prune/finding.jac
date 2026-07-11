@@ -88,6 +88,189 @@ obj Finding {
 }
 
 
+def _q(question: str, how: str, expect: str) -> dict {
+    return {"q": question, "how": how, "expect": expect};
+}
+
+
+def _grep_string_lit(name: str) -> str {
+    return f"grep -rn '\"{name}\"' --include='*.jac' <root>";
+}
+
+
+def verify_questions(f: Finding) -> list[dict] {
+    det = f.detector;
+    nm = f.name;
+    if det == "unused-imports" {
+        return [
+            _q(
+                f"Is '{nm}' referenced dynamically (string literal / getattr) anywhere in scope?",
+                _grep_string_lit(nm),
+                "no hits outside the decl module; any hit = dynamic-dispatch risk"
+            ),
+            _q(
+                "Is the import a try/except importability probe (name intentionally unused)?",
+                "open the import site; look for an enclosing try { ... } except ImportError",
+                "not inside a try/except import guard"
+            )
+        ];
+    }
+    if det == "private-dead-defs" {
+        return [
+            _q(
+                f"Is '{nm}' invoked reflectively (getattr / registry / string dispatch)?",
+                _grep_string_lit(nm),
+                "no dynamic reference; only the decl site appears"
+            ),
+            _q(
+                f"Is '{nm}' a test/entry hook discovered by name convention?",
+                "check for test-runner or plugin naming conventions on the name",
+                "not a convention-discovered hook"
+            )
+        ];
+    }
+    if det == "dead-enum-variants" {
+        return [
+            _q(
+                f"Is the variant '{nm}' selected by string value or serialized externally?",
+                _grep_string_lit(nm),
+                "no external/string selection of the variant"
+            ),
+            _q(
+                "Is this enum part of a public API surface (persisted / wire format)?",
+                "check whether the enum crosses a module/package boundary or is serialized",
+                "internal enum only"
+            )
+        ];
+    }
+    if det == "write-only-fields" {
+        return [
+            _q(
+                f"Is field '{nm}' read via getattr / serialization / reflection?",
+                _grep_string_lit(nm),
+                "no reflective or serialized read of the field"
+            )
+        ];
+    }
+    if det == "literal-dead-branch" {
+        return [
+            _q(
+                "Is the literal condition a deliberate feature flag or debug toggle?",
+                "read the branch; confirm the constant is not a config-swappable flag",
+                "constant is a true dead branch, not a toggle"
+            )
+        ];
+    }
+    if det == "single-caller-inline" {
+        return [
+            _q(
+                f"Does the sole caller of '{nm}' do real work around the call, or purely forward?",
+                "read the caller body; confirm it is a thin forward with no added logic",
+                "caller forwards with negligible surrounding logic"
+            ),
+            _q(
+                f"Is '{nm}' referenced anywhere besides the one static call site?",
+                _grep_string_lit(nm),
+                "no other (dynamic) references"
+            )
+        ];
+    }
+    if det == "visibility-tightening" {
+        return [
+            _q(
+                f"Is '{nm}' an entry point invoked via a registry (CLI command / plugin)?",
+                "check for a decorator/registry registration keyed on the name",
+                "not registry-dispatched"
+            ),
+            _q(
+                f"Is '{nm}' re-exported by a package __init__.jac as public API?",
+                f"grep -rn '{nm}' --include='__init__.jac' <root>",
+                "not re-exported (safe to demote)"
+            )
+        ];
+    }
+    if det == "duplicated-constant-blobs" {
+        return [
+            _q(
+                "Are the duplicated literals semantically the same constant, or coincidental?",
+                "compare the cited sites; confirm one canonical meaning",
+                "same logical constant at every site"
+            )
+        ];
+    }
+    if det == "duplicate-docstrings" {
+        return [
+            _q(
+                "Do the symbols sharing this doc genuinely have the same contract?",
+                "read each cited symbol; confirm the doc is not a stale copy-paste",
+                "same contract, one canonical doc is correct"
+            )
+        ];
+    }
+    if det == "module-cohesion" {
+        return [
+            _q(
+                "Do the disconnected clusters (or the tight seam) reflect real subsystems?",
+                "read the cited representative symbols per cluster / the two modules",
+                "clusters are independent concerns, not incidental helpers"
+            )
+        ];
+    }
+    if det.startswith("agent-") {
+        return [
+            _q(
+                "Do the cited facts independently support this redundancy claim?",
+                "resolve each citation and confirm the structural relationship holds",
+                "every citation checks out; claim reproduces from facts"
+            )
+        ];
+    }
+    return [
+        _q(
+            f"Is '{nm}' referenced dynamically anywhere in scope?",
+            _grep_string_lit(nm),
+            "no dynamic reference outside the decl module"
+        )
+    ];
+}
+
+
+def reuse_verify_questions(tier: str) -> list[dict] {
+    out = [
+        _q(
+            "Are all members complete bodies (not decl-only stubs) and semantically equivalent?",
+            "read each cited member body; confirm identical intent modulo the deltas",
+            "every member is a real, equivalent implementation"
+        ),
+        _q(
+            "Do the members share an owner relation (same owner / sibling archetypes with a common base) enabling a pull-up?",
+            "compare member owner_id / owner_name; check for a shared base archetype",
+            "a hosting seam exists (shared owner or common base), else extract-helper only"
+        ),
+        _q(
+            "Do the deltas reduce to parameters, or include callee/behavior differences (harder merge)?",
+            "inspect each member's `vector` delta slots; note literal-only vs callee deltas",
+            "literal-only deltas parameterize cleanly; callee deltas need a hook"
+        ),
+        _q(
+            "Have the members drifted deliberately (would merging discard an intended divergence)?",
+            "git log -p over the member spans; look for divergent edits post-copy",
+            "no intended divergence; the copies are still meant to stay in lockstep"
+        )
+    ];
+    if "fuzz" in tier or tier == "t3" {
+        out.append(
+            _q(
+                "Is the shared material contiguous (real shared logic) or coincidental shingle overlap?",
+                "compare the members' struct_tokens; check longest-common-subsequence contiguity",
+                "shared tokens form a contiguous block, not scattered coincidences"
+            )
+        );
+    }
+    return out;
+}
+
+
 obj Candidate {
     has finding: Finding,
         risk: RiskTier,
@@ -111,6 +294,7 @@ obj Candidate {
             "disposition": disposition_label(self.disposition),
             "source": f.source,
             "evidence": [e.as_dict() for e in f.evidence],
+            "verify": verify_questions(f),
             "citations": f.citations,
             "related": f.related,
             "trace": self.trace
