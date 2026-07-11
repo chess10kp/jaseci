@@ -40,7 +40,11 @@ obj CloneGroup {
         copies_saved: int,
         lines_saved: int,
         reach: int,
-        payoff: float;
+        payoff: float,
+        lcs_ratio: float = 1.0,
+        param_count: int = 0,
+        refactorability: float = 1.0,
+        suggested_shape: str = "hoist-shared-helper";
 }
 
 
@@ -160,6 +164,127 @@ def _reach(members: list[CloneMember]) -> int {
 }
 
 
+# A member's vector holds only the tokens that vary within a structural group:
+# literal VALUES and local-variable NAMES (the struct hash keeps callees/shape and
+# erases both). A repr-shaped token (quote-led, numeric, or True/False/None) is a
+# literal; anything else is a local name. Only literal divergence needs a
+# parameter -- name divergence is pure alpha-rename, semantically null.
+def _vec_token_kind(t: str) -> str {
+    if not t {
+        return "name";
+    }
+    c = t[0];
+    if c == "'" or c == '"' {
+        return "lit";
+    }
+    if t in ("True", "False", "None") {
+        return "lit";
+    }
+    if c == "-" or ("0" <= c and c <= "9") {
+        return "lit";
+    }
+    return "name";
+}
+
+
+def _lcs_len(a: list[str], b: list[str]) -> int {
+    n = len(a);
+    m = len(b);
+    if n == 0 or m == 0 {
+        return 0;
+    }
+    prev: list[int] = [0 for _i in range(m + 1)];
+    for i in range(1, n + 1) {
+        cur: list[int] = [0 for _j in range(m + 1)];
+        for j in range(1, m + 1) {
+            if a[i - 1] == b[j - 1] {
+                cur[j] = prev[j - 1] + 1;
+            } else {
+                cur[j] = max(prev[j], cur[j - 1]);
+            }
+        }
+        prev = cur;
+    }
+    return prev[m];
+}
+
+
+def _mean_pairwise_lcs(vectors: list[list[str]]) -> float {
+    if len(vectors) < 2 {
+        return 1.0;
+    }
+    ratios: list[float] = [];
+    for i in range(len(vectors) - 1) {
+        a = vectors[i];
+        b = vectors[i + 1];
+        denom = max(len(a), len(b));
+        ratios.append(1.0 if denom == 0 else _lcs_len(a, b) / float(denom));
+    }
+    return sum(ratios) / float(len(ratios));
+}
+
+
+def _adjusted_payoff(g: CloneGroup) -> float {
+    return g.payoff * (0.35 + 0.65 * g.refactorability);
+}
+
+
+# Refactorability = how cleanly a group's members collapse into one definition.
+# Exact bodies hoist verbatim (1.0); structural members differing only in local
+# names are alpha-equivalent (hoist after rename); members differing in a few
+# literal slots parametrize; many divergent literals or low token overlap means a
+# merge just relocates complexity (extract-template, low score). The score
+# downweights payoff so structural-not-semantic clones stop ranking as harvest.
+def _refactor_analysis(members: list[CloneMember], kind: str) -> dict {
+    vectors = [m.vector for m in members];
+    lcs_ratio = _mean_pairwise_lcs(vectors);
+    lengths = [len(v) for v in vectors];
+    min_len = min(lengths) if lengths else 0;
+    lit_params = 0;
+    for p in range(min_len) {
+        if _vec_token_kind(vectors[0][p]) == "lit" {
+            vals = {v[p] for v in vectors};
+            if len(vals) > 1 {
+                lit_params += 1;
+            }
+        }
+    }
+    ragged = (max(lengths) - min_len) if lengths else 0;
+    param_count = lit_params + ragged;
+    distinct_owners = len(
+        {
+            m.owner_id
+            for m in members
+            if m.owner_id
+        }
+    );
+
+    if kind == "exact" {
+        refac = 1.0;
+    } elif param_count == 0 {
+        refac = max(lcs_ratio, 0.85);
+    } else {
+        spread = max(0.2, 1.0 - 0.12 * float(param_count - 1));
+        refac = lcs_ratio * spread;
+    }
+    refac = max(0.1, min(1.0, refac));
+
+    if kind == "exact" or param_count == 0 {
+        shape = "hoist-to-base" if distinct_owners >= 2 else "hoist-shared-helper";
+    } elif param_count <= 3 and lcs_ratio >= 0.6 {
+        shape = "parametrize";
+    } else {
+        shape = "extract-template";
+    }
+    return {
+        "lcs_ratio": round(lcs_ratio, 4),
+        "param_count": param_count,
+        "refactorability": round(refac, 4),
+        "suggested_shape": shape
+    };
+}
+
+
 def find_clone_groups(store: FactStore) -> list[CloneGroup] {
     rows = store.candidate_bodies();
     order: list[str] = [];
@@ -204,6 +329,7 @@ def find_clone_groups(store: FactStore) -> list[CloneGroup] {
                 float(copies_saved), 6.0
             ) + 0.15 * _sat(float(reach), 40.0)
         );
+        ra = _refactor_analysis(members, kind);
         groups.append(
             CloneGroup(
                 group_id=_group_id(sh, member_ids),
@@ -217,12 +343,16 @@ def find_clone_groups(store: FactStore) -> list[CloneGroup] {
                 copies_saved=copies_saved,
                 lines_saved=lines_saved,
                 reach=reach,
-                payoff=payoff
+                payoff=payoff,
+                lcs_ratio=float(ra["lcs_ratio"]),
+                param_count=int(ra["param_count"]),
+                refactorability=float(ra["refactorability"]),
+                suggested_shape=str(ra["suggested_shape"])
             )
         );
     }
 
-    groups.sort(key=(lambda g : (-g.payoff, g.group_id)));
+    groups.sort(key=(lambda g : (-_adjusted_payoff(g), g.group_id)));
     return groups;
 }
 
@@ -326,7 +456,12 @@ def group_summary(
         "copies_saved": g.copies_saved,
         "lines_saved": g.lines_saved,
         "reach": g.reach,
-        "payoff": g.payoff
+        "payoff": g.payoff,
+        "adjusted_payoff": round(_adjusted_payoff(g), 4),
+        "refactorability": g.refactorability,
+        "suggested_shape": g.suggested_shape,
+        "lcs_ratio": g.lcs_ratio,
+        "param_count": g.param_count
     };
     if probe is not None {
         out["probe"] = probe.get("status", "");
@@ -400,6 +535,11 @@ def group_packet(
         "verify": reuse_verify_questions(g.kind),
         "payoff": {
             "score": g.payoff,
+            "adjusted": round(_adjusted_payoff(g), 4),
+            "refactorability": g.refactorability,
+            "suggested_shape": g.suggested_shape,
+            "lcs_ratio": g.lcs_ratio,
+            "param_count": g.param_count,
             "copies_saved": g.copies_saved,
             "lines_saved": g.lines_saved,
             "reach": g.reach

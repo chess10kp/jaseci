@@ -397,7 +397,14 @@ def _run_reuse(
             members = ", ".join(
                 [f"{m.owner_name or '<mod>'}.{m.name}" for m in g.members]
             );
-            row = [g.kind, str(len(g.members)), str(g.lines_saved), f"{g.payoff:.2f}"];
+            row = [
+                g.kind,
+                str(len(g.members)),
+                str(g.lines_saved),
+                f"{g.payoff:.2f}",
+                f"{g.refactorability:.2f}",
+                g.suggested_shape
+            ];
             if probe {
                 pr = probes.get(g.group_id);
                 row.append(pr.get("status", "-") if pr is not None else "-");
@@ -413,7 +420,7 @@ def _run_reuse(
             row.append(members);
             rows.append(row);
         }
-        header = ["kind", "copies", "~lines", "payoff"];
+        header = ["kind", "copies", "~lines", "payoff", "refac", "shape"];
         if probe {
             header.append("probe");
         }
