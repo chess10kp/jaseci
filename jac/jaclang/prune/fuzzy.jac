@@ -149,13 +149,11 @@ def find_fuzzy_clone_groups(
         ];
         n = len(rowset);
         parent: dict[int, int] = {i: i for i in range(n)};
-        edges: list = [];
         for i in range(n) {
             for j in range(i + 1, n) {
                 sim = _jaccard(shs[i], shs[j]);
                 if sim >= thr {
                     _union(parent, i, j);
-                    edges.append((i, j, sim));
                 }
             }
         }
@@ -182,12 +180,13 @@ def find_fuzzy_clone_groups(
             if len(sites) < 2 {
                 continue;
             }
-            idx_set = set(idxs);
-            sim_vals = [
-                e[2]
-                for e in edges
-                if e[0] in idx_set and e[1] in idx_set
-            ];
+            idx_list = sorted(idxs);
+            sim_vals: list[float] = [];
+            for ai in range(len(idx_list)) {
+                for bj in range(ai + 1, len(idx_list)) {
+                    sim_vals.append(_jaccard(shs[idx_list[ai]], shs[idx_list[bj]]));
+                }
+            }
             min_sim = min(sim_vals) if sim_vals else thr;
             mean_sim = (sum(sim_vals) / len(sim_vals)) if sim_vals else thr;
 
@@ -304,7 +303,8 @@ def fuzzy_packet(store: FactStore, g: FuzzyGroup) -> dict {
             "threshold": g.threshold,
             "min_similarity": g.min_similarity,
             "mean_similarity": g.mean_similarity,
-            "structural_hashes": g.structural_hashes
+            "structural_hashes": g.structural_hashes,
+            "chained": g.min_similarity < g.threshold
         },
         "verify": reuse_verify_questions("fuzzy"),
         "payoff": {

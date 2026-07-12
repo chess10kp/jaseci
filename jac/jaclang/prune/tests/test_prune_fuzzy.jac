@@ -185,3 +185,93 @@ test "summary is machine-quiet and self-describing" {
     assert s["min_similarity"] >= 0.8;
     assert s["payoff"] >= 0.0;
 }
+
+
+obj _ChainStore {
+    has rows: list[dict] = [];
+
+    def candidate_bodies -> list[dict] {
+        return self.rows;
+    }
+
+    def callers_of(symbol_id: str) -> list {
+        return [];
+    }
+
+    def callees_of(symbol_id: str) -> list {
+        return [];
+    }
+
+    def symbol_row(symbol_id: str) -> (dict | None) {
+        return None;
+    }
+}
+
+
+def _chain_row(name: str, tokens: list[str], shash: str) -> dict {
+    return {
+        "symbol_id": "sym:" + name,
+        "name": name,
+        "owner_id": "",
+        "owner_name": "",
+        "module_path": "/fake/" + name + ".jac",
+        "body_file": "/fake/" + name + ".jac",
+        "body_pos_start": 0,
+        "body_pos_end": 10,
+        "stmt_pos_start": 0,
+        "stmt_pos_end": 10,
+        "exact_hash": "ex:" + name,
+        "structural_hash": shash,
+        "arity": 1,
+        "is_async": False,
+        "is_gen": False,
+        "stmt_count": 4,
+        "line_count": 8,
+        "size_band": 1,
+        "completeness": "full",
+        "vector": "",
+        "struct_tokens": "\x1f".join(tokens)
+    };
+}
+
+
+test "chained A~B~C group reports true all-pairs min/mean, not edge-only" {
+    # With k=1, tokens are shingles. A={1..9}, B={2..10}, C={3..11}:
+    # j(A,B)=j(B,C)=0.8 (at threshold), j(A,C)=7/11. Single-linkage still
+    # unions all three; edge-only stats would report min=0.8, but true min is
+    # the cross-edge below the threshold.
+    a_toks = [str(i) for i in range(1, 10)];
+    b_toks = [str(i) for i in range(2, 11)];
+    c_toks = [str(i) for i in range(3, 12)];
+    thr = 0.8;
+    ab = _jaccard(set(a_toks), set(b_toks));
+    bc = _jaccard(set(b_toks), set(c_toks));
+    ac = _jaccard(set(a_toks), set(c_toks));
+    assert ab == thr , ab;
+    assert bc == thr , bc;
+    assert ac < thr , ac;
+
+    store = _ChainStore(
+        rows=[
+            _chain_row("chain_a", a_toks, "hash_a"),
+            _chain_row("chain_b", b_toks, "hash_b"),
+            _chain_row("chain_c", c_toks, "hash_c")
+        ]
+    );
+    (groups, skipped) = find_fuzzy_clone_groups(store, threshold=thr, k=1);
+    assert len(skipped) == 0 , skipped;
+    assert len(groups) == 1 , [[m.name for m in g.members] for g in groups];
+    g = groups[0];
+    assert {m.name for m in g.members} == {"chain_a", "chain_b", "chain_c"};
+    expect_min = ac;
+    expect_mean = (ab + bc + ac) / 3.0;
+    edge_only_mean = (ab + bc) / 2.0;
+    assert g.min_similarity == expect_min , (g.min_similarity, expect_min);
+    assert g.min_similarity < thr , g.min_similarity;
+    assert g.mean_similarity == expect_mean , (g.mean_similarity, expect_mean);
+    assert g.mean_similarity < edge_only_mean , (g.mean_similarity, edge_only_mean);
+
+    packet = fuzzy_packet(store, g);
+    assert packet["evidence"]["chained"] == True;
+    assert packet["evidence"]["min_similarity"] == expect_min;
+}
