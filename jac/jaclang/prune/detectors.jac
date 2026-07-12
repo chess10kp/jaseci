@@ -197,6 +197,48 @@ def _used_as_type(name: str, text: str) -> bool {
 }
 
 
+def _symbol_finding(
+    detector: str,
+    d: dict,
+    message: str,
+    veto: VetoIndex,
+    evidence: list[Evidence],
+    kind: str = "",
+    name: str = "",
+    access: str = "",
+    citations: list[str] | None = None,
+    related: list[str] | None = None,
+    plan_meta: dict | None = None
+) -> Finding {
+    nm = name or str(d["name"]);
+    kd = kind or str(d["kind"]);
+    mod = str(d["module_path"]);
+    f = Finding(
+        detector=detector,
+        symbol_id=str(d["id"]),
+        name=nm,
+        module_path=mod,
+        kind=kd,
+        message=message,
+        pos_start=int(d["decl_pos_start"]),
+        pos_end=int(d["decl_pos_end"]),
+        line=int(d["decl_line"]),
+        access=access or str(d["access"]),
+        scope_chain=str(d["scope_chain"]),
+        citations=citations if citations is not None else [],
+        related=related if related is not None else [],
+        plan_meta=plan_meta if plan_meta is not None else {}
+    );
+    for ev in evidence {
+        f.add(ev);
+    }
+    for ev in veto.check_symbol(nm, mod) {
+        f.add(ev);
+    }
+    return f;
+}
+
+
 def detect_unused_imports(store: FactStore, veto: VetoIndex) -> list[Finding] {
     out: list[Finding] = [];
     src_cache: dict = {};
@@ -298,30 +340,21 @@ def detect_private_dead_defs(store: FactStore, veto: VetoIndex) -> list[Finding]
         if store.external_use_count(str(d["id"])) != 0 {
             continue;
         }
-        f = Finding(
-            detector="private-dead-defs",
-            symbol_id=str(d["id"]),
-            name=name,
-            module_path=str(d["module_path"]),
-            kind=kind,
-            message=f"private {kind} '{name}' has no references outside its own definition",
-            pos_start=int(d["decl_pos_start"]),
-            pos_end=int(d["decl_pos_end"]),
-            line=int(d["decl_line"]),
-            access=str(d["access"]),
-            scope_chain=str(d["scope_chain"])
-        );
-        f.add(
-            Evidence(
-                kind="zero-external-refs",
-                polarity=Polarity.SUPPORTS,
-                detail="0 references outside own definition"
+        out.append(
+            _symbol_finding(
+                "private-dead-defs",
+                d,
+                f"private {kind} '{name}' has no references outside its own definition",
+                veto,
+                [
+                    Evidence(
+                        kind="zero-external-refs",
+                        polarity=Polarity.SUPPORTS,
+                        detail="0 references outside own definition"
+                    )
+                ]
             )
         );
-        for ev in veto.check_symbol(name, str(d["module_path"])) {
-            f.add(ev);
-        }
-        out.append(f);
     }
     return out;
 }
@@ -341,30 +374,21 @@ def detect_dead_enum_variants(store: FactStore, veto: VetoIndex) -> list[Finding
         if store.external_use_count(str(d["id"])) != 0 {
             continue;
         }
-        f = Finding(
-            detector="dead-enum-variants",
-            symbol_id=str(d["id"]),
-            name=name,
-            module_path=str(d["module_path"]),
-            kind="enum_member",
-            message=f"enum variant '{name}' is never constructed, read, or matched - dead speculative generality",
-            pos_start=int(d["decl_pos_start"]),
-            pos_end=int(d["decl_pos_end"]),
-            line=int(d["decl_line"]),
-            access=str(d["access"]),
-            scope_chain=str(d["scope_chain"])
-        );
-        f.add(
-            Evidence(
-                kind="zero-refs",
-                polarity=Polarity.SUPPORTS,
-                detail="0 references to the enum variant"
+        out.append(
+            _symbol_finding(
+                "dead-enum-variants",
+                d,
+                f"enum variant '{name}' is never constructed, read, or matched - dead speculative generality",
+                veto,
+                [
+                    Evidence(
+                        kind="zero-refs",
+                        polarity=Polarity.SUPPORTS,
+                        detail="0 references to the enum variant"
+                    )
+                ]
             )
         );
-        for ev in veto.check_symbol(name, str(d["module_path"])) {
-            f.add(ev);
-        }
-        out.append(f);
     }
     return out;
 }
@@ -388,30 +412,21 @@ def detect_write_only_fields(store: FactStore, veto: VetoIndex) -> list[Finding]
         if not (writes >= 1 and reads == 0) {
             continue;
         }
-        f = Finding(
-            detector="write-only-fields",
-            symbol_id=str(d["id"]),
-            name=name,
-            module_path=str(d["module_path"]),
-            kind="field",
-            message=f"private field '{name}' is written ({writes}) but never read",
-            pos_start=int(d["decl_pos_start"]),
-            pos_end=int(d["decl_pos_end"]),
-            line=int(d["decl_line"]),
-            access=str(d["access"]),
-            scope_chain=str(d["scope_chain"])
-        );
-        f.add(
-            Evidence(
-                kind="write-only",
-                polarity=Polarity.SUPPORTS,
-                detail=f"{writes} write(s), 0 reads"
+        out.append(
+            _symbol_finding(
+                "write-only-fields",
+                d,
+                f"private field '{name}' is written ({writes}) but never read",
+                veto,
+                [
+                    Evidence(
+                        kind="write-only",
+                        polarity=Polarity.SUPPORTS,
+                        detail=f"{writes} write(s), 0 reads"
+                    )
+                ]
             )
         );
-        for ev in veto.check_symbol(name, str(d["module_path"])) {
-            f.add(ev);
-        }
-        out.append(f);
     }
     return out;
 }
@@ -481,32 +496,23 @@ def detect_single_caller_inline(store: FactStore, veto: VetoIndex) -> list[Findi
         if len(callers) != 1 {
             continue;
         }
-        f = Finding(
-            detector="single-caller-inline",
-            symbol_id=sid,
-            name=name,
-            module_path=str(d["module_path"]),
-            kind=kind,
-            message=f"private {kind} '{name}' has a single caller and a {stmt_count}-statement body - inline and delete",
-            pos_start=int(d["decl_pos_start"]),
-            pos_end=int(d["decl_pos_end"]),
-            line=int(d["decl_line"]),
-            access=str(d["access"]),
-            scope_chain=str(d["scope_chain"]),
-            citations=["sym:" + sid],
-            related=["sym:" + callers[0]]
-        );
-        f.add(
-            Evidence(
-                kind="single-caller",
-                polarity=Polarity.SUPPORTS,
-                detail=f"exactly 1 caller, {stmt_count}-statement body"
+        out.append(
+            _symbol_finding(
+                "single-caller-inline",
+                d,
+                f"private {kind} '{name}' has a single caller and a {stmt_count}-statement body - inline and delete",
+                veto,
+                [
+                    Evidence(
+                        kind="single-caller",
+                        polarity=Polarity.SUPPORTS,
+                        detail=f"exactly 1 caller, {stmt_count}-statement body"
+                    )
+                ],
+                citations=["sym:" + sid],
+                related=["sym:" + callers[0]]
             )
         );
-        for ev in veto.check_symbol(name, str(d["module_path"])) {
-            f.add(ev);
-        }
-        out.append(f);
     }
     return out;
 }
@@ -545,32 +551,24 @@ def detect_visibility_tightening(store: FactStore, veto: VetoIndex) -> list[Find
             continue;
         }
         internal = store.use_count(sid);
-        f = Finding(
-            detector="visibility-tightening",
-            symbol_id=sid,
-            name=name,
-            module_path=mod,
-            kind=kind,
-            message=f"public {kind} '{name}' has no cross-module references; demote from :pub (or delete if not exported API)",
-            pos_start=int(d["decl_pos_start"]),
-            pos_end=int(d["decl_pos_end"]),
-            line=int(d["decl_line"]),
-            access="public",
-            scope_chain=str(d["scope_chain"]),
-            citations=["sym:" + sid],
-            plan_meta={"internal_uses": internal, "exported": False}
-        );
-        f.add(
-            Evidence(
-                kind="no-cross-module-refs",
-                polarity=Polarity.SUPPORTS,
-                detail=f"0 references outside module; {internal} in-module use(s)"
+        out.append(
+            _symbol_finding(
+                "visibility-tightening",
+                d,
+                f"public {kind} '{name}' has no cross-module references; demote from :pub (or delete if not exported API)",
+                veto,
+                [
+                    Evidence(
+                        kind="no-cross-module-refs",
+                        polarity=Polarity.SUPPORTS,
+                        detail=f"0 references outside module; {internal} in-module use(s)"
+                    )
+                ],
+                access="public",
+                citations=["sym:" + sid],
+                plan_meta={"internal_uses": internal, "exported": False}
             )
         );
-        for ev in veto.check_symbol(name, mod) {
-            f.add(ev);
-        }
-        out.append(f);
     }
     return out;
 }
@@ -867,31 +865,33 @@ def detect_module_cohesion(store: FactStore, veto: VetoIndex) -> list[Finding] {
 }
 
 
+glob DETECTOR_REGISTRY: dict = {
+         "unused-imports": detect_unused_imports,
+         "private-dead-defs": detect_private_dead_defs,
+         "dead-enum-variants": detect_dead_enum_variants,
+         "write-only-fields": detect_write_only_fields,
+         "literal-dead-branch": detect_literal_dead_branches,
+         "single-caller-inline": detect_single_caller_inline,
+         "visibility-tightening": detect_visibility_tightening,
+         "duplicated-constant-blobs": detect_duplicated_constant_blobs,
+         "duplicate-docstrings": detect_duplicate_docstrings,
+         "module-cohesion": detect_module_cohesion
+     };
+
+
+def detector_names -> list[str] {
+    return list(DETECTOR_REGISTRY.keys());
+}
+
+
 def run_detectors(
     store: FactStore, veto: VetoIndex, recipes: list[str]
 ) -> list[Finding] {
     out: list[Finding] = [];
     for name in recipes {
-        if name == "unused-imports" {
-            out.extend(detect_unused_imports(store, veto));
-        } elif name == "private-dead-defs" {
-            out.extend(detect_private_dead_defs(store, veto));
-        } elif name == "dead-enum-variants" {
-            out.extend(detect_dead_enum_variants(store, veto));
-        } elif name == "write-only-fields" {
-            out.extend(detect_write_only_fields(store, veto));
-        } elif name == "literal-dead-branch" {
-            out.extend(detect_literal_dead_branches(store, veto));
-        } elif name == "single-caller-inline" {
-            out.extend(detect_single_caller_inline(store, veto));
-        } elif name == "visibility-tightening" {
-            out.extend(detect_visibility_tightening(store, veto));
-        } elif name == "duplicated-constant-blobs" {
-            out.extend(detect_duplicated_constant_blobs(store, veto));
-        } elif name == "duplicate-docstrings" {
-            out.extend(detect_duplicate_docstrings(store, veto));
-        } elif name == "module-cohesion" {
-            out.extend(detect_module_cohesion(store, veto));
+        fn = DETECTOR_REGISTRY.get(name);
+        if fn is not None {
+            out.extend(fn(store, veto));
         }
     }
     return out;

@@ -15,7 +15,12 @@ import from jaclang.prune.manifest { Manifest, ManifestEntry, FileRole }
 import from jaclang.prune.extract { extract_facts, FactSet, ModuleFact, ImportFact }
 import from jaclang.prune.factstore { FactStore }
 import from jaclang.prune.veto { VetoIndex, build_veto_index }
-import from jaclang.prune.detectors { detect_unused_imports, run_detectors }
+import from jaclang.prune.detectors {
+    detect_unused_imports,
+    run_detectors,
+    detector_names,
+    DETECTOR_REGISTRY
+}
 import from jaclang.prune.finding { Finding, Evidence, Polarity, Candidate, classify }
 import from jaclang.prune.campaign { Campaign, RiskTier, Disposition }
 import from jaclang.prune.suppress { filter_suppressed }
@@ -275,4 +280,35 @@ test "classifier caps any vetoed finding to report-only" {
     );
     c = classify(f, RiskTier.SAFE);
     assert c.disposition == Disposition.REPORT_ONLY;
+}
+
+
+test "run_detectors skips unknown recipe names" {
+    store = FactStore(db_path=":memory:");
+    store.open();
+    findings = run_detectors(store, VetoIndex(), ["unknown-name"]);
+    store.close();
+    assert findings == [];
+}
+
+
+test "detector_names lists every registered detector" {
+    names = detector_names();
+    expected = [
+        "unused-imports",
+        "private-dead-defs",
+        "dead-enum-variants",
+        "write-only-fields",
+        "literal-dead-branch",
+        "single-caller-inline",
+        "visibility-tightening",
+        "duplicated-constant-blobs",
+        "duplicate-docstrings",
+        "module-cohesion"
+    ];
+    for n in expected {
+        assert n in names;
+    }
+    assert len(names) == len(DETECTOR_REGISTRY);
+    assert len(names) == 10;
 }
