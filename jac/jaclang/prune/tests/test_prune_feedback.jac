@@ -3,9 +3,14 @@ count outcomes). Pure JSONL round-trip - no CLI, no compile.
 """
 
 import os;
-import from jaclang.prune.feedback { FeedbackEntry, FeedbackLog, entry_from_candidate }
+import from jaclang.prune.feedback {
+    FeedbackEntry,
+    FeedbackLog,
+    entry_from_candidate,
+    verdict_entry
+}
 import from jaclang.prune.finding { Finding, classify }
-import from jaclang.prune.campaign { RiskTier, Disposition }
+import from jaclang.prune.campaign { RiskTier }
 
 
 glob _TMP = os.path.join(os.path.dirname(__file__), "_feedback_scratch.jsonl");
@@ -30,8 +35,8 @@ test "ledger appends fates and reads them back, counting outcomes" {
                     symbol_id="a",
                     name="x",
                     module_path="/m.jac",
-                    risk="1",
-                    disposition="1",
+                    risk="safe",
+                    disposition="auto-fix",
                     source="detector",
                     outcome="applied"
                 ),
@@ -41,8 +46,8 @@ test "ledger appends fates and reads them back, counting outcomes" {
                     symbol_id="b",
                     name="y",
                     module_path="/m.jac",
-                    risk="1",
-                    disposition="1",
+                    risk="safe",
+                    disposition="auto-fix",
                     source="detector",
                     outcome="applied"
                 )
@@ -57,8 +62,8 @@ test "ledger appends fates and reads them back, counting outcomes" {
                     symbol_id="c",
                     name="z",
                     module_path="/n.jac",
-                    risk="1",
-                    disposition="3",
+                    risk="safe",
+                    disposition="report-only",
                     source="detector",
                     outcome="validation-failed"
                 )
@@ -93,10 +98,39 @@ test "entry_from_candidate captures fingerprint, source and fate" {
     assert e.fingerprint == f.fingerprint();
     assert e.outcome == "applied";
     assert e.source == "detector";
-    assert e.disposition == str(Disposition.AUTO_FIX.value);
+    assert e.disposition == "auto-fix";
     d = e.as_dict();
     assert d["detector"] == "unused-imports";
     assert d["name"] == "foo";
+    assert d["risk"] == "safe";
+}
+
+
+test "entry_from_candidate and verdict_entry agree on risk/disposition labels" {
+    f = Finding(
+        detector="unused-imports",
+        symbol_id="sid",
+        name="foo",
+        module_path="/m.jac",
+        kind="import",
+        message="m",
+        pos_start=0,
+        pos_end=1,
+        line=1
+    );
+    c = classify(f, RiskTier.SAFE);
+    from_cand = entry_from_candidate(c, "applied");
+    packet = c.as_dict();
+    from_verdict = verdict_entry(packet, "accept", ["sym:sid"]);
+    assert from_cand.risk in {"safe", "moderate", "risky", "forbidden"};
+    assert from_cand.disposition in {"auto-fix", "pr-only", "report-only"};
+    assert from_cand.risk == from_verdict.risk , (from_cand.risk, from_verdict.risk);
+    assert from_cand.disposition == from_verdict.disposition , (
+        from_cand.disposition,
+        from_verdict.disposition
+    );
+    assert from_cand.as_dict()["risk"] == packet["risk"];
+    assert from_cand.as_dict()["disposition"] == packet["disposition"];
 }
 
 

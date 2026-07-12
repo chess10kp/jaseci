@@ -15,8 +15,8 @@ import from jaclang.prune.manifest { Manifest, FileRole, build_manifest, role_la
 import from jaclang.prune.pipeline {
     Analysis,
     build_analysis,
-    compile_scope,
-    facts_db_path
+    facts_db_path,
+    open_synced_store
 }
 
 
@@ -160,8 +160,6 @@ impl prune(
 
 
 def _reuse_context(campaign: Campaign) -> tuple {
-    import from jaclang.prune.extract { extract_facts }
-    import from jaclang.prune.factstore { FactStore }
     manifest = build_manifest(campaign);
     if not manifest.entries {
         return (None, None, None);
@@ -169,13 +167,9 @@ def _reuse_context(campaign: Campaign) -> tuple {
     def on_compile_error(path: str, err: any) {
         console.warning(f"compile failed: {path}: {err}");
     }
-    (prog, errs, warns, compiled) = compile_scope(
+    (prog, store, _errs, _warns, _compiled, _refreshed, _skipped) = open_synced_store(
         campaign, manifest, on_error=on_compile_error
     );
-    facts = extract_facts(prog, manifest);
-    store = FactStore(db_path=facts_db_path(campaign));
-    store.open();
-    store.sync(facts);
     return (store, prog, manifest);
 }
 
@@ -210,28 +204,6 @@ def _run_reuse(
     windows: bool = False,
     fuzzy: bool = False
 ) -> int {
-    import json;
-    import from jaclang.prune.clones {
-        find_clone_groups,
-        find_class_rollups,
-        group_summary,
-        group_packet,
-        rollup_summary
-    }
-    import from jaclang.prune.probe { probe_group, probe_groups }
-    import from jaclang.prune.history { git_root, group_history, annotate_histories }
-    import from jaclang.prune.windows {
-        find_stmt_windows,
-        window_summary,
-        window_packet
-    }
-    import from jaclang.prune.fuzzy {
-        find_fuzzy_clone_groups,
-        fuzzy_summary,
-        fuzzy_packet
-    }
-    import from jaclang.prune.validate { snapshot_baseline }
-
     start = time();
     as_json = campaign.output_format == OutputFormat.JSON;
     quiet = campaign.output_format != OutputFormat.TABLE;
@@ -250,242 +222,273 @@ def _run_reuse(
         return 0;
     }
 
-    groups = find_clone_groups(store);
+    try {
+        import json;
+        import from jaclang.prune.clones {
+            find_clone_groups,
+            find_class_rollups,
+            group_summary,
+            group_packet,
+            rollup_summary
+        }
+        import from jaclang.prune.probe { probe_group, probe_groups }
+        import from jaclang.prune.history {
+            git_root,
+            group_history,
+            annotate_histories
+        }
+        import from jaclang.prune.windows {
+            find_stmt_windows,
+            window_summary,
+            window_packet
+        }
+        import from jaclang.prune.fuzzy {
+            find_fuzzy_clone_groups,
+            fuzzy_summary,
+            fuzzy_packet
+        }
+        import from jaclang.prune.validate { snapshot_baseline }
 
-    if group and group.startswith("reuse:win:") {
-        wins = find_stmt_windows(store);
-        wtarget = None;
-        for w in wins {
-            if w.window_id == group {
-                wtarget = w;
-            }
-        }
-        if wtarget is None {
-            store.close();
-            console.print("{}")
-                if as_json
-                else console.error(f"No statement window with id '{group}'.");
-            return 2;
-        }
-        packet = window_packet(wtarget, store);
-        store.close();
-        console.print(json.dumps(packet, indent=2));
-        return 0;
-    }
+        groups = find_clone_groups(store);
 
-    if group and group.startswith("reuse:fzy:") {
-        (fz_groups, _fz_skipped) = find_fuzzy_clone_groups(store);
-        ftarget = None;
-        for fg in fz_groups {
-            if fg.group_id == group {
-                ftarget = fg;
+        if group and group.startswith("reuse:win:") {
+            wins = find_stmt_windows(store);
+            wtarget = None;
+            for w in wins {
+                if w.window_id == group {
+                    wtarget = w;
+                }
             }
+            if wtarget is None {
+                console.print("{}")
+                    if as_json
+                    else console.error(f"No statement window with id '{group}'.");
+                return 2;
+            }
+            packet = window_packet(wtarget, store);
+            console.print(json.dumps(packet, indent=2));
+            return 0;
         }
-        if ftarget is None {
-            store.close();
-            console.print("{}")
-                if as_json
-                else console.error(f"No fuzzy clone group with id '{group}'.");
-            return 2;
-        }
-        packet = fuzzy_packet(store, ftarget);
-        store.close();
-        console.print(json.dumps(packet, indent=2));
-        return 0;
-    }
 
-    if group {
-        target = None;
-        for g in groups {
-            if g.group_id == group {
-                target = g;
+        if group and group.startswith("reuse:fzy:") {
+            (fz_groups, _fz_skipped) = find_fuzzy_clone_groups(store);
+            ftarget = None;
+            for fg in fz_groups {
+                if fg.group_id == group {
+                    ftarget = fg;
+                }
             }
-        }
-        if target is None {
-            store.close();
-            if as_json {
-                console.print("{}");
-            } else {
-                console.error(f"No clone group with id '{group}'.");
+            if ftarget is None {
+                console.print("{}")
+                    if as_json
+                    else console.error(f"No fuzzy clone group with id '{group}'.");
+                return 2;
             }
-            return 2;
+            packet = fuzzy_packet(store, ftarget);
+            console.print(json.dumps(packet, indent=2));
+            return 0;
         }
-        probe_dict = None;
+
+        if group {
+            target = None;
+            for g in groups {
+                if g.group_id == group {
+                    target = g;
+                }
+            }
+            if target is None {
+                if as_json {
+                    console.print("{}");
+                } else {
+                    console.error(f"No clone group with id '{group}'.");
+                }
+                return 2;
+            }
+            probe_dict = None;
+            if probe {
+                (source_paths, test_paths) = _reuse_scope_paths(manifest);
+                baseline = snapshot_baseline(source_paths);
+                probe_dict = probe_group(
+                    target, source_paths, test_paths, prog, baseline
+                ).as_dict();
+            }
+            history_dict = None;
+            if history {
+                repo = git_root(campaign.project_root);
+                if repo is not None {
+                    history_dict = group_history(target, repo).as_dict();
+                }
+            }
+            packet = group_packet(
+                store, target, probe=probe_dict, history=history_dict
+            );
+            console.print(json.dumps(packet, indent=2));
+            return 0;
+        }
+
+        probes: dict = {};
         if probe {
             (source_paths, test_paths) = _reuse_scope_paths(manifest);
-            baseline = snapshot_baseline(source_paths);
-            probe_dict = probe_group(
-                target, source_paths, test_paths, prog, baseline
-            ).as_dict();
+            gp = probe_groups(groups, source_paths, test_paths, prog);
+            for (gid, res) in gp.items() {
+                probes[gid] = res.as_dict();
+            }
         }
-        history_dict = None;
+
+        histories: dict = {};
         if history {
             repo = git_root(campaign.project_root);
             if repo is not None {
-                history_dict = group_history(target, repo).as_dict();
+                hs = annotate_histories(groups, repo);
+                for (gid, h) in hs.items() {
+                    histories[gid] = h.as_dict();
+                }
+                groups = _reorder_by_tandem(groups, histories);
             }
         }
-        packet = group_packet(store, target, probe=probe_dict, history=history_dict);
-        store.close();
-        console.print(json.dumps(packet, indent=2));
-        return 0;
-    }
 
-    probes: dict = {};
-    if probe {
-        (source_paths, test_paths) = _reuse_scope_paths(manifest);
-        gp = probe_groups(groups, source_paths, test_paths, prog);
-        for (gid, res) in gp.items() {
-            probes[gid] = res.as_dict();
-        }
-    }
-
-    histories: dict = {};
-    if history {
-        repo = git_root(campaign.project_root);
-        if repo is not None {
-            hs = annotate_histories(groups, repo);
-            for (gid, h) in hs.items() {
-                histories[gid] = h.as_dict();
-            }
-            groups = _reorder_by_tandem(groups, histories);
-        }
-    }
-
-    win_groups: list = [];
-    if windows {
-        win_groups = find_stmt_windows(store);
-    }
-
-    fuzzy_groups: list = [];
-    fuzzy_skipped: list = [];
-    if fuzzy {
-        (fuzzy_groups, fuzzy_skipped) = find_fuzzy_clone_groups(store);
-    }
-
-    rollups = find_class_rollups(groups);
-    if as_json {
-        payload = {
-            "groups": [
-                group_summary(
-                    g, probe=probes.get(g.group_id), history=histories.get(g.group_id)
-                ) for g in groups
-            ],
-            "rollups": [rollup_summary(r) for r in rollups]
-        };
+        win_groups: list = [];
         if windows {
-            payload["windows"] = [window_summary(w) for w in win_groups];
+            win_groups = find_stmt_windows(store);
         }
-        if fuzzy {
-            payload["fuzzy"] = [fuzzy_summary(fg) for fg in fuzzy_groups];
-            payload["fuzzy_skipped_buckets"] = fuzzy_skipped;
-        }
-        store.close();
-        console.print(json.dumps(payload, indent=2));
-        return 0;
-    }
 
-    store.close();
-    if not groups and not win_groups and not fuzzy_groups {
-        console.success("No structural duplicates found. 🎉");
-        console.print_elapsed_time(time() - start);
-        return 0;
-    }
-    if groups {
-        rows: list[list[str]] = [];
-        for g in groups {
-            members = ", ".join(
-                [f"{m.owner_name or '<mod>'}.{m.name}" for m in g.members]
-            );
-            row = [
-                g.kind,
-                str(len(g.members)),
-                str(g.lines_saved),
-                f"{g.payoff:.2f}",
-                f"{g.refactorability:.2f}",
-                g.suggested_shape
-            ];
+        fuzzy_groups: list = [];
+        fuzzy_skipped: list = [];
+        if fuzzy {
+            (fuzzy_groups, fuzzy_skipped) = find_fuzzy_clone_groups(store);
+        }
+
+        rollups = find_class_rollups(groups);
+        if as_json {
+            payload = {
+                "groups": [
+                    group_summary(
+                        g,
+                        probe=probes.get(g.group_id),
+                        history=histories.get(g.group_id)
+                    ) for g in groups
+                ],
+                "rollups": [rollup_summary(r) for r in rollups]
+            };
+            if windows {
+                payload["windows"] = [window_summary(w) for w in win_groups];
+            }
+            if fuzzy {
+                payload["fuzzy"] = [fuzzy_summary(fg) for fg in fuzzy_groups];
+                payload["fuzzy_skipped_buckets"] = fuzzy_skipped;
+            }
+            console.print(json.dumps(payload, indent=2));
+            return 0;
+        }
+
+        if not groups and not win_groups and not fuzzy_groups {
+            console.success("No structural duplicates found. 🎉");
+            console.print_elapsed_time(time() - start);
+            return 0;
+        }
+        if groups {
+            rows: list[list[str]] = [];
+            for g in groups {
+                members = ", ".join(
+                    [f"{m.owner_name or '<mod>'}.{m.name}" for m in g.members]
+                );
+                row = [
+                    g.kind,
+                    str(len(g.members)),
+                    str(g.lines_saved),
+                    f"{g.payoff:.2f}",
+                    f"{g.refactorability:.2f}",
+                    g.suggested_shape
+                ];
+                if probe {
+                    pr = probes.get(g.group_id);
+                    row.append(pr.get("status", "-") if pr is not None else "-");
+                }
+                if history {
+                    h = histories.get(g.group_id);
+                    if h is not None and h.get("available") {
+                        row.append(str(h.get("tandem_commits", 0)));
+                    } else {
+                        row.append("-");
+                    }
+                }
+                row.append(members);
+                rows.append(row);
+            }
+            header = ["kind", "copies", "~lines", "payoff", "refac", "shape"];
             if probe {
-                pr = probes.get(g.group_id);
-                row.append(pr.get("status", "-") if pr is not None else "-");
+                header.append("probe");
             }
             if history {
-                h = histories.get(g.group_id);
-                if h is not None and h.get("available") {
-                    row.append(str(h.get("tandem_commits", 0)));
-                } else {
-                    row.append("-");
-                }
+                header.append("tandem");
             }
-            row.append(members);
-            rows.append(row);
-        }
-        header = ["kind", "copies", "~lines", "payoff", "refac", "shape"];
-        if probe {
-            header.append("probe");
-        }
-        if history {
-            header.append("tandem");
-        }
-        header.append("members");
-        console.print_table(
-            header, rows, title=f"Structural-duplicate candidates ({len(groups)})"
-        );
-    }
-    if win_groups {
-        wrows = [
-            [
-                str(w.length),
-                str(len(w.sites)),
-                f"{w.payoff:.2f}",
-                ", ".join([f"{s.owner_name or '<mod>'}.{s.name}" for s in w.sites])
-            ] for w in win_groups
-        ];
-        console.print_table(
-            ["stmts", "sites", "payoff", "functions"],
-            wrows,
-            title=f"Repeated statement-window blocks ({len(win_groups)})"
-        );
-    }
-    if fuzzy_groups {
-        frows = [
-            [
-                str(len(fg.members)),
-                f"{fg.min_similarity:.2f}",
-                str(fg.lines_saved),
-                f"{fg.payoff:.2f}",
-                ", ".join([f"{m.owner_name or '<mod>'}.{m.name}" for m in fg.members])
-            ] for fg in fuzzy_groups
-        ];
-        console.print_table(
-            ["copies", "min~sim", "~lines", "payoff", "members"],
-            frows,
-            title=f"Fuzzy near-clone candidates ({len(fuzzy_groups)})"
-        );
-        if fuzzy_skipped {
-            console.warning(
-                f"{len(fuzzy_skipped)} oversized bucket(s) skipped for fuzzy "
-                "comparison (bound the cost); re-run scoped to inspect them."
+            header.append("members");
+            console.print_table(
+                header, rows, title=f"Structural-duplicate candidates ({len(groups)})"
             );
         }
-    }
-    if rollups {
-        rrows = [
-            [", ".join(r.class_names), str(r.shared_method_count), str(r.lines_saved)]
-            for r in rollups
-        ];
-        console.print_table(
-            ["classes", "shared methods", "~lines"],
-            rrows,
-            title=f"Class-hoist rollups ({len(rollups)})"
+        if win_groups {
+            wrows = [
+                [
+                    str(w.length),
+                    str(len(w.sites)),
+                    f"{w.payoff:.2f}",
+                    ", ".join([f"{s.owner_name or '<mod>'}.{s.name}" for s in w.sites])
+                ] for w in win_groups
+            ];
+            console.print_table(
+                ["stmts", "sites", "payoff", "functions"],
+                wrows,
+                title=f"Repeated statement-window blocks ({len(win_groups)})"
+            );
+        }
+        if fuzzy_groups {
+            frows = [
+                [
+                    str(len(fg.members)),
+                    f"{fg.min_similarity:.2f}",
+                    str(fg.lines_saved),
+                    f"{fg.payoff:.2f}",
+                    ", ".join(
+                        [f"{m.owner_name or '<mod>'}.{m.name}" for m in fg.members]
+                    )
+                ] for fg in fuzzy_groups
+            ];
+            console.print_table(
+                ["copies", "min~sim", "~lines", "payoff", "members"],
+                frows,
+                title=f"Fuzzy near-clone candidates ({len(fuzzy_groups)})"
+            );
+            if fuzzy_skipped {
+                console.warning(
+                    f"{len(fuzzy_skipped)} oversized bucket(s) skipped for fuzzy "
+                    "comparison (bound the cost); re-run scoped to inspect them."
+                );
+            }
+        }
+        if rollups {
+            rrows = [
+                [
+                    ", ".join(r.class_names),
+                    str(r.shared_method_count),
+                    str(r.lines_saved)
+                ] for r in rollups
+            ];
+            console.print_table(
+                ["classes", "shared methods", "~lines"],
+                rrows,
+                title=f"Class-hoist rollups ({len(rollups)})"
+            );
+        }
+        console.info(
+            "Report-only by construction: every group cites verified fact IDs; the "
+            "tool loads no model and applies nothing."
         );
+        console.print_elapsed_time(time() - start);
+        return 0;
+    } finally {
+        store.close();
     }
-    console.info(
-        "Report-only by construction: every group cites verified fact IDs; the "
-        "tool loads no model and applies nothing."
-    );
-    console.print_elapsed_time(time() - start);
-    return 0;
 }
 
 
@@ -738,39 +741,42 @@ def _show_reuse(campaign: Campaign, target: str) -> int {
         return 2;
     }
 
-    packet = None;
-    if target.startswith("reuse:win:") {
-        for w in find_stmt_windows(store) {
-            if w.window_id == target {
-                packet = window_packet(w, store);
+    try {
+        packet = None;
+        if target.startswith("reuse:win:") {
+            for w in find_stmt_windows(store) {
+                if w.window_id == target {
+                    packet = window_packet(w, store);
+                }
             }
-        }
-    } elif target.startswith("reuse:fzy:") {
-        (fz_groups, _skipped) = find_fuzzy_clone_groups(store);
-        for fg in fz_groups {
-            if fg.group_id == target {
-                packet = fuzzy_packet(store, fg);
+        } elif target.startswith("reuse:fzy:") {
+            (fz_groups, _skipped) = find_fuzzy_clone_groups(store);
+            for fg in fz_groups {
+                if fg.group_id == target {
+                    packet = fuzzy_packet(store, fg);
+                }
             }
-        }
-    } else {
-        for g in find_clone_groups(store) {
-            if g.group_id == target {
-                packet = group_packet(store, g);
-            }
-        }
-    }
-    store.close();
-
-    if packet is None {
-        if campaign.output_format == OutputFormat.TABLE {
-            console.error(f"No reuse group with id '{target}'.");
         } else {
-            console.print("{}");
+            for g in find_clone_groups(store) {
+                if g.group_id == target {
+                    packet = group_packet(store, g);
+                }
+            }
         }
-        return 2;
+
+        if packet is None {
+            if campaign.output_format == OutputFormat.TABLE {
+                console.error(f"No reuse group with id '{target}'.");
+            } else {
+                console.print("{}");
+            }
+            return 2;
+        }
+        console.print(json.dumps(packet, indent=2));
+        return 0;
+    } finally {
+        store.close();
     }
-    console.print(json.dumps(packet, indent=2));
-    return 0;
 }
 
 
@@ -802,29 +808,32 @@ def _verdict_reuse_packet(campaign: Campaign, target: str) -> dict | None {
     if store is None {
         return None;
     }
-    packet = None;
-    if target.startswith("reuse:win:") {
-        for w in find_stmt_windows(store) {
-            if w.window_id == target {
-                packet = window_packet(w, store);
+    try {
+        packet = None;
+        if target.startswith("reuse:win:") {
+            for w in find_stmt_windows(store) {
+                if w.window_id == target {
+                    packet = window_packet(w, store);
+                }
+            }
+        } elif target.startswith("reuse:fzy:") {
+            (fz_groups, _skipped) = find_fuzzy_clone_groups(store);
+            for fg in fz_groups {
+                if fg.group_id == target {
+                    packet = fuzzy_packet(store, fg);
+                }
+            }
+        } else {
+            for g in find_clone_groups(store) {
+                if g.group_id == target {
+                    packet = group_packet(store, g);
+                }
             }
         }
-    } elif target.startswith("reuse:fzy:") {
-        (fz_groups, _skipped) = find_fuzzy_clone_groups(store);
-        for fg in fz_groups {
-            if fg.group_id == target {
-                packet = fuzzy_packet(store, fg);
-            }
-        }
-    } else {
-        for g in find_clone_groups(store) {
-            if g.group_id == target {
-                packet = group_packet(store, g);
-            }
-        }
+        return packet;
+    } finally {
+        store.close();
     }
-    store.close();
-    return packet;
 }
 
 
@@ -963,9 +972,6 @@ def _run_verdict(
 
 
 def _run_facts(campaign: Campaign) -> int {
-    import from jaclang.prune.extract { extract_facts }
-    import from jaclang.prune.factstore { FactStore }
-
     start = time();
     console.print_header("jac prune - facts");
     console.info(f"project root: {campaign.project_root}");
@@ -980,41 +986,41 @@ def _run_facts(campaign: Campaign) -> int {
     def on_compile_error(path: str, err: any) {
         console.warning(f"compile failed: {path}: {err}");
     }
-    (prog, errs, warns, compiled) = compile_scope(
+    (_prog, store, errs, warns, compiled, refreshed, skipped) = open_synced_store(
         campaign, manifest, on_error=on_compile_error
     );
-    console.info(f"compiled {compiled} module(s): {errs} error(s), {warns} warning(s)");
+    try {
+        console.info(
+            f"compiled {compiled} module(s): {errs} error(s), {warns} warning(s)"
+        );
+        db_path = facts_db_path(campaign);
+        row_counts = store.counts();
 
-    facts = extract_facts(prog, manifest);
-    db_path = facts_db_path(campaign);
-    store = FactStore(db_path=db_path);
-    store.open();
-    (refreshed, skipped) = store.sync(facts);
-    row_counts = store.counts();
-    store.close();
-
-    console.print("");
-    console.info(f"fact store: {db_path}");
-    console.info(
-        f"{len(refreshed)} module(s) refreshed, {len(skipped)} unchanged (cached)"
-    );
-    rows: list[list[str]] = [];
-    for tbl in [
-        "modules",
-        "symbols",
-        "refs",
-        "imports",
-        "field_accesses",
-        "module_deps",
-        "bodies",
-        "literals",
-        "docstrings"
-    ] {
-        rows.append([tbl, str(row_counts.get(tbl, 0))]);
+        console.print("");
+        console.info(f"fact store: {db_path}");
+        console.info(
+            f"{len(refreshed)} module(s) refreshed, {len(skipped)} unchanged (cached)"
+        );
+        rows: list[list[str]] = [];
+        for tbl in [
+            "modules",
+            "symbols",
+            "refs",
+            "imports",
+            "field_accesses",
+            "module_deps",
+            "bodies",
+            "literals",
+            "docstrings"
+        ] {
+            rows.append([tbl, str(row_counts.get(tbl, 0))]);
+        }
+        console.print_table(["table", "rows"], rows, title="Fact store");
+        console.print_elapsed_time(time() - start);
+        return 0;
+    } finally {
+        store.close();
     }
-    console.print_table(["table", "rows"], rows, title="Fact store");
-    console.print_elapsed_time(time() - start);
-    return 0;
 }
 
 

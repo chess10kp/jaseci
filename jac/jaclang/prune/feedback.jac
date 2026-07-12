@@ -1,7 +1,8 @@
 import os;
 import json;
 import from typing { cast }
-import from jaclang.prune.finding { Candidate }
+import from jaclang.prune.finding { Candidate, disposition_label }
+import from jaclang.prune.campaign { risk_tier_label }
 
 
 glob VERDICT_DECISIONS = {"accept", "reject", "contested"},
@@ -106,8 +107,8 @@ def entry_from_candidate(
         symbol_id=f.symbol_id,
         name=f.name,
         module_path=f.module_path,
-        risk=str(cand.risk.value),
-        disposition=str(cand.disposition.value),
+        risk=risk_tier_label(cand.risk),
+        disposition=disposition_label(cand.disposition),
         source=f.source,
         outcome=outcome,
         reason=reason

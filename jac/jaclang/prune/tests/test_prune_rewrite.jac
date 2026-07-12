@@ -67,6 +67,38 @@ test "hash_span is stable and content-addressed" {
 }
 
 
+test "apply_edits rejects a span past the end of the buffer" {
+    data = b"abcdefghij";
+    e = make_edit(data, 0, 20, b"", "past end");
+    r = apply_edits(data, [e]);
+    assert not r.ok;
+    assert r.applied == 0;
+    assert any("out of bounds" in msg for msg in r.errors) , r.errors;
+    assert r.data == data;
+}
+
+
+test "apply_edits rejects an inverted span" {
+    data = b"abcdefghij";
+    e = SpanEdit(pos_start=8, pos_end=3, expected_hash="", note="inverted");
+    r = apply_edits(data, [e]);
+    assert not r.ok;
+    assert r.applied == 0;
+    assert any("out of bounds" in msg for msg in r.errors) , r.errors;
+    assert r.data == data;
+}
+
+
+test "apply_edits with an empty edit list is a no-op success" {
+    data = b"leave me alone";
+    r = apply_edits(data, []);
+    assert r.ok;
+    assert r.applied == 0;
+    assert r.data == data;
+    assert r.errors == [];
+}
+
+
 # ---- planner: import item surgery ------------------------------------------
 def _import_finding(
     item: str, istart: int, iend: int, n_items: int, ss: int, se: int

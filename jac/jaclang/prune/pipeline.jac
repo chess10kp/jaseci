@@ -7,10 +7,6 @@ import from jaclang.prune.factstore { FactStore }
 import from jaclang.prune.agent { AgentModel }
 
 
-# Detectors whose verdict depends on cross-module reference counting: a symbol
-# used only from OUTSIDE the analyzed scope reads as dead to these. A partial
-# scope therefore inflates their false-positive rate; findings are stamped with
-# `scope_partial` so the report and confidence model can hedge them.
 glob _SCOPE_SENSITIVE_DETECTORS = {"visibility-tightening"};
 
 
@@ -39,9 +35,6 @@ obj Analysis {
         );
     }
 
-    """One-line caveat when cross-module findings were produced under a scope
-    that excludes potential consumers; empty when coverage is complete or no
-    scope-sensitive detector ran."""
     def scope_warning -> str {
         if self.coverage is None or not self.scope_partial() {
             return "";
@@ -61,8 +54,6 @@ obj Analysis {
 }
 
 
-"""Mark cross-module findings produced under a partial scope so downstream
-consumers (report warning, confidence model, JSON packet) can hedge them."""
 def _stamp_scope_partial(findings: list[Finding], coverage: ScopeCoverage) {
     if not coverage.is_partial() {
         return;
@@ -135,6 +126,22 @@ def compile_scope(
 }
 
 
+def open_synced_store(
+    campaign: Campaign, manifest: Manifest, on_error: any = None
+) -> tuple[any, FactStore, int, int, int, list[str], list[str]] {
+    import from jaclang.prune.extract { extract_facts }
+
+    (prog, errs, warns, compiled) = compile_scope(
+        campaign, manifest, on_error=on_error
+    );
+    facts = extract_facts(prog, manifest);
+    store = FactStore(db_path=facts_db_path(campaign));
+    store.open();
+    (refreshed, skipped) = store.sync(facts);
+    return (prog, store, errs, warns, compiled, refreshed, skipped);
+}
+
+
 def build_analysis(
     campaign: Campaign,
     manifest: Manifest,
@@ -143,18 +150,15 @@ def build_analysis(
     judge: (AgentModel | None) = None,
     keep_store_open: bool = False
 ) -> Analysis {
-    import from jaclang.prune.extract { extract_facts }
     import from jaclang.prune.veto { build_veto_index }
     import from jaclang.prune.detectors { run_detectors }
     import from jaclang.prune.suppress { filter_suppressed }
     import from jaclang.prune.factquery { ToolSurface }
     import from jaclang.prune.agent { AgentAnalyzer }
 
-    (prog, errs, warns, compiled) = compile_scope(campaign, manifest);
-    facts = extract_facts(prog, manifest);
-    store: FactStore | None = FactStore(db_path=facts_db_path(campaign));
-    store.open();
-    store.sync(facts);
+    (prog, store, errs, warns, compiled, _refreshed, _skipped) = open_synced_store(
+        campaign, manifest
+    );
     veto = build_veto_index(manifest, campaign.project_root);
     det_findings = run_detectors(store, veto, campaign.recipes);
     coverage = scope_coverage(campaign, manifest);
@@ -173,9 +177,10 @@ def build_analysis(
     }
 
     candidates = [classify(f, campaign.risk_ceiling) for f in findings];
+    out_store: FactStore | None = store;
     if not keep_store_open {
         store.close();
-        store = None;
+        out_store = None;
     }
     return Analysis(
         candidates=candidates,
@@ -185,7 +190,7 @@ def build_analysis(
         errs=errs,
         warns=warns,
         compiled=compiled,
-        store=store,
+        store=out_store,
         detector_input=detector_input,
         agent_ledger=agent_ledger,
         coverage=coverage
