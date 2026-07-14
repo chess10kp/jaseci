@@ -4,7 +4,7 @@ import logging;
 import secrets;
 import jwt;
 import from datetime { UTC, datetime, timedelta }
-import from pydantic { BaseModel, Field }
+import from pydantic { Field }
 import from jaclang.runtimelib.transport { TransportResponse, Meta }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.persistence.db { Db, get_mongo_client }

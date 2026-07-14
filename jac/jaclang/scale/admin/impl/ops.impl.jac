@@ -4,12 +4,7 @@ import logging;
 import time;
 import from fastapi { Request }
 import from fastapi.responses { JSONResponse }
-import from jaclang.scale.jserver.jserver {
-    HTTPMethod,
-    JEndPoint,
-    APIParameter,
-    ParameterType
-}
+import from jaclang.scale.jserver.jserver { HTTPMethod, JEndPoint }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.admin.service_urls { service_base_url }
 import from jaclang.scale.admin.traces { _tempo_base_url }

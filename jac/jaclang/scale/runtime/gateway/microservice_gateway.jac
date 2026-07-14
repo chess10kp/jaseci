@@ -9,7 +9,6 @@ import from jaclang.scale.runtime.gateway.service_registry {
     ServiceEntry,
     ServiceStatus
 }
-import from jaclang.scale.runtime.transport.http_forward { raw_forward }
 import from jaclang.scale.runtime.context.util {
     DEFAULT_GATEWAY_PORT,
     DEFAULT_GATEWAY_HOST,

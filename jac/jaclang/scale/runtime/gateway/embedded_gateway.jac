@@ -5,11 +5,7 @@ import from fastapi { FastAPI, Request }
 import from fastapi.responses { JSONResponse, Response }
 import from jaclang.scale.runtime.gateway.gateway { Gateway }
 import from jaclang.scale.runtime.gateway.service_registry { ServiceRegistry }
-import from jaclang.scale.runtime.gateway.dispatch {
-    classify_route,
-    ROUTE_PROXY,
-    ROUTE_STATIC
-}
+import from jaclang.scale.runtime.gateway.dispatch { classify_route, ROUTE_PROXY }
 import from jaclang.scale.runtime.transport.transport { ServiceTransport }
 import from jaclang.scale.runtime.context.util {
     DEFAULT_GATEWAY_PORT,

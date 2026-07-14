@@ -1,5 +1,4 @@
 import from pathlib { Path }
-import from fastapi { Request }
 import from fastapi.responses { HTMLResponse, JSONResponse, Response, FileResponse }
 import from jaclang.runtimelib.transport { TransportResponse }
 import from jaclang.scale.jserver.jserver {

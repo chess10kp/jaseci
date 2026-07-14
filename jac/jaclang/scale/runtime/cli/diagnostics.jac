@@ -8,8 +8,7 @@ import from jaclang.scale.runtime.cli._narrow {
     effective_resources,
     iget,
     lget,
-    pod_spec,
-    sget
+    pod_spec
 }
 
 

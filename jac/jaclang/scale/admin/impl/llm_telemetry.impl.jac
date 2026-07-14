@@ -5,7 +5,7 @@ import uuid;
 import from collections { OrderedDict }
 import from fastapi { Request }
 import from fastapi.responses { JSONResponse }
-import from jaclang.runtimelib.transport { TransportResponse, Meta }
+import from jaclang.runtimelib.transport { Meta }
 import from jaclang.scale.jserver.jserver {
     HTTPMethod,
     JEndPoint,

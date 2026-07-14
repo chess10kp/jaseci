@@ -1,5 +1,4 @@
 import os;
-import pathlib;
 import from jaclang.cli.registry { get_registry }
 import from jaclang.cli.command { Arg, ArgKind }
 import from jaclang.cli.console { console }

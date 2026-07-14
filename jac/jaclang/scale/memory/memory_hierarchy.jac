@@ -1,13 +1,13 @@
 import json;
 import logging;
-import from collections.abc { Callable, Generator, Iterable }
+import from collections.abc { Callable, Generator }
 import from datetime { datetime, timezone }
 import from pickle { dumps, loads }
 import from typing { Any, cast }
 import from uuid { UUID }
 import from jaclang.scale._optdeps.redis { redis_module as redis }
 import from jaclang.scale._optdeps.pymongo { MongoClient, UpdateOne, ConnectionFailure }
-import from jaclang.jac0core.archetype { Anchor, EdgeAnchor, NodeAnchor, Root }
+import from jaclang.jac0core.archetype { Anchor, NodeAnchor, Root }
 import from jaclang.runtimelib.changeset {
     ApplyReport,
     ChangeSet,
@@ -24,7 +24,6 @@ import from jaclang.runtimelib.memory {
 import from jaclang.runtimelib.query_plan { QueryPlan }
 import from jaclang.runtimelib.utils { storage_key, to_uuid }
 import from jaclang.runtimelib.serializer { Serializer }
-import from jaclang.runtimelib.typecache { get_field_types }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.memory.l1_invalidation {
     DEFAULT_INVALIDATION_CHANNEL,

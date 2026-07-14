@@ -19,8 +19,6 @@ import from "lucide-react" { ScrollText, RefreshCw, AlertTriangle, X }
 
 import from react { useEffect }
 import from ....components.common.Button { Button }
-import from ....components.common.Input { Input }
-import from ....components.common.Select { Select }
 import from ....context.AuthContext { useAuth }
 import from ....services.logsService { getLogServices, getLogs, getTraceLogs }
 import from ....utils.api { getErrorMessage }

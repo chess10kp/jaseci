@@ -1,5 +1,4 @@
 import from typing { Any }
-import from jaclang.runtimelib.client { BUN_VERSION }
 import from jaclang.scale.deploy.target.deployment_target { DeploymentTarget }
 import from jaclang.scale.config.app_config { AppConfig }
 import from jaclang.scale.models.deployment_result { DeploymentResult }
@@ -8,7 +7,7 @@ import from jaclang.scale.observability.logger { Logger }
 import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
     KubernetesConfig
 }
-import from jaclang.scale.injector.pvc_injector { PvcInjector, bundle_pvc_name }
+import from jaclang.scale.injector.pvc_injector { bundle_pvc_name }
 import from jaclang.scale.deploy.target.kubernetes.runtime_bootstrap {
     build_bootstrap_init_container,
     runtime_container_env
@@ -30,9 +29,6 @@ import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
     resize_pvc_if_needed
 }
 import from jaclang.scale.deploy.target.kubernetes.cluster_provider { ClusterProvider }
-import from jaclang.scale.deploy.database.kubernetes_mongo { KubernetesMongoProvider }
-import from jaclang.scale.deploy.database.kubernetes_redis { KubernetesRedisProvider }
-import from jaclang.scale._optdeps.optional_deps { require_optional }
 import from jaclang.scale._optdeps.kubernetes {
     client,
     config as k8s_cluster_config,
