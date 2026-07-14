@@ -2,7 +2,10 @@ import hashlib;
 import logging;
 import from pathlib { Path }
 import from typing { Any }
-import from jaclang.scale.deploy.database.database_provider { DatabaseProvider }
+import from jaclang.scale.deploy.database.database_provider {
+    DatabaseProvider,
+    build_wait_init_container
+}
 import from jaclang.scale.deploy.target.deployment_target { DeploymentTarget }
 import from jaclang.scale.config.config_loader { get_scale_config }
 
@@ -523,22 +526,7 @@ obj KubernetesRedisProvider(DatabaseProvider) {
     override def get_init_container(
         app_name: str, wait_image: str
     ) -> (dict[(str, Any)] | None) {
-        return {
-            'name': 'wait-for-redis',
-            'image': wait_image,
-            'securityContext': {
-                'runAsNonRoot': True,
-                'runAsUser': 1000,
-                'readOnlyRootFilesystem': True,
-                'allowPrivilegeEscalation': False,
-                'capabilities': {'drop': ['ALL']}
-            },
-            'command': [
-                'sh',
-                '-c',
-                f"until nc -z {app_name}-redis-service 6379; do echo waiting for redis; sleep 3; done"
-            ]
-        };
+        return build_wait_init_container(app_name, wait_image, 'redis', 6379);
     }
 
     def deploy_dashboard -> dict[str, any] {
