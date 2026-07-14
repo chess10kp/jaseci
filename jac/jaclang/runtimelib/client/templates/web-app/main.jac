@@ -3,7 +3,7 @@
 Combines server-side endpoints with the client-side UI.
 """
 
-import from endpoints { Message, PostMessage, ListMessages }
+import from endpoints { Message }
 
 # Client-side UI
 cl {

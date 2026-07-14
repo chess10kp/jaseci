@@ -195,7 +195,6 @@ def _generate_index_html(
     loaded_mod: types.ModuleType,
     project_dir: Path
 ) {
-    import html;
     import json;
     import from jaclang.runtimelib.client.serving { HeaderBuilder }
 

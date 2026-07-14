@@ -57,7 +57,6 @@ def _default_client_deps(framework: str) -> tuple[dict[str, str], dict[str, str]
 }
 
 def prompt_install_client_deps(config_loader: object) -> bool {
-    import sys;
     import from jaclang.cli.console { console }
     framework = _resolve_client_framework();
     console.error("\n  ⚠ Client dependencies are not configured.");

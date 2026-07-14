@@ -6,7 +6,6 @@ import from jaclang.project.plugin_config { deep_merge }
 import from jaclang.runtimelib.client.npm_provider {
     CORE_DEV_DEPS,
     CORE_RUNTIME_DEPS,
-    LEGACY_META_PACKAGES,
     OPTIONAL_RUNTIME_DEPS,
     resolve_client_target_name,
     target_scoped_npm_deps

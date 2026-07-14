@@ -3,7 +3,6 @@ import platform as platform_mod;
 import from pathlib { Path }
 import from typing { Any, Optional, cast }
 import from jaclang.cli.console { console }
-import from jaclang.runtimelib.watcher { FileChangeEvent }
 import from jaclang.runtimelib.client.mobile_dev_host {
     resolve_mobile_dev_host,
     resolve_mobile_server_port,

@@ -7,7 +7,7 @@ BRIDGE END markers. This file is the single authoritative copy.
 
 The free function pattern (not a bound method) is confirmed by test_binding.jac.
 """
-import from webview { Webview, respond }
+import from webview { respond }
 
 import from "<libpy>" {
     def PyGILState_Ensure -> int;  def PyGILState_Release(state: int) -> None;  def PyObject_CallOneArg(

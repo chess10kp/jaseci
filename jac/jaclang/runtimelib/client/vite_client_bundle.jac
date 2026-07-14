@@ -1,5 +1,3 @@
-import contextlib;
-import shutil;
 import from collections.abc { Callable }
 import from pathlib { Path }
 import from types { ModuleType }
