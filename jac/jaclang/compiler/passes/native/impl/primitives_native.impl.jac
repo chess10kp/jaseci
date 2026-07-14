@@ -2120,8 +2120,8 @@ impl NativeStrEmitter.emit_isidentifier(
     return result_phi;
 }
 
-impl NativeStrEmitter.emit_islower(
-    self, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
+impl NativeStrEmitter._emit_cased_test(
+    self, ctx: NativeEmitCtx, target: ir.Value, wrong_case_extern: str, prefix: str
 ) -> (ir.Value | None) {
     p = ctx.pass_ref;
     b = get_builder(p);
@@ -2130,56 +2130,62 @@ impl NativeStrEmitter.emit_islower(
     i32 = ir.IntType(32);
     i64 = ir.IntType(64);
     strlen_fn = p._get_or_declare_extern("strlen", i64, [i8p]);
-    isupper_fn = p._get_or_declare_extern("isupper", i32, [i32]);
+    wrong_fn = p._get_or_declare_extern(wrong_case_extern, i32, [i32]);
     isalpha_fn = p._get_or_declare_extern("isalpha", i32, [i32]);
-    slen = b.call(strlen_fn, [target], name="islower.len");
-    is_empty = b.icmp_unsigned("==", slen, ir.Constant(i64, 0), name="islower.empty");
+    slen = b.call(strlen_fn, [target], name=f"{prefix}.len");
+    is_empty = b.icmp_unsigned("==", slen, ir.Constant(i64, 0), name=f"{prefix}.empty");
     func = b.basic_block.function;
     entry_bb = b.basic_block;
-    loop_bb = func.append_basic_block(name="islower.loop");
-    body_bb = func.append_basic_block(name="islower.body");
-    fail_bb = func.append_basic_block(name="islower.fail");
-    check_bb = func.append_basic_block(name="islower.check");
-    done_bb = func.append_basic_block(name="islower.done");
+    loop_bb = func.append_basic_block(name=f"{prefix}.loop");
+    body_bb = func.append_basic_block(name=f"{prefix}.body");
+    fail_bb = func.append_basic_block(name=f"{prefix}.fail");
+    check_bb = func.append_basic_block(name=f"{prefix}.check");
+    done_bb = func.append_basic_block(name=f"{prefix}.done");
     b.cbranch(is_empty, fail_bb, loop_bb);
     b.position_at_start(loop_bb);
-    idx = b.phi(i64, name="islower.idx");
-    has_cased = b.phi(i64, name="islower.hascased");
+    idx = b.phi(i64, name=f"{prefix}.idx");
+    has_cased = b.phi(i64, name=f"{prefix}.hascased");
     idx.add_incoming(ir.Constant(i64, 0), entry_bb);
     has_cased.add_incoming(ir.Constant(i64, 0), entry_bb);
-    at_end = b.icmp_unsigned(">=", idx, slen, name="islower.atend");
+    at_end = b.icmp_unsigned(">=", idx, slen, name=f"{prefix}.atend");
     b.cbranch(at_end, check_bb, body_bb);
     b.position_at_start(body_bb);
-    ch_ptr = b.gep(target, [idx], name="islower.ch.ptr");
-    ch = b.load(ch_ptr, name="islower.ch");
-    ch_i32 = b.zext(ch, i32, name="islower.ch.i32");
-    is_upper = b.call(isupper_fn, [ch_i32], name="islower.isupper");
-    is_upper_bool = b.icmp_signed(
-        "!=", is_upper, ir.Constant(i32, 0), name="islower.isup"
+    ch_ptr = b.gep(target, [idx], name=f"{prefix}.ch.ptr");
+    ch = b.load(ch_ptr, name=f"{prefix}.ch");
+    ch_i32 = b.zext(ch, i32, name=f"{prefix}.ch.i32");
+    is_wrong = b.call(wrong_fn, [ch_i32], name=f"{prefix}.wrong");
+    is_wrong_bool = b.icmp_signed(
+        "!=", is_wrong, ir.Constant(i32, 0), name=f"{prefix}.wrongbool"
     );
-    next_idx = b.add(idx, ir.Constant(i64, 1), name="islower.next");
-    is_alpha = b.call(isalpha_fn, [ch_i32], name="islower.isalpha");
+    next_idx = b.add(idx, ir.Constant(i64, 1), name=f"{prefix}.next");
+    is_alpha = b.call(isalpha_fn, [ch_i32], name=f"{prefix}.isalpha");
     is_alpha_bool = b.icmp_signed(
-        "!=", is_alpha, ir.Constant(i32, 0), name="islower.isalp"
+        "!=", is_alpha, ir.Constant(i32, 0), name=f"{prefix}.isalp"
     );
     new_cased = b.select(
-        is_alpha_bool, ir.Constant(i64, 1), has_cased, name="islower.newcased"
+        is_alpha_bool, ir.Constant(i64, 1), has_cased, name=f"{prefix}.newcased"
     );
     idx.add_incoming(next_idx, body_bb);
     has_cased.add_incoming(new_cased, body_bb);
-    b.cbranch(is_upper_bool, fail_bb, loop_bb);
+    b.cbranch(is_wrong_bool, fail_bb, loop_bb);
     b.position_at_start(check_bb);
     has_any = b.icmp_unsigned(
-        "!=", has_cased, ir.Constant(i64, 0), name="islower.hasany"
+        "!=", has_cased, ir.Constant(i64, 0), name=f"{prefix}.hasany"
     );
     b.cbranch(has_any, done_bb, fail_bb);
     b.position_at_start(fail_bb);
     b.branch(done_bb);
     b.position_at_start(done_bb);
-    result_phi = b.phi(i64, name="islower.final");
+    result_phi = b.phi(i64, name=f"{prefix}.final");
     result_phi.add_incoming(ir.Constant(i64, 1), check_bb);
     result_phi.add_incoming(ir.Constant(i64, 0), fail_bb);
     return result_phi;
+}
+
+impl NativeStrEmitter.emit_islower(
+    self, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
+) -> (ir.Value | None) {
+    return self._emit_cased_test(ctx, target, "isupper", "islower");
 }
 
 impl NativeStrEmitter.emit_isnumeric(
@@ -2279,61 +2285,7 @@ impl NativeStrEmitter.emit_istitle(
 impl NativeStrEmitter.emit_isupper(
     self, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
-    p = ctx.pass_ref;
-    b = get_builder(p);
-    i8 = ir.IntType(8);
-    i8p = i8.as_pointer();
-    i32 = ir.IntType(32);
-    i64 = ir.IntType(64);
-    strlen_fn = p._get_or_declare_extern("strlen", i64, [i8p]);
-    islower_fn = p._get_or_declare_extern("islower", i32, [i32]);
-    isalpha_fn = p._get_or_declare_extern("isalpha", i32, [i32]);
-    slen = b.call(strlen_fn, [target], name="isupper.len");
-    is_empty = b.icmp_unsigned("==", slen, ir.Constant(i64, 0), name="isupper.empty");
-    func = b.basic_block.function;
-    entry_bb = b.basic_block;
-    loop_bb = func.append_basic_block(name="isupper.loop");
-    body_bb = func.append_basic_block(name="isupper.body");
-    fail_bb = func.append_basic_block(name="isupper.fail");
-    check_bb = func.append_basic_block(name="isupper.check");
-    done_bb = func.append_basic_block(name="isupper.done");
-    b.cbranch(is_empty, fail_bb, loop_bb);
-    b.position_at_start(loop_bb);
-    idx = b.phi(i64, name="isupper.idx");
-    has_cased = b.phi(i64, name="isupper.hascased");
-    idx.add_incoming(ir.Constant(i64, 0), entry_bb);
-    has_cased.add_incoming(ir.Constant(i64, 0), entry_bb);
-    at_end = b.icmp_unsigned(">=", idx, slen, name="isupper.atend");
-    b.cbranch(at_end, check_bb, body_bb);
-    b.position_at_start(body_bb);
-    ch_ptr = b.gep(target, [idx], name="isupper.ch.ptr");
-    ch = b.load(ch_ptr, name="isupper.ch");
-    ch_i32 = b.zext(ch, i32, name="isupper.ch.i32");
-    is_low = b.call(islower_fn, [ch_i32], name="isupper.islow");
-    is_low_bool = b.icmp_signed("!=", is_low, ir.Constant(i32, 0), name="isupper.islo");
-    next_idx = b.add(idx, ir.Constant(i64, 1), name="isupper.next");
-    is_alpha = b.call(isalpha_fn, [ch_i32], name="isupper.isalpha");
-    is_alpha_bool = b.icmp_signed(
-        "!=", is_alpha, ir.Constant(i32, 0), name="isupper.isalp"
-    );
-    new_cased = b.select(
-        is_alpha_bool, ir.Constant(i64, 1), has_cased, name="isupper.newcased"
-    );
-    idx.add_incoming(next_idx, body_bb);
-    has_cased.add_incoming(new_cased, body_bb);
-    b.cbranch(is_low_bool, fail_bb, loop_bb);
-    b.position_at_start(check_bb);
-    has_any = b.icmp_unsigned(
-        "!=", has_cased, ir.Constant(i64, 0), name="isupper.hasany"
-    );
-    b.cbranch(has_any, done_bb, fail_bb);
-    b.position_at_start(fail_bb);
-    b.branch(done_bb);
-    b.position_at_start(done_bb);
-    result_phi = b.phi(i64, name="isupper.final");
-    result_phi.add_incoming(ir.Constant(i64, 1), check_bb);
-    result_phi.add_incoming(ir.Constant(i64, 0), fail_bb);
-    return result_phi;
+    return self._emit_cased_test(ctx, target, "islower", "isupper");
 }
 
 impl NativeStrEmitter.emit_encode(

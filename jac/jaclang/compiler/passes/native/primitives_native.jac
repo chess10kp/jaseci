@@ -450,6 +450,14 @@ class NativeStrEmitter(StrEmitter[(ir.Value, NativeEmitCtx)]) {
         empty_is_true: bool = False
     ) -> (ir.Value | None);
 
+    def _emit_cased_test(
+        self: NativeStrEmitter,
+        ctx: NativeEmitCtx,
+        target: ir.Value,
+        wrong_case_extern: str,
+        prefix: str
+    ) -> (ir.Value | None);
+
     def emit_isalnum(
         self: NativeStrEmitter,
         ctx: NativeEmitCtx,
