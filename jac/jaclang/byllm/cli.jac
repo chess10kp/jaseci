@@ -10,7 +10,6 @@ successful `pull` warms the cache and removes the first-run prompt.
 """
 
 import os;
-import sys;
 import from jaclang.cli.registry { get_registry, CommandRegistry }
 import from jaclang.cli.command { Arg, ArgKind }
 import from jaclang.cli.console { console }
@@ -37,7 +36,6 @@ exit code (0 on success, non-zero on user-visible errors).
 def _cmd_model(action: str = "list", alias: str = "") -> int {
     import from jaclang.byllm.local_runtime { LOCAL_MODELS, list_local_aliases }
     import from jaclang.byllm.model_cache {
-        ensure_model,
         force_pull,
         is_downloaded,
         list_downloaded,

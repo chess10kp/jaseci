@@ -1,4 +1,4 @@
-import from jaclang.cli.command { CommandSpec, Arg }
+import from jaclang.cli.command { CommandSpec }
 
 obj CommandGroups {
     has groups: dict[str, str] = {

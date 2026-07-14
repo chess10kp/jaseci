@@ -3,7 +3,6 @@ import sys;
 import shutil;
 import subprocess;
 import tempfile;
-import shlex;
 import base64;
 import importlib.metadata;
 import from pathlib { Path }

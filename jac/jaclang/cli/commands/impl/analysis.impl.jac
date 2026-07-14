@@ -1,5 +1,4 @@
 import from pathlib { Path }
-import from fnmatch { fnmatch }
 import from jaclang.cli.console { console }
 import from jaclang.cli.check_report {
     print_file_progress,

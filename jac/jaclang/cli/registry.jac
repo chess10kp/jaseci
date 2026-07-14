@@ -1,6 +1,6 @@
 import argparse;
 import from typing { Callable }
-import from jaclang.cli.command { Arg, ArgKind, CommandSpec }
+import from jaclang.cli.command { Arg, CommandSpec }
 
 obj CommandRegistry {
     has commands: dict[str, CommandSpec] = {},

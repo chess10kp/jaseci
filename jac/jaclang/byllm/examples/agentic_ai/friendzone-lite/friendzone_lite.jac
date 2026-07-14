@@ -1,6 +1,6 @@
 import from jaclang.byllm.lib { Model, Image }
 import from jaclang.jac0core.archetype { Root }
-import from typing { List, Dict }
+import from typing { List }
 import os;
 
 def clear_terminal {

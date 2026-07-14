@@ -1,6 +1,5 @@
 import tempfile;
 import os;
-import sys;
 import threading;
 import logging;
 

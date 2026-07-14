@@ -8,8 +8,6 @@ and instructs the caller to run `jac model pull <alias>` first.
 """
 
 import os;
-import sys;
-import json;
 import logging;
 import from pathlib { Path }
 
