@@ -33,7 +33,6 @@ import from jaclang.compiler.type_system.ts_decl_parser {
 
 import from jaclang.jac0core.diagnostics {
     DiagnosticInfo,
-    E1001,
     E1010,
     E1023,
     E1030,
@@ -62,9 +61,6 @@ import from jaclang.jac0core.diagnostics {
     E1073,
     E1080,
     E1081,
-    E1096,
-    E1097,
-    E1098,
     E1099,
     E1100,
     E1101,

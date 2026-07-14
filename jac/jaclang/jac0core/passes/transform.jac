@@ -3,7 +3,7 @@ import from abc { ABC, abstractmethod }
 import from dataclasses { field }
 import from threading { Event }
 import from jaclang.jac0core.codeinfo { CodeLocInfo }
-import from jaclang.jac0core.diagnostics { DiagnosticInfo, Severity, E9001 }
+import from jaclang.jac0core.diagnostics { DiagnosticInfo, E9001 }
 import from jaclang.jac0core.log { logging }
 import from jaclang.jac0core.unitree { UniNode }
 import type from jaclang.jac0core.program { JacProgram }
