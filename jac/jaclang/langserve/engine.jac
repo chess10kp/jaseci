@@ -1,16 +1,13 @@
-import asyncio;
 import logging;
 import os;
-import sys;
 import time;
 import threading;
 import from collections { deque }
 import from concurrent.futures { Future }
-import from typing { Callable, Optional }
+import from typing { Optional }
 
 import jaclang.jac0core.unitree as uni;
 import from jaclang { JacRuntimeInterface as Jac }
-import from jaclang.jac0core.constant { SymbolType }
 import from jaclang.jac0core.program { JacProgram }
 import from jaclang.cli.console { console }
 import from jaclang.jac0core.bccache { discover_base_file, discover_annex_files }
@@ -23,7 +20,6 @@ import from jaclang.compiler.type_system.types {
     TypeBase
 }
 import from jaclang.jac0core.unitree { UniScopeNode }
-import from .sem_manager { SemTokManager }
 import from jaclang.lsp { uris }
 import from jaclang.lsp.server { LanguageServer }
 

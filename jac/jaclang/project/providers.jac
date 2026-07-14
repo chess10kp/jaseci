@@ -3,7 +3,6 @@ import from jaclang.cli.console { console }
 import from jaclang.project.config { JacConfig }
 import from jaclang.project.pyvenv {
     ensure_venv,
-    get_venv_site_packages,
     make_git_spec,
     make_pip_spec,
     run_pip,

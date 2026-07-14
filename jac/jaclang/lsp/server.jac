@@ -1,5 +1,4 @@
 import asyncio;
-import enum;
 import io;
 import json;
 import logging;
@@ -7,7 +6,7 @@ import os;
 import re;
 import sys;
 import threading;
-import from typing { Callable, Dict, List, Optional, Union }
+import from typing { Callable, List, Optional, Union }
 
 import from .types {
     Position,
@@ -31,7 +30,6 @@ import from .types {
     INITIALIZED,
     SHUTDOWN,
     EXIT,
-    WORKSPACE_SEMANTIC_TOKENS_REFRESH,
     METHOD_TO_PARAMS
 }
 import from . { uris }

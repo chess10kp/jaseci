@@ -1,5 +1,4 @@
 import from typing { Callable }
-import from pathlib { Path }
 
 obj ProjectTemplate {
     has name: str,
