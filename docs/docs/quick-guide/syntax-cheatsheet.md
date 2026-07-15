@@ -1238,7 +1238,7 @@ with entry {
 # ============================================================
 # `own` marks a unique owner; assigning it elsewhere or passing it
 # to a call MOVES the value (use-after-move is a compile error).
-# `&`/`&mut` take a shared/mutable borrow; `val` is deep-immutable.
+# `&`/`&mut` take a shared/mutable borrow; `imm` is deep-immutable.
 # Unannotated bindings are untouched -- the checker only tracks
 # what you tag. On native, full coverage enables zero-RC builds
 # (jac nacompile --gc none --enforce-nogc --assert-no-rc).
@@ -1251,7 +1251,7 @@ with entry {
     a: own Buffer = Buffer();   # unique owner
     v: &Buffer = &a;            # shared borrow (owner is read-only while live)
     use_buf(v);
-    m: val Buffer = Buffer();   # deep-immutable: no writes through `m`, ever
+    m: imm Buffer = Buffer();   # deep-immutable: no writes through `m`, ever
     b = a;                      # moves out of `a`; reading `a` again is E1301
 }
 

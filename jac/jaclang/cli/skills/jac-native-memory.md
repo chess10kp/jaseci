@@ -1,6 +1,6 @@
 ---
 name: jac-native-memory
-description: Memory management on the native pathway - the emit-time `--gc` modes (cycles/rc/none), the opt-in ownership & borrow checker (`own`, `&`/`&mut`, `val`, `region`, `def drop`), zero-RC enforced builds (`--enforce-nogc`, E1401-E1406, `managed()`), and verification (`--assert-no-rc`, `JAC_RC_STATS`). Load when any E13xx/E14xx diagnostic appears, when a native binary leaks or churns refcounts, or when building an RC-free binary. For the native subset itself see `jac-native`.
+description: Memory management on the native pathway - the emit-time `--gc` modes (cycles/rc/none), the opt-in ownership & borrow checker (`own`, `&`/`&mut`, `imm`, `region`, `def drop`), zero-RC enforced builds (`--enforce-nogc`, E1401-E1406, `managed()`), and verification (`--assert-no-rc`, `JAC_RC_STATS`). Load when any E13xx/E14xx diagnostic appears, when a native binary leaks or churns refcounts, or when building an RC-free binary. For the native subset itself see `jac-native`.
 ---
 
 Native Jac heap values (objects, strings, lists, dicts, sets) are reference-counted by default. Ownership annotations are **opt-in**: they let the compiler move/borrow-check tagged bindings, and - taken to full coverage - compile memory management the way Rust would emit it: alloc at construction, free at a statically determined drop point, **no RC or collector in the binary**, checkable with `--assert-no-rc`.
@@ -19,7 +19,7 @@ jac nacompile app.na.jac --gc none     # zero retain/release call sites emitted
 
 ## Ownership surface (opt-in - unannotated code is untouched)
 
-The checker only tracks bindings tagged `own`/`val`/`&`/`&mut` plus allocations inside `region { }`. Annotations are compile-time-only on every backend (`&x` compiles to exactly `x`).
+The checker only tracks bindings tagged `own`/`imm`/`&`/`&mut` plus allocations inside `region { }`. Annotations are compile-time-only on every backend (`&x` compiles to exactly `x`).
 
 ```jac
 obj Buffer { has n: int = 0; }
@@ -31,7 +31,7 @@ with entry {
     v: &Buffer = &a;            # shared borrow - owner is read-only while `v` is live (write = E1303)
     use_buf(v);
     b = a;                      # MOVES; reading `a` after this is E1301 (reassigning revives it)
-    d: val Buffer = Buffer();   # deep-immutable - any write through `d` is E1309
+    d: imm Buffer = Buffer();   # deep-immutable - any write through `d` is E1309
     use_buf(d);
 }
 ```
@@ -41,7 +41,7 @@ with entry {
 - `own` is **affine**: dropping without consuming is fine, not an error. Passing an owned local to a call, `return`, or field store consumes it.
 - Storing an owned value into a field/subscript/graph object seals it into managed storage (**the membrane**): the source binding dies, and reading it back yields a plain managed value. `node`/`edge`/`walker` stay fully managed - no `own`/`&` of graph state.
 - Borrows are second-class: returning or storing one is E1306 (single passthrough of a borrow *parameter* is allowed); a borrow outliving its owner is E1304.
-- `region { }` = arena; references rooted in it must not escape (E1307). Only `val`, moved `own`, or scalars cross `flow`/`thread_run` boundaries (E1308).
+- `region { }` = arena; references rooted in it must not escape (E1307). Only `imm`, moved `own`, or scalars cross `flow`/`thread_run` boundaries (E1308).
 - `def drop` (reserved ability, like `postinit`) runs exactly once at destruction, **at the owner's last use, not scope end** (NLL-style eager drop) - same observable point under every gc mode. No resurrection; under `cycles`, intra-cycle drop order is unspecified. The Python backend does not call it yet.
 
 ## Zero-RC enforced builds - the workflow
@@ -62,9 +62,9 @@ jac nacompile service.na.jac --gc none --enforce-nogc --assert-no-rc
 
    | Code | Meaning | Fix |
    |------|---------|-----|
-   | E1401 | Heap-typed param/return/`has` field has no ownership state | Annotate the contract position `own`/`&`/`&mut`/`val` (locals infer from a fresh RHS) |
+   | E1401 | Heap-typed param/return/`has` field has no ownership state | Annotate the contract position `own`/`&`/`&mut`/`imm` (locals infer from a fresh RHS) |
    | E1402 | Owned value sealed into managed storage | Keep it owned, or cross explicitly with `managed(x)` at the boundary |
-   | E1403 | Heap value crosses out of the module implicitly | Wrap the argument in `managed(x)`; scalars and `val` cross freely |
+   | E1403 | Heap value crosses out of the module implicitly | Wrap the argument in `managed(x)`; scalars and `imm` cross freely |
    | E1404 | `any`-typed value could be heap | Give it a concrete type, or confine `any` to scalars |
    | E1405 | Escaping closure capture | Pass the value as an explicit parameter or keep the closure local |
    | E1406 | Retaining/aliasing construct (`iter`/`globals`/`locals`, or `managed()` of a heap value under `--gc none`) | Use an owned-compatible alternative or move the code out of the enforced module |

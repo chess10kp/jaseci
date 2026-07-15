@@ -785,7 +785,7 @@ Under the managed modes (`cycles`, `rc`) a heap value carries a reference count 
 
 For a module written against the [ownership and borrow-checking surface](ownership-borrowing.md), memory management compiles to what Rust would emit: an allocation at construction, a free at a statically determined drop point, and **no reference counting or collector in the binary at all** -- and the absence of that machinery is checkable in the artifact. Three pieces turn this into a compile-time contract rather than a best-effort optimization:
 
-- **nogc enforcement** (`jac nacompile --enforce-nogc`, or per-module patterns in [`jac.toml [gc.enforce]`](../config/index.md#gc)). In an enforced module, every heap-typed contract position -- parameter, return type, `has` field -- must live in the owned world (`own`, `&`, `&mut`, `val`); locals infer ownership from a fresh right-hand side. Anything the contract cannot prove is a hard error ([`E1401`-`E1406`](../diagnostics.md#zero-rc-enforcement-errors)) that blocks codegen.
+- **nogc enforcement** (`jac nacompile --enforce-nogc`, or per-module patterns in [`jac.toml [gc.enforce]`](../config/index.md#gc)). In an enforced module, every heap-typed contract position -- parameter, return type, `has` field -- must live in the owned world (`own`, `&`, `&mut`, `imm`); locals infer ownership from a fresh right-hand side. Anything the contract cannot prove is a hard error ([`E1401`-`E1406`](../diagnostics.md#zero-rc-enforcement-errors)) that blocks codegen.
 - **Headerless owned codegen** (under `--gc none`). Owned payloads are bare `malloc` allocations with no reference-count header, and each free is a direct call to the statically inserted `__drop_<T>` at the value's drop point -- after its last use, NLL-style (see [drop timing](ownership-borrowing.md#the-drop-hook)). User `def drop` hooks run from that same static call.
 - **`--assert-no-rc`** proves the result: it scans the emitted IR and fails the build if any RC/collector machinery is present -- `__rc_*` helpers, trace functions, roots-buffer globals, or entry-point GC env probes. A build that passes is observably RC-free.
 
@@ -795,7 +795,7 @@ jac nacompile service.na.jac --gc none --enforce-nogc --assert-no-rc
 
 Notes on the enforced world:
 
-- **The `managed()` membrane.** In an enforced module compiled under a managed gc mode, a heap value may cross out to unenforced (reference-counted) code only through the explicit `managed(x)` builtin at the boundary -- an implicit crossing is `E1403`, and sealing an owned value into managed storage is `E1402`. Under `--gc none` the artifact has no reference-counted side to cross into, so `managed()` of a heap value is itself rejected (`E1406`). Scalars and `val` values cross freely everywhere, and on the Python backend `managed()` is the identity function.
+- **The `managed()` membrane.** In an enforced module compiled under a managed gc mode, a heap value may cross out to unenforced (reference-counted) code only through the explicit `managed(x)` builtin at the boundary -- an implicit crossing is `E1403`, and sealing an owned value into managed storage is `E1402`. Under `--gc none` the artifact has no reference-counted side to cross into, so `managed()` of a heap value is itself rejected (`E1406`). Scalars and `imm` values cross freely everywhere, and on the Python backend `managed()` is the identity function.
 - **Unhandled exceptions abort.** In a nogc-enforced module, a `raise` with no local handler prints a diagnostic line and calls `abort()` rather than unwinding -- unwinding would require the managed runtime.
 - **Grandfathering.** `[gc.enforce] grandfathered` patterns exempt matching modules from enforcement so a codebase can adopt the contract incrementally.
 
@@ -824,7 +824,7 @@ The elision is proven by the core `RcFactsPass` (`passes/main/rc_facts_pass.jac`
 It is deliberately conservative -- it proves only the safe case and retains everywhere else. An assignment `b = a` is elided only when:
 
 - `b` is a single, plain, **local** name (never a field, subscript, global, or parameter);
-- the binding is not a `borrow`/`val` binding;
+- the binding is not a `borrow`/`imm` binding;
 - `a` is a plain **local** name (an `own` *parameter* is never elided);
 - **every** use of `a` in its function is an alias-value into a plain local -- this one invariant excludes call-args, returns, field/container stores, `&a` borrows, and closure/concurrent captures, any of which is a use that is not an alias-value; and
 - `a` is **dead-out** at the move site, proven by backward liveness over the CFG. A later use reached through a loop back-edge without an intervening redefinition keeps `a` live and blocks the elision, so a `b = a` inside a loop is elided only when `a` is redefined each iteration before the move.
