@@ -426,6 +426,125 @@ impl NaIRGenPass._unbox_from_jacval(jv: ir.Value, target_type: ir.Type) -> ir.Va
     return ir.Constant(target_type, None);
 }
 
+impl NaIRGenPass._emit_jacval_str(jv: ir.Value) -> ir.Value {
+    b = self.builder;
+    i8 = ir.IntType(8);
+    i64 = ir.IntType(64);
+    i8p = i8.as_pointer();
+
+    tag = b.extract_value(jv, 0, name="jvstr.tag");
+    payload = b.extract_value(jv, 1, name="jvstr.payload");
+    func = b.function;
+
+    str_bb = func.append_basic_block(name="jvstr.str");
+    int_chk_bb = func.append_basic_block(name="jvstr.int.chk");
+    int_bb = func.append_basic_block(name="jvstr.int");
+    float_chk_bb = func.append_basic_block(name="jvstr.float.chk");
+    float_bb = func.append_basic_block(name="jvstr.float");
+    bool_chk_bb = func.append_basic_block(name="jvstr.bool.chk");
+    bool_bb = func.append_basic_block(name="jvstr.bool");
+    none_chk_bb = func.append_basic_block(name="jvstr.none.chk");
+    none_bb = func.append_basic_block(name="jvstr.none");
+    default_bb = func.append_basic_block(name="jvstr.default");
+    merge_bb = func.append_basic_block(name="jvstr.end");
+
+    is_str = b.icmp_unsigned("==", tag, ir.Constant(i8, 2), name="jvstr.isstr");
+    b.cbranch(is_str, str_bb, int_chk_bb);
+
+    b.position_at_end(str_bb);
+
+    is_null_str = b.icmp_unsigned(
+        "==", payload, ir.Constant(i64, 0), name="jvstr.strnull"
+    );
+    str_null_bb = func.append_basic_block(name="jvstr.str.null");
+    str_copy_bb = func.append_basic_block(name="jvstr.str.copy");
+    b.cbranch(is_null_str, str_null_bb, str_copy_bb);
+
+    b.position_at_end(str_null_bb);
+    str_null_res = self._make_global_string("", name_prefix=".jvstr.empty");
+    str_null_end = b.block;
+    b.branch(merge_bb);
+
+    b.position_at_end(str_copy_bb);
+
+    src_ptr = b.inttoptr(payload, i8p, name="jvstr.strp");
+    strlen_fn = self._get_or_declare_extern("strlen", i64, [i8p]);
+    src_len = b.call(strlen_fn, [src_ptr], name="jvstr.strlen");
+    copy_size = b.add(src_len, ir.Constant(i64, 1), name="jvstr.strsize");
+    str_buf = b.call(self.rc_alloc_fn, [copy_size], name="jvstr.strcopy");
+    strcpy_fn = self._get_or_declare_extern("strcpy", i8p, [i8p, i8p]);
+    b.call(strcpy_fn, [str_buf, src_ptr], name="jvstr.strcpy");
+    str_res = str_buf;
+    str_end = b.block;
+    b.branch(merge_bb);
+
+    b.position_at_end(int_chk_bb);
+    is_int = b.icmp_unsigned("==", tag, ir.Constant(i8, 0), name="jvstr.isint");
+    b.cbranch(is_int, int_bb, float_chk_bb);
+
+    b.position_at_end(int_bb);
+    int_buf = b.call(self.rc_alloc_fn, [ir.Constant(i64, 32)], name="jvstr.int.buf");
+    snprintf = self._get_or_declare_extern(
+        "snprintf", ir.IntType(32), [i8p, i64, i8p], var_arg=True
+    );
+    int_fmt = b.bitcast(self._get_snprintf_fmt("%ld"), i8p, name="jvstr.int.fmt");
+    b.call(
+        snprintf,
+        [int_buf, ir.Constant(i64, 32), int_fmt, payload],
+        name="jvstr.int.snprintf"
+    );
+    int_res = int_buf;
+    int_end = b.block;
+    b.branch(merge_bb);
+
+    b.position_at_end(float_chk_bb);
+    is_float = b.icmp_unsigned("==", tag, ir.Constant(i8, 1), name="jvstr.isfloat");
+    b.cbranch(is_float, float_bb, bool_chk_bb);
+
+    b.position_at_end(float_bb);
+    f64 = b.bitcast(payload, ir.DoubleType(), name="jvstr.f64");
+    float_res = self._emit_float_repr(f64);
+    float_end = b.block;
+    b.branch(merge_bb);
+
+    b.position_at_end(bool_chk_bb);
+    is_bool = b.icmp_unsigned("==", tag, ir.Constant(i8, 7), name="jvstr.isbool");
+    b.cbranch(is_bool, bool_bb, none_chk_bb);
+
+    b.position_at_end(bool_bb);
+    true_s = self._make_global_string("True", name_prefix=".jvstr.true");
+    false_s = self._make_global_string("False", name_prefix=".jvstr.false");
+    is_true = b.icmp_unsigned("!=", payload, ir.Constant(i64, 0), name="jvstr.istrue");
+    bool_res = b.select(is_true, true_s, false_s, name="jvstr.bool");
+    bool_end = b.block;
+    b.branch(merge_bb);
+
+    b.position_at_end(none_chk_bb);
+    is_none = b.icmp_unsigned("==", tag, ir.Constant(i8, 8), name="jvstr.isnone");
+    b.cbranch(is_none, none_bb, default_bb);
+
+    b.position_at_end(none_bb);
+    none_res = self._make_global_string("None", name_prefix=".jvstr.none");
+    none_end = b.block;
+    b.branch(merge_bb);
+
+    b.position_at_end(default_bb);
+    default_res = self._make_global_string("", name_prefix=".jvstr.empty");
+    default_end = b.block;
+    b.branch(merge_bb);
+
+    b.position_at_end(merge_bb);
+    phi = b.phi(i8p, name="jvstr");
+    phi.add_incoming(str_res, str_end);
+    phi.add_incoming(str_null_res, str_null_end);
+    phi.add_incoming(int_res, int_end);
+    phi.add_incoming(float_res, float_end);
+    phi.add_incoming(bool_res, bool_end);
+    phi.add_incoming(none_res, none_end);
+    phi.add_incoming(default_res, default_end);
+    return phi;
+}
+
 impl NaIRGenPass._codegen_dict_val(nd: uni.DictVal) -> (ir.Value | None) {
     if not nd.kv_pairs {
         _dk = self._dict_key_of(nd);

@@ -339,6 +339,7 @@ obj NaIRGenPass(ModuleCodegenPass) {
     def _to_bool(val: ir.Value) -> ir.Value;
     def _jacval_truthy(jv: ir.Value) -> ir.Value;
     def _jacval_is_none(jv: ir.Value, negate: bool) -> ir.Value;
+    def _emit_jacval_str(jv: ir.Value) -> ir.Value;
     def _entry_alloca(var_type: ir.Type, name: str) -> ir.Value;
     def _coerce_type(val: ir.Value, target_type: ir.Type) -> ir.Value;
     def _coerce_type_inner(val: ir.Value, target_type: ir.Type) -> ir.Value;

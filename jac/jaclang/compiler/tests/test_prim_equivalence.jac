@@ -142,6 +142,16 @@ test "native any tuple roundtrip" {
     );
 }
 
+test "native any scalar str" {
+    run_with_both(
+        "native_list_any_ops.jac",
+        "any_scalar_str_py",
+        "any_scalar_str_cl",
+        "any_scalar_str_na",
+        require=["na"]
+    );
+}
+
 test "dict" {
     run_with_both("prim_dict.jac", "dict_py", "dict_cl", "dict_na");
 }

@@ -206,3 +206,48 @@ na {
         return any_tuple_helper_na(555);
     }
 }
+
+# str() of an `any`-boxed scalar must stringify the value, not the JacVal
+# type tag (native regression guard for #7498). "hel"+"lo" is dynamically
+# allocated, and `s_again` re-reads it *after* str()'ing the box, so a
+# use-after-free (the release freeing the container's original string) would
+# surface as a mismatch on `s_again`.
+def any_scalar_str_py() -> dict {
+    d: dict = {
+        "s": "hel" + "lo", "n": 7, "f": 1.5, "b": True, "bf": False,
+        "empty": "", "neg": -42, "none": None
+    };
+    out: dict = {
+        "s": str(d["s"]),
+        "n": str(d["n"]),
+        "f": str(d["f"]),
+        "b": str(d["b"]),
+        "bf": str(d["bf"]),
+        "empty": str(d["empty"]),
+        "neg": str(d["neg"]),
+        "none": str(d["none"]),
+    };
+    out["s_again"] = d["s"];
+    return out;
+}
+
+na {
+    def any_scalar_str_na() -> dict[str, any] {
+        d: dict[str, any] = {
+            "s": "hel" + "lo", "n": 7, "f": 1.5, "b": True, "bf": False,
+            "empty": "", "neg": -42, "none": None
+        };
+        out: dict[str, any] = {
+            "s": str(d["s"]),
+            "n": str(d["n"]),
+            "f": str(d["f"]),
+            "b": str(d["b"]),
+            "bf": str(d["bf"]),
+            "empty": str(d["empty"]),
+            "neg": str(d["neg"]),
+            "none": str(d["none"]),
+        };
+        out["s_again"] = d["s"];
+        return out;
+    }
+}
