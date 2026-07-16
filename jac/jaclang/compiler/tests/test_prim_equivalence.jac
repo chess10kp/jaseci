@@ -143,6 +143,8 @@ test "native any tuple roundtrip" {
 }
 
 test "native any scalar str" {
+    # The ES/JS backend has no `any`-boxing, so there is no `any_scalar_str_cl`
+    # fixture: only `na` is required and the cl leg is an intentional no-op skip.
     run_with_both(
         "native_list_any_ops.jac",
         "any_scalar_str_py",

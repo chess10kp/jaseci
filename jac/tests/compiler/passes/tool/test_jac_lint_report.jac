@@ -59,16 +59,29 @@ test "lint report path preserves every warning the mutation pass emits" {
         "with entry {\n    x = 5;\n    if x is 5 {\n        print(\"five\");\n    }\n}\n",
         # W3024 repeated condition in if/elif chain
         "with entry {\n    x = 5;\n    if x > 0 {\n        print(\"p\");\n    } elif x > 0 {\n        print(\"q\");\n    }\n}\n",
+        # W3001 @staticmethod should become the `static` keyword (auto-fixable;
+        # emitted from behind a report_only short-circuit before the #7496 fix)
+        "obj Foo {\n    @staticmethod\n    def bar(x: int) -> int {\n        return x;\n    }\n}\n",
+        # W3002 consecutive `has` declarations can be combined (auto-fixable)
+        "obj Foo {\n    has x: int = 1;\n    has y: int = 2;\n}\n",
+        # W3004 `__init__` should use the `init` Jac keyword (auto-fixable)
+        "obj Foo {\n    def __init__(self: Foo) {\n        self.x = 1;\n    }\n}\n",
+        # W3005 empty parentheses can be removed (auto-fixable)
+        "def bar() {\n    return;\n}\n",
 
     ];
     for src in sources {
         path = _write_tmp(src);
-        prog = JacProgram.jac_file_linter(path);
-        rep_keys = _warn_keys(prog);
-        full_keys = _full_pass_warnings(src, path);
-        assert rep_keys == full_keys , (
-            f"warning set diverged for {path}: " f"report={rep_keys} full={full_keys}"
-        );
-        os.remove(path);
+        try {
+            prog = JacProgram.jac_file_linter(path);
+            rep_keys = _warn_keys(prog);
+            full_keys = _full_pass_warnings(src, path);
+            assert rep_keys == full_keys , (
+                f"warning set diverged for {path}: "
+                f"report={rep_keys} full={full_keys}"
+            );
+        } finally {
+            os.remove(path);
+        }
     }
 }

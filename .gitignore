@@ -92,6 +92,9 @@ RUNTIME_SPLIT_PROGRESS.md
 CLAUDE.local.md
 .claude/
 
+# pi-subagents local session artifacts (run transcripts/inputs/outputs)
+.pi-subagents/
+
 jactastic/**
 .mcp.json
 .gstack/
