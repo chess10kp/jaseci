@@ -494,7 +494,7 @@ def verify_and_continue(max_rounds: int = 3);
 def run_agent(req: object) -> int;
 
 
-def ui_configure -> None;
+def ui_configure(model_override: str = "", n_ctx: int = 0, project: str = "") -> None;
 def ui_send(prompt: str) -> bool;
 def ui_poll -> dict;
 def ui_graph -> dict;

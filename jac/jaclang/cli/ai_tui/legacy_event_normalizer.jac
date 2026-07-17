@@ -7,6 +7,7 @@ import from jaclang.cli.ai_tui.bridge_schema {
     MUT_MESSAGE_END,
     MUT_MESSAGE_START,
     MUT_MESSAGE_UPDATE,
+    MUT_SNAPSHOT_REQUIRED,
     MUT_STATUS,
     MUT_TOOL_END,
     MUT_TOOL_START,
@@ -97,6 +98,17 @@ def legacy_frame_to_mutations(
         pair = _legacy_ev(eva, epoch, seq, False);
         out.append(pair[0]);
         seq = pair[1];
+    }
+
+    if frame.get("full") {
+        out.append(
+            UiMutation(
+                kind=MUT_SNAPSHOT_REQUIRED,
+                seq=0,
+                epoch=epoch,
+                diagnostic="legacy_full_frame"
+            )
+        );
     }
 
     return out;

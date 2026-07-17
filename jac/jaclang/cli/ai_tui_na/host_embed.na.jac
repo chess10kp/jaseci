@@ -1,20 +1,41 @@
 import os;
+import sys;
 
-import from .libc_tty { tty_open, tty_close }
+import from .libc_tty { tty_open, tty_close, tty_configure_device }
 import from .tui_loop { tui_loop_once }
-import from .tui_core { tui_populate_state, tui_enter_screen, tui_leave_screen }
+import from .tui_core {
+    tui_populate_state,
+    tui_enter_screen,
+    tui_leave_screen,
+    tui_seed_agent_meta
+}
 import from .runtime { TuiRuntime }
 import from .embed_models { AgentRequest }
 import from .embed_runtime { EmbedRuntime }
 import from .embed_session_client { EmbedSessionClient }
+import from .cli_args { parse_argv, print_help, print_error }
 
 # Phase 4: CPython imports live only in embed_runtime.na.jac.
 # Phase 5: input goes through reducer; InteractiveApp available for injected-key tests.
 
 
-def _env_or_empty(name: str) -> str {
-    v = os.getenv(name);
-    return v if v is not None else "";
+def _resolve_project(cli_project: str, cli_cwd: str) -> str {
+    if cli_project {
+        return cli_project;
+    }
+    if cli_cwd {
+        return cli_cwd;
+    }
+    cwd = os.getcwd();
+    return cwd if cwd is not None else "";
+}
+
+def _resolve_cwd(cli_cwd: str) -> str {
+    if cli_cwd {
+        return cli_cwd;
+    }
+    cwd = os.getcwd();
+    return cwd if cwd is not None else "";
 }
 
 def _bind_runtime(rt: TuiRuntime, embed: EmbedRuntime, session: EmbedSessionClient) {
@@ -23,9 +44,21 @@ def _bind_runtime(rt: TuiRuntime, embed: EmbedRuntime, session: EmbedSessionClie
 }
 
 def _run_embed -> None {
-    proj_s: str = _env_or_empty("JAC_AI_UI_PROJECT");
-    files_s: str = _env_or_empty("JAC_AI_UI_FILES");
-    presets_s: str = _env_or_empty("JAC_AI_UI_MODEL_PRESETS");
+    cli = parse_argv(sys.argv);
+    if cli.show_help {
+        print_help(os.path.basename(sys.argv[0]));
+        return;
+    }
+    if cli.bad {
+        print_error(os.path.basename(sys.argv[0]), cli.bad);
+        sys.exit(2);
+    }
+
+    if cli.tty {
+        tty_configure_device(cli.tty);
+    }
+
+    proj_s = _resolve_project(cli.project, cli.cwd);
 
     embed = EmbedRuntime();
     boot = embed.boot();
@@ -42,9 +75,15 @@ def _run_embed -> None {
     session = EmbedSessionClient(runtime=embed);
     start = session.start(
         AgentRequest(
-            cwd=_env_or_empty("PWD"),
-            stub=False,
-            model_name=_env_or_empty("JAC_AI_UI_MODEL")
+            cwd=_resolve_cwd(cli.cwd),
+            stub=cli.want_stub(),
+            model_name=cli.model,
+            n_ctx=cli.n_ctx,
+            project=proj_s,
+            byllm_src=cli.byllm_src,
+            byllm_deps=cli.byllm_deps,
+            debug_log=cli.debug_log,
+            no_stub=cli.stub_mode == 0
         )
     );
     if not start.ok {
@@ -64,6 +103,9 @@ def _run_embed -> None {
     state = rt.state;
     rt.cmd_queue.clear();
     state.ipc_fd = -1;
+    tui_populate_state(state, proj_s, "", "");
+    tui_seed_agent_meta(state, start.model_name, start.presets, cli.model);
+    session.bootstrap_state(state);
     tty_fd: int = tty_open();
     if tty_fd < 0 {
         disp = session.dispose(reason="tty_open_failed", deadline_ms=1000);
@@ -72,7 +114,6 @@ def _run_embed -> None {
         return;
     }
     state.render_fd = tty_fd;
-    tui_populate_state(state, proj_s, files_s, presets_s);
     tui_enter_screen(state);
 
     try {

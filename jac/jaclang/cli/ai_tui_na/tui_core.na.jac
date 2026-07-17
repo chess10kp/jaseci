@@ -41,6 +41,37 @@ def tui_populate_state(
     state.model_presets.extend(_nonempty_lines(presets_env));
 }
 
+def _append_unique(dst: list[str], value: str) {
+    if not value {
+        return;
+    }
+    for existing in dst {
+        if existing == value {
+            return;
+        }
+    }
+    dst.append(value);
+}
+
+def tui_seed_agent_meta(
+    state: TuiState, model_name: str, presets: list[str], cli_model: str = ""
+) {
+    active = model_name if model_name else cli_model;
+    if active {
+        state.model_name = active;
+    }
+    for name in presets {
+        _append_unique(state.model_presets, name);
+    }
+    if cli_model {
+        _append_unique(state.model_presets, cli_model);
+        if not state.model_name {
+            state.model_name = cli_model;
+        }
+    }
+    state.mark_layout_dirty();
+}
+
 def tui_enter_screen(state: TuiState) {
     term = ProcessTerminal();
     term.bind_fd(state.render_fd);

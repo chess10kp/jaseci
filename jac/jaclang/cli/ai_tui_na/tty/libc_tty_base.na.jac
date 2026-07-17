@@ -62,6 +62,7 @@ obj TtyCtx {
     has fd: int = -1,
         saved_term: str = "",
         term_saved: bool = False,
+        device_override: str = "",
         rows: int = 24,
         cols: int = 80,
         x_pixels: int = 0,
@@ -72,6 +73,16 @@ obj TtyCtx {
 }
 
 glob g_tty: TtyCtx = TtyCtx();
+
+
+def tty_configure_device(path: str) {
+    g_tty.device_override = path;
+}
+
+
+def get_tty_path -> str {
+    return g_tty.device_override;
+}
 
 def _read_le(buf: str, off: int, nbytes: int) -> int {
     val: int = 0;
@@ -116,7 +127,7 @@ def build_raw_termios(saved: str) -> str {
 }
 
 def _tty_device_path -> str {
-    override = os.getenv("JAC_AI_TUI_TTY");
+    override = g_tty.device_override;
     if override is not None and len(override) > 0 {
         return override;
     }

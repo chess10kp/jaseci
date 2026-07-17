@@ -192,18 +192,28 @@ def decode_command(raw: str) -> dict[str, any] {
 
 
 def encode_start_result(
-    ok: bool, session_id: str = "", epoch: int = 0, error: str = ""
+    ok: bool,
+    session_id: str = "",
+    epoch: int = 0,
+    error: str = "",
+    model_name: str = "",
+    presets: list[str] | None = None
 ) -> str {
-    return _dumps(
-        {
-            "schema_id": SCHEMA_ID,
-            "kind": "start_result",
-            "ok": ok,
-            "session_id": session_id,
-            "epoch": epoch,
-            "error": error
-        }
-    );
+    body: dict[str, any] = {
+        "schema_id": SCHEMA_ID,
+        "kind": "start_result",
+        "ok": ok,
+        "session_id": session_id,
+        "epoch": epoch,
+        "error": error
+    };
+    if model_name {
+        body["model_name"] = model_name;
+    }
+    if presets {
+        body["presets"] = presets;
+    }
+    return _dumps(body);
 }
 
 

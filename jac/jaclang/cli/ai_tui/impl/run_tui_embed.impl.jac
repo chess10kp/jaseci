@@ -5,7 +5,7 @@ impl run_tui_embed(req: AgentRequest) -> int {
     import from pathlib { Path }
     import from jaclang.cli.console { console }
     import from jaclang.cli.ai_tui.tui_shared {
-        _configure_ui_env,
+        _build_embed_argv,
         _embed_byllm_seams,
         _ensure_embed_host,
         _require_tty
@@ -13,7 +13,7 @@ impl run_tui_embed(req: AgentRequest) -> int {
 
     cli_root = Path(str(__file__)).resolve().parent.parent;
 
-    ensured = _ensure_embed_host(cli_root);
+    ensured = _ensure_embed_host(cli_root, force=bool(req?.rebuild_tui));
     if not ensured.ok {
         console.error(str(ensured.error or "failed to build embed TUI host"));
         if ensured.hint {
@@ -29,16 +29,12 @@ impl run_tui_embed(req: AgentRequest) -> int {
 
     r: any = req;
 
-    _configure_ui_env(r);
-    child = dict(os.environ);
-
+    argv: list[str] = [host_bin];
     seams = _embed_byllm_seams();
-    if seams.get("src") {
-        child["JAC_AI_TUI_BYLLM_SRC"] = str(seams["src"]);
+    for flag in _build_embed_argv(r, seams) {
+        argv.append(flag);
     }
-    if seams.get("deps") {
-        child["JAC_AI_TUI_DEPS"] = str(seams["deps"]);
-    }
+    child = dict(os.environ);
 
     if os.environ.get("JAC_STANDALONE") == "1" {
         pyhome = os.environ.get("PYTHONHOME", "").strip();
@@ -51,7 +47,7 @@ impl run_tui_embed(req: AgentRequest) -> int {
     }
 
     try {
-        os.execve(host_bin, [host_bin], child);
+        os.execve(host_bin, argv, child);
     } except Exception as e {
         console.error(f"failed to launch embed TUI host {host_bin}: {e}");
         return 1;

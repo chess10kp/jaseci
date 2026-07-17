@@ -213,5 +213,5 @@ with open(os.path.join(bindir, ".embed_build_stamp"), "w", encoding="utf-8") as 
     f.write(f"{newest}\n")
 PYEOF
 echo "==> Done. Self-hosting TUI binary: $SCRIPT_DIR/$OUT"
-echo "    Boot test (stub agent, no byllm): ./bin/jac-ai-tui"
-echo "    Real agent: set JAC_AI_TUI_BYLLM_SRC + JAC_AI_TUI_DEPS, then ./bin/jac-ai-tui"
+echo "    Boot test (stub agent): ./bin/jac-ai-tui --stub"
+echo "    Real agent: ./bin/jac-ai-tui --byllm-src <dir> --byllm-deps <paths>"

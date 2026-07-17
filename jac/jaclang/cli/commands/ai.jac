@@ -54,6 +54,13 @@ glob registry = get_registry();
             default=False,
             help="Open the agent in a terminal UI (`--ui` and `--tui` are exclusive)"
         ),
+        Arg.create(
+            "rebuild_tui",
+            kind=ArgKind.FLAG,
+            typ=bool,
+            default=False,
+            help="Force rebuild of the embed TUI binary before launch"
+        ),
 
     ],
     examples=[
@@ -80,5 +87,6 @@ def ai(
     safe: bool = False,
     quiet: bool = False,
     ui: bool = False,
-    tui: bool = False
+    tui: bool = False,
+    rebuild_tui: bool = False
 ) -> int;

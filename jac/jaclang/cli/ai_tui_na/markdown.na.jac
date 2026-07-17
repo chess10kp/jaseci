@@ -100,7 +100,7 @@ def _md_find_close(s: str, start: int, delim: str) -> int {
 }
 
 def _md_apply_inline(s: str, base_sgr: str) -> str {
-    result: str = "";
+    parts: list[str] = [];
     n = len(s);
     i: int = 0;
     while i < n {
@@ -109,7 +109,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "`" {
             close_at = _md_find_close(s, i + 1, "`");
             if close_at >= 0 {
-                result = result + ANSI_FG_YELLOW + s[i + 1:close_at] + ANSI_RESET + base_sgr;
+                parts.append(ANSI_FG_YELLOW + s[i + 1:close_at] + ANSI_RESET + base_sgr);
                 i = close_at + 1;
                 continue;
             }
@@ -118,7 +118,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "*" and i + 1 < n and s[i + 1] == "*" {
             close_at = _md_find_close(s, i + 2, "**");
             if close_at >= 0 {
-                result = result + ANSI_BOLD + s[i + 2:close_at] + ANSI_RESET + base_sgr;
+                parts.append(ANSI_BOLD + s[i + 2:close_at] + ANSI_RESET + base_sgr);
                 i = close_at + 2;
                 continue;
             }
@@ -127,7 +127,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "*" and (i + 1 >= n or s[i + 1] != "*") {
             close_at = _md_find_close(s, i + 1, "*");
             if close_at > i + 1 {
-                result = result + ANSI_ITALIC + s[i + 1:close_at] + ANSI_RESET + base_sgr;
+                parts.append(ANSI_ITALIC + s[i + 1:close_at] + ANSI_RESET + base_sgr);
                 i = close_at + 1;
                 continue;
             }
@@ -136,7 +136,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "~" and i + 1 < n and s[i + 1] == "~" {
             close_at = _md_find_close(s, i + 2, "~~");
             if close_at >= 0 {
-                result = result + ANSI_STRIKE + s[i + 2:close_at] + ANSI_RESET + base_sgr;
+                parts.append(ANSI_STRIKE + s[i + 2:close_at] + ANSI_RESET + base_sgr);
                 i = close_at + 2;
                 continue;
             }
@@ -153,17 +153,17 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
                 if close_paren > close_bracket + 1 {
                     link_text = s[i + 1:close_bracket];
                     link_url = s[close_bracket + 2:close_paren];
-                    result = result + term_hyperlink(link_text, link_url);
+                    parts.append(term_hyperlink(link_text, link_url));
                     i = close_paren + 1;
                     continue;
                 }
             }
         }
 
-        result = result + s[i];
+        parts.append(s[i]);
         i += 1;
     }
-    return result;
+    return "".join(parts);
 }
 
 def _md_wrap(styled: str, width: int, base_sgr: str) -> list[str] {
@@ -172,11 +172,7 @@ def _md_wrap(styled: str, width: int, base_sgr: str) -> list[str] {
     current_w: int = 0;
     words = styled.split(" ");
 
-    word_count = len(words);
-    wi: int = 0;
-    while wi < word_count {
-        word = words[wi];
-        wi += 1;
+    for word in words {
         word_w = visible_width(word);
         if current_w == 0 {
             current = word;
@@ -191,7 +187,7 @@ def _md_wrap(styled: str, width: int, base_sgr: str) -> list[str] {
         }
     }
 
-    if current_w > 0 or len(rows) == 0 {
+    if current_w or not rows {
         rows.append(base_sgr + ansi_pad(current, width) + ANSI_RESET);
     }
     return rows;
@@ -200,15 +196,12 @@ def _md_wrap(styled: str, width: int, base_sgr: str) -> list[str] {
 def _md_emit_wrapped(
     wrapped: list[str], out: list[str], sgr: str, first_prefix: str, cont_prefix: str
 ) {
-    n = len(wrapped);
-    i: int = 0;
-    while i < n {
-        if i == 0 {
-            out.append(sgr + first_prefix + wrapped[i]);
-        } else {
-            out.append(sgr + cont_prefix + wrapped[i]);
-        }
-        i += 1;
+    if not wrapped {
+        return;
+    }
+    out.append(sgr + first_prefix + wrapped[0]);
+    for line in wrapped[1:] {
+        out.append(sgr + cont_prefix + line);
     }
 }
 
@@ -218,11 +211,7 @@ def md_render(text: str, width: int, color: Rgb, attrs: int) -> list[str] {
     in_fence: bool = False;
 
     lines = text.split("\n");
-    line_count = len(lines);
-    line_idx: int = 0;
-    while line_idx < line_count {
-        line = lines[line_idx];
-        line_idx += 1;
+    for line in lines {
         ll = len(line);
         if ll > 0 and line[ll - 1] == "\r" {
             line = line[:ll - 1];

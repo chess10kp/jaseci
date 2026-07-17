@@ -5,11 +5,12 @@ impl ai(
     safe: bool = False,
     quiet: bool = False,
     ui: bool = False,
-    tui: bool = False
+    tui: bool = False,
+    rebuild_tui: bool = False
 ) -> int {
     import from jaclang.cli.agent_api { build_agent_request, validate_agent_request }
     import from jaclang.jac0core.runtime { JacRuntime as Jac }
-    req = build_agent_request(prompt, model, n_ctx, safe, quiet, ui, tui);
+    req = build_agent_request(prompt, model, n_ctx, safe, quiet, ui, tui, rebuild_tui);
     if err := validate_agent_request(req) {
         return err;
     }

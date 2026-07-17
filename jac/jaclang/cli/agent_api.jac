@@ -11,6 +11,7 @@ obj AgentRequest {
         quiet: bool = False,
         ui: bool = False,
         tui: bool = False,
+        rebuild_tui: bool = False,
         cwd: str = "",
         code_intel: CodeIntelligence | None = None;
 }
@@ -23,7 +24,8 @@ def build_agent_request(
     safe: bool = False,
     quiet: bool = False,
     ui: bool = False,
-    tui: bool = False
+    tui: bool = False,
+    rebuild_tui: bool = False
 ) -> AgentRequest {
     cwd = os.getcwd();
     return AgentRequest(
@@ -34,6 +36,7 @@ def build_agent_request(
         quiet=quiet,
         ui=ui,
         tui=tui,
+        rebuild_tui=rebuild_tui,
         cwd=cwd,
         code_intel=CodeIntelligence(proj_dir=cwd, lazy=True)
     );

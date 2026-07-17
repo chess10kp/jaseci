@@ -2409,21 +2409,17 @@ impl _install_ui_provider_capture(target_bus: any = None) -> None {
     _ui_output_capture_installed = True;
 }
 
-impl ui_configure -> None {
+impl ui_configure(model_override: str = "", n_ctx: int = 0, project: str = "") -> None {
     global agent_model;
 
-    proj = os.environ.get("JAC_AI_UI_PROJECT") or os.getcwd();
+    proj = project or os.getcwd();
     agent.ws.cwd = os.path.normpath(proj);
 
     agent.cfg.yolo_mode = True;
     agent.cfg.verbose = True;
     agent.cfg.show_stats = True;
     agent.bus.active_feed = True;
-    model_flag = os.environ.get("JAC_AI_UI_MODEL") or "";
-    n_ctx = 0;
-    try {
-        n_ctx = int(os.environ.get("JAC_AI_UI_NCTX") or "0");
-    } except Exception { }
+    model_flag = model_override;
 
     agent.ws.ci = CodeIntelligence(proj_dir=agent.ws.cwd, lazy=True);
     reset_session();
@@ -2785,10 +2781,19 @@ impl _run_ui_server(r: any) -> int {
         console.error(f"bundled UI app not found at {entry}");
         return 1;
     }
-    env = dict(os.environ);
-    env["JAC_AI_UI_PROJECT"] = agent.ws.cwd;
-    env["JAC_AI_UI_MODEL"] = str(r?.model or "");
-    env["JAC_AI_UI_NCTX"] = str(int(r?.n_ctx or 0));
+    argv: list[str] = [sys.executable, "-m", "jaclang", "start", "main.jac"];
+    argv.append("--project");
+    argv.append(agent.ws.cwd);
+    _model = str(r?.model or "");
+    if _model {
+        argv.append("-m");
+        argv.append(_model);
+    }
+    _nctx = int(r?.n_ctx or 0);
+    if _nctx > 0 {
+        argv.append("--n-ctx");
+        argv.append(str(_nctx));
+    }
     log_path = "/tmp/jac_ai_ui.log";
     console.print("");
     console.print("  Jac AI -- web UI", style="bold");
@@ -2798,12 +2803,11 @@ impl _run_ui_server(r: any) -> int {
     try {
         log_f = open(log_path, "w", encoding="utf-8");
         proc = subprocess.Popen(
-            [sys.executable, "-m", "jaclang", "start", "main.jac"],
+            argv,
             cwd=ui_dir,
             stdout=log_f,
             stderr=subprocess.STDOUT,
             text=True,
-            env=env,
             start_new_session=True
         );
 
@@ -2813,12 +2817,6 @@ impl _run_ui_server(r: any) -> int {
         return 1;
     }
     timeout = 180.0;
-    try {
-        raw = os.environ.get("JAC_AI_UI_TIMEOUT");
-        if raw {
-            timeout = float(raw);
-        }
-    } except Exception { }
     url = _poll_for_server_url(proc, log_path, timeout);
     if not url {
         tail = "";

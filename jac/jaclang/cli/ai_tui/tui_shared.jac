@@ -24,11 +24,20 @@ import from jaclang.cli.ai_tui.ipc_schema {
     RECEIPT_OK
 }
 
+glob _DEBUG_LOG_PATH: str = "";
+
+
+def _set_debug_log_path(path: str) {
+    global _DEBUG_LOG_PATH;
+    _DEBUG_LOG_PATH = path.strip();
+}
+
+
 def _debug_log(msg: str) -> None {
     import os;
     import time;
 
-    path = os.environ.get("JAC_AI_TUI_DEBUG_LOG", "").strip();
+    path = _DEBUG_LOG_PATH;
     if not path {
         return;
     }
@@ -41,13 +50,16 @@ def _debug_log(msg: str) -> None {
 }
 
 
-def _silence_logging_for_tui {
+def _silence_logging_for_tui(debug_path: str = "") {
     import logging;
     import os;
     import sys;
 
+    if debug_path {
+        _set_debug_log_path(debug_path);
+    }
     root_logger = logging.getLogger();
-    debug_path = os.environ.get("JAC_AI_TUI_DEBUG_LOG", "").strip();
+    debug_path = _DEBUG_LOG_PATH;
     lvl_dbg: int = int(logging.DEBUG);
     lvl_warn: int = int(logging.WARNING);
 
@@ -229,22 +241,46 @@ def _require_tty -> str | None {
 }
 
 
-def _configure_ui_env(r: any) {
+def _build_embed_argv(req: any, seams: dict | None = None) -> list[str] {
     import os;
 
-    project = os.path.normpath(str(r?.cwd or os.getcwd()));
-    files_env = _list_project_files(project);
-    presets_env = "";
-    try {
-        import from jaclang.cli.ai_agent { _MODEL_PRESETS }
-        presets_env = "\n".join(_MODEL_PRESETS);
-    } except Exception { }
-
-    os.environ["JAC_AI_UI_PROJECT"] = project;
-    os.environ["JAC_AI_UI_MODEL"] = str(r?.model or "");
-    os.environ["JAC_AI_UI_NCTX"] = str(int(r?.n_ctx or 0));
-    os.environ["JAC_AI_UI_FILES"] = files_env;
-    os.environ["JAC_AI_UI_MODEL_PRESETS"] = presets_env;
+    argv: list[str] = [];
+    project = os.path.normpath(str(req?.cwd or os.getcwd()));
+    argv.append("--project");
+    argv.append(project);
+    _model = str(req?.model or "");
+    if _model {
+        argv.append("-m");
+        argv.append(_model);
+    }
+    n_ctx = int(req?.n_ctx or 0);
+    if n_ctx > 0 {
+        argv.append("--n-ctx");
+        argv.append(str(n_ctx));
+    }
+    s: any = seams;
+    if s is None {
+        s = _embed_byllm_seams();
+    }
+    if s.get("src") {
+        argv.append("--byllm-src");
+        argv.append(str(s["src"]));
+    }
+    if s.get("deps") {
+        argv.append("--byllm-deps");
+        argv.append(str(s["deps"]));
+    }
+    _debug = str(req?.debug_log or "");
+    if _debug {
+        argv.append("--debug-log");
+        argv.append(_debug);
+    }
+    _tty = str(req?.tty or "");
+    if _tty {
+        argv.append("--tty");
+        argv.append(_tty);
+    }
+    return argv;
 }
 
 
@@ -552,7 +588,7 @@ def _embed_host_fresh(
 }
 
 
-def _ensure_embed_host(cli_root: any) -> EmbedHostResult {
+def _ensure_embed_host(cli_root: any, force: bool = False) -> EmbedHostResult {
     import os;
     import fcntl;
     import subprocess;
@@ -565,12 +601,6 @@ def _ensure_embed_host(cli_root: any) -> EmbedHostResult {
     build_sh = os.path.join(na_dir, "build_embed.sh");
     manual_hint = f"bash {build_sh}";
 
-    force = os.environ.get("JAC_AI_TUI_REBUILD", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on"
-    );
     newest_src = _embed_inputs_newest_mtime(na_dir, cli_root);
 
     if _embed_host_fresh(artifact, bindir, newest_src, force) {
@@ -614,7 +644,7 @@ def _ensure_embed_host(cli_root: any) -> EmbedHostResult {
         pre_existed = os.path.exists(artifact);
         if force and pre_existed {
             console.print(
-                "[tui] JAC_AI_TUI_REBUILD set; rebuilding embed host ...", style="dim"
+                "[tui] --rebuild-tui set; rebuilding embed host ...", style="dim"
             );
         } elif pre_existed {
             console.print(

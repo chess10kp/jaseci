@@ -197,13 +197,29 @@ def decode_dispose_result(raw: str) -> dict[str, any] {
 }
 
 
-def encode_start_request(cwd: str, stub: bool, model_name: str) -> str {
+def encode_start_request(
+    cwd: str,
+    stub: bool,
+    model_name: str,
+    n_ctx: int,
+    project: str,
+    byllm_src: str = "",
+    byllm_deps: str = "",
+    debug_log: str = "",
+    no_stub: bool = False
+) -> str {
     payload: dict[str, any] = {
         "schema_id": SCHEMA_ID,
         "kind": "agent_request",
         "cwd": cwd,
         "stub": stub,
-        "model_name": model_name
+        "model_name": model_name,
+        "n_ctx": n_ctx,
+        "project": project,
+        "byllm_src": byllm_src,
+        "byllm_deps": byllm_deps,
+        "debug_log": debug_log,
+        "no_stub": no_stub
     };
     return _dumps(payload);
 }

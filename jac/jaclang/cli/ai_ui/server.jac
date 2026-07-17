@@ -4,8 +4,10 @@ Thin RPC surface over the agent's in-process event bus. This server runs in the
 child `jac start` process the `--ui` launcher spawned; it re-imports the core
 agent module, so its `agent` glob -- and the `agent.bus` the turn thread writes
 to -- is the very object these endpoints read. `ui_configure()` runs once at
-boot to point the agent at the user's project (passed via env by the launcher).
+boot with project/model/n_ctx from argv (passed by the launcher).
 """
+
+import sys;
 
 import from typing { Iterator }
 import from jaclang.cli.ai_agent {
@@ -22,10 +24,72 @@ import from jaclang.cli.ai_agent {
     ui_phase_context
 }
 
+def _parse_ui_boot_argv(argv: list[str]) -> dict[str, any] {
+    out: dict[str, any] = {"model": "", "n_ctx": 0, "project": ""};
+    i: int = 1;
+    n = len(argv);
+    while i < n {
+        a = argv[i];
+        if a == "-m" or a == "--model" {
+            if i + 1 < n {
+                out["model"] = argv[i + 1];
+                i += 2;
+                continue;
+            }
+        }
+        if a == "--project" {
+            if i + 1 < n {
+                out["project"] = argv[i + 1];
+                i += 2;
+                continue;
+            }
+        }
+        if a == "--n-ctx" {
+            if i + 1 < n {
+                try {
+                    out["n_ctx"] = int(argv[i + 1]);
+                } except Exception { }
+                i += 2;
+                continue;
+            }
+        }
+        if a.startswith("--model=") {
+            out["model"] = a[8:];
+            i += 1;
+            continue;
+        }
+        if a.startswith("-m=") {
+            out["model"] = a[3:];
+            i += 1;
+            continue;
+        }
+        if a.startswith("--project=") {
+            out["project"] = a[10:];
+            i += 1;
+            continue;
+        }
+        if a.startswith("--n-ctx=") {
+            try {
+                out["n_ctx"] = int(a[8:]);
+            } except Exception { }
+            i += 1;
+            continue;
+        }
+        i += 1;
+    }
+    return out;
+}
+
 # Point the agent at the user's project and build its model. Runs once when the
 # server process imports this module at boot.
+glob boot = _parse_ui_boot_argv(sys.argv);
+
 with entry {
-    ui_configure();
+    ui_configure(
+        model_override=str(boot.get("model", "")),
+        n_ctx=int(boot.get("n_ctx", 0) or 0),
+        project=str(boot.get("project", ""))
+    );
 }
 
 """One structured agent event for the UI feed (a flattened bus record).

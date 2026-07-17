@@ -89,33 +89,36 @@ def _handle_submit(state: TuiState, res: ReduceResult) {
         return;
     }
     (cmd_res, effects) = slash_submit_effects(text, state);
-    if cmd_res == CmdResult.QUIT {
-        ed.submit();
-        _extend(res, effects);
-        res.quit = True;
-        return;
+    match cmd_res {
+        case CmdResult.QUIT:
+            ed.submit();
+            _extend(res, effects);
+            res.quit = True;
+            return;
+
+        case CmdResult.OPEN_MODEL:
+            ed.submit();
+            overlay_open_model(state);
+            return;
+
+        case CmdResult.OPEN_FILE:
+            ed.submit();
+            overlay_open_file(state);
+            return;
+
+        case CmdResult.HANDLED:
+            ed.submit();
+            _extend(res, effects);
+            return;
+
+        case CmdResult.NONE:
+            if state.status_blocks_prompt() {
+                return;
+            }
+            state.pending_submission.active = True;
+            state.pending_submission.text = text;
+            res.effects.append(effect_send(text));
     }
-    if cmd_res == CmdResult.OPEN_MODEL {
-        ed.submit();
-        overlay_open_model(state);
-        return;
-    }
-    if cmd_res == CmdResult.OPEN_FILE {
-        ed.submit();
-        overlay_open_file(state);
-        return;
-    }
-    if cmd_res == CmdResult.HANDLED {
-        ed.submit();
-        _extend(res, effects);
-        return;
-    }
-    if state.status_blocks_prompt() {
-        return;
-    }
-    state.pending_submission.active = True;
-    state.pending_submission.text = text;
-    res.effects.append(effect_send(text));
 }
 
 def _handle_global(state: TuiState, k: Key, res: ReduceResult) -> bool {
@@ -128,68 +131,90 @@ def _handle_global(state: TuiState, k: Key, res: ReduceResult) -> bool {
         res.effects.append(effect_quit());
         return True;
     }
-    if ch == "g" {
-        res.effects.append(effect_stop());
-        state.mark_layout_dirty();
-        return True;
-    }
-    if ch == "r" {
-        res.effects.append(effect_reset());
-        state.reset_events();
-        state.mark_layout_dirty();
-        return True;
-    }
-    if ch == "o" {
-        overlay_open_palette(state, "");
-        return True;
+    match ch {
+        case "g":
+            res.effects.append(effect_stop());
+            state.mark_layout_dirty();
+            return True;
+
+        case "r":
+            res.effects.append(effect_reset());
+            state.reset_events();
+            state.mark_layout_dirty();
+            return True;
+
+        case "o":
+            overlay_open_palette(state, "");
+            return True;
     }
     return False;
+}
+
+def _overlay_select(state: TuiState, res: ReduceResult, item_value: str) {
+    kind = state.overlay_stack.active_spec().role;
+    match kind {
+        case OverlayKind.MODEL:
+            _extend(res, apply_model_effects(item_value, state));
+            overlay_close(state);
+            return;
+
+        case OverlayKind.FILE:
+            state.editor.insert_text(f"@{item_value} ");
+            overlay_close(state);
+            return;
+
+        case OverlayKind.PALETTE:
+            (cmd_res, effects) = command_dispatch_effects(item_value, state);
+            match cmd_res {
+                case CmdResult.OPEN_MODEL:
+                    overlay_open_model(state);
+                    return;
+
+                case CmdResult.OPEN_FILE:
+                    overlay_open_file(state);
+                    return;
+
+                case CmdResult.QUIT:
+                    _extend(res, effects);
+                    res.quit = True;
+                    overlay_close(state);
+                    return;
+
+                case CmdResult.HANDLED:
+                    _extend(res, effects);
+                    overlay_close(state);
+                    return;
+
+                case CmdResult.NONE:
+                    _extend(res, effects);
+                    overlay_close(state);
+            }
+    }
 }
 
 def _handle_overlay_key(state: TuiState, k: Key, res: ReduceResult) {
     if not state.overlay_stack.is_active() {
         return;
     }
-    sl = state.select_list;
-    action = sl.handle_key(k);
-    if action == SelectAction.CANCEL {
-        overlay_close(state);
-        return;
-    }
-    if action == SelectAction.CHANGED {
-        state.dirty = True;
-        return;
-    }
-    if action == SelectAction.SELECT {
-        item = sl.current();
-        if item is None {
-            return;
-        }
-        kind = state.overlay_stack.active_spec().role;
-        if kind == OverlayKind.MODEL {
-            _extend(res, apply_model_effects(item.value, state));
+    action = state.select_list.handle_key(k);
+    match action {
+        case SelectAction.CANCEL:
             overlay_close(state);
             return;
-        }
-        if kind == OverlayKind.FILE {
-            state.editor.insert_text(f"@{item.value} ");
-            overlay_close(state);
+
+        case SelectAction.CHANGED:
+            state.dirty = True;
             return;
-        }
-        (cmd_res, effects) = command_dispatch_effects(item.value, state);
-        if cmd_res == CmdResult.OPEN_MODEL {
-            overlay_open_model(state);
+
+        case SelectAction.SELECT:
+            item = state.select_list.current();
+            if item is None {
+                return;
+            }
+            _overlay_select(state, res, item.value);
+
+        case SelectAction.NONE:
             return;
-        }
-        if cmd_res == CmdResult.OPEN_FILE {
-            overlay_open_file(state);
-            return;
-        }
-        _extend(res, effects);
-        if cmd_res == CmdResult.QUIT {
-            res.quit = True;
-        }
-        overlay_close(state);
     }
 }
 
@@ -199,28 +224,30 @@ def _handle_ac_key(state: TuiState, k: Key, res: ReduceResult) {
         _sync_editor_view(state);
         return;
     }
-    did_nav = True;
-    if k.kind == KeyKind.ESCAPE {
-        state.ac.dismiss();
-    } elif k.kind == KeyKind.UP {
-        state.ac.nav_up();
-    } elif k.kind == KeyKind.DOWN {
-        state.ac.nav_down();
-    } else {
-        did_nav = False;
-    }
-    if did_nav {
-        state.mark_layout_dirty();
-        return;
-    }
-    if k.kind == KeyKind.ENTER {
-        ac_kind = state.ac.kind;
-        ac_apply(state);
-        state.editor.update_scroll(_editor_width(state), _editor_max_rows(state));
-        if ac_kind == AcKind.SLASH {
-            _handle_submit(state, res);
-        }
-        return;
+    match k.kind {
+        case KeyKind.ESCAPE:
+            state.ac.dismiss();
+            state.mark_layout_dirty();
+            return;
+
+        case KeyKind.UP:
+            state.ac.nav_up();
+            state.mark_layout_dirty();
+            return;
+
+        case KeyKind.DOWN:
+            state.ac.nav_down();
+            state.mark_layout_dirty();
+            return;
+
+        case KeyKind.ENTER:
+            ac_kind = state.ac.kind;
+            ac_apply(state);
+            state.editor.update_scroll(_editor_width(state), _editor_max_rows(state));
+            if ac_kind == AcKind.SLASH {
+                _handle_submit(state, res);
+            }
+            return;
     }
     state.ac.dismiss();
     _handle_edit_key(state, k, res);
@@ -228,24 +255,26 @@ def _handle_ac_key(state: TuiState, k: Key, res: ReduceResult) {
 
 def _handle_editor_ctrl(state: TuiState, k: Key) {
     ed = state.editor;
-    ch = chr(k.code);
-    did_edit = True;
-    if ch == "a" {
-        ed.move_line_start();
-    } elif ch == "e" {
-        ed.move_line_end();
-    } elif ch == "k" {
-        ed.delete_to_line_end();
-    } elif ch == "u" {
-        ed.delete_to_line_start();
-    } elif ch == "w" {
-        ed.delete_word_back();
-    } else {
-        did_edit = False;
+    match chr(k.code) {
+        case "a":
+            ed.move_line_start();
+
+        case "e":
+            ed.move_line_end();
+
+        case "k":
+            ed.delete_to_line_end();
+
+        case "u":
+            ed.delete_to_line_start();
+
+        case "w":
+            ed.delete_word_back();
+
+        case _:
+            return;
     }
-    if did_edit {
-        _sync_editor_view(state);
-    }
+    _sync_editor_view(state);
 }
 
 def _handle_movement(state: TuiState, k: Key) -> bool {
@@ -275,93 +304,108 @@ def _handle_movement(state: TuiState, k: Key) -> bool {
         _sync_editor_view(state);
         return True;
     }
-    moved = True;
-    if k.kind == KeyKind.LEFT {
-        ed.move_left();
-    } elif k.kind == KeyKind.RIGHT {
-        ed.move_right();
-    } elif k.kind == KeyKind.HOME {
-        ed.move_line_start();
-    } elif k.kind == KeyKind.END {
-        ed.move_line_end();
-    } elif k.kind == KeyKind.WORD_LEFT {
-        ed.word_left();
-    } elif k.kind == KeyKind.WORD_RIGHT {
-        ed.word_right();
-    } else {
-        moved = False;
+    match k.kind {
+        case KeyKind.LEFT:
+            ed.move_left();
+
+        case KeyKind.RIGHT:
+            ed.move_right();
+
+        case KeyKind.HOME:
+            ed.move_line_start();
+
+        case KeyKind.END:
+            ed.move_line_end();
+
+        case KeyKind.WORD_LEFT:
+            ed.word_left();
+
+        case KeyKind.WORD_RIGHT:
+            ed.word_right();
+
+        case KeyKind.PAGE_UP:
+            state.scroll_up(state.term_rows - _PAGE_CHROME_ROWS);
+            return True;
+
+        case KeyKind.PAGE_DOWN:
+            state.scroll_down(state.term_rows - _PAGE_CHROME_ROWS);
+            return True;
+
+        case _:
+            return False;
     }
-    if moved {
-        _sync_editor_view(state);
-        return True;
-    }
-    if k.kind == KeyKind.PAGE_UP {
-        state.scroll_up(state.term_rows - _PAGE_CHROME_ROWS);
-        return True;
-    }
-    if k.kind == KeyKind.PAGE_DOWN {
-        state.scroll_down(state.term_rows - _PAGE_CHROME_ROWS);
-        return True;
-    }
-    return False;
+    _sync_editor_view(state);
+    return True;
 }
 
 def _handle_edit_key(state: TuiState, k: Key, res: ReduceResult) {
     ed = state.editor;
-    if k.kind == KeyKind.TAB {
-        ed_text = ed.get_text();
-        if ed_text.startswith("/") {
-            overlay_open_palette(state, ed_text[1:]);
-        }
-        return;
-    }
-    if k.kind == KeyKind.SHIFT_ENTER {
-        ed.newline();
-        _sync_editor_view(state);
-        return;
-    }
-    if k.kind == KeyKind.ENTER {
-        _handle_submit(state, res);
-        return;
-    }
-    if k.kind == KeyKind.BACKSPACE {
-        ed.backspace();
-        _sync_editor_view(state);
-        ac_update(state);
-        return;
-    }
-    if k.kind == KeyKind.MOUSE_SCROLL_UP {
-        state.scroll_up(_MOUSE_SCROLL_LINES);
-        return;
-    }
-    if k.kind == KeyKind.MOUSE_SCROLL_DOWN {
-        state.scroll_down(_MOUSE_SCROLL_LINES);
-        return;
-    }
-    if k.kind == KeyKind.DELETE {
-        ed.forward_delete();
-        _sync_editor_view(state);
-        return;
-    }
-    if k.kind == KeyKind.CHAR {
-        if ed.text_len() >= _MAX_INPUT_LEN {
+    match k.kind {
+        case KeyKind.TAB:
+            ed_text = ed.get_text();
+            if ed_text.startswith("/") {
+                overlay_open_palette(state, ed_text[1:]);
+            }
             return;
-        }
-        ed.insert(chr(k.code));
-        _sync_editor_view(state);
-        ac_update(state);
+
+        case KeyKind.SHIFT_ENTER:
+            ed.newline();
+            _sync_editor_view(state);
+            return;
+
+        case KeyKind.ENTER:
+            _handle_submit(state, res);
+            return;
+
+        case KeyKind.BACKSPACE:
+            ed.backspace();
+            _sync_editor_view(state);
+            ac_update(state);
+            return;
+
+        case KeyKind.MOUSE_SCROLL_UP:
+            state.scroll_up(_MOUSE_SCROLL_LINES);
+            return;
+
+        case KeyKind.MOUSE_SCROLL_DOWN:
+            state.scroll_down(_MOUSE_SCROLL_LINES);
+            return;
+
+        case KeyKind.DELETE:
+            ed.forward_delete();
+            _sync_editor_view(state);
+            return;
+
+        case KeyKind.CHAR:
+            if ed.text_len() >= _MAX_INPUT_LEN {
+                return;
+            }
+            ed.insert(chr(k.code));
+            _sync_editor_view(state);
+            ac_update(state);
+            return;
+
+        case _:
+            return;
     }
 }
 
 def _handle_transcript_key(state: TuiState, k: Key) {
-    if k.kind == KeyKind.PAGE_UP {
-        state.scroll_up(state.term_rows - _PAGE_CHROME_ROWS);
-    } elif k.kind == KeyKind.PAGE_DOWN {
-        state.scroll_down(state.term_rows - _PAGE_CHROME_ROWS);
-    } elif k.kind == KeyKind.MOUSE_SCROLL_UP {
-        state.scroll_up(_MOUSE_SCROLL_LINES);
-    } elif k.kind == KeyKind.MOUSE_SCROLL_DOWN {
-        state.scroll_down(_MOUSE_SCROLL_LINES);
+    match k.kind {
+        case KeyKind.PAGE_UP:
+            state.scroll_up(state.term_rows - _PAGE_CHROME_ROWS);
+
+        case KeyKind.PAGE_DOWN:
+            state.scroll_down(state.term_rows - _PAGE_CHROME_ROWS);
+
+        case KeyKind.MOUSE_SCROLL_UP:
+            state.scroll_up(_MOUSE_SCROLL_LINES);
+
+        case KeyKind.MOUSE_SCROLL_DOWN:
+            state.scroll_down(_MOUSE_SCROLL_LINES);
+
+        case _:
+            return;
     }
 }
 
@@ -381,27 +425,30 @@ def reduce_input(model: TuiState, action: UiAction) -> ReduceResult {
     if _handle_global(model, k, res) {
         return res;
     }
-    f = effective_focus(model);
-    if f == FocusTarget.OVERLAY {
-        _handle_overlay_key(model, k, res);
-        return res;
+    match effective_focus(model) {
+        case FocusTarget.OVERLAY:
+            _handle_overlay_key(model, k, res);
+            return res;
+
+        case FocusTarget.AUTOCOMPLETE:
+            _handle_ac_key(model, k, res);
+            return res;
+
+        case FocusTarget.TRANSCRIPT:
+            _handle_transcript_key(model, k);
+            return res;
+
+        case FocusTarget.EDITOR:
+            if k.kind == KeyKind.CTRL {
+                _handle_editor_ctrl(model, k);
+                return res;
+            }
+            if _handle_movement(model, k) {
+                return res;
+            }
+            _handle_edit_key(model, k, res);
+            return res;
     }
-    if f == FocusTarget.AUTOCOMPLETE {
-        _handle_ac_key(model, k, res);
-        return res;
-    }
-    if f == FocusTarget.TRANSCRIPT {
-        _handle_transcript_key(model, k);
-        return res;
-    }
-    if k.kind == KeyKind.CTRL {
-        _handle_editor_ctrl(model, k);
-        return res;
-    }
-    if _handle_movement(model, k) {
-        return res;
-    }
-    _handle_edit_key(model, k, res);
     return res;
 }
 

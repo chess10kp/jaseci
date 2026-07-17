@@ -46,12 +46,11 @@ glob _adapter: TuiSessionAdapter | None = None,
      _poll_count: int = 0;
 
 
-def _apply_path_env {
-    byllm = os.environ.get("JAC_AI_TUI_BYLLM_SRC", "");
-    if byllm and byllm not in sys.path {
-        sys.path.insert(0, byllm);
+def _apply_path_env(byllm_src: str = "", byllm_deps: str = "") {
+    if byllm_src and byllm_src not in sys.path {
+        sys.path.insert(0, byllm_src);
     }
-    for d in os.environ.get("JAC_AI_TUI_DEPS", "").split(os.pathsep) {
+    for d in byllm_deps.split(os.pathsep) {
         if d and d not in sys.path {
             sys.path.append(d);
         }
@@ -104,6 +103,28 @@ def _receipt_wire(receipt: CommandReceipt) -> str {
 }
 
 
+def _agent_ui_meta(stub: bool) -> tuple[str, list[str]] {
+    if stub {
+        return ("stub", ["stub"]);
+    }
+    try {
+        import from jaclang.cli.ai_agent { ui_settings }
+        settings = ui_settings();
+        model = str(settings.get("model", "") or "");
+        presets: list[str] = [];
+        for raw in settings.get("presets", []) or [] {
+            name = str(raw or "");
+            if name {
+                presets.append(name);
+            }
+        }
+        return (model, presets);
+    } except Exception {
+        return ("", []);
+    }
+}
+
+
 def _start_adapter(
     stub: bool, model_name: str = "stub", reason: str = ""
 ) -> dict[str, any] {
@@ -111,8 +132,8 @@ def _start_adapter(
     if reason {
         sys.stderr.write(f"jac-ai-tui: using stub agent ({reason})\n");
         sys.stderr.write(
-            "  set JAC_AI_TUI_BYLLM_SRC=<jac-byllm checkout> and "
-            "JAC_AI_TUI_DEPS=<dep dirs (litellm, openai, ...)> for the real agent.\n"
+            "  pass --byllm-src=<jac-byllm checkout> and "
+            "--byllm-deps=<dep dirs (litellm, openai, ...)> for the real agent.\n"
         );
     }
     adapter = TuiSessionAdapter(cwd=os.getcwd(), stub=stub, model_name=model_name);
@@ -132,12 +153,14 @@ def _start_adapter(
 }
 
 
-def _start_real -> dict[str, any] {
+def _start_real(model_name: str, n_ctx: int = 0, project: str = "") -> dict[str, any] {
     import from jaclang.cli.ai_agent { ui_configure }
     import from jaclang.cli.ai_tui.tui_shared { _debug_log }
 
-    _debug_log("_start_real: calling ui_configure");
-    ui_configure();
+    _debug_log(
+        f"_start_real: ui_configure(model={model_name!r} n_ctx={n_ctx} project={project!r})"
+    );
+    ui_configure(model_override=model_name, n_ctx=n_ctx, project=project);
 
     import from jaclang.cli.ai_agent { agent as _agent_rt, agent_model as _am }
     model_name = "";
@@ -167,8 +190,12 @@ def _parse_start_request(request: str) -> dict[str, any] {
 
 def start(request: str = "{}") -> str {
     global _adapter,_poll_count;
-    _apply_path_env();
-    _silence_logging_for_tui();
+    body = _parse_start_request(request);
+    byllm_src = str(body.get("byllm_src", "") or "");
+    byllm_deps = str(body.get("byllm_deps", "") or "");
+    debug_log = str(body.get("debug_log", "") or "");
+    _apply_path_env(byllm_src, byllm_deps);
+    _silence_logging_for_tui(debug_log);
     _poll_count = 0;
     if _adapter is not None {
         try {
@@ -176,32 +203,44 @@ def start(request: str = "{}") -> str {
         } except Exception { }
         _adapter = None;
     }
-    body = _parse_start_request(request);
     prefer_stub = bool(body.get("stub", False));
     model_name = str(body.get("model_name", "") or "");
+    project = str(body.get("project", "") or body.get("cwd", "") or "");
+    n_ctx = 0;
+    try {
+        n_ctx = int(body.get("n_ctx", 0) or 0);
+    } except Exception { }
     _debug_log(
-        f"start: stub={prefer_stub!r} model={model_name!r} "
-        f"JAC_AI_UI_MODEL={os.environ.get('JAC_AI_UI_MODEL', '<unset>')!r}"
+        f"start: stub={prefer_stub!r} model={model_name!r} n_ctx={n_ctx} project={project!r}"
     );
     if prefer_stub {
         got = _start_adapter(stub=True, model_name=model_name or "stub");
+        (active_model, presets) = _agent_ui_meta(True);
+        if model_name {
+            active_model = model_name;
+        }
         return encode_start_result(
             bool(got.get("ok")),
             session_id=str(got.get("session_id", "")),
             epoch=int(got.get("epoch", 0)),
-            error=str(got.get("error", ""))
+            error=str(got.get("error", "")),
+            model_name=active_model or "stub",
+            presets=presets
         );
     }
     try {
-        got = _start_real();
+        got = _start_real(model_name, n_ctx=n_ctx, project=project);
+        (active_model, presets) = _agent_ui_meta(False);
         return encode_start_result(
             True,
             session_id=str(got.get("session_id", "")),
-            epoch=int(got.get("epoch", 0))
+            epoch=int(got.get("epoch", 0)),
+            model_name=active_model,
+            presets=presets
         );
     } except Exception as e {
         _debug_log(f"_start_real failed: {e}");
-        if os.environ.get("JAC_AI_TUI_NO_STUB") {
+        if bool(body.get("no_stub", False)) {
             return encode_start_result(False, error=str(e));
         }
         got = _start_adapter(stub=True, model_name="stub", reason=str(e));
@@ -209,7 +248,9 @@ def start(request: str = "{}") -> str {
             bool(got.get("ok")),
             session_id=str(got.get("session_id", "")),
             epoch=int(got.get("epoch", 0)),
-            error=str(got.get("error", ""))
+            error=str(got.get("error", "")),
+            model_name="stub",
+            presets=["stub"]
         );
     }
 }
@@ -305,6 +346,16 @@ def poll(cap: str = "64") -> str {
 def snapshot -> str {
     adapter = _active();
     snap = adapter.snapshot();
+    model = snap.model_name or adapter.model_name;
+    if not adapter.stub {
+        try {
+            import from jaclang.cli.ai_agent { agent_model as _am, agent as _agent_rt }
+            resolved = str(_am.model_name) or str(_agent_rt.bus.model_name);
+            if resolved {
+                model = resolved;
+            }
+        } except Exception { }
+    }
     msgs: list[any] = [];
     for m in snap.messages {
         parts: list[any] = [];
@@ -329,7 +380,7 @@ def snapshot -> str {
         snap.base_seq,
         snap.lifecycle,
         msgs,
-        model_name=snap.model_name,
+        model_name=model,
         active=snap.active
     );
 }

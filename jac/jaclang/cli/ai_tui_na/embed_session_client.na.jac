@@ -54,7 +54,17 @@ obj EmbedSessionClient {
         last_epoch: int = 0;
 
     def start(req: AgentRequest) -> NativeStartResult {
-        raw_req = encode_start_request(req.cwd, req.stub, req.model_name);
+        raw_req = encode_start_request(
+            req.cwd,
+            req.stub,
+            req.model_name,
+            req.n_ctx,
+            req.project,
+            req.byllm_src,
+            req.byllm_deps,
+            req.debug_log,
+            req.no_stub
+        );
         call = self.runtime.call_start(raw_req);
         if not call.ok {
             # Managed start() never executed: no AgentSessionRuntime, no feed
@@ -71,8 +81,20 @@ obj EmbedSessionClient {
                 ok=ok,
                 session_id=as_str(data.get("session_id", "")),
                 epoch=as_int(data.get("epoch", 0)),
-                error=as_str(data.get("error", ""))
+                error=as_str(data.get("error", "")),
+                model_name=as_str(data.get("model_name", ""))
             );
+            presets_raw = data.get("presets", None);
+            if presets_raw is not None {
+                if isinstance(presets_raw, list) {
+                    for item in presets_raw {
+                        name = as_str(item, "");
+                        if name {
+                            result.presets.append(name);
+                        }
+                    }
+                }
+            }
             if ok {
                 self.started = True;
                 self.last_epoch = result.epoch;
@@ -223,6 +245,19 @@ obj EmbedSessionClient {
             return NativeDisposeResult(
                 ok=False, timed_out=True, reason=reason, joined_workers=0
             );
+        }
+    }
+
+    def bootstrap_state(state: TuiState) -> bool {
+        snap = self.snapshot();
+        if not snap.raw {
+            return False;
+        }
+        try {
+            apply_snapshot(state, decode_snapshot(snap.raw));
+            return True;
+        } except Exception {
+            return False;
         }
     }
 

@@ -29,7 +29,13 @@ obj FinalizeResult {
 obj AgentRequest {
     has cwd: str = "",
         stub: bool = True,
-        model_name: str = "stub";
+        model_name: str = "stub",
+        n_ctx: int = 0,
+        project: str = "",
+        byllm_src: str = "",
+        byllm_deps: str = "",
+        debug_log: str = "",
+        no_stub: bool = False;
 }
 
 
@@ -47,7 +53,9 @@ obj NativeStartResult {
     has ok: bool = False,
         session_id: str = "",
         epoch: int = 0,
-        error: str = "";
+        error: str = "",
+        model_name: str = "",
+        presets: list[str] = [];
 }
 
 

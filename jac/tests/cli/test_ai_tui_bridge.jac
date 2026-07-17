@@ -118,37 +118,38 @@ test "_list_project_files enumerates files under a project dir" {
 }
 
 
-test "_configure_ui_env populates every JAC_AI_UI_* key from the request" {
-    # run_tui_embed copies os.environ into the child and os.execve's the native
-    # host immediately after this, so the env is write-only here -- the contract
-    # is just "all five keys land with the request's values".
+test "_build_embed_argv passes config as flags (no JAC_AI_* env)" {
     shared_mod = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
-    configure = getattr(shared_mod, "_configure_ui_env");
-    keys = [
+    build_argv = getattr(shared_mod, "_build_embed_argv");
+    seams = {"src": "/byllm", "deps": "/litellm:/openai"};
+    argv = build_argv(
+        AgentRequest(tui=True, cwd=os.getcwd(), model="new-model", n_ctx=4096,), seams
+    );
+    assert "--project" in argv;
+    assert os.getcwd() in argv;
+    assert "-m" in argv;
+    assert "new-model" in argv;
+    assert "--n-ctx" in argv;
+    assert "4096" in argv;
+    assert "--byllm-src" in argv;
+    assert "/byllm" in argv;
+    assert "--byllm-deps" in argv;
+    assert "/litellm:/openai" in argv;
+    for key in [
         "JAC_AI_UI_PROJECT",
         "JAC_AI_UI_MODEL",
         "JAC_AI_UI_NCTX",
         "JAC_AI_UI_FILES",
         "JAC_AI_UI_MODEL_PRESETS",
+        "JAC_AI_TUI_BYLLM_SRC",
+        "JAC_AI_TUI_DEPS",
+        "JAC_AI_TUI_NO_STUB",
+        "JAC_AI_TUI_DEBUG_LOG",
+        "JAC_AI_TUI_REBUILD",
+        "JAC_AI_TUI_TTY",
 
-    ];
-    try {
-        for key in keys {
-            os.environ.pop(key, None);
-        }
-        configure(
-            AgentRequest(tui=True, cwd=os.getcwd(), model="new-model", n_ctx=4096,)
-        );
-        assert os.environ.get("JAC_AI_UI_MODEL") == "new-model";
-        assert os.environ.get("JAC_AI_UI_NCTX") == "4096";
-        assert os.environ.get("JAC_AI_UI_PROJECT") == os.getcwd();
-        for key in keys {
-            assert key in os.environ , f"expected {key} to be set by configure";
-        }
-    } finally {
-        for key in keys {
-            os.environ.pop(key, None);
-        }
+    ] {
+        assert key not in os.environ , f"{key} must not be set by launcher";
     }
 }
 
