@@ -106,10 +106,18 @@ obj TuiSessionAdapter {
             for m in projected {
                 self.queue.submit(m);
             }
+            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
+            _debug_log(
+                f"_on_runtime_event: kind={event.kind} projected={len(projected)} " + f"snap_required={self.queue.snapshot_required}"
+            );
         } except ValueError as e {
             self.queue.require_snapshot(str(e));
+            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
+            _debug_log(f"_on_runtime_event: ValueError kind={event.kind} msg={e}");
         } except Exception as e {
             self.queue.require_snapshot(f"projector_error:{e}");
+            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
+            _debug_log(f"_on_runtime_event: Exception kind={event.kind} msg={e!r}");
         }
     }
 }

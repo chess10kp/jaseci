@@ -1,0 +1,1 @@
+{"id": "evt_001", "seq": 42, "ratio": 3.14, "active": true, "note": null, "tags": ["alpha", "beta"], "multiline": "line1\nline2\t\"quoted\" \u00e9moji \ud83d\ude00", "nested": {"deep": [1, 2, 99], "neg": -7, "zero": 0}}

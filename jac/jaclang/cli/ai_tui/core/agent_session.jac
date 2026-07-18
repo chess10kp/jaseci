@@ -19,6 +19,7 @@ import from jaclang.cli.ai_tui.bridge_schema {
     MUT_AGENT_START,
     MUT_DIAGNOSTIC,
     MUT_MESSAGE_START,
+    MUT_MESSAGE_UPDATE,
     MUT_STATUS
 }
 import from jaclang.cli.ai_tui.session_models {
@@ -50,7 +51,13 @@ obj AgentSession {
         _lock: any = None,
         _listeners: list[any] = [],
         _sub_seq: int = 0,
-        _prompt_id: int = 0;
+        _prompt_id: int = 0,
+        _msg_id: int = 0;
+
+    def _next_msg_id -> str {
+        self._msg_id += 1;
+        return str(self._msg_id);
+    }
 
     def postinit {
         if not self.session_id {
@@ -193,6 +200,8 @@ obj AgentSession {
             }
             self._prompt_id += 1;
             pid = str(self._prompt_id);
+            uid = self._next_msg_id();
+            aid = self._next_msg_id();
             self.settled = False;
             self.cancel_requested = False;
             self.lifecycle = LIFE_RUNNING;
@@ -201,11 +210,20 @@ obj AgentSession {
             );
             self._publish(UiMutation(kind=MUT_AGENT_START, lifecycle=LIFE_RUNNING));
             self._publish(
-                UiMutation(kind=MUT_MESSAGE_START, message_id=pid, op="user", text=text)
+                UiMutation(
+                    kind=MUT_MESSAGE_START,
+                    message_id=uid,
+                    part_id=uid + ":text",
+                    op="user",
+                    text=text,
+                    payload={"role": "user", "prompt_id": pid}
+                )
             );
             self._publish(UiMutation(kind=MUT_STATUS, lifecycle=LIFE_RUNNING));
             if self.stub {
-                tw = Thread(target=self._stub_turn, args=(pid, text), daemon=False);
+                tw = Thread(
+                    target=self._stub_turn, args=(pid, aid, text), daemon=False
+                );
                 self._workers.append(tw);
                 tw.start();
             } else {
@@ -271,7 +289,7 @@ obj AgentSession {
         }
     }
 
-    def _stub_turn(prompt_id: str, text: str) {
+    def _stub_turn(prompt_id: str, answer_id: str, text: str) {
         time.sleep(0.02);
         if self.cancel_requested or self._stop.is_set() {
             self._settle_abort();
@@ -279,12 +297,15 @@ obj AgentSession {
         }
         reply = f"echo: {text}";
         self.manager.append(SessionMutation(kind="assistant", text=reply));
+
         self._publish(
             UiMutation(
-                kind="message_update",
-                message_id=prompt_id,
-                op="text_append",
-                text=reply
+                kind=MUT_MESSAGE_UPDATE,
+                message_id=answer_id,
+                part_id=answer_id + ":text",
+                op="replace_partial",
+                text=reply,
+                payload={"role": "assistant"}
             )
         );
         self._publish(UiMutation(kind=MUT_AGENT_END, lifecycle=LIFE_IDLE));
@@ -329,6 +350,8 @@ obj AgentSession {
             import from jaclang.cli.ai_tui.legacy_event_normalizer {
                 legacy_frame_to_mutations
             }
+            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
+            _debug_log("_legacy_feed: thread started");
             for frame in ui_stream() {
                 if self._stop.is_set() {
                     break;
@@ -338,6 +361,11 @@ obj AgentSession {
                 }
                 frame_dict: dict[str, any] = frame if isinstance(frame, dict) else {};
                 muts = legacy_frame_to_mutations(frame_dict, epoch=0, seq_start=0);
+                _debug_log(
+                    f"_legacy_feed: frame keys={list(frame_dict.keys())} " + f"status={frame.get(
+                        'status', ''
+                    )!r} muts={len(muts)}"
+                );
                 for m in muts {
                     self._publish(m);
                 }
@@ -358,6 +386,8 @@ obj AgentSession {
                 }
             }
         } except Exception as e {
+            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
+            _debug_log(f"_legacy_feed: DIED {e!r}");
             self.lifecycle = LIFE_FAILED;
             self._publish(
                 UiMutation(

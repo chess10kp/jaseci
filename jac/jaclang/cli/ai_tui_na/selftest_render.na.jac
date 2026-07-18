@@ -161,6 +161,58 @@ def build_overlay() -> TuiState {
 }
 
 
+def build_reasoning() -> TuiState {
+    s = TuiState();
+    s.status = TuiStatus.RUNNING;
+    s.model_name = "claude-sonnet-4";
+    s.events = [
+        Event(id=1, kind=EventKind.USER, text="Explain recursion"),
+        Event(
+            id=2,
+            kind=EventKind.REASONING,
+            text="Let me think step by step about base cases and the recursive call."
+        ),
+        Event(
+            id=3,
+            kind=EventKind.ANSWER,
+            text="Recursion is when a function calls itself with a smaller input."
+        )
+    ];
+    return s;
+}
+
+
+def build_provider_error() -> TuiState {
+    s = TuiState();
+    s.status = TuiStatus.IDLE;
+    s.events = [
+        Event(id=1, kind=EventKind.USER, text="hello"),
+        Event(
+            id=2,
+            kind=EventKind.ERROR,
+            text="Provider error: rate limit exceeded (retry after 30s)"
+        )
+    ];
+    return s;
+}
+
+
+def build_tools_only() -> TuiState {
+    s = TuiState();
+    s.status = TuiStatus.RUNNING;
+    s.events = [
+        Event(id=1, kind=EventKind.CALL, text="read_file", node="call"),
+        Event(
+            id=2,
+            kind=EventKind.TOOL_RESULT,
+            text="def main():\n    print('ok')\n",
+            node="res"
+        )
+    ];
+    return s;
+}
+
+
 with entry {
     # ── empty_idle: baseline idle screen ──
     _run_one("empty_idle.80x24", build_empty(), 80, 24);
@@ -189,6 +241,15 @@ with entry {
 
     # ── tiny: below _MIN_COLS/_MIN_ROWS → blank-rows early return ──
     _run_one("empty_idle.8x4", build_empty(), 8, 4);
+
+    # ── reasoning + answer transcript ──
+    _run_one("reasoning.80x24", build_reasoning(), 80, 24);
+
+    # ── provider error row ──
+    _run_one("provider_error.80x24", build_provider_error(), 80, 24);
+
+    # ── tool call + result only ──
+    _run_one("tools_only.80x24", build_tools_only(), 80, 24);
 
     _runtime_smoke();
 }

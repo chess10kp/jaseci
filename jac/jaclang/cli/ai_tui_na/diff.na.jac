@@ -8,8 +8,6 @@ import from .terminal {
     term_sync_end
 }
 
-import from .theme { TH_SGR_BG }
-
 glob _NO_CHANGE: int = -1;
 
 obj PaintBuf {
@@ -43,13 +41,13 @@ def _end_frame(fd: int, paint_buf: PaintBuf) {
 }
 
 def _full_paint(lines: list[str], fd: int, paint_buf: PaintBuf) {
-    _begin_frame(fd, TH_SGR_BG + ANSI_CLEAR_SCREEN, paint_buf);
+    _begin_frame(fd, ANSI_RESET + ANSI_CLEAR_SCREEN, paint_buf);
     _emit(fd, "\r\n".join(lines), paint_buf);
     _end_frame(fd, paint_buf);
 }
 
 def _diff_paint(lines: list[str], first: int, last: int, fd: int, paint_buf: PaintBuf) {
-    _begin_frame(fd, TH_SGR_BG, paint_buf);
+    _begin_frame(fd, ANSI_RESET, paint_buf);
     row_count = len(lines);
     for row in range(first, last + 1) {
         _emit(fd, ansi_move(0, row) + ANSI_CLEAR_LINE, paint_buf);

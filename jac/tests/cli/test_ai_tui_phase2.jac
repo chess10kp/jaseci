@@ -78,6 +78,43 @@ test "legacy normalizer maps stopping and rejects unknown kinds" {
 }
 
 
+test "legacy feed survives a status-kind ev and skips unknown kinds" {
+    # Regression: the bus emits a `kind="status"` event (from set_status) on every
+    # turn. It used to raise out of the feed loop, permanently killing the stream
+    # so the agent's answer never reached the TUI ("type input -> no output"). A
+    # status ev must normalize to a lifecycle mutation, and any unmapped kind must
+    # be skipped -- never abort the frame or the feed.
+    norm = importlib.import_module("jaclang.cli.ai_tui.legacy_event_normalizer");
+    bridge = importlib.import_module("jaclang.cli.ai_tui.bridge_schema");
+
+    muts = norm.legacy_frame_to_mutations(
+        {"ev": {"id": 5, "kind": "status", "status": "running"}}, epoch=0, seq_start=0
+    );
+    assert len(muts) == 1;
+    assert muts[0].kind == bridge.MUT_STATUS;
+    assert muts[0].lifecycle == "running";
+
+    # A user prompt followed by a status ev and an unknown ev, then the answer:
+    # every event before AND after the bad one must survive.
+    seq = norm.legacy_frame_to_mutations(
+        {"ev": {"id": 1, "kind": "user", "text": "hi"}}, epoch=0, seq_start=0
+    );
+    st = norm.legacy_frame_to_mutations(
+        {"ev": {"id": 2, "kind": "status", "status": "running"}}, epoch=0, seq_start=0
+    );
+    junk = norm.legacy_frame_to_mutations(
+        {"ev": {"id": 3, "kind": "mystery", "text": "?"}}, epoch=0, seq_start=0
+    );
+    ans = norm.legacy_frame_to_mutations(
+        {"ev": {"id": 4, "kind": "answer", "text": "hello world"}}, epoch=0, seq_start=0
+    );
+    assert len(seq) == 1 and seq[0].kind == bridge.MUT_MESSAGE_START;
+    assert len(st) == 1 and st[0].kind == bridge.MUT_STATUS;
+    assert len(junk) == 0;
+    assert len(ans) == 1 and ans[0].message_id == "4" and ans[0].text == "hello world";
+}
+
+
 test "projector orders events and emits agent_settled exactly once" {
     proj_mod = importlib.import_module("jaclang.cli.ai_tui.ui_event_projector");
     models = importlib.import_module("jaclang.cli.ai_tui.session_models");

@@ -1,4 +1,4 @@
-import from .terminal { Rgb, ansi_sgr, ansi_bg }
+import from .terminal { Rgb, ansi_sgr, ansi_fg }
 
 glob TH_NONE: int = 0,
      TH_BOLD: int = 1,
@@ -39,32 +39,32 @@ glob TH_MD_H1: Rgb = Rgb(r=255, g=215, b=100),
      TH_MD_BQ_BAR: Rgb = Rgb(r=80, g=120, b=160),
      TH_MD_HR: Rgb = Rgb(r=70, g=70, b=100);
 
-glob TH_SGR_BG: str = ansi_bg(TH_BG),
-     TH_SGR_BORDER: str = ansi_sgr(TH_BORDER, TH_BG, TH_NONE),
-     TH_SGR_BORDER_DIM: str = ansi_sgr(TH_BORDER, TH_BG, TH_DIM),
-     TH_SGR_TITLE: str = ansi_sgr(TH_TITLE, TH_BG, TH_BOLD),
-     TH_SGR_CWD: str = ansi_sgr(TH_CWD, TH_BG, TH_NONE),
-     TH_SGR_MODEL_DIM: str = ansi_sgr(TH_MODEL, TH_BG, TH_DIM),
-     TH_SGR_USER_PROMPT: str = ansi_sgr(TH_USER, TH_BG, TH_BOLD),
+# Foreground-only spans inherit the terminal background (pi's model).
+glob TH_SGR_BORDER: str = ansi_fg(TH_BORDER, TH_NONE),
+     TH_SGR_BORDER_DIM: str = ansi_fg(TH_BORDER, TH_DIM),
+     TH_SGR_TITLE: str = ansi_fg(TH_TITLE, TH_BOLD),
+     TH_SGR_CWD: str = ansi_fg(TH_CWD, TH_NONE),
+     TH_SGR_MODEL_DIM: str = ansi_fg(TH_MODEL, TH_DIM),
+     TH_SGR_USER_PROMPT: str = ansi_fg(TH_USER, TH_BOLD),
      TH_SGR_USER_MSG: str = ansi_sgr(TH_USER, TH_USER_BG, TH_BOLD),
-     TH_SGR_ANSWER: str = ansi_sgr(TH_ANSWER, TH_BG, TH_NONE),
-     TH_SGR_PHASE: str = ansi_sgr(TH_PHASE, TH_BG, TH_NONE),
-     TH_SGR_ERROR: str = ansi_sgr(TH_ERROR, TH_BG, TH_NONE),
-     TH_SGR_ERROR_BOLD: str = ansi_sgr(TH_ERROR, TH_BG, TH_BOLD),
-     TH_SGR_RESULT: str = ansi_sgr(TH_RESULT, TH_BG, TH_NONE),
-     TH_SGR_CALL_BOLD: str = ansi_sgr(TH_CALL, TH_BG, TH_BOLD),
-     TH_SGR_REASON_DIM: str = ansi_sgr(TH_REASON, TH_BG, TH_DIM),
-     TH_SGR_OK_BOLD: str = ansi_sgr(TH_STATUS_OK, TH_BG, TH_BOLD);
+     TH_SGR_ANSWER: str = ansi_fg(TH_ANSWER, TH_NONE),
+     TH_SGR_PHASE: str = ansi_fg(TH_PHASE, TH_NONE),
+     TH_SGR_ERROR: str = ansi_fg(TH_ERROR, TH_NONE),
+     TH_SGR_ERROR_BOLD: str = ansi_fg(TH_ERROR, TH_BOLD),
+     TH_SGR_RESULT: str = ansi_fg(TH_RESULT, TH_NONE),
+     TH_SGR_CALL_BOLD: str = ansi_fg(TH_CALL, TH_BOLD),
+     TH_SGR_REASON_DIM: str = ansi_fg(TH_REASON, TH_DIM),
+     TH_SGR_OK_BOLD: str = ansi_fg(TH_STATUS_OK, TH_BOLD);
 
 glob TH_SGR_AC_SEL: str = ansi_sgr(TH_USER, TH_AC_SEL_BG, TH_BOLD),
      TH_SGR_AC_SEL_DESC: str = ansi_sgr(TH_AC_SEL_DESC, TH_AC_SEL_BG, TH_NONE),
-     TH_SGR_AC_DESC_DIM: str = ansi_sgr(TH_AC_DESC, TH_BG, TH_DIM);
+     TH_SGR_AC_DESC_DIM: str = ansi_fg(TH_AC_DESC, TH_DIM);
 
-glob TH_SGR_MD_H1: str = ansi_sgr(TH_MD_H1, TH_BG, TH_BOLD),
-     TH_SGR_MD_H2: str = ansi_sgr(TH_MD_H2, TH_BG, TH_BOLD),
-     TH_SGR_MD_H3: str = ansi_sgr(TH_MD_H3, TH_BG, TH_BOLD),
+glob TH_SGR_MD_H1: str = ansi_fg(TH_MD_H1, TH_BOLD),
+     TH_SGR_MD_H2: str = ansi_fg(TH_MD_H2, TH_BOLD),
+     TH_SGR_MD_H3: str = ansi_fg(TH_MD_H3, TH_BOLD),
      TH_SGR_MD_CODE: str = ansi_sgr(TH_MD_CODE, TH_MD_CODE_BG, TH_NONE),
-     TH_SGR_MD_FENCE: str = ansi_sgr(TH_MD_FENCE, TH_BG, TH_DIM),
-     TH_SGR_MD_BQ: str = ansi_sgr(TH_MD_BQ, TH_BG, TH_ITALIC),
-     TH_SGR_MD_BQ_BAR: str = ansi_sgr(TH_MD_BQ_BAR, TH_BG, TH_NONE),
-     TH_SGR_MD_HR: str = ansi_sgr(TH_MD_HR, TH_BG, TH_DIM);
+     TH_SGR_MD_FENCE: str = ansi_fg(TH_MD_FENCE, TH_DIM),
+     TH_SGR_MD_BQ: str = ansi_fg(TH_MD_BQ, TH_ITALIC),
+     TH_SGR_MD_BQ_BAR: str = ansi_fg(TH_MD_BQ_BAR, TH_NONE),
+     TH_SGR_MD_HR: str = ansi_fg(TH_MD_HR, TH_DIM);

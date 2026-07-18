@@ -154,6 +154,26 @@ test "_build_embed_argv passes config as flags (no JAC_AI_* env)" {
 }
 
 
+test "_embed_byllm_seams always seeds user site-packages for embed host" {
+    import site;
+
+    shared_mod = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
+    seams_fn = getattr(shared_mod, "_embed_byllm_seams");
+    seams = seams_fn();
+    deps = str(seams.get("deps", "") or "");
+    user_site = "";
+    try {
+        user_site = str(site.getusersitepackages() or "");
+    } except Exception { }
+    assert deps , "expected byllm dep dirs for embed host sys.path seeding";
+    if user_site {
+        assert user_site in deps.split(os.pathsep) , (
+            f"expected user site-packages in deps; deps={deps!r} user_site={user_site!r}"
+        );
+    }
+}
+
+
 test "native TUI runtime keeps embed transport dispatch concrete" {
     # Regression for the broken `jac ai --tui --model ...` path: the UI env did
     # carry the model override into the embed host, but the native runtime typed
@@ -558,12 +578,17 @@ test "Phase 1 native seams: stopping status, no id=-1, pending submission" {
     ipc_src = (cli_dir / "ai_tui_na" / "ipc.na.jac").read_text();
     state_src = (cli_dir / "ai_tui_na" / "state.na.jac").read_text();
     input_src = (cli_dir / "ai_tui_na" / "input.na.jac").read_text();
+    # Post-rearchitecture the submit/pending logic lives in the reducer; the
+    # input adapter only maps effects onto the CmdQueue. (This assertion used to
+    # read input.na.jac and silently rotted when the code moved.)
+    reducer_src = (cli_dir / "ai_tui_na" / "reducer.na.jac").read_text();
 
     assert 'if s == "stopping"' in ipc_src , "parse_tui_status must map stopping";
     assert "STOPPING" in state_src , "TuiStatus must include STOPPING";
     assert "obj PendingSubmission" in state_src;
     assert "status_blocks_prompt" in state_src;
     assert "upsert_event(-1," not in input_src , "no optimistic id=-1 user row";
-    assert "pending_submission" in input_src;
+    assert "upsert_event(-1," not in reducer_src , "no optimistic id=-1 user row";
+    assert "pending_submission" in reducer_src;
     assert "_adopt_pending_user" not in state_src , "id=-1 adoption path must be removed";
 }

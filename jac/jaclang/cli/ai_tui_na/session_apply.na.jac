@@ -9,6 +9,9 @@ import from .bridge_schema {
     MUT_MESSAGE_START,
     MUT_MESSAGE_UPDATE,
     MUT_MESSAGE_END,
+    MUT_TOOL_START,
+    MUT_TOOL_UPDATE,
+    MUT_TOOL_END,
     MUT_STATUS,
     MUT_DIAGNOSTIC,
     MUT_AGENT_SETTLED,
@@ -77,6 +80,27 @@ def apply_mutation(state: TuiState, m: dict[str, any]) {
         return;
     }
     if kind == MUT_MESSAGE_END {
+        return;
+    }
+    if kind == MUT_TOOL_START {
+        # A real turn's tool call (`call` event) -- surface it as a CALL row.
+        # Without this branch tool calls were silently dropped from the TUI.
+        state.upsert_event(
+            _msg_id(m.get("message_id", "1")), EventKind.CALL, _text_of(m), "session"
+        );
+        return;
+    }
+    if kind == MUT_TOOL_UPDATE {
+        state.append_to_event(_msg_id(m.get("message_id", "1")), _text_of(m));
+        return;
+    }
+    if kind == MUT_TOOL_END {
+        state.upsert_event(
+            _msg_id(m.get("message_id", "1")),
+            EventKind.TOOL_RESULT,
+            _text_of(m),
+            "session"
+        );
         return;
     }
     if kind == MUT_DIAGNOSTIC {

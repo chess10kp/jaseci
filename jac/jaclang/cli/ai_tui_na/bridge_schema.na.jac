@@ -33,6 +33,9 @@ glob MUT_SNAPSHOT_REQUIRED: str = "snapshot_required",
      MUT_MESSAGE_START: str = "message_start",
      MUT_MESSAGE_UPDATE: str = "message_update",
      MUT_MESSAGE_END: str = "message_end",
+     MUT_TOOL_START: str = "tool_execution_start",
+     MUT_TOOL_UPDATE: str = "tool_execution_update",
+     MUT_TOOL_END: str = "tool_execution_end",
      MUT_STATUS: str = "runtime_state_changed",
      MUT_DIAGNOSTIC: str = "diagnostic";
 

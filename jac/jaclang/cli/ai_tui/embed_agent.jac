@@ -211,7 +211,7 @@ def start(request: str = "{}") -> str {
         n_ctx = int(body.get("n_ctx", 0) or 0);
     } except Exception { }
     _debug_log(
-        f"start: stub={prefer_stub!r} model={model_name!r} n_ctx={n_ctx} project={project!r}"
+        f"start: stub={prefer_stub!r} model={model_name!r} n_ctx={n_ctx} project={project!r} " + f"byllm_src={byllm_src!r} byllm_deps={byllm_deps!r}"
     );
     if prefer_stub {
         got = _start_adapter(stub=True, model_name=model_name or "stub");
@@ -272,6 +272,7 @@ def submit(command: str) -> str {
 
     if kind == CMD_KIND_PROMPT {
         text = str(body.get("text", ""));
+        _debug_log(f"submit prompt: {text!r}");
         return _receipt_obj(adapter.submit(make_prompt_command(text, command_id)));
     }
     if kind == CMD_KIND_ABORT {

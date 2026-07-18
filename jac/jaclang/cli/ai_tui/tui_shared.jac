@@ -276,6 +276,10 @@ def _build_embed_argv(req: any, seams: dict | None = None) -> list[str] {
         argv.append(_debug);
     }
     _tty = str(req?.tty or "");
+    if not _tty {
+        probe = _probe_tty();
+        _tty = str(probe.get("device", "") or "");
+    }
     if _tty {
         argv.append("--tty");
         argv.append(_tty);
@@ -444,6 +448,28 @@ def _embed_module_dir(name: str) -> str | None {
 }
 
 
+def _embed_site_package_dirs -> list[str] {
+    import site;
+
+    out: list[str] = [];
+    try {
+        user_site = str(site.getusersitepackages() or "").strip();
+        if user_site and user_site not in out {
+            out.append(user_site);
+        }
+    } except Exception { }
+    try {
+        for sp in site.getsitepackages() {
+            path = str(sp or "").strip();
+            if path and path not in out {
+                out.append(path);
+            }
+        }
+    } except Exception { }
+    return out;
+}
+
+
 def _embed_byllm_seams -> dict {
     import os;
 
@@ -466,6 +492,18 @@ def _embed_byllm_seams -> dict {
         d = _embed_module_dir(mod);
         if d and d not in dep_dirs {
             dep_dirs.append(d);
+        }
+    }
+
+    for d in _embed_site_package_dirs() {
+        if d not in dep_dirs {
+            dep_dirs.append(d);
+        }
+    }
+    if not src {
+        for d in dep_dirs {
+            out["src"] = d;
+            break;
         }
     }
     if dep_dirs {

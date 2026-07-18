@@ -1,4 +1,4 @@
-"""Integration smoke: stub embed host renders in a pty and quits cleanly.
+"""Integration smoke: stub embed host renders in a pty, round-trips twice, resizes, quits.
 
 Delegates to scripts/ai_tui_pty_smoke.py (Python pty logic). The native tty
 layer opens --tty or /dev/tty, so the harness passes --tty with the pty slave.
@@ -39,7 +39,7 @@ def _pty_smoke_script(repo_root: Path) -> Path {
 }
 
 
-test "stub embed host renders in pty and quits on ctrl-c" {
+test "stub embed host pty round-trip resize and quit" {
     if sys.platform == "win32" {
         pytest.skip("pty integration requires POSIX");
     }

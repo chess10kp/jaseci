@@ -5,14 +5,13 @@ import from .terminal {
     ANSI_RESET,
     ANSI_STRIKE,
     Rgb,
-    ansi_sgr,
+    ansi_fg,
     term_spaces,
     term_dashes
 }
 import from .width { visible_width, ansi_pad }
 import from .terminal_image { term_hyperlink }
 import from .theme {
-    TH_BG,
     TH_SGR_MD_H1,
     TH_SGR_MD_H2,
     TH_SGR_MD_H3,
@@ -109,7 +108,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "`" {
             close_at = _md_find_close(s, i + 1, "`");
             if close_at >= 0 {
-                parts.append(ANSI_FG_YELLOW + s[i + 1:close_at] + ANSI_RESET + base_sgr);
+                parts.append(ANSI_FG_YELLOW + s[i + 1:close_at] + base_sgr);
                 i = close_at + 1;
                 continue;
             }
@@ -118,7 +117,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "*" and i + 1 < n and s[i + 1] == "*" {
             close_at = _md_find_close(s, i + 2, "**");
             if close_at >= 0 {
-                parts.append(ANSI_BOLD + s[i + 2:close_at] + ANSI_RESET + base_sgr);
+                parts.append(ANSI_BOLD + s[i + 2:close_at] + base_sgr);
                 i = close_at + 2;
                 continue;
             }
@@ -127,7 +126,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "*" and (i + 1 >= n or s[i + 1] != "*") {
             close_at = _md_find_close(s, i + 1, "*");
             if close_at > i + 1 {
-                parts.append(ANSI_ITALIC + s[i + 1:close_at] + ANSI_RESET + base_sgr);
+                parts.append(ANSI_ITALIC + s[i + 1:close_at] + base_sgr);
                 i = close_at + 1;
                 continue;
             }
@@ -136,7 +135,7 @@ def _md_apply_inline(s: str, base_sgr: str) -> str {
         if c == "~" and i + 1 < n and s[i + 1] == "~" {
             close_at = _md_find_close(s, i + 2, "~~");
             if close_at >= 0 {
-                parts.append(ANSI_STRIKE + s[i + 2:close_at] + ANSI_RESET + base_sgr);
+                parts.append(ANSI_STRIKE + s[i + 2:close_at] + base_sgr);
                 i = close_at + 2;
                 continue;
             }
@@ -206,7 +205,7 @@ def _md_emit_wrapped(
 }
 
 def md_render(text: str, width: int, color: Rgb, attrs: int) -> list[str] {
-    base_sgr = ansi_sgr(color, TH_BG, attrs);
+    base_sgr = ansi_fg(color, attrs);
     result: list[str] = [];
     in_fence: bool = False;
 

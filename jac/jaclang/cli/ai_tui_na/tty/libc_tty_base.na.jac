@@ -262,7 +262,9 @@ def tty_stdin_ready -> bool {
 }
 
 def tty_key_ready -> bool {
-    return g_tty.key_ready;
+    # Embed hosts open --tty (or /dev/tty) on g_tty.fd while stdin may be the
+    # real pts device; poll can signal stdin before the dedicated tty fd.
+    return g_tty.key_ready or g_tty.stdin_ready;
 }
 
 def tty_write(fd: int, text: str) {
@@ -301,6 +303,9 @@ def tty_read_line -> str {
 
 def tty_read_key -> str {
     fd: int = g_tty.fd;
+    if g_tty.stdin_ready {
+        fd = 0;
+    }
     if fd < 0 {
         return "";
     }

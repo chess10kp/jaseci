@@ -132,7 +132,7 @@ def _build_export_trie(symbols: list[tuple[str, int]]) -> bytes {
         return bytes([0, 0]);
     }
 
-    symbols = sorted(symbols, key=lambda x : -len(x[0]));
+    symbols = sorted(symbols, key=lambda (x) { -len(x[0]); });
 
     term_nodes: list[bytes] = [];
     for (name, addr) in symbols {

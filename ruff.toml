@@ -45,6 +45,8 @@ suppress-none-returning = true
 "**/fixtures/**/*.py" = ["T201"]
 "scripts/**/*.py" = ["T201"]
 "docs/scripts/**/*.py" = ["T201"]
+# Diagnostic/scratch Python under plans/ (pty harness, probes) -- prints CLI output.
+"plans/**/*.py" = ["T201"]
 # Bootstrap/low-level files that run before console is available
 "jac/jaclang/compiler/__init__.py" = ["T201"]
 "jac/jaclang/pycore/tsparser.py" = ["T201"]
