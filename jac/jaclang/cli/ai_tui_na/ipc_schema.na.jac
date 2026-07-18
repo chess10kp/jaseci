@@ -1,21 +1,13 @@
-glob FIELD_TYPE: str = "TYPE",
-     FIELD_STATUS: str = "STATUS",
-     FIELD_ACTIVE: str = "ACTIVE",
-     FIELD_MODEL: str = "MODEL",
-     FIELD_NEEDS_KEY: str = "NEEDS_KEY",
-     FIELD_KEY_ENV: str = "KEY_ENV",
-     FIELD_EV: str = "EV",
-     FIELD_EVA: str = "EVA",
-     FIELD_LEN: str = "L",
-     FTYPE_FULL: str = "full",
-     FTYPE_DELTA: str = "delta",
-     FTYPE_HB: str = "hb",
-     CMD_SEND: str = "SEND",
+# Command + receipt vocabulary shared across the native command-dispatch path.
+# The legacy L:<n> / EV / EVA frame-field schema (FIELD_*, FTYPE_*, FRAME_SEP)
+# was removed with the text-frame bridge (PLAN.md Phase 4); only the live
+# command verbs and receipt strings remain, mirroring ai_tui/ipc_schema.jac.
+
+glob CMD_SEND: str = "SEND",
      CMD_STOP: str = "STOP",
      CMD_RESET: str = "RESET",
      CMD_QUIT: str = "QUIT",
      CMD_APPLY: str = "APPLY",
-     FRAME_SEP: str = "---",
      RECEIPT_ACCEPTED: str = "ACCEPTED",
      RECEIPT_REJECTED_BUSY: str = "REJECTED:busy",
      RECEIPT_REJECTED_EMPTY: str = "REJECTED:empty",

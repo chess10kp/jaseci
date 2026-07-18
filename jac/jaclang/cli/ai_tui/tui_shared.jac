@@ -1,22 +1,9 @@
 import from jaclang.cli.ai_tui.ipc_schema {
-    FIELD_TYPE,
-    FIELD_STATUS,
-    FIELD_ACTIVE,
-    FIELD_MODEL,
-    FIELD_NEEDS_KEY,
-    FIELD_KEY_ENV,
-    FIELD_EV,
-    FIELD_EVA,
-    FIELD_LEN,
-    FTYPE_FULL,
-    FTYPE_DELTA,
-    FTYPE_HB,
     CMD_SEND,
     CMD_STOP,
     CMD_RESET,
     CMD_QUIT,
     CMD_APPLY,
-    FRAME_SEP,
     RECEIPT_ACCEPTED,
     RECEIPT_REJECTED_BUSY,
     RECEIPT_REJECTED_EMPTY,
@@ -89,58 +76,6 @@ def _silence_logging_for_tui(debug_path: str = "") {
             _logu.add(debug_path, level="DEBUG");
         }
     } except Exception { }
-}
-
-
-def _esc_text(text: str) -> str {
-    return text.replace("\\", "\\\\").replace("\n", "\\n");
-}
-
-
-def _esc_field(text: str) -> str {
-    return _esc_text(text).replace(":", "\\c");
-}
-
-
-def _ev_line(ev: any) -> str {
-    ev_id = str(ev.get("id", 0));
-    ev_kind = str(ev.get("kind", ""));
-    ev_node = _esc_field(str(ev.get("node", "")));
-    ev_text = _esc_text(str(ev.get("text", "")));
-    return f"{FIELD_EV}:{ev_id}:{ev_kind}:{ev_node}:{ev_text}";
-}
-
-
-def _frame_blob(frame: any) -> str {
-    parts = [];
-    if frame.get("full") {
-        parts.append(f"{FIELD_TYPE}:{FTYPE_FULL}");
-    } else {
-        parts.append(f"{FIELD_TYPE}:{FTYPE_DELTA}");
-    }
-    parts.append(f"{FIELD_STATUS}:{frame.get('status', '')}");
-    parts.append(f"{FIELD_ACTIVE}:{_esc_text(str(frame.get('active', '')))}");
-    parts.append(f"{FIELD_MODEL}:{_esc_text(str(frame.get('model_name', '')))}");
-    parts.append(f"{FIELD_NEEDS_KEY}:{'1' if frame.get('needs_key') else '0'}");
-    parts.append(f"{FIELD_KEY_ENV}:{_esc_text(str(frame.get('key_env', '')))}");
-
-    if frame.get("full") {
-        for ev in (frame.get("events") or []) {
-            parts.append(_ev_line(ev));
-        }
-    } elif frame.get("ev") {
-        ev = frame["ev"];
-        delta = ev.get("_delta");
-        if delta is not None {
-            ev_id = str(ev.get("id", 0));
-            parts.append(f"{FIELD_EVA}:{ev_id}:{_esc_text(str(delta))}");
-        } else {
-            parts.append(_ev_line(ev));
-        }
-    }
-
-    body = "\n".join(parts);
-    return f"{FIELD_LEN}:{len(parts)}\n{body}\n{FRAME_SEP}";
 }
 
 

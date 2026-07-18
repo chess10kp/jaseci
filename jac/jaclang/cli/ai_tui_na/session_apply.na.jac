@@ -1,7 +1,6 @@
 """Apply typed session mutations / snapshots onto TuiState (Phase 4)."""
 
-import from .state { TuiState, EventKind }
-import from .ipc { parse_tui_status }
+import from .state { TuiState, TuiStatus, EventKind }
 import from .bridge_schema {
     as_str,
     as_int,
@@ -31,6 +30,23 @@ def _text_of(m: dict[str, any]) -> str {
         return t;
     }
     return as_str(m.get("diagnostic", ""));
+}
+
+
+def parse_tui_status(s: str) -> TuiStatus {
+    # Lifecycle string -> TuiStatus (sole native consumer of the bridge's
+    # lifecycle field; the text-frame parser that once owned this was removed
+    # with the L:<n>/key:value bridge in PLAN.md Phase 4).
+    if s == "idle" {
+        return TuiStatus.IDLE;
+    }
+    if s == "running" {
+        return TuiStatus.RUNNING;
+    }
+    if s == "stopping" {
+        return TuiStatus.STOPPING;
+    }
+    return TuiStatus.UNKNOWN;
 }
 
 

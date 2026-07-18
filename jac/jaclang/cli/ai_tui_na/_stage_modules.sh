@@ -17,7 +17,7 @@ _stage_dir() {
         # source that is not itself under tui/ or components/.
         if [ -e "$dest" ] && [ ! -L "$dest" ]; then
             case "$base" in
-                screen.na.jac|state.na.jac|runtime.na.jac|host_embed.na.jac|selftest_render.na.jac|input.na.jac|overlay.na.jac|commands.na.jac|theme.na.jac|terminal.na.jac|diff.na.jac|width.na.jac|editor.na.jac|feed.na.jac|keys.na.jac|select_list.na.jac|autocomplete.na.jac|transport.na.jac|ipc.na.jac|ipc_schema.na.jac|util.na.jac|markdown.na.jac|tool_block.na.jac|terminal_image.na.jac|blob_reader.na.jac|tui_loop.na.jac|tui_core.na.jac|reducer.na.jac|interactive_app.na.jac|embed_*.na.jac|bridge_schema.na.jac|session_apply.na.jac)
+                screen.na.jac|state.na.jac|runtime.na.jac|host_embed.na.jac|selftest_render.na.jac|input.na.jac|overlay.na.jac|commands.na.jac|theme.na.jac|terminal.na.jac|diff.na.jac|width.na.jac|editor.na.jac|feed.na.jac|keys.na.jac|select_list.na.jac|autocomplete.na.jac|transport.na.jac|ipc_schema.na.jac|util.na.jac|markdown.na.jac|tool_block.na.jac|terminal_image.na.jac|tui_loop.na.jac|tui_core.na.jac|reducer.na.jac|interactive_app.na.jac|embed_*.na.jac|bridge_schema.na.jac|session_apply.na.jac)
                     if [ "$(realpath "$f")" != "$(realpath "$dest")" ]; then
                         echo "==> staging conflict: $f -> $base already exists as a real file" >&2
                         exit 1

@@ -16,13 +16,6 @@ import from jaclang.cli.ai_tui.bridge_schema {
     encode_start_result,
     decode_command
 }
-import from jaclang.cli.ai_tui.ipc_schema {
-    RECEIPT_ACCEPTED,
-    RECEIPT_REJECTED_BUSY,
-    RECEIPT_REJECTED_EMPTY,
-    RECEIPT_REJECTED_ERROR,
-    RECEIPT_OK
-}
 import from jaclang.cli.ai_tui.session_models {
     CommandError,
     CommandReceipt,
@@ -77,29 +70,6 @@ def _receipt_obj(receipt: CommandReceipt) -> str {
         error_message=err.message,
         retryable=err.retryable
     );
-}
-
-
-def _receipt_wire(receipt: CommandReceipt) -> str {
-    if receipt.accepted {
-        if receipt.disposition == DISP_STARTED or receipt.disposition == "started" {
-            return RECEIPT_ACCEPTED;
-        }
-        return RECEIPT_OK;
-    }
-    code = "";
-    try {
-        code = str(receipt.error.code);
-    } except Exception {
-        code = "";
-    }
-    if code == "busy" {
-        return RECEIPT_REJECTED_BUSY;
-    }
-    if code == "empty" {
-        return RECEIPT_REJECTED_EMPTY;
-    }
-    return RECEIPT_REJECTED_ERROR;
 }
 
 
@@ -414,103 +384,6 @@ def dispose(spec: str = "{}") -> str {
     return encode_dispose_result(
         result.ok, result.timed_out, result.reason, result.joined_workers
     );
-}
-
-
-def setup {
-    start("{}");
-}
-
-
-def poll_legacy -> str {
-    adapter = _active();
-    batch = adapter.poll(64);
-    if not batch.mutations {
-        return "";
-    }
-    import from jaclang.cli.ai_tui.tui_shared { _frame_blob }
-    snap = adapter.snapshot();
-    events = [];
-    for m in batch.mutations {
-        if m.kind == "message_start" and m.op == "user" {
-            events.append(
-                {
-                    "id": int(m.message_id) if str(m.message_id).isdigit() else 1,
-                    "kind": "user",
-                    "node": "session",
-                    "text": m.text
-                }
-            );
-        } elif m.kind == "message_update" {
-            events.append(
-                {
-                    "id": int(m.message_id) if str(m.message_id).isdigit() else 1,
-                    "kind": "answer",
-                    "node": "session",
-                    "text": m.text
-                }
-            );
-        } elif m.kind == "diagnostic" or m.kind == "runtime_state_changed" {
-            if m.text or m.diagnostic {
-                events.append(
-                    {
-                        "id": 1,
-                        "kind": "system",
-                        "node": "session",
-                        "text": m.text or m.diagnostic
-                    }
-                );
-            }
-        }
-    }
-    frame = {
-        "status": snap.lifecycle or "idle",
-        "model_name": snap.model_name or adapter.model_name,
-        "events": events
-    };
-    return _frame_blob(frame);
-}
-
-
-def send(line: str) -> str {
-    adapter = _active();
-    raw = line.strip();
-    if not raw {
-        return RECEIPT_REJECTED_EMPTY;
-    }
-    verb = "";
-    payload = "";
-    colon = raw.find(":");
-    if colon > 0 {
-        verb = raw[:colon].upper();
-        payload = raw[colon + 1:];
-    } else {
-        parts = raw.split(None, 1);
-        verb = parts[0].upper();
-        payload = parts[1] if len(parts) > 1 else "";
-    }
-
-    if verb == "SEND" {
-        receipt = adapter.submit(make_prompt_command(payload));
-        return _receipt_wire(receipt);
-    }
-    if verb == "STOP" {
-        receipt = adapter.submit(make_abort_command());
-        return _receipt_wire(receipt);
-    }
-    if verb == "RESET" {
-        receipt = adapter.submit(make_reset_command());
-        return _receipt_wire(receipt);
-    }
-    if verb == "QUIT" {
-        adapter.submit(make_abort_command());
-        return RECEIPT_OK;
-    }
-    if adapter.stub {
-        return RECEIPT_REJECTED_ERROR;
-    }
-    import from threading { Event }
-    return _dispatch_cmd(line, Event(), None);
 }
 
 

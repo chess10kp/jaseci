@@ -227,62 +227,6 @@ test "native TUI runtime keeps embed transport dispatch concrete" {
 }
 
 
-test "every producer event kind is recognized by the native parser (no silent UNKNOWN drift)" {
-    # Tripwire for the event-kind duplication flagged in the #6355 review:
-    # the producer (ai_agent.impl.jac) emits kind strings via bus.emit/emit_stream,
-    # the serializer (_ev_line) passes them through verbatim, and the native
-    # parser (ipc.na.jac::parse_event_kind) maps a CLOSED set to EventKind --
-    # anything else silently becomes UNKNOWN. This scans both sources so a new
-    # producer kind fails CI here instead of rendering as a blank UNKNOWN row.
-    import re;
-
-    shared_mod = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
-    cli_dir = Path(shared_mod.__file__).resolve().parent.parent;
-    producer_src = (cli_dir / "impl" / "ai_agent.impl.jac").read_text();
-    parser_src = (cli_dir / "ai_tui_na" / "ipc.na.jac").read_text();
-
-    producer_kinds = set(re.findall(r'\.emit(?:_stream)?\("([a-z_]+)"', producer_src));
-
-    # Scope to parse_event_kind only -- parse_tui_status also matches `s == "..."`
-    # but is a different closed set (idle/running).
-    func_match = re.search(r'def parse_event_kind\b.*?\n\}', parser_src, re.S);
-    assert func_match is not None , "could not locate parse_event_kind -- regex stale?";
-    parser_kinds = set(re.findall(r's == "([a-z_]+)"', func_match.group(0)));
-
-    assert producer_kinds , "no producer kinds extracted -- regex stale?";
-    assert parser_kinds , "no parser kinds extracted -- regex stale?";
-    for k in (
-        "user",
-        "answer",
-        "reasoning",
-        "system",
-        "error",
-        "phase",
-        "call",
-        "tool_result"
-    ) {
-        assert k in producer_kinds , f"expected producer kind {k!r} missing -- regex stale?";
-        assert k in parser_kinds , f"expected parser kind {k!r} missing -- regex stale?";
-    }
-
-    # "status" is carried out-of-band by FIELD_STATUS, not as a transcript
-    # event, so it is intentionally absent from parse_event_kind.
-    out_of_band = {"status"};
-
-    unknown = producer_kinds.difference(parser_kinds).difference(out_of_band);
-    assert not unknown , (
-        f"producer emits kind(s) {sorted(unknown)} that parse_event_kind maps to "
-        f"UNKNOWN; teach ipc.na.jac::parse_event_kind or carry them out-of-band"
-    );
-
-    stale = out_of_band.difference(producer_kinds);
-    assert not stale , (
-        f"out-of-band kind(s) {sorted(stale)} are no longer emitted; drop them "
-        f"from the out_of_band set"
-    );
-}
-
-
 test "_resolve_jac_build_bin prefers JAC_BIN then repo zig-out binary" {
     import tempfile;
     shared_mod = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
@@ -414,25 +358,6 @@ test "na IPC schema mirrors the host wire constants" {
     for v in na_vals {
         assert v in host_vals , f"wire value {v!r} in ipc_schema.na.jac missing from ipc_schema.jac";
     }
-}
-
-
-test "embed_agent stub round-trips a frame through _frame_blob's wire shape" {
-    # embed_agent.builds frames via tui_shared._frame_blob; a stub frame must
-    # carry the schema's TYPE/EV tokens so the native parser accepts it.
-    import importlib;
-    shared = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
-    blob = shared._frame_blob(
-        {
-            "full": True,
-            "status": "idle",
-            "model_name": "stub",
-            "events": [{"id": 1, "kind": "system", "node": "stub", "text": "hi"}],
-
-        }
-    );
-    assert "TYPE:full" in blob , blob;
-    assert "EV:1:system:stub:hi" in blob , blob;
 }
 
 
@@ -575,7 +500,6 @@ test "SEND dispatch returns ACCEPTED or REJECTED receipt" {
 test "Phase 1 native seams: stopping status, no id=-1, pending submission" {
     shared_mod = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
     cli_dir = Path(shared_mod.__file__).resolve().parent.parent;
-    ipc_src = (cli_dir / "ai_tui_na" / "ipc.na.jac").read_text();
     state_src = (cli_dir / "ai_tui_na" / "state.na.jac").read_text();
     input_src = (cli_dir / "ai_tui_na" / "input.na.jac").read_text();
     # Post-rearchitecture the submit/pending logic lives in the reducer; the
@@ -583,7 +507,6 @@ test "Phase 1 native seams: stopping status, no id=-1, pending submission" {
     # read input.na.jac and silently rotted when the code moved.)
     reducer_src = (cli_dir / "ai_tui_na" / "reducer.na.jac").read_text();
 
-    assert 'if s == "stopping"' in ipc_src , "parse_tui_status must map stopping";
     assert "STOPPING" in state_src , "TuiStatus must include STOPPING";
     assert "obj PendingSubmission" in state_src;
     assert "status_blocks_prompt" in state_src;
