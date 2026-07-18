@@ -497,6 +497,62 @@ test "SEND dispatch returns ACCEPTED or REJECTED receipt" {
 }
 
 
+test "run_ai_agent routes JAC_AI_TUI_BACKEND to embed vs inprocess" {
+    import unittest.mock;
+    import os;
+    import from jaclang { JacRuntime as Jac }
+    import from jaclang.cli.agent_api { AgentRequest }
+
+    req = AgentRequest(tui=True);
+    seen: list[str] = [];
+    prior = os.environ.get("JAC_AI_TUI_BACKEND");
+
+    def fake_inprocess(r: any) -> int {
+        seen.append("inprocess");
+        return 42;
+    }
+
+    def fake_embed(r: any) -> int {
+        seen.append("embed");
+        return 7;
+    }
+
+    try {
+        os.environ["JAC_AI_TUI_BACKEND"] = "inprocess";
+        with unittest.mock.patch(
+            "jaclang.cli.ai_tui.run_tui_in_process.run_tui_in_process", fake_inprocess
+        ) {
+            with unittest.mock.patch(
+                "jaclang.cli.ai_tui.run_tui_embed.run_tui_embed", fake_embed
+            ) {
+                rc = Jac.run_ai_agent(req);
+                assert rc == 42;
+                assert seen == ["inprocess"];
+            }
+        }
+        seen.clear();
+        os.environ.pop("JAC_AI_TUI_BACKEND", None);
+        with unittest.mock.patch(
+            "jaclang.cli.ai_tui.run_tui_in_process.run_tui_in_process", fake_inprocess
+        ) {
+            with unittest.mock.patch(
+                "jaclang.cli.ai_tui.run_tui_embed.run_tui_embed", fake_embed
+            ) {
+                rc = Jac.run_ai_agent(req);
+                assert rc == 7;
+                assert seen == ["embed"];
+            }
+        }
+    } finally {
+        if prior is None {
+            os.environ.pop("JAC_AI_TUI_BACKEND", None);
+        } else {
+            os.environ["JAC_AI_TUI_BACKEND"] = prior;
+        }
+    }
+}
+
+
 test "Phase 1 native seams: stopping status, no id=-1, pending submission" {
     shared_mod = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
     cli_dir = Path(shared_mod.__file__).resolve().parent.parent;

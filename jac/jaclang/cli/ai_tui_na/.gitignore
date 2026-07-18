@@ -1,5 +1,7 @@
 .jac_ir/
 bin/
+bin/libtui.so*
+bin/libtui.dylib*
 libc_tty.na.jac
 tty_plat.na.jac
 libjacpyembed.so

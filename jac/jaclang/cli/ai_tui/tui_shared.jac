@@ -693,3 +693,206 @@ def _ensure_embed_host(cli_root: any, force: bool = False) -> EmbedHostResult {
         }
     }
 }
+
+
+def _dlopen_lib_path(cli_root: any) -> str {
+    import os;
+    import sys;
+
+    name: str = "libtui.so";
+    if sys.platform == "darwin" {
+        name = "libtui.dylib";
+    } elif sys.platform == "win32" {
+        name = "tui.dll";
+    }
+    return os.path.join(str(cli_root), "ai_tui_na", "bin", name);
+}
+
+
+def _dlopen_build_stamp_path(bindir: str) -> str {
+    import os;
+
+    return os.path.join(bindir, ".dlopen_build_stamp");
+}
+
+
+def _read_dlopen_build_stamp(bindir: str) -> float {
+    import os;
+
+    path = _dlopen_build_stamp_path(bindir);
+    try {
+        with open(path, encoding="utf-8") as f {
+            raw = f.read().strip();
+        }
+        return float(raw);
+    } except Exception {
+        return 0.0;
+    }
+}
+
+
+def _dlopen_inputs_newest_mtime(na_dir: str) -> float {
+    import os;
+    import glob;
+
+    newest: float = 0.0;
+    pattern = os.path.join(na_dir, "**", "*.na.jac");
+    for path in glob.glob(pattern, recursive=True) {
+        newest = _embed_mtime(path, newest);
+    }
+    for name in ["build_dlopen.sh", "_stage_modules.sh"] {
+        newest = _embed_mtime(os.path.join(na_dir, name), newest);
+    }
+    return newest;
+}
+
+
+def _dlopen_lib_fresh(
+    artifact: str, bindir: str, newest_src: float, force: bool
+) -> bool {
+    import os;
+
+    if force or not os.path.exists(artifact) {
+        return False;
+    }
+    stamp = _read_dlopen_build_stamp(bindir);
+    if stamp + 0.001 < newest_src {
+        return False;
+    }
+    try {
+        return os.path.getmtime(artifact) >= newest_src;
+    } except Exception {
+        return False;
+    }
+}
+
+
+def _ensure_tui_lib(cli_root: any, force: bool = False) -> EmbedHostResult {
+    import os;
+    import fcntl;
+    import subprocess;
+    import from jaclang.cli.console { console }
+
+    na_dir = os.path.join(str(cli_root), "ai_tui_na");
+    bindir = os.path.join(na_dir, "bin");
+    artifact = _dlopen_lib_path(cli_root);
+    source = os.path.join(na_dir, "host_dlopen.na.jac");
+    build_sh = os.path.join(na_dir, "build_dlopen.sh");
+    manual_hint = f"bash {build_sh}";
+
+    newest_src = _dlopen_inputs_newest_mtime(na_dir);
+
+    if _dlopen_lib_fresh(artifact, bindir, newest_src, force) {
+        return EmbedHostResult(ok=True, path=artifact);
+    }
+    if not os.path.isfile(source) or not os.path.isfile(build_sh) {
+        if os.path.exists(artifact) {
+            return EmbedHostResult(ok=True, path=artifact);
+        }
+        return EmbedHostResult(
+            ok=False,
+            path=artifact,
+            error=f"in-process TUI library not found at {artifact}",
+            hint=f"Build it with: {manual_hint}"
+        );
+    }
+
+    try {
+        os.makedirs(bindir, exist_ok=True);
+    } except Exception { }
+    lock_fd: int = -1;
+    try {
+        lock_fd = os.open(
+            os.path.join(bindir, ".dlopen_build.lock"), os.O_CREAT | os.O_RDWR, 0o644
+        );
+    } except Exception {
+        lock_fd = -1;
+    }
+
+    try {
+        if lock_fd >= 0 {
+            try {
+                fcntl.flock(lock_fd, fcntl.LOCK_EX);
+            } except Exception { }
+        }
+
+        if _dlopen_lib_fresh(artifact, bindir, newest_src, force) {
+            return EmbedHostResult(ok=True, path=artifact);
+        }
+
+        pre_existed = os.path.exists(artifact);
+        if force and pre_existed {
+            console.print(
+                "[tui] --rebuild-tui set; rebuilding in-process TUI library ...",
+                style="dim"
+            );
+        } elif pre_existed {
+            console.print(
+                "[tui] in-process TUI library is stale; recompiling ...", style="dim"
+            );
+        } else {
+            console.print(
+                "[tui] in-process TUI library missing; compiling (first run) ...",
+                style="dim"
+            );
+        }
+
+        build_env = dict(os.environ);
+        jac_bin = _resolve_jac_build_bin(cli_root);
+        if jac_bin {
+            build_env["JAC_BIN"] = jac_bin;
+        }
+        try {
+            res = subprocess.run(
+                ["bash", build_sh],
+                cwd=na_dir,
+                env=build_env,
+                capture_output=True,
+                text=True,
+                timeout=900,
+            );
+            if res.returncode != 0 {
+                detail = (res.stderr or res.stdout or "").strip();
+                if detail {
+                    console.error(detail);
+                }
+                return EmbedHostResult(
+                    ok=False,
+                    path=artifact,
+                    error="in-process TUI library compile failed",
+                    hint=f"Run manually: {manual_hint}"
+                );
+            }
+        } except Exception as e {
+            return EmbedHostResult(
+                ok=False,
+                path=artifact,
+                error=f"in-process TUI library compile failed: {e}",
+                hint=f"Run manually: {manual_hint}"
+            );
+        }
+        if not os.path.exists(artifact) {
+            return EmbedHostResult(
+                ok=False,
+                path=artifact,
+                error=f"in-process TUI library not found at {artifact} after compile",
+                hint=f"Run manually: {manual_hint}"
+            );
+        }
+        try {
+            with open(_dlopen_build_stamp_path(bindir), "w", encoding="utf-8") as f {
+                f.write(f"{newest_src}\n");
+            }
+        } except Exception { }
+        return EmbedHostResult(ok=True, path=artifact);
+    } finally {
+        if lock_fd >= 0 {
+            try {
+                fcntl.flock(lock_fd, fcntl.LOCK_UN);
+            } except Exception { }
+            try {
+                os.close(lock_fd);
+            } except Exception { }
+        }
+    }
+}

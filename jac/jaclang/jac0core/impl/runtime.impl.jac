@@ -567,6 +567,12 @@ impl JacBuiltin.printgraph(
 impl JacCmd.run_ai_agent(req: object) -> int {
     r: any = req;
     if bool(r?.tui) {
+        import os;
+        backend = os.environ.get("JAC_AI_TUI_BACKEND", "embed").strip().lower();
+        if backend == "inprocess" {
+            import from jaclang.cli.ai_tui.run_tui_in_process { run_tui_in_process }
+            return run_tui_in_process(req);
+        }
         import from jaclang.cli.ai_tui.run_tui_embed { run_tui_embed }
         return run_tui_embed(req);
     }

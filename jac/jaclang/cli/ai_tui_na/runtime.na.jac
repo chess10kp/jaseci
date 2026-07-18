@@ -1,11 +1,10 @@
-# Host runtime bundle. Embed/session live here; Screen/Diff stay for paint path.
+# Host runtime bundle. Screen/Diff stay for paint path; embed/session are bound by
+# host_embed.na.jac at startup (host_dlopen.na.jac leaves them None).
 
 import from .state { TuiState }
 import from .diff { DiffEngine, PaintBuf }
 import from .transport { EmbedPyTransport, CmdQueue }
 import from .screen { Screen }
-import from .embed_session_client { EmbedSessionClient }
-import from .embed_runtime { EmbedRuntime }
 import from .tui { Tui }
 
 obj TuiRuntime {
@@ -15,7 +14,7 @@ obj TuiRuntime {
         cmd_queue: CmdQueue = CmdQueue(),
         paint_buf: PaintBuf = PaintBuf(),
         screen: Screen = Screen(),
-        session: EmbedSessionClient = EmbedSessionClient(),
-        embed: EmbedRuntime = EmbedRuntime(),
-        tui: Tui = Tui();
+        tui: Tui = Tui(),
+        session: any = None,
+        embed: any = None;
 }
