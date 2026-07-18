@@ -1,5 +1,4 @@
 import from typing { Callable }
-import from jaclang.jac0core.archetype { Root }
 import from jaclang.byllm.lib { Model }
 import from jaclang.byllm.parallel { mark_serialize }
 
@@ -122,7 +121,6 @@ obj TurnRenderer {
     def _fmt_gen(ms: float, tokens: int) -> str;
     def _ci_event(info: any);
     def render_stream(event_stream: any) -> dict;
-    def route_stream_event(event: any) -> None;
     def _emit_call_usage(data: any, phase: str) -> None;
     def _is_tool_error_result(result: any) -> bool;
 }
@@ -173,7 +171,6 @@ obj AgentRuntime {
     has cfg: AgentConfig = AgentConfig(),
         ws: Workspace = Workspace(),
         ledger: Ledger | None = None,
-        active_run: AgentRun | None = None,
         turn_wrote: bool = False,
         bus: AgentEventBus = AgentEventBus(),
         files: FileTools = FileTools(),
@@ -193,19 +190,10 @@ glob agent: AgentRuntime = AgentRuntime();
 
 enum ToolCat { Read, Write, Run }
 
-node Tool {
-    has fn: any,
-        category: ToolCat,
-        serialize: bool = False;
-}
-
-edge Exposes {}
-
 obj ToolSpec {
     has fn: any,
         category: ToolCat,
-        serialize: bool = False,
-        phases: set[type] = set();
+        serialize: bool = False;
 }
 
 def _project_root_of(start: str) -> str;
@@ -224,11 +212,13 @@ def _san_msg(m: any) -> dict;
 
 glob AGENT_RULES = """\
 You are Jac AI, a coding agent working inside the user's terminal in their Jac
-project. You read, write, and debug Jac code, and verify it really works. You
-move through states and the state you are in tells
-you what to do now; these are the habits that hold across all of them.
+project. You read, write, debug, and verify Jac code across a single, ongoing
+conversation: each turn you take the user's request, do the work with your
+tools, and report back. Plan, build, and verify all in the one turn -- explore
+what you need, make the changes, then confirm they actually work before you
+answer.
 
-Universal habits:
+Habits:
 - Batch aggressively. Independent tool calls run in parallel, so issue them
   together in ONE step -- never one at a time.
 - Navigate by meaning, not text. find_symbol, find_uses, project_map,
@@ -238,9 +228,16 @@ Universal habits:
   before writing unfamiliar Jac -- they are the authoritative spec for correct,
   idiomatic Jac. read_guide("jac-core-cheatsheet") is the core-syntax primer;
   read it before writing Jac when you are unsure of the basics.
+- Build for real. To create a file call write_file with its full contents
+  (never shell redirection); use edit_file only on a file that already exists,
+  and read it first. Every write reports the compiler errors it introduced --
+  fix them before moving on.
+- Verify before you finish. Run `jac check .` and require zero errors. For a
+  runnable app, start_app to confirm it boots; for a web or full-stack app,
+  serve it and drive the browser (browse_open, browse_snapshot, then
+  click/fill/type the real controls) to confirm the requested feature works.
 - Leave a note. When you make a decision, rely on an assumption, or spot
-  something a later state should check, call `note` -- notes stay visible to
-  every later state and turn.
+  something to check later, call `note` -- notes stay visible across turns.
 
 You write only JAC -- Python-flavored with braces -- never JavaScript, TypeScript.
 A UI component is Jac (`def:pub Name(props) -> JsxElement { ... }`), not a
@@ -280,11 +277,6 @@ obj TurnStats {
 }
 
 
-obj Prompt {
-    static def for_phase(state_ty: type, objective: str, ledger: Ledger) -> str;
-}
-
-
 def run_phase(directive: str) -> str by agent_model(
     tools=agent.phase_tools,
     conversation=agent.phase_ctx,
@@ -299,160 +291,35 @@ def run_phase(directive: str) -> str by agent_model(
 );
 
 
-def request_needs_code_changes(objective: str, plan: str) -> bool by agent_model(
-    temperature=agent.cfg.temperature
-);
-
-sem request_needs_code_changes.objective = "The user's original request for this turn.";
-sem request_needs_code_changes.plan = "The plan and findings produced by the Plan phase so far.";
-
-
-edge Flow {}
-
-node PhaseState {
-    has ctx: list = [],
-        desc: str = "";
-
-    def tools -> list;
-    def directive -> str;
-    def step(visitor: AgentRun) -> dict;
-    def halt(visitor: AgentRun) -> bool;
-}
-
-node Plan(PhaseState) {
-    has desc: str = "Explore and decide the approach";
-
-    override def directive -> str;
-    can run with AgentRun entry;
-}
-
-node Build(PhaseState) {
-    has desc: str = "Write and edit the code";
-
-    override def directive -> str;
-    can run with AgentRun entry;
-}
-
-node QA(PhaseState) {
-    has desc: str = "Type-check, run, and verify";
-
-    override def directive -> str;
-    can run with AgentRun entry;
-}
-
-node Done {
-    has desc: str = "Objective built and verified";
-
-    can finish with AgentRun entry;
-}
-
 glob TOOL_SPECS: list[ToolSpec] = [
-         ToolSpec(
-             fn=agent.files.read_file, category=ToolCat.Read, phases={Plan, Build, QA}
-         ),
-         ToolSpec(
-             fn=agent.files.write_file,
-             category=ToolCat.Write,
-             serialize=True,
-             phases={Build}
-         ),
-         ToolSpec(
-             fn=agent.files.edit_file,
-             category=ToolCat.Write,
-             serialize=True,
-             phases={Build}
-         ),
-         ToolSpec(fn=agent.files.list_dir, category=ToolCat.Read, phases={Plan, Build}),
-         ToolSpec(fn=agent.files.grep, category=ToolCat.Read, phases={Plan, Build}),
-         ToolSpec(
-             fn=agent.semantic.find_symbol, category=ToolCat.Read, phases={Plan, Build}
-         ),
-         ToolSpec(
-             fn=agent.semantic.find_uses, category=ToolCat.Read, phases={Plan, Build}
-         ),
-         ToolSpec(fn=agent.semantic.project_map, category=ToolCat.Read, phases={Plan}),
-         ToolSpec(fn=agent.semantic.find_walkers, category=ToolCat.Read, phases={Plan}),
-         ToolSpec(
-             fn=agent.semantic.context_slice,
-             category=ToolCat.Read,
-             phases={Plan, Build}
-         ),
-         ToolSpec(fn=agent.proc.jac_check, category=ToolCat.Run, phases={Build, QA}),
-         ToolSpec(
-             fn=agent.proc.start_app, category=ToolCat.Run, serialize=True, phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.proc.serve, category=ToolCat.Run, serialize=True, phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.proc.stop_server,
-             category=ToolCat.Run,
-             serialize=True,
-             phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.proc.run_command,
-             category=ToolCat.Run,
-             serialize=True,
-             phases={Build, QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_open, category=ToolCat.Run, serialize=True, phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_navigate,
-             category=ToolCat.Run,
-             serialize=True,
-             phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_snapshot,
-             category=ToolCat.Read,
-             serialize=True,
-             phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_click,
-             category=ToolCat.Run,
-             serialize=True,
-             phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_type, category=ToolCat.Run, serialize=True, phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_fill, category=ToolCat.Run, serialize=True, phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_press,
-             category=ToolCat.Run,
-             serialize=True,
-             phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_get, category=ToolCat.Read, serialize=True, phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_eval, category=ToolCat.Run, serialize=True, phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.web.browse_close,
-             category=ToolCat.Run,
-             serialize=True,
-             phases={QA}
-         ),
-         ToolSpec(
-             fn=agent.guides.search_guides, category=ToolCat.Read, phases={Plan, Build}
-         ),
-         ToolSpec(
-             fn=agent.guides.read_guide, category=ToolCat.Read, phases={Plan, Build}
-         ),
-         ToolSpec(
-             fn=agent.note,
-             category=ToolCat.Read,
-             serialize=True,
-             phases={Plan, Build, QA}
-         )
+         ToolSpec(fn=agent.files.read_file, category=ToolCat.Read),
+         ToolSpec(fn=agent.files.write_file, category=ToolCat.Write, serialize=True),
+         ToolSpec(fn=agent.files.edit_file, category=ToolCat.Write, serialize=True),
+         ToolSpec(fn=agent.files.list_dir, category=ToolCat.Read),
+         ToolSpec(fn=agent.files.grep, category=ToolCat.Read),
+         ToolSpec(fn=agent.semantic.find_symbol, category=ToolCat.Read),
+         ToolSpec(fn=agent.semantic.find_uses, category=ToolCat.Read),
+         ToolSpec(fn=agent.semantic.project_map, category=ToolCat.Read),
+         ToolSpec(fn=agent.semantic.find_walkers, category=ToolCat.Read),
+         ToolSpec(fn=agent.semantic.context_slice, category=ToolCat.Read),
+         ToolSpec(fn=agent.proc.jac_check, category=ToolCat.Run),
+         ToolSpec(fn=agent.proc.start_app, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.proc.serve, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.proc.stop_server, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.proc.run_command, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_open, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_navigate, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_snapshot, category=ToolCat.Read, serialize=True),
+         ToolSpec(fn=agent.web.browse_click, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_type, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_fill, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_press, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_get, category=ToolCat.Read, serialize=True),
+         ToolSpec(fn=agent.web.browse_eval, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.web.browse_close, category=ToolCat.Run, serialize=True),
+         ToolSpec(fn=agent.guides.search_guides, category=ToolCat.Read),
+         ToolSpec(fn=agent.guides.read_guide, category=ToolCat.Read),
+         ToolSpec(fn=agent.note, category=ToolCat.Read, serialize=True)
      ];
 
 glob _WRITE_TOOLS: set[str] = {
@@ -474,23 +341,7 @@ with entry {
     }
 }
 
-def build_pipeline -> Plan;
-
-
-walker AgentRun {
-    has objective: str,
-        ledger: Ledger,
-        stats: TurnStats,
-        steps: int = 0,
-        max_steps: int = 16,
-        build_nudges: int = 0;
-
-    can begin with Root entry;
-}
-
-
 def run_turn(message: str);
-def verify_and_continue(max_rounds: int = 3);
 def run_agent(req: object) -> int;
 
 

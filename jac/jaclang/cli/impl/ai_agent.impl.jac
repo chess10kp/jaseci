@@ -980,7 +980,11 @@ impl system_prompt -> str {
 
 impl reset_session{
     agent.ledger = Ledger();
+    agent.phase_ctx = [];
 }
+
+sem run_phase = "Handle the user's request for this turn: explore, edit, and verify as needed, then answer.";
+sem run_phase.directive = "The user's message for this turn.";
 
 impl AgentEventBus.emit(kind: str, fields: dict) -> None {
     if not self.active_feed {
@@ -1790,13 +1794,6 @@ impl TurnStats.absorb(st: dict) {
     }
 }
 
-impl Prompt.for_phase(state_ty: type, objective: str, ledger: Ledger) -> str {
-    role = str(state_ty?._jac_semstr or "");
-    return (
-        system_prompt() + "\n\n## Current state\n\nYou are in " + role + "\n\n## Objective\n\n" + objective + "\n\n## Progress so far (shared across states)\n\n" + ledger.render()
-    );
-}
-
 impl AgentRuntime.postinit -> None {
     self.files.ws = self.ws;
     self.files.cfg = self.cfg;
@@ -1806,273 +1803,22 @@ impl AgentRuntime.postinit -> None {
     self.bus._lock = threading.Lock();
 }
 
-sem AgentRuntime.note = "Record a short note that stays visible to every later phase (Plan, Build, QA) and in later turns. Use it to flag a decision, an assumption, or something to verify.";
+sem AgentRuntime.note = "Record a short note that stays visible in later turns. Use it to flag a decision, an assumption, or something to verify.";
 sem AgentRuntime.note.text = "The note to remember.";
 
 impl AgentRuntime.note(text: str) -> str {
-    if agent.active_run is not None {
-        agent.active_run.ledger.remember(text);
-        agent.bus.publish_ledger();
-        return f"noted: {text}";
+    if agent.ledger is None {
+        agent.ledger = Ledger();
     }
-    return "(no active session to note onto)";
-}
-
-impl PhaseState.tools -> list {
-    return [t.fn for t in [self->:Exposes:->]];
-}
-
-sem Plan = "the PLANNING state: understand the request and the existing project before writing anything. Use project_map for an unfamiliar project, find_symbol / find_uses / context_slice to navigate by meaning, read_file to read what you will change, and the guides for unfamiliar Jac (read at least the one for the kind of code you will write -- e.g. jac-cl-components for a UI). Do not write or edit files here. Finish by stating a short, concrete plan: whether to scaffold (and which template -- web-static for a browser-only UI, web-app for server/data, default for a script), the files to create or change, and what each is for.";
-
-sem Build = "the BUILDING state: carry out the plan. For a new app, scaffold it ONCE with `jac create --kind <kind> <name>` via run_command, then `cd <name>` so every later tool works inside the project (the cd persists). Pick the SIMPLEST kind that fits: `web-static` for a browser-only UI with no server or saved data (a calculator, a unit converter, a static page); `web-app` only when you need server endpoints or persistent/multi-user data; `cli` for a non-web script. To create a NEW file, call write_file with its FULL contents -- never create files with shell redirection (`echo >`, `cat <<EOF`, `touch`) and never try to edit a file that does not exist yet. Use edit_file only to change a file that already exists, and read it first. Every write reports the compiler errors it introduced; fix them before moving on. Keep files focused; split large archetypes into impl files.";
-
-sem QA = "the QA state: verify the work end to end and fix what you find. Run `jac check .` (zero errors required). For a runnable app, start_app and confirm it boots cleanly. For a web or full-stack app, drive the built-in browser: call serve(entry) to start the dev server -- it waits until the server is actually ready and returns its URL (the first start is slow, as it installs client deps and builds the client). Then browse_open that URL, browse_snapshot to read the page, exercise the main flows with browse_click / browse_fill / browse_type / browse_press (snapshotting after each), check for errors with browse_eval, then browse_close and stop_server. If serve reports the server failed to start, read the log tail it returns and go back to Build to fix the cause -- do not conclude the app works until you have actually run and exercised it.";
-
-impl PhaseState.directive -> str {
-    return f"Carry out the {type(self).__name__} state now.";
-}
-
-impl PhaseState.step(visitor: AgentRun) -> dict {
-    agent.active_run = visitor;
-    label = type(self).__name__;
-    console.print(f"\n  ● {label}", style="bold blue");
-
-    agent.bus.enter(label);
-
-    sysmsg = {
-        "role": "system",
-        "content": Prompt.for_phase(type(self), visitor.objective, visitor.ledger)
-    };
-    if not self.ctx {
-        self.ctx.append(sysmsg);
-    } else {
-        self.ctx[0] = sysmsg;
-    }
-
-    agent.phase_tools = self.tools();
-    agent.phase_ctx = self.ctx;
-
-    agent.bus.open_convo(self.ctx);
-
-    agent.bus.set_convo_tools(agent.phase_tools);
-    result = agent.view.render_stream(run_phase(self.directive()));
-    agent.bus.close_convo(self.ctx);
-    visitor.stats.absorb(result);
-    visitor.ledger.record(label, str(result.get("answer", "") or "(no summary)"));
-
+    agent.ledger.remember(text);
     agent.bus.publish_ledger();
-    return result;
-}
-
-impl PhaseState.halt(visitor: AgentRun) -> bool {
-    if agent.bus.cancel_requested {
-        return True;
-    }
-
-    visitor.steps += 1;
-    if visitor.steps > visitor.max_steps {
-        console.print("\n  ● step cap reached -- stopping", style="yellow");
-        return True;
-    }
-    return False;
-}
-
-impl Plan.directive -> str {
-    return (
-        "Investigate the request and the existing project, then state a "
-        "short, concrete plan. Do not write or edit files in this state."
-    );
-}
-
-impl Build.directive -> str {
-    return (
-        "Build the requested feature NOW by writing real code: call "
-        "write_file to create each new file with its full contents, and "
-        "edit_file to change existing ones. Exploring or describing the "
-        "plan is NOT building -- keep working until every file the task "
-        "needs exists and the project compiles. After each write, read the "
-        "compiler feedback it returns and fix the errors before moving on. "
-        "Do not end this state with only reads."
-    );
-}
-
-impl QA.directive -> str {
-    return (
-        "Verify the finished work end to end NOW. Run jac_check and require "
-        "zero errors. For a web or full-stack app, serve it and drive the "
-        "browser (browse_open, browse_snapshot, then click/type the real "
-        "controls) to confirm the REQUESTED feature actually works on the "
-        "page -- not just that the scaffold loads. If anything is missing, "
-        "wrong, or broken, go back to Build to fix it; choose Done only "
-        "after you have actually run and exercised the result."
-    );
-}
-
-sem run_phase.directive = "A short instruction kicking off the current phase.";
-
-impl Plan.run with AgentRun entry {
-    if agent.bus.cancel_requested {
-        return;
-    }
-    self.step(visitor);
-    if self.halt(visitor) {
-        return;
-    }
-
-    needs_code = True;
-    try {
-        needs_code = request_needs_code_changes(
-            visitor.objective, visitor.ledger.render()
-        );
-    } except Exception as e {
-        console.print(
-            f"  ↳ classifier failed ({e}); defaulting to Build", style="yellow"
-        );
-    }
-    if needs_code {
-        visit [->:Flow:->][?:Build];
-    } else {
-        console.print(
-            "  ↳ read-only request -- answered in Plan, skipping Build/QA",
-            style="green"
-        );
-        visit [->:Flow:->][?:Done];
-    }
-}
-
-impl Build.run with AgentRun entry {
-    if agent.bus.cancel_requested {
-        return;
-    }
-    result = self.step(visitor);
-    if self.halt(visitor) {
-        return;
-    }
-    if int(result.get("n_write", 0) or 0) == 0 and visitor.build_nudges < 2 {
-        visitor.build_nudges += 1;
-        self.ctx.append(
-            {
-                "role": "user",
-                "content": (
-                    "You ended Build having called write_file ZERO times -- you only "
-                    "described code, pasted it into your reply, or left notes. That "
-                    "is not building. Call write_file NOW with the COMPLETE Jac "
-                    "contents of each file the task needs (for a UI, e.g. "
-                    "components/Calculator.cl.jac as a `def:pub Calculator() -> "
-                    "JsxElement` component, and edit main.jac to render it). Write "
-                    "real Jac files this turn -- do not explain, just write them."
-                )
-            }
-        );
-        console.print(
-            "  ↳ Build wrote no files -- re-entering Build to actually write code",
-            style="yellow"
-        );
-        visit self;
-    } else {
-        visit [->:Flow:->];
-    }
-}
-
-impl QA.run with AgentRun entry {
-    if agent.bus.cancel_requested {
-        return;
-    }
-    self.step(visitor);
-    if self.halt(visitor) {
-        return;
-    }
-    if agent.ws.project_errors() {
-        n = len(agent.ws.project_errors());
-        console.print(
-            f"  ↳ project has {n} compile error(s) -- returning to Build",
-            style="yellow"
-        );
-        visit [->:Flow:->][?:Build];
-    } else {
-        agent.bus.open_convo(
-            [
-                {
-                    "role": "system",
-                    "content": "Routing: pick the single next state along this node's out-edges (Build to fix, Plan to rethink, Done only once verified)."
-                },
-                {
-                    "role": "user",
-                    "content": f"Objective:\n{visitor.objective}\n\nProgress so far:\n{visitor.ledger.render()}\n\nStep: {visitor.steps} of at most {visitor.max_steps}"
-                }
-            ]
-        );
-        visit [->:Flow:->] by agent_model(
-            stream=True,
-            stream_handler=agent.view.route_stream_event,
-            incl_info={
-                "Objective": visitor.objective,
-                "Progress so far": visitor.ledger.render(),
-                "Step": f"{visitor.steps} of at most {visitor.max_steps}",
-                "How to choose": "Pick the single next state. Choose Done only once you have actually verified the result; go back to Build to fix problems QA found, or to Plan to rethink the approach."
-            }
-        );
-    }
-}
-
-impl TurnRenderer.route_stream_event(event: any) -> None {
-    if agent.bus.cancel_requested {
-        return;
-    }
-
-    if event.event_type == "llm_timing" {
-        self._emit_call_usage(event.data, "route");
-        return;
-    }
-    tok = str(event.data.get("content", "")) if event.data else "";
-    if not tok {
-        return;
-    }
-
-    if event.event_type == "thought" {
-        cleaned = self._strip_control(tok);
-        if cleaned {
-            agent.bus.emit_stream("reasoning", cleaned);
-        }
-    }
-}
-
-sem Done = "the DONE state: the session is complete. Reach it from QA once the objective is fully built AND verified (type-checked, and for an app, run and exercised), or directly from Plan when the request was a pure question or read-only inspection that needed no file changes and has been answered. Ends the session.";
-impl Done.finish{
-    console.print("\n  ● Done", style="bold green");
-    agent.bus.enter("Done");
-}
-
-impl build_pipeline -> Plan {
-    plan = Plan();
-    build = Build();
-    qa = QA();
-    done = Done();
-    plan +>:Flow:+> build;
-
-    plan +>:Flow:+> done;
-    build +>:Flow:+> qa;
-    qa +>:Flow:+> build;
-    qa +>:Flow:+> plan;
-    qa +>:Flow:+> done;
-
-    for ph in [plan, build, qa] {
-        for spec in TOOL_SPECS {
-            if type(ph) in spec.phases {
-                ph +>:Exposes:+> Tool(
-                    fn=spec.fn, category=spec.category, serialize=spec.serialize
-                );
-            }
-        }
-    }
-    return plan;
-}
-
-impl AgentRun.begin{
-    visit build_pipeline();
+    return f"noted: {text}";
 }
 
 impl run_turn(message: str) {
+    if agent.bus.cancel_requested {
+        return;
+    }
     agent.turn_wrote = False;
 
     ledger = agent.ledger;
@@ -2081,16 +1827,45 @@ impl run_turn(message: str) {
         agent.ledger = ledger;
     }
     started = time.time();
-    session = AgentRun(objective=message, ledger=ledger, stats=TurnStats()) spawn root;
+
+    agent.bus.enter("Agent");
+
+    sysmsg = {
+        "role": "system",
+        "content": (
+            system_prompt() + "\n\n## Notes (persist across turns)\n\n" + ledger.render()
+        )
+    };
+    if not agent.phase_ctx {
+        agent.phase_ctx.append(sysmsg);
+    } else {
+        agent.phase_ctx[0] = sysmsg;
+    }
+    agent.phase_tools = [t.fn for t in TOOL_SPECS];
+
+    agent.bus.open_convo(agent.phase_ctx);
+    agent.bus.set_convo_tools(agent.phase_tools);
+    result = agent.view.render_stream(run_phase(message));
+    agent.bus.close_convo(agent.phase_ctx);
+
+    stats = TurnStats();
+    stats.absorb(result);
+    ledger.record("Agent", str(result.get("answer", "") or "(no summary)"));
+    agent.bus.publish_ledger();
+
     if agent.cfg.show_stats {
-        st = session.stats;
         agent.view.print_stats(
-            time.time() - started, st.n_read, st.n_write, st.n_run, st.files, st.usage
+            time.time() - started,
+            stats.n_read,
+            stats.n_write,
+            stats.n_run,
+            stats.files,
+            stats.usage
         );
     }
 
     if agent.bus.active_feed {
-        st2 = session.stats;
+        st2 = stats;
         elapsed = time.time() - started;
         usage = st2.usage;
         prompt = int(usage.get("prompt_tokens", 0) or 0);
@@ -2133,45 +1908,6 @@ impl run_turn(message: str) {
     }
 }
 
-impl verify_and_continue(max_rounds: int = 3) {
-    if not agent.turn_wrote {
-        return;
-    }
-    rnd = 0;
-    prev_count = -1;
-    while rnd < max_rounds {
-        errs = agent.ws.project_errors();
-        if not errs {
-            break;
-        }
-
-        if prev_count >= 0 and len(errs) >= prev_count {
-            break;
-        }
-        prev_count = len(errs);
-        rnd += 1;
-        shown = errs[:12];
-        lines = [f"  {d.file}:{d.line}: {d.message}" for d in shown];
-        more = (
-            f"\n  ... and {len(errs) - len(shown)} more"
-                if len(errs) > len(shown)
-                else ""
-        );
-        console.print("");
-        console.print(
-            f"  build left {len(errs)} compile error(s); continuing to fix "
-            f"(round {rnd}/{max_rounds})",
-            style="yellow"
-        );
-        msg = (
-            f"The project does not compile yet -- {len(errs)} error(s):\n" + "\n".join(
-                lines
-            ) + more + "\n\nFix these. Read each failing file, correct it, and re-run " + "jac_check until the whole project compiles cleanly. Do not finish " + "while errors remain."
-        );
-        run_turn(msg);
-    }
-}
-
 impl run_agent(req: object) -> int {
     global agent_model;
 
@@ -2200,8 +1936,6 @@ impl run_agent(req: object) -> int {
     if initial_prompt {
         try {
             run_turn(initial_prompt);
-
-            verify_and_continue();
         } except Exception as e {
             console.error(f"Turn failed: {e}");
         } finally {
@@ -2452,10 +2186,6 @@ impl ui_configure(model_override: str = "", n_ctx: int = 0, project: str = "") -
 def _ui_turn_worker(prompt: str) {
     try {
         run_turn(prompt);
-
-        if not agent.bus.cancel_requested {
-            verify_and_continue();
-        }
     } except Exception as e {
         err_text = f"provider: {e}";
         if not _ui_is_duplicate_provider_error(err_text) {
@@ -2621,38 +2351,17 @@ impl ui_stream -> any {
 }
 
 impl ui_graph -> dict {
-    nodes = [];
-    edges = [];
-    seen = set();
-
-    frontier: list = [build_pipeline()];
-    while frontier {
-        nd = frontier.pop(0);
-        nid = type(nd).__name__;
-        if nid in seen {
-            continue;
+    tool_names = [str(getattr(t.fn, "__name__", "") or "") for t in TOOL_SPECS];
+    nodes = [
+        {
+            "id": "Agent",
+            "label": "Agent",
+            "desc": "Read, write, and verify Jac code in one conversation",
+            "sem": "",
+            "tools": tool_names
         }
-        seen.add(nid);
-
-        tool_names = (
-            [getattr(t, "__name__", "") for t in nd.tools()] if nd?.tools else []
-        );
-        nodes.append(
-            {
-                "id": nid,
-                "label": nid,
-                "desc": nd.desc,
-                "sem": str(type(nd)?._jac_semstr or ""),
-                "tools": tool_names
-            }
-        );
-
-        for succ in [nd->:Flow:->] {
-            edges.append({"source": nid, "target": type(succ).__name__});
-            frontier.append(succ);
-        }
-    }
-    return {"nodes": nodes, "edges": edges, "state": agent.bus.snapshot()};
+    ];
+    return {"nodes": nodes, "edges": [], "state": agent.bus.snapshot()};
 }
 
 impl ui_reset -> None {

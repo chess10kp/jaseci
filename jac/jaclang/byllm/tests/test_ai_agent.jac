@@ -2,8 +2,9 @@
 
 The agent groups its tools into capability objects on a single `AgentRuntime`
 composition root -- `agent.files`, `agent.proc`, `agent.semantic`, `agent.guides`,
-`agent.web` -- drives phases with an `AgentRun` walker, and renders the live
-view through `agent.view`. These tests exercise that surface:
+`agent.web` -- handles each user message as one back-and-forth turn (no phase
+state machine), and renders the live view through `agent.view`. These tests
+exercise that surface:
 
 - the file toolbox (writes/edits reach disk, with inline compiler feedback and
   the JavaScript-drift guard),
@@ -11,11 +12,11 @@ view through `agent.view`. These tests exercise that surface:
 - the guide and process toolboxes,
 - the `note` memory tool writing to the session ledger,
 - the renderer turning a byLLM event stream into the live view and turn tallies,
-- one full Plan -> Build -> QA -> Done walker run driven by a scripted MockLLM.
+- one full `run_turn` back-and-forth (tool call + answer) driven by a scripted
+  MockLLM.
 
 The toolbox methods are called directly (no model needed), which keeps every
-test but the last deterministic; the walker test scripts a single flat MockLLM
-`outputs` list consumed across phases.
+test but the last deterministic; the turn test scripts a MockLLM `outputs` list.
 """
 
 import io;
@@ -211,17 +212,15 @@ test "the process toolbox runs shell commands and jac_check" {
 }
 
 
-test "the note tool records onto the active session's ledger" {
+test "the note tool records onto the session's ledger" {
     proj = make_project();
     events: list = [];
     arm(proj, events);
-    ai.agent.active_run = ai.AgentRun(
-        objective="x", ledger=ai.Ledger(), stats=ai.TurnStats()
-    );
+    ai.agent.ledger = ai.Ledger();
 
     out = ai.agent.note("the build directory is app/");
     assert "noted:" in out , out;
-    assert "the build directory is app/" in ai.agent.active_run.ledger.notes;
+    assert "the build directory is app/" in ai.agent.ledger.notes;
 
     shutil.rmtree(proj, ignore_errors=True);
 }
@@ -455,29 +454,19 @@ test "ui mode routes tool invocations to tool events for the transcript" {
 }
 
 
-test "a scripted MockLLM drives the AgentRun walker through its phases" {
+test "a scripted MockLLM drives one back-and-forth turn with tool use" {
     proj = make_project();
     events: list = [];
     arm(proj, events);
     feat = str(Path(proj) / "greeting.jac");
 
-    # One flat outputs list, consumed across phases by the shared mock cursor:
-    #   Plan run_phase                -> a final answer (no tools);
-    #   request_needs_code_changes    -> "true": route Plan -> Build, not the
-    #                                    read-only Plan -> Done fast path;
-    #   Build run_phase               -> write a compiling file, then a final answer;
-    #   QA run_phase                  -> a final answer.
-    # `max_steps=2` halts the walk at the step cap once QA has run, so the test
-    # stays deterministic without exercising QA's LLM-driven routing (which is
-    # byLLM machinery, covered elsewhere). Plan picks its successor via the typed
-    # request_needs_code_changes classifier; the other phases advance along their
-    # single out-edge with no model routing call.
+    # One turn: the model calls write_file through the real tool, then returns a
+    # final answer. `run_turn` runs the single byLLM ReAct loop -- no phase
+    # walker -- so the flat outputs list is consumed within this one turn.
     ai.agent_model = Model(
         model_name="mockllm",
         config={
             "outputs": [
-                "Plan: add greeting.jac with a hello function.",
-                "true",
                 MockToolCall(
                     tool=ai.agent.files.write_file,
                     args={
@@ -485,29 +474,17 @@ test "a scripted MockLLM drives the AgentRun walker through its phases" {
                         "content": "def hello() -> str { return \"hi\"; }\n"
                     }
                 ),
-                "Built greeting.jac.",
-                "QA: jac check is clean."
+                "Built greeting.jac."
             ]
         }
     );
 
-    out = capturing(lambda { AgentRunSpawn(proj); });
+    out = capturing(lambda { ai.run_turn("add greeting.jac with a hello function"); });
 
-    # The Build phase wrote the file through the real file tool.
+    # The turn wrote the file through the real file tool and recorded the answer.
     assert Path(feat).exists() , out;
     assert "def hello" in Path(feat).read_text();
-    # The walker advanced Plan -> Build -> QA, then halted at the step cap.
-    assert "Build" in out , out;
-    assert "QA" in out , out;
-    assert "step cap" in out , out;
+    assert ai.agent.turn_wrote , out;
 
     shutil.rmtree(proj, ignore_errors=True);
-}
-
-
-"""Spawn an AgentRun bounded to two steps so the walk halts after QA."""
-def AgentRunSpawn(objective: str) {
-    ai.AgentRun(
-        objective=objective, ledger=ai.Ledger(), stats=ai.TurnStats(), max_steps=2
-    ) spawn root;
 }
