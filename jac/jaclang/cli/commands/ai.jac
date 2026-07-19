@@ -61,6 +61,14 @@ glob registry = get_registry();
             default=False,
             help="Force rebuild of the embed TUI binary before launch"
         ),
+        Arg.create(
+            "stub",
+            kind=ArgKind.FLAG,
+            typ=bool,
+            default=False,
+            help="Use a fake echo agent (no LLM); useful for testing the TUI",
+            short=""
+        ),
 
     ],
     examples=[
@@ -76,6 +84,7 @@ glob registry = get_registry();
         ),
         ("jac ai --ui", "Open a web UI with a live agent phase-graph visualizer"),
         ("jac ai --tui", "Open an in-terminal TUI session"),
+        ("jac ai --tui --stub", "TUI with a fake echo agent (no LLM/API keys)"),
 
     ],
     group="general"
@@ -88,5 +97,6 @@ def ai(
     quiet: bool = False,
     ui: bool = False,
     tui: bool = False,
-    rebuild_tui: bool = False
+    rebuild_tui: bool = False,
+    stub: bool = False
 ) -> int;

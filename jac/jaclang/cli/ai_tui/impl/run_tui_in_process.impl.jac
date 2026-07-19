@@ -6,10 +6,7 @@ impl run_tui_in_process(req: AgentRequest) -> int {
     import time;
     import from pathlib { Path }
     import from jaclang.cli.console { console }
-    import from jaclang.cli.ai_tui.python_session_bridge {
-        PythonSessionBridge,
-        argv_stub_flags
-    }
+    import from jaclang.cli.ai_tui.python_session_bridge { PythonSessionBridge }
     import from jaclang.cli.ai_tui.tui_host { TuiHost, _tui_lib_path }
     import from jaclang.cli.ai_tui.tui_shared {
         _debug_log,
@@ -41,7 +38,8 @@ impl run_tui_in_process(req: AgentRequest) -> int {
     project = os.path.normpath(str(r?.cwd or os.getcwd()));
     files_env = _list_project_files(project);
     seams = _embed_byllm_seams();
-    (prefer_stub, no_stub) = argv_stub_flags();
+    prefer_stub = bool(r?.stub);
+    no_stub = bool(r?.no_stub);
     debug_log = os.environ.get("JAC_AI_TUI_DEBUG_LOG", "").strip();
     _silence_logging_for_tui(debug_log);
 

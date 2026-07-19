@@ -171,6 +171,10 @@ def tty_open -> int {
     return fd;
 }
 
+def tty_fd -> int {
+    return g_tty.fd;
+}
+
 def tty_close {
     fd: int = g_tty.fd;
     if fd < 0 {

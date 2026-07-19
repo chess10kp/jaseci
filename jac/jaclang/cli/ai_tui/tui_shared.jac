@@ -219,6 +219,11 @@ def _build_embed_argv(req: any, seams: dict | None = None) -> list[str] {
         argv.append("--tty");
         argv.append(_tty);
     }
+    if bool(req?.stub) {
+        argv.append("--stub");
+    } elif bool(req?.no_stub) {
+        argv.append("--no-stub");
+    }
     return argv;
 }
 

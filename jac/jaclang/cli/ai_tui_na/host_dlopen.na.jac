@@ -33,10 +33,7 @@ import from .libc_tty {
     tty_stdin_ready,
     tty_key_ready,
     tty_read_key,
-    tty_write,
-    tty_init_stdio_remap,
-    tty_restore_stdio,
-    tty_ipc_fd
+    tty_write
 }
 import from .terminal {
     term_enter_alt_screen,
@@ -187,7 +184,7 @@ def:pub tui_quit_requested -> int {
 
 
 def:pub tui_render -> int {
-    if tty_fd() < 0 {
+    if host_rt.state.render_fd < 0 {
         return 0;
     }
     tui_sync_size(host_rt.state);
@@ -197,7 +194,7 @@ def:pub tui_render -> int {
 
 
 def:pub tui_shutdown -> int {
-    if tty_fd() >= 0 {
+    if host_rt.state.render_fd >= 0 {
         tui_leave_screen(host_rt.state);
     }
     tty_close();
