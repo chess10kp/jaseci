@@ -1,0 +1,45 @@
+{
+  "schema_id": "jac.ai_tui.bridge.v1",
+  "cmd_kinds": {
+    "CMD_KIND_PROMPT": "prompt",
+    "CMD_KIND_ABORT": "abort",
+    "CMD_KIND_RESET": "reset",
+    "CMD_KIND_APPLY_SETTINGS": "apply_settings",
+    "CMD_KIND_SELECT_MODEL": "select_model",
+    "CMD_KIND_LIST_MODELS": "list_models",
+    "CMD_KIND_SEARCH_FILES": "search_files",
+    "CMD_KIND_NEW_SESSION": "new_session",
+    "CMD_KIND_RESUME_SESSION": "resume_session",
+    "CMD_KIND_FORK_SESSION": "fork_session"
+  },
+  "dispositions": {
+    "DISP_STARTED": "started",
+    "DISP_QUEUED": "queued",
+    "DISP_NO_OP": "no_op",
+    "DISP_REJECTED": "rejected"
+  },
+  "lifecycles": {
+    "LIFE_STARTING": "starting",
+    "LIFE_IDLE": "idle",
+    "LIFE_RUNNING": "running",
+    "LIFE_STOPPING": "stopping",
+    "LIFE_QUIESCING": "quiescing",
+    "LIFE_DISPOSED": "disposed",
+    "LIFE_FAILED": "failed"
+  },
+  "mutations": {
+    "MUT_SNAPSHOT_REQUIRED": "snapshot_required",
+    "MUT_AGENT_START": "agent_start",
+    "MUT_AGENT_END": "agent_end",
+    "MUT_AGENT_SETTLED": "agent_settled",
+    "MUT_MESSAGE_START": "message_start",
+    "MUT_MESSAGE_UPDATE": "message_update",
+    "MUT_MESSAGE_END": "message_end",
+    "MUT_TOOL_START": "tool_execution_start",
+    "MUT_TOOL_UPDATE": "tool_execution_update",
+    "MUT_TOOL_END": "tool_execution_end",
+    "MUT_STATUS": "runtime_state_changed",
+    "MUT_DIAGNOSTIC": "diagnostic",
+    "MUT_RUNTIME_REPLACED": "runtime_replaced"
+  }
+}

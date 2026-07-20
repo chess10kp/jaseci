@@ -210,7 +210,12 @@ def _count_diags(diags: list) -> tuple[int, int];
 def _san_msg(m: any) -> dict;
 
 
-glob AGENT_RULES = """\
+glob CHAT_ONLY: bool = True,
+     CHAT_ONLY_RULES = """\
+You are Jac AI, a helpful assistant. Have a natural back-and-forth conversation
+with the user. Answer directly and concisely.
+""",
+     AGENT_RULES = """\
 You are Jac AI, an LLM-powered coding agent that lives in the user's terminal and
 works on their Jac project. You are equipped with tools for reading, writing,
 running, and verifying code. Each turn you take the user's request, do the real
@@ -358,6 +363,9 @@ def run_agent(req: object) -> int;
 
 
 def ui_configure(model_override: str = "", n_ctx: int = 0, project: str = "") -> None;
+def ui_prepare_turn(prompt: str) -> bool;
+def ui_run_turn(message: str) -> None;
+def ui_finish_turn_cleanup -> None;
 def ui_send(prompt: str) -> bool;
 def ui_poll -> dict;
 def ui_graph -> dict;

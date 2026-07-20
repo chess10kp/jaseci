@@ -257,6 +257,9 @@ impl NaIRGenPass._visit_nonprimary_ancestor_methods(
 
 impl NaIRGenPass._codegen_archetype(nd: uni.Archetype) -> None {
     arch_name = (nd).name.value if (nd).name else "unknown";
+    if arch_name in self._struct_bodies_done {
+        return;
+    }
     struct_type = self.struct_types.get(arch_name);
     if struct_type is None {
         return;
@@ -379,6 +382,7 @@ impl NaIRGenPass._codegen_archetype(nd: uni.Archetype) -> None {
         }
     }
 
+    self._struct_bodies_done.add(arch_name);
     struct_type.set_body(*field_types);
     self.struct_field_indices[arch_name] = field_index_map;
     self.struct_field_types[arch_name] = field_type_map;

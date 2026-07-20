@@ -3,7 +3,10 @@ import from jaclang.cli.ai_tui.session_models {
     UiMutation,
     mutation_dict
 }
-import from jaclang.cli.ai_tui.bridge_schema { MUT_SNAPSHOT_REQUIRED }
+import from jaclang.cli.ai_tui.bridge_schema {
+    MUT_RUNTIME_REPLACED,
+    MUT_SNAPSHOT_REQUIRED
+}
 
 glob DEFAULT_DRAIN_CAP: int = 64,
      DEFAULT_MAX_RECORDS: int = 1024,
@@ -17,7 +20,8 @@ obj TuiEventQueue {
         max_bytes: int = DEFAULT_MAX_BYTES,
         closed: bool = False,
         snapshot_required: bool = False,
-        epoch: int = 0;
+        epoch: int = 0,
+        next_seq: int = 1;
 
     def close {
         self.closed = True;
@@ -40,7 +44,15 @@ obj TuiEventQueue {
         if self.snapshot_required and item.kind != MUT_SNAPSHOT_REQUIRED {
             return;
         }
-        if item.epoch != 0 {
+        if item.kind == MUT_RUNTIME_REPLACED {
+            if item.epoch != 0 {
+                self.epoch = item.epoch;
+            }
+            self.next_seq = 1;
+        } elif item.epoch != 0 and item.epoch != self.epoch {
+            self.epoch = item.epoch;
+            self.next_seq = 1;
+        } elif item.epoch != 0 {
             self.epoch = item.epoch;
         }
         self._coalesce_or_append(item);
@@ -91,6 +103,8 @@ obj TuiEventQueue {
                 return;
             }
         }
+        item.seq = self.next_seq;
+        self.next_seq += 1;
         self._items.append(item);
         self._bytes += len(item.text) + len(item.diagnostic) + 64;
     }

@@ -453,6 +453,39 @@ def _embed_byllm_seams -> dict {
 }
 
 
+def _resolve_embed_seams(byllm_src: str = "", byllm_deps: str = "") -> tuple[str, str] {
+    src = str(byllm_src or "").strip();
+    deps = str(byllm_deps or "").strip();
+    if src and deps {
+        return (src, deps);
+    }
+    auto = _embed_byllm_seams();
+    if not src {
+        src = str(auto.get("src", "") or "").strip();
+    }
+    if not deps {
+        deps = str(auto.get("deps", "") or "").strip();
+    }
+    return (src, deps);
+}
+
+
+def _apply_embed_path_env(byllm_src: str = "", byllm_deps: str = "") {
+    import os;
+    import sys;
+
+    (src, deps) = _resolve_embed_seams(byllm_src, byllm_deps);
+    if src and src not in sys.path {
+        sys.path.insert(0, src);
+    }
+    for d in deps.split(os.pathsep) {
+        if d and d not in sys.path {
+            sys.path.append(d);
+        }
+    }
+}
+
+
 obj EmbedHostResult {
     has ok: bool = False,
         path: str = "",

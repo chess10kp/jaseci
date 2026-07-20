@@ -154,6 +154,11 @@ def build_expo_start_argv(metro_port: int, clear_cache: bool = True) -> list[str
     if clear_cache {
         argv.append("--clear");
     }
+
+    tunnel_flag = str(os.environ.get("JAC_RN_TUNNEL", "")).strip().lower();
+    if tunnel_flag in ["1", "true", "yes", "on"] {
+        argv.append("--tunnel");
+    }
     return argv;
 }
 

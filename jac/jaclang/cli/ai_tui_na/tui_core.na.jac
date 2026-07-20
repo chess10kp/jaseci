@@ -2,10 +2,8 @@ import os;
 
 import from .libc_tty { tty_update_size, tty_rows, tty_cols }
 import from .state { TuiState }
-import from .overlay { overlay_build_modal, overlay_composite, overlay_is_active }
 import from .runtime { TuiRuntime }
 import from .process_terminal { ProcessTerminal }
-import from .frame_renderer { FrameRenderer }
 
 def tui_sync_size(state: TuiState) {
     tty_update_size();
@@ -88,23 +86,6 @@ def tui_leave_screen(state: TuiState) {
 }
 
 def tui_render_once(rt: TuiRuntime) -> bool {
-    state = rt.state;
-    if not state.dirty {
-        return False;
-    }
-    fr = FrameRenderer();
-    fr.bind_diff(rt.diff);
-    fr.bind_paint_buf(rt.paint_buf);
-    if state.overlay_full_redraw {
-        fr.invalidate();
-        state.overlay_full_redraw = False;
-    }
-    lines = rt.screen.render(state, state.term_cols, state.term_rows);
-    if overlay_is_active(state) {
-        modal = overlay_build_modal(state, state.term_cols, state.term_rows);
-        lines = overlay_composite(lines, modal, state.term_cols, state.term_rows);
-    }
-    fr.paint(lines, state.term_cols, state.render_fd);
-    state.dirty = False;
-    return True;
+    rt.tui.bind_state(rt.state);
+    return rt.tui.paint_once();
 }

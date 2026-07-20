@@ -59,7 +59,7 @@ def _runtime_smoke() {
     state = rt.state;
     state.term_cols = 80;
     state.term_rows = 24;
-    lines = rt.screen.render(state, 80, 24);
+    lines = rt.tui.screen.render(state, 80, 24);
     ok: str = "OK" if len(lines) == 24 else "FAIL";
     tty_write(1, "===RT_SMOKE===\n" + ok + "\n===END===\n");
 }

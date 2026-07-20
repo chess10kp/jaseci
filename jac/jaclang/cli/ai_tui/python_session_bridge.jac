@@ -31,10 +31,12 @@ import from jaclang.cli.ai_tui.tui_session_adapter {
     make_reset_command
 }
 import from jaclang.cli.ai_tui.tui_shared {
+    _apply_embed_path_env,
+    _cmd_apply,
     _debug_log,
-    _dispatch_cmd,
-    _embed_byllm_seams,
-    _silence_logging_for_tui
+    _resolve_embed_seams,
+    _silence_logging_for_tui,
+    RECEIPT_OK
 }
 
 
@@ -49,7 +51,8 @@ obj PythonSessionBridge {
         byllm_src = str(body.get("byllm_src", "") or "");
         byllm_deps = str(body.get("byllm_deps", "") or "");
         debug_log = str(body.get("debug_log", "") or "");
-        _apply_path_env(byllm_src, byllm_deps);
+        (byllm_src, byllm_deps) = _resolve_embed_seams(byllm_src, byllm_deps);
+        _apply_embed_path_env(byllm_src, byllm_deps);
         _silence_logging_for_tui(debug_log);
         self._poll_count = 0;
 
@@ -213,7 +216,6 @@ obj PythonSessionBridge {
                 "joined_workers": 0
             };
         }
-        result = self.adapter.dispose(reason=reason, deadline_ms=deadline_ms);
         if not self.adapter.stub {
             try {
                 import from jaclang.cli.ai_agent { ui_stop }
@@ -222,6 +224,7 @@ obj PythonSessionBridge {
                 _debug_log(f"PythonSessionBridge.dispose: ui_stop failed: {e}");
             }
         }
+        result = self.adapter.dispose(reason=reason, deadline_ms=deadline_ms);
         self.started = False;
         return {
             "ok": result.ok,
@@ -376,28 +379,22 @@ obj PythonSessionBridge {
             );
         }
         import from threading { Event }
-        line = "APPLY:" + raw_args if raw_args else "APPLY";
         try {
-            _dispatch_cmd(line, Event(), None);
-            return CommandReceipt(accepted=True, disposition="ok");
+            rc = _cmd_apply(raw_args, Event(), None);
+            if rc == RECEIPT_OK {
+                return CommandReceipt(accepted=True, disposition="ok");
+            }
+            return CommandReceipt(
+                accepted=False,
+                disposition=DISP_REJECTED,
+                error=CommandError(code="apply_failed", message=str(rc))
+            );
         } except Exception as e {
             return CommandReceipt(
                 accepted=False,
                 disposition=DISP_REJECTED,
                 error=CommandError(code="apply_failed", message=str(e))
             );
-        }
-    }
-}
-
-
-def _apply_path_env(byllm_src: str = "", byllm_deps: str = "") {
-    if byllm_src and byllm_src not in sys.path {
-        sys.path.insert(0, byllm_src);
-    }
-    for d in byllm_deps.split(os.pathsep) {
-        if d and d not in sys.path {
-            sys.path.append(d);
         }
     }
 }

@@ -115,6 +115,41 @@ test "legacy feed survives a status-kind ev and skips unknown kinds" {
 }
 
 
+test "legacy full frame does not emit snapshot_required poison pill" {
+    norm = importlib.import_module("jaclang.cli.ai_tui.legacy_event_normalizer");
+    bridge = importlib.import_module("jaclang.cli.ai_tui.bridge_schema");
+
+    muts = norm.legacy_frame_to_mutations(
+        {
+            "full": True,
+            "events": [
+                {"id": "1", "kind": "user", "text": "hi"},
+                {"id": "2", "kind": "answer", "text": "hello"}
+            ]
+        },
+        epoch=0,
+        seq_start=0
+    );
+    kinds = [m.kind for m in muts];
+    assert bridge.MUT_SNAPSHOT_REQUIRED not in kinds;
+    assert bridge.MUT_MESSAGE_START in kinds;
+}
+
+
+test "projector ignores snapshot_required without raising" {
+    proj_mod = importlib.import_module("jaclang.cli.ai_tui.ui_event_projector");
+    models = importlib.import_module("jaclang.cli.ai_tui.session_models");
+    bridge = importlib.import_module("jaclang.cli.ai_tui.bridge_schema");
+    p = proj_mod.UiEventProjector();
+    out = p.apply(
+        models.UiMutation(
+            kind=bridge.MUT_SNAPSHOT_REQUIRED, seq=0, diagnostic="legacy_full_frame"
+        )
+    );
+    assert out == [];
+}
+
+
 test "projector orders events and emits agent_settled exactly once" {
     proj_mod = importlib.import_module("jaclang.cli.ai_tui.ui_event_projector");
     models = importlib.import_module("jaclang.cli.ai_tui.session_models");
@@ -171,7 +206,7 @@ test "projector rejects sequence gaps" {
 }
 
 
-test "event queue coalesces appends and overflows to snapshot_required" {
+test "event queue coalesces appends and assigns contiguous wire seq" {
     qmod = importlib.import_module("jaclang.cli.ai_tui.event_queue");
     models = importlib.import_module("jaclang.cli.ai_tui.session_models");
     bridge = importlib.import_module("jaclang.cli.ai_tui.bridge_schema");
@@ -179,7 +214,7 @@ test "event queue coalesces appends and overflows to snapshot_required" {
     q.submit(
         models.UiMutation(
             kind=bridge.MUT_MESSAGE_UPDATE,
-            seq=1,
+            seq=0,
             epoch=1,
             message_id="a",
             part_id="a:t",
@@ -190,7 +225,7 @@ test "event queue coalesces appends and overflows to snapshot_required" {
     q.submit(
         models.UiMutation(
             kind=bridge.MUT_MESSAGE_UPDATE,
-            seq=2,
+            seq=0,
             epoch=1,
             message_id="a",
             part_id="a:t",
@@ -198,18 +233,31 @@ test "event queue coalesces appends and overflows to snapshot_required" {
             text="b"
         )
     );
-    # Coalesced into one record.
+    # Coalesced into one record with wire seq 1.
     assert len(q._items) == 1;
     assert q._items[0].text == "ab";
+    assert q._items[0].seq == 1;
+
+    batch = q.drain(64);
+    assert batch.first_seq == 1;
+    assert batch.last_seq == 1;
+    assert len(batch.mutations) == 1;
+
+    q.submit(
+        models.UiMutation(kind=bridge.MUT_DIAGNOSTIC, seq=0, epoch=1, text="next")
+    );
+    batch2 = q.drain(64);
+    assert batch2.first_seq == 2;
+    assert batch2.last_seq == 2;
 
     q2 = qmod.TuiEventQueue(max_records=2, max_bytes=10_000_000);
-    q2.submit(models.UiMutation(kind=bridge.MUT_DIAGNOSTIC, seq=1, epoch=1, text="1"));
-    q2.submit(models.UiMutation(kind=bridge.MUT_DIAGNOSTIC, seq=2, epoch=1, text="2"));
-    q2.submit(models.UiMutation(kind=bridge.MUT_DIAGNOSTIC, seq=3, epoch=1, text="3"));
+    q2.submit(models.UiMutation(kind=bridge.MUT_DIAGNOSTIC, seq=0, epoch=1, text="1"));
+    q2.submit(models.UiMutation(kind=bridge.MUT_DIAGNOSTIC, seq=0, epoch=1, text="2"));
+    q2.submit(models.UiMutation(kind=bridge.MUT_DIAGNOSTIC, seq=0, epoch=1, text="3"));
     assert q2.snapshot_required == True;
     assert q2._items[0].kind == bridge.MUT_SNAPSHOT_REQUIRED;
 
-    batch = q2.drain(64);
-    assert len(batch.mutations) == 1;
-    assert batch.mutations[0].kind == bridge.MUT_SNAPSHOT_REQUIRED;
+    batch3 = q2.drain(64);
+    assert len(batch3.mutations) == 1;
+    assert batch3.mutations[0].kind == bridge.MUT_SNAPSHOT_REQUIRED;
 }

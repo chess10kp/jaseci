@@ -1,7 +1,6 @@
 import from .state { TuiState }
 import from .select_list { SelectItem }
 import from .ipc_schema { CMD_STOP, CMD_RESET, CMD_QUIT, CMD_APPLY }
-import from .runtime { TuiRuntime }
 import from .input_types {
     Effect,
     EffectKind,
@@ -34,22 +33,6 @@ obj CmdDef {
         palette: bool = False,
         running_only: bool = False,
         palette_label: str = "";
-
-    def execute(rt: TuiRuntime) -> CmdResult {
-        (result, effects) = self.execute_effects(rt.state);
-        for e in effects {
-            if e.kind == EffectKind.QUIT {
-                rt.cmd_queue.send(rt.state.ipc_fd, CMD_QUIT);
-            } elif e.kind == EffectKind.STOP {
-                rt.cmd_queue.send(rt.state.ipc_fd, CMD_STOP);
-            } elif e.kind == EffectKind.RESET {
-                rt.cmd_queue.send(rt.state.ipc_fd, CMD_RESET);
-            } elif e.kind == EffectKind.APPLY_SETTINGS {
-                rt.cmd_queue.send(rt.state.ipc_fd, CMD_APPLY + ":" + e.payload);
-            }
-        }
-        return result;
-    }
 
     def execute_effects(state: TuiState) -> tuple[CmdResult, list[Effect]] {
         effects: list[Effect] = [];
@@ -283,14 +266,6 @@ def _resolve_slash_line(text: str) -> str {
     return "";
 }
 
-def command_dispatch(cmd: str, rt: TuiRuntime) -> CmdResult {
-    d = _find_def(cmd);
-    if d is None {
-        return CmdResult.NONE;
-    }
-    return d.execute(rt);
-}
-
 def command_dispatch_effects(cmd: str, state: TuiState) -> tuple[CmdResult, list[Effect]] {
     d = _find_def(cmd);
     if d is None {
@@ -298,22 +273,6 @@ def command_dispatch_effects(cmd: str, state: TuiState) -> tuple[CmdResult, list
         return (CmdResult.NONE, empty);
     }
     return d.execute_effects(state);
-}
-
-def slash_submit(text: str, rt: TuiRuntime) -> CmdResult {
-    (result, effects) = slash_submit_effects(text, rt.state);
-    for e in effects {
-        if e.kind == EffectKind.QUIT {
-            rt.cmd_queue.send(rt.state.ipc_fd, CMD_QUIT);
-        } elif e.kind == EffectKind.STOP {
-            rt.cmd_queue.send(rt.state.ipc_fd, CMD_STOP);
-        } elif e.kind == EffectKind.RESET {
-            rt.cmd_queue.send(rt.state.ipc_fd, CMD_RESET);
-        } elif e.kind == EffectKind.APPLY_SETTINGS {
-            rt.cmd_queue.send(rt.state.ipc_fd, CMD_APPLY + ":" + e.payload);
-        }
-    }
-    return result;
 }
 
 def slash_submit_effects(text: str, state: TuiState) -> tuple[CmdResult, list[Effect]] {
@@ -327,11 +286,6 @@ def slash_submit_effects(text: str, state: TuiState) -> tuple[CmdResult, list[Ef
         return (CmdResult.NONE, empty);
     }
     return command_dispatch_effects(value, state);
-}
-
-def apply_model(model: str, rt: TuiRuntime) {
-    apply_model_effects(model, rt.state);
-    rt.cmd_queue.send(rt.state.ipc_fd, CMD_APPLY + ":model=" + model);
 }
 
 def apply_model_effects(model: str, state: TuiState) -> list[Effect] {

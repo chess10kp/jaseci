@@ -31,6 +31,8 @@ obj TuiHost {
         self.lib.tui_handle_key.argtypes = [];
         self.lib.tui_next_command.restype = ctypes.c_char_p;
         self.lib.tui_next_command.argtypes = [];
+        self.lib.tui_apply_send_receipt.restype = ctypes.c_int64;
+        self.lib.tui_apply_send_receipt.argtypes = [ctypes.c_int64, ctypes.c_char_p];
         self.lib.tui_quit_requested.restype = ctypes.c_int64;
         self.lib.tui_quit_requested.argtypes = [];
         self.lib.tui_render.restype = ctypes.c_int64;
@@ -73,6 +75,14 @@ obj TuiHost {
         }
         decoded: str = str(raw.decode("utf-8", "replace"));
         return decoded;
+    }
+
+    def apply_send_receipt(accepted: bool, error_detail: str = "") -> int {
+        return int(
+            self.lib.tui_apply_send_receipt(
+                1 if accepted else 0, error_detail.encode("utf-8")
+            )
+        );
     }
 
     def quit_requested -> int {

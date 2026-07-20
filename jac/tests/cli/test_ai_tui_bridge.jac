@@ -174,6 +174,29 @@ test "_embed_byllm_seams always seeds user site-packages for embed host" {
 }
 
 
+test "_resolve_embed_seams fills missing byllm deps for direct embed launches" {
+    import site;
+
+    shared_mod = importlib.import_module("jaclang.cli.ai_tui.tui_shared");
+    resolve_fn = getattr(shared_mod, "_resolve_embed_seams");
+    (src, deps) = resolve_fn("", "");
+    assert src , "expected auto byllm src for bare embed host launch";
+    assert deps , "expected auto byllm deps for bare embed host launch";
+    user_site = "";
+    try {
+        user_site = str(site.getusersitepackages() or "");
+    } except Exception { }
+    if user_site {
+        assert user_site in deps.split(os.pathsep) , (
+            f"expected user site-packages in resolved deps; deps={deps!r}"
+        );
+    }
+    (src2, deps2) = resolve_fn("/custom/src", "/custom/deps");
+    assert src2 == "/custom/src";
+    assert deps2 == "/custom/deps";
+}
+
+
 test "native TUI runtime keeps embed transport dispatch concrete" {
     # Regression for the broken `jac ai --tui --model ...` path: the UI env did
     # carry the model override into the embed host, but the native runtime typed
@@ -185,12 +208,15 @@ test "native TUI runtime keeps embed transport dispatch concrete" {
     cli_dir = Path(shared_mod.__file__).resolve().parent.parent;
     runtime_src = (cli_dir / "ai_tui_na" / "runtime.na.jac").read_text();
     transport_src = (cli_dir / "ai_tui_na" / "transport.na.jac").read_text();
-    loop_src = (cli_dir / "ai_tui_na" / "tui_loop.na.jac").read_text();
+    app_src = (cli_dir / "ai_tui_na" / "interactive_app.na.jac").read_text();
     host_src = (cli_dir / "ai_tui_na" / "host_embed.na.jac").read_text();
 
     assert "transport: EmbedPyTransport = EmbedPyTransport()" in runtime_src , (
         "TuiRuntime.transport must stay concretely typed as EmbedPyTransport or "
         "native dispatch falls back to Transport's no-op recv/send methods"
+    );
+    assert "tui: Tui = Tui()" in runtime_src , (
+        "TuiRuntime must own a Tui for InteractiveApp production cutover"
     );
     assert "obj EmbedPyTransport(TtyFdTransport)" in transport_src , (
         "Embed transport implementation missing from transport.na.jac"
@@ -201,11 +227,17 @@ test "native TUI runtime keeps embed transport dispatch concrete" {
     assert "def poll_gil(timeout_ms: int)" in transport_src , (
         "TtyFdTransport must expose poll_gil for tests and injected-key harnesses"
     );
-    assert "tty_poll(50);" in loop_src , (
-        "TUI loop must poll the tty without virtual dispatch so the Python feed can run"
+    assert "tty_poll(timeout_ms);" in app_src , (
+        "InteractiveApp must poll the tty without virtual dispatch so the Python feed can run"
     );
-    assert "tui_drain_session" in loop_src , (
-        "Phase 4 loop drains typed session batches via EmbedSessionClient"
+    assert "_drain_session" in app_src , (
+        "InteractiveApp drains typed session batches via EmbedSessionClient"
+    );
+    assert "InteractiveApp" in host_src , (
+        "host_embed production path must run through InteractiveApp"
+    );
+    assert "app.shutdown();" in host_src , (
+        "host_embed teardown must restore the terminal via InteractiveApp.shutdown"
     );
     assert "rt.transport.close_py();" not in host_src , (
         "host teardown must not dispatch through rt.transport after the loop"
@@ -217,12 +249,11 @@ test "native TUI runtime keeps embed transport dispatch concrete" {
     finally_i = host_src.rfind("} finally {");
     assert finally_i > 0 , "host _run_embed must have a finally teardown block";
     teardown = host_src[finally_i:];
-    leave_i = teardown.find("tui_leave_screen(state);");
-    tty_i = teardown.find("tty_close();");
+    shutdown_i = teardown.find("app.shutdown();");
     disp_i = teardown.find("session.dispose(");
     fin_i = teardown.find("finalize_if_safe(");
-    assert leave_i > 0 and tty_i > leave_i , "leave_screen must precede tty_close";
-    assert disp_i > tty_i , "tty_close must precede session.dispose (terminal-first quit)";
+    assert shutdown_i > 0 , "app.shutdown must run in finally teardown";
+    assert disp_i > shutdown_i , "app.shutdown must precede session.dispose (terminal-first quit)";
     assert fin_i > disp_i , "finalize_if_safe must follow dispose";
 }
 

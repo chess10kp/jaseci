@@ -63,3 +63,11 @@ test "native autocomplete selftest passes" {
     harness.ensure_unit_selftests(na_dir);
     harness.assert_selftest_passes(na_dir, "selftest_autocomplete");
 }
+
+
+test "native diff renderer selftest passes" {
+    na_dir = harness.na_dir();
+    _skip_unless_shim(na_dir);
+    harness.ensure_unit_selftests(na_dir);
+    harness.assert_selftest_passes(na_dir, "selftest_diff");
+}

@@ -54,13 +54,7 @@ import from .runtime { TuiRuntime }
 import from .input { handle_key }
 import from .keys { parse_key }
 import from .terminal_image { term_hyperlink, image_rows }
-import from .tui_core {
-    tui_populate_state,
-    tui_enter_screen,
-    tui_leave_screen,
-    tui_render_once,
-    tui_sync_size
-}
+import from .tui_core { tui_populate_state }
 import from .bridge_schema { decode_batch, decode_snapshot }
 import from .session_apply { apply_batch, apply_snapshot }
 
@@ -85,7 +79,7 @@ def _reset_host_state {
     st.editor.clear();
     st.overlay_stack.clear();
     st.overlay_full_redraw = False;
-    host_rt.diff.invalidate();
+    host_rt.tui.frame.invalidate();
 }
 
 
@@ -113,13 +107,15 @@ def:pub tui_init(project: str, files_env: str, presets_env: str, tty_dev: str) -
     if tty_dev {
         tty_configure_device(tty_dev);
     }
-    fd: int = tty_open();
-    if fd < 0 {
+    host_rt.tui.bind_state(host_rt.state);
+    if tty_dev {
+        tty_configure_device(tty_dev);
+    }
+    if host_rt.tui.terminal.open_tty() < 0 {
         return 1;
     }
-    host_rt.state.render_fd = fd;
     tui_populate_state(host_rt.state, project, files_env, presets_env);
-    tui_enter_screen(host_rt.state);
+    host_rt.tui.enter_screen();
     return 0;
 }
 
@@ -187,16 +183,13 @@ def:pub tui_render -> int {
     if host_rt.state.render_fd < 0 {
         return 0;
     }
-    tui_sync_size(host_rt.state);
-    tui_render_once(host_rt);
+    host_rt.tui.sync_size();
+    host_rt.tui.paint_once();
     return 0;
 }
 
 
 def:pub tui_shutdown -> int {
-    if host_rt.state.render_fd >= 0 {
-        tui_leave_screen(host_rt.state);
-    }
-    tty_close();
+    host_rt.tui.stop();
     return 0;
 }

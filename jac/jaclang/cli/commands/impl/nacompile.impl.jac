@@ -241,7 +241,9 @@ impl nacompile(
             prog._auto_promote_target = os.path.abspath(filename);
         }
 
-        options = CompileOptions(aot_mode=True, type_check=False, na_gc_mode=gc);
+        options = CompileOptions(
+            aot_mode=True, type_check=False, na_gc_mode=gc, force_target_program=True
+        );
         ir_module = prog.compile(file_path=os.path.abspath(filename), options=options);
     } except Exception as e {
         console.error(f"Jac compilation failed: {e}");

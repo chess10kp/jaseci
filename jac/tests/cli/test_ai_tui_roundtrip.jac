@@ -90,7 +90,63 @@ test "stub prompt yields a DISTINCT answer, not glued onto the user row" {
     # The user start must read as a user (op convention the native reducer keys on).
     assert str(user_mut.get("op")) == "user";
 
+    user_starts = [
+        m
+        for m in muts
+        if m.get("kind") == schema.MUT_MESSAGE_START
+        and str(m.get("op")) == "user"
+        and str(m.get("text", "")) == "roundtrip-hi"
+    ];
+    assert len(user_starts) == 1 , f"expected one user row, got {len(user_starts)}";
+
     _reset(mod);
+}
+
+
+test "real agent submit does not eagerly publish a duplicate user row" {
+    sess_mod = importlib.import_module("jaclang.cli.ai_tui.core.agent_session");
+    bridge = importlib.import_module("jaclang.cli.ai_tui.bridge_schema");
+    models = importlib.import_module("jaclang.cli.ai_tui.session_models");
+    ai_mod = importlib.import_module("jaclang.cli.ai_agent");
+
+    def fake_prepare(prompt: str) -> bool {
+        return True;
+    }
+
+    def noop_run_turn(prompt: str) { }
+
+    old_prepare = getattr(ai_mod, "ui_prepare_turn");
+    old_run_turn = getattr(ai_mod, "ui_run_turn");
+    setattr(ai_mod, "ui_prepare_turn", fake_prepare);
+    setattr(ai_mod, "ui_run_turn", noop_run_turn);
+    sess = sess_mod.AgentSession(cwd="/tmp/no-dup-user", stub=False);
+    user_starts: list[any] = [];
+
+    def on_ev(ev: any) {
+        if (
+            str(ev.kind) == bridge.MUT_MESSAGE_START
+            and str(ev.op) == "user"
+            and str(ev.text) == "hello"
+        ) {
+            user_starts.append(ev);
+        }
+    }
+
+    sess.subscribe(on_ev);
+    cmd = models.SessionCommand(
+        kind=bridge.CMD_KIND_PROMPT, command_id="c1", payload={"text": "hello"}
+    );
+    try {
+        receipt = sess.submit(cmd);
+        assert receipt.accepted == True , receipt;
+        assert len(user_starts) == 0 , (
+            "non-stub submit must not eagerly publish user MESSAGE_START; " + "the legacy feed owns that row"
+        );
+    } finally {
+        setattr(ai_mod, "ui_prepare_turn", old_prepare);
+        setattr(ai_mod, "ui_run_turn", old_run_turn);
+        sess.dispose(deadline_ms=2000);
+    }
 }
 
 

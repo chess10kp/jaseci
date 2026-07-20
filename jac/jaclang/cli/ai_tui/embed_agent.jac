@@ -29,26 +29,17 @@ import from jaclang.cli.ai_tui.tui_session_adapter {
     make_reset_command
 }
 import from jaclang.cli.ai_tui.tui_shared {
-    _dispatch_cmd,
+    _apply_embed_path_env,
+    _cmd_apply,
     _debug_log,
-    _silence_logging_for_tui
+    _resolve_embed_seams,
+    _silence_logging_for_tui,
+    RECEIPT_OK
 }
 
 
 glob _adapter: TuiSessionAdapter | None = None,
      _poll_count: int = 0;
-
-
-def _apply_path_env(byllm_src: str = "", byllm_deps: str = "") {
-    if byllm_src and byllm_src not in sys.path {
-        sys.path.insert(0, byllm_src);
-    }
-    for d in byllm_deps.split(os.pathsep) {
-        if d and d not in sys.path {
-            sys.path.append(d);
-        }
-    }
-}
 
 
 def _active -> TuiSessionAdapter {
@@ -164,7 +155,8 @@ def start(request: str = "{}") -> str {
     byllm_src = str(body.get("byllm_src", "") or "");
     byllm_deps = str(body.get("byllm_deps", "") or "");
     debug_log = str(body.get("debug_log", "") or "");
-    _apply_path_env(byllm_src, byllm_deps);
+    (byllm_src, byllm_deps) = _resolve_embed_seams(byllm_src, byllm_deps);
+    _apply_embed_path_env(byllm_src, byllm_deps);
     _silence_logging_for_tui(debug_log);
     _poll_count = 0;
     if _adapter is not None {
@@ -263,10 +255,18 @@ def submit(command: str) -> str {
             );
         }
         import from threading { Event }
-        line = "APPLY:" + raw if raw else "APPLY";
         try {
-            _dispatch_cmd(line, Event(), None);
-            return encode_receipt(True, "ok", command_id=command_id);
+            rc = _cmd_apply(raw, Event(), None);
+            if rc == RECEIPT_OK {
+                return encode_receipt(True, "ok", command_id=command_id);
+            }
+            return encode_receipt(
+                False,
+                DISP_REJECTED,
+                command_id=command_id,
+                error_code="apply_failed",
+                error_message=str(rc)
+            );
         } except Exception as e {
             return encode_receipt(
                 False,
@@ -371,8 +371,8 @@ def dispose(spec: str = "{}") -> str {
     if _adapter is None {
         return encode_dispose_result(True, False, reason, 0);
     }
-    result = _adapter.dispose(reason=reason, deadline_ms=deadline_ms);
-    if not _adapter.stub {
+    stub = _adapter.stub;
+    if not stub {
         try {
             import from jaclang.cli.ai_agent { ui_stop }
             ui_stop();
@@ -380,6 +380,7 @@ def dispose(spec: str = "{}") -> str {
             _debug_log(f"dispose: ui_stop failed: {e}");
         }
     }
+    result = _adapter.dispose(reason=reason, deadline_ms=deadline_ms);
     _adapter = None;
     return encode_dispose_result(
         result.ok, result.timed_out, result.reason, result.joined_workers

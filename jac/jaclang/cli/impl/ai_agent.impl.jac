@@ -968,6 +968,9 @@ impl BrowseTools._browse_shutdown{
 }
 
 impl system_prompt -> str {
+    if CHAT_ONLY {
+        return CHAT_ONLY_RULES;
+    }
     index_lines: list[str] = [];
     for g in gs_list() {
         index_lines.append(f"- {g.name}: {g.description}");
@@ -1841,7 +1844,7 @@ impl run_turn(message: str) {
     } else {
         agent.phase_ctx[0] = sysmsg;
     }
-    agent.phase_tools = [t.fn for t in TOOL_SPECS];
+    agent.phase_tools = [] if CHAT_ONLY else [t.fn for t in TOOL_SPECS];
 
     agent.bus.open_convo(agent.phase_ctx);
     agent.bus.set_convo_tools(agent.phase_tools);
@@ -2183,9 +2186,29 @@ impl ui_configure(model_override: str = "", n_ctx: int = 0, project: str = "") -
     }
 }
 
-def _ui_turn_worker(prompt: str) {
+impl ui_prepare_turn(prompt: str) -> bool {
+    text = prompt.strip();
+    if not text {
+        return False;
+    }
+
+    agent.bus._lock.acquire();
     try {
-        run_turn(prompt);
+        if agent.bus.status == "running" or agent.bus.status == "stopping" {
+            return False;
+        }
+        agent.bus.begin_turn();
+        agent.bus.emit("user", {"text": text});
+        agent.bus.set_status("running");
+        return True;
+    } finally {
+        agent.bus._lock.release();
+    }
+}
+
+impl ui_run_turn(message: str) {
+    try {
+        run_turn(message);
     } except Exception as e {
         err_text = f"provider: {e}";
         if not _ui_is_duplicate_provider_error(err_text) {
@@ -2209,6 +2232,9 @@ def _ui_turn_worker(prompt: str) {
             agent.bus.publish_full();
         }
     }
+}
+
+impl ui_finish_turn_cleanup{
     if agent.bus.cancel_requested {
         agent.bus.emit("system", {"text": "Stopped."});
         agent.bus.cancel_requested = False;
@@ -2218,24 +2244,20 @@ def _ui_turn_worker(prompt: str) {
     }
 }
 
+def _ui_turn_worker(prompt: str) {
+    ui_run_turn(prompt);
+    ui_finish_turn_cleanup();
+}
+
 impl ui_send(prompt: str) -> bool {
     text = prompt.strip();
     if not text {
         return False;
     }
-
-    agent.bus._lock.acquire();
-    try {
-        if agent.bus.status == "running" or agent.bus.status == "stopping" {
-            return False;
-        }
-        agent.bus.begin_turn();
-        agent.bus.emit("user", {"text": text});
-        agent.bus.set_status("running");
-        threading.Thread(target=_ui_turn_worker, args=(text, ), daemon=True).start();
-    } finally {
-        agent.bus._lock.release();
+    if not ui_prepare_turn(prompt) {
+        return False;
     }
+    threading.Thread(target=_ui_turn_worker, args=(text, ), daemon=True).start();
     return True;
 }
 
@@ -2351,7 +2373,11 @@ impl ui_stream -> any {
 }
 
 impl ui_graph -> dict {
-    tool_names = [str(getattr(t.fn, "__name__", "") or "") for t in TOOL_SPECS];
+    tool_names = (
+        []
+            if CHAT_ONLY
+            else [str(getattr(t.fn, "__name__", "") or "") for t in TOOL_SPECS]
+    );
     nodes = [
         {
             "id": "Agent",

@@ -50,6 +50,11 @@ test "sequential adapters share no queue ledger stop or subscription state" {
     }
     batch1 = first.poll(64);
     assert len(batch1.mutations) > 0;
+    assert batch1.first_seq == batch1.mutations[0].seq;
+    assert batch1.last_seq == batch1.mutations[len(batch1.mutations) - 1].seq;
+    for i in range(1, len(batch1.mutations)) {
+        assert batch1.mutations[i].seq == batch1.mutations[i - 1].seq + 1;
+    }
     assert len(mgr1.entries) >= 1;
 
     d1 = first.dispose(reason="done", deadline_ms=2000);
@@ -159,4 +164,89 @@ test "dispose reports timeout when a worker ignores stop" {
     assert result.ok == False;
     hang_stop.set();
     tw.join(1.0);
+}
+
+
+test "legacy send rejection settles session so retry works" {
+    sess_mod = importlib.import_module("jaclang.cli.ai_tui.core.agent_session");
+    bridge = importlib.import_module("jaclang.cli.ai_tui.bridge_schema");
+    models = importlib.import_module("jaclang.cli.ai_tui.session_models");
+    ai_mod = importlib.import_module("jaclang.cli.ai_agent");
+
+    def fake_busy(prompt: str) -> bool {
+        return False;
+    }
+
+    def fake_ok(prompt: str) -> bool {
+        return True;
+    }
+
+    old_prepare = getattr(ai_mod, "ui_prepare_turn");
+    old_run_turn = getattr(ai_mod, "ui_run_turn");
+    setattr(ai_mod, "ui_prepare_turn", fake_busy);
+    sess = sess_mod.AgentSession(cwd="/tmp/legacy-busy", stub=False);
+    seen: list[str] = [];
+
+    def on_ev(ev: any) {
+        seen.append(str(ev.kind));
+    }
+
+    sess.subscribe(on_ev);
+    cmd = models.SessionCommand(
+        kind=bridge.CMD_KIND_PROMPT, command_id="c1", payload={"text": "hello"}
+    );
+    try {
+        receipt = sess.submit(cmd);
+        assert receipt.accepted == False , receipt;
+        assert receipt.error.code == "busy" , receipt.error;
+        assert sess.lifecycle == bridge.LIFE_IDLE , sess.lifecycle;
+        assert sess.settled == True;
+        assert bridge.MUT_AGENT_START not in seen , seen;
+
+        setattr(ai_mod, "ui_prepare_turn", fake_ok);
+
+        def noop_run_turn(prompt: str) { }
+
+        setattr(ai_mod, "ui_run_turn", noop_run_turn);
+        cmd2 = models.SessionCommand(
+            kind=bridge.CMD_KIND_PROMPT, command_id="c2", payload={"text": "again"}
+        );
+        receipt2 = sess.submit(cmd2);
+        assert receipt2.accepted == True , receipt2;
+        assert sess.lifecycle == bridge.LIFE_RUNNING;
+    } finally {
+        setattr(ai_mod, "ui_prepare_turn", old_prepare);
+        setattr(ai_mod, "ui_run_turn", old_run_turn);
+        sess.dispose(deadline_ms=2000);
+    }
+}
+
+
+test "submit rejects when agent bus is busy before publishing" {
+    sess_mod = importlib.import_module("jaclang.cli.ai_tui.core.agent_session");
+    bridge = importlib.import_module("jaclang.cli.ai_tui.bridge_schema");
+    models = importlib.import_module("jaclang.cli.ai_tui.session_models");
+    ai_mod = importlib.import_module("jaclang.cli.ai_agent");
+
+    def fake_poll -> dict {
+        return {"status": "running"};
+    }
+
+    old_poll = getattr(ai_mod, "ui_poll");
+    setattr(ai_mod, "ui_poll", fake_poll);
+    sess = sess_mod.AgentSession(cwd="/tmp/bus-busy", stub=False);
+    cmd = models.SessionCommand(
+        kind=bridge.CMD_KIND_PROMPT, command_id="c1", payload={"text": "hello"}
+    );
+    try {
+        receipt = sess.submit(cmd);
+        assert receipt.accepted == False , receipt;
+        assert receipt.error.code == "busy" , receipt.error;
+        assert receipt.error.retryable == True;
+        assert sess.lifecycle == bridge.LIFE_IDLE;
+        assert sess.settled == True;
+    } finally {
+        setattr(ai_mod, "ui_poll", old_poll);
+        sess.dispose(deadline_ms=2000);
+    }
 }

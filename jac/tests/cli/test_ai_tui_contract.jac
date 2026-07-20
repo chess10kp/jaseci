@@ -27,6 +27,7 @@ These two tests close that gap:
 import importlib;
 import threading;
 import os;
+import json;
 
 
 def _real_turn_mutations -> tuple {
@@ -152,7 +153,18 @@ test "every (kind, op) the normalizer emits is handled by native apply_mutation"
     cli_dir = os.path.abspath(os.path.join(here, "..", "..", "jaclang", "cli"));
     na_dir = os.path.join(cli_dir, "ai_tui_na");
     apply_src = open(os.path.join(na_dir, "session_apply.na.jac")).read();
-    na_bridge_src = open(os.path.join(na_dir, "bridge_schema.na.jac")).read();
+    manifest = json.loads(
+        open(os.path.join(cli_dir, "ai_tui", "bridge_schema.manifest.json")).read()
+    );
+    manifest_wire_values: set = set();
+    for section in ("cmd_kinds", "dispositions", "lifecycles", "mutations") {
+        body = manifest.get(section, {});
+        if isinstance(body, dict) {
+            for value in body.values() {
+                manifest_wire_values.add(str(value));
+            }
+        }
+    }
 
     # Build wire-value -> constant-name from the Python bridge, so we can look up
     # what the native side must branch on for each kind we actually emitted.
@@ -177,8 +189,8 @@ test "every (kind, op) the normalizer emits is handled by native apply_mutation"
     for kv in kinds {
         name = val_to_name.get(kv, "");
         assert name , f"emitted kind {kv!r} has no MUT_ constant in the Python bridge";
-        # Value parity: the native bridge must define the SAME wire string.
-        if ('"' + kv + '"') not in na_bridge_src {
+        # Value parity: manifest is the single source; native schema is generated from it.
+        if kv not in manifest_wire_values {
             drifted_values.append(kv);
         }
         # Handled: the native reducer must actually compare against this constant
@@ -188,7 +200,7 @@ test "every (kind, op) the normalizer emits is handled by native apply_mutation"
         }
     }
 
-    assert not drifted_values , f"native bridge_schema missing wire values (drift): {drifted_values}";
+    assert not drifted_values , f"manifest missing wire values for emitted kinds (drift): {drifted_values}";
     assert not unhandled_kinds , f"native apply_mutation never branches on these kinds the normalizer "
     f"emits (silently dropped in the TUI): {unhandled_kinds}";
 

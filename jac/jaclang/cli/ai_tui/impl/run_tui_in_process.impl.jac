@@ -190,10 +190,11 @@ impl run_tui_in_process(req: AgentRequest) -> int {
                 if pending_send_receipts {
                     with lock {
                         for item in pending_send_receipts {
+                            accepted = bool(item.get("accepted", False));
+                            detail = str(item.get("error_detail", "") or "");
+                            host.apply_send_receipt(accepted, detail);
                             _debug_log(
-                                f"send receipt: accepted={item.get('accepted')} " + f"detail={item.get(
-                                    'error_detail', ''
-                                )!r}"
+                                f"send receipt: accepted={accepted} " + f"detail={detail!r}"
                             );
                         }
                         pending_send_receipts.clear();

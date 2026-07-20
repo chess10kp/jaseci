@@ -33,7 +33,12 @@ def unit_selftest_names -> list[str] {
         "selftest_editor",
         "selftest_markdown",
         "selftest_overlay",
-        "selftest_autocomplete"
+        "selftest_autocomplete",
+        "selftest_diff",
+        "selftest_session_client",
+        "selftest_session_dispatch",
+        "selftest_interactive_app",
+        "selftest_snapshot_apply"
     ];
 }
 
@@ -87,6 +92,28 @@ def ensure_unit_selftests(na_dir: Path) {
     }
     if stale {
         subprocess.run(["bash", str(na_dir / "build_unit_selftests.sh")], check=True);
+    }
+}
+
+
+def ensure_selftest(na_dir: Path, binary_name: str) {
+    build_sh = na_dir / "build_unit_selftests.sh";
+    if binary_stale(na_dir, binary_name) {
+        proc = subprocess.run(
+            ["bash", str(build_sh), binary_name], capture_output=True, text=True
+        );
+        if proc.returncode != 0 {
+            import pytest;
+            tail = (proc.stderr or proc.stdout or "")[-800:];
+            pytest.skip(
+                f"native selftest {binary_name} could not be built (skip when LLVM IR/build unavailable): " + tail
+            );
+        }
+    }
+    binary = na_dir / "bin" / binary_name;
+    if not binary.is_file() {
+        import pytest;
+        pytest.skip(f"native selftest binary missing: {binary_name}");
     }
 }
 

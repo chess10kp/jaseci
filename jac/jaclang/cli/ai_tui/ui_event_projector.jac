@@ -17,6 +17,7 @@ import from jaclang.cli.ai_tui.bridge_schema {
     MUT_MESSAGE_START,
     MUT_MESSAGE_UPDATE,
     MUT_RUNTIME_REPLACED,
+    MUT_SNAPSHOT_REQUIRED,
     MUT_STATUS,
     MUT_TOOL_END,
     MUT_TOOL_START,
@@ -37,6 +38,10 @@ obj UiEventProjector {
         and event.epoch != st.epoch
         and event.kind != MUT_RUNTIME_REPLACED {
             raise ValueError(f"epoch mismatch: event={event.epoch} state={st.epoch}");
+        }
+
+        if event.kind == MUT_SNAPSHOT_REQUIRED {
+            return [];
         }
 
         if event.kind == MUT_RUNTIME_REPLACED {
@@ -61,9 +66,10 @@ obj UiEventProjector {
 
         assigned = event.seq if event.seq != 0 else st.next_seq;
         st.next_seq = assigned + 1;
+
         emitted = UiMutation(
             kind=event.kind,
-            seq=assigned,
+            seq=0,
             epoch=st.epoch,
             message_id=event.message_id,
             part_id=event.part_id,

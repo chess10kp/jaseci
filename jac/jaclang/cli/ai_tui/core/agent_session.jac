@@ -147,6 +147,12 @@ obj AgentSession {
         }
         self.disposed = True;
         self.lifecycle = LIFE_DISPOSED;
+        if not self.stub {
+            try {
+                import from jaclang.cli.ai_agent { ui_stop }
+                ui_stop();
+            } except Exception { }
+        }
         self._stop.set();
         joined = 0;
         timed_out = False;
@@ -198,46 +204,63 @@ obj AgentSession {
                     )
                 );
             }
-            self._prompt_id += 1;
-            pid = str(self._prompt_id);
-            uid = self._next_msg_id();
-            aid = self._next_msg_id();
-            self.settled = False;
-            self.cancel_requested = False;
-            self.lifecycle = LIFE_RUNNING;
-            self.manager.append(
-                SessionMutation(kind="user", text=text, payload={"prompt_id": pid})
-            );
-            self._publish(UiMutation(kind=MUT_AGENT_START, lifecycle=LIFE_RUNNING));
-            self._publish(
-                UiMutation(
-                    kind=MUT_MESSAGE_START,
-                    message_id=uid,
-                    part_id=uid + ":text",
-                    op="user",
-                    text=text,
-                    payload={"role": "user", "prompt_id": pid}
-                )
-            );
-            self._publish(UiMutation(kind=MUT_STATUS, lifecycle=LIFE_RUNNING));
+            if not self.stub {
+                try {
+                    import from jaclang.cli.ai_agent { ui_poll }
+                    snap = ui_poll();
+                    bus_status = str(snap.get("status", "") or "");
+                    if bus_status == "running" or bus_status == "stopping" {
+                        return CommandReceipt(
+                            accepted=False,
+                            disposition=DISP_REJECTED,
+                            command_id=cmd.command_id,
+                            error=CommandError(
+                                code="busy", message="agent busy", retryable=True
+                            )
+                        );
+                    }
+                } except Exception { }
+            }
             if self.stub {
+                self._prompt_id += 1;
+                pid = str(self._prompt_id);
+                uid = self._next_msg_id();
+                aid = self._next_msg_id();
+                self.settled = False;
+                self.cancel_requested = False;
+                self.lifecycle = LIFE_RUNNING;
+                self.manager.append(
+                    SessionMutation(kind="user", text=text, payload={"prompt_id": pid})
+                );
+                self._publish(UiMutation(kind=MUT_AGENT_START, lifecycle=LIFE_RUNNING));
+                self._publish(
+                    UiMutation(
+                        kind=MUT_MESSAGE_START,
+                        message_id=uid,
+                        part_id=uid + ":text",
+                        op="user",
+                        text=text,
+                        payload={"role": "user", "prompt_id": pid}
+                    )
+                );
+                self._publish(UiMutation(kind=MUT_STATUS, lifecycle=LIFE_RUNNING));
                 tw = Thread(
                     target=self._stub_turn, args=(pid, aid, text), daemon=False
                 );
                 self._workers.append(tw);
                 tw.start();
-            } else {
-                self._legacy_send(text);
+                return CommandReceipt(
+                    accepted=True,
+                    disposition=DISP_STARTED,
+                    command_id=cmd.command_id,
+                    prompt_id=pid
+                );
             }
-            return CommandReceipt(
-                accepted=True,
-                disposition=DISP_STARTED,
-                command_id=cmd.command_id,
-                prompt_id=pid
-            );
         } finally {
             self._lock.release();
         }
+        receipt = self._prepare_and_start_turn(text, cmd);
+        return receipt;
     }
 
     def _submit_abort(cmd: SessionCommand) -> CommandReceipt {
@@ -370,19 +393,24 @@ obj AgentSession {
                     self._publish(m);
                 }
                 status = str(frame.get("status", "") or "");
-                if status == "idle"
-                and self.lifecycle in (LIFE_RUNNING, LIFE_STOPPING) {
-                    self.lifecycle = LIFE_IDLE;
-                    if not self.settled {
-                        self.settled = True;
-                        self._publish(
-                            UiMutation(kind=MUT_AGENT_SETTLED, lifecycle=LIFE_IDLE)
-                        );
+                self._lock.acquire();
+                try {
+                    if status == "idle"
+                    and self.lifecycle in (LIFE_RUNNING, LIFE_STOPPING) {
+                        self.lifecycle = LIFE_IDLE;
+                        if not self.settled {
+                            self.settled = True;
+                            self._publish(
+                                UiMutation(kind=MUT_AGENT_SETTLED, lifecycle=LIFE_IDLE)
+                            );
+                        }
+                    } elif status == "running" {
+                        self.lifecycle = LIFE_RUNNING;
+                    } elif status == "stopping" {
+                        self.lifecycle = LIFE_STOPPING;
                     }
-                } elif status == "running" {
-                    self.lifecycle = LIFE_RUNNING;
-                } elif status == "stopping" {
-                    self.lifecycle = LIFE_STOPPING;
+                } finally {
+                    self._lock.release();
                 }
             }
         } except Exception as e {
@@ -399,16 +427,79 @@ obj AgentSession {
         }
     }
 
-    def _legacy_send(text: str) {
+    def _prepare_and_start_turn(text: str, cmd: SessionCommand) -> CommandReceipt {
+        import from jaclang.cli.ai_tui.tui_shared { _debug_log }
         try {
-            import from jaclang.cli.ai_agent { ui_send }
-            ui_send(text);
+            import from jaclang.cli.ai_agent { ui_prepare_turn }
+            if not ui_prepare_turn(text) {
+                _debug_log(f"ui_prepare_turn({text!r}) -> False");
+                return CommandReceipt(
+                    accepted=False,
+                    disposition=DISP_REJECTED,
+                    command_id=cmd.command_id,
+                    error=CommandError(
+                        code="busy",
+                        message=(
+                            "agent busy — prompt not sent; " + "retry when the current turn finishes"
+                        ),
+                        retryable=True
+                    )
+                );
+            }
         } except Exception as e {
-            self.lifecycle = LIFE_FAILED;
-            self._publish(
-                UiMutation(kind=MUT_DIAGNOSTIC, diagnostic=str(e), text=str(e))
+            _debug_log(f"ui_prepare_turn({text!r}) error: {e}");
+            return CommandReceipt(
+                accepted=False,
+                disposition=DISP_REJECTED,
+                command_id=cmd.command_id,
+                error=CommandError(
+                    code="busy",
+                    message=(
+                        "agent busy — prompt not sent; " + "retry when the current turn finishes"
+                    ),
+                    retryable=True
+                )
             );
-            self._settle_idle();
+        }
+        self._lock.acquire();
+        try {
+            self._prompt_id += 1;
+            pid = str(self._prompt_id);
+            self.settled = False;
+            self.cancel_requested = False;
+            self.lifecycle = LIFE_RUNNING;
+            self.manager.append(
+                SessionMutation(kind="user", text=text, payload={"prompt_id": pid})
+            );
+
+            self._publish(UiMutation(kind=MUT_AGENT_START, lifecycle=LIFE_RUNNING));
+            self._publish(UiMutation(kind=MUT_STATUS, lifecycle=LIFE_RUNNING));
+            tw = Thread(target=self._real_turn, args=(text, ), daemon=False);
+            self._workers.append(tw);
+            tw.start();
+            return CommandReceipt(
+                accepted=True,
+                disposition=DISP_STARTED,
+                command_id=cmd.command_id,
+                prompt_id=pid
+            );
+        } finally {
+            self._lock.release();
+        }
+    }
+
+    def _real_turn(text: str) {
+        try {
+            import from jaclang.cli.ai_agent { ui_run_turn, ui_finish_turn_cleanup }
+            if self._stop.is_set() or self.cancel_requested {
+                return;
+            }
+            ui_run_turn(text);
+        } finally {
+            try {
+                import from jaclang.cli.ai_agent { ui_finish_turn_cleanup }
+                ui_finish_turn_cleanup();
+            } except Exception { }
         }
     }
 

@@ -24,6 +24,9 @@ impl NaIRGenPass._maybe_declare_ability(nd: uni.ElementStmt) -> None {
         return;
     }
     name = nd.name_ref.sym_name if nd.name_ref else "unnamed";
+    if name in self.func_symtab {
+        return;
+    }
     sig = nd.signature;
 
     param_types: list[ir.Type] = [];

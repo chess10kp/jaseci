@@ -1,4 +1,7 @@
 import os;
+import time;
+
+import from threading { Event, Thread }
 
 import from jaclang.cli.ai_tui.bridge_schema {
     CMD_KIND_ABORT,
@@ -19,6 +22,7 @@ import from jaclang.cli.ai_tui.session_models {
 }
 import from jaclang.cli.ai_tui.ui_event_projector { UiEventProjector }
 import from jaclang.cli.ai_tui.event_queue { TuiEventQueue }
+import from jaclang.cli.ai_tui.session_event_dispatcher { SessionEventDispatcher }
 import from jaclang.cli.ai_tui.core.agent_session_runtime { AgentSessionRuntime }
 
 
@@ -31,6 +35,9 @@ obj TuiSessionAdapter {
         runtime: AgentSessionRuntime | None = None,
         projector: UiEventProjector = UiEventProjector(),
         queue: TuiEventQueue = TuiEventQueue(),
+        dispatcher: SessionEventDispatcher | None = None,
+        _dispatcher_stop: any = None,
+        _dispatcher_thread: any = None,
         _sub: any = None;
 
     def start(req: dict[str, any] | None = None) -> StartResult {
@@ -51,10 +58,16 @@ obj TuiSessionAdapter {
         self.projector = UiEventProjector();
         self.queue = TuiEventQueue();
         self.queue.epoch = 1;
+        self.dispatcher = SessionEventDispatcher(
+            projector=self.projector, queue=self.queue
+        );
+        self._dispatcher_stop = Event();
+        self._dispatcher_thread = Thread(target=self._run_dispatcher, daemon=False);
         self.runtime = AgentSessionRuntime(
             cwd=cwd, stub=stub, model_name=model, epoch=1
         );
         self._sub = self.runtime.subscribe(self._on_runtime_event);
+        self._dispatcher_thread.start();
         self.started = True;
         snap = self.runtime.snapshot();
         self.projector.state.epoch = snap.epoch;
@@ -89,10 +102,41 @@ obj TuiSessionAdapter {
             return DisposeResult(ok=True, reason=reason, joined_workers=0);
         }
         self.disposed = True;
+        joined = 0;
+        timed_out = False;
+        timeout_s = max(0.0, deadline_ms / 1000.0);
+        deadline = time.monotonic() + timeout_s;
+        if self.dispatcher is not None {
+            self.dispatcher.close();
+            if self._dispatcher_thread is not None {
+                remaining = max(0.0, deadline - time.monotonic());
+                self._dispatcher_thread.join(remaining);
+                if self._dispatcher_thread.is_alive() {
+                    timed_out = True;
+                } else {
+                    joined += 1;
+                }
+                self._dispatcher_thread = None;
+            }
+            self.dispatcher = None;
+        }
+        self._dispatcher_stop = None;
         self.queue.close();
-        result = DisposeResult(ok=True, reason=reason);
+        result = DisposeResult(
+            ok=not timed_out, timed_out=timed_out, reason=reason, joined_workers=joined
+        );
         if self.runtime is not None {
-            result = self.runtime.dispose(reason=reason, deadline_ms=deadline_ms);
+            remaining = max(0.0, deadline - time.monotonic());
+            rt_ms = int(remaining * 1000.0);
+            if rt_ms <= 0 {
+                rt_ms = 1;
+            }
+            rt_result = self.runtime.dispose(reason=reason, deadline_ms=rt_ms);
+            result.joined_workers += rt_result.joined_workers;
+            if rt_result.timed_out {
+                result.timed_out = True;
+                result.ok = False;
+            }
             self.runtime = None;
         }
         self.started = False;
@@ -100,25 +144,18 @@ obj TuiSessionAdapter {
         return result;
     }
 
-    def _on_runtime_event(event: UiMutation) {
-        try {
-            projected = self.projector.apply(event);
-            for m in projected {
-                self.queue.submit(m);
-            }
-            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
-            _debug_log(
-                f"_on_runtime_event: kind={event.kind} projected={len(projected)} " + f"snap_required={self.queue.snapshot_required}"
-            );
-        } except ValueError as e {
-            self.queue.require_snapshot(str(e));
-            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
-            _debug_log(f"_on_runtime_event: ValueError kind={event.kind} msg={e}");
-        } except Exception as e {
-            self.queue.require_snapshot(f"projector_error:{e}");
-            import from jaclang.cli.ai_tui.tui_shared { _debug_log }
-            _debug_log(f"_on_runtime_event: Exception kind={event.kind} msg={e!r}");
+    def _run_dispatcher {
+        if self.dispatcher is None or self._dispatcher_stop is None {
+            return;
         }
+        self.dispatcher.run_until(self._dispatcher_stop);
+    }
+
+    def _on_runtime_event(event: UiMutation) {
+        if self.disposed or self.dispatcher is None {
+            return;
+        }
+        self.dispatcher.enqueue(event);
     }
 }
 

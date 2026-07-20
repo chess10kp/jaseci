@@ -731,7 +731,6 @@ impl NaIRGenPass._register_imported_archetype(arch: uni.Archetype) -> None {
     if aname in self._struct_bodies_done {
         return;
     }
-    self._struct_bodies_done.add(aname);
 
     self._codegen_archetype(arch);
 }

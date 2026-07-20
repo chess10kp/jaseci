@@ -15,7 +15,7 @@ import from .embed_session_client { EmbedSessionClient }
 import from .embed_runtime { EmbedRuntime }
 import from .transport { EmbedPyTransport, CmdQueue }
 import from .state { EventKind, TuiState }
-import from .ipc_schema { CMD_SEND, CMD_STOP, CMD_RESET, CMD_QUIT, CMD_APPLY }
+import from .session_dispatch { apply_effects_host }
 
 glob _FRAME_DRAIN_CAP: int = 64;
 
@@ -49,26 +49,27 @@ obj InteractiveApp {
         self.tui.bind_state(state);
     }
 
+    def bind_renderer(
+        transport: EmbedPyTransport, cmd_queue: CmdQueue, state: TuiState
+    ) {
+        self.transport = transport;
+        self.cmd_queue = cmd_queue;
+        self.tui.bind_state(state);
+    }
+
+    def _session_live -> bool {
+        return self.session.started;
+    }
+
     def run -> int {
         while self.step(50).cont { }
         return 0;
     }
 
     def _execute_effects(effects: list[Effect]) {
-        state = self.tui.state;
+        apply_effects_host(self.session, self.tui.state, self.cmd_queue, effects);
         for e in effects {
-            if e.kind == EffectKind.QUIT {
-                self.cmd_queue.send(state.ipc_fd, CMD_QUIT);
-                state.quit_flag = True;
-            } elif e.kind == EffectKind.STOP {
-                self.cmd_queue.send(state.ipc_fd, CMD_STOP);
-            } elif e.kind == EffectKind.RESET {
-                self.cmd_queue.send(state.ipc_fd, CMD_RESET);
-            } elif e.kind == EffectKind.SEND_PROMPT {
-                self.cmd_queue.send(state.ipc_fd, CMD_SEND + ":" + e.payload);
-            } elif e.kind == EffectKind.APPLY_SETTINGS {
-                self.cmd_queue.send(state.ipc_fd, CMD_APPLY + ":" + e.payload);
-            } elif e.kind == EffectKind.REQUEST_RENDER {
+            if e.kind == EffectKind.REQUEST_RENDER {
                 self.tui.request_render(False);
             }
         }
@@ -78,7 +79,6 @@ obj InteractiveApp {
         action = UiAction(kind=UiActionKind.KEY, key=k);
         res = reduce_input(self.tui.state, action);
         self._execute_effects(res.effects);
-        self.session.flush_outbound_cmds(self.cmd_queue, self.tui.state);
         if res.quit {
             self.tui.state.quit_flag = True;
         }
@@ -105,6 +105,10 @@ obj InteractiveApp {
         state = self.tui.state;
         if self.poll_profile {
             self.poll_calls += 1;
+        }
+        if not self._session_live() {
+            self.tui.sync_size();
+            return True;
         }
         if not self.session.drain_into(state, _FRAME_DRAIN_CAP) {
             if self.session.backend_dead {
