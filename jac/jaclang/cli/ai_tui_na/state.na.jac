@@ -246,6 +246,7 @@ obj TuiState {
         model_presets: list[str] = [],
         ac: AcState = AcState(),
         pending_submission: PendingSubmission = PendingSubmission(),
+        loading_tick: int = 0,
         focus: FocusTarget = FocusTarget.EDITOR;
 
     def status_blocks_prompt -> bool {

@@ -197,6 +197,19 @@ def build_provider_error() -> TuiState {
 }
 
 
+def build_waiting() -> TuiState {
+    # RUNNING with only a user message — exercises the loading footer before the
+    # first assistant token arrives.
+    s = TuiState();
+    s.status = TuiStatus.RUNNING;
+    s.model_name = "claude-sonnet-4";
+    s.events = [
+        Event(id=1, kind=EventKind.USER, text="hello?")
+    ];
+    return s;
+}
+
+
 def build_tools_only() -> TuiState {
     s = TuiState();
     s.status = TuiStatus.RUNNING;
@@ -244,6 +257,9 @@ with entry {
 
     # ── reasoning + answer transcript ──
     _run_one("reasoning.80x24", build_reasoning(), 80, 24);
+
+    # ── waiting: user message only, loading footer ──
+    _run_one("waiting.80x24", build_waiting(), 80, 24);
 
     # ── provider error row ──
     _run_one("provider_error.80x24", build_provider_error(), 80, 24);
