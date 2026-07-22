@@ -2306,6 +2306,67 @@ impl EsastGenPass._resolve_primitive_type_name(_obj_type: object) -> str {
     return primitive_type_name_of(_obj_type) or "";
 }
 
+impl EsastGenPass._js_type_check_expr(value_js: str, type_name: str) -> (str | None) {
+    if type_name == "str" {
+        return 'typeof ' + value_js + ' === "string"';
+    } elif type_name == "int" {
+        return 'typeof ' + value_js + ' === "number" && Number.isInteger(' + value_js + ')';
+    } elif type_name == "float" {
+        return 'typeof ' + value_js + ' === "number" && !Number.isInteger(' + value_js + ')';
+    } elif type_name == "bool" {
+        return 'typeof ' + value_js + ' === "boolean"';
+    } elif type_name == "list" {
+        return 'Array.isArray(' + value_js + ') && !Object.isFrozen(' + value_js + ')';
+    } elif type_name == "tuple" {
+        return 'Array.isArray(' + value_js + ') && Object.isFrozen(' + value_js + ')';
+    } elif type_name == "dict" {
+        return 'typeof ' + value_js + ' === "object" && ' + value_js + ' !== null && !Array.isArray(' + value_js + ')';
+    } elif type_name == "set" {
+        return value_js + ' instanceof Set';
+    } elif type_name == "bytes" {
+        return value_js + ' instanceof Uint8Array';
+    }
+    return None;
+}
+
+impl EsastGenPass._try_type_compare(
+    expr_node: uni.UniNode, type_node: uni.UniNode, is_not: bool, jac_node: uni.UniNode
+) -> (es.Expression | None) {
+    import from jaclang.compiler.passes.ecmascript.es_unparse { JSCodeGenerator }
+    if (
+        not isinstance(expr_node, uni.FuncCall)
+        or expr_node.call_kind != "builtin"
+        or not isinstance(expr_node.target, uni.Name)
+        or expr_node.target.sym_name != "type"
+        or not expr_node.params
+    ) {
+        return None;
+    }
+    _type_name = self._expr_type_name(type_node);
+    if not _type_name {
+        return None;
+    }
+    _unparser = JSCodeGenerator();
+    _value_es = cast(
+        es.Expression,
+        self._get_ast_or_default(
+            expr_node.params[0],
+            default_factory=lambda (src: any) { es.Identifier(name=src.sym_name)
+                if isinstance(src, uni.Name)
+                else es.Identifier(name='value'); }
+        )
+    );
+    _value_js = _unparser.generate(_value_es);
+    _predicate = self._js_type_check_expr(_value_js, _type_name);
+    if not _predicate {
+        return None;
+    }
+    if is_not {
+        _predicate = '!(' + _predicate + ')';
+    }
+    return self.sync_loc(es.Identifier(name=_predicate), jac_node=jac_node);
+}
+
 impl EsastGenPass._try_primitive_op(
     expr_node: uni.UniNode,
     emit_method: str,
@@ -2558,6 +2619,22 @@ impl EsastGenPass.exit_compare_expr(nd: uni.CompareExpr) -> None {
             )
         );
         op_tok = Tok(op_token.name) if (op_token.name in Tok.__members__) else None;
+
+        if op_tok in (Tok.KW_IS, Tok.KW_ISN) {
+            _type_compare = self._try_type_compare(
+                nd.left, right_node, op_tok == Tok.KW_ISN, nd
+            );
+            if _type_compare is None {
+                _type_compare = self._try_type_compare(
+                    right_node, nd.left, op_tok == Tok.KW_ISN, nd
+                );
+            }
+            if _type_compare is not None {
+                comparisons.append(_type_compare);
+                left = right;
+                continue;
+            }
+        }
 
         _cmp_emit_name = CMP_EMIT_MAP.get(op_tok) if op_tok else None;
         if _cmp_emit_name {

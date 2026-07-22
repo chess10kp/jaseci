@@ -410,6 +410,32 @@ test "type to typeof transformation" {
     }
 }
 
+test "type comparisons lower to JS type predicates" {
+    # Regression for `type(x) is str` / `type(x) is not dict` lowering the
+    # builtin type name as a bare identifier in JS codegen.
+    jac_code = "\"\"\"Test type() comparison codegen.\"\"\"\n\ncl def classify(x: any) -> str {\n    if type(x) is str {\n        return \"string\";\n    } elif type(x) is not dict {\n        return \"not dict\";\n    }\n    return \"other\";\n}\n";
+
+    temp_path = write_temp_jac(jac_code);
+
+    try {
+        js_code = compile_fixture_to_js(temp_path);
+        assert "typeof x === \"string\"" in js_code , (
+            f"`type(x) is str` must lower to a JS string check, got:\n{js_code}"
+        );
+        assert "Array.isArray(x)" in js_code , (
+            f"`type(x) is not dict` must lower to an object/array predicate, got:\n{js_code}"
+        );
+        assert "x !== null" in js_code , (
+            f"`type(x) is not dict` must exclude null, got:\n{js_code}"
+        );
+        assert "=== str" not in js_code;
+        assert "!== dict" not in js_code;
+        assert_balanced_syntax(js_code, temp_path);
+    } finally {
+        os.unlink(temp_path);
+    }
+}
+
 test "category1 named imports generate correct js" {
     fixture_file_path = os.path.join(FIXTURES, "category1_named_imports.jac");
     js_code = compile_fixture_to_js(fixture_file_path);
