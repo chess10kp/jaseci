@@ -290,7 +290,10 @@ impl build_runtime_tarball(
         );
         if missing_exports {
             entry_js = (
-                entry_js.rstrip("\n") + "\nexport { " + ", ".join(missing_exports) + " };\n"
+                entry_js.rstrip("\n")
+                + "\nexport { "
+                + ", ".join(missing_exports)
+                + " };\n"
             );
         }
     }
