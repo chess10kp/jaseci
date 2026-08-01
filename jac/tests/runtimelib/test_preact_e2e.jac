@@ -200,9 +200,8 @@ test "preact counter increments in browser" {
                 try {
                     page.goto(f"{url}/cl/app", wait_until="load", timeout=120000);
                     page.wait_for_selector('[data-testid="count"]', timeout=60000);
-                    assert "Count: 0" in page.locator(
-                        '[data-testid="count"]'
-                    ).inner_text();
+                    assert "Count: 0"
+                        in page.locator('[data-testid="count"]').inner_text();
                     page.locator('[data-testid="inc"]').click();
                     page.wait_for_function(
                         """() => {
@@ -211,9 +210,8 @@ test "preact counter increments in browser" {
                         }""",
                         timeout=15000,
                     );
-                    assert "Count: 1" in page.locator(
-                        '[data-testid="count"]'
-                    ).inner_text();
+                    assert "Count: 1"
+                        in page.locator('[data-testid="count"]').inner_text();
                 } finally {
                     context.close();
                     browser.close();

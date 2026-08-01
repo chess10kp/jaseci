@@ -19,7 +19,7 @@ import from jaclang.jac0core.program { JacProgram }
 glob FIXTURES = os.path.join(
          JAC_ROOT, "tests", "compiler", "passes", "ecmascript", "fixtures"
      ),
-     _MINIMAL_JSX = 'cl def:pub render(items: list) -> any {\n    return <div>{items}</div>;\n}\n';
+     _MINIMAL_JSX = 'def:pub render(items: list) -> any {\n    return <div>{items}</div>;\n}\n';
 
 """Count named import bindings for a runtime symbol."""
 def _count_runtime_imports(js: str, symbol: str) -> int {
@@ -53,7 +53,7 @@ def _compile_with_backend(path: str, backend: any) -> str {
 
 """Write inline Jac to a temp file and return its path."""
 def _write_temp_jac(code: str) -> str {
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".cl.jac", delete=False) as tmp {
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jac", delete=False) as tmp {
         tmp.write(code);
         return tmp.name;
     }
@@ -106,7 +106,7 @@ test "raw Solid JSX does not reference or import __jacJsx" {
 
 test "Solid compiler-created fragments stay backend-native" {
     js = _compile_with_backend(
-        os.path.join(FIXTURES, "view_basic.cl.jac"), SolidBackend()
+        os.path.join(FIXTURES, "view_basic.jac"), SolidBackend()
     );
     assert "__jacJsx" not in js , (
         "Solid slot fragments must not import the React JSX factory"
@@ -132,9 +132,9 @@ test "runtime source does not self-import @jac/runtime" {
     plugin = importlib.import_module("jaclang.runtimelib.client");
     paths = list(getattr(plugin, "__path__", []) or []);
     assert paths , "jaclang.runtimelib.client must be importable";
-    core_src = os.path.join(paths[0], "client_runtime_core.cl.jac");
+    core_src = os.path.join(paths[0], "client_runtime_core.jac");
     assert os.path.isfile(core_src) , (
-        "client_runtime_core.cl.jac is part of jaclang and must be present"
+        "client_runtime_core.jac is part of jaclang and must be present"
     );
     js = _compile_raw_js(core_src);
     assert "function __jacJsx" in js , "runtime core must define __jacJsx";
@@ -206,7 +206,7 @@ test "published npm JS remaps the runtime import exactly once" {
     try {
         pkg = Path(tmpdir) / "ui";
         pkg.mkdir(parents=True, exist_ok=True);
-        (pkg / "index.cl.jac").write_text(
+        (pkg / "index.jac").write_text(
             'def:pub Button(label: str) -> any {\n'
             '    return <button class="btn">{label}</button>;\n'
             '}\n'
