@@ -664,6 +664,95 @@ impl TypeEvaluator._get_method_with_overloads(
     return method_ty;
 }
 
+impl TypeEvaluator._is_protocol_class(cls: types.ClassType) -> bool {
+    for base_cls in cls.shared.base_classes {
+        if not isinstance(base_cls, types.ClassType) or base_cls._shared is None {
+            continue;
+        }
+        if (
+            self.prefetch.protocol_class is not None
+            and base_cls.shared == self.prefetch.protocol_class.shared
+        ) {
+            return True;
+        }
+        if base_cls.shared.is_builtin_class
+            and base_cls.shared.class_name in ('Protocol', '_SpecialForm') {
+            return True;
+        }
+    }
+    class_name = cls.shared.class_name;
+    if (cls.shared.is_from_stdlib_stub or cls.shared.is_builtin_class)
+        and (class_name.startswith('Supports') or class_name.startswith('_Supports')) {
+        return True;
+    }
+    return False;
+}
+
+impl TypeEvaluator._bind_protocol_type_vars(
+    proto: types.ClassType,
+    impl_cls: types.ClassType,
+    bindings: dict[str, types.TypeBase],
+) -> bool {
+    if not self._is_protocol_class(proto) {
+        return False;
+    }
+    if not type_utils.class_implements_protocol(impl_cls, proto, self) {
+        return False;
+    }
+    proto_symtab = proto.shared.symbol_table;
+    if not isinstance(proto_symtab, uni.UniScopeNode) {
+        return False;
+    }
+    bound_any = False;
+    for (name, sym) in proto_symtab.names_in_scope.items() {
+        if not sym.decl or not isinstance(sym.decl.name_of, uni.Ability) {
+            continue;
+        }
+        proto_member = self._lookup_class_member(proto, name);
+        impl_member = self._lookup_class_member(impl_cls, name);
+        if not proto_member or not impl_member {
+            continue;
+        }
+        proto_fn = self.get_type_of_symbol(proto_member.symbol);
+        impl_fn = self.get_type_of_symbol(impl_member.symbol);
+        if not isinstance(proto_fn, types.FunctionType)
+            or not isinstance(impl_fn, types.FunctionType) {
+            continue;
+        }
+        proto_params = [
+            p
+            for p in proto_fn.parameters
+            if not p.is_self and not p.is_cls
+        ];
+        impl_params = [
+            p
+            for p in impl_fn.parameters
+            if not p.is_self and not p.is_cls
+        ];
+        for (i, pp) in enumerate(proto_params) {
+            if (
+                i < len(impl_params)
+                and pp.param_type is not None
+                and impl_params[i].param_type is not None
+            ) {
+                if self.assign_type_to_type_var(
+                    pp.param_type, impl_params[i].param_type, bindings
+                ) {
+                    bound_any = True;
+                }
+            }
+        }
+        if proto_fn.return_type is not None and impl_fn.return_type is not None {
+            if self.assign_type_to_type_var(
+                proto_fn.return_type, impl_fn.return_type, bindings
+            ) {
+                bound_any = True;
+            }
+        }
+    }
+    return bound_any;
+}
+
 impl TypeEvaluator.assign_type_to_type_var(
     param_type: TypeBase, arg_type: TypeBase, bindings: dict[str, TypeBase]
 ) -> bool {
@@ -752,13 +841,24 @@ impl TypeEvaluator.assign_type_to_type_var(
     if isinstance(param_type, types.ClassType)
         and isinstance(arg_type, types.ClassType) {
         param_type_args = param_type.private.type_args if param_type.private else [];
-        specialized = type_utils.specialize_for_base_class(arg_type, param_type);
-        arg_type_args = specialized.private.type_args if specialized.private else [];
+        if param_type_args {
+            specialized = type_utils.specialize_for_base_class(arg_type, param_type);
+            arg_type_args = specialized.private.type_args if specialized.private else [];
+            resolved_concrete = any(
+                not isinstance(arg, types.TypeVarType) for arg in arg_type_args
+            );
 
-        for (i, pta) in enumerate(param_type_args) {
-            if i < len(arg_type_args) {
-                if not self.assign_type_to_type_var(pta, arg_type_args[i], bindings) {
-                    return False;
+            if not resolved_concrete and specialized.shared == param_type.shared {
+                self._bind_protocol_type_vars(param_type, arg_type, bindings);
+            } else {
+                for (i, pta) in enumerate(param_type_args) {
+                    if i < len(arg_type_args) {
+                        if not self.assign_type_to_type_var(
+                            pta, arg_type_args[i], bindings
+                        ) {
+                            return False;
+                        }
+                    }
                 }
             }
         }

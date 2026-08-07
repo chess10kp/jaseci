@@ -502,6 +502,13 @@ obj TypeEvaluator {
         param_type: TypeBase, arg_type: TypeBase, bindings: dict[str, TypeBase]
     ) -> bool;
 
+    def _is_protocol_class(cls: types.ClassType) -> bool;
+    def _bind_protocol_type_vars(
+        proto: types.ClassType,
+        impl_cls: types.ClassType,
+        bindings: dict[str, types.TypeBase],
+    ) -> bool;
+
     def _infer_type_args_from_method(
         caller_type: types.ClassType,
         expr: uni.FuncCall,
