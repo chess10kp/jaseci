@@ -39,7 +39,7 @@ test "flow for output is byte-identical across gc modes" {
             assert ran.returncode == 0 , f"{mode}: {ran.stderr}";
             outs[mode] = ran.stdout;
         }
-        assert outs["rc"] == "10\n20\n30\n8\n10\nend\n" , outs["rc"];
+        assert outs["rc"] == "60\n18\nend\n" , outs["rc"];
         assert outs["none"] == outs["rc"] , outs["none"];
         assert outs["cycles"] == outs["rc"] , outs["cycles"];
     }
