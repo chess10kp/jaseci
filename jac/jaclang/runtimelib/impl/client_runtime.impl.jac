@@ -122,13 +122,13 @@ impl useRouter -> dict {
 }
 
 impl AuthGuard(redirect: str = "/login", children: any = None) -> JsxElement {
-    if jacIsLoggedIn() {
-        if children != None {
-            return children;
-        }
-        return <ReactRouterOutlet/>;
+    if not jacIsLoggedIn() {
+        return <ReactRouterNavigate to={redirect} replace={True}/>;
     }
-    <ReactRouterNavigate to={redirect} replace={True}/>
+    if children is not None {
+        return <>{children}</>;
+    }
+    <ReactRouterOutlet/>
 }
 
 impl JacAwaiting(props: dict) -> JsxElement {
