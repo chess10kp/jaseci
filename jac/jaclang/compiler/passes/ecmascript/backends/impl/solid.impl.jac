@@ -12,8 +12,6 @@ impl SolidBackend.name -> str {
 }
 
 impl SolidBackend.lowers_fragments_natively -> bool {
-    # Solid's dom-expressions path lowers fragments to native JSX; its runtime
-    # shim deliberately exports no __jacJsx hyperscript factory.
     return True;
 }
 

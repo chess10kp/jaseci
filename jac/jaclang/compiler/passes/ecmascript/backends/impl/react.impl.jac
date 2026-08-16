@@ -20,7 +20,6 @@ impl ReactBackend.jsx_factory_name -> str {
 }
 
 impl ReactBackend.lowers_fragments_natively -> bool {
-    # React-family backends emit __jacJsx(null, {}, acc) for slot fragments.
     return False;
 }
 

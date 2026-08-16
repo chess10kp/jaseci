@@ -4459,9 +4459,6 @@ impl EsastGenPass._jsx_fragment(
     }
     self._ensure_backend();
     if not self.backend.lowers_fragments_natively() {
-        # JSX-factory backends (React family): the fragment is one factory
-        # call whose third argument is the children passed positionally -
-        # it must NOT re-wrap the accumulator in another array (#7859).
         factory = self.backend.jsx_factory_name();
         factory_name = factory if isinstance(factory, str) and factory else "__jacJsx";
         self._inject_runtime_import(factory_name, anchor);
@@ -4477,9 +4474,7 @@ impl EsastGenPass._jsx_fragment(
             jac_node=anchor
         );
     }
-    # DOM-native backends (Solid): lower the fragment through the backend's
-    # own view lowering so it stays a native JSX fragment instead of a React
-    # hyperscript factory call the backend's runtime does not export.
+
     view = self.sync_loc(
         ViewElement(
             tag=FragmentTag(jac_node=anchor),
