@@ -121,8 +121,11 @@ impl useRouter -> dict {
     };
 }
 
-impl AuthGuard(redirect: str = "/login") -> JsxElement {
+impl AuthGuard(redirect: str = "/login", children: any = None) -> JsxElement {
     if jacIsLoggedIn() {
+        if children != None {
+            return children;
+        }
         return <ReactRouterOutlet/>;
     }
     <ReactRouterNavigate to={redirect} replace={True}/>
