@@ -11,6 +11,12 @@ impl SolidBackend.name -> str {
     return "solid";
 }
 
+impl SolidBackend.lowers_fragments_natively -> bool {
+    # Solid's dom-expressions path lowers fragments to native JSX; its runtime
+    # shim deliberately exports no __jacJsx hyperscript factory.
+    return True;
+}
+
 impl SolidBackend.required_globals -> list[str] {
     return ["__jacSpawn"];
 }

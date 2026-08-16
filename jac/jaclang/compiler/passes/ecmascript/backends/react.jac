@@ -28,6 +28,7 @@ obj ReactBackend(FrameworkBackend) {
     def async_boundary_symbols(a: AsyncBoundary) -> list[str];
     def view_runtime_symbols(view: ViewElement) -> list[str];
     def jsx_factory_name -> str;
+    def lowers_fragments_natively -> bool;
     def import_source(symbol: str) -> str;
     def required_globals -> list[str];
     def runtime_source_basename -> str;
@@ -43,5 +44,7 @@ obj ReactBackend(FrameworkBackend) {
     def vite_plugin_lines -> (tuple[str, str] | None);
     def _hook_symbols -> set[str];
     def _get_setter_name(var_name: str) -> str;
+    def _state_cell_name(var_name: str) -> str;
+    def _state_cell_member(var_name: str, member: str) -> es.Expression;
     def _jsx_fragment(children: list[es.Expression]) -> es.CallExpression;
 }

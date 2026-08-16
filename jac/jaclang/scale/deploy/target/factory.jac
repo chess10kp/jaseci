@@ -10,6 +10,13 @@ import from jaclang.project.capabilities {
 
 type TargetFactory = Callable[[dict[str, any], Logger | None], DeploymentTarget];
 
+glob BUILTIN_TARGET_TYPES: tuple = (
+         "kubernetes",
+         "kubernetes-microservice",
+         "aws",
+         "gcp"
+     );
+
 def ensure_deploy_tooling(dry_run: bool = False) {
     if dry_run {
         return;
@@ -45,6 +52,12 @@ class DeploymentTargetFactory {
         DeploymentTargetFactory._registry[target_type] = factory;
     }
 
+    static def known_targets -> list[str] {
+        names: set[str] = set(BUILTIN_TARGET_TYPES);
+        names.update(DeploymentTargetFactory._registry.keys());
+        return sorted(names);
+    }
+
     static def create(
         target_type: str,
         config: dict[str, any],
@@ -56,30 +69,17 @@ class DeploymentTargetFactory {
             return factory(config, logger);
         }
 
-        if target_type == 'kubernetes' {
+        if target_type in ('kubernetes', 'kubernetes-microservice') {
             ensure_deploy_tooling(dry_run);
             require_deploy_tooling(dry_run);
-            import from jaclang.scale.deploy.target.kubernetes.kubernetes_target {
-                KubernetesTarget
-            }
             import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
                 KubernetesConfig
+            }
+            import from jaclang.scale.deploy.target.kubernetes.target {
+                KubernetesTarget
             }
             k8s_config = KubernetesConfig.from_dict(KubernetesConfig, config);
             return KubernetesTarget(config=k8s_config, logger=logger, dry_run=dry_run);
-        } elif target_type == 'kubernetes-microservice' {
-            ensure_deploy_tooling(dry_run);
-            require_deploy_tooling(dry_run);
-            import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
-                KubernetesConfig
-            }
-            import from jaclang.scale.deploy.target.kubernetes.microservice.target {
-                KubernetesMicroserviceTarget
-            }
-            k8s_config = KubernetesConfig.from_dict(KubernetesConfig, config);
-            return KubernetesMicroserviceTarget(
-                config=k8s_config, logger=logger, dry_run=dry_run
-            );
         } elif target_type == 'aws' {
             raise NotImplementedError("AWS target not yet implemented");
         } elif target_type == 'gcp' {
