@@ -29,6 +29,7 @@ exclude = [
     "docs/*",
     "*/examples/*",
     "*/tests/*",
+    "jac-py/*",
     "console.impl.jac",
     "cli_boot.jac",
     # Files whose comments/docstrings are load-bearing, so they are NOT deslopped:
