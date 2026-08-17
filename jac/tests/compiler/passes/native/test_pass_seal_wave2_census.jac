@@ -30,30 +30,39 @@ never called natively inside the artifact; the layout registration routes
 its Python callers to bytecode. It clears when `ice` construction lowers
 or when the internal-error guard moves behind the emit-as-data path.
 
-Measured and REFUSED this wave, honestly:
+Measured and REFUSED in wave 2; the named preps have since landed:
 
-  - `boundary_analysis_pass`: ~23 own seams that are driver coupling, not
-    backend gaps -- it constructs `JacCompiler`, reads files
-    (`read_file_with_encoding`, jacignore), resolves native modules, and
-    reads `prog` state, all reachable from `enter_import` on any
-    import-bearing input. It needs the #8242-style redesign (the driver
-    hands data) before it can seal; waivers cannot launder driver seams.
-  - `sym_tab_build_pass`: its census is one waiver-class seam after
-    #8241/#8253 cleared the hoist-era union gaps and two checker
-    escalations got honest narrows, but the reachability walk caught a
-    real abort path: live `exit_module_path` reads `Import.is_jac`,
-    whose implementation chains into `__jac_detected` and
-    `ModulePath.resolve_relative_path`, the waived filesystem
-    import-resolution family. Sealed, that aborts on the first plain
-    import. It seals when import detection becomes driver-stamped data
-    on the Import node (the #8242 `absorbed_mod` pattern); the
-    self-clearing pin lives in `test_sealed_seam_reachability.jac`.
-  - `decl_impl_match_pass`: its `transform` chain reaches `id()`-keyed
-    dedup (`_report_bare_redecls`), the Python-side `ext_registry` annex
-    predicate, and untyped `name_of` link walks -- all natively reachable
-    from `transform`, so not waiver-eligible. Three small preps clear it:
-    identity-free E2026 dedup, a native-clean annex-suffix predicate (the
-    `annex_weave` pattern), and typed link accumulators.
+  - `sym_tab_build_pass`: CLEARED. The wave-2 refusal was a real abort
+    path -- live `exit_module_path` read `Import.is_jac`, chaining into
+    `__jac_detected` and `ModulePath.resolve_relative_path`, the waived
+    filesystem import-resolution family. Import detection is
+    driver-stamped data now (`Import.jac_detected`, stamped by
+    `resolve_absorb_imports` alongside `absorbed_mod`, the #8242
+    pattern) and the pass consumes the slot. Census: one waiver-class
+    seam (`exit_global_vars` calls `Transform.ice`, the
+    `semantic_analysis` waiver's twin). Seal-ready; the cleared-state
+    pin lives in `test_sealed_seam_reachability.jac`.
+  - `decl_impl_match_pass`: CLEARED. The `id()`-keyed dedup lowered on
+    its own once #8212 landed; the remaining preps were the typed
+    `NameAtom` link accumulators, the inlined annex-suffix facts
+    replacing the function-local `ext_registry` import, a typed dedup
+    reset, and moving the symbol-binding free functions
+    (`bind_assignment_targets` and friends) into `unitree`, whose
+    vocabulary they read. Census: zero own seams, native IR produced.
+    Seal-ready.
+  - `boundary_analysis_pass`: driver coupling GONE, manifest vocabulary
+    remains. The driver now precomputes every filesystem, config and
+    program-state question an import raises and stamps
+    `Import.boundary_facts` before the pass runs (`stamp_boundary_facts`
+    in `run_schedule`); `JacCompiler` construction, file reads, native
+    module resolution and `prog` reads left the pass entirely, and its
+    closure dropped `helpers`/`fnmatch`. Remaining seams are one
+    coherent family plus one shim gap: methods that write the
+    `InteropManifest` demote because `codeinfo.jac` cannot emit native
+    IR yet (its module-level `dataclasses` import is a fatal placement
+    violation), and `_native_source_module_of` needs `os.path.relpath`
+    in the na_stdlib shim. It seals when codeinfo lowers (or the
+    manifest goes data, the #8243 family) -- not this wave.
 
 The measurement is a source-lane one: under a sealed jaclang image the
 census reads the image's trust boundary instead of each unit's own
@@ -61,7 +70,6 @@ coupling, so `_root_census` skips there (both gates below).
 """
 
 import os;
-import pytest;
 import jaclang;
 import from pathlib { Path }
 import from jaclang.jac0core.compile_options { CompileOptions }
@@ -84,25 +92,49 @@ glob PKG_PATH = Path(jaclang.__file__).parent,
 """Each root's exact native closure, as package-relative paths."""
 glob WAVE2_CLOSURES: dict[(str, tuple)] = {
          "jac0core/passes/ast_validation_pass.jac": (
+             "compiler/type_registry.jac",
+             "compiler/type_system/type_utils.jac",
+             "compiler/type_system/types.jac",
              "jac0core/constant.jac",
              "jac0core/diagnostics.jac",
+             "jac0core/helpers.jac",
              "jac0core/passes/ast_validation_pass.jac",
              "jac0core/srcloc.jac",
              "jac0core/unitree.jac",
-             "runtimelib/na_stdlib/keyword.jac"
+             "runtimelib/na_stdlib/_hashlib_native.jac",
+             "runtimelib/na_stdlib/fnmatch.jac",
+             "runtimelib/na_stdlib/hashlib.jac",
+             "runtimelib/na_stdlib/keyword.jac",
+             "runtimelib/na_stdlib/pathlib.jac"
          ),
          "jac0core/passes/semantic_analysis_pass.jac": (
+             "compiler/type_registry.jac",
+             "compiler/type_system/type_utils.jac",
+             "compiler/type_system/types.jac",
              "jac0core/constant.jac",
              "jac0core/diagnostics.jac",
+             "jac0core/helpers.jac",
              "jac0core/passes/semantic_analysis_pass.jac",
              "jac0core/srcloc.jac",
-             "jac0core/unitree.jac"
+             "jac0core/unitree.jac",
+             "runtimelib/na_stdlib/_hashlib_native.jac",
+             "runtimelib/na_stdlib/fnmatch.jac",
+             "runtimelib/na_stdlib/hashlib.jac",
+             "runtimelib/na_stdlib/pathlib.jac"
          ),
          "compiler/passes/main/sem_def_match_pass.jac": (
              "compiler/passes/main/sem_def_match_pass.jac",
+             "compiler/type_registry.jac",
+             "compiler/type_system/type_utils.jac",
+             "compiler/type_system/types.jac",
              "jac0core/constant.jac",
+             "jac0core/helpers.jac",
              "jac0core/srcloc.jac",
-             "jac0core/unitree.jac"
+             "jac0core/unitree.jac",
+             "runtimelib/na_stdlib/_hashlib_native.jac",
+             "runtimelib/na_stdlib/fnmatch.jac",
+             "runtimelib/na_stdlib/hashlib.jac",
+             "runtimelib/na_stdlib/pathlib.jac"
          )
      };
 
@@ -116,13 +148,13 @@ def _root_module_name(rel: str) -> str {
 """Compile one root the way seal_native_artifacts does, up to the census."""
 def _root_census(rel: str) -> tuple {
     if _jaclang_image() is not None {
-        pytest.skip(
+        testskip(
             "this runtime is a sealed jaclang image; a source census here "
             "measures the image's trust boundary, not the unit's own seams"
         );
     }
     if native_artifact_for(_root_module_name(rel)) is not None {
-        pytest.skip(
+        testskip(
             f"{rel} is served from this runtime's native seal; the census "
             "gated the build via seal_demotion_report"
         );

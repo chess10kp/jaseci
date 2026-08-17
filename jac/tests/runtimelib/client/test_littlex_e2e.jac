@@ -20,7 +20,6 @@ import os;
 import shutil;
 import tempfile;
 import time;
-import pytest;
 import from subprocess { Popen, run }
 import from urllib.error { HTTPError }
 import from urllib.request { urlopen }
@@ -119,7 +118,7 @@ def _littlex_template -> str {
         env=get_env_with_bun(),
     );
     if add_result.returncode != 0 {
-        pytest.fail(
+        testfail(
             f"jac install --npm failed for littleX (bun/npm unavailable?)\n"
             f"STDOUT:\n{add_result.stdout[:2000]}\n"
             f"STDERR:\n{add_result.stderr[:2000]}\n"
@@ -169,7 +168,7 @@ def _require_playwright -> any {
     try {
         import from playwright.sync_api { sync_playwright }
     } except ImportError {
-        pytest.skip("playwright not installed");
+        testskip("playwright not installed");
     }
     return sync_playwright;
 }

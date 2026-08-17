@@ -17,7 +17,7 @@ import from jaclang.jac0core.unitree {
     UnaryExpr,
     UniNode
 }
-import from jaclang.jac0core.passes { UniPass }
+import from jaclang.jac0core.passes.uni_pass { UniPass }
 import from jaclang.jac0core.passes.transform { Transform }
 import from jaclang.jac0core.const_fold { fold_const }
 import from jaclang.jac0core.constant { OwnershipKind, Tokens as Tok }
@@ -93,6 +93,7 @@ obj EnumLayout {
         underlying: str = "i64",
         is_string_enum: bool = False,
         is_class_form: bool = False,
+        all_values_known: bool = True,
         members: list[EnumMemberLayout] = [];
 }
 
@@ -433,7 +434,7 @@ obj LayoutRegistry {
     def is_primary_ancestor(child: str, ancestor: str) -> bool;
 }
 
-obj LayoutPass(Transform[Module, Module]) {
+obj LayoutPass(Transform) {
     has ir_in: Module,
         prog: any,
         cancel_token: any = None,
