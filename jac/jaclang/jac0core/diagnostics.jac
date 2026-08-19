@@ -667,6 +667,33 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          " typing;` then `typing.Any`.",
          blocks_codegen=True
      ),
+     E1123 = _err(
+         "E1123",
+         Category.IMPORT,
+         "'{name}' cannot be imported from 'typing' -- use the builtin `{remedy}`",
+         help="'{name}' is the deprecated typing alias for the builtin"
+         " `{remedy}`. The two spell the same type, and jac subscripts the"
+         " builtin directly, so the alias buys nothing and costs an import."
+         " Drop '{name}' from the import list (remove the import when it was"
+         " the only name) and write the builtin instead -- `{remedy}[int]`,"
+         " not `{name}[int]`.",
+         blocks_codegen=True
+     ),
+     E1124 = _err(
+         "E1124",
+         Category.TYPE,
+         "Membership test \"{op}\" over an operand with no static type"
+         " (\"{type}\"); native code cannot answer it",
+         help="Every container answers `in` from its own layout, so the operand"
+         " has to carry one by the time the comparison is reached. This one"
+         " has no static type at all -- typed `any`, or left unannotated and"
+         " never inferred -- so there is no layout to reach and no"
+         " dynamic-dispatch tier to fall back on. Annotate the operand with the"
+         " container it actually holds (`list[Tag]`, `dict[str, int]`,"
+         " `set[str]`), or bind it to a directly-typed local first, so its"
+         " layout reaches the comparison.",
+         blocks_codegen=True
+     ),
      E1301 = _err(
          "E1301",
          Category.SEMANTIC,
@@ -1476,6 +1503,14 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          "refusing a mixed-options link.",
          help="Every module in a native link must carry the same codegen options fingerprint (gc mode, nogc enforcement, target triple, opt level, debug gates). Rebuild the module under the current options, or scrub the stale native cache with `jac nacompile --scrub`."
      ),
+     E5028 = _err(
+         "E5028",
+         Category.CODEGEN,
+         "Native module '{path}' still calls {names} as live after {attempts} "
+         "re-emissions, but the defining module's verdict demotes them; the "
+         "demotion/emission order did not converge.",
+         help="Within one native unit a caller's emitted IR must observe the callee module's final demotion verdicts (verdict-before-emission). A caller emitted under an import cycle is re-emitted once its callees' verdicts land; failing to converge means a verdict keeps flipping between emissions, which is a compiler defect worth reporting with JAC_NA_DEBUG=1 output."
+     ),
      E5030 = _err(
          "E5030",
          Category.CODEGEN,
@@ -1632,6 +1667,12 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          Category.CODEGEN,
          "Constructing '{cls}' would run '{owner}.postinit' on a Python shadow the native object cannot see",
          help="A native class over a Python-side base owns two halves: its own slots live in the native struct, the base's live on a Python shadow instance the bridge keeps beside it. Construction runs the base's `__post_init__` on that shadow, where the subclass's native slots do not exist and its method overrides are not on the shadow's class -- so a store the base initializer makes is invisible natively, and a call it dispatches reaches the base's body rather than the override. The object comes out with its declared defaults and nothing says so. Give '{cls}' a `postinit` of its own -- it suppresses the base's and can chain into it with `super.postinit()`, which does bridge -- or bring the base into the native unit so the whole chain lowers."
+     ),
+     E5089 = _err(
+         "E5089",
+         Category.CODEGEN,
+         "Calling '{cls}.{meth}' runs '{base}.{meth}' on a Python shadow that does not carry '{cls}.{over}'",
+         help="The bridge builds the Python shadow as `type(name, (base,), {{}})`: it carries the Python-side base chain and none of the native subclass's bodies. '{base}.{meth}' dispatches to `self.{over}` and would find the base's body, not the override '{cls}' declares, because that override is not on the shadow's class -- the wrong body would run and nothing would say so. Override '{meth}' on '{cls}' as well, so the native lane owns the entry point and no shadow dispatch is needed; or bring '{base}' into the native unit so the whole chain lowers and dispatches through the vtable."
      ),
      W6001 = _warn(
          "W6001",
