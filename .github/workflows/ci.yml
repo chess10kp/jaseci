@@ -400,6 +400,9 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Verify P0/P1 host hard removals (8144 items 1–10)
+        run: bash scripts/check-host-hard-removals.sh
+
       # On PRs, scope format/check to the .jac files changed vs the merge-base;
       # otherwise run the whole repo.
       - name: Determine changed .jac files

@@ -1,7 +1,8 @@
 import from pathlib { Path }
 import from typing { Optional }
 import from jaclang.runtimelib.watcher { FileChangeEvent }
-import from jaclang.runtimelib.client.targets.registry { ClientTarget }
+import from jaclang.jac0core.host { HOST_RN }
+import from jaclang.runtimelib.client.targets.registry { Host }
 import from jaclang.runtimelib.client.targets.client_dev_common { _ClientHmrHandler }
 
 obj _RNHmrHandler(_ClientHmrHandler) {
@@ -11,8 +12,9 @@ obj _RNHmrHandler(_ClientHmrHandler) {
     def on_event(evt: FileChangeEvent) -> None;
 }
 
-obj ReactNativeTarget(ClientTarget) {
+obj ReactNativeTarget(Host) {
     has name: str = "react-native",
+        host_kind: str = HOST_RN,
         default: bool = False,
         requires_setup: bool = True,
         config_section: str = "react_native";

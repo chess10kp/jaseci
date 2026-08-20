@@ -339,6 +339,7 @@ def install(
     no_save: bool = False,
     git: str = "",
     npm: bool = False,
+    server: bool = False,
     shadcn: bool = False,
     verbose: bool = False,
     force_reinstall: bool = False,

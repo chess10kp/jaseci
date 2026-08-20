@@ -1,10 +1,11 @@
 import from pathlib { Path }
 import from typing { Optional }
 import from jaclang.runtimelib.client.targets.web_target { WebTarget }
-import from jaclang.runtimelib.client.targets.registry { TargetType }
+import from jaclang.jac0core.host { HOST_WEBVIEW }
 
 obj NativeDesktopTarget(WebTarget) {
-    has name: str = TargetType.DESKTOP.value,
+    has name: str = "desktop",
+        host_kind: str = HOST_WEBVIEW,
         default: bool = False,
         requires_setup: bool = False,
         config_section: str = "desktop",

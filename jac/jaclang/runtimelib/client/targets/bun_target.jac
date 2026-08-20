@@ -1,15 +1,15 @@
 import from pathlib { Path }
 import from typing { Optional }
-import from jaclang.runtimelib.client.targets.web_target { WebTarget }
-import from jaclang.jac0core.host { HOST_BROWSER }
+import from jaclang.runtimelib.client.targets.registry { Host }
+import from jaclang.jac0core.host { HOST_BUN }
 
-obj MobileTarget(WebTarget) {
-    has name: str = "mobile",
-        host_kind: str = HOST_BROWSER,
+obj BunTarget(Host) {
+    has name: str = "bun",
+        host_kind: str = HOST_BUN,
         default: bool = False,
-        requires_setup: bool = True,
-        config_section: str = "mobile",
-        output_dir: Path = Path("android/app/build/outputs");
+        requires_setup: bool = False,
+        config_section: str = "plugin.client",
+        output_dir: Optional[Path] = None;
 
     override def setup(project_dir: Path) -> None;
     override def build(

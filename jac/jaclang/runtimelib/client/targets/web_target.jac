@@ -1,9 +1,11 @@
 import from pathlib { Path }
 import from typing { Optional }
-import from jaclang.runtimelib.client.targets.registry { ClientTarget }
+import from jaclang.runtimelib.client.targets.registry { Host }
+import from jaclang.jac0core.host { HOST_BROWSER }
 
-obj WebTarget(ClientTarget) {
+obj WebTarget(Host) {
     has name: str = "web",
+        host_kind: str = HOST_BROWSER,
         default: bool = True,
         requires_setup: bool = False,
         config_section: str = "plugin.client",
