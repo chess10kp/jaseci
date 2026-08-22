@@ -7,7 +7,6 @@ import io;
 import json;
 import logging;
 import os;
-import pytest;
 import re;
 import shutil;
 import uuid;
@@ -27,7 +26,7 @@ suite); core CI skips them.
 """
 def _require_client_integration {
     if not os.environ.get("JAC_CLIENT_INTEGRATION") {
-        pytest.skip(
+        testskip(
             "client render requires the Vite/Bun toolchain; "
             "set JAC_CLIENT_INTEGRATION=1 to run"
         );
@@ -69,7 +68,7 @@ def make_client_app_client(tmp_path: str) -> JacTestClient {
     module_name = f"client_app_{unique_id}";
     fixtures_dest = Path(tmp_path) / module_name;
     fixtures_dest.mkdir(parents=True, exist_ok=True);
-    for f in fixtures_src.glob("*.jac") {
+    for f in fixtures_src.`glob("*.jac") {
         if f.is_file() {
             dest_name = f.name;
             if f.name == "client_app.jac" {
@@ -229,7 +228,7 @@ def make_spa_client(tmp_path: str) -> JacTestClient {
     module_name = f"spa_app_{unique_id}";
     fixtures_dest = Path(tmp_path) / module_name;
     fixtures_dest.mkdir(parents=True, exist_ok=True);
-    for f in fixtures_src.glob("*.jac") {
+    for f in fixtures_src.`glob("*.jac") {
         if f.is_file() {
             dest_name = f.name;
             if f.name == "client_app.jac" {
@@ -2302,7 +2301,7 @@ test "concurrent ensure_bundle callers share one build instead of each running t
     try {
         results = list(executor.map(_one, range(6)));
     } finally {
-        executor.shutdown(wait=True);
+        executor.shutdown(`wait=True);
     }
     assert builder.calls == 1 , (
         f"the bundle was built {builder.calls} times for 6 concurrent callers; "

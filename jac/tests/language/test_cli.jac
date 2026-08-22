@@ -432,11 +432,11 @@ test "jac test err" {
     captured_output = io.StringIO();
     sys.stdout = captured_output;
     sys.stderr = captured_output;
-    analysis.test(fixture_path("baddy.jac"));
+    analysis.`test(fixture_path("baddy.jac"));
     sys.stdout = sys.__stdout__;
     sys.stderr = sys.__stderr__;
     stdout_value = captured_output.getvalue();
-    # pytest points the failure at <file>:<line> -- the deliberate error is on
+    # the runner points the failure at <file>:<line> -- the deliberate error is on
     # line 2 of the base module's test annex.
     assert "baddy.test.jac:2" in stdout_value;
 }
@@ -518,13 +518,13 @@ test "run test" {
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        analysis.test(fixture_path("run_test.jac"), maxfail=2);
+        analysis.`test(fixture_path("run_test.jac"), maxfail=2);
         out = captured.getvalue();
     } finally {
         sys.stdout = old_stdout;
     }
 
-    # jac test routes through pytest, reporting on stdout; --maxfail 2 stops the
+    # jac test reports on stdout; --maxfail 2 stops the
     # run after the 2nd failure.
     assert "2 failed" in out;
     assert "run_test.jac" in out;
@@ -532,7 +532,7 @@ test "run test" {
 
 test "run test native codespace file" {
     # A compound-codespace test file (`foo.jac`) must collect and run its
-    # `test` blocks. Regression for issue #7150: the pytest collector derived
+    # `test` blocks. Regression for issue #7150: the collector derived
     # the module name with `Path(...).stem`, leaving the `.na` suffix so the
     # import resolved as a package path, failed, and was silently swallowed --
     # 0 items collected, exit 0, CI green while running nothing.
@@ -540,7 +540,7 @@ test "run test native codespace file" {
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        analysis.test(fixture_path("native_run_test.jac"), maxfail=2);
+        analysis.`test(fixture_path("native_run_test.jac"), maxfail=2);
         out = captured.getvalue();
     } finally {
         sys.stdout = old_stdout;
@@ -565,7 +565,7 @@ test "run test native broken import surfaces error" {
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        rc = analysis.test(fixture_path("native_broken_import_test.jac"));
+        rc = analysis.`test(fixture_path("native_broken_import_test.jac"));
         out = captured.getvalue();
     } finally {
         sys.stdout = old_stdout;
@@ -580,25 +580,46 @@ test "run test native broken import surfaces error" {
     assert "passed" not in out;
 }
 
-test "run test with directory filter" {
-    # Directory discovery + glob filter over fixture files is native-runner
-    # behavior (the pytest collector skips fixtures/ and non-test_ names).
-    fixtures_dir = fixture_path("");
-    env = dict(os.environ);
-    env["JAC_TEST_NATIVE"] = "1";
-    process = subprocess.Popen(
-        ["jac", "test", "-d", fixtures_dir, "-f", "circle*", "-x"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        env=env
-    );
-    (stdout, stderr) = process.communicate();
-    combined = stdout + stderr;
-    assert "circle" in combined;
-    assert "circle_purfe.test" not in combined;
-    assert "circle_pure.impl" not in combined;
+test "directory discovery skips impl annexes and dedupes test annexes" {
+    # Collection rules, asserted against the runner's discovery directly, on a
+    # tree built for the purpose. The end-to-end CLI path for the same rules
+    # lives in tests/cli/test_test_discovery.jac.
+    import from jaclang.runtimelib.test_runner { discover }
+    tree_root = tempfile.mkdtemp();
+    try {
+        Path(os.path.join(tree_root, "widget.jac")).write_text("def area -> int;\n");
+        Path(os.path.join(tree_root, "widget.impl.jac")).write_text(
+            "impl area -> int {\n    return 4;\n}\n"
+        );
+        Path(os.path.join(tree_root, "widget.test.jac")).write_text(
+            'test "widget area" {\n    assert area() == 4;\n}\n'
+        );
+        Path(os.path.join(tree_root, "plain_suite.jac")).write_text(
+            'test "plain" {\n    assert True;\n}\n'
+        );
+        os.makedirs(os.path.join(tree_root, "fixtures"));
+        trap = os.path.join(tree_root, "fixtures", "input.jac");
+        Path(trap).write_text('test "never collected" {\n    assert False;\n}\n');
+
+        names = [os.path.basename(f) for f in discover(directory=tree_root).files];
+        # An impl annex is never a suite.
+        assert "widget.impl.jac" not in names;
+        # A .test.jac annex resolves to its base module, so the pair collects
+        # once, reported under the base rather than the annex.
+        assert "widget.test.jac" not in names;
+        assert "widget.jac" in names;
+        # Every .jac under a declared [test] tree_root is a suite (#7151), even one
+        # whose name follows no test-naming convention.
+        assert "plain_suite.jac" in names;
+        # A fixtures/ input is a test input, not a suite.
+        assert "input.jac" not in names;
+
+        # ... but naming a fixtures/ file directly still collects it.
+        explicit = [os.path.basename(f) for f in discover(paths=[trap]).files];
+        assert explicit == ["input.jac"];
+    } finally {
+        shutil.rmtree(tree_root, ignore_errors=True);
+    }
 }
 
 test "discovery prunes hidden and pycache dirs" {
@@ -618,12 +639,13 @@ test "discovery prunes hidden and pycache dirs" {
         Path(os.path.join(tmp_dir, "__pycache__", "skip_test.jac")).write_text(
             'test "pruned_pyc" {\n    assert False;\n}\n'
         );
-        # Directory discovery + pruning of hidden/cache dirs is native-runner
-        # behavior (the pytest collector only takes test_ names, not good_test.jac).
+        # A declared `-d` root collects every .jac beneath it regardless of
+        # naming (#7151), so good_test.jac is a suite even without a test_
+        # prefix.
         env = dict(os.environ);
-        env["JAC_TEST_NATIVE"] = "1";
+        env["JAC_TEST_JOBS"] = "0";
         process = subprocess.Popen(
-            ["jac", "test", "-d", tmp_dir],
+            ["jac", "test", "-d", tmp_dir, "-v"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -634,7 +656,7 @@ test "discovery prunes hidden and pycache dirs" {
         combined = stdout + stderr;
         # Top-level test is discovered and runs to a pass.
         assert "good_test.jac" in combined;
-        assert "Passed successfully." in combined;
+        assert "1 passed" in combined;
         # Hidden / pycache dirs are pruned: their failing tests never run.
         assert "skip_test.jac" not in combined;
         assert "FAILED" not in combined;
@@ -644,12 +666,21 @@ test "discovery prunes hidden and pycache dirs" {
     }
 }
 
-test "run test with filter maxfail" {
-    # Glob filter over a discovered directory is native-runner behavior.
+test "maxfail spans several files" {
+    # --maxfail counts across the whole run, not per file. Serial so the
+    # cap trips deterministically rather than racing parallel workers.
     env = dict(os.environ);
-    env["JAC_TEST_NATIVE"] = "1";
+    env["JAC_TEST_JOBS"] = "0";
     process = subprocess.Popen(
-        ["jac", "test", "-f", "*run_test.jac", "-m", "4"],
+        [
+            "jac",
+            "test",
+            "maxfail_run_test.jac",
+            "run_test.jac",
+            "native_run_test.jac",
+            "-m",
+            "4"
+        ],
         cwd=fixture_path(""),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -659,46 +690,30 @@ test "run test with filter maxfail" {
     );
     (stdout, stderr) = process.communicate();
     combined = stdout + stderr;
-    # Three files match since the .na.jac marker retired: native_run_test
-    # (.F) now joins maxfail_run_test (F.F) and run_test (...F); -m 4 lets
-    # all of them run before the failure cap trips.
-    assert "...F" in combined;
-    assert "F.F" in combined;
-    assert ".F" in combined;
+    # -m 4 lets all three files run before the failure cap trips.
+    assert "4 failed" in combined;
+    assert process.returncode != 0;
 }
 
 test "run specific test only" {
-    # Asserting on a passing test's own printed output needs the native runner
-    # (pytest captures/suppresses stdout of passing tests).
-    old_native = os.environ.get("JAC_TEST_NATIVE");
-    os.environ["JAC_TEST_NATIVE"] = "1";
-
-    captured_stderr = io.StringIO();
-    old_stderr = sys.stderr;
-    sys.stderr = captured_stderr;
-
     captured = io.StringIO();
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        analysis.test(fixture_path("jactest_main.jac"), test_name="from 2 to 10");
-        stdout = captured.getvalue();
-        stderr = captured_stderr.getvalue();
+        analysis.`test(
+            fixture_path("jactest_main.jac"), test_name="from 2 to 10", verbose=True
+        );
+        out = captured.getvalue();
     } finally {
         sys.stdout = old_stdout;
-        sys.stderr = old_stderr;
-        if old_native is None {
-            del os.environ["JAC_TEST_NATIVE"];
-        } else {
-            os.environ["JAC_TEST_NATIVE"] = old_native;
-        }
     }
 
-    assert "Ran 1 test" in stderr;
-    assert "Testing fibonacci numbers from 2 to 10." in stdout;
-    assert "Testing first 2 fibonacci numbers." not in stdout;
-    assert "This test should not run after import." not in stdout;
+    # --test_name joins its words with `and`, so only the matching block runs.
+    assert "1 passed" in out;
+    assert "from 2 to 10" in out;
+    assert "first two" not in out;
 }
+
 
 test "graph coverage" {
     graph_params = set(inspect.signature(tools.dot).parameters.keys());
@@ -854,7 +869,7 @@ test "param arg" {
 test "caching issue" {
     test_cases = [(10, True), (11, False)];
     # Write the generated test into an isolated temp dir so it never pollutes
-    # the source tree and parallel runs (pytest -n auto) cannot collide.
+    # the source tree and parallel worker runs cannot collide.
     with tempfile.TemporaryDirectory() as tmpdir {
         test_file = os.path.join(tmpdir, "test_caching_issue.jac");
         for (x, is_passed) in test_cases {
@@ -869,7 +884,7 @@ test "caching issue" {
             );
             (stdout, stderr) = process.communicate();
             combined = stdout + stderr;
-            # jac test routes through pytest; the rebuilt file must re-run (not
+            # the rebuilt file must re-run (not
             # serve a stale cached result), so pass/fail flips with the assertion.
             if is_passed {
                 assert "1 passed" in combined;
@@ -1093,7 +1108,7 @@ test "format -s preserves bracketed Jac syntax through Rich console" {
     # `todos + [t]` verbatim; it looks like terminal markup but the console
     # never interprets markup/highlight in caller data. This test invokes the
     # `jac` binary via subprocess so the full CLI console + stdout path is
-    # exercised end-to-end (calling `analysis.format` from inside pytest covers
+    # exercised end-to-end (calling `analysis.format` from inside the suite covers
     # the same console but not the real CLI stdout path).
     with tempfile.TemporaryDirectory() as tmpdir {
         src_path = os.path.join(tmpdir, "brackets.jac");
@@ -2256,19 +2271,19 @@ test "jac check disable_error_code warns on unknown diagnostics" {
     assert "E9999" in combined , "unknown warning should use canonical code casing";
 }
 
-test "jac check native-census flag maps to check arg" {
+test "jac check native-coverage flag maps to check arg" {
     import from jaclang.cli.manifest { get_command_meta }
     import from jaclang.cli.manifest_parse { build_command_parser }
     parser = build_command_parser(get_command_meta("check"));
     (args, _) = parser.parse_known_args(
-        [fixture_path("warnings_only.jac"), "--native-census"]
+        [fixture_path("warnings_only.jac"), "--native-coverage"]
     );
-    assert getattr(args, "native_census", False) == True , (
-        "kebab flag should map to native_census dest"
+    assert getattr(args, "native_coverage", False) == True , (
+        "kebab flag should map to native_coverage dest"
     );
 }
 
-test "jac check native census ranks module outcomes" {
+test "jac check native coverage ranks module outcomes" {
     with tempfile.TemporaryDirectory() as td {
         with open(os.path.join(td, "pure.jac"), "w") as f {
             f.write("def add(a: int, b: int) -> int {\n    return a + b;\n}\n");
@@ -2290,14 +2305,14 @@ test "jac check native census ranks module outcomes" {
         (captured_stdout, captured_stderr, old_stdout, old_stderr) = _capture_output();
         _reset_config();
         try {
-            result = analysis.check([td], native_census=True);
+            result = analysis.check([td], native_coverage=True);
             combined = captured_stdout.getvalue() + captured_stderr.getvalue();
         } finally {
             _restore_output(old_stdout, old_stderr);
             set_config(None);
             _reset_config();
         }
-        assert "native census" in combined.lower() , "census header missing";
+        assert "native coverage" in combined.lower() , "coverage header missing";
         assert "native seams" in combined , (
             "a module whose callable demoted granularly must be reported "
             "under the native-seams section"
@@ -2312,7 +2327,7 @@ test "jac check native census ranks module outcomes" {
         assert "root access (persistent graph)" in combined , (
             "server reason strings must be real signal labels"
         );
-        assert result == 0 , "census seams must not flip exit code";
+        assert result == 0 , "coverage seams must not flip exit code";
     }
 }
 
@@ -2657,6 +2672,36 @@ test "jac check on impl file redirects to base and filters errors" {
             f"Base file errors should be filtered out when checking impl file. "
             f"Output:\n{output}"
         );
+    }
+}
+
+"""A directory walk skips annexes the base module in the same run already compiles."""
+test "jac check directory skips covered annexes" {
+    import from jaclang.jac0core.program { JacProgram }
+    import from jaclang.jac0core.runtime { JacRuntime }
+
+    with tempfile.TemporaryDirectory() as tmpdir {
+        with open(os.path.join(tmpdir, "mymod.jac"), "w") as f {
+            f.write("def greet(name: str) -> str;\n");
+        }
+        impl_dir = os.path.join(tmpdir, "impl");
+        os.makedirs(impl_dir);
+        with open(os.path.join(impl_dir, "mymod.impl.jac"), "w") as f {
+            f.write("impl greet(name: str) -> str { return name; }\n");
+        }
+        with open(os.path.join(tmpdir, "orphan.impl.jac"), "w") as f {
+            f.write("impl nobase.thing { return 1; }\n");
+        }
+        JacRuntime.program = JacProgram();
+        # mymod.jac plus the orphan annex no base module covers -- not
+        # mymod.impl.jac, which compiling mymod.jac already folds in.
+        assert _run_jac_check(tmpdir) == 2;
+        JacRuntime.program = JacProgram();
+        # An annex folder named directly is still walked.
+        assert _run_jac_check(impl_dir) == 1;
+        JacRuntime.program = JacProgram();
+        # So is an annex named directly.
+        assert _run_jac_check(os.path.join(impl_dir, "mymod.impl.jac")) == 1;
     }
 }
 

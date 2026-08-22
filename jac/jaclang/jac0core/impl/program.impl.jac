@@ -11,6 +11,16 @@ impl JacProgram.init(
     self._compile_options: CompileOptions = CompileOptions();
     self._native_cache: dict = {};
 
+    self._na_dep_units: dict = {};
+
+    self._na_dep_inflight: set = set();
+
+    self._na_verdict_resolving: set = set();
+
+    self._na_unverified_live: dict = {};
+
+    self._na_verdict_misses: int = 0;
+
     self._hub_cache_times: dict[str, float] = {};
 
     self._dependents: dict[str, set[str]] = {};
@@ -24,6 +34,10 @@ impl JacProgram.init(
     self._placement_summaries: dict = {};
 
     self._placement_state: dict = {};
+
+    self._boundary_parse_memo: dict = {};
+
+    self._compile_depth: int = 0;
 }
 
 impl JacProgram.hub_cache_stamp(self: JacProgram, resolved_path: str) -> None {
@@ -276,14 +290,73 @@ impl JacProgram.clear_type_system(self: JacProgram, clear_hub: bool = False) -> 
     self.type_evaluator = None;
     if clear_hub {
         self.mod.hub.clear();
-    } else {
-        for mod in self.mod.hub.values() {
-            for nd in mod.get_all_sub_nodes(uni.Expr) {
+        return;
+    }
+
+    for mod in self.mod.hub.values() {
+        if mod.stub_only {
+            continue;
+        }
+        stack: list[uni.UniNode] = [mod];
+        while stack {
+            nd = stack.pop();
+            if isinstance(nd, uni.Expr) {
                 nd.type = None;
                 nd.narrowed_type = None;
             }
+            for kid in nd.kid {
+                stack.append(kid);
+            }
         }
     }
+    self._inferred_mods.clear();
+}
+
+impl JacProgram.release_native_dep_units(self: JacProgram) -> None {
+    for (path, unit) in self._na_dep_units.items() {
+        if isinstance(unit, str) {
+            continue;
+        }
+        try {
+            keyed = JacProgram.hub_key(path);
+        } except Exception {
+            keyed = path;
+        }
+        probes: list[str] = [keyed];
+        if path != keyed {
+            probes.append(path);
+        }
+        for probe in probes {
+            if self.mod.hub.get(probe) is unit {
+                self.invalidate_module(probe);
+            }
+        }
+        try {
+            gen = unit.gen;
+        } except Exception {
+            continue;
+        }
+        gen.native_engine = None;
+        gen.llvm_ir = None;
+        gen.native_bitcode = None;
+    }
+    self._na_dep_units.clear();
+    self._na_unverified_live.clear();
+    self._na_verdict_resolving.clear();
+}
+
+impl JacProgram.release_check_caches(self: JacProgram) -> None {
+    ev = self.type_evaluator;
+    if ev is None {
+        return;
+    }
+    ev._flow_node_type_cache.clear();
+    ev._flow_key_type_cache.clear();
+    ev._and_narrowing_overrides.clear();
+    ev._strict_site_cache.clear();
+    ev._sv_async_syms_cache.clear();
+    ev._loop_written_keys_cache.clear();
+    ev._type_guard_probes.clear();
 }
 
 impl JacProgram.release_compile_closure(
@@ -314,6 +387,8 @@ impl JacProgram.release_compile_closure(
     self.type_evaluator = None;
     self.errors_had.clear();
     self.warnings_had.clear();
+    self._boundary_parse_memo.clear();
+    self.release_native_dep_units();
 }
 
 impl JacProgram._search_hubs(self: JacProgram) -> list[dict[(str, uni.Module)]] {
@@ -331,6 +406,19 @@ impl JacProgram.find_module(self: JacProgram, path: str) -> (uni.Module | None) 
     for hub in hubs {
         if path in hub {
             return hub[path];
+        }
+    }
+
+    try {
+        keyed = JacProgram.hub_key(path);
+    } except Exception {
+        keyed = path;
+    }
+    if keyed != path {
+        for hub in hubs {
+            if keyed in hub {
+                return hub[keyed];
+            }
         }
     }
 
@@ -411,7 +499,7 @@ impl JacProgram.build(
 impl JacProgram.run_schedule(
     self: JacProgram,
     mod: uni.Module,
-    passes: list[type[Transform[uni.Module, uni.Module]]],
+    passes: list[type[Transform]],
     cancel_token: (Event | None) = None
 ) -> None {
     self._get_compiler().run_schedule(mod, self, passes, cancel_token);

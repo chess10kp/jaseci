@@ -1,4 +1,3 @@
-import from typing { Any }
 import from jaclang.scale.deploy.target.deployment_target { DeploymentTarget }
 import from jaclang.scale.models.resource_status { ResourceStatus, ResourceStatusInfo }
 import from jaclang.scale.models.progress { EventSink, NoopSink, ProgressEvent }
@@ -13,8 +12,6 @@ import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
     delete_k8s_secret,
     delete_if_exists,
     delete_namespace,
-    check_K8s_status,
-    ensure_namespace_exists,
     get_cluster_provider,
     resize_pvc_if_needed
 }
@@ -99,7 +96,7 @@ obj KubernetesTargetBase(DeploymentTarget) {
         }
     }
 
-    def _get_database_init_containers(app_name: str) -> list[dict[(str, Any)]] {
+    def _get_database_init_containers(app_name: str) -> list[dict[(str, any)]] {
         init_containers = [];
         wait_image = self.k8s_config.wait_image;
 
@@ -116,7 +113,7 @@ obj KubernetesTargetBase(DeploymentTarget) {
         return init_containers;
     }
 
-    def _deploy_databases(app_name: str, namespace: str, apps_v1: Any, core_v1: Any) {
+    def _deploy_databases(app_name: str, namespace: str, apps_v1: any, core_v1: any) {
         if not self.k8s_config.database_enabled() {
             return;
         }
@@ -673,6 +670,19 @@ obj KubernetesTargetBase(DeploymentTarget) {
             }
         }
         return None;
+    }
+
+    def port_forward_hint -> str {
+        namespace = self.k8s_config.namespace;
+        target_port = self.k8s_config.container_port;
+        local_port = 8080;
+        return (
+            "No ingress is configured, so the gateway has no address outside "
+            "the cluster. Reach it with:\n"
+            f"  kubectl -n {namespace} port-forward svc/gateway-service "
+            f"{local_port}:{target_port}\n"
+            f"then open http://localhost:{local_port}"
+        );
     }
 
     def get_service_url(app_name: str) -> (str | None) {

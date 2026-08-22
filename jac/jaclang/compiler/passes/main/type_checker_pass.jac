@@ -52,9 +52,33 @@ import from jaclang.jac0core.unitree {
     WithStmt,
     YieldExpr
 }
-import from jaclang.jac0core.passes { UniPass }
+import from jaclang.jac0core.passes.uni_pass { UniPass }
 import from jaclang.jac0core.constant { Tokens as Tok }
+import from jaclang.compiler.type_system.types {
+    AnyType,
+    ClassType,
+    TypeBase,
+    TypeVarType,
+    UnionType,
+    UnknownType
+}
+import from jaclang.compiler.type_system.type_utils {
+    PropertyWriteKind,
+    get_declared_generator_return_type,
+    get_generator_yield_type,
+    is_generator_family_type
+}
+import from jaclang.compiler.type_system.operations {
+    ARITHMETIC_OPERATORS,
+    AUG_OPERATOR_MAP,
+    AUG_TO_BINARY_MAP,
+    BINARY_OPERATOR_MAP,
+    get_numeric_promotion_type,
+    get_pow_result_type
+}
+import type from jaclang.compiler.type_system.type_evaluator { TypeEvaluator }
 import from jaclang.jac0core.diagnostics {
+    Category,
     DiagnosticInfo,
     E1001,
     E1002,
@@ -82,6 +106,7 @@ import from jaclang.jac0core.diagnostics {
     E1116,
     E1117,
     E1119,
+    E1124,
     E5095,
     W1036,
     W1037,
@@ -93,7 +118,9 @@ import from jaclang.jac0core.diagnostics {
 
 
 class TypeCheckPass(UniPass) {
-    has _lambda_depth: int = 0;
+    has evaluator: TypeEvaluator,
+        _lambda_depth: int = 0;
+
     static has PROVIDES: tuple = ('inference', ),
         inference_only: bool = False;
 
@@ -109,6 +136,8 @@ class TypeCheckPass(UniPass) {
     ) -> bool;
 
     def _insert_builtin_symbols(self: TypeCheckPass) -> None;
+    def _install_client_state_setters(self: TypeCheckPass) -> None;
+    def _client_state_field_owner(self: TypeCheckPass, nd: HasVar) -> (Ability | None);
     def enter_ability(self: TypeCheckPass, nd: Ability) -> None;
     def exit_ability(self: TypeCheckPass, nd: Ability) -> None;
     def enter_lambda_expr(self: TypeCheckPass, nd: LambdaExpr) -> None;
@@ -121,6 +150,10 @@ class TypeCheckPass(UniPass) {
     def exit_atom_trailer(self: TypeCheckPass, nd: AtomTrailer) -> None;
     def exit_binary_expr(self: TypeCheckPass, nd: BinaryExpr) -> None;
     def exit_compare_expr(self: TypeCheckPass, nd: CompareExpr) -> None;
+    def _diag_erased_membership(
+        self: TypeCheckPass, nd: CompareExpr, hay: Expr, op_text: str
+    ) -> None;
+
     def exit_func_call(self: TypeCheckPass, nd: FuncCall) -> None;
     def _check_intrinsic_call(self: TypeCheckPass, nd: FuncCall) -> None;
     def _check_intrinsic_collision(self: TypeCheckPass, nd: Ability) -> None;

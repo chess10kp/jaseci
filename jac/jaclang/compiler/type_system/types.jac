@@ -1,7 +1,6 @@
 import from abc { ABC }
 import from enum { IntEnum, auto }
 import from pathlib { Path }
-import from typing { ClassVar }
 import type from jaclang.jac0core.unitree { Expr, Symbol }
 import type from jaclang.jac0core.unitree { UniScopeNode as SymbolTable }
 
@@ -160,7 +159,7 @@ obj ClassType(TypeBase) {
     def clone_as_instance -> ClassType;
     def clone_as_class -> ClassType;
     def specialize_generics(type_args: list[TypeBase]) -> ClassType;
-    def get_class_symbol -> Symbol;
+    def get_class_symbol -> (Symbol | None);
     def lookup_member_symbol(
         member: str, r_overloaded: list | None = None
     ) -> (Symbol | None);

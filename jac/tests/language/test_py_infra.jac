@@ -13,7 +13,6 @@ import sys;
 import tempfile;
 import shutil;
 import importlib;
-import pytest;
 import from pathlib { Path }
 import from tests.support { JAC_ROOT }
 import from unittest.mock { patch }
@@ -359,7 +358,7 @@ test "deep imports interp mode" {
     # Delete JIR cache files to force recompilation
     cache_dir = get_jir_cache_dir() / "modules";
     if cache_dir.exists() {
-        for cache_file in cache_dir.glob("*deep_import*") {
+        for cache_file in cache_dir.`glob("*deep_import*") {
             cache_file.unlink();
         }
     }

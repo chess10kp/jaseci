@@ -142,17 +142,21 @@ obj NativeParser {
         _parse_types: list = [],
         _diags: any = None,
         _diags_types: list = [],
+        _merge: any = None,
+        _merge_types: list = [],
+        _prefix: any = None,
+        _prefix_types: list = [],
         _pydec: any = None,
         _keep: list = [];
 
-    def _call(fn: any, param_types: list, src: str, path: str) -> any {
-        c_args = _native_str_args(self._str_new, param_types, (src, path, ));
+    def _call(fn: any, param_types: list, args: tuple) -> any {
+        c_args = _native_str_args(self._str_new, param_types, args);
         h = fn(*c_args);
         if not h {
             raise _bind_error(
                 self.lib_path,
-                f"the crossing entry returned NULL on {path}; the artifact "
-                "and this runtime disagree"
+                f"the crossing entry returned NULL on {args[-1]}; the "
+                "artifact and this runtime disagree"
             );
         }
         out = ctypes.cast(h, ctypes.py_object).value;
@@ -161,14 +165,43 @@ obj NativeParser {
     }
 
     def parse(src: str, path: str) -> tuple {
-        r = self._call(self._parse, self._parse_types, src, path);
+        r = self._call(self._parse, self._parse_types, (src, path, ));
         materialize_fixups(r[0]);
         return (r[0], r[1], r[2], r[3], r[4], r[5], );
     }
 
     def parse_diags(src: str, path: str) -> tuple {
-        r = self._call(self._diags, self._diags_types, src, path);
+        r = self._call(self._diags, self._diags_types, (src, path, ));
         return (r[0], r[1], r[2], r[3], );
+    }
+
+    def merge_probe(src: str, path: str, annex_src: str, annex_path: str) -> tuple {
+        r = self._call(
+            self._merge, self._merge_types, (src, path, annex_src, annex_path, )
+        );
+        materialize_fixups(r[0]);
+        return (r[0], r[1], r[2], );
+    }
+
+    def serves_prefix -> bool {
+        return self._prefix is not None;
+    }
+
+    def parse_and_run_prefix(
+        src: str,
+        path: str,
+        claimed_n: int,
+        project_root: str,
+        has_project_root: int,
+        access_enforced: int
+    ) -> tuple {
+        r = self._call(
+            self._prefix,
+            self._prefix_types,
+            (src, path, claimed_n, project_root, has_project_root, access_enforced, )
+        );
+        materialize_fixups(r[0]);
+        return (r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], );
     }
 }
 
@@ -194,7 +227,7 @@ def bind_native_parser(lib_path: str, layout_dict: dict) -> NativeParser {
     );
 
     entries: dict = {};
-    for entry_name in ("mat_parse", "mat_parse_diags") {
+    for entry_name in ("mat_parse", "mat_parse_diags", "mat_merge_probe") {
         fl = layout.functions.get(entry_name);
         if fl is None {
             raise _bind_error(lib_path, f"layout exports no {entry_name}");
@@ -208,6 +241,25 @@ def bind_native_parser(lib_path: str, layout_dict: dict) -> NativeParser {
             list(fl.param_types),
 
         );
+    }
+    prefix_fn: any = None;
+    prefix_types: list = [];
+    prefix_fl = layout.functions.get("mat_parse_and_run_prefix");
+    if prefix_fl is not None {
+        prefix_addr = eng.get_function_address("mat_parse_and_run_prefix");
+        if not prefix_addr {
+            raise _bind_error(
+                lib_path,
+                "the layout exports mat_parse_and_run_prefix but the "
+                "artifact does not link it"
+            );
+        }
+        prefix_fn = ctypes.PYFUNCTYPE(
+            ctypes.c_uint64, *_entry_argtypes(prefix_fl.param_types)
+        )(
+            prefix_addr
+        );
+        prefix_types = list(prefix_fl.param_types);
     }
 
     cdll = eng._cdll;
@@ -282,6 +334,7 @@ def bind_native_parser(lib_path: str, layout_dict: dict) -> NativeParser {
 
     (parse_fn, parse_types) = entries["mat_parse"];
     (diags_fn, diags_types) = entries["mat_parse_diags"];
+    (merge_fn, merge_types) = entries["mat_merge_probe"];
     return NativeParser(
         lib_path=lib_path,
         _engine=eng,
@@ -290,6 +343,10 @@ def bind_native_parser(lib_path: str, layout_dict: dict) -> NativeParser {
         _parse_types=parse_types,
         _diags=diags_fn,
         _diags_types=diags_types,
+        _merge=merge_fn,
+        _merge_types=merge_types,
+        _prefix=prefix_fn,
+        _prefix_types=prefix_types,
         _pydec=pydec,
         _keep=keep
     );
