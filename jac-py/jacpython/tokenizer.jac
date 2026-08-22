@@ -32,8 +32,8 @@ import from token_model {
     tok_no_loc,
 }
 
-glob TABSIZE: int = 8;
-glob MAXINDENT: int = 100;
+glob TABSIZE: int = 8,
+     MAXINDENT: int = 100;
 
 # ---------------- tokenizer state ----------------
 obj tok_state {
@@ -185,7 +185,7 @@ def _process_bol_indent(st: tok_state) -> int {
             return 1;
         }
     }
-  # EOF with only whitespace on this logical line.
+    # EOF with only whitespace on this logical line.
     if st.pos >= len(st.source) {
         st.at_bol = False;
         return 0;
@@ -344,7 +344,12 @@ def _read_number(st: tok_state) -> tok_token {
     if ch == "0" {
         _advance(st);
         nxt = _peek(st);
-        if nxt == "x" or nxt == "X" or nxt == "b" or nxt == "B" or nxt == "o" or nxt == "O" {
+        if nxt == "x"
+            or nxt == "X"
+            or nxt == "b"
+            or nxt == "B"
+            or nxt == "o"
+            or nxt == "O" {
             _advance(st);
             while st.pos < len(st.source) {
                 c = _peek(st);
@@ -454,10 +459,8 @@ def _read_name(st: tok_state) -> tok_token {
     );
 }
 
-def tokenizer_from_string(
-    source: str, filename: str, exec_input: bool
-) -> tok_state {
-  # Eval/single input: ensure a trailing newline like decode_str(single=1).
+def tokenizer_from_string(source: str, filename: str, exec_input: bool) -> tok_state {
+    # Eval/single input: ensure a trailing newline like decode_str(single=1).
     buf = source;
     if not exec_input {
         if len(buf) == 0 or buf[len(buf) - 1] != "\n" {
@@ -594,7 +597,9 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     );
 }
 
-def tokenize_all(source: str, filename: str, exec_input: bool) -> list[tok_token | tok_diag] {
+def tokenize_all(
+    source: str, filename: str, exec_input: bool
+) -> list[tok_token | tok_diag] {
     st = tokenizer_from_string(source, filename, exec_input);
     out: list[tok_token | tok_diag] = [];
     while True {

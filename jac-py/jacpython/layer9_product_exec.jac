@@ -146,6 +146,7 @@ test "layer9: compare assign then statement executes both" {
         "x": PyInt(t="int", val=1),
         "y": PyInt(t="int", val=2),
         "z": PyInt(t="int", val=3),
+
     };
     out = exec_code(co as PyCode, [], ns);
     assert not is_error(out);

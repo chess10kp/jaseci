@@ -811,21 +811,27 @@ def pa_seq_append_to_end(head: list[expr] | None, item: expr) -> list[expr] {
 def pa_get_keys(pairs: list[object]) -> list[expr] {
     return [];
 }
+
 def pa_get_values(pairs: list[object]) -> list[expr] {
     return [];
 }
+
 def pa_get_patterns(pairs: list[object]) -> list[pattern] {
     return [];
 }
+
 def pa_get_pattern_keys(pairs: list[object]) -> list[expr] {
     return [];
 }
+
 def pa_map_names_to_ids(names: list[expr]) -> list[str] {
     return [];
 }
+
 def pa_seq_count_dots(name: expr) -> int {
     return 0;
 }
+
 def pa_body_end_span(body: list[stmt]) -> tuple[int, int] {
     last = body[len(body) - 1];
     end_lineno = last.lineno;
@@ -919,6 +925,7 @@ def pa_make_arguments(
         defaults=defaults
     );
 }
+
 def pa_dummy_name(
     lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
 ) -> Name {
@@ -935,9 +942,11 @@ def pa_dummy_name(
 def pa_interactive_exit(p: peg_parser) -> list[stmt] {
     return [];
 }
+
 def pa_aug_op(target: expr) -> operator {
     return Add();
 }
+
 # arguments rule returns a dummy Call from pa_collect_call_seqs; peel args/keywords.
 def pa_call_args(`node: expr) -> list[expr] {
     if `node is None {
@@ -970,15 +979,19 @@ def pa_comp_field(`node: expr, field: str) -> expr {
 def pa_seq_first(seq: list[object]) -> expr | None {
     return None;
 }
+
 def pa_seq_last(seq: list[object]) -> expr | None {
     return None;
 }
+
 def pa_seq_len(seq: list[object]) -> int {
     return len(seq);
 }
+
 def pa_seq_get(seq: list[object], index: int) -> object | None {
     return None;
 }
+
 def pa_or_pattern_singleton(
     patterns: list[pattern],
     lineno: int,
@@ -998,12 +1011,15 @@ def pa_or_pattern_singleton(
 def pa_err_occurred(p: peg_parser) -> bool {
     return peg_has_error(p);
 }
+
 def pa_expr_lineno(`node: expr) -> int {
     return `node.lineno;
 }
+
 def pa_expr_end_col_offset(`node: expr) -> int {
     return `node.end_col_offset;
 }
+
 def pa_expr_end_lineno(`node: expr) -> int {
     return `node.end_lineno;
 }
@@ -1047,72 +1063,95 @@ def pa_check_legacy_stmt_or_raise(p: peg_parser, a: object, b: object) -> None {
 def pa_checked_future_import(module: object, names: object, level: object) -> object {
     return None;
 }
+
 def pa_nonparen_genexp_in_call(a: object, b: object) -> object {
     return None;
 }
+
 def pa_arguments_parsing_error(`node: object) -> object {
     return None;
 }
+
 def pa_check_legacy_stmt(p: peg_parser, `node: object) -> bool {
     return False;
 }
+
 def pa_concatenate_strings(parts: list[object]) -> expr | None {
     return None;
 }
+
 def pa_concatenate_tstrings(parts: list[object]) -> expr | None {
     return None;
 }
+
 def pa_constant_from_string(spelling: str) -> Constant | None {
     return None;
 }
+
 def pa_constant_from_token(tok: peg_token | None) -> Constant | None {
     return None;
 }
+
 def pa_decoded_constant_from_token(tok: peg_token | None) -> Constant | None {
     return None;
 }
+
 def pa_ensure_imaginary(`node: expr) -> expr {
     return `node;
 }
+
 def pa_ensure_real(`node: expr) -> expr {
     return `node;
 }
+
 def pa_get_expr_name(`node: expr) -> str {
     return "";
 }
+
 def pa_get_last_comprehension_item(`node: object) -> object {
     return None;
 }
+
 def pa_join_names_with_dot(a: expr, b: expr) -> expr {
     return a;
 }
+
 def pa_join_sequences(a: list[object], b: list[object]) -> list[object] {
     return a;
 }
+
 def pa_alias_for_star(`node: object) -> alias | None {
     return None;
 }
+
 def pa_add_type_comment_to_arg(arg: arg, comment: object) -> arg {
     return arg;
 }
+
 def pa_seq_delete_starred_exprs(seq: list[object]) -> list[object] {
     return seq;
 }
+
 def pa_seq_extract_starred_exprs(seq: list[object]) -> list[object] {
     return seq;
 }
+
 def pa_setup_full_format_spec(`node: object) -> object {
     return `node;
 }
+
 def pa_check_fstring_conversion(a: object, b: object) -> object {
     return a;
 }
+
 def pa_function_def_decorators(decs: list[expr], stmt: stmt) -> stmt {
     return stmt;
 }
+
 def pa_class_def_decorators(decs: list[expr], stmt: stmt) -> stmt {
     return stmt;
 }
+
 def pa_key_value_pair(
     key: expr,
     value: expr,
@@ -1135,9 +1174,7 @@ def pa_key_pattern_pair(
     return pa_key_pattern_pair(key=key, pattern=pat);
 }
 
-def pa_name_default_pair(
-    arg: arg, `default: expr | None
-) -> name_default_pair {
+def pa_name_default_pair(arg: arg, `default: expr | None) -> name_default_pair {
     return name_default_pair(arg=arg, default=`default);
 }
 
@@ -1188,6 +1225,7 @@ def pa_star_etc(
         vararg=vararg, kwonlyargs=kwonlyargs, kw_defaults=kw_defaults, kwarg=kwarg
     );
 }
+
 def pa_slash_with_default(
     a: object,
     b: object,
@@ -1198,6 +1236,7 @@ def pa_slash_with_default(
 ) -> object {
     return None;
 }
+
 def pa_joined_str(
     a: object,
     b: list[expr],
@@ -1209,6 +1248,7 @@ def pa_joined_str(
 ) -> expr | None {
     return None;
 }
+
 def pa_template_str(
     a: object,
     b: list[expr],
@@ -1220,6 +1260,7 @@ def pa_template_str(
 ) -> expr | None {
     return None;
 }
+
 def pa_formatted_value(
     a: object,
     b: object,
@@ -1233,6 +1274,7 @@ def pa_formatted_value(
 ) -> expr | None {
     return None;
 }
+
 def pa_interpolation(
     a: object,
     b: object,

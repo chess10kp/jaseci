@@ -993,9 +993,7 @@ def visit_expr(
     if isinstance(e, Name) {
         n = e as Name;
         emit_name_load(
-            g,
-            n.id,
-            nloc(n.lineno, n.end_lineno, n.col_offset, n.end_col_offset)
+            g, n.id, nloc(n.lineno, n.end_lineno, n.col_offset, n.end_col_offset)
         );
         return None;
     }
@@ -2692,9 +2690,7 @@ def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
         return stmt_cont(loc=floc);
     }
     if len(fd.decorator_list) > 0 {
-        codegen_fail(
-            g, "NotImplementedError", "function decorators not yet supported"
-        );
+        codegen_fail(g, "NotImplementedError", "function decorators not yet supported");
         return stmt_cont(loc=floc);
     }
     u_fn = compile_function_cfg(fd, g.u.filename, sym_fn);
@@ -2723,10 +2719,7 @@ def compile_function_cfg(
 ) -> unverified_cfg {
     counts = function_argcounts(fd.args);
     u = unverified_cfg(
-        filename=filename,
-        name=fd.name,
-        qualname=fd.name,
-        firstlineno=fd.lineno
+        filename=filename, name=fd.name, qualname=fd.name, firstlineno=fd.lineno
     );
     if counts is None {
         unit_fail(
@@ -2752,9 +2745,7 @@ def compile_function_cfg(
     bi = 0;
     while bi < len(fd.body) {
         s = fd.body[bi];
-        cont = visit_stmt(
-            g, s, exec_tail_emits_code(fd.body, bi + 1), fd.body, bi + 1
-        );
+        cont = visit_stmt(g, s, exec_tail_emits_code(fd.body, bi + 1), fd.body, bi + 1);
         last = cont.loc;
         if cont.terminated {
             terminated = True;

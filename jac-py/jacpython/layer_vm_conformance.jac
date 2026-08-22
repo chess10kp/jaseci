@@ -45,6 +45,7 @@ def _vm_host_raises(setup_src, body_src):
 ::py::
 
 
+
 def host_result_key(setup: str, body: str, mode: str, key: str) -> any {
     ns = _vm_host_exec(setup, body, mode) as dict;
     return ns[key];
@@ -148,7 +149,9 @@ test "vm: CALL invokes callable" {
 
 # vm-opcode: OP_MAKE_FUNCTION
 test "vm: MAKE_FUNCTION builds function object" {
-    assert_vm_value_matches_host("", "def f():\n    return 1\nresult = f()\n", "exec", "result");
+    assert_vm_value_matches_host(
+        "", "def f():\n    return 1\nresult = f()\n", "exec", "result"
+    );
 }
 
 # vm-opcode: OP_COMPARE_OP

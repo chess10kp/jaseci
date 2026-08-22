@@ -154,11 +154,11 @@ obj PyModule(PyObj) {
 # Layer 2 shim registry: name -> PyModule. Checked before host import.
 glob shim_modules: dict[str, PyObj] = {};
 
-def register_shim_module(name: str, module: PyObj) -> None {
+def register_shim_module(name: str, module: PyObj) {
     shim_modules[name] = module;
 }
 
-def clear_shim_modules() -> None {
+def clear_shim_modules {
     shim_modules = {};
 }
 

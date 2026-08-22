@@ -94,10 +94,7 @@ def validate_load_expr(e: expr, in_function: bool) -> validation_result {
                 col = yf.col_offset;
             }
             return validation_error(
-                "SyntaxError",
-                "'yield' outside function",
-                lineno,
-                col
+                "SyntaxError", "'yield' outside function", lineno, col
             );
         }
         if isinstance(e, Yield) {
@@ -125,10 +122,7 @@ def validate_load_expr(e: expr, in_function: bool) -> validation_result {
         a = e as Attribute;
         if not isinstance(a.ctx, Load) {
             return validation_error(
-                "SyntaxError",
-                "illegal expression context",
-                a.lineno,
-                a.col_offset
+                "SyntaxError", "illegal expression context", a.lineno, a.col_offset
             );
         }
         inner = validate_load_expr(a.value, in_function);
@@ -141,10 +135,7 @@ def validate_load_expr(e: expr, in_function: bool) -> validation_result {
         s = e as Subscript;
         if not isinstance(s.ctx, Load) {
             return validation_error(
-                "SyntaxError",
-                "illegal expression context",
-                s.lineno,
-                s.col_offset
+                "SyntaxError", "illegal expression context", s.lineno, s.col_offset
             );
         }
         inner = validate_load_expr(s.value, in_function);
@@ -317,10 +308,7 @@ def validate_store_target(t: expr, in_function: bool) -> validation_result {
         n = t as Name;
         if not isinstance(n.ctx, Store) {
             return validation_error(
-                "SyntaxError",
-                "cannot assign to " + n.id,
-                n.lineno,
-                n.col_offset
+                "SyntaxError", "cannot assign to " + n.id, n.lineno, n.col_offset
             );
         }
         return validation_ok();
@@ -329,10 +317,7 @@ def validate_store_target(t: expr, in_function: bool) -> validation_result {
         a = t as Attribute;
         if not isinstance(a.ctx, Store) {
             return validation_error(
-                "SyntaxError",
-                "illegal target for assignment",
-                a.lineno,
-                a.col_offset
+                "SyntaxError", "illegal target for assignment", a.lineno, a.col_offset
             );
         }
         return validate_load_expr(a.value, in_function);
@@ -341,10 +326,7 @@ def validate_store_target(t: expr, in_function: bool) -> validation_result {
         s = t as Subscript;
         if not isinstance(s.ctx, Store) {
             return validation_error(
-                "SyntaxError",
-                "illegal target for assignment",
-                s.lineno,
-                s.col_offset
+                "SyntaxError", "illegal target for assignment", s.lineno, s.col_offset
             );
         }
         inner = validate_load_expr(s.value, in_function);
@@ -363,10 +345,7 @@ def validate_delete_target(t: expr, in_function: bool) -> validation_result {
         n = t as Name;
         if not isinstance(n.ctx, Del) {
             return validation_error(
-                "SyntaxError",
-                "cannot delete " + n.id,
-                n.lineno,
-                n.col_offset
+                "SyntaxError", "cannot delete " + n.id, n.lineno, n.col_offset
             );
         }
         return validation_ok();
@@ -375,10 +354,7 @@ def validate_delete_target(t: expr, in_function: bool) -> validation_result {
         a = t as Attribute;
         if not isinstance(a.ctx, Del) {
             return validation_error(
-                "SyntaxError",
-                "illegal target for deletion",
-                a.lineno,
-                a.col_offset
+                "SyntaxError", "illegal target for deletion", a.lineno, a.col_offset
             );
         }
         return validate_load_expr(a.value, in_function);
@@ -387,10 +363,7 @@ def validate_delete_target(t: expr, in_function: bool) -> validation_result {
         s = t as Subscript;
         if not isinstance(s.ctx, Del) {
             return validation_error(
-                "SyntaxError",
-                "illegal target for deletion",
-                s.lineno,
-                s.col_offset
+                "SyntaxError", "illegal target for deletion", s.lineno, s.col_offset
             );
         }
         inner = validate_load_expr(s.value, in_function);
@@ -411,10 +384,7 @@ def validate_stmt(
         r = s as Return;
         if not in_function {
             return validation_error(
-                "SyntaxError",
-                "'return' outside function",
-                r.lineno,
-                r.col_offset
+                "SyntaxError", "'return' outside function", r.lineno, r.col_offset
             );
         }
         if r.value is not None {
@@ -426,10 +396,7 @@ def validate_stmt(
         b = s as Break;
         if not in_loop {
             return validation_error(
-                "SyntaxError",
-                "'break' outside loop",
-                b.lineno,
-                b.col_offset
+                "SyntaxError", "'break' outside loop", b.lineno, b.col_offset
             );
         }
         return validation_ok();
@@ -438,10 +405,7 @@ def validate_stmt(
         c = s as Continue;
         if not in_loop {
             return validation_error(
-                "SyntaxError",
-                "'continue' not properly in loop",
-                c.lineno,
-                c.col_offset
+                "SyntaxError", "'continue' not properly in loop", c.lineno, c.col_offset
             );
         }
         return validation_ok();
@@ -461,10 +425,7 @@ def validate_stmt(
                 col = yf.col_offset;
             }
             return validation_error(
-                "SyntaxError",
-                "'yield' outside function",
-                lineno,
-                col
+                "SyntaxError", "'yield' outside function", lineno, col
             );
         }
         return validation_ok();
@@ -697,6 +658,7 @@ def _host_compile_syntax_error(source, mode="exec"):
     return None
 ::py::
 
+
 def host_compile_syntax_error(source: str, mode: str = "exec") -> str | None {
     return _host_compile_syntax_error(source, mode) as str | None;
 }
@@ -785,7 +747,16 @@ test "compiler_validate: unsupported tuple target defers to codegen" {
     r = validate_module_body(
         [
             Assign(
-                targets=[Tuple(elts=[x, y], ctx=Store(), lineno=1, col_offset=0, end_lineno=1, end_col_offset=4)],
+                targets=[
+                    Tuple(
+                        elts=[x, y],
+                        ctx=Store(),
+                        lineno=1,
+                        col_offset=0,
+                        end_lineno=1,
+                        end_col_offset=4
+                    )
+                ],
                 value=one,
                 type_comment=None,
                 lineno=1,
@@ -823,7 +794,8 @@ test "compiler_validate: nonlocal at module rejected" {
         [Nonlocal(names=["x"], lineno=1, col_offset=0, end_lineno=1, end_col_offset=13)]
     );
     assert r.diag is not None;
-    assert compiler_diag_message(r.diag) == "nonlocal declaration not allowed at module level";
+    assert compiler_diag_message(r.diag)
+        == "nonlocal declaration not allowed at module level";
 }
 
 test "compiler_validate: break inside while accepted" {

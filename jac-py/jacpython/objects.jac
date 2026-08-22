@@ -1144,8 +1144,8 @@ obj PyException(PyObj) {
             return py_none();
         }
         if name == "__context__"
-        or name == "__traceback__"
-        or name == "__suppress_context__" {
+            or name == "__traceback__"
+            or name == "__suppress_context__" {
             return py_none();
         }
         return py_error("AttributeError", name);
