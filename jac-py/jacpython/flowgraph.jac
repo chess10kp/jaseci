@@ -27,6 +27,7 @@ import from opcode_meta {
     OP_STORE_FAST,
     OP_STORE_FAST_MAYBE_NULL,
     OP_LOAD_FAST,
+    OP_LOAD_FAST_CHECK,
     OP_LOAD_FAST_BORROW,
     OP_LOAD_FAST_LOAD_FAST,
     OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW,
@@ -1340,8 +1341,291 @@ def optimize_load_fast(u: unverified_cfg) {
     }
 }
 
+# ---------------------------------------------------------------------------
+# CPython flowgraph.c add_checks_for_loads_of_uninitialized_variables. A
+# worklist dataflow over "unsafe" bitmasks (local i may be uninitialized at a
+# block entry): seeds are non-parameter locals at the entry block; each scanned
+# instruction also propagates the block's current mask to its innermost
+# exception handler (derived from except_regions, unlike CPython's per-instr
+# i_except links). LOAD_FAST under an unsafe bit becomes LOAD_FAST_CHECK.
+# Runs BEFORE superinstruction fusion and borrow analysis, matching CPython's
+# pass order (CHECK loads never fuse or downgrade to borrows).
+def ac_innermost_handler(u: unverified_cfg, pos: list[int], bid: int) -> int {
+    # Innermost region covering block bid = greatest start position among
+    # regions whose [start,end) layout span contains it (spans nest properly).
+    if bid >= len(pos) or pos[bid] < 0 {
+        return -1;
+    }
+    bp = pos[bid];
+    best_start = -1;
+    handler = -1;
+    ri = 0;
+    while ri < len(u.except_regions) {
+        r = u.except_regions[ri];
+        if r.start_block < 0 or r.end_block < 0 or r.start_block >= len(pos)
+            or r.end_block >= len(pos) {
+            ri = ri + 1;
+            continue;
+        }
+        sp = pos[r.start_block];
+        ep = pos[r.end_block];
+        if sp >= 0 and ep >= 0 and sp <= bp and bp < ep and sp > best_start {
+            best_start = sp;
+            handler = r.handler_block;
+        }
+        ri = ri + 1;
+    }
+    return handler;
+}
+
+def ac_maybe_push(
+    nbids: int,
+    unsafe: int,
+    masks: list[int],
+    onstack: list[bool],
+    blocks_by_id: list[basicblock],
+    worklist: list[basicblock]
+) {
+    both = masks[nbids] | unsafe;
+    if masks[nbids] != both {
+        masks[nbids] = both;
+        if not onstack[nbids] and blocks_by_id[nbids] is not None {
+            worklist.append(blocks_by_id[nbids]);
+            onstack[nbids] = True;
+        }
+    }
+}
+
+def ac_scan_block(
+    u: unverified_cfg,
+    b: basicblock,
+    pos: list[int],
+    mask_in: int,
+    masks: list[int],
+    onstack: list[bool],
+    blocks_by_id: list[basicblock],
+    worklist: list[basicblock],
+    nlocals: int
+) {
+    all_mask = 0;
+    if nlocals < 63 {
+        all_mask = (1 << nlocals) - 1;
+    } else {
+        all_mask = -1;
+    }
+    mask = mask_in & all_mask;
+    h = ac_innermost_handler(u, pos, b.id);
+    i = 0;
+    n = len(b.instrs);
+    while i < n {
+        ins = b.instrs[i];
+        # Exception edge: the handler can start at any point of this block.
+        if h >= 0 and h < len(masks) {
+            ac_maybe_push(h, mask, masks, onstack, blocks_by_id, worklist);
+        }
+        oparg = ins.oparg;
+        # Fused superinstructions carry packed nibble pairs, so they are not
+        # subject to the single-local oparg bound. Scoped pre-fusion (match
+        # arms, bind seams) can produce them before this pass runs.
+        op = ins.opcode;
+        if op == OP_STORE_FAST_STORE_FAST or op == OP_STORE_FAST_LOAD_FAST
+            or op == OP_LOAD_FAST_LOAD_FAST
+            or op == OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW {
+            f_lo = oparg & 15;
+            f_hi = (oparg >> 4) & 15;
+            if op == OP_STORE_FAST_STORE_FAST {
+                mask = mask & ~((1 << f_lo) | (1 << f_hi));
+            } elif op == OP_STORE_FAST_LOAD_FAST {
+                mask = mask & ~(1 << f_hi);
+                if mask & (1 << f_lo) {
+                    # CHECK cannot be encoded in the fused form: split.
+                    ins.opcode = OP_STORE_FAST;
+                    ins.oparg = f_hi;
+                    b.instrs.insert(
+                        i + 1,
+                        cinstr(
+                            opcode=OP_LOAD_FAST_CHECK,
+                            oparg=f_lo,
+                            loc=ins.loc,
+                            target_block=-1
+                        )
+                    );
+                    n = n + 1;
+                }
+                mask = mask & ~(1 << f_lo);
+            } else {
+                if mask & ((1 << f_lo) | (1 << f_hi)) {
+                    ins.opcode = (
+                        OP_LOAD_FAST_CHECK if mask & (1 << f_hi) else OP_LOAD_FAST
+                    );
+                    ins.oparg = f_hi;
+                    b.instrs.insert(
+                        i + 1,
+                        cinstr(
+                            opcode=(
+                                OP_LOAD_FAST_CHECK
+                                if mask & (1 << f_lo)
+                                else OP_LOAD_FAST
+                            ),
+                            oparg=f_lo,
+                            loc=ins.loc,
+                            target_block=-1
+                        )
+                    );
+                    n = n + 1;
+                }
+                mask = mask & ~((1 << f_lo) | (1 << f_hi));
+            }
+            i = i + 1;
+            continue;
+        }
+        if oparg >= 0 and oparg < 64 and oparg < nlocals {
+            bit = 1 << oparg;
+            op = ins.opcode;
+            if op == OP_DELETE_FAST or op == OP_LOAD_FAST_AND_CLEAR
+                or op == OP_STORE_FAST_MAYBE_NULL {
+                mask = mask | bit;
+            } elif op == OP_STORE_FAST or op == OP_LOAD_FAST_CHECK {
+                mask = mask & ~bit;
+            } elif op == OP_LOAD_FAST {
+                if mask & bit {
+                    ins.opcode = OP_LOAD_FAST_CHECK;
+                }
+                mask = mask & ~bit;
+            }
+        }
+        i = i + 1;
+    }
+    # Fallthrough successor.
+    if block_has_fallthrough(b) {
+        nb = layout_next_block_from(u, b);
+        if nb is not None {
+            ac_maybe_push(nb.id, mask, masks, onstack, blocks_by_id, worklist);
+        }
+    }
+    last = block_last_instr(b);
+    if last is not None and last.target_block >= 0
+        and (is_conditional_jump(last.opcode) or is_unconditional_jump_opcode(last.opcode)) {
+        tb = find_block(u, last.target_block);
+        if tb is not None {
+            ac_maybe_push(tb.id, mask, masks, onstack, blocks_by_id, worklist);
+        }
+    }
+}
+
+def layout_next_block_from(u: unverified_cfg, b: basicblock) -> basicblock | None {
+    bi = 0;
+    while bi < len(u.blocks) {
+        if u.blocks[bi].id == b.id {
+            if bi + 1 < len(u.blocks) {
+                return u.blocks[bi + 1];
+            }
+            return None;
+        }
+        bi = bi + 1;
+    }
+    return None;
+}
+
+def add_checks_for_uninitialized(u: unverified_cfg) {
+    nlocals = len(u.varnames);
+    if nlocals == 0 {
+        return;
+    }
+    # Layout position per block id (ids are dense 0..next_block_id-1).
+    nblocks = u.next_block_id;
+    pos: list[int] = [];
+    i = 0;
+    while i < nblocks {
+        pos.append(-1);
+        i = i + 1;
+    }
+    bi = 0;
+    while bi < len(u.blocks) {
+        if u.blocks[bi].id < nblocks {
+            pos[u.blocks[bi].id] = bi;
+        }
+        bi = bi + 1;
+    }
+    blocks_by_id: list[basicblock] = [];
+    i = 0;
+    while i < nblocks {
+        blocks_by_id.append(None);
+        i = i + 1;
+    }
+    for b in u.blocks {
+        if b.id < nblocks {
+            blocks_by_id[b.id] = b;
+        }
+    }
+    masks: list[int] = [];
+    onstack: list[bool] = [];
+    i = 0;
+    while i < nblocks {
+        masks.append(0);
+        onstack.append(False);
+        i = i + 1;
+    }
+    worklist: list[basicblock] = [];
+    # Seed 1: non-parameter locals are uninitialized at function entry.
+    start_mask = 0;
+    i = u.param_count;
+    while i < nlocals {
+        start_mask = start_mask | (1 << i);
+        i = i + 1;
+    }
+    entry_blk = u.blocks[0];
+    masks[entry_blk.id] = start_mask;
+    onstack[entry_blk.id] = True;
+    worklist.append(entry_blk);
+    # Seed 2: scan every block once so DELETE_FAST origins are covered.
+    bi = 0;
+    while bi < len(u.blocks) {
+        bb = u.blocks[bi];
+        ops: list[str] = [];
+        ii = 0;
+        while ii < len(bb.instrs) {
+            ops.append(str(bb.instrs[ii].opcode) + ":" + str(bb.instrs[ii].oparg));
+            ii = ii + 1;
+        }
+        print("BLK " + u.name + " " + str(bb.id) + " [" + str.join(" ", ops) + "]");
+        bi = bi + 1;
+    }
+    bi = 0;
+    while bi < len(u.blocks) {
+        ac_scan_block(
+            u, u.blocks[bi], pos, masks[u.blocks[bi].id], masks, onstack,
+            blocks_by_id, worklist, nlocals
+        );
+        bi = bi + 1;
+    }
+    while len(worklist) > 0 {
+        b = worklist[len(worklist) - 1];
+        worklist.pop();
+        onstack[b.id] = False;
+        ac_scan_block(u, b, pos, masks[b.id], masks, onstack, blocks_by_id, worklist, nlocals);
+    }
+}
+
+# Scoped STORE_FAST -> LOAD_FAST fusion for flagged bind-seam blocks. Runs
+# after add_checks_for_uninitialized so the dataflow sees the plain store
+# (CPython's CFG has these in one block and fuses after the same pass).
+def fuse_flagged_stores(u: unverified_cfg) {
+    bi = 0;
+    while bi < len(u.blocks) {
+        b = u.blocks[bi];
+        if b.fuse_store_ok {
+            opt_superinstructions(b, 0);
+            opt_compact_block(b);
+        }
+        bi = bi + 1;
+    }
+}
+
 def verify_cfg(u: unverified_cfg) -> verified_cfg {
     optimize_cfg(u);
+    add_checks_for_uninitialized(u);
+    fuse_flagged_stores(u);
     insert_superinstructions(u);
     normalize_jumps(u);
     tdiag = check_cfg_terminators(u);

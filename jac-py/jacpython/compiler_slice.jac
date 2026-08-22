@@ -3172,6 +3172,56 @@ test "compiler_slice: band6 return inside with runs __exit__ in ceval" {
     assert tup.items[2].t == "none";
 }
 
+# ---------------- Band 6: multi-item async with (oracle byte parity) ----------------
+
+test "compiler_slice: band6 async with two items trailing matches oracle" {
+    src = "async def f(a, b):\n    async with a as x, b as y:\n        r = x\n    return r\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    f_fn = nested_code_by_name(actual, "f");
+    exp_f = nested_code_by_name(exp, "f");
+    assert f_fn.co_code == exp_f.co_code;
+    assert f_fn.exceptiontable == exp_f.exceptiontable;
+}
+
+test "compiler_slice: band6 async with three items trailing matches oracle" {
+    src = "async def f(a, b, c):\n    async with a as x, b as y, c as z:\n        r = x\n    return r\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    f_fn = nested_code_by_name(actual, "f");
+    exp_f = nested_code_by_name(exp, "f");
+    assert f_fn.co_code == exp_f.co_code;
+    assert f_fn.exceptiontable == exp_f.exceptiontable;
+}
+
+test "compiler_slice: band6 async with two items return body matches oracle" {
+    src = "async def f(a, b):\n    async with a as x, b as y:\n        return x + y\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    f_fn = nested_code_by_name(actual, "f");
+    exp_f = nested_code_by_name(exp, "f");
+    assert f_fn.co_code == exp_f.co_code;
+    assert f_fn.exceptiontable == exp_f.exceptiontable;
+}
+
+test "compiler_slice: band6 async with three items return body matches oracle" {
+    src = "async def f(a, b, c):\n    async with a as x, b as y, c as z:\n        return x\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    f_fn = nested_code_by_name(actual, "f");
+    exp_f = nested_code_by_name(exp, "f");
+    assert f_fn.co_code == exp_f.co_code;
+    assert f_fn.exceptiontable == exp_f.exceptiontable;
+}
+
 # ---------------- Band 7 slice 7: async generator ----------------
 
 test "compiler_slice: band7 async generator minimal parsed matches oracle nested co_code" {

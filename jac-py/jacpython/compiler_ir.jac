@@ -90,6 +90,20 @@ obj with_fblock {
         frame_idx: int;
 }
 
+# One async-with frame's return-unwind await loop (emitted inline at the
+# return site); the CT footer blocks are deferred until the visitor positions
+# them after the enter footers.
+obj with_unwind_rec {
+    has send_blk: int,
+        yield_blk: int,
+        after_resume_blk: int,
+        end_send_blk: int,
+        boundary: int,
+        depth: int,
+        ct: basicblock,
+        cj: basicblock;
+}
+
 # CFG builder: owns the current block and emits into unverified_cfg (Phase 4).
 obj cfg_builder {
     has u: unverified_cfg,
@@ -101,16 +115,10 @@ obj cfg_builder {
         with_fblocks: list[with_fblock] = [],
         # Set when return unwinding ran for at least one with frame.
         with_unwind_used: bool = False,
-        # Deferred await-send loop of the return-unwind path (block ids; CT
-        # footer blocks are deferred objects positioned later by the visitor).
-        with_unwind_send: int = -1,
-        with_unwind_yield: int = -1,
-        with_unwind_resume: int = -1,
-        with_unwind_end_send: int = -1,
-        with_unwind_boundary: int = -1,
-        with_unwind_depth: int = -1,
-        with_unwind_ct: basicblock | None = None,
-        with_unwind_cj: basicblock | None = None,
+        # Per-frame return-unwind records (innermost frame first), one per
+        # async-with frame unwound by a return. CT footer blocks are deferred
+        # objects positioned later by the visitor.
+        with_unwind_recs: list[with_unwind_rec] = [],
         # Suspendable function (generator/coroutine) PEP 479 protect start block id.
         generator_protect_start: int = -1,
         # END_ASYNC_FOR handler block id (async-for PEP 479 unwind region).
@@ -219,7 +227,13 @@ obj basicblock {
         # to match the way optimize_swap_range is scoped to match arms. Other
         # constructs already emit CPython's post-optimizer shape by hand, so a
         # global inliner would mis-fire (e.g. on generator/async-for back-edges).
-        exit_inline_ok: bool = False;
+        exit_inline_ok: bool = False,
+        # True on async-with bind seams: the block ends with a store whose
+        # successor instruction is the next item's leading LOAD_FAST on the
+        # same line. verify_cfg fuses these after add_checks_for_uninitialized
+        # (CPython fuses in its finer-grained CFG; running fusion before the
+        # uninitialized-locals pass would hide the store's effect on the mask).
+        fuse_store_ok: bool = False;
 }
 
 # Deferred comprehension cleanup handler (emitted after module RETURN_VALUE).
@@ -250,6 +264,10 @@ obj unverified_cfg {
         firstlineno: int,
         argcount: int = 0,
         posonlyargcount: int = 0,
+        # Total bound-at-entry parameter slots (posonly + pos-or-kw + kwonly +
+        # vararg + kwarg). Seeds the uninitialized-locals dataflow, which must
+        # not treat *args/**kwargs as possibly-unset.
+        param_count: int = 0,
         kwonlyargcount: int = 0,
         flags: int = 0,
         varnames: list[str] = [],
