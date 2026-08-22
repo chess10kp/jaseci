@@ -14,7 +14,9 @@ import from objects {
     expect_str,
     is_error,
     PyError,
-    py_none
+    py_none,
+    PyList,
+    PyTuple
 }
 import from ast_nodes {
     expr,
@@ -3109,6 +3111,65 @@ test "compiler_slice: band7 async with parsed executes in ceval" {
     finished = (done as PyError).exception;
     assert finished.type_name == "StopIteration";
     assert expect_int(finished.value as PyObj) == 42;
+}
+
+# ---------------- Band 6: return inside with unwinds inline exits ----------------
+
+test "compiler_slice: band6 return inside sync with matches oracle nested co_code" {
+    src = "def f(a):\n    with a as x:\n        return x\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    f_fn = nested_code_by_name(actual, "f");
+    exp_f = nested_code_by_name(exp, "f");
+    assert f_fn.co_code == exp_f.co_code;
+    assert f_fn.exceptiontable == exp_f.exceptiontable;
+}
+
+test "compiler_slice: band6 return inside async with matches oracle nested co_code" {
+    src = "async def f(expr):\n    async with expr as y:\n        return y\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    f_fn = nested_code_by_name(actual, "f");
+    exp_f = nested_code_by_name(exp, "f");
+    assert f_fn.co_code == exp_f.co_code;
+    assert f_fn.exceptiontable == exp_f.exceptiontable;
+}
+
+test "compiler_slice: band6 return inside with runs __exit__ in ceval" {
+    src = (
+        "exits = []\n"
+        + "class CM:\n"
+        + "    def __enter__(self):\n"
+        + "        return 7\n"
+        + "    def __exit__(self, *a):\n"
+        + "        exits.append(a)\n"
+        + "        return False\n"
+        + "def f():\n"
+        + "    with CM() as v:\n"
+        + "        return v\n"
+        + "result = f()\n"
+    );
+    co = compile_parsed_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co, [], ns);
+    assert not is_error(out);
+    assert expect_int(ns["result"]) == 7;
+    # The __exit__ call must have run exactly once with (None, None, None).
+    exits_list = ns["exits"];
+    assert exits_list.t == "list";
+    lst = exits_list as PyList;
+    assert len(lst.items) == 1;
+    args = lst.items[0];
+    assert args.t == "tuple";
+    tup = args as PyTuple;
+    assert len(tup.items) == 3;
+    assert tup.items[0].t == "none";
+    assert tup.items[1].t == "none";
+    assert tup.items[2].t == "none";
 }
 
 # ---------------- Band 7 slice 7: async generator ----------------

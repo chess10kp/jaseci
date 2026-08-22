@@ -291,6 +291,7 @@ import from compiler_ir {
     loop_frame,
     except_region,
     comp_handler,
+    with_fblock,
 }
 import from compiler_symtable {
     sym_block,
@@ -308,7 +309,7 @@ import from compiler_symtable {
     sym_block_tuple_names,
 }
 import from compiler_diagnostics { lowering_diagnostic }
-import from flowgraph { verify_cfg, optimize_swap_range }
+import from flowgraph { verify_cfg, optimize_swap_range, find_block }
 import from assembler { assemble }
 import from codegen_util {
     fold_default_values,
@@ -4538,6 +4539,24 @@ def visit_with(
         store_ids.append(g.cur.id);
         ei = ei + 1;
     }
+    # Single-item: open the frame's protect region now so a return inside the
+    # body can close it at its unwind boundary.
+    prot0_region = -1;
+    if n == 1 {
+        prot0_region = len(g.u.except_regions);
+        g.u.except_regions.append(
+            except_region(
+                start_block=store_ids[0],
+                end_block=-1,
+                handler_block=-1,
+                stack_depth=4,
+                preserve_lasti=True
+            )
+        );
+        g.with_fblocks.append(
+            with_fblock(is_async=False, protect_region=prot0_region, frame_idx=0)
+        );
+    }
     # --- body ---
     with_body = g.new_block();
     g.use(with_body);
@@ -4549,36 +4568,53 @@ def visit_with(
     if codegen_busy(g) {
         return stmt_cont(loc=wloc);
     }
-    # --- inline __exit__ calls, innermost first (xs[k] is frame n-1-k) ---
+    if g.with_unwind_used and not body_cont.terminated {
+        codegen_fail(
+            g,
+            "NotImplementedError",
+            "return inside with followed by more statements not supported"
+        );
+        return stmt_cont(loc=wloc);
+    }
+    body_exits = not body_cont.terminated;
+    if n == 1 and body_exits {
+        # Frame unwinds via the inline __exit__ call below.
+        g.with_fblocks = [];
+    }
+    # --- inline __exit__ calls, innermost first (xs[k] is frame n-1-k). ---
+    # A body that always terminates already unwound every frame inline during
+    # its return/raise; the tail path is unreachable and CPython drops it.
     none_idx = g.u.add_const(py_none());
     xs: list[basicblock] = [];
-    k = 0;
-    while k < n {
-        xblk = g.new_block();
-        g.use(xblk);
-        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-        g.emit_op(OP_CALL, 3, wloc);
-        g.emit_op(OP_POP_TOP, 0, wloc);
-        xs.append(xblk);
-        k = k + 1;
-    }
-    # normal-path continuation (after outermost inline exit)
-    if with_follows {
-        tail_more = False;
-        if tail is not None and tail_idx + 1 < len(tail) {
-            tail_more = exec_tail_emits_code(tail, tail_idx + 1);
+    if body_exits {
+        k = 0;
+        while k < n {
+            xblk = g.new_block();
+            g.use(xblk);
+            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+            g.emit_op(OP_CALL, 3, wloc);
+            g.emit_op(OP_POP_TOP, 0, wloc);
+            xs.append(xblk);
+            k = k + 1;
         }
-        tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more);
-        if codegen_busy(g) {
-            return stmt_cont(loc=body_cont.loc);
+        # normal-path continuation (after outermost inline exit)
+        if with_follows {
+            tail_more = False;
+            if tail is not None and tail_idx + 1 < len(tail) {
+                tail_more = exec_tail_emits_code(tail, tail_idx + 1);
+            }
+            tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more);
+            if codegen_busy(g) {
+                return stmt_cont(loc=body_cont.loc);
+            }
+            if not tail_cont.terminated {
+                emit_module_return(g, tail_cont.loc);
+            }
+        } else {
+            emit_module_return(g, body_cont.loc);
         }
-        if not tail_cont.terminated {
-            emit_module_return(g, tail_cont.loc);
-        }
-    } else {
-        emit_module_return(g, body_cont.loc);
     }
     # --- cleanup handlers, innermost first (ws/ends/uns[k] is frame n-1-k) ---
     ws: list[basicblock] = [];
@@ -4619,25 +4655,44 @@ def visit_with(
         uns.append(unwind);
         k = k + 1;
     }
+    if prot0_region >= 0 {
+        if body_exits {
+            g.u.except_regions[prot0_region].end_block = xs[n - 1].id;
+        }
+        g.u.except_regions[prot0_region].handler_block = ws[n - 1].id;
+    }
     # --- exception regions (carved so the assembler emits them verbatim) ---
+    if not body_exits and (n != 1 or prot0_region < 0) {
+        codegen_fail(
+            g,
+            "NotImplementedError",
+            "always-terminating body inside multi-item with not supported"
+        );
+        return stmt_cont(loc=wloc);
+    }
     i = 0;
     while i < n {
         s_i = store_ids[i];
-        x_i = xs[n - 1 - i];
         w_i = ws[n - 1 - i];
         e_i = ends[n - 1 - i];
         u_i = uns[n - 1 - i];
+        x_i = -1;
+        if body_exits {
+            x_i = xs[n - 1 - i].id;
+        }
         if i == n - 1 {
-            # innermost: protected body
-            g.u.except_regions.append(
-                except_region(
-                    start_block=s_i,
-                    end_block=x_i.id,
-                    handler_block=w_i.id,
-                    stack_depth=4 + 2 * i,
-                    preserve_lasti=True
-                )
-            );
+            if body_exits and prot0_region < 0 {
+                # innermost: protected body
+                g.u.except_regions.append(
+                    except_region(
+                        start_block=s_i,
+                        end_block=x_i,
+                        handler_block=w_i.id,
+                        stack_depth=4 + 2 * i,
+                        preserve_lasti=True
+                    )
+                );
+            }
         } else {
             s_next = store_ids[i + 1];
             x_next = xs[n - 2 - i];
@@ -4656,7 +4711,7 @@ def visit_with(
             g.u.except_regions.append(
                 except_region(
                     start_block=x_next.id,
-                    end_block=x_i.id,
+                    end_block=x_i,
                     handler_block=w_i.id,
                     stack_depth=4 + 2 * i,
                     preserve_lasti=True
@@ -4729,6 +4784,24 @@ def visit_async_with(
         }
     }
     protect_start = bind_blk.id;
+    # Open the frame's protect region now so a return inside the body closes
+    # it at its unwind boundary.
+    prot0_region = -1;
+    if len(w.items) == 1 {
+        prot0_region = len(g.u.except_regions);
+        g.u.except_regions.append(
+            except_region(
+                start_block=protect_start,
+                end_block=-1,
+                handler_block=-1,
+                stack_depth=4,
+                preserve_lasti=True
+            )
+        );
+        g.with_fblocks.append(
+            with_fblock(is_async=True, protect_region=prot0_region, frame_idx=0)
+        );
+    }
     with_body = g.new_block();
     g.use(with_body);
     with_follows = more_code_follows;
@@ -4739,6 +4812,20 @@ def visit_async_with(
     if codegen_busy(g) {
         return stmt_cont(loc=wloc);
     }
+    if g.with_unwind_used and not body_cont.terminated {
+        codegen_fail(
+            g,
+            "NotImplementedError",
+            "return inside async with followed by more statements not supported"
+        );
+        return stmt_cont(loc=wloc);
+    }
+    body_exits = not body_cont.terminated;
+    if prot0_region >= 0 and body_exits {
+        # Frame unwinds via the inline __aexit__ call below.
+        g.with_fblocks = [];
+    }
+    if body_exits {
     protect_end = g.new_block();
     g.use(protect_end);
     none_idx = g.u.add_const(py_none());
@@ -4778,10 +4865,43 @@ def visit_async_with(
     } else {
         emit_module_return(g, body_cont.loc);
     }
+    }
     (enter_ct, enter_cj) = emit_await_send_loop_footer(g, enter_als, cloc);
     emit_await_send_except_regions(
         g, enter_als, enter_ct, enter_cj, 5, -1, -1, bind_blk.id, 2, True
     );
+    if g.with_unwind_ct is not None and g.with_unwind_cj is not None {
+        # Return-unwind await loop: carve its regions now that the enter
+        # footer exists (the after-resume row ends where the enter footer's
+        # jump block begins), then position its CT footer blocks.
+        ct_b = g.with_unwind_ct;
+        cj_b = g.with_unwind_cj;
+        uals = await_send_loop(
+            send_blk=find_block(g.u, g.with_unwind_send),
+            yield_blk=find_block(g.u, g.with_unwind_yield),
+            after_resume_blk=find_block(g.u, g.with_unwind_resume),
+            end_send_blk=find_block(g.u, g.with_unwind_end_send)
+        );
+        emit_await_send_except_regions(
+            g, uals, ct_b, cj_b, g.with_unwind_depth, -1,
+            g.with_unwind_boundary, enter_cj.id, 2, True
+        );
+        g.u.except_regions.append(
+            except_region(
+                start_block=ct_b.id,
+                end_block=cj_b.id,
+                handler_block=-1,
+                stack_depth=2,
+                preserve_lasti=True
+            )
+        );
+        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+        g.use(ct_b);
+        g.emit_op(OP_CLEANUP_THROW, 0, wloc);
+        g.use(cj_b);
+        g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, uals.end_send_blk.id, wloc);
+    }
+    if body_exits {
     (exit_ct, exit_cj) = emit_await_send_loop_footer(g, exit_als, wloc);
     emit_await_send_except_regions(
         g, exit_als, exit_ct, exit_cj, 3, -1, protect_end.id, enter_cj.id, 2, True
@@ -4796,6 +4916,7 @@ def visit_async_with(
         )
     );
     g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+    }
     with_except = g.new_block();
     noloc = no_loc();
     g.use(with_except);
@@ -4862,15 +4983,12 @@ def visit_async_with(
             preserve_lasti=True
         )
     );
-    g.u.except_regions.append(
-        except_region(
-            start_block=protect_start,
-            end_block=protect_end.id,
-            handler_block=with_except.id,
-            stack_depth=4,
-            preserve_lasti=True
-        )
-    );
+    if prot0_region >= 0 {
+        if body_exits {
+            g.u.except_regions[prot0_region].end_block = protect_end.id;
+        }
+        g.u.except_regions[prot0_region].handler_block = with_except.id;
+    }
     g.u.except_regions.append(
         except_region(
             start_block=with_except.id,
@@ -7068,10 +7186,52 @@ def visit_stmt(
 }
 
 # Emit a Return statement and finish the compile unit (no module epilogue).
+# Return inside with / async with: unwind enclosing frames innermost-first,
+# mirroring CPython codegen_unwind_fblock_stack with preserve_tos. Each frame's
+# open protect region closes at a fresh boundary right before its inline
+# __exit__ call (the POP_BLOCK marker position).
+def emit_with_return_unwind(g: cfg_builder, wloc: cloc) {
+    g.with_unwind_used = True;
+    while len(g.with_fblocks) > 0 {
+        fb = g.with_fblocks[len(g.with_fblocks) - 1];
+        g.with_fblocks = g.with_fblocks[0 : len(g.with_fblocks) - 1];
+        boundary = g.new_block();
+        g.use(boundary);
+        if fb.protect_region >= 0 and g.u.except_regions[fb.protect_region].end_block < 0 {
+            g.u.except_regions[fb.protect_region].end_block = boundary.id;
+        }
+        g.emit_op(OP_SWAP, 3, wloc);
+        g.emit_op(OP_SWAP, 2, wloc);
+        none_idx = g.u.add_const(py_none());
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_CALL, 3, wloc);
+        if fb.is_async {
+            als = emit_await_send_loop_header(g, OP_GET_AWAITABLE, 2, 3, wloc);
+            # CT footer blocks are allocated now but positioned later by the
+            # with-statement visitor (after the main flow terminates), so the
+            # layout matches CPython (footers grouped after the return).
+            ct = g.u.add_deferred_block();
+            cj = g.u.add_deferred_block();
+            g.with_unwind_send = als.send_blk.id;
+            g.with_unwind_yield = als.yield_blk.id;
+            g.with_unwind_resume = als.after_resume_blk.id;
+            g.with_unwind_end_send = als.end_send_blk.id;
+            g.with_unwind_boundary = boundary.id;
+            g.with_unwind_depth = 4 + 2 * fb.frame_idx;
+            g.with_unwind_ct = ct;
+            g.with_unwind_cj = cj;
+        }
+        g.emit_op(OP_POP_TOP, 0, wloc);
+    }
+}
+
 def visit_return_stmt(
     g: cfg_builder, r: Return, check_fast: bool = False, borrow_fast: bool = False
 ) {
     rloc = nloc(r.lineno, r.end_lineno, r.col_offset, r.end_col_offset);
+    has_fblocks = len(g.with_fblocks) > 0;
     if r.value is not None {
         if isinstance(r.value, Name) {
             n = r.value as Name;
@@ -7085,16 +7245,25 @@ def visit_return_stmt(
                 } else {
                     g.emit_op(OP_LOAD_FAST, fi, rloc);
                 }
+                if has_fblocks {
+                    emit_with_return_unwind(g, rloc);
+                }
                 g.emit_op(OP_RETURN_VALUE, 0, rloc);
                 return;
             }
         }
         visit_expr(g, r.value);
+        if has_fblocks {
+            emit_with_return_unwind(g, rloc);
+        }
         g.emit_op(OP_RETURN_VALUE, 0, rloc);
         return;
     }
     none_idx = g.u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, rloc);
+    if has_fblocks {
+        emit_with_return_unwind(g, rloc);
+    }
     g.emit_op(OP_RETURN_VALUE, 0, rloc);
 }
 

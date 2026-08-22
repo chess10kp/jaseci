@@ -81,6 +81,15 @@ obj loop_frame {
         break_is_stub: bool = False;
 }
 
+# Enclosing with / async-with frame tracked for return unwinding (mirrors
+# CPython COMPILE_FBLOCK_WITH / COMPILE_FBLOCK_ASYNC_WITH). The open protect
+# region is closed at the unwind boundary (POP_BLOCK equivalent).
+obj with_fblock {
+    has is_async: bool,
+        protect_region: int,
+        frame_idx: int;
+}
+
 # CFG builder: owns the current block and emits into unverified_cfg (Phase 4).
 obj cfg_builder {
     has u: unverified_cfg,
@@ -88,6 +97,20 @@ obj cfg_builder {
         sym_top: sym_block | None = None,
         private: str | None = None,
         loop_stack: list[loop_frame] = [],
+        # Enclosing with / async-with frames, outermost first.
+        with_fblocks: list[with_fblock] = [],
+        # Set when return unwinding ran for at least one with frame.
+        with_unwind_used: bool = False,
+        # Deferred await-send loop of the return-unwind path (block ids; CT
+        # footer blocks are deferred objects positioned later by the visitor).
+        with_unwind_send: int = -1,
+        with_unwind_yield: int = -1,
+        with_unwind_resume: int = -1,
+        with_unwind_end_send: int = -1,
+        with_unwind_boundary: int = -1,
+        with_unwind_depth: int = -1,
+        with_unwind_ct: basicblock | None = None,
+        with_unwind_cj: basicblock | None = None,
         # Suspendable function (generator/coroutine) PEP 479 protect start block id.
         generator_protect_start: int = -1,
         # END_ASYNC_FOR handler block id (async-for PEP 479 unwind region).
