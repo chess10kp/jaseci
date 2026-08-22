@@ -513,6 +513,10 @@ test.jac
 testing.impl.jac
 testing.jac
 theme_handler.jac
+# c2jac-generated demonstration output: lifted C double-pointer params
+# (`rotating_node_t **root`) surface as `object`, and the `typedef struct
+# rotating_node_s rotating_node_t` alias does not carry the struct's fields.
+jac-py/Modules/rotatingtree.jac
 tool.impl.jac
 toolcall.impl.jac
 tools.impl.jac

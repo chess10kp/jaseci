@@ -41,6 +41,7 @@ jobs:
           filters: |
             core:
               - 'jac/**'
+              - 'jac-py/**'
               - '.github/workflows/ci.yml'
               - '.github/actions/setup-jac/**'
               - '.github/actions/setup-jac-dev/**'
@@ -90,7 +91,7 @@ jobs:
   # by path expect it at jac/zig-out/bin/jac, where setup-jac builds it, so
   # the download steps below restore it there.
   build-jac:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
@@ -185,7 +186,7 @@ jobs:
   test-compiler:
     needs: [changes, build-jac]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Sealed lane: this suite spawns `jac` subprocesses with isolated env/HOME
     # (serve/client/cli tests). Under the dev lane each such spawn would
     # recompile the checkout compiler from source into its cold cache -- a
@@ -281,7 +282,7 @@ jobs:
   test-no-llvm:
     needs: changes
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Set up Python 3.14
@@ -334,7 +335,7 @@ jobs:
   test-runtime:
     needs: [changes, build-jac]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Sealed lane: this suite spawns `jac` subprocesses with isolated env/HOME
     # (serve/client/cli tests). Under the dev lane each such spawn would
     # recompile the checkout compiler from source into its cold cache -- a
@@ -388,7 +389,7 @@ jobs:
   # Required check: no needs on build-jac (a skipped required check would
   # satisfy branch protection); it restores the same binary cache itself.
   jac-check:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Dev lane: run THIS checkout's compiler (see test-compiler).
     env:
       JAC_NO_DEV_SOURCE: ""
@@ -602,7 +603,7 @@ jobs:
     needs: changes
     # On push to main, only worth running when docs changed.
     if: ${{ github.event_name != 'push' || needs.changes.outputs.docs == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Dev lane: run THIS checkout's compiler (see test-compiler).
     env:
       JAC_NO_DEV_SOURCE: ""
@@ -664,10 +665,90 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: bash scripts/check-release-notes.sh
 
+  jac-py-gates:
+    name: jac-py P4 gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up pinned CPython for jac-py gates
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Pin CPython reference checkout
+        run: python3 jac-py/tools/fetch_cpython_reference.py
+
+      - name: P4 import boundary gate
+        run: python3 jac-py/tools/p4_import_gate.py
+
+      - name: P0.4 token model regeneration gate
+        run: python3 jac-py/tools/tokens2jac.py --check
+
+      - name: Set up jac (build the binary)
+        uses: ./.github/actions/setup-jac
+
+      - name: Layer 4 oracle contract tests
+        run: jac test jac-py/jacpython/layer4_compile.jac
+
+      - name: P0.10 compiler slice tests
+        run: jac test jac-py/jacpython/compiler_slice.jac
+
+      - name: Phase 2 validation contract tests
+        run: jac test jac-py/jacpython/compiler_validate.jac
+
+      - name: Phase 5 symtable contract tests
+        run: jac test jac-py/jacpython/compiler_symtable.jac
+
+      - name: layer9 product exec slice tests
+        run: jac test jac-py/jacpython/layer9_product_exec.jac
+
+      - name: P0.4 token model contract tests
+        run: jac test jac-py/jacpython/layer5_token_model.jac
+
+      - name: P0.5 tokenizer slice tests
+        run: jac test jac-py/jacpython/layer5_tokenizer.jac
+
+      - name: P0.6 PEG runtime contract tests
+        run: jac test jac-py/jacpython/layer6_peg_runtime.jac
+
+      - name: grammar2jac check
+        run: python3 jac-py/tools/grammar2jac.py --check
+
+      - name: grammar2jac Phase 1 tests
+        run: python3 -m unittest jac-py/tools/test_grammar2jac.py
+
+      - name: opcode_meta2jac check
+        run: python3 jac-py/tools/opcode_meta2jac.py --check
+
+      - name: opcode_meta2jac Phase 3 tests
+        run: python3 -m unittest jac-py/tools/test_opcode_meta2jac.py
+
+      - name: Phase 3 flowgraph verification tests
+        run: jac test jac-py/jacpython/layer_flowgraph_verify.jac
+
+      - name: Phase 6 VM opcode fixture coverage gate
+        run: python3 jac-py/tools/vm_opcode_fixtures.py --check
+
+      - name: Phase 6 VM opcode fixture gate tests
+        run: python3 -m unittest jac-py/tools/test_vm_opcode_fixtures.py
+
+      - name: Phase 6 independent VM conformance tests
+        run: jac test jac-py/jacpython/layer_vm_conformance.jac
+
+      - name: layer7 parser expr tests
+        run: jac test jac-py/jacpython/layer7_parser_expr.jac
+
+      - name: layer8 product eval slice tests
+        run: jac test jac-py/jacpython/layer8_product_expr.jac
+
+      - name: layer10 product control-flow slice tests
+        run: jac test jac-py/jacpython/layer10_product_controlflow.jac
+
   test-solid-and-desktop:
     needs: [changes, build-jac]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.desktop == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Sealed lane: this suite spawns `jac` subprocesses with isolated env/HOME
     # (serve/client/cli tests). Under the dev lane each such spawn would
     # recompile the checkout compiler from source into its cold cache -- a
@@ -719,7 +800,7 @@ jobs:
   test-client:
     needs: [changes, build-jac]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Sealed lane: this suite spawns `jac` subprocesses with isolated env/HOME
     # (serve/client/cli tests). Under the dev lane each such spawn would
     # recompile the checkout compiler from source into its cold cache -- a
@@ -775,7 +856,7 @@ jobs:
   test-packages-and-docs:
     needs: [changes, build-jac]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.byllm == 'true' || needs.changes.outputs.docs == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Sealed lane: byllm's MTIR integration tests key registries off the
     # sealed module identity (dev-source loading keys them differently), and
     # the suite spawns env-isolated `jac` subprocesses (see test-compiler's
@@ -956,7 +1037,7 @@ jobs:
         run: zig build -Dno-ninja test --summary all
 
   test-cef-build:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Dev lane: run THIS checkout's compiler (see test-compiler).
     env:
       JAC_NO_DEV_SOURCE: ""
@@ -993,7 +1074,7 @@ jobs:
   test-scale:
     needs: [changes, build-jac]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.scale == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -1084,7 +1165,7 @@ jobs:
        needs.changes.outputs.core == 'true' ||
        needs.changes.outputs.scale == 'true') &&
       !contains(github.event.pull_request.labels.*.name, 'skip-k8s')
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -1153,7 +1234,7 @@ jobs:
   test-jac-pack-smoke:
     needs: [changes, build-jac]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.scale == 'true' || needs.changes.outputs.byllm == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
     - name: Check out code
       uses: actions/checkout@v5
@@ -1468,7 +1549,7 @@ jobs:
       github.event_name != 'push' &&
       (github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.scale == 'true') &&
       !contains(github.event.pull_request.labels.*.name, 'skip-k8s')
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false
@@ -1735,6 +1816,7 @@ jobs:
       - test-runtime
       - jac-check
       - contribution-checks
+      - jac-py-gates
       - test-solid-and-desktop
       - test-client
       - test-packages-and-docs

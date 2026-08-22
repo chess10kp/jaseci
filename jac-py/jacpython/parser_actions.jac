@@ -1,0 +1,1291 @@
+# P0.7 parser action helpers (PLAN.md).
+#
+# Lowers CPython grammar actions (_PyAST_*, _PyPegen_*) into ast_nodes.jac
+# objects. Generated parser rules call these helpers; this file is hand-written
+# and grows with each grammar profile.
+
+import from objects { PyObj, PyInt, PyBool, py_none }
+import from ast_nodes {
+    ast_node,
+    expr,
+    mod,
+    stmt,
+    operator,
+    unaryop,
+    boolop,
+    cmpop,
+    expr_context,
+    Expression,
+    Module,
+    Constant,
+    Name,
+    Load,
+    Store,
+    Del,
+    Attribute,
+    Subscript,
+    Slice,
+    AugAssign,
+    Delete,
+    BinOp,
+    UnaryOp,
+    BoolOp,
+    Compare,
+    Call,
+    IfExp,
+    Starred,
+    Assign,
+    AnnAssign,
+    Expr,
+    Return,
+    Pass,
+    Tuple,
+    Add,
+    Sub,
+    Mult,
+    Div,
+    FloorDiv,
+    Mod,
+    MatMult,
+    Pow,
+    LShift,
+    RShift,
+    BitOr,
+    BitXor,
+    BitAnd,
+    USub,
+    UAdd,
+    Invert,
+    Not,
+    And,
+    Or,
+    Eq,
+    NotEq,
+    Lt,
+    LtE,
+    Gt,
+    GtE,
+    Is,
+    IsNot,
+    In,
+    NotIn,
+    cmpop,
+    keyword,
+    Break,
+    Continue,
+    pattern,
+    arguments,
+    alias,
+    arg,
+    comprehension,
+    excepthandler,
+    match_case,
+    type_param,
+    withitem,
+    MatchOr,
+}
+import from peg_runtime { peg_parser, peg_token, peg_has_error, peg_raise_syntax_error }
+
+obj pa_cmpop_expr_pair {
+    has cmpop: cmpop,
+        expr: expr;
+}
+
+obj kv_pair {
+    has key: expr,
+        value: expr;
+}
+
+obj pa_key_pattern_pair {
+    has key: expr,
+        pattern: pattern;
+}
+
+obj pa_keyword_or_starred {
+    has arg: str | None,
+        value: expr;
+}
+
+obj name_default_pair {
+    has arg: arg,
+        default: expr | None;
+}
+
+obj star_etc_node {
+    has vararg: arg | None = None,
+        kwonlyargs: list[arg] = [],
+        kw_defaults: list[expr | None] = [],
+        kwarg: arg | None = None;
+}
+
+def pa_extra(
+    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> tuple[int, int, int, int] {
+    return (lineno, col_offset, end_lineno, end_col_offset);
+}
+
+def pa_name_id(ast_name: expr) -> str {
+    if isinstance(ast_name, Name) {
+        n = ast_name as Name;
+        return n.id;
+    }
+    return "";
+}
+
+def pa_name_from_token(tok: peg_token | None) -> Name | None {
+    if tok is None {
+        return None;
+    }
+    return Name(
+        id=tok.spelling,
+        ctx=Load(),
+        lineno=tok.lineno,
+        col_offset=tok.col_offset,
+        end_lineno=tok.end_lineno,
+        end_col_offset=tok.end_col_offset
+    );
+}
+
+def _digit_val(c: str) -> int {
+    if c >= "0" and c <= "9" {
+        return ord(c) - ord("0");
+    }
+    return -1;
+}
+
+def pa_parse_int_spelling(spelling: str) -> int {
+    n = 0;
+    i = 0;
+    while i < len(spelling) {
+        d = _digit_val(spelling[i]);
+        if d >= 0 {
+            n = n * 10 + d;
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
+def pa_number_from_token(tok: peg_token | None) -> Constant | None {
+    if tok is None {
+        return None;
+    }
+    val = PyInt(t="int", val=pa_parse_int_spelling(tok.spelling));
+    return Constant(
+        value=val,
+        kind=None,
+        lineno=tok.lineno,
+        col_offset=tok.col_offset,
+        end_lineno=tok.end_lineno,
+        end_col_offset=tok.end_col_offset
+    );
+}
+
+def pa_constant_none(
+    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Constant {
+    return Constant(
+        value=py_none(),
+        kind=None,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_constant_bool(
+    val: bool, lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Constant {
+    return Constant(
+        value=PyBool(t="bool", val=val),
+        kind=None,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_expression(body: expr) -> Expression {
+    return Expression(body=body);
+}
+
+def pa_ast_binop(
+    left: expr,
+    op: operator,
+    right: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> BinOp {
+    return BinOp(
+        left=left,
+        op=op,
+        right=right,
+        lineno=left.lineno,
+        col_offset=left.col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_unaryop(
+    op: unaryop,
+    operand: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> UnaryOp {
+    return UnaryOp(
+        op=op,
+        operand=operand,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_boolop(
+    op: boolop,
+    values: list[expr],
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> BoolOp {
+    start_lineno = lineno;
+    start_col = col_offset;
+    if len(values) > 0 {
+        start_lineno = values[0].lineno;
+        start_col = values[0].col_offset;
+    }
+    return BoolOp(
+        op=op,
+        values=values,
+        lineno=start_lineno,
+        col_offset=start_col,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_compare(
+    left: expr,
+    ops: list[cmpop],
+    comparators: list[expr],
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Compare {
+    return Compare(
+        left=left,
+        ops=ops,
+        comparators=comparators,
+        lineno=left.lineno,
+        col_offset=left.col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_call(
+    func: expr,
+    args: list[expr],
+    keywords: list[keyword],
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Call {
+    return Call(
+        func=func,
+        args=args,
+        keywords=keywords,
+        lineno=func.lineno,
+        col_offset=func.col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_starred(
+    value: expr, lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Starred {
+    return Starred(
+        value=value,
+        ctx=Load(),
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_ifexp(
+    test_expr: expr,
+    body: expr,
+    orelse: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> IfExp {
+    return IfExp(
+        test=test_expr,
+        body=body,
+        orelse=orelse,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_singleton_seq(item: expr) -> list[expr] {
+    return [item];
+}
+
+def pa_seq_insert_front(head: expr, tail: list[expr] | None) -> list[expr] {
+    if tail is None {
+        return pa_singleton_seq(head);
+    }
+    out: list[expr] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_make_cmpop_pair(op: cmpop, rhs: expr) -> pa_cmpop_expr_pair {
+    return pa_cmpop_expr_pair(cmpop=op, expr=rhs);
+}
+
+def pa_get_cmpops(pairs: list[pa_cmpop_expr_pair]) -> list[cmpop] {
+    out: list[cmpop] = [];
+    i = 0;
+    while i < len(pairs) {
+        out.append(pairs[i].cmpop);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_get_exprs(pairs: list[pa_cmpop_expr_pair]) -> list[expr] {
+    out: list[expr] = [];
+    i = 0;
+    while i < len(pairs) {
+        out.append(pairs[i].expr);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_collect_call_seqs(
+    args: list[expr],
+    kwargs: expr | None,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Call {
+    if kwargs is None {
+        return pa_ast_call(
+            Name(
+                id="",
+                ctx=Load(),
+                lineno=lineno,
+                col_offset=col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            ),
+            args,
+            [],
+            lineno,
+            col_offset,
+            end_lineno,
+            end_col_offset
+        );
+    }
+    if isinstance(kwargs, Call) {
+        c = kwargs as Call;
+        return pa_ast_call(
+            c.func, args, c.keywords, lineno, col_offset, end_lineno, end_col_offset
+        );
+    }
+    return pa_ast_call(
+        Name(
+            id="",
+            ctx=Load(),
+            lineno=lineno,
+            col_offset=col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        ),
+        args,
+        [],
+        lineno,
+        col_offset,
+        end_lineno,
+        end_col_offset
+    );
+}
+
+def pa_call_from_optional_args(
+    func: expr,
+    args_expr: expr | None,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Call {
+    args: list[expr] = [];
+    keywords: list[keyword] = [];
+    if args_expr is not None and isinstance(args_expr, Call) {
+        c = args_expr as Call;
+        args = c.args;
+        keywords = c.keywords;
+    }
+    return pa_ast_call(
+        func, args, keywords, lineno, col_offset, end_lineno, end_col_offset
+    );
+}
+
+def pa_check(body: expr) -> expr {
+    return body;
+}
+
+def pa_stmt_list_or_empty(xs: list[stmt] | None) -> list[stmt] {
+    if xs is None {
+        return [];
+    }
+    return xs;
+}
+
+def pa_unsupported_action(p: peg_parser, label: str) -> None {
+    if peg_has_error(p) {
+        return None;
+    }
+    peg_raise_syntax_error(p, False, f"unsupported grammar action: {label}");
+    return None;
+}
+
+# ---------------- statement actions (file/exec profile, P0.12 band 2) ----------------
+# These lower the straight-line statement grammar actions into ast_nodes.jac
+# objects. Locations arrive as the EXTRA quad (start_lineno, start_col_offset,
+# end_lineno, end_col_offset). Type comments are disabled (None).
+
+# file -> Module. _PyPegen_make_module wraps the flattened statement list. A
+# missing statement list (empty file) yields an empty module body.
+def pa_make_module(body: list[stmt] | None) -> Module {
+    stmts: list[stmt] = [];
+    if body is not None {
+        stmts = body;
+    }
+    return Module(body=stmts, type_ignores=[]);
+}
+
+# statements: statement+ -> flatten list[list[stmt]] into list[stmt]. Each
+# `statement` result is itself a seq (compound -> singleton, simple_stmts -> the
+# ';' separated list). _PyPegen_seq_flatten concatenates them in source order.
+def pa_seq_flatten(parts: list[object]) -> list[stmt] {
+    out: list[stmt] = [];
+    i = 0;
+    while i < len(parts) {
+        chunk = parts[i];
+        if isinstance(chunk, list) {
+            inner = chunk as list[object];
+            j = 0;
+            while j < len(inner) {
+                s = inner[j];
+                if isinstance(s, stmt) {
+                    out.append(s as stmt);
+                }
+                j = j + 1;
+            }
+        }
+        i = i + 1;
+    }
+    return out;
+}
+
+# target / RHS context switch: _PyPegen_set_expr_context rewrites a Name's ctx.
+# Jac values are immutable, so rebuild the Name with the requested context.
+def pa_set_context(target: expr, ctx: expr_context) -> expr {
+    if isinstance(target, Name) {
+        n = target as Name;
+        return Name(
+            id=n.id,
+            ctx=ctx,
+            lineno=n.lineno,
+            col_offset=n.col_offset,
+            end_lineno=n.end_lineno,
+            end_col_offset=n.end_col_offset
+        );
+    }
+    if isinstance(target, Attribute) {
+        a = target as Attribute;
+        return Attribute(
+            value=a.value,
+            attr=a.attr,
+            ctx=ctx,
+            lineno=a.lineno,
+            col_offset=a.col_offset,
+            end_lineno=a.end_lineno,
+            end_col_offset=a.end_col_offset
+        );
+    }
+    if isinstance(target, Subscript) {
+        s = target as Subscript;
+        return Subscript(
+            value=s.value,
+            slice=s.slice,
+            ctx=ctx,
+            lineno=s.lineno,
+            col_offset=s.col_offset,
+            end_lineno=s.end_lineno,
+            end_col_offset=s.end_col_offset
+        );
+    }
+    return target;
+}
+
+# star_expressions as a statement -> Expr (expression statement).
+def pa_ast_expr_stmt(
+    value: expr, lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Expr {
+    return Expr(
+        value=value,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+# star_targets '=' annotated_rhs -> Assign. NEW_TYPE_COMMENT is lowered to None
+# (type comments disabled).
+def pa_ast_assign(
+    targets: list[expr],
+    value: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Assign {
+    return Assign(
+        targets=targets,
+        value=value,
+        type_comment=None,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+# NAME ':' expression ['=' rhs] -> AnnAssign. Faithful AST build; codegen for
+# annotated assignment lands in a later P0.12 band and fails loud if hit first.
+def pa_ast_annassign(
+    target: expr,
+    annotation: expr,
+    value: expr | None,
+    simple: int,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> AnnAssign {
+    return AnnAssign(
+        target=target,
+        annotation=annotation,
+        value=value,
+        simple=simple,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+# return [expr] -> Return.
+def pa_ast_return(
+    value: expr | None,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Return {
+    return Return(
+        value=value,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+# pass -> Pass.
+def pa_ast_pass(
+    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Pass {
+    return Pass(
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+# tuple literal / target -> Tuple. ctx is Load (RHS) or Store (multi-target).
+def pa_ast_tuple(
+    elts: list[expr],
+    ctx: expr_context,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Tuple {
+    return Tuple(
+        elts=elts,
+        ctx=ctx,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_attribute(
+    value: expr,
+    attr_name: str,
+    ctx: expr_context,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Attribute {
+    return Attribute(
+        value=value,
+        attr=attr_name,
+        ctx=ctx,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_subscript(
+    value: expr,
+    slice_expr: expr,
+    ctx: expr_context,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Subscript {
+    return Subscript(
+        value=value,
+        slice=slice_expr,
+        ctx=ctx,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_slice(
+    lower: expr | None,
+    upper: expr | None,
+    step: expr | None,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Slice {
+    return Slice(
+        lower=lower,
+        upper=upper,
+        step=step,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_augassign(
+    target: expr,
+    op: operator,
+    value: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> AugAssign {
+    return AugAssign(
+        target=target,
+        op=op,
+        value=value,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_delete(
+    targets: list[expr],
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> Delete {
+    return Delete(
+        targets=targets,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+# ---------------- full-grammar parser action helpers (Phase 1) ----------------
+
+def pa_ast_break(
+    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Break {
+    return Break(
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_ast_continue(
+    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Continue {
+    return Continue(
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_constant_from_expr(
+    value: expr, lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Constant {
+    return Constant(
+        value=py_none(),
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_seq_append_to_end(head: list[expr] | None, item: expr) -> list[expr] {
+    if head is None {
+        return pa_singleton_seq(item);
+    }
+    out: list[expr] = [];
+    i = 0;
+    while i < len(head) {
+        out.append(head[i]);
+        i = i + 1;
+    }
+    out.append(item);
+    return out;
+}
+
+def pa_get_keys(pairs: list[object]) -> list[expr] {
+    return [];
+}
+
+def pa_get_values(pairs: list[object]) -> list[expr] {
+    return [];
+}
+
+def pa_get_patterns(pairs: list[object]) -> list[pattern] {
+    return [];
+}
+
+def pa_get_pattern_keys(pairs: list[object]) -> list[expr] {
+    return [];
+}
+
+def pa_map_names_to_ids(names: list[expr]) -> list[str] {
+    return [];
+}
+
+def pa_seq_count_dots(name: expr) -> int {
+    return 0;
+}
+
+def pa_body_end_span(body: list[stmt]) -> tuple[int, int] {
+    last = body[len(body) - 1];
+    end_lineno = last.lineno;
+    end_col_offset = last.col_offset;
+    if last.end_lineno is not None {
+        end_lineno = last.end_lineno;
+    }
+    if last.end_col_offset is not None {
+        end_col_offset = last.end_col_offset;
+    }
+    return (end_lineno, end_col_offset);
+}
+
+def pa_empty_arguments -> arguments {
+    return arguments(
+        posonlyargs=[],
+        args=[],
+        vararg=None,
+        kwonlyargs=[],
+        kw_defaults=[],
+        kwarg=None,
+        defaults=[]
+    );
+}
+
+def pa_args_from_list(seq: object | None) -> list[arg] {
+    if seq is None {
+        return [];
+    }
+    out: list[arg] = [];
+    raw = seq as list[object];
+    i = 0;
+    while i < len(raw) {
+        out.append(raw[i] as arg);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_append_args_from_pairs(
+    args: list[arg], defaults: list[expr], pairs: object | None
+) -> tuple[list[arg], list[expr]] {
+    if pairs is None {
+        return (args, defaults);
+    }
+    raw = pairs as list[object];
+    if len(raw) == 0 {
+        return (args, defaults);
+    }
+    i = 0;
+    while i < len(raw) {
+        pair = raw[i] as name_default_pair;
+        args.append(pair.arg);
+        if pair.default is not None {
+            defaults.append(pair.default as expr);
+        }
+        i = i + 1;
+    }
+    return (args, defaults);
+}
+
+def pa_make_arguments(
+    slash_no_default: object,
+    slash_with_default: object,
+    plain_names: object,
+    names_with_default: object,
+    star_etc: object
+) -> arguments {
+    posonlyargs = pa_args_from_list(slash_no_default);
+    args = pa_args_from_list(plain_names);
+    defaults: list[expr] = [];
+    (args, defaults) = pa_append_args_from_pairs(args, defaults, names_with_default);
+    vararg: arg | None = None;
+    kwonlyargs: list[arg] = [];
+    kw_defaults: list[expr | None] = [];
+    kwarg: arg | None = None;
+    if star_etc is not None {
+        se = star_etc as star_etc_node;
+        vararg = se.vararg;
+        kwonlyargs = se.kwonlyargs;
+        kw_defaults = se.kw_defaults;
+        kwarg = se.kwarg;
+    }
+    return arguments(
+        posonlyargs=posonlyargs,
+        args=args,
+        vararg=vararg,
+        kwonlyargs=kwonlyargs,
+        kw_defaults=kw_defaults,
+        kwarg=kwarg,
+        defaults=defaults
+    );
+}
+
+def pa_dummy_name(
+    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Name {
+    return Name(
+        id="_",
+        ctx=Load(),
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_interactive_exit(p: peg_parser) -> list[stmt] {
+    return [];
+}
+
+def pa_aug_op(target: expr) -> operator {
+    return Add();
+}
+
+# arguments rule returns a dummy Call from pa_collect_call_seqs; peel args/keywords.
+def pa_call_args(`node: expr) -> list[expr] {
+    if `node is None {
+        return [];
+    }
+    if isinstance(`node, Call) {
+        return (`node as Call).args;
+    }
+    return [];
+}
+
+def pa_call_keywords(`node: expr) -> list[keyword] {
+    if `node is None {
+        return [];
+    }
+    if isinstance(`node, Call) {
+        return (`node as Call).keywords;
+    }
+    return [];
+}
+
+def pa_comp_field(`node: expr, field: str) -> expr {
+    pair = `node as kv_pair;
+    if field == "key" {
+        return pair.key;
+    }
+    return pair.value;
+}
+
+def pa_seq_first(seq: list[object]) -> expr | None {
+    return None;
+}
+
+def pa_seq_last(seq: list[object]) -> expr | None {
+    return None;
+}
+
+def pa_seq_len(seq: list[object]) -> int {
+    return len(seq);
+}
+
+def pa_seq_get(seq: list[object], index: int) -> object | None {
+    return None;
+}
+
+def pa_or_pattern_singleton(
+    patterns: list[pattern],
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> pattern {
+    return MatchOr(
+        patterns=patterns,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_err_occurred(p: peg_parser) -> bool {
+    return peg_has_error(p);
+}
+
+def pa_expr_lineno(`node: expr) -> int {
+    return `node.lineno;
+}
+
+def pa_expr_end_col_offset(`node: expr) -> int {
+    return `node.end_col_offset;
+}
+
+def pa_expr_end_lineno(`node: expr) -> int {
+    return `node.end_lineno;
+}
+
+def pa_raise_syntax(p: peg_parser, on_next: bool, message: str) -> None {
+    if peg_has_error(p) {
+        return None;
+    }
+    peg_raise_syntax_error(p, on_next, message);
+    return None;
+}
+
+def pa_raise_syntax_known_expr(
+    p: peg_parser, on_next: bool, `node: expr, message: str
+) -> None {
+    return pa_raise_syntax(p, on_next, message);
+}
+
+def pa_raise_syntax_known_range(
+    p: peg_parser, on_next: bool, a: expr, b: expr, message: str
+) -> None {
+    return pa_raise_syntax(p, on_next, message);
+}
+
+def pa_raise_invalid_target(p: peg_parser, kind: object, `node: expr) -> None {
+    return pa_raise_syntax(p, False, "invalid assignment target");
+}
+
+def pa_raise_type_param_error(colon: object, `node: expr, is_tuple: bool) -> None {
+    return None;
+}
+
+def pa_raise_kvpair_error(p: peg_parser, `node: expr) -> None {
+    return pa_raise_syntax(p, False, "':' expected after dictionary key");
+}
+
+def pa_check_legacy_stmt_or_raise(p: peg_parser, a: object, b: object) -> None {
+    return None;
+}
+
+def pa_checked_future_import(module: object, names: object, level: object) -> object {
+    return None;
+}
+
+def pa_nonparen_genexp_in_call(a: object, b: object) -> object {
+    return None;
+}
+
+def pa_arguments_parsing_error(`node: object) -> object {
+    return None;
+}
+
+def pa_check_legacy_stmt(p: peg_parser, `node: object) -> bool {
+    return False;
+}
+
+def pa_concatenate_strings(parts: list[object]) -> expr | None {
+    return None;
+}
+
+def pa_concatenate_tstrings(parts: list[object]) -> expr | None {
+    return None;
+}
+
+def pa_constant_from_string(spelling: str) -> Constant | None {
+    return None;
+}
+
+def pa_constant_from_token(tok: peg_token | None) -> Constant | None {
+    return None;
+}
+
+def pa_decoded_constant_from_token(tok: peg_token | None) -> Constant | None {
+    return None;
+}
+
+def pa_ensure_imaginary(`node: expr) -> expr {
+    return `node;
+}
+
+def pa_ensure_real(`node: expr) -> expr {
+    return `node;
+}
+
+def pa_get_expr_name(`node: expr) -> str {
+    return "";
+}
+
+def pa_get_last_comprehension_item(`node: object) -> object {
+    return None;
+}
+
+def pa_join_names_with_dot(a: expr, b: expr) -> expr {
+    return a;
+}
+
+def pa_join_sequences(a: list[object], b: list[object]) -> list[object] {
+    return a;
+}
+
+def pa_alias_for_star(`node: object) -> alias | None {
+    return None;
+}
+
+def pa_add_type_comment_to_arg(arg: arg, comment: object) -> arg {
+    return arg;
+}
+
+def pa_seq_delete_starred_exprs(seq: list[object]) -> list[object] {
+    return seq;
+}
+
+def pa_seq_extract_starred_exprs(seq: list[object]) -> list[object] {
+    return seq;
+}
+
+def pa_setup_full_format_spec(`node: object) -> object {
+    return `node;
+}
+
+def pa_check_fstring_conversion(a: object, b: object) -> object {
+    return a;
+}
+
+def pa_function_def_decorators(decs: list[expr], stmt: stmt) -> stmt {
+    return stmt;
+}
+
+def pa_class_def_decorators(decs: list[expr], stmt: stmt) -> stmt {
+    return stmt;
+}
+
+def pa_key_value_pair(
+    key: expr,
+    value: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> kv_pair {
+    return kv_pair(key=key, value=value);
+}
+
+def pa_key_pattern_pair(
+    key: expr,
+    pat: pattern,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> pa_key_pattern_pair {
+    return pa_key_pattern_pair(key=key, pattern=pat);
+}
+
+def pa_name_default_pair(arg: arg, `default: expr | None) -> name_default_pair {
+    return name_default_pair(arg=arg, default=`default);
+}
+
+def pa_keyword_or_starred(
+    arg: str | None,
+    value: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> pa_keyword_or_starred {
+    return pa_keyword_or_starred(arg=arg, value=value);
+}
+
+def pa_star_etc(
+    a: object,
+    b: object,
+    c: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> star_etc_node | None {
+    if a is None and b is None and c is None {
+        return None;
+    }
+    vararg: arg | None = None;
+    if a is not None {
+        vararg = a as arg;
+    }
+    kwonlyargs: list[arg] = [];
+    kw_defaults: list[expr | None] = [];
+    if b is not None {
+        raw = b as list[object];
+        pi = 0;
+        while pi < len(raw) {
+            pair = raw[pi] as name_default_pair;
+            kwonlyargs.append(pair.arg);
+            kw_defaults.append(pair.default);
+            pi = pi + 1;
+        }
+    }
+    kwarg: arg | None = None;
+    if c is not None {
+        kwarg = c as arg;
+    }
+    return star_etc_node(
+        vararg=vararg, kwonlyargs=kwonlyargs, kw_defaults=kw_defaults, kwarg=kwarg
+    );
+}
+
+def pa_slash_with_default(
+    a: object,
+    b: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> object {
+    return None;
+}
+
+def pa_joined_str(
+    a: object,
+    b: list[expr],
+    c: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    return None;
+}
+
+def pa_template_str(
+    a: object,
+    b: list[expr],
+    c: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    return None;
+}
+
+def pa_formatted_value(
+    a: object,
+    b: object,
+    c: object,
+    d: object,
+    e: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    return None;
+}
+
+def pa_interpolation(
+    a: object,
+    b: object,
+    c: object,
+    d: object,
+    e: object,
+    f: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    return None;
+}
