@@ -302,3 +302,72 @@ compiler_ir.jac / assembler.jac
   except_region             # start/end/handler blocks + stack_depth
   assemble_exception_table  # varint encoding for co_exceptiontable
 ```
+
+## 9. Return-inside-with unwinding (landed)
+
+- cfg_builder.with_fblocks tracks enclosing with/async-with frames
+  (is_async, protect_region index, frame_idx). visit_return_stmt calls
+  emit_with_return_unwind: innermost-first, per frame a fresh boundary block
+  closes the open protect region (CPython's POP_BLOCK position), then
+  SWAP 3 / SWAP 2 (TOS preservation), LC None x3, CALL 3, and for async a
+  GET_AWAITABLE(2) send loop, then POP_TOP. RETURN_VALUE afterwards.
+- Protect regions are opened at bind time (end=-1) and closed by whichever
+  path unwinds first; the handler_block is patched after handlers exist.
+- Bodies that always terminate (body_cont.terminated) skip the statement-tail
+  inline exits entirely - CPython drops them as unreachable; keeping them
+  breaks byte parity.
+- optimize_load_fast was rewritten to analyze maximal FALLTHROUGH CHAINS of
+  blocks as one virtual block (CPython's blocks are coarser; jac blocks split
+  at region boundaries). RETURN_VALUE resets leftover refs silently instead of
+  marking them escaping (dead frame state below a return still borrows).
+  Without this, `LOAD_FAST x` before SWAP3/SWAP2/CALL/RETURN_VALUE stayed
+  owned where CPython emits LOAD_FAST_BORROW.
+
+## 10. Multi-item async with - CPython layout blueprint (NOT yet implemented)
+
+Ground truth from oracle dumps (n=2/3, return-body and trailing shapes):
+
+Physical layout order (function-level, n items):
+  enters+binds | body | [return-unwind exits if return-in-body]
+  | normal tail-exits + tail (only if body falls through)
+  | CT footers: enter0..enter_{n-1}, then unwind/exit loops innermost-first
+  | W_{n-1} handler, unwind_{n-1}, then per frame k descending:
+    exit-chain copy X'_{k-1} (fresh await loop, ends POP_TOP then either
+    JUMP_FORWARD to next dup or LOAD_CONST None + RETURN_VALUE), W_{k-1}, ...
+
+Suppressed-path targets:
+
+- body terminates: W_k.supp jumps FORWARD to a fresh copy of the remaining
+    exits (X_{k-1}'..X_0') ending in implicit `LC None; RETURN_VALUE`. The
+    copies are shared between supp paths that converge (W_2 and W_1 both
+    target the single X_0' in n=3). Cannot share the main-flow copies because
+    stack shape/successors differ (return-preserved value vs None).
+- code follows the with (trailing): W_k.supp jumps BACKWARD to the SHARED
+    normal-path X_{k-1} block (identical content+successor); outermost supp
+    re-executes an inline copy of the tail.
+
+ET depth formulas (CPython depths; encoded stack_depth = d+2 for lasti=T,
+d+1 for lasti=F):
+  protect A_i (bind_i .. PB_i, spans ALL inner frames' lifecycles): d=2+2i T,
+    handler W_i
+  handler internals B_i (W_i start .. before POP_EXCEPT in suppress): d=4+2i T,
+    handler unwind_i
+  enter_i loop yield carve: d=4+2i F -> CT footer of enter_i
+  normal tail-exit loop yield (frame i): d=2+2i F
+  return-unwind loop yield (frame i): d=3+2i F
+  suppressed dup-chain exit loop yield (frame i): d=2+2i F
+  handler wloop yield carve: d=7+2i F -> inline wCT
+  CT footers of inner-frame loops route to nearest still-active OUTER handler
+  (d=2+2i T); the outermosframe's own footer routes to pep479 intrinsic.
+  After-resume p479 rows end at the NEXT footer's first block
+  (pep479_end = next loop's ct/cj).
+
+Implementation sketch for visit_async_with generalization:
+
+- recursive aws_frame(i): setup, enter header(GET_AWAITABLE,1,3), bind,
+    push fb(frame_idx=i), recurse or body; pop fb; close A_i at boundary;
+    emit tail-exit (or nothing if terminated); deferred W_i.
+- keep jacpython manual placement: xs-style shared blocks only help the
+    trailing shape; ret-body shape needs fresh dup chains placed between
+    handlers exactly as CPython's cold-block ordering produces.
+- reuse g.with_unwind_* deferred-footer mechanism generalized to a list.
