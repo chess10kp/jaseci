@@ -1588,6 +1588,26 @@ def _adjust_index(i: int, length: int, neg: bool) -> int {
 
 # Resolve a PySlice against a sequence of `length` into concrete
 # [start, stop, step], applying CPython's negative-index and clamping rules.
+# CPython raises ValueError("slice step cannot be zero") before any stepping
+# loop runs; without this guard a zero-step slice never terminates.
+def _zero_step_error(sl: PySlice) -> PyObj {
+    if isinstance(sl.step, PyNoneType) {
+        return py_none();
+    }
+    step = sl.step;
+    if isinstance(step, PyBool) {
+        # bool is an int subclass: True steps forward.
+        if (step as PyBool).val {
+            return py_none();
+        }
+        return py_error("ValueError", "slice step cannot be zero");
+    }
+    if isinstance(step, PyInt) and (step as PyInt).val == 0 {
+        return py_error("ValueError", "slice step cannot be zero");
+    }
+    return py_none();
+}
+
 def slice_indices(sl: PySlice, length: int) -> list[int] {
     step = 1;
     if not isinstance(sl.step, PyNoneType) {
