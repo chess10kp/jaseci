@@ -1898,10 +1898,13 @@ obj PyTraceback(PyObj) {
             }
             return py_none();
         }
-        if name2 == "tb_lineno" or name2 == "tb_frame" {
-            # tb_lineno is a plain int attribute on C tracebacks too.
+        if name2 == "tb_lineno" or name2 == "tb_lasti" or name2 == "tb_frame" {
+            # tb_lineno/tb_lasti are plain int attributes on C tracebacks too.
             if name2 == "tb_lineno" {
                 return PyInt(t="int", val=self.tb_lineno);
+            }
+            if name2 == "tb_lasti" {
+                return PyInt(t="int", val=self.tb_lasti);
             }
             return PyTracebackFrame(
                 t="frame", frame_code=self.code, frame_lineno=self.tb_lineno
@@ -2037,7 +2040,7 @@ obj PyException(PyObj) {
             }
             # CPython's BaseException_new initializes __suppress_context__ to
             # False (not None) -- truthiness must be false-yet-bool.
-            return PyBool(t="bool", val=false);
+            return PyBool(t="bool", val=False);
         }
         return py_error("AttributeError", name);
     }
