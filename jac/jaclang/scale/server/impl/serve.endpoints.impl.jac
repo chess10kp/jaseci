@@ -124,38 +124,9 @@ impl JacAPIServerEndpoints.create_walker_callback(
         if nd {
             kwargs['_jac_spawn_node'] = nd;
         }
-        result = await self.execution_manager.spawn_walker(
-            self.get_walkers()[walker_name], kwargs, (username or Con.GUEST.value)
-        );
-        if (isgenerator(result) or isinstance(result, AsyncGenerator)) {
-            import from jaclang.runtimelib.serving.sse { sse_frame_stream }
-            return StreamingResponse(
-                sse_frame_stream(result),
-                media_type='text/event-stream',
-                headers={
-                    'Cache-Control': 'no-cache',
-                    'Connection': 'close',
-                    'X-Accel-Buffering': 'no'
-                }
-            );
-        }
-        if 'error' in result {
-            if result.get('error') == 'User not found' {
-                return TransportResponse.fail(
-                    code='UNAUTHORIZED',
-                    message='Unauthorized: unknown user',
-                    meta=Meta(extra={'http_status': 401})
-                );
-            }
-            return TransportResponse.fail(
-                code='EXECUTION_ERROR',
-                message=result.get('error', 'Walker execution failed'),
-                details=result.get('traceback') if 'traceback' in result else None,
-                meta=Meta(extra={'http_status': 500})
-            );
-        }
-        return TransportResponse.success(
-            data=result, meta=Meta(extra={'http_status': 200})
+
+        return await self.execution_handler.spawn_walker(
+            walker_name, kwargs, (username or Con.GUEST.value)
         );
     }
     return callback;
@@ -276,39 +247,18 @@ impl JacAPIServerEndpoints.create_function_callback(
             );
         }
         console.print(f"Executing function '{func_name}' with params: {kwargs}");
-        result = await self.execution_manager.execute_function(
-            self.get_functions()[func_name], kwargs, (username or Con.GUEST.value)
-        );
 
-        if (isgenerator(result) or isinstance(result, AsyncGenerator)) {
-            import from jaclang.runtimelib.serving.sse { sse_frame_stream }
-            return StreamingResponse(
-                sse_frame_stream(result),
-                media_type='text/event-stream',
-                headers={
-                    'Cache-Control': 'no-cache',
-                    'Connection': 'close',
-                    'X-Accel-Buffering': 'no'
-                }
-            );
+        resp = await self.execution_handler.call_function(
+            func_name, kwargs, (username or Con.GUEST.value)
+        );
+        if not resp.ok {
+            return resp;
         }
-        if 'error' in result {
-            if result.get('error') == 'User not found' {
-                return TransportResponse.fail(
-                    code='UNAUTHORIZED',
-                    message='Unauthorized: unknown user',
-                    meta=Meta(extra={'http_status': 401})
-                );
-            }
-            return TransportResponse.fail(
-                code='EXECUTION_ERROR',
-                message=result.get('error', 'Function execution failed'),
-                details=result.get('traceback') if 'traceback' in result else None,
-                meta=Meta(extra={'http_status': 500})
-            );
-        }
-        if raw_body {
-            payload = result.get('result') if isinstance(result, dict) else result;
+        if raw_body
+            and not (isgenerator(resp.data) or isinstance(resp.data, AsyncGenerator)) {
+            payload = resp.data.get('result')
+                if isinstance(resp.data, dict)
+                else resp.data;
             if isinstance(payload, bytes) {
                 body = payload;
             } elif isinstance(payload, str) {
@@ -320,9 +270,7 @@ impl JacAPIServerEndpoints.create_function_callback(
             }
             return Response(content=body, media_type=raw_media_type);
         }
-        return TransportResponse.success(
-            data=result, meta=Meta(extra={'http_status': 200})
-        );
+        return resp;
     }
     return callback;
 }

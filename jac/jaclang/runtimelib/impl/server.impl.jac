@@ -367,6 +367,40 @@ async def _aspawn_walker(
     return await handler.spawn_walker(name, fields, username);
 }
 
+def _normalize_execution_result(result: any) -> TransportResponse {
+    if isgenerator(result) or isinstance(result, AsyncGenerator) {
+        return TransportResponse.success(
+            data=result, meta=Meta(extra={'http_status': 200})
+        );
+    }
+    if isinstance(result, dict) and 'error' in result {
+        if result.get('error') == 'User not found' {
+            return TransportResponse.fail(
+                code='UNAUTHORIZED',
+                message='Unauthorized: unknown user',
+                meta=Meta(extra={'http_status': 401})
+            );
+        }
+        if result.get('error_code') == 'write_conflict' {
+            return TransportResponse.fail(
+                code='OCC_CONFLICT',
+                message=str(result.get('error', 'Write conflict')),
+                details=result.get('traceback'),
+                meta=Meta(extra={'http_status': 409})
+            );
+        }
+        return TransportResponse.fail(
+            code='EXECUTION_ERROR',
+            message=str(result.get('error', 'Execution failed')),
+            details=result.get('traceback') if 'traceback' in result else None,
+            meta=Meta(extra={'http_status': 500})
+        );
+    }
+    return TransportResponse.success(
+        data=result, meta=Meta(extra={'http_status': 200})
+    );
+}
+
 impl ExecutionManager._finalize_call_response(
     call_state: CallState, result: any
 ) -> dict[str, JsonValue] | Generator | AsyncGenerator {
@@ -1667,9 +1701,7 @@ impl ExecutionHandler.call_function(
     result = await self.execution_manager.execute_function(
         functions[name], args, username
     );
-    return TransportResponse.success(
-        data=result, meta=Meta(extra={'http_status': 200})
-    );
+    return _normalize_execution_result(result);
 }
 
 impl ExecutionHandler.spawn_walker(
@@ -1685,9 +1717,7 @@ impl ExecutionHandler.spawn_walker(
         );
     }
     result = await self.execution_manager.spawn_walker(walkers[name], fields, username);
-    return TransportResponse.success(
-        data=result, meta=Meta(extra={'http_status': 200})
-    );
+    return _normalize_execution_result(result);
 }
 
 def _warm_persistence {
