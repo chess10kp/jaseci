@@ -46,9 +46,8 @@ import from ceval {
     py_attr,
     py_compare,
     py_hash,
+    host_convert,
     py_repr,
-    py_slot_truth,
-    py_str,
     register_shim_module,
 }
 import from pyc_first { unmarshal, exec_code }
@@ -270,11 +269,7 @@ obj DCEqOp(PyObj) {
             if is_error(c) {
                 return c;
             }
-            truth = py_slot_truth(c);
-            if is_error(truth) {
-                return truth;
-            }
-            if not ((truth as PyBool).val) {
+            if not c.tp_bool() {
                 return PyBool(t="bool", val=False);
             }
             i += 1;
@@ -317,11 +312,7 @@ obj DCOrderOp(PyObj) {
             if is_error(eqc) {
                 return eqc;
             }
-            etruth = py_slot_truth(eqc);
-            if is_error(etruth) {
-                return etruth;
-            }
-            if not ((etruth as PyBool).val) {
+            if not eqc.tp_bool() {
                 return py_compare(kind, mvals[i], tvals[i]);
             }
             i += 1;
@@ -758,7 +749,7 @@ def dc_parse_params(kwargs: dict[str, PyObj]) -> PyObj {
 # ---------------- field collection ----------------
 
 def dc_annotation_str(a: PyObj) -> str {
-    s = py_str(a);
+    s = host_convert(a, 1);
     if is_error(s) {
         return "";
     }
