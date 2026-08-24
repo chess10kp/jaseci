@@ -1030,6 +1030,14 @@ def _jac_standin_class(cls):
     s = class_lookup_attr(cls, "__str__")
     if not is_error(s):
         ns["__str__"] = _jac_standin_dunder("__str__", py_str)
+    # Module-faithful: a host type() inherits __module__ from the CALLING module
+    # (always 'ceval' here). Copy the guest class's real __module__ so reprs and
+    # identity checks crossing back read the defining module, not the bridge.
+    mod = class_lookup_attr(cls, "__module__")
+    if not is_error(mod):
+        hm = to_host(mod)
+        if isinstance(hm, str):
+            ns["__module__"] = hm
     if class_has_abc_meta(cls):
         _jac_install_abc_trampolines()
         host_cls = _JacABCMeta(cls.name, _jac_standin_bases(cls), ns)
