@@ -6,7 +6,7 @@
 # differential stays separate; this path exercises ``import platform`` (etc.)
 # through register_shim_module + exec_code.
 
-import from objects { PyObj, PyStr, PyError, PyList, PyInt, PyBool, PyDict, is_error, py_none, py_error, }
+import from objects { PyObj, PyStr, PyError, PyList, PyInt, PyBool, PyDict, is_error, py_none, py_error, str_value, }
 import from getplatform { Py_GetPlatform }
 import from _bisectmodule {
     _p2_bisect_right,
@@ -20,7 +20,7 @@ import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
 }
-import from ceval { _sys3_forget, set_layer3_active, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
+import from ceval { _sys3_forget, set_layer3_active, import_native, sys3_modules, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
 import from _collectionsmodule {
     _p2_deque,
     _p2_defaultdict,
@@ -972,6 +972,50 @@ obj P2SupportRequiresDebugRangesFn(PyObj) {
     }
 }
 
+obj P2SupportEnsureLazyImportsFn(PyObj) {
+    # CPython ensure_lazy_imports(imported_module, modules_to_block) verifies
+    # via a fresh SUBPROCESS that importing imported_module does not eagerly
+    # pull modules_to_block. The honest guest equivalent measures THIS VM's
+    # own module registry (sys3_modules) around a real guest import: pure-Py
+    # modules executed in-VM register there; anything pre-blocked before the
+    # import or pulled eagerly by it fails with CPython's message shapes.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) != 2 {
+            return py_error("TypeError", "ensure_lazy_imports expected 2 arguments");
+        }
+        mod = str_value(args[0]);
+        blocked_host = to_host(args[1]);
+        if not isinstance(blocked_host, (set, frozenset, list)) {
+            return py_error("TypeError", "modules_to_block must be a set");
+        }
+        before = "";
+        for name in sys3_modules.keys() {
+            if name in blocked_host {
+                if before != "" { before += ", "; }
+                before += str(name);
+            }
+        }
+        if before != "" {
+            return py_error("AssertionError", "unexpectedly imported at startup: " + before);
+        }
+        imp = import_native(mod);
+        if is_error(imp) {
+            return imp;
+        }
+        after = "";
+        for name in sys3_modules.keys() {
+            if name in blocked_host {
+                if after != "" { after += ", "; }
+                after += str(name);
+            }
+        }
+        if after != "" {
+            return py_error("AssertionError", "unexpectedly imported after importing " + mod + ": " + after);
+        }
+        return py_none();
+    }
+}
+
 def p2_libtest_reset {
     clear_shim_modules();
     # Route IMPORT_NAME through py_import_name so the registered facades win;
@@ -1018,6 +1062,7 @@ def p2_libtest_reset {
         "is_apple_mobile": PyBool(t="bool", val=False),
         "is_apple": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
+        "ensure_lazy_imports": P2SupportEnsureLazyImportsFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
@@ -1032,6 +1077,11 @@ def p2_libtest_reset {
     os_helper_mod = PyModule(t="module", name="test.support.os_helper", attrs=os_helper_attrs);
     register_shim_module("test.support.os_helper", os_helper_mod);
     support_attrs["os_helper"] = os_helper_mod;
+    import_helper_mod = PyModule(t="module", name="test.support.import_helper", attrs={
+        "ensure_lazy_imports": P2SupportEnsureLazyImportsFn(t="function"),
+    });
+    register_shim_module("test.support.import_helper", import_helper_mod);
+    support_attrs["import_helper"] = import_helper_mod;
     register_shim_module("test.support", support_mod);
     # Lib/test/support/numbers.py is pure literal data shared by numeric
     # suites (test_underscores et al); embedded verbatim from the pinned
