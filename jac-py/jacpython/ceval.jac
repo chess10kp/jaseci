@@ -2530,6 +2530,11 @@ obj PyClass(PyObj) {
         # call __new__(cls, *args) and use its return value. __init__ then runs
         # only if __new__ returned an instance of this class (CPython's rule).
         user_new = class_lookup_attr(self, "__new__");
+        if not is_error(user_new) and isinstance(user_new, PyStaticMethod) {
+            # The implicit staticmethod wrap at class creation stores __new__
+            # wrapped; the constructor itself is the wrapped function.
+            user_new = (user_new as PyStaticMethod).func;
+        }
         if not is_error(user_new) and isinstance(user_new, PyFunction) {
             new_args: list[PyObj] = [self];
             for a in args {
@@ -9315,6 +9320,18 @@ def make_pyclass_from_map(
     slots_state = compute_class_slots(class_name, bases, namespace);
     if is_error(slots_state) {
         return slots_state;
+    }
+    # CPython type_new: "__new__() is implicitly a static method" -- a plain
+    # function bound as __new__ in the class dict is wrapped in staticmethod at
+    # class creation. Without this, super().__new__(mcls, ...) in metaclass
+    # chains binds the raw function to mcls and prepends a duplicate first
+    # argument ('too many positional arguments' in typing._ProtocolMeta.__new__).
+    # Already-wrapped entries (an explicit `__new__ = staticmethod(f)`) stay put.
+    new_entry = namespace.get("__new__");
+    if isinstance(new_entry, PyFunction) {
+        namespace["__new__"] = PyStaticMethod(
+            t="staticmethod", func=new_entry as PyObj
+        );
     }
     state = (slots_state as PyTuple).items;
     members: list[str] = [];
