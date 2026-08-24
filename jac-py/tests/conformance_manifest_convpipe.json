@@ -170,20 +170,13 @@
     {
       "stem": "htmlparser",
       "gate_type": "oracle",
-      "status": "partial",
+      "status": "converted",
       "oracle_tests": [
         "conv_htmlparser_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "50 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "htmlparser.conv.json",
-      "jacpython_results": {
-        "htmlparser": {
-          "passed": 0,
-          "total": 50,
-          "notes": "0/50 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
-        }
-      }
+      "conversion_meta": "htmlparser.conv.json"
     },
     {
       "stem": "int_literal",
