@@ -3237,6 +3237,14 @@ obj PyClassMethod(PyObj) {
     # `__func__` exposes the wrapped function (namedtuple rewrites
     # `_make.__func__.__qualname__`; functools/abc read it too).
     def tp_getattro(name: str) -> PyObj {
+        # `__get__` exists on the wrapper itself (CPython classmethod is a
+        # descriptor): guest code tests hasattr(v, '__get__') to detect
+        # descriptors (enum's EnumDict._is_descriptor gates member registration
+        # on it). Without this arm a decorated method fails the test and is
+        # recorded as an enum MEMBER -- '<enum IntFlag> cannot extend ...'.
+        if name == "__get__" {
+            return PyDescrAccess(t="descr_access", target=self as PyObj, op="__get__");
+        }
         if name == "__func__" {
             return self.func;
         }
@@ -3252,6 +3260,10 @@ obj PyStaticMethod(PyObj) {
     has func: PyObj;
 
     def tp_getattro(name: str) -> PyObj {
+        # Same descriptor-surface requirement as PyClassMethod.__get__ above.
+        if name == "__get__" {
+            return PyDescrAccess(t="descr_access", target=self as PyObj, op="__get__");
+        }
         if name == "__func__" {
             return self.func;
         }
@@ -3260,6 +3272,41 @@ obj PyStaticMethod(PyObj) {
 
     def tp_setattro(name: str, value: PyObj) -> PyObj {
         return self.func.tp_setattro(name, value);
+    }
+}
+
+# The classmethod/staticmethod __get__ slot-wrapper view (descriptor-protocol
+# parity with PyPropAccess): guest code may fetch and call it by hand.
+obj PyDescrAccess(PyObj) {
+    has target: PyObj,
+        op: str;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        instance = py_none();
+        owner = py_none();
+        if len(args) > 0 {
+            instance = args[0];
+        }
+        if len(args) > 1 {
+            owner = args[1];
+        }
+        return descriptor_get(self.target, instance, owner);
+    }
+}
+
+# function.__get__(instance, owner): CPython functions are descriptors whose
+# __get__ binds the instance (or returns the function itself for a None
+# instance -- class-level access). Same hand-callable surface as PyDescrAccess.
+obj PyFuncGet(PyObj) {
+    has func: PyObj;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) > 0 and not isinstance(args[0], PyNoneType) {
+            return PyBoundMethod(
+                t="bound_method", function=self.func, receiver=args[0]
+            );
+        }
+        return self.func;
     }
 }
 
@@ -3690,6 +3737,13 @@ obj PyFunction(PyObj) {
     def tp_getattro(name: str) -> PyObj {
         if name in self.attrs {
             return self.attrs[name];
+        }
+        # Functions are descriptors in CPython (every def has __get__): guest
+        # code gates on this (enum's EnumDict._is_descriptor decides whether a
+        # class-body binding becomes a member or a plain method). Without the
+        # arm, methods defined in an enum body are recorded as MEMBERS.
+        if name == "__get__" {
+            return PyFuncGet(t="func_get", func=self as PyObj);
         }
         if name == "__name__" {
             return PyStr(t="str", val=self.name);
@@ -4781,6 +4835,12 @@ def host_convert(value: PyObj, conv: int) -> PyObj {
     # A member descriptor converts to its repr form on BOTH str() and repr()
     # (host: str(C.__dict__['x']) == repr(C.__dict__['x'])).
     if isinstance(value, PyMemberDescr) {
+        return py_repr(value);
+    }
+    # A guest class object converts IN-VM: routing a PyClass through to_host
+    # mints a standin whose host repr leaks into formatted messages
+    # ('<class ceval.Protocol>' instead of '<class typing.Protocol>').
+    if isinstance(value, PyClass) {
         return py_repr(value);
     }
     hv_r = to_host_coerce(value);
@@ -9640,7 +9700,15 @@ def py_build_class(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         );
     }
     # Default `type`: execute the body into a plain namespace and box a PyClass.
-    namespace: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
+    # CPython __build_class__ seeds the class body's `__name__` from the CALLING
+    # frame's globals so the implicit `__module__ = __name__` binding records
+    # the defining module -- not a hardcoded placeholder.
+    caller_mod = body.globals.get("__name__");
+    body_mod_name = "__main__";
+    if isinstance(caller_mod, PyStr) {
+        body_mod_name = (caller_mod as PyStr).val;
+    }
+    namespace: dict[str, PyObj] = {"__name__": PyStr(t="str", val=body_mod_name)};
     body_result = exec_code_frame(
         body.code, [], {}, body.globals, namespace, body.closure, [], {}
     );
@@ -9750,7 +9818,13 @@ def build_class_via_metaclass(
         return py_invoke(metaclass, call_args, class_kwds);
     }
     # A plain-dict (or absent) namespace: seed, run the body, box a real dict.
-    namespace2: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
+    # Same caller-globals seeding rule as the default-type path above.
+    caller_mod2 = body.globals.get("__name__");
+    body_mod_name2 = "__main__";
+    if isinstance(caller_mod2, PyStr) {
+        body_mod_name2 = (caller_mod2 as PyStr).val;
+    }
+    namespace2: dict[str, PyObj] = {"__name__": PyStr(t="str", val=body_mod_name2)};
     if isinstance(prepared, PyDict) {
         prep_map = pydict_to_str_map(prepared as PyDict);
         for pk in prep_map {
