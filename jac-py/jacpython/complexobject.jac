@@ -3,10 +3,19 @@
 # Lift: Objects/_lifted/complexobject_core.jac. Pure-arithmetic pieces live in
 # objects.jac next to the PyComplex slots; this module adds what needs float
 # formatting / text scanning, mirroring CPython 3.14 byte-for-byte.
-import from objects { PyComplex, PyInt, _signed_hash, }
+import from objects { PyComplex, PyInt, }
 import from pyhash { float_hash_value, _U64, }
 
 glob _PyHASH_IMAG: int = 1000003;
+
+# Two's-complement fold back into signed 64-bit (same kernel the set/tuple
+# lanes carry locally; upstream keeps this per-module rather than shared).
+def _signed_hash(acc: int) -> int {
+    if acc >= 0x8000000000000000 {
+        return acc - 0x10000000000000000;
+    }
+    return acc;
+}
 
 def complex_hash_combine(hashreal: int, hashimag: int) -> int {
     if hashreal == -1 or hashimag == -1 {

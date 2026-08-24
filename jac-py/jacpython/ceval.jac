@@ -1996,6 +1996,8 @@ def host_setattr(value: PyObj, name: str, field: PyObj) -> PyObj {
 # the method call (self's vtable), never a tag comparison.
 def py_truth(value: PyObj) -> bool {
     return value.tp_bool();
+}
+
 # Native complex() constructor over native operands (PyHostProxy.tp_call
 # interception). PY_NOT_IMPLEMENTED marks shapes with no native answer --
 # bytes, kwargs, user/host objects, the both-imag-parts deprecation combo --
@@ -2076,61 +2078,6 @@ def py_convert_complex(args: list[PyObj]) -> PyObj {
     return PyComplex(t="complex", real=r1, imag=r2);
 }
 
-def py_convert_float(x: PyObj) -> PyObj {
-    if isinstance(x, PyUserObj) {
-        u = x as PyUserObj;
-        # CPython abstract.c PyNumber_Float: once nb_float exists its result and
-        # exceptions are final -- nb_index is tried only when nb_float is
-        # absent entirely.
-        if user_has_dunder(u, "__float__") {
-            res = call_user_dunder(u, "__float__", []);
-            if is_error(res) {
-                return res;
-            }
-            if isinstance(res, PyFloat) {
-                return res;
-            }
-            return py_error(
-                "TypeError",
-                u.cls.name + ".__float__ returned non-float (type " + res.t + ")"
-            );
-        }
-        # A builtin number base's own slot is inherited by the subclass.
-        if boxed_number_base(u) {
-            return py_convert_float(u._base_obj());
-        }
-        # No nb_float anywhere in the hierarchy: nb_index next; its exceptions
-        # and non-int reports propagate verbatim (PyNumber_Index).
-        if user_has_dunder(u, "__index__") {
-            idx = (u as PyObj).to_index();
-            if is_error(idx) {
-                return idx;
-            }
-            return PyFloat(t="float", val=float((idx as PyInt).val));
-        }
-        # Remaining bases convert on their own terms (str parsing, ...); none
-        # applicable is CPython's final TypeError (PyNumber_Float falls back to
-        # PyFloat_FromString, which the host constructor path reproduces).
-        if u._has_base() {
-            return py_convert_float(u._base_obj());
-        }
-        return py_error(
-            "TypeError",
-            "float() argument must be a string or a real number, not '"
-                + u.cls.name + "'",
-        );
-    }
-    return py_host_convert("float", x);
-}
-
-# The host constructor of `name` over a value with no native slot answer
-# (str/bytes parsing, float truncation, opaque proxies). Exact legacy behavior.
-}
-
-# A key/value that is NOT a builtin (a user object or a host proxy) can carry a
-# custom __eq__, so the hashkey-bucket match must be confirmed with a real
-# comparison. Between two builtins the hashkey protocol already IS value equality
-# (numeric collapse included), so the confirming eq is skipped -- the fast path.
 def _needs_eq_confirm(o: PyObj) -> bool {
     return isinstance(o, PyUserObj) or isinstance(o, PyHostProxy);
 }

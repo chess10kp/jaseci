@@ -681,19 +681,19 @@ obj PyComplex(PyObj) {
         }
         ar = self.real;
         ai = self.imag;
-        if kind == NB_ADD {
+        if kind == 0 {
             (r, i) = _cx_add(ar, ai, br, bi);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_SUBTRACT {
+        if kind == 10 {
             (r, i) = _cx_sub(ar, ai, br, bi);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_MULTIPLY {
+        if kind == 5 {
             (r, i) = _cx_mul(ar, ai, br, bi);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_TRUE_DIVIDE {
+        if kind == 11 {
             # CPython: any zero divisor raises plain "division by zero"
             # (3.14 unified message -- no "complex division by zero").
             if br == 0.0 and bi == 0.0 {
@@ -702,7 +702,7 @@ obj PyComplex(PyObj) {
             (r, i) = _cx_div(ar, ai, br, bi);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_POWER {
+        if kind == 8 {
             # Integer-valued exponents use CPython's repeated-squaring path
             # (native, incl. its overflow/zero rules). General exponents need
             # polar-form transcendentals the na-clean leaf cannot import, so
@@ -740,26 +740,26 @@ obj PyComplex(PyObj) {
         }
         ar = self.real;
         ai = self.imag;
-        if kind == NB_ADD {
+        if kind == 0 {
             (r, i) = _cx_add(lr, li, ar, ai);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_SUBTRACT {
+        if kind == 10 {
             (r, i) = _cx_sub(lr, li, ar, ai);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_MULTIPLY {
+        if kind == 5 {
             (r, i) = _cx_mul(lr, li, ar, ai);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_TRUE_DIVIDE {
+        if kind == 11 {
             if ar == 0.0 and ai == 0.0 {
                 return py_error("ZeroDivisionError", "division by zero");
             }
             (r, i) = _cx_div(lr, li, ar, ai);
             return PyComplex(t="complex", real=r, imag=i);
         }
-        if kind == NB_POWER {
+        if kind == 8 {
             if ai == 0.0 and -100.0 < ar and ar < 100.0 {
                 iv = int(ar);
                 if float(iv) == ar {
@@ -784,19 +784,19 @@ obj PyComplex(PyObj) {
         # unordered, so nan-complex equals nothing, not even itself). Ordering
         # is NotImplemented; PyObject_RichCompare then raises the byte-exact
         # "'<' not supported between instances of 'complex' and ..." error.
-        if kind != Py_EQ and kind != Py_NE {
+        if kind != 2 and kind != 3 {
             return PY_NOT_IMPLEMENTED;
         }
         (ok, br, bi) = self._coerce(other);
         if ok {
             eqv = self.real == br and self.imag == bi;
-            if kind == Py_EQ {
+            if kind == 2 {
                 return PyBool(t="bool", val=eqv);
             }
             return PyBool(t="bool", val=not eqv);
         }
         # Non-numeric operand: identity-tag (in)equality (CPython default).
-        if kind == Py_EQ {
+        if kind == 2 {
             return PyBool(t="bool", val=False);
         }
         return PyBool(t="bool", val=True);
@@ -811,7 +811,7 @@ obj PyComplex(PyObj) {
     # n:/f: namespaces wholesale. Nonzero imag lives in "z:" keyed on both
     # parts (str round-trips exactly; -0.0 normalized onto 0.0 because they
     # compare equal). All-NaN divergence mirrors PyFloat's accepted note.
-    def tp_hashkey -> PyObj {
+    def tp_hashkey -> str {
         if self.imag == 0.0 {
             return PyFloat(t="float", val=self.real).tp_hashkey();
         }
@@ -819,7 +819,7 @@ obj PyComplex(PyObj) {
         if r == 0.0 {
             r = 0.0;
         }
-        return PyStr(t="str", val="z:" + str(r) + "," + str(self.imag));
+        return "z:" + str(r) + "," + str(self.imag);
     }
 
     # .real/.imag are floats even for int-built complexes (CPython getters);
