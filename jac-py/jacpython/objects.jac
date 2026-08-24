@@ -1278,15 +1278,34 @@ obj PyTypeAlias(PyObj) {
 }
 
 # PEP 695 type-parameter stand-in (CPython typing.TypeVar as produced by
-# CALL_INTRINSIC_1(INTRINSIC_TYPEVAR)). Data-only: the intrinsic operand is
-# just the parameter name string, so __bound__ is None and __constraints__ is
-# the empty tuple -- bounded/constrained parameters wrap this object through
-# CALL_INTRINSIC_2 INTRINSIC_TYPEVAR_WITH_BOUND/_WITH_CONSTRAINTS instead.
-# Implicit PEP 695 parameters live in module 'typing' with inferred variance,
-# and their host repr is the bare name ('T'; the '~T' form belongs to
+# CALL_INTRINSIC_1(INTRINSIC_TYPEVAR)). The intrinsic operand is just the
+# parameter name string; bounded/constrained/defaulted parameters are wrapped
+# through CALL_INTRINSIC_2 INTRINSIC_TYPEVAR_WITH_BOUND (arm 2) /
+# _WITH_CONSTRAINTS (3) / SET_TYPEPARAM_DEFAULT (5), each handing over a
+# hidden zero-arg lazy evaluator function stored in the *_fn slots. The lazy
+# slots evaluate once and cache through the pyc_first py_attr seam
+# (typevar_bound_value / typevar_constraints_value / typevar_default_value) --
+# evaluation re-enters the interpreter, which this na-clean obj cannot do, so
+# tp_getattro defers those names when a slot holds a function. Implicit PEP
+# 695 parameters live in module 'typing' with inferred variance, and their
+# host repr is the bare name ('T'; the '~T' form belongs to
 # explicitly-constructed TypeVars outside typing).
 obj PyTypeVar(PyObj) {
-    has name: str;
+    has name: str,
+        # Hidden zero-arg evaluators from CALL_INTRINSIC_2 arms 2/3/5; 'none'
+        # when the parameter has no bound/constraints/default.
+        bound_fn: PyObj = py_none(),
+        constraints_fn: PyObj = py_none(),
+        default_fn: PyObj = py_none(),
+        # Compute-once caches mirroring CPython's constevaluator memoization:
+        # errors propagate uncached so a retry re-evaluates exactly like a
+        # fresh call.
+        bound_computed: bool = False,
+        cached_bound: PyObj = py_none(),
+        constraints_computed: bool = False,
+        cached_constraints: PyObj = py_none(),
+        default_computed: bool = False,
+        cached_default: PyObj = py_none();
 
     def tp_getattro(name: str) -> PyObj {
         if name == "__name__" {
@@ -1295,15 +1314,43 @@ obj PyTypeVar(PyObj) {
         if name == "__module__" {
             return PyStr(t="str", val="typing");
         }
+        # Lazy slots: with no evaluator the answer is static (None / empty
+        # tuple); with one, serving requires running it, so defer to the
+        # pyc_first seam (reaching here then is a routing bug).
         if name == "__bound__" {
+            if self.bound_fn.t != "none" {
+                return py_error("AttributeError", "__bound__");
+            }
             return py_none();
         }
         if name == "__constraints__" {
+            if self.constraints_fn.t != "none" {
+                return py_error("AttributeError", "__constraints__");
+            }
             return PyTuple(t="tuple", items=[]);
+        }
+        if name == "__default__" {
+            if self.default_fn.t != "none" {
+                return py_error("AttributeError", "__default__");
+            }
+            return py_none();
+        }
+        # Getset surface: CPython exposes the hidden evaluator functions
+        # themselves (None when absent); calling them forces evaluation.
+        if name == "evaluate_bound" {
+            return self.bound_fn;
+        }
+        if name == "evaluate_constraints" {
+            return self.constraints_fn;
+        }
+        if name == "evaluate_default" {
+            return self.default_fn;
         }
         if name == "__infer_variance__" {
             return PyBool(t="bool", val=True);
         }
+        # has_default() is a method needing a callable wrapper built on the
+        # host-allowed side of the substrate boundary -- served by py_attr.
         return py_error(
             "AttributeError",
             "'typing.TypeVar' object has no attribute '" + name + "'"

@@ -1273,6 +1273,7 @@ import from opcode_meta {
     OP_CONTAINS_OP,
     OP_LOAD_COMMON_CONSTANT,
     OP_CALL_INTRINSIC_1,
+    OP_CALL_INTRINSIC_2,
     OP_LOAD_FAST_AND_CLEAR,
     OP_SEND,
     OP_END_SEND,
@@ -5337,12 +5338,84 @@ def typealias_value(ta: PyTypeAlias) -> PyObj {
     return res;
 }
 
+# PEP 695 lazy TypeVar slot evaluation (CPython typevarobject.c constevaluator
+# memoization for __bound__ / __constraints__ / __default__): run the hidden
+# zero-arg evaluator from CALL_INTRINSIC_2 arms 2/3/5 once, cache the result,
+# and serve later accesses from the cache. Errors propagate uncached, so a
+# retry re-evaluates (and re-raises) exactly like a fresh call.
+def typevar_bound_value(tv: PyTypeVar) -> PyObj {
+    if tv.bound_fn.t == "none" {
+        return py_none();
+    }
+    if tv.bound_computed {
+        return tv.cached_bound;
+    }
+    res = py_invoke(tv.bound_fn, [], {});
+    if is_error(res) {
+        return res;
+    }
+    tv.bound_computed = True;
+    tv.cached_bound = res;
+    return res;
+}
+
+def typevar_constraints_value(tv: PyTypeVar) -> PyObj {
+    if tv.constraints_fn.t == "none" {
+        return PyTuple(t="tuple", items=[]);
+    }
+    if tv.constraints_computed {
+        return tv.cached_constraints;
+    }
+    res = py_invoke(tv.constraints_fn, [], {});
+    if is_error(res) {
+        return res;
+    }
+    tv.constraints_computed = True;
+    tv.cached_constraints = res;
+    return res;
+}
+
+def typevar_default_value(tv: PyTypeVar) -> PyObj {
+    if tv.default_fn.t == "none" {
+        return py_none();
+    }
+    if tv.default_computed {
+        return tv.cached_default;
+    }
+    res = py_invoke(tv.default_fn, [], {});
+    if is_error(res) {
+        return res;
+    }
+    tv.default_computed = True;
+    tv.cached_default = res;
+    return res;
+}
+
 def py_attr(value: PyObj, name: str) -> PyObj {
     # The alias's lazy __value__ re-enters the interpreter (it runs the hidden
     # value function), so it is served here rather than in the na-clean obj's
     # tp_getattro -- see typealias_value.
     if isinstance(value, PyTypeAlias) and name == "__value__" {
         return typealias_value(value as PyTypeAlias);
+    }
+    # Same seam for the PEP 695 TypeVar's lazy slots -- evaluation runs the
+    # hidden CALL_INTRINSIC_2 evaluators. has_default() is syntactic (PEP 696:
+    # never forces default evaluation) but needs a callable wrapper built on
+    # this side of the substrate boundary.
+    if isinstance(value, PyTypeVar) {
+        tv = value as PyTypeVar;
+        if name == "__bound__" {
+            return typevar_bound_value(tv);
+        }
+        if name == "__constraints__" {
+            return typevar_constraints_value(tv);
+        }
+        if name == "__default__" {
+            return typevar_default_value(tv);
+        }
+        if name == "has_default" {
+            return PyTypeVarMethod(t="typevar_method", tv=tv, name=name);
+        }
     }
     result = value.tp_getattro(name);
     # A native dict's keys()/values()/items() are bound zero-arg constructors of
@@ -9919,6 +9992,23 @@ def dict_lookup_value(d: PyDict, key: PyObj) -> PyObj {
 # The bound method object d.keys / d.values / d.items resolves to; calling it
 # builds the view (matching CPython, where `d.keys` is a builtin method and
 # `d.keys()` is the view).
+# Bound has_default() on a PEP 695 TypeVar: zero-arg probe of whether a
+# default was supplied at parameter creation, without evaluating it.
+obj PyTypeVarMethod(PyObj) {
+    has tv: PyTypeVar,
+        name: str;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(kwargs) > 0 {
+            return meth_no_kwargs("TypeVar", self.name);
+        }
+        if len(args) != 0 {
+            return meth_takes_none("TypeVar", self.name, len(args));
+        }
+        return PyBool(t="bool", val=self.tv.default_fn.t != "none");
+    }
+}
+
 obj PyDictViewCtor(PyObj) {
     has d: PyDict,
         mode: str;
@@ -13211,6 +13301,63 @@ def run_frame(frame: PyFrame) -> PyObj {
                 continue;
             }
             return py_error("SystemError", "unsupported CALL_INTRINSIC_1 " + str(arg));
+        }
+        if op == OP_CALL_INTRINSIC_2 {
+            # CPython intrinsic_2 calling convention: lhs = deeper item (the
+            # base object), rhs = top of stack (the argument).
+            rhs = stack.pop();
+            lhs = stack.pop();
+            if arg == 2 {
+                # INTRINSIC_TYPEVAR_WITH_BOUND: lhs is the parameter NAME
+                # string, rhs the hidden zero-arg bound evaluator -- this arm
+                # constructs the TypeVar itself (PEP 695 `T: bound`).
+                if not isinstance(lhs, PyStr) {
+                    return py_error(
+                        "SystemError", "TYPEVAR_WITH_BOUND name must be a str"
+                    );
+                }
+                stack.append(PyTypeVar(
+                    t="TypeVar",
+                    name=(lhs as PyStr).val,
+                    bound_fn=rhs,
+                ));
+                continue;
+            }
+            if arg == 3 {
+                # INTRINSIC_TYPEVAR_WITH_CONSTRAINTS: lhs is the parameter
+                # NAME string, rhs the evaluator that builds the constraints
+                # tuple when run (PEP 695 `T: (int, str)`).
+                if not isinstance(lhs, PyStr) {
+                    return py_error(
+                        "SystemError", "TYPEVAR_WITH_CONSTRAINTS name must be a str"
+                    );
+                }
+                stack.append(PyTypeVar(
+                    t="TypeVar",
+                    name=(lhs as PyStr).val,
+                    constraints_fn=rhs,
+                ));
+                continue;
+            }
+            if arg == 5 {
+                # INTRINSIC_SET_TYPEPARAM_DEFAULT: attach the hidden zero-arg
+                # default evaluator (PEP 696 `T = default`).
+                if not isinstance(lhs, PyTypeVar) {
+                    return py_error(
+                        "SystemError", "SET_TYPEPARAM_DEFAULT base is not a TypeVar"
+                    );
+                }
+                src = lhs as PyTypeVar;
+                stack.append(PyTypeVar(
+                    t="TypeVar",
+                    name=src.name,
+                    bound_fn=src.bound_fn,
+                    constraints_fn=src.constraints_fn,
+                    default_fn=rhs,
+                ));
+                continue;
+            }
+            return py_error("SystemError", "unsupported CALL_INTRINSIC_2 " + str(arg));
         }
         if op == OP_RETURN_VALUE {
             if len(stack) == 0 {
