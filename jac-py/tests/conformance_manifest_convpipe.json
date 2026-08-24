@@ -2,7 +2,7 @@
   "version": 1,
   "wave": "conv_pipeline",
   "description": "D2 mechanical test-conversion pipeline (convert_suite/diff_runner)",
-  "module_count": 67,
+  "module_count": 71,
   "modules": [
     {
       "stem": "augassign",
@@ -1046,6 +1046,50 @@
       "libtest_snippets": [],
       "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "string_literals.conv.json"
+    },
+    {
+      "stem": "grammar",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_grammar_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "52 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "grammar.conv.json"
+    },
+    {
+      "stem": "unicodedata",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_unicodedata_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "unicodedata.conv.json"
+    },
+    {
+      "stem": "timeit",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_timeit_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "timeit.conv.json"
+    },
+    {
+      "stem": "itertools",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_itertools_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "itertools.conv.json"
     }
   ]
 }

@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "e6813d071549e9a9a03b24838596c6cc6ae9c1ba",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_unicodedata.py",
+    "-o",
+    "jac-py/tests/conv_unicodedata",
+    "--name",
+    "conv_unicodedata"
+  ],
+  "generated_at": "2026-08-24T15:08:31",
+  "hashes": {
+    "pins_jac": "908a6b36f3f1148ed888924e6bcae759c80d15caac02d19b1cd86dbe26a03e79"
+  },
+  "source_file": "reference/cpython/Lib/test/test_unicodedata.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "unicodedata",
+  "pins_file": "conv_unicodedata_pins.jac",
+  "pins": [
+    {
+      "ident": "UnicodeMiscTest.test_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_failed_import_during_compiling",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import open_urlresource, requires_resource, script_helper, cpython_only, check_disallow_instantiation, force_not_colorized, is_resource_enabled, findfile\n\ndef _t():\n    code = 'import sys;sys.modules[\\'unicodedata\\'] = None;eval(\"\\'\\\\\\\\N{SOFT HYPHEN}\\'\")'\n    result = script_helper.assert_python_failure('-c', code)\n    error = \"SyntaxError: (unicode error) \\\\N escapes not supported (can't load unicodedata module)\"\n    assert error in result.err.decode('ascii'), ('assertIn', error, result.err.decode('ascii'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_unicodedata_unload_reload",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import open_urlresource, requires_resource, script_helper, cpython_only, check_disallow_instantiation, force_not_colorized, is_resource_enabled, findfile\n\ndef _t():\n    code = 'import gc, sys\\nassert \\'\\\\N{GRINNING FACE}\\'.encode(    \\'ascii\\', errors=\\'namereplace\\') == b\\'\\\\\\\\N{GRINNING FACE}\\'\\ncompile(r\"x = \\'\\\\\\\\N{LATIN CAPITAL LETTER A}\\'\", \\'<x>\\', \\'exec\\')\\ndel sys.modules[\\'unicodedata\\']\\ngc.collect()\\nassert \\'\\\\N{WINKING FACE}\\'.encode(    \\'ascii\\', errors=\\'namereplace\\') == b\\'\\\\\\\\N{WINKING FACE}\\'\\ncompile(r\"x = \\'\\\\\\\\N{LATIN CAPITAL LETTER B}\\'\", \\'<x>\\', \\'exec\\')\\n'\n    script_helper.assert_python_ok('-c', code)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_ucd_510",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import unicodedata\n\ndef _t():\n    assert unicodedata.mirrored('\u0f3a'), ('assertTrue', unicodedata.mirrored('\u0f3a'))\n    assert not unicodedata.ucd_3_2_0.mirrored('\u0f3a'), ('assertTrue', not unicodedata.ucd_3_2_0.mirrored('\u0f3a'))\n    assert 'a'.upper() == 'A', ('assertTrue', 'a'.upper() == 'A')\n    assert '\u1d79'.upper() == '\ua77d', ('assertTrue', '\u1d79'.upper() == '\ua77d')\n    assert '.'.upper() == '.', ('assertTrue', '.'.upper() == '.')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_bug_5828",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nfrom test.support import open_urlresource, requires_resource, script_helper, cpython_only, check_disallow_instantiation, force_not_colorized, is_resource_enabled, findfile\nquicktest = not is_resource_enabled('cpu')\n\ndef iterallchars():\n    maxunicode = 65535 if quicktest else sys.maxunicode\n    return map(chr, range(maxunicode + 1))\n\ndef _t():\n    assert '\u1d79'.lower() == '\u1d79', ('assertEqual', '\u1d79'.lower(), '\u1d79')\n    assert [c for c in iterallchars() if '\\x00' in (c.lower(), c.upper(), c.title())] == ['\\x00'], ('assertEqual', [c for c in iterallchars() if '\\x00' in (c.lower(), c.upper(), c.title())], ['\\x00'])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_bug_4971",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert '\u01c4'.title() == '\u01c5', ('assertEqual', '\u01c4'.title(), '\u01c5')\n    assert '\u01c5'.title() == '\u01c5', ('assertEqual', '\u01c5'.title(), '\u01c5')\n    assert '\u01c6'.title() == '\u01c5', ('assertEqual', '\u01c6'.title(), '\u01c5')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_linebreak_7643",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nfrom test.support import open_urlresource, requires_resource, script_helper, cpython_only, check_disallow_instantiation, force_not_colorized, is_resource_enabled, findfile\nquicktest = not is_resource_enabled('cpu')\n\ndef iterallchars():\n    maxunicode = 65535 if quicktest else sys.maxunicode\n    return map(chr, range(maxunicode + 1))\n\ndef _t():\n    for c in iterallchars():\n        lines = (c + 'A').splitlines()\n        if c in ('\\n', '\\x0b', '\\x0c', '\\r', '\\x85', '\\x1c', '\\x1d', '\\x1e', '\\u2028', '\\u2029'):\n            assert len(lines) == 2, ('assertEqual', len(lines), 2)\n        else:\n            assert len(lines) == 1, ('assertEqual', len(lines), 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizationTest.test_edge_cases",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import unicodedata\n\ndef _t():\n    try:\n        unicodedata.normalize()\n    except TypeError:\n        pass\n    try:\n        unicodedata.normalize(*('unknown', 'xx'))\n    except ValueError:\n        pass\n    assert unicodedata.normalize('NFKC', '') == '', ('assertEqual', unicodedata.normalize('NFKC', ''), '')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizationTest.test_bug_834676",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import unicodedata\n\ndef _t():\n    unicodedata.normalize('NFC', '\ud55c\uae00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "UnicodeMethodsTest.test_method_checksum",
+      "reason": "uses-self.expectedchecksum"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_function_checksum",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_name",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_name_inverse_lookup",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_no_names_in_pua",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_lookup_nonexistant",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_digit",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_numeric",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_decimal",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_category",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_bidirectional",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_decomposition",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_mirrored",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_combining",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_normalization",
+      "reason": "uses-self.old"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_pr29",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_issue10254",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_long_combining_mark_run",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_combining_mark_run_fast_paths",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_issue29456",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_east_asian_width",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeFunctionsTest.test_east_asian_width_unassigned",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_decimal_numeric_consistent",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_digit_numeric_consistent",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_normalize_consistent",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "UnicodeMiscTest.test_bug_1704793",
+      "reason": "uses-self.db"
+    },
+    {
+      "ident": "NormalizationTest.test_normalization",
+      "reason": "helper:run_normalization_tests(helper:unistr(decorated-helper))"
+    },
+    {
+      "ident": "NormalizationTest.test_normalization_3_2_0",
+      "reason": "helper:run_normalization_tests(helper:unistr(decorated-helper))"
+    },
+    {
+      "ident": "NormalizationTest.test_normalize_return_type",
+      "reason": "uses-self.subTest"
+    }
+  ],
+  "counts": {
+    "extracted": 38,
+    "pinned": 8,
+    "quarantined": 30
+  }
+}

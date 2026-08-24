@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "11e0d79986da69cce759ee684e472c54415dcb57",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/var/tmp/sp6-out/test_timeit-r2/conv_timeit_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:05:32",
+  "hashes": {
+    "pins_jac": "f60caba84b705d0f52943108c8b8680ba4f3adef1934c9a2ef13aeef4e9a1798",
+    "conversion_json": "79a54e0a1afb8681c9a87cdd0ed627bfba6a5930bc2e0f0435d3a7a2ad3cf702",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "timeit",
+  "counts": {
+    "converted": 41,
+    "runnable": 7,
+    "green": 7,
+    "quarantined": 34
+  },
+  "pins": [
+    {
+      "id": "TestTimeit.test_reindent_empty",
+      "status": "pass"
+    },
+    {
+      "id": "TestTimeit.test_reindent_single",
+      "status": "pass"
+    },
+    {
+      "id": "TestTimeit.test_reindent_multi_empty",
+      "status": "pass"
+    },
+    {
+      "id": "TestTimeit.test_reindent_multi",
+      "status": "pass"
+    },
+    {
+      "id": "TestTimeit.test_timer_invalid_stmt",
+      "status": "pass"
+    },
+    {
+      "id": "TestTimeit.test_timer_invalid_setup",
+      "status": "pass"
+    },
+    {
+      "id": "TestTimeit.test_timer_empty_stmt",
+      "status": "pass"
+    },
+    {
+      "id": "TestTimeit.test_main_help",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "TestTimeit.test_timeit_zero_iters",
+      "status": "quarantined",
+      "reason": "helper:timeit(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_timeit_few_iters",
+      "status": "quarantined",
+      "reason": "helper:timeit(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_timeit_callable_stmt",
+      "status": "quarantined",
+      "reason": "helper:timeit(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_timeit_callable_setup",
+      "status": "quarantined",
+      "reason": "helper:timeit(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_timeit_callable_stmt_and_setup",
+      "status": "quarantined",
+      "reason": "helper:timeit(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_timeit_function_zero_iters",
+      "status": "quarantined",
+      "reason": "uses-self.fake_stmt"
+    },
+    {
+      "id": "TestTimeit.test_timeit_globals_args",
+      "status": "quarantined",
+      "reason": "unresolved-name:FakeTimer"
+    },
+    {
+      "id": "TestTimeit.test_repeat_zero_reps",
+      "status": "quarantined",
+      "reason": "helper:repeat(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_repeat_zero_iters",
+      "status": "quarantined",
+      "reason": "helper:repeat(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_repeat_few_reps_and_iters",
+      "status": "quarantined",
+      "reason": "helper:repeat(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_repeat_callable_stmt",
+      "status": "quarantined",
+      "reason": "helper:repeat(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_repeat_callable_setup",
+      "status": "quarantined",
+      "reason": "helper:repeat(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_repeat_callable_stmt_and_setup",
+      "status": "quarantined",
+      "reason": "helper:repeat(uses-self.fake_timer)"
+    },
+    {
+      "id": "TestTimeit.test_repeat_function_zero_reps",
+      "status": "quarantined",
+      "reason": "uses-self.fake_stmt"
+    },
+    {
+      "id": "TestTimeit.test_repeat_function_zero_iters",
+      "status": "quarantined",
+      "reason": "uses-self.fake_stmt"
+    },
+    {
+      "id": "TestTimeit.test_print_exc",
+      "status": "quarantined",
+      "reason": "helper:assert_exc_string(self.assertStartsWith)"
+    },
+    {
+      "id": "TestTimeit.test_main_bad_switch",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_seconds",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_milliseconds",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_microseconds",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_fixed_iters",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_setup",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_multiple_setups",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_fixed_reps",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_negative_reps",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_verbose",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_very_verbose",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_with_time_unit",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_exception",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_main_exception_fixed_reps",
+      "status": "quarantined",
+      "reason": "helper:run_main(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_autorange",
+      "status": "quarantined",
+      "reason": "helper:autorange(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_autorange_second",
+      "status": "quarantined",
+      "reason": "helper:autorange(uses-self.fake_stmt)"
+    },
+    {
+      "id": "TestTimeit.test_autorange_with_callback",
+      "status": "quarantined",
+      "reason": "helper:autorange(uses-self.fake_stmt)"
+    }
+  ]
+}

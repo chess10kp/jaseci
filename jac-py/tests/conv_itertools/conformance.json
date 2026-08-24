@@ -1,0 +1,715 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "11e0d79986da69cce759ee684e472c54415dcb57",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/var/tmp/laneb-out/test_itertools/conv_itertools_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:03:42",
+  "hashes": {
+    "pins_jac": "0c978890274582ec3a10956e631b8bd7079ceb69663bf2e19be0f80cff44186a",
+    "conversion_json": "8743bc5c1223b8744f5acbb50c2f8c0e392858df415e6a989b1f5033caddce91",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "itertools",
+  "counts": {
+    "converted": 138,
+    "runnable": 5,
+    "green": 4,
+    "quarantined": 133
+  },
+  "pins": [
+    {
+      "id": "testR",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'r' is not defined"
+    },
+    {
+      "id": "testR2",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'r' is not defined"
+    },
+    {
+      "id": "TestBasicOps.test_tee_dealloc_segfault",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'threading_helper' from '<unknown>'\">"
+    },
+    {
+      "id": "TestExamples.test_filter",
+      "status": "pass"
+    },
+    {
+      "id": "TestExamples.test_map",
+      "status": "pass"
+    },
+    {
+      "id": "TestExamples.test_zip",
+      "status": "pass"
+    },
+    {
+      "id": "RegressionTests.test_sf_793826",
+      "status": "pass"
+    },
+    {
+      "id": "TestBasicOps.test_combinations_overflow",
+      "status": "quarantined",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "id": "TestBasicOps.test_combinations_tuple_reuse",
+      "status": "quarantined",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "id": "TestBasicOps.test_combinations_with_replacement_overflow",
+      "status": "quarantined",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "id": "TestBasicOps.test_combinations_with_replacement_tuple_reuse",
+      "status": "quarantined",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "id": "TestBasicOps.test_permutations_overflow",
+      "status": "quarantined",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "id": "TestBasicOps.test_permutations_tuple_reuse",
+      "status": "quarantined",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "id": "TestBasicOps.test_count_threading",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "TestBasicOps.test_zip_tuple_reuse",
+      "status": "quarantined",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "id": "TestBasicOps.test_zip_longest_tuple_reuse",
+      "status": "quarantined",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "id": "TestBasicOps.test_product_overflow",
+      "status": "quarantined",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "id": "TestBasicOps.test_product_tuple_reuse",
+      "status": "quarantined",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "id": "TestBasicOps.test_tee_concurrent",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "TestBasicOps.test_combinations_result_gc",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TestBasicOps.test_combinations_with_replacement_result_gc",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TestBasicOps.test_permutations_result_gc",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TestBasicOps.test_product_result_gc",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TestBasicOps.test_zip_longest_result_gc",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TestBasicOps.test_pairwise_result_gc",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TestBasicOps.test_immutable_types",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "RegressionTests.test_long_chain_of_empty_iterables",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "id": "SizeofTest.test_product_sizeof",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SizeofTest.test_combinations_sizeof",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SizeofTest.test_combinations_with_replacement_sizeof",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SizeofTest.test_permutations_sizeof",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TestBasicOps.test_accumulate",
+      "status": "quarantined",
+      "reason": "unresolved-name:accumulate"
+    },
+    {
+      "id": "TestBasicOps.test_batched",
+      "status": "quarantined",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "id": "TestBasicOps.test_chain",
+      "status": "quarantined",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "id": "TestBasicOps.test_chain_from_iterable",
+      "status": "quarantined",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "id": "TestBasicOps.test_combinations",
+      "status": "quarantined",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "id": "TestBasicOps.test_combinations_with_replacement",
+      "status": "quarantined",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "id": "TestBasicOps.test_permutations",
+      "status": "quarantined",
+      "reason": "unresolved-name:permutations"
+    },
+    {
+      "id": "TestBasicOps.test_combinatorics",
+      "status": "quarantined",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "id": "TestBasicOps.test_compress",
+      "status": "quarantined",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "id": "TestBasicOps.test_count",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestBasicOps.test_count_with_step",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestBasicOps.test_count_with_step_threading",
+      "status": "quarantined",
+      "reason": "self.test_count_threading"
+    },
+    {
+      "id": "TestBasicOps.test_cycle",
+      "status": "quarantined",
+      "reason": "unresolved-name:cycle"
+    },
+    {
+      "id": "TestBasicOps.test_groupby",
+      "status": "quarantined",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "id": "TestBasicOps.test_groupby_reentrant_eq_does_not_crash",
+      "status": "quarantined",
+      "reason": "uses-self.do_advance"
+    },
+    {
+      "id": "TestBasicOps.test_grouper_reentrant_eq_does_not_crash",
+      "status": "quarantined",
+      "reason": "uses-self.do_advance"
+    },
+    {
+      "id": "TestBasicOps.test_filter",
+      "status": "quarantined",
+      "reason": "self.pickletest"
+    },
+    {
+      "id": "TestBasicOps.test_filterfalse",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestBasicOps.test_zip",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestBasicOps.test_ziplongest",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestBasicOps.test_zip_longest_bad_iterable",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TestBasicOps.test_bug_7244",
+      "status": "quarantined",
+      "reason": "uses-self.o"
+    },
+    {
+      "id": "TestBasicOps.test_pairwise",
+      "status": "quarantined",
+      "reason": "uses-self.assertEqual"
+    },
+    {
+      "id": "TestBasicOps.test_pairwise_reenter",
+      "status": "quarantined",
+      "reason": "uses-self.count"
+    },
+    {
+      "id": "TestBasicOps.test_pairwise_reenter2",
+      "status": "quarantined",
+      "reason": "uses-self.count"
+    },
+    {
+      "id": "TestBasicOps.test_product",
+      "status": "quarantined",
+      "reason": "unresolved-name:product"
+    },
+    {
+      "id": "TestBasicOps.test_repeat",
+      "status": "quarantined",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "id": "TestBasicOps.test_repeat_with_negative_times",
+      "status": "quarantined",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "id": "TestBasicOps.test_map",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestBasicOps.test_starmap",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestBasicOps.test_islice",
+      "status": "quarantined",
+      "reason": "uses-self.val"
+    },
+    {
+      "id": "TestBasicOps.test_takewhile",
+      "status": "quarantined",
+      "reason": "unresolved-name:takewhile"
+    },
+    {
+      "id": "TestBasicOps.test_dropwhile",
+      "status": "quarantined",
+      "reason": "unresolved-name:dropwhile"
+    },
+    {
+      "id": "TestBasicOps.test_tee",
+      "status": "quarantined",
+      "reason": "unresolved-name:tee"
+    },
+    {
+      "id": "TestBasicOps.test_tee_del_backward",
+      "status": "quarantined",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "id": "TestBasicOps.test_tee_reenter",
+      "status": "quarantined",
+      "reason": "uses-self.first"
+    },
+    {
+      "id": "TestBasicOps.test_StopIteration",
+      "status": "quarantined",
+      "reason": "unresolved-name:StopNow"
+    },
+    {
+      "id": "TestExamples.test_accumulate",
+      "status": "quarantined",
+      "reason": "unresolved-name:accumulate"
+    },
+    {
+      "id": "TestExamples.test_chain",
+      "status": "quarantined",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "id": "TestExamples.test_chain_from_iterable",
+      "status": "quarantined",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "id": "TestExamples.test_combinations",
+      "status": "quarantined",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "id": "TestExamples.test_combinations_with_replacement",
+      "status": "quarantined",
+      "reason": "unresolved-name:combinations_with_replacement"
+    },
+    {
+      "id": "TestExamples.test_compress",
+      "status": "quarantined",
+      "reason": "unresolved-name:compress"
+    },
+    {
+      "id": "TestExamples.test_count",
+      "status": "quarantined",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "id": "TestExamples.test_cycle",
+      "status": "quarantined",
+      "reason": "unresolved-name:cycle"
+    },
+    {
+      "id": "TestExamples.test_dropwhile",
+      "status": "quarantined",
+      "reason": "unresolved-name:dropwhile"
+    },
+    {
+      "id": "TestExamples.test_groupby",
+      "status": "quarantined",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "id": "TestExamples.test_filterfalse",
+      "status": "quarantined",
+      "reason": "unresolved-name:filterfalse"
+    },
+    {
+      "id": "TestExamples.test_islice",
+      "status": "quarantined",
+      "reason": "unresolved-name:islice"
+    },
+    {
+      "id": "TestExamples.test_zip_longest",
+      "status": "quarantined",
+      "reason": "unresolved-name:zip_longest"
+    },
+    {
+      "id": "TestExamples.test_permutations",
+      "status": "quarantined",
+      "reason": "unresolved-name:permutations"
+    },
+    {
+      "id": "TestExamples.test_product",
+      "status": "quarantined",
+      "reason": "unresolved-name:product"
+    },
+    {
+      "id": "TestExamples.test_repeat",
+      "status": "quarantined",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "id": "TestExamples.test_stapmap",
+      "status": "quarantined",
+      "reason": "unresolved-name:starmap"
+    },
+    {
+      "id": "TestExamples.test_takewhile",
+      "status": "quarantined",
+      "reason": "unresolved-name:takewhile"
+    },
+    {
+      "id": "TestPurePythonRoughEquivalents.test_batched_recipe",
+      "status": "quarantined",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "id": "TestPurePythonRoughEquivalents.test_groupby_recipe",
+      "status": "quarantined",
+      "reason": "unresolved-name:islice"
+    },
+    {
+      "id": "TestPurePythonRoughEquivalents.test_islice_recipe",
+      "status": "quarantined",
+      "reason": "uses-self.islice"
+    },
+    {
+      "id": "TestPurePythonRoughEquivalents.test_tee_recipe",
+      "status": "quarantined",
+      "reason": "uses-self.link"
+    },
+    {
+      "id": "TestGC.test_accumulate",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_batched",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_chain",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_chain_from_iterable",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_combinations",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_combinations_with_replacement",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_compress",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_count",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_cycle",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_dropwhile",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_groupby",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_issue2246",
+      "status": "quarantined",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "id": "TestGC.test_filter",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_filterfalse",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_zip",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_zip_longest",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_map",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_islice",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_pairwise",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_permutations",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_product",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_repeat",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_starmap",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestGC.test_takewhile",
+      "status": "quarantined",
+      "reason": "self.makecycle"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_accumulate",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_batched",
+      "status": "quarantined",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_chain",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_compress",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_product",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_cycle",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_groupby",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_filter",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_filterfalse",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_zip",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_ziplongest",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_map",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_islice",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_pairwise",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_starmap",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_takewhile",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_dropwhile",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_tee",
+      "status": "quarantined",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "id": "LengthTransparency.test_repeat",
+      "status": "quarantined",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "id": "LengthTransparency.test_repeat_with_negative_times",
+      "status": "quarantined",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "id": "RegressionTests.test_sf_950057",
+      "status": "quarantined",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "id": "RegressionTests.test_issue30347_1",
+      "status": "quarantined",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "id": "RegressionTests.test_issue30347_2",
+      "status": "quarantined",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "id": "SubclassWithKwargsTest.test_keywords_in_subclass",
+      "status": "quarantined",
+      "reason": "uses-self.subTest"
+    }
+  ]
+}
