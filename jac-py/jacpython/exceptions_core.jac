@@ -30,6 +30,7 @@ glob _EXC_PARENT: dict[str, str] = {
          "BufferError": "Exception",
          "EOFError": "Exception",
          "ExceptionGroup": "Exception",
+         "FrozenInstanceError": "ValueError",
          "ImportError": "Exception",
          "ModuleNotFoundError": "ImportError",
          "LookupError": "Exception",
