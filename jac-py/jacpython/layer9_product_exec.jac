@@ -22,6 +22,7 @@ import from objects {
     PyDict,
     PySet,
     PyList,
+    PyStr,
     expect_int,
     expect_str,
     is_error,
@@ -284,7 +285,9 @@ test "layer9: band-11 module annotations execute in ceval" {
     assert expect_int(ns["x"]) == 5;
     assert isinstance(ns["ann"], PyDict);
     ann = ns["ann"] as PyDict;
-    assert "x" in ann.items;
+    # PyDict.items is hashkey-keyed internally; membership goes through
+    # dict_contains (raw `in` would compare against "s:x"-style keys).
+    assert ann.dict_contains(PyStr(t="str", val="x"));
     assert isinstance(ns["cond"], PySet);
     cond = ns["cond"] as PySet;
     assert cond.set_contains(PyInt(t="int", val=0));
