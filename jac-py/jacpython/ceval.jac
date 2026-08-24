@@ -1627,6 +1627,18 @@ def _sys3_forget(name: str) {
     }
 }
 
+# Drop every cached import resolution: sys3_modules entries plus the
+# delegate_cache snapshots delegated_module memoizes. Resolutions made while
+# layer3 was INACTIVE are HOST-side views (PyHostProxy aliases, delegated host
+# modules) that would keep winning over real in-VM boots after
+# set_layer3_active(True) -- import_native checks sys3_modules first. The
+# libtest reset calls this right after activation and BEFORE re-registering
+# harness shims, which live in shim_modules and are therefore untouched.
+def _sys3_forget_all() {
+    sys3_modules = {};
+    delegate_cache = {};
+}
+
 def _last_component(dotted: str) -> str {
     parts = dotted.split(".");
     return parts[len(parts) - 1];
