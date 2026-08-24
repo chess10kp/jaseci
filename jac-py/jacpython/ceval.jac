@@ -1500,6 +1500,10 @@ def import_native(absname: str) -> PyObj {
         # stdlib and would otherwise be executed in-VM against C internals.
         shim_modules["weakref"] = build_weakref_module();
     }
+    if absname == "sys" {
+        # Same facade contract as the legacy host_import path above.
+        ensure_sys_facade_registered();
+    }
     if absname in sys3_modules {
         return sys3_modules[absname];
     }
@@ -3095,7 +3099,25 @@ obj PyFunction(PyObj) {
         # The function's writable __dict__ + overridable dunders. functools.wraps
         # / update_wrapper copy __module__/__name__/__qualname__/__doc__ and set
         # __wrapped__ here, so decorators (pervasive in the unittest closure) work.
-        attrs: dict[str, PyObj] = {};
+        attrs: dict[str, PyObj] = {},
+        # Identity-stable caches for the computed introspection surfaces
+        # (__defaults__/__kwdefaults__/__closure__ must return the SAME object on
+        # every read, per CPython). Each cache validates against the identity of
+        # its source binding -- OP_SET_FUNCTION_ATTRIBUTE replaces the source
+        # lists wholesale at creation, which the `is` check detects.
+        _defaults_tuple: any = None,
+        _defaults_src: any = None,
+        _kwdefaults_map: any = None,
+        _kwdefaults_src: any = None,
+        _closure_tuple: any = None,
+        _closure_src: any = None,
+        # Lazily materialized __annotations__: CPython hands out one stable dict
+        # per function; ours starts empty because PEP 649 lazy evaluation of the
+        # compiled __annotate__ closure is not wired into this accessor yet.
+        _annotations: any = None,
+        # The live PyDict backing __dict__ once first materialized; until then
+        # bootstrap writes go through self.attrs (kept in lockstep below).
+        _attr_dict: any = None;
 
     def _func_doc -> PyObj {
         if len(self.code.consts) > 0 and isinstance(self.code.consts[0], PyStr) {
@@ -3107,6 +3129,14 @@ obj PyFunction(PyObj) {
     def tp_getattro(name: str) -> PyObj {
         if name in self.attrs {
             return self.attrs[name];
+        }
+        # Writes into the live __dict__ (d['tag'] = v) bypass self.attrs; serve
+        # them so attribute reads observe __dict__ mutations like CPython.
+        if self._attr_dict is not None {
+            got = (self._attr_dict as PyDict).mp_subscript(PyStr(t="str", val=name));
+            if not is_error(got) {
+                return got;
+            }
         }
         if name == "__name__" {
             return PyStr(t="str", val=self.name);
@@ -3127,15 +3157,66 @@ obj PyFunction(PyObj) {
             if len(self.defaults) == 0 {
                 return py_none();
             }
-            return PyTuple(t="tuple", items=self.defaults);
+            if self._defaults_tuple is None or not ((self._defaults_src is self.defaults)) {
+                self._defaults_tuple = PyTuple(t="tuple", items=self.defaults);
+                self._defaults_src = self.defaults;
+            }
+            return self._defaults_tuple;
+        }
+        if name == "__kwdefaults__" {
+            if len(self.kwdefaults) == 0 {
+                return py_none();
+            }
+            if self._kwdefaults_map is None or not ((self._kwdefaults_src is self.kwdefaults)) {
+                self._kwdefaults_map = dict_from_str_map(self.kwdefaults);
+                self._kwdefaults_src = self.kwdefaults;
+            }
+            return self._kwdefaults_map;
+        }
+        if name == "__closure__" {
+            if len(self.closure) == 0 {
+                return py_none();
+            }
+            if self._closure_tuple is None or not ((self._closure_src is self.closure)) {
+                cells: list[PyObj] = [];
+                for c in self.closure {
+                    cells.append(c as PyObj);
+                }
+                self._closure_tuple = PyTuple(t="tuple", items=cells);
+                self._closure_src = self.closure;
+            }
+            return self._closure_tuple;
+        }
+        if name == "__annotations__" {
+            if self._annotations is None {
+                self._annotations = PyDict(t="dict", items={});
+            }
+            return self._annotations;
+        }
+        if name == "__annotate__" {
+            # PEP 649 hook: functions without annotations carry None. Annotated
+            # functions would need the compiled __annotate__ closure attached by
+            # SET_FUNCTION_ATTRIBUTE (oparg 0x10), which is not wired yet.
+            return py_none();
+        }
+        if name == "__globals__" {
+            # Snapshot divergence: CPython exposes the LIVE module namespace.
+            # Our globals live as a native map behind the frame, so reads hand
+            # out a fresh view; mutations of the returned dict do not write
+            # back. Values are current as of each read.
+            return dict_from_str_map(self.globals);
         }
         if name == "__code__" {
             return self.code;
         }
         if name == "__dict__" {
-            # functools.wraps / update_wrapper reads and updates a function's
-            # __dict__ (WRAPPER_UPDATES). Snapshot of the writable attr map.
-            return dict_from_str_map(self.attrs);
+            # CPython's f.__dict__ IS the writable attribute store (identity
+            # stable, mutations persist). Materialize once from the bootstrap
+            # map, then serve every read from that same live PyDict.
+            if self._attr_dict is None {
+                self._attr_dict = dict_from_str_map(self.attrs);
+            }
+            return self._attr_dict;
         }
         if name == "__wrapped__" {
             return py_error("AttributeError", name);
@@ -3144,7 +3225,53 @@ obj PyFunction(PyObj) {
     }
 
     def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # CPython forbids assignment to these two (AttributeError 'readonly
+        # attribute'); everything else lands in the writable attr surface.
+        if name == "__globals__" or name == "__closure__" {
+            return py_error("AttributeError", "readonly attribute");
+        }
+        if name == "__defaults__" {
+            # Keep call-time binding AND the stored object in sync so reads
+            # return exactly what was assigned (including ()).
+            self.attrs[name] = value;
+            if value.t == "tuple" {
+                self.defaults = tuple_value(value);
+            } elif value.t == "none" {
+                self.defaults = [];
+            } else {
+                del self.attrs[name];
+                return py_error("TypeError", "__defaults__ must be a tuple or None");
+            }
+            self._defaults_tuple = value;
+            self._defaults_src = self.defaults;
+            return py_none();
+        }
+        if name == "__kwdefaults__" {
+            self.attrs[name] = value;
+            if value.t == "dict" {
+                self.kwdefaults = (value as PyDict).dict_str_map();
+            } elif value.t == "none" {
+                self.kwdefaults = {};
+            } else {
+                del self.attrs[name];
+                return py_error("TypeError", "__kwdefaults__ must be a dict or None");
+            }
+            self._kwdefaults_map = value;
+            self._kwdefaults_src = self.kwdefaults;
+            return py_none();
+        }
+        if name == "__annotations__" {
+            if value.t != "dict" {
+                return py_error("TypeError", "__annotations__ must be a dict");
+            }
+            self._annotations = value;
+            return py_none();
+        }
         self.attrs[name] = value;
+        # The materialized __dict__ (if any) must observe later direct writes.
+        if self._attr_dict is not None {
+            (self._attr_dict as PyDict).dict_set(PyStr(t="str", val=name), value);
+        }
         return py_none();
     }
 
@@ -3694,6 +3821,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # The host module's ref() sees to_host conversions (plain objects ->
         # None), so serve our identity-faithful shim instead.
         shim_modules["weakref"] = build_weakref_module();
+    }
+    if name == "sys" {
+        # Frame-introspection trio must answer with VM frames, never host
+        # bridge frames; everything else delegates to the real host module.
+        ensure_sys_facade_registered();
     }
     if name in shim_modules {
         return shim_modules[name];
@@ -5328,6 +5460,16 @@ def py_del_attr(value: PyObj, name: str) -> PyObj {
         }
         return default_user_delattro(u, name);
     }
+    # `del cell.cell_contents` empties the cell (CPython cell_del_contents).
+    if isinstance(value, PyCell) {
+        cell = value as PyCell;
+        if name == "cell_contents" {
+            cell.val = py_none();
+            cell.filled = False;
+            return py_none();
+        }
+        return py_error("AttributeError", name);
+    }
     if isinstance(value, PyModule) {
         m = value as PyModule;
         if name in m.attrs {
@@ -5340,6 +5482,25 @@ def py_del_attr(value: PyObj, name: str) -> PyObj {
         f = value as PyFunction;
         if name in f.attrs {
             del f.attrs[name];
+            if f._attr_dict is not None {
+                (f._attr_dict as PyDict).mp_del_subscript(PyStr(t="str", val=name));
+            }
+            return py_none();
+        }
+        if name == "__annotations__" {
+            f._annotations = None;
+            return py_none();
+        }
+        if name == "__defaults__" {
+            f.defaults = [];
+            f._defaults_tuple = None;
+            f._defaults_src = None;
+            return py_none();
+        }
+        if name == "__kwdefaults__" {
+            f.kwdefaults = {};
+            f._kwdefaults_map = None;
+            f._kwdefaults_src = None;
             return py_none();
         }
         return py_error("AttributeError", name);
@@ -10221,6 +10382,309 @@ def build_copy_module -> PyObj {
     );
 }
 
+# ---------------- frame/function introspection surface -----------------------
+# Guest-visible live frames behind sys._getframe() (CPython PyFrameObject
+# semantics, scoped to what this VM can answer honestly):
+#
+# - live_frame_chain holds every frame that is CURRENTLY executing. It is a
+#   strict call-stack mirror: exec_code_frame pushes right before run_frame and
+#   pops in a finally, so the innermost running frame is always chain[-1] --
+#   exactly the frame sys._getframe(0) must return.
+# - Generator/coroutine frames are NOT on the chain: they execute through the
+#   generator resume path, not exec_code_frame's run_frame call. A suspended or
+#   resuming generator is invisible to _getframe (divergence from CPython,
+#   where a running generator's frame sits on the stack; ours only ever runs
+#   through resume, so the caller visible during gen code is the resumer).
+# - f_locals/f_globals/f_builtins are SNAPSHOT mappings (pre-PEP-667 shape:
+#   plain dicts), not the FrameLocalsProxy live views CPython 3.13+ returns;
+#   mutations of the returned mapping do not write back. Values are current as
+#   of each read.
+# - f_trace/f_trace_lines/f_trace_opcodes accept writes and store them, but no
+#   tracing events fire: wiring a tracer needs dispatch-loop hooks outside this
+#   region. sys.settrace/gettrace record/return the tracer without installing
+#   it, so trace-based code degrades to "no events" instead of crashing.
+
+glob live_frame_chain: list[PyFrame] = [];
+# Views minted per chain entry (keyed by frame identity) so repeated reads of
+# f_back / _getframe(depth) return the SAME view object, like CPython.
+glob live_frame_views: dict[str, PyObj] = {};
+# sys.settrace storage (list-slot: scalar globs rebind locally, lists mutate).
+glob trace_fn_slot: list[PyObj] = [];
+# Cached native callables for the three sys names.
+glob sys_inspect_fns: dict[str, PyObj] = {};
+# Cached host builtins.__dict__ proxy behind f_builtins.
+glob guest_builtins_slot: list[PyObj] = [];
+
+def frame_chain_push(frame: PyFrame) {
+    live_frame_chain.append(frame);
+}
+
+def frame_chain_pop {
+    if len(live_frame_chain) > 0 {
+        fr = live_frame_chain[len(live_frame_chain) - 1];
+        key = "fv:" + str(py_id(fr));
+        if key in live_frame_views {
+            del live_frame_views[key];
+        }
+        live_frame_chain.pop();
+    }
+}
+
+# The view object handed to guests. `fr` aliases the LIVE eval frame, so
+# f_lineno/f_lasti/f_locals track execution while the frame runs.
+obj PyLiveFrame(PyObj) {
+    has fr: PyFrame,
+        # Parent view (or host None at the root), pre-linked at mint time so
+        # f_back identity is stable across reads.
+        back: any = None,
+        f_trace: any = None,
+        f_trace_lines: bool = True,
+        f_trace_opcodes: bool = False;
+
+    def tp_getattro(name: str) -> PyObj {
+        if name == "f_code" {
+            return self.fr.co as PyObj;
+        }
+        if name == "f_back" {
+            if self.back is not None {
+                return self.back as PyObj;
+            }
+            return py_none();
+        }
+        if name == "f_globals" {
+            return dict_from_str_map(self.fr.globals);
+        }
+        if name == "f_locals" {
+            return frame_locals_snapshot(self.fr);
+        }
+        if name == "f_builtins" {
+            return guest_builtins_mapping();
+        }
+        if name == "f_lineno" {
+            # Line of the instruction at/next past f_lasti; ip==0 decodes to
+            # firstlineno via the table walk.
+            offset = self.fr.ip;
+            if offset >= 2 {
+                offset = offset - 2;
+            }
+            return PyInt(t="int", val=pycode_lineno(self.fr.co, offset));
+        }
+        if name == "f_lasti" {
+            # Byte offset into co_code -- our internal ip IS that offset
+            # (co_code is stored as CPython-layout bytes).
+            return PyInt(t="int", val=self.fr.ip);
+        }
+        if name == "f_trace" {
+            if self.f_trace is not None {
+                return self.f_trace as PyObj;
+            }
+            return py_none();
+        }
+        if name == "f_trace_lines" {
+            return PyBool(t="bool", val=self.f_trace_lines);
+        }
+        if name == "f_trace_opcodes" {
+            return PyBool(t="bool", val=self.f_trace_opcodes);
+        }
+        return py_error("AttributeError", name);
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # Trace controls are writable (stored, currently unused by the loop);
+        # everything else on a frame is read-only, matching CPython apart from
+        # f_lineno (settable only inside trace events, which never fire here --
+        # so effectively read-only too).
+        if name == "f_trace" {
+            self.f_trace = value;
+            return py_none();
+        }
+        if name == "f_trace_lines" {
+            self.f_trace_lines = value.t != "bool" or (value as PyBool).val;
+            return py_none();
+        }
+        if name == "f_trace_opcodes" {
+            self.f_trace_opcodes = value.t == "bool" and (value as PyBool).val;
+            return py_none();
+        }
+        if name == "f_lineno" {
+            return py_error("ValueError", "f_lineno can only be set in a trace function");
+        }
+        return py_error("AttributeError", "readonly attribute");
+    }
+}
+
+# Snapshot mapping over the merged localsplus: varname slots first (values or
+# cells), then cellvars + freevars in localsplus order.
+def frame_locals_snapshot(fr: PyFrame) -> PyObj {
+    m: dict[str, PyObj] = {};
+    co = fr.co;
+    i = 0;
+    while i < len(co.varnames) and i < len(fr.fast) {
+        v = fr.fast[i];
+        if isinstance(v, PyCell) {
+            c = v as PyCell;
+            m[co.varnames[i]] = c.val;
+        } else {
+            m[co.varnames[i]] = v;
+        }
+        i = i + 1;
+    }
+    k = 0;
+    j = len(co.varnames);
+    while j < len(fr.fast) {
+        v = fr.fast[j];
+        nm: str = "<localsplus:" + str(j) + ">";
+        if k < len(co.cellvars) {
+            nm = co.cellvars[k];
+        } elif k < len(co.cellvars) + len(co.freevars) {
+            nm = co.freevars[k - len(co.cellvars)];
+        }
+        if isinstance(v, PyCell) {
+            c2 = v as PyCell;
+            m[nm] = c2.val;
+        } else {
+            m[nm] = v;
+        }
+        k = k + 1;
+        j = j + 1;
+    }
+    return dict_from_str_map(m);
+}
+
+# f_builtins: the host builtins namespace, same object guests get for
+# builtins.__dict__. Cached process-wide (the builtins mapping is a singleton).
+def guest_builtins_mapping -> PyObj {
+    if len(guest_builtins_slot) > 0 {
+        return guest_builtins_slot[0];
+    }
+    star: list[PyObj] = [PyStr(t="str", val="*")];
+    r = _jac_host_import("builtins", to_host(PyList(t="list", items=star)));
+    if not ((r[0] as bool)) {
+        return py_error(str(r[1]), str(r[2]));
+    }
+    d = host_getattr(PyHostProxy(t="host", val=r[1]), "__dict__");
+    if is_error(d) {
+        return d;
+    }
+    guest_builtins_slot.append(d);
+    return d;
+}
+
+# View for the frame at chain index idx, linked through its parents.
+def live_frame_view(idx: int) -> PyObj {
+    fr = live_frame_chain[idx];
+    key = "fv:" + str(py_id(fr));
+    if key in live_frame_views {
+        return live_frame_views[key];
+    }
+    back = None;
+    if idx > 0 {
+        back = live_frame_view(idx - 1);
+    }
+    view = PyLiveFrame(t="frame", fr=fr, back=back);
+    live_frame_views[key] = view;
+    return view;
+}
+
+def sys_getframe(depth: int) -> PyObj {
+    idx = len(live_frame_chain) - 1 - depth;
+    if idx < 0 {
+        return py_error("ValueError", "call stack is not deep enough");
+    }
+    return live_frame_view(idx);
+}
+
+# Native callables standing in for sys._getframe / sys.settrace / sys.gettrace.
+# Everything else on sys keeps flowing to the real host module through the
+# facade below, so sys.path / sys.modules / sys.stderr semantics are unchanged.
+obj PySysInspectFn(PyObj) {
+    has name: str;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if self.name == "_getframe" {
+            depth = 0;
+            if len(args) == 1 {
+                if isinstance(args[0], PyInt) {
+                    depth = (args[0] as PyInt).val;
+                } else {
+                    return py_error("TypeError", "an integer is required");
+                }
+            } elif len(args) > 1 {
+                return py_error(
+                    "TypeError",
+                    "_getframe() takes at most 1 argument (" + str(len(args)) + " given)",
+                );
+            }
+            return sys_getframe(depth);
+        }
+        if self.name == "settrace" {
+            if len(args) != 1 {
+                return py_error(
+                    "TypeError",
+                    "settrace() takes exactly one argument (" + str(len(args)) + " given)",
+                );
+            }
+            prev = py_none();
+            if len(trace_fn_slot) > 0 {
+                prev = trace_fn_slot[len(trace_fn_slot) - 1];
+            }
+            trace_fn_slot.append(args[0]);
+            return prev;
+        }
+        # gettrace(): the recorded tracer (None unless set). NOTE: events do
+        # not fire -- see the region header for why tracing is record-only.
+        if len(trace_fn_slot) > 0 {
+            return trace_fn_slot[len(trace_fn_slot) - 1];
+        }
+        return py_none();
+    }
+}
+
+def sys_inspect_fn(name: str) -> PyObj {
+    if name in sys_inspect_fns {
+        return sys_inspect_fns[name];
+    }
+    fn = PySysInspectFn(t="builtin_function_or_method", name=name);
+    sys_inspect_fns[name] = fn;
+    return fn;
+}
+
+# Transparent facade over the host-proxied sys module that intercepts exactly
+# the frame-introspection trio. Without it, guest sys._getframe would cross the
+# bridge and report HOST bridge frames -- meaningless inside the VM.
+obj SysFacadeModule(PyObj) {
+    has inner: PyObj;
+
+    def tp_getattro(name: str) -> PyObj {
+        if name == "_getframe" or name == "settrace" or name == "gettrace" {
+            return sys_inspect_fn(name);
+        }
+        return (self.inner as PyObj).tp_getattro(name);
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        return (self.inner as PyObj).tp_setattro(name, value);
+    }
+}
+
+# Build-and-register the facade once (identity-stable across imports, like
+# sys.modules['sys'] in CPython). Falls back silently to the raw proxy path if
+# the host import itself fails; the normal import error then surfaces.
+def ensure_sys_facade_registered {
+    if "sys" in shim_modules {
+        return;
+    }
+    star: list[PyObj] = [PyStr(t="str", val="*")];
+    result = _jac_host_import("sys", to_host(PyList(t="list", items=star)));
+    if not ((result[0] as bool)) {
+        return;
+    }
+    shim_modules["sys"] = SysFacadeModule(
+        t="module",
+        inner=PyHostProxy(t="host", val=result[1]),
+    );
+}
+
 # gen.close(): throw GeneratorExit in. Swallowing it (StopIteration or letting
 # GeneratorExit propagate) is a clean close; yielding again is a RuntimeError.
 def gen_close(gen: PyGenerator) -> PyObj {
@@ -10532,7 +10996,16 @@ def exec_code_frame(
     if (co.flags & 32) != 0 {
         return PyGenerator(t="generator", frame=frame, started=False, finished=False);
     }
-    return run_frame(frame);
+    # Live-frame tracking for sys._getframe: only frames that actually RUN
+    # enter the chain (generator-flagged code returns above without running).
+    # The finally-pop keeps the chain exact even when a native (non-PyError)
+    # exception unwinds past this call.
+    frame_chain_push(frame);
+    try {
+        return run_frame(frame);
+    } finally {
+        frame_chain_pop();
+    }
 }
 
 def run_frame(frame: PyFrame) -> PyObj {

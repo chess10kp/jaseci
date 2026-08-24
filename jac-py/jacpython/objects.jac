@@ -1228,13 +1228,33 @@ obj PyCode(PyObj) {
             }
             return PyTuple(t="tuple", items=items);
         }
+        if name == "co_nlocals" {
+            # CPython 3.11+: co_nlocals counts exactly the varname slots.
+            return PyInt(t="int", val=len(self.varnames));
+        }
         if name == "co_consts" {
             return PyTuple(t="tuple", items=self.consts);
         }
         if name == "co_code" {
             return PyBytes(t="bytes", val=self.co_code);
         }
+        if name == "co_linetable" {
+            # PEP 626 location table, byte-exact (assembler emits CPython's
+            # entry format and marshal delivers the host's own bytes).
+            return PyBytes(t="bytes", val=self.linetable);
+        }
+        if name == "co_exceptiontable" {
+            return PyBytes(t="bytes", val=self.exceptiontable);
+        }
+        # co_lnotab (the pre-3.10 line-delta table) is intentionally absent:
+        # deprecated upstream and derivable from co_linetable only through the
+        # old two-byte encoding, which nothing in the VM consumes.
         return py_error("AttributeError", "'code' object has no attribute '" + name + "'");
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # Code objects are fully immutable in CPython; match its error text.
+        return py_error("AttributeError", "readonly attribute");
     }
 }
 
@@ -1246,6 +1266,27 @@ obj PyCell(PyObj) {
         # flag cannot work: an enclosing function's STORE_DEREF must make the
         # same cell readable inside a class body it was captured into.
         filled: bool = False;
+
+    # Closure-cell introspection: `cell.cell_contents`. Reads of an empty cell
+    # raise CPython's exact ValueError; writes box the value; deletion empties.
+    def tp_getattro(name: str) -> PyObj {
+        if name == "cell_contents" {
+            if self.filled {
+                return self.val;
+            }
+            return py_error("ValueError", "Cell is empty");
+        }
+        return py_error("AttributeError", name);
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        if name == "cell_contents" {
+            self.val = value;
+            self.filled = True;
+            return py_none();
+        }
+        return py_error("AttributeError", name);
+    }
 }
 
 # PEP 695 `type X = v` runtime stand-in (CPython types.TypeAliasType), built by
