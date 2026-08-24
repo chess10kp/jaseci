@@ -58,6 +58,8 @@ import from compiler_ir {
     stmt_cont,
 }
 import from compiler_emit {
+    anext_send_loop,
+    await_send_loop,
     codegen_busy,
     codegen_fail,
     emit_await_send_except_regions,
