@@ -1883,8 +1883,10 @@ test "layer9: COPY_FREE_VARS precedes MAKE_CELL in nested prologues" {
     assert not is_error(actual);
     expected = oracle_exec(src, "<f>");
     exp = expected as PyCode;
-    inner_u = nested_code_by_name(actual as PyCode, "inner");
-    inner_e = nested_code_by_name(exp, "inner");
+    outer_u = nested_code_by_name(actual as PyCode, "outer");
+    inner_u = nested_code_by_name(outer_u, "inner");
+    exp_outer = nested_code_by_name(exp, "outer");
+    inner_e = nested_code_by_name(exp_outer, "inner");
     assert len(inner_u.co_code) >= 4;
     assert inner_u.co_code[0] == OP_COPY_FREE_VARS;
     assert inner_u.co_code[2] == OP_MAKE_CELL;
