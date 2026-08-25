@@ -309,6 +309,16 @@ def _jac_wrap_tstr_template(strings, interpolations):
     import string.templatelib as tl
     return tl.Template(strings=strings, interpolations=interpolations)
 
+def _jac_construct_host_type(host_type, raw_args):
+    # Non-builtin host C-type bases (io.BytesIO, ...) resolve by reference,
+    # not builtins lookup -- unknown names cannot degrade gracefully here.
+    try:
+        if raw_args:
+            return (True, host_type(*raw_args))
+        return (True, host_type())
+    except BaseException as exc:
+        return _jac_host_error(exc)
+
 # Track B (builtin subclassing) host helpers.
 _JAC_BUILTIN_BASES = (
     "int", "str", "float", "bool", "list", "dict",
@@ -1016,6 +1026,51 @@ def _jac_standin_dunder(dunder_name, vm_fn):
     return _meth
 
 
+def _jac_standin_method(name):
+    # Host method that replays a guest-defined method through the VM on the
+    # recovered original object. Host callers (C reader loops, callbacks) then
+    # see guest OVERRIDES, not just inherited base behavior.
+    def _meth(self, *args, **kwargs):
+        u = getattr(self, "_jac_guest_", None)
+        if u is None:
+            raise RuntimeError(
+                "bridge-table: stand-in lost its guest back-reference"
+            )
+        m = py_attr(u, name)
+        if isinstance(m, PyError):
+            _jac_reraise_pyerror(m)
+        b = bind_attribute(m, u)
+        if isinstance(b, PyError):
+            _jac_reraise_pyerror(b)
+        h_args = [from_host(a) for a in args]
+        h_kwargs = {}
+        for k in kwargs:
+            h_kwargs[k] = from_host(kwargs[k])
+        res = b.tp_call(h_args, h_kwargs)
+        if isinstance(res, PyError):
+            _jac_reraise_pyerror(res)
+        return to_host(res)
+    _meth.__name__ = name
+    return _meth
+
+
+def _jac_standin_install_methods(ns, cls):
+    # Install trampolines for every guest-DEFINED plain method (own attrs;
+    # only PyFunction values install so data is never shadowed). Inherited
+    # behavior answers through the real host base; identity dunders keep host
+    # semantics.
+    try:
+        items = list(cls.attrs.items())
+    except BaseException:
+        return
+    for name, val in items:
+        if name in ns or not isinstance(val, PyFunction):
+            continue
+        if name.startswith("__"):
+            continue
+        ns[name] = _jac_standin_method(name)
+
+
 def _jac_standin_class(cls):
     # The cached name-faithful host class for a guest PyClass.
     import weakref
@@ -1024,6 +1079,7 @@ def _jac_standin_class(cls):
     if ent is not None and ent[0]() is cls:
         return ent[1]
     ns = {}
+    _jac_standin_install_methods(ns, cls)
     r = class_lookup_attr(cls, "__repr__")
     if not is_error(r):
         ns["__repr__"] = _jac_standin_dunder("__repr__", py_repr)
@@ -1054,6 +1110,41 @@ def _jac_user_standin(u):
     inst._jac_guest_ = u
     _JAC_USER_STANDINS[key] = [weakref.ref(u), inst]
     return inst
+
+
+def _jac_standin_adopt(base_obj, host_cls, guest_u):
+    # Re-class the boxed host-C-type base AS the guest class's stand-in: one
+    # object then carries BOTH the live C state (buffer, position, ...) and
+    # the guest method trampolines. False on layout mismatch -- callers
+    # degrade to presenting the bare base.
+    try:
+        base_obj.__class__ = host_cls
+    except BaseException:
+        return False
+    try:
+        base_obj._jac_guest_ = guest_u
+    except BaseException:
+        pass
+    return True
+
+
+def _jac_user_standin_typed(u):
+    # Stand-in for an instance of a guest class whose ancestor is a proxied
+    # host C TYPE outside the builtin list (io.BytesIO, ...). The boxed base
+    # instance is ADOPTED as the stand-in class instead of a fresh __new__
+    # shell: C state constructed in-VM survives the crossing AND guest
+    # overrides stay visible to host callbacks (marshal-style readers).
+    import weakref
+    key = id(u)
+    ent = _JAC_USER_STANDINS.get(key)
+    if ent is not None and ent[0]() is u:
+        return ent[1]
+    base_r = to_host(u._base_obj())
+    host_cls = _jac_standin_class(u.cls)
+    if not _jac_standin_adopt(base_r, host_cls, u):
+        return base_r
+    _JAC_USER_STANDINS[key] = [weakref.ref(u), base_r]
+    return base_r
 
 
 class _JacABCMeta(type):
@@ -2589,6 +2680,11 @@ obj PyClass(PyObj) {
         attrs: dict[str, PyObj],
         bases: list[PyObj] = [],
         native_base: str = "",
+        # Non-builtin host C-type ancestor (io.BytesIO, zlib.Compress, ...)
+        # recorded by compute_host_base: the resolved host type itself. Unlike
+        # plain user classes there is live per-instance C state behind every
+        # method call, so instances must box a REAL base instance.
+        host_base: any = None,
         # The type OF this class (its metaclass). None means the default `type`.
         # A user metaclass (EnumType, ABCMeta) is recorded here by type.__new__ so
         # `class Sub(Base)` can re-derive it from a base and re-run the protocol.
@@ -2867,6 +2963,22 @@ obj PyClass(PyObj) {
                 if upd.t == "error" {
                     return upd;
                 }
+            }
+        } elif self.host_base is not None {
+            # A non-builtin host C-type base boxes a REAL instance of the host
+            # type (same empty-then-fill pattern as mutable builtins when a
+            # user __init__ will call super().__init__ itself).
+            if not has_user_init and len(kwargs) > 0 {
+                tname: str = str(_jac_host_type_name(self.host_base));
+                return py_error("TypeError", tname + "() takes no keyword arguments");
+            }
+            box_args2 = args;
+            if has_user_init {
+                box_args2 = [];
+            }
+            boxed = construct_host_typed_base(self.host_base, box_args2);
+            if is_error(boxed) {
+                return boxed;
             }
         }
         instance = PyUserObj(t="instance", cls=self, attrs={}, base=boxed);
@@ -4766,6 +4878,13 @@ def to_host(value: PyObj) -> any {
             # other plain user object gets a NAME-FAITHFUL cached host stand-in
             # whose back-reference recovers the original on round-trip.
             if value._has_base() {
+                if (value as PyUserObj).cls.host_base is not None {
+                    # Host-C-type subclass: adopt the boxed base AS the
+                    # stand-in so live C state and guest overrides both
+                    # survive the crossing (host reader callbacks must see
+                    # the override, never a bare base).
+                    return _jac_user_standin_typed(value as PyUserObj);
+                }
                 return to_host(value._base_obj());
             }
             if class_is_exception(value.cls) {
@@ -9733,6 +9852,26 @@ def construct_native_base(name: str, args: list[PyObj]) -> PyObj {
     return host_result_error(result);
 }
 
+# Same boundary contract as construct_native_base, for non-builtin host C-type
+# bases recorded on the class (compute_host_base): call the actual host type
+# so per-instance C state is real.
+def construct_host_typed_base(host_type: any, args: list[PyObj]) -> PyObj {
+    raw_args: list[any] = [];
+    for a in args {
+        ha_r = to_host_coerce(a);
+        ha = ha_r[1];
+        if not ((ha_r[0] as bool)) {
+            return ha_r[1] as PyObj;
+        }
+        raw_args.append(ha);
+    }
+    result = _jac_construct_host_type(host_type, raw_args);
+    if host_result_ok(result) {
+        return from_host(result[1]);
+    }
+    return host_result_error(result);
+}
+
 # For operator delegation: a builtin subclass on either operand acts as its
 # boxed value (MyInt(5) + MyInt(1) -> 5 + 1).
 def unwrap_base(o: PyObj) -> PyObj {
@@ -9961,6 +10100,40 @@ def compute_native_base(bases: list[PyObj]) -> str {
     return native_base;
 }
 
+# The non-builtin host C-type ancestor (if any): a proxied HOST type base the
+# _JAC_BUILTIN_BASES list does not cover (io.BytesIO, zlib.Compress, ...).
+# Recorded on the class so instances box a REAL base instance -- every method
+# call behind it touches live per-instance C state that must survive
+# boundary crossings.
+def compute_host_base(bases: list[PyObj]) -> any {
+    for base in bases {
+        if isinstance(base, PyClass) {
+            inherited = (base as PyClass).host_base;
+            if inherited is not None {
+                return inherited;
+            }
+        } elif isinstance(base, PyHostProxy) {
+            hostval = (base as PyHostProxy).val;
+            # Metaclasses ride native_base="type"; listed builtins ride
+            # native_base; exception bases ride the exception machinery.
+            if _jac_is_type_type(hostval) {
+                continue;
+            }
+            if str(_jac_builtin_base_name(hostval)) != "" {
+                continue;
+            }
+            if bool(_jac_is_exception_type(hostval)) {
+                continue;
+            }
+            cand = _jac_hostproxy_val_is_type(hostval);
+            if not isinstance(cand, str) {
+                return cand;
+            }
+        }
+    }
+    return None;
+}
+
 # Box a PyClass from a resolved name/bases/namespace. `meta` is the metaclass that
 # produced it (None = the default `type`), recorded so a later subclass can
 # re-derive and re-run the metaclass protocol.
@@ -10184,6 +10357,7 @@ def make_pyclass_from_map(
         attrs=namespace,
         bases=bases,
         native_base=compute_native_base(bases),
+        host_base=compute_host_base(bases),
         metaclass=meta,
         tp_flags=flags,
         slot_members=members,
