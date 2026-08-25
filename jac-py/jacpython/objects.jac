@@ -3564,6 +3564,13 @@ def slice_indices(sl: PySlice, length: int) -> list[int] {
     if not isinstance(sl.step, PyNoneType) {
         step = expect_int(sl.step);
     }
+    # CPython's PySlice_AdjustIndices raises ValueError before any stepping
+    # loop runs; without this guard a zero-step slice never terminates.
+    # Callers pre-check via _zero_step_error, so this is a fail-fast backstop
+    # for any future caller that skips the pre-check.
+    if step == 0 {
+        raise ValueError("slice step cannot be zero");
+    }
     neg = step < 0;
     start = 0;
     if isinstance(sl.start, PyNoneType) {
