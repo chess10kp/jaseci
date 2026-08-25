@@ -142,5 +142,8 @@ jac-py/jacpython/_tmp_*.jac
 jac-py/jacpython/_repro*.jac
 jac-py/jacpython/_smoke_*.jac
 jac-py/jacpython/_fuzz_*.jac
+# Sanctioned pinned-corpus replay driver: consumed by tools/fuzz_run.py to run
+# tools/fuzz_corpus_pinned.json; without it every pin reports MISSING.
+!jac-py/jacpython/_fuzz_smoke.jac
 jac-py/jacpython/_t[0-9]*.jac
 jac-py/jacpython/zz_*tmp*.jac

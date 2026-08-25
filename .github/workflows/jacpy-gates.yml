@@ -184,7 +184,12 @@ jobs:
           JACPATH: jac-py/jacpython
         run: jac test jac-py/tests/test_p2_facade_parity.jac
 
-      - name: P2 wave-20 facade parity (functools + itertools accumulate)
+      - name: P2 wave-20 kernel parity (math fsum/isclose/perm-comb + array overflow guards)
+        env:
+          JACPATH: "jac-py/jacpython:jac-py/Modules"
+        run: jac test jac-py/tests/test_wave20_parity.jac
+
+      - name: P2 facade parity (functools + itertools accumulate)
         env:
           JACPATH: jac-py/jacpython
         run: |
