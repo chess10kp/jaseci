@@ -959,7 +959,9 @@ def _class_attr_seeds(
         if info is not None:
             stack.extend(reversed(info.bases))
     seeds: dict[str, ast.expr] = {}
-    for name in chain:
+    # ``chain`` is descendant-first (each node is appended before its bases);
+    # apply base-first so subclass overrides win over base defaults.
+    for name in reversed(chain):
         cd = mod_classes.get(name)
         if cd is None:
             continue
