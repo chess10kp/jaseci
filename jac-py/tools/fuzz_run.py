@@ -2,8 +2,9 @@
 """Runner/classifier for the jacpython-vs-CPython differential fuzz corpus.
 
 Mirrors how jac-py/jacpython/_fuzz_smoke.jac consumes the pin corpus: it
-extracts the `cases` array from fuzz_corpus_pinned.json, points
-/tmp/fuzz_cases.json at it, and runs the smoke driver via
+extracts the `cases` array from fuzz_corpus_pinned.json, points the smoke
+driver's scratch input at it (FUZZ_CASES_FILE override, default
+/var/tmp/fuzz_cases.json), and runs the smoke driver via
 `JACPYTHON_CPYTHON=python3 .venv/bin/jac run jac-py/jacpython/_fuzz_smoke.jac`.
 The driver's Layer-1 harness replays each case's setup in BOTH host CPython
 and jacpython, then diffs every assertEqual argument pair on both sides.
@@ -35,7 +36,7 @@ TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(TOOLS_DIR))
 SMOKE_DRIVER = os.path.join(REPO_ROOT, "jac-py", "jacpython", "_fuzz_smoke.jac")
 JAC = os.path.join(REPO_ROOT, ".venv", "bin", "jac")
-SMOKE_INPUT = "/tmp/fuzz_cases.json"  # hardcoded inside _fuzz_smoke.jac
+SMOKE_INPUT = os.environ.get("FUZZ_CASES_FILE", "/var/tmp/fuzz_cases.json")
 
 _OK_RE = re.compile(r"^ok (\S+) passed: (\d+) skipped: (\d+)")
 _FAIL_RE = re.compile(r"^FUZZFAIL (\S+) ")
