@@ -6,7 +6,7 @@
 # differential stays separate; this path exercises ``import platform`` (etc.)
 # through register_shim_module + exec_code.
 
-import from objects { PyObj, PyStr, PyError, PyList, PyInt, PyBool, PyDict, is_error, py_none, py_error, }
+import from objects { PyObj, PyStr, PyError, PyList, PyInt, PyBool, PyDict, PyTuple, is_error, py_none, py_error, str_value, }
 import from getplatform { Py_GetPlatform }
 import from _bisectmodule {
     _p2_bisect_right,
@@ -20,7 +20,7 @@ import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
 }
-import from ceval { _sys3_forget, set_layer3_active, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
+import from ceval { _sys3_forget, set_layer3_active, import_native, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
 import from _collectionsmodule {
     _p2_deque,
     _p2_defaultdict,
@@ -623,6 +623,45 @@ obj P2SupportRequiresDebugRangesFn(PyObj) {
     }
 }
 
+obj P2SupportImportModuleFn(PyObj) {
+    # CPython Lib/test/support/import_helper.py import_module(name,
+    # deprecated=False, *, required_on=()): import and return the module under
+    # test; ImportError becomes unittest.SkipTest unless sys.platform starts
+    # with one of required_on, in which case the original error propagates.
+    # The guest import routes through import_native so shim-first resolution
+    # applies; `deprecated` only suppresses DeprecationWarnings during the
+    # host capture and has no guest-visible surface to gate here.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) < 1 or len(args) > 2 {
+            return py_error(
+                "TypeError",
+                "import_module expected 1 or 2 arguments, got " + str(len(args)),
+            );
+        }
+        mod = str_value(args[0]);
+        imported = import_native(mod);
+        if not is_error(imported) {
+            return imported;
+        }
+        plat = Py_GetPlatform();
+        if "required_on" in kwargs {
+            req = kwargs["required_on"];
+            req_items: list[PyObj] = [];
+            if isinstance(req, PyTuple) {
+                req_items = (req as PyTuple).items;
+            } elif isinstance(req, PyList) {
+                req_items = (req as PyList).items;
+            }
+            for prefix in req_items {
+                if plat.startswith(str_value(prefix)) {
+                    return imported;
+                }
+            }
+        }
+        return py_error("SkipTest", (imported as PyError).exception.message);
+    }
+}
+
 def p2_libtest_reset {
     clear_shim_modules();
     # Route IMPORT_NAME through py_import_name so the registered facades win;
@@ -683,6 +722,11 @@ def p2_libtest_reset {
     os_helper_mod = PyModule(t="module", name="test.support.os_helper", attrs=os_helper_attrs);
     register_shim_module("test.support.os_helper", os_helper_mod);
     support_attrs["os_helper"] = os_helper_mod;
+    import_helper_mod = PyModule(t="module", name="test.support.import_helper", attrs={
+        "import_module": P2SupportImportModuleFn(t="function"),
+    });
+    register_shim_module("test.support.import_helper", import_helper_mod);
+    support_attrs["import_helper"] = import_helper_mod;
     register_shim_module("test.support", support_mod);
     # Lib/test/support/numbers.py is pure literal data shared by numeric
     # suites (test_underscores et al); embedded verbatim from the pinned
@@ -832,6 +876,34 @@ def p2_libtest_expect_ok(source: str, expect_stdout: str = "ok") -> tuple[bool, 
     return (True, detail);
 }
 
+
+test "layer_p2_libtest: import_helper resolves and imports via shim registry" {
+    snippet = (
+        "from test.support import import_helper\n"
+        "mod = import_helper.import_module('bisect')\n"
+        "assert hasattr(mod, 'bisect_right'), dir(mod)\n"
+        "assert hasattr(mod, 'insort')\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: import_helper missing module raises SkipTest like CPython" {
+    snippet = (
+        "from test.support import import_helper\n"
+        "try:\n"
+        "    import_helper.import_module('_no_such_module_xyz')\n"
+        "except Exception as e:\n"
+        "    assert type(e).__name__ == 'SkipTest', type(e).__name__\n"
+        "    assert 'No module named' in str(e), str(e)\n"
+        "    print('ok')\n"
+        "else:\n"
+        "    raise AssertionError('expected SkipTest')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
 
 test "layer_p2_libtest: platform_basic snippet prints ok on JacPython" {
     snippet = (
