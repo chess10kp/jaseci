@@ -1016,6 +1016,51 @@ def _jac_standin_dunder(dunder_name, vm_fn):
     return _meth
 
 
+def _jac_standin_iter_method():
+    # Host __iter__ that recovers the guest object and serves iteration through
+    # py_iter -- the exact CPython tp_iter surface (__iter__, boxed bases,
+    # then the old-style __getitem__ sequence protocol) -- drained LAZILY via
+    # the shared _jac_make_host_iterator so guest and host observe the SAME
+    # consumption position. This is what lets host-routed consumers
+    # (tuple()/sum()/any()/all()/enumerate()/zip()/dict.fromkeys()/...) see a
+    # user object as iterable instead of a non-iterable repr/str-only standin.
+    def _meth(self):
+        u = getattr(self, "_jac_guest_", None)
+        if u is None:
+            raise RuntimeError(
+                "bridge-table: stand-in lost its guest back-reference"
+            )
+        it = py_iter(u)
+        if isinstance(it, PyError):
+            _jac_reraise_pyerror(it)
+        return _jac_make_host_iterator(it)
+    _meth.__name__ = "__iter__"
+    return _meth
+
+
+def _jac_standin_next_method():
+    # Host __next__ for standins of guest classes that ARE iterators: drives
+    # the recovered guest object through the shared tp_iternext helper and
+    # maps normal completion back to host StopIteration.
+    def _meth(self):
+        u = getattr(self, "_jac_guest_", None)
+        if u is None:
+            raise RuntimeError(
+                "bridge-table: stand-in lost its guest back-reference"
+            )
+        step = send_into(u, py_none())
+        if isinstance(step, PyGenStop):
+            raise StopIteration
+        if isinstance(step, PyError):
+            exc = step.exception
+            if exc_name_matches(exc.type_name, "StopIteration"):
+                raise StopIteration
+            _jac_reraise_pyerror(step)
+        return to_host(step)
+    _meth.__name__ = "__next__"
+    return _meth
+
+
 def _jac_standin_class(cls):
     # The cached name-faithful host class for a guest PyClass.
     import weakref
@@ -1030,6 +1075,18 @@ def _jac_standin_class(cls):
     s = class_lookup_attr(cls, "__str__")
     if not is_error(s):
         ns["__str__"] = _jac_standin_dunder("__str__", py_str)
+    # Iteration protocol: install only what the guest MRO actually defines
+    # (class-level lookup -- never the instance dict, so __getattr__ tails are
+    # not swallowed into spurious protocol presence). Like CPython's
+    # type_ready_set_slots, an __getitem__-without-__iter__ class still gets a
+    # working tp_iter equivalent; py_iter synthesizes the sequence iterator.
+    if (
+        not is_error(class_lookup_attr(cls, "__iter__"))
+        or not is_error(class_lookup_attr(cls, "__getitem__"))
+    ):
+        ns["__iter__"] = _jac_standin_iter_method()
+    if not is_error(class_lookup_attr(cls, "__next__")):
+        ns["__next__"] = _jac_standin_next_method()
     if class_has_abc_meta(cls):
         _jac_install_abc_trampolines()
         host_cls = _JacABCMeta(cls.name, _jac_standin_bases(cls), ns)
