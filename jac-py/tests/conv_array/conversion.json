@@ -1,24 +1,24 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "ac08a64851ccfed082ecf7de18dd723383ee3abb",
+  "jac_sha": "4c2c55eb0ba5fff3b134e97f06691fb24c18dd6c",
   "cpython": {
     "version": "3.14.6",
-    "sha": "unknown"
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
   },
   "command": [
     "convert_suite.py",
-    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_array.py",
+    "reference/cpython/Lib/test/test_array.py",
     "-o",
-    "/var/tmp/lane8/jac-py/tests/conv_array",
+    "/var/tmp/worker6-array-3320479/jac-py/tests/conv_array",
     "--name",
     "conv_array"
   ],
-  "generated_at": "2026-08-24T14:26:20",
+  "generated_at": "2026-08-25T13:53:29",
   "hashes": {
     "pins_jac": "def560644029b4e37074ba1c900b76a03097a745c2e78826f320fe7eb0d84363"
   },
-  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_array.py",
+  "source_file": "reference/cpython/Lib/test/test_array.py",
   "generator": "jac-py/tools/convert_suite.py",
   "module_stem": "array",
   "pins_file": "conv_array_pins.jac",
@@ -158,271 +158,3027 @@
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_constructor",
+      "ident": "UCS4Test.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_len",
+      "ident": "ByteTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_buffer_info",
+      "ident": "ShortTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_byteswap",
+      "ident": "IntTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_copy",
+      "ident": "LongTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_deepcopy",
+      "ident": "LongLongTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_reduce_ex",
+      "ident": "UnsignedByteTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_pickle",
+      "ident": "UnsignedShortTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_pickle_for_empty_array",
+      "ident": "UnsignedIntTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_iterator_pickle",
+      "ident": "UnsignedLongTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_exhausted_iterator",
+      "ident": "UnsignedLongLongTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_reverse_iterator",
+      "ident": "FloatTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_reverse_iterator_picking",
+      "ident": "DoubleTest.test_constructor",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_exhausted_reverse_iterator",
+      "ident": "UCS4Test.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_insert",
+      "ident": "ByteTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_tofromfile",
+      "ident": "ShortTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_fromfile_ioerror",
+      "ident": "IntTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_filewrite",
+      "ident": "LongTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_tofromlist",
+      "ident": "LongLongTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_tofrombytes",
+      "ident": "UnsignedByteTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_fromarray",
+      "ident": "UnsignedShortTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_repr",
+      "ident": "UnsignedIntTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_str",
+      "ident": "UnsignedLongTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_cmp",
+      "ident": "UnsignedLongLongTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_add",
+      "ident": "FloatTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_iadd",
+      "ident": "DoubleTest.test_len",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_mul",
+      "ident": "UCS4Test.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_imul",
+      "ident": "ByteTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_getitem",
+      "ident": "ShortTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_setitem",
+      "ident": "IntTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_delitem",
+      "ident": "LongTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_getslice",
+      "ident": "LongLongTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_extended_getslice",
+      "ident": "UnsignedByteTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_setslice",
+      "ident": "UnsignedShortTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_extended_set_del_slice",
+      "ident": "UnsignedIntTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_index",
+      "ident": "UnsignedLongTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_count",
+      "ident": "UnsignedLongLongTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_remove",
+      "ident": "FloatTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_pop",
+      "ident": "DoubleTest.test_buffer_info",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_clear",
+      "ident": "UCS4Test.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_reverse",
+      "ident": "ByteTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_extend",
+      "ident": "ShortTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_constructor_with_iterable_argument",
+      "ident": "IntTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_coveritertraverse",
+      "ident": "LongTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_buffer",
+      "ident": "LongLongTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_weakref",
+      "ident": "UnsignedByteTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_subclass_with_kwargs",
+      "ident": "UnsignedShortTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_create_from_bytes",
+      "ident": "UnsignedIntTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_initialize_with_unicode",
+      "ident": "UnsignedLongTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "BaseTest.test_free_after_iterating",
+      "ident": "UnsignedLongLongTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "StringTest.test_setitem",
+      "ident": "FloatTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "UnicodeTest.test_unicode",
+      "ident": "DoubleTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "UnicodeTest.test_issue17223",
+      "ident": "UCS4Test.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "UnicodeTest.test_typecode_u_deprecation",
+      "ident": "ByteTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "UnicodeTest.test_empty_string_mem_leak_gh140474",
+      "ident": "ShortTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "NumberTest.test_extslice",
+      "ident": "IntTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "NumberTest.test_delslice",
+      "ident": "LongTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "NumberTest.test_assignment",
+      "ident": "LongLongTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "NumberTest.test_iterationcontains",
+      "ident": "UnsignedByteTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "NumberTest.test_subclassing",
+      "ident": "UnsignedShortTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "NumberTest.test_frombytearray",
+      "ident": "UnsignedIntTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "IntegerNumberTest.test_type_error",
+      "ident": "UnsignedLongTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "SignedNumberTest.test_overflow",
+      "ident": "UnsignedLongLongTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "UnsignedNumberTest.test_overflow",
+      "ident": "FloatTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "UnsignedNumberTest.test_bytes_extend",
+      "ident": "DoubleTest.test_copy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "FPTest.test_nan",
+      "ident": "UCS4Test.test_deepcopy",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
-      "ident": "FPTest.test_byteswap",
+      "ident": "ByteTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_deepcopy",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_reduce_ex",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_pickle_for_empty_array",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_iterator_pickle",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_exhausted_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_reverse_iterator_picking",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_exhausted_reverse_iterator",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_insert",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_tofromfile",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_fromfile_ioerror",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_filewrite",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_tofromlist",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_tofrombytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_fromarray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_repr",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_str",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_cmp",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_add",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_iadd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_mul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_imul",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_getitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_delitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_extended_getslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_setslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_extended_set_del_slice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_index",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_count",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_remove",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_pop",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_clear",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_reverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_constructor_with_iterable_argument",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_coveritertraverse",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_buffer",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_weakref",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_subclass_with_kwargs",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_create_from_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_initialize_with_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_free_after_iterating",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_setitem",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_unicode",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_issue17223",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_typecode_u_deprecation",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UCS4Test.test_empty_string_mem_leak_gh140474",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_extslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_delslice",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_assignment",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_iterationcontains",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_subclassing",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_frombytearray",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_type_error",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ByteTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "ShortTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "IntTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "LongLongTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_overflow",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedByteTest.test_bytes_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedShortTest.test_bytes_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedIntTest.test_bytes_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongTest.test_bytes_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "UnsignedLongLongTest.test_bytes_extend",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_nan",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_nan",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "FloatTest.test_byteswap",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "DoubleTest.test_byteswap",
       "reason": "helper:setUp(self.enterContext)"
     },
     {
@@ -439,8 +3195,8 @@
     }
   ],
   "counts": {
-    "extracted": 98,
+    "extracted": 787,
     "pinned": 5,
-    "quarantined": 93
+    "quarantined": 782
   }
 }
