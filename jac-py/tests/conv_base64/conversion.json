@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "8cbc51382b93e32dc94556867b2695640fbb1527",
+  "jac_sha": "unknown",
   "cpython": {
     "version": "3.14.6",
     "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
@@ -10,13 +10,13 @@
     "convert_suite.py",
     "reference/cpython/Lib/test/test_base64.py",
     "-o",
-    "/var/tmp/sp1-out/test_base64-r4",
+    "/var/tmp/worker6-base64-3323773/jac-py/tests/conv_base64",
     "--name",
     "conv_base64"
   ],
-  "generated_at": "2026-08-24T23:20:44",
+  "generated_at": "2026-08-25T13:53:37",
   "hashes": {
-    "pins_jac": "e476d53baab45fcd18f90bc603b3cf1ccdcd20168fecc07cebe7101aaa627138"
+    "pins_jac": "dcc8d8ffa1fa79db5b57c3d2c538cc1fdf9feceb7a1706bf6fee21e7502ba54f"
   },
   "source_file": "reference/cpython/Lib/test/test_base64.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -230,6 +230,14 @@
       "snippet": "import base64\n\ndef _t():\n    decode_funcs = (base64.b64decode, base64.standard_b64decode, base64.urlsafe_b64decode, base64.b32decode, base64.b16decode, base64.b85decode, base64.a85decode, base64.z85decode)\n    for f in decode_funcs:\n        try:\n            f(*('with non-ascii \u00cb',))\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
+      "ident": "BaseXYTestCase.test_ErrorHeritage",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n    assert issubclass(binascii.Error, ValueError), ('assertIsSubclass', binascii.Error, ValueError)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
       "ident": "BaseXYTestCase.test_RFC4648_test_cases",
       "status": "pinned",
       "oracle": {
@@ -278,15 +286,10 @@
       "snippet": "from test.support import script_helper\n\ndef _t():\n    output = script_helper.assert_python_failure('-m', 'base64', '-x').err\n    assert b'usage: ' in output, ('assertIn', b'usage: ', output)\n    assert b'-d, -u: decode' in output, ('assertIn', b'-d, -u: decode', output)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     }
   ],
-  "quarantined": [
-    {
-      "ident": "BaseXYTestCase.test_ErrorHeritage",
-      "reason": "self.assertIsSubclass"
-    }
-  ],
+  "quarantined": [],
   "counts": {
     "extracted": 41,
-    "pinned": 18,
-    "quarantined": 23
+    "pinned": 19,
+    "quarantined": 22
   }
 }
