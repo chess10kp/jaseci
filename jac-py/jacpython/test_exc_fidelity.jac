@@ -278,3 +278,21 @@ test "user exception subclass super().__init__ stores args" {
     assert vm_str(ns, "a2") == "(7, 8)";
     assert vm_str(ns, "s2") == "(7, 8)";
 }
+
+test "__notes__ follows CPython PEP 678 lifecycle" {
+    # No __notes__ attribute until add_note() first creates it (AttributeError
+    # before, list after), and add_note appends in call order.
+    ns = vm_exec(
+        "e = ValueError('x')\n"
+        "pre = 'unset'\n"
+        "try:\n"
+        "    e.__notes__\n"
+        "except AttributeError:\n"
+        "    pre = 'attrerror'\n"
+        "e.add_note('n1')\n"
+        "e.add_note('n2')\n"
+        "notes = e.__notes__\n"
+    );
+    assert vm_str(ns, "pre") == "attrerror";
+    assert vm_str(ns, "notes") == "['n1', 'n2']";
+}
