@@ -46,12 +46,12 @@ def descr_name(descr: PyDescrObject) -> PyObj {
     return 0;
 }
 
-def _object_type_check(obj: PyObj, `type: PyTypeObject) -> bool {
-    return obj.ob_type == `type;
+def _object_type_check(`obj: PyObj, `type: PyTypeObject) -> bool {
+    return `obj.ob_type == `type;
 }
 
-def descr_check(descr: PyDescrObject, obj: PyObj) -> int {
-    if not _object_type_check(obj, descr.d_type) {
+def descr_check(descr: PyDescrObject, `obj: PyObj) -> int {
+    if not _object_type_check(`obj, descr.d_type) {
         raise TypeError(
             "descriptor for '" + descr.d_type.tp_name + "' objects "
             + "doesn't apply to a '" + obj.ob_type.tp_name + "' object"
@@ -61,8 +61,8 @@ def descr_check(descr: PyDescrObject, obj: PyObj) -> int {
     return 0;
 }
 
-def descr_setcheck(descr: PyDescrObject, obj: PyObj, value: PyObj) -> int {
-    if not _object_type_check(obj, descr.d_type) {
+def descr_setcheck(descr: PyDescrObject, `obj: PyObj, value: PyObj) -> int {
+    if not _object_type_check(`obj, descr.d_type) {
         raise TypeError(
             "descriptor for '" + descr.d_type.tp_name + "' objects "
             + "doesn't apply to a '" + obj.ob_type.tp_name + "' object"
@@ -72,8 +72,8 @@ def descr_setcheck(descr: PyDescrObject, obj: PyObj, value: PyObj) -> int {
     return 0;
 }
 
-def getset_get(`self: PyGetSetDescrObject, obj: PyObj, `type: PyObj) -> PyObj {
-    if obj == 0 {
+def getset_get(`self: PyGetSetDescrObject, `obj: PyObj, `type: PyObj) -> PyObj {
+    if `obj == 0 {
         return `self;
     }
     if descr_check(`self.d_common, obj) < 0 {
@@ -88,8 +88,8 @@ def getset_get(`self: PyGetSetDescrObject, obj: PyObj, `type: PyObj) -> PyObj {
     return 0;
 }
 
-def property_descr_get(`self: propertyobject, obj: PyObj, `type: PyObj) -> PyObj {
-    if (obj == 0) {
+def property_descr_get(`self: propertyobject, `obj: PyObj, `type: PyObj) -> PyObj {
+    if (`obj == 0) {
         return `self;
     }
     if `self.prop_get == 0 {

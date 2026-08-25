@@ -223,10 +223,10 @@ def _codes_are_style_or_none(codes: list[str]) -> bool {
 test "lift oracle: every callable fixture obeys its fidelity claim" {
     mismatches: list = [];
     ran: int = 0;
-    for (name, driver, entry, entry_fn) in _BREADTH_CASES {
+    for (name, driver, `entry, entry_fn) in _BREADTH_CASES {
         path = os.path.join(FIXTURES, name);
         (status, detail) = assert_lift_matches_c_or_traps(
-            path, driver, entry, entry_fn
+            path, driver, `entry, entry_fn
         );
         ran += 1;
         if status != "ok" {

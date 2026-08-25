@@ -96,11 +96,11 @@ def _na_codegen(fixture: str, calls: list[str]) -> tuple[bool, str] {
         src = f.read();
     }
     argv = ", ".join([f"{c}()" for c in calls]);
-    entry = "\n\nwith entry {\n    print(" + argv + ");\n}\n";
+    `entry = "\n\nwith entry {\n    print(" + argv + ");\n}\n";
     work = tempfile.mkdtemp();
     na_path = os.path.join(work, fixture);
     with open(na_path, "w") as f {
-        f.write(src + entry);
+        f.write(src + `entry);
     }
     na_path = os.path.abspath(na_path);
     prog = JacProgram();
