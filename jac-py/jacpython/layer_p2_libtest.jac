@@ -358,6 +358,32 @@ obj P2LibtestBisectLeftFn(PyObj) {
     }
 }
 
+obj P2SupportGcCollectFn(PyObj) {
+    # CPython test.support.gc_collect (Lib/test/support/__init__.py): three
+    # gc.collect() passes so cycles and delayed finalizers settle. Guest
+    # PyUserObj/PyClass objects are ordinary host CPython objects, so the host
+    # collector drives their lifetime exactly as it does for weakref pins.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        gc_res = _jac_host_import("gc", PyList(t="list", items=[PyStr(t="str", val="*")]));
+        if not ((gc_res[0] as bool)) {
+            return py_error(str(gc_res[1]), str(gc_res[2]));
+        }
+        collect_res = _jac_host_getattr(gc_res[1], "collect");
+        if not ((collect_res[0] as bool)) {
+            return py_error(str(collect_res[1]), str(collect_res[2]));
+        }
+        i = 0;
+        while i < 3 {
+            res = _jac_host_call(collect_res[1], [], {});
+            if not ((res[0] as bool)) {
+                return py_error(str(res[1]), str(res[2]));
+            }
+            i += 1;
+        }
+        return py_none();
+    }
+}
+
 obj P2LibtestInsortFn(PyObj) {
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 2 {
@@ -670,6 +696,9 @@ def p2_libtest_reset {
         "is_apple": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
+        # Lib/test suites lean on gc_collect for weakref/refcount liveness
+        # assertions (test_frame ClearTest et al); served over the host bridge.
+        "gc_collect": P2SupportGcCollectFn(t="function"),
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
     os_helper_attrs: dict[str, PyObj] = {
