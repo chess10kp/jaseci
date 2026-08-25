@@ -1,0 +1,408 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_marshal/conv_marshal_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:02:25",
+  "hashes": {
+    "pins_jac": "ed1ed89ebf8ff7c603ca812ac18609c8c9d2fe6bb9f1d56733fbdf5ee0ceba26",
+    "conversion_json": "2f010860c3e696b4da58bf64e7bb1412e422d668fe75987d4449b96a7ed12d04",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "marshal",
+  "counts": {
+    "converted": 75,
+    "runnable": 39,
+    "green": 17,
+    "quarantined": 36
+  },
+  "pins": [
+    {
+      "id": "IntTestCase.test_ints",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "IntTestCase.test_int64",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCase.test_bool",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "FloatTestCase.test_floats",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "StringTestCase.test_unicode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "StringTestCase.test_string",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "StringTestCase.test_bytes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "ExceptionTestCase.test_exceptions",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"bridge-table: type \\'exception_type\\' has policy BridgePolicy.FAIL but no to_host conversion arm\"'>"
+    },
+    {
+      "id": "CodeTestCase.test_different_filenames",
+      "status": "pass"
+    },
+    {
+      "id": "ContainerTestCase.test_dict",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'd'"
+    },
+    {
+      "id": "ContainerTestCase.test_list",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'd'"
+    },
+    {
+      "id": "ContainerTestCase.test_tuple",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'd'"
+    },
+    {
+      "id": "ContainerTestCase.test_sets",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'd'"
+    },
+    {
+      "id": "BufferTestCase.test_bytearray",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "BufferTestCase.test_memoryview",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "BufferTestCase.test_array",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_bug_5888452",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_patch_873224",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_version_argument",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_fuzz",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_loads_recursion",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_recursion_limit",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_reference_loop_list",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'maximum recursion depth exceeded'\">"
+    },
+    {
+      "id": "BugsTestCase.test_reference_loop_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'maximum recursion depth exceeded'\">"
+    },
+    {
+      "id": "BugsTestCase.test_reference_loop_tuple",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'maximum recursion depth exceeded'\">"
+    },
+    {
+      "id": "BugsTestCase.test_reference_loop_slice",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'maximum recursion depth exceeded'\">"
+    },
+    {
+      "id": "BugsTestCase.test_loads_reference_loop_list",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_loads_reference_loop_dict",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_loads_abnormal_reference_loops",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIs\\', ([(...)],), ([([(...)],)],))\"'>"
+    },
+    {
+      "id": "BugsTestCase.test_exact_type_match",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_large_marshal",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_invalid_longs",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_multiple_dumps_and_loads",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "BugsTestCase.test_loads_reject_unicode_strings",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_bad_reader",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC EOFError 'EOF read where object expected'\">"
+    },
+    {
+      "id": "BugsTestCase.test_eof",
+      "status": "pass"
+    },
+    {
+      "id": "BugsTestCase.test_deterministic_sets",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ModuleNotFoundError: No module named 'test.support.script_helper'\">"
+    },
+    {
+      "id": "BugsTestCase.test_unmarshallable",
+      "status": "pass"
+    },
+    {
+      "id": "InstancingTestCase.testInt",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "InstancingTestCase.testFloat",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "InstancingTestCase.testStr",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "InstancingTestCase.testBytes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "InstancingTestCase.testList",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'keys'"
+    },
+    {
+      "id": "InstancingTestCase.testTuple",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'keys'"
+    },
+    {
+      "id": "InstancingTestCase.testSet",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'keys'"
+    },
+    {
+      "id": "InstancingTestCase.testFrozenSet",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'keys'"
+    },
+    {
+      "id": "InstancingTestCase.testDict",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'keys'"
+    },
+    {
+      "id": "InstancingTestCase.testRecursion",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'maximum recursion depth exceeded'\">"
+    },
+    {
+      "id": "InterningTestCase.testIntern",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'strobj'"
+    },
+    {
+      "id": "InterningTestCase.testNoIntern",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'strobj'"
+    },
+    {
+      "id": "SliceTestCase.test_slice",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'helper'"
+    },
+    {
+      "id": "CodeTestCase.test_same_filename_used",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LargeValuesTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LargeValuesTestCase.test_str",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LargeValuesTestCase.test_tuple",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LargeValuesTestCase.test_list",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LargeValuesTestCase.test_set",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LargeValuesTestCase.test_frozenset",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LargeValuesTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "CAPI_TestCase.test_write_long_to_file",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CAPI_TestCase.test_write_object_to_file",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CAPI_TestCase.test_read_short_from_file",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CAPI_TestCase.test_read_long_from_file",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CAPI_TestCase.test_read_last_object_from_file",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CAPI_TestCase.test_read_object_from_file",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodeTestCase.test_code",
+      "status": "quarantined",
+      "reason": "unresolved-name:ExceptionTestCase"
+    },
+    {
+      "id": "CodeTestCase.test_many_codeobjects",
+      "status": "quarantined",
+      "reason": "unresolved-name:ExceptionTestCase"
+    },
+    {
+      "id": "CodeTestCase.test_no_allow_code",
+      "status": "quarantined",
+      "reason": "unresolved-name:ExceptionTestCase"
+    },
+    {
+      "id": "CodeTestCase.test_minimal_linetable_with_no_debug_ranges",
+      "status": "quarantined",
+      "reason": "unresolved-name:ExceptionTestCase"
+    },
+    {
+      "id": "BugsTestCase.test_reference_loop_code",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "InstancingTestCase.testModule",
+      "status": "quarantined",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "id": "CompatibilityTestCase.test0To3",
+      "status": "quarantined",
+      "reason": "helper:_test(unresolved-name:__file__)"
+    },
+    {
+      "id": "CompatibilityTestCase.test1To3",
+      "status": "quarantined",
+      "reason": "helper:_test(unresolved-name:__file__)"
+    },
+    {
+      "id": "CompatibilityTestCase.test2To3",
+      "status": "quarantined",
+      "reason": "helper:_test(unresolved-name:__file__)"
+    },
+    {
+      "id": "CompatibilityTestCase.test3To3",
+      "status": "quarantined",
+      "reason": "helper:_test(unresolved-name:__file__)"
+    }
+  ]
+}

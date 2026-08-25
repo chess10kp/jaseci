@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_class/conv_class_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:03:25",
+  "hashes": {
+    "pins_jac": "6655067b29338d2b9fa3a33f8433f1d14510e4db6cc082a3e4c865f0dc5f5d55",
+    "conversion_json": "dad1639502bf1b4ee3a16d34c2a2b3c38afa6450192711a83962d0f8c99f55cb",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "class",
+  "counts": {
+    "converted": 37,
+    "runnable": 3,
+    "green": 1,
+    "quarantined": 34
+  },
+  "pins": [
+    {
+      "id": "TestInlineValues.test_bug_117750",
+      "status": "pass"
+    },
+    {
+      "id": "TestInlineValues.test_store_attr_deleted_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__dict__'\">"
+    },
+    {
+      "id": "TestInlineValues.test_rematerialize_object_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__dict__'\">"
+    },
+    {
+      "id": "TestInlineValues.test_detach_materialized_dict_no_memory",
+      "status": "quarantined",
+      "reason": "host-raised:SkipTest: No module named '_testcapi'"
+    },
+    {
+      "id": "ClassTests.testInit",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testBinaryOps",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testListAndDictOps",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testUnaryOps",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testMisc",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testGetSetAndDel",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testHasAttrString",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testDel",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testBadTypeReturned",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testHashStuff",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testPredefinedAttrs",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testSFBug532646",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testForExceptionsRaisedInInstanceGetattr2",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testHashComparisonOfMethods",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testSetattrWrapperNameIntern",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testSetattrNonStringName",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testTypeAttributeAccessErrorMessages",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testObjectAttributeAccessErrorMessages",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testConstructorErrorMessages",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testClassWithExtCall",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testClassCallRecursionLimit",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.testMetaclassCallOptimization",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "ClassTests.test_specialization_class_call_doesnt_crash",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "TestInlineValues.test_no_flags_for_slots_class",
+      "status": "quarantined",
+      "reason": "unresolved-name:NoManagedDict"
+    },
+    {
+      "id": "TestInlineValues.test_both_flags_for_regular_class",
+      "status": "quarantined",
+      "reason": "unresolved-name:Plain"
+    },
+    {
+      "id": "TestInlineValues.test_managed_dict_only_for_varsized_subclass",
+      "status": "quarantined",
+      "reason": "unresolved-name:VarSizedSubclass"
+    },
+    {
+      "id": "TestInlineValues.test_has_inline_values",
+      "status": "quarantined",
+      "reason": "unresolved-name:Plain"
+    },
+    {
+      "id": "TestInlineValues.test_instances",
+      "status": "quarantined",
+      "reason": "unresolved-name:Plain"
+    },
+    {
+      "id": "TestInlineValues.test_inspect_dict",
+      "status": "quarantined",
+      "reason": "unresolved-name:Plain"
+    },
+    {
+      "id": "TestInlineValues.test_update_dict",
+      "status": "quarantined",
+      "reason": "unresolved-name:Plain"
+    },
+    {
+      "id": "TestInlineValues.test_many_attributes",
+      "status": "quarantined",
+      "reason": "helper:set_100(decorated-helper)"
+    },
+    {
+      "id": "TestInlineValues.test_many_attributes_with_dict",
+      "status": "quarantined",
+      "reason": "helper:set_100(decorated-helper)"
+    },
+    {
+      "id": "TestInlineValues.test_store_attr_type_cache",
+      "status": "quarantined",
+      "reason": "uses-self.assertEqual"
+    }
+  ]
+}

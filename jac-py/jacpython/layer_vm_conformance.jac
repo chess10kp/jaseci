@@ -10,7 +10,7 @@
 import from objects { PyObj, PyCode, PyInt, PyError, is_error, }
 import from host_oracle { host_compile_marshal }
 import from product_compile { compile_source }
-import from pyc_first { unmarshal, exec_code, to_host }
+import from pyc_first { unmarshal, exec_code, exec_module, to_host }
 import from opcode_meta {
     OP_LOAD_LOCALS,
     OP_BINARY_SLICE,
@@ -19,37 +19,44 @@ import from opcode_meta {
     OP_POP_JUMP_IF_NONE
 }
 
-::py::
-def _vm_host_exec(setup_src, body_src, mode="exec"):
-    ns = {"__builtins__": __builtins__}
-    if setup_src:
-        exec(compile(setup_src, "<vm-host-setup>", "exec"), ns)
-    if mode == "eval":
-        ns["result"] = eval(compile(body_src, "<vm-host-body>", "eval"), ns)
-    else:
-        exec(compile(body_src, "<vm-host-body>", "exec"), ns)
-    return ns
+def _vm_host_exec(setup_src: str, body_src: str, mode: str = "exec") -> dict {
+    ns = {"__builtins__": __builtins__};
+    if setup_src {
+        exec(compile(setup_src, "<vm-host-setup>", "exec"), ns);
+    }
+    if mode == "eval" {
+        ns["result"] = eval(compile(body_src, "<vm-host-body>", "eval"), ns);
+    } else {
+        exec(compile(body_src, "<vm-host-body>", "exec"), ns);
+    }
+    return ns;
+}
 
 
-def _vm_host_equal(a, b):
-    try:
-        if a != a and b != b:
-            return True
-        return bool(a == b)
-    except BaseException:
-        return False
+def _vm_host_equal(a: any, b: any) -> bool {
+    try {
+        if a != a and b != b {
+            return True;
+        }
+        return bool(a == b);
+    } except BaseException {
+        return False;
+    }
+}
 
 
-def _vm_host_raises(setup_src, body_src):
-    ns = {"__builtins__": __builtins__}
-    if setup_src:
-        exec(compile(setup_src, "<vm-host-setup>", "exec"), ns)
-    try:
-        exec(compile(body_src, "<vm-host-body>", "exec"), ns)
-        return None
-    except BaseException as exc:
-        return type(exc).__name__, str(exc)
-::py::
+def _vm_host_raises(setup_src: str, body_src: str) -> tuple | None {
+    ns = {"__builtins__": __builtins__};
+    if setup_src {
+        exec(compile(setup_src, "<vm-host-setup>", "exec"), ns);
+    }
+    try {
+        exec(compile(body_src, "<vm-host-body>", "exec"), ns);
+        return None;
+    } except BaseException as exc {
+        return (type(exc).__name__, str(exc));
+    }
+}
 
 
 
@@ -622,6 +629,46 @@ test "vm: RAISE_VARARGS raises with message" {
     assert err.exception.message == (host_exc[1] as str);
 }
 
+# Regression: a zero-step slice must raise ValueError before the stepping
+# loops run -- without the guard, seq[5:1:0] never terminates.
+test "vm: zero-step slice subscript raises ValueError like CPython" {
+    setup = "";
+    body = "seq = [1, 2, 3, 4]\nresult = seq[5:1:0]\n";
+    host_exc = host_raises(setup, body);
+    assert host_exc is not None;
+    ns: dict[str, PyObj] = {};
+    out = jac_run_oracle(setup, body, "exec", ns);
+    assert is_error(out);
+    err = out as PyError;
+    assert err.exception.type_name == (host_exc[0] as str);
+    assert err.exception.message == (host_exc[1] as str);
+}
+
+# Regression: same guard on the delete path (del seq[a:b:c]).
+test "vm: del with zero-step slice raises ValueError like CPython" {
+    setup = "";
+    body = "seq = [1, 2, 3, 4]\ndel seq[5:1:0]\n";
+    host_exc = host_raises(setup, body);
+    assert host_exc is not None;
+    ns: dict[str, PyObj] = {};
+    out = jac_run_oracle(setup, body, "exec", ns);
+    assert is_error(out);
+    err = out as PyError;
+    assert err.exception.type_name == (host_exc[0] as str);
+    assert err.exception.message == (host_exc[1] as str);
+}
+
+# bool is an int subclass: True/False index sequences as 1/0. The str, bytes,
+# and tuple subscripts must route through __index__ like list does.
+test "vm: bool subscripts index str/bytes/tuple like CPython" {
+    assert_vm_value_matches_host(
+        "s = 'abc'\nt = (1, 2, 3)\nb = b'xy'\n",
+        "result = (s[True], t[False], b[True], s[False], t[True])\n",
+        "exec",
+        "result",
+    );
+}
+
 # vm-opcode: OP_LOAD_SPECIAL
 test "vm: LOAD_SPECIAL enters context manager" {
     setup = "";
@@ -634,6 +681,53 @@ test "vm: WITH_EXCEPT_START handles context manager exit" {
     setup = "";
     body = "class CM:\n    def __enter__(self):\n        return 42\n    def __exit__(self, *a):\n        pass\nwith CM() as x:\n    result = x\n";
     assert_vm_value_matches_host(setup, body, "exec", "result");
+}
+
+# Regression (TODO item 17): the exception type passed to __exit__ must carry
+# identity attrs (__name__/__qualname__) like a CPython class object.
+test "vm: __exit__ receives exception type with __name__" {
+    setup = "";
+    body = "seen = []\n"
+        + "class CM:\n"
+        + "    def __enter__(self):\n        return self\n"
+        + "    def __exit__(self, et, ev, tb):\n"
+        + "        seen.append((et.__name__, ev.__class__.__name__))\n"
+        + "        return True\n"
+        + "for ET in (ValueError, KeyError):\n"
+        + "    with CM():\n        raise ET('x')\n"
+        + "result = seen\n";
+    assert_vm_value_matches_host(setup, body, "exec", "result");
+}
+
+# Regression (TODO item 18): del on a property routes through fdel; a property
+# without a deleter raises AttributeError instead of silently deleting.
+test "vm: property deleter invoked by del attr" {
+    setup = "";
+    body = "gone = []\n"
+        + "class T1:\n"
+        + "    @property\n"
+        + "    def x(self): return 1\n"
+        + "    @x.deleter\n"
+        + "    def x(self): gone.append('del')\n"
+        + "o = T1()\n"
+        + "del o.x\n"
+        + "result = gone\n";
+    assert_vm_value_matches_host(setup, body, "exec", "result");
+}
+
+test "vm: del on property without deleter raises AttributeError" {
+    setup = "";
+    body = "class T2:\n"
+        + "    @property\n"
+        + "    def x(self): return 1\n"
+        + "del T2().x\n";
+    host_exc = host_raises(setup, body);
+    assert host_exc is not None;
+    ns: dict[str, PyObj] = {};
+    out = jac_run_oracle(setup, body, "exec", ns);
+    assert is_error(out);
+    err = out as PyError;
+    assert err.exception.type_name == (host_exc[0] as str);
 }
 
 # vm-opcode: OP_LOAD_COMMON_CONSTANT
@@ -1014,4 +1108,50 @@ test "vm: POP_JUMP_IF_NONE emitted for is not None test" {
     assert not is_error(co);
     assert isinstance(co, PyCode);
     assert code_has_opcode(co as PyCode, OP_POP_JUMP_IF_NONE);
+}
+
+# Lane F regression: an exception raised by a HOST call (json.loads) must
+# carry its original args tuple into guest code -- the old bridge collapsed
+# the live exception to (type_name, message) and guests saw e.args == ().
+test "vm: host-raised exception keeps original args" {
+    setup = "";
+    body = (
+        "import json\n"
+        "try:\n"
+        "    json.loads('{bad json')\n"
+        "except Exception as e:\n"
+        "    result = (type(e).__name__, e.args)\n"
+    );
+    ns: dict[str, PyObj] = {};
+    out = jac_run_oracle(setup, body, "exec", ns);
+    assert not is_error(out);
+    jac_val = to_host(ns["result"]) as tuple;
+    assert (jac_val[0] as str) == "JSONDecodeError";
+    assert len(jac_val[1]) == 1;
+}
+
+# Lane F regression: a module-body failure raised by a HOST call surfaces at
+# the guest->host boundary as the ORIGINAL exception object (real class,
+# real __module__), not a synthesized same-name mint from ceval.
+test "vm: module-boundary re-raise preserves original host exception" {
+    src = (
+        "try:\n"
+        "    1/0\n"
+        "except ZeroDivisionError:\n"
+        "    import json\n"
+        "    json.loads('{bad json')\n"
+    );
+    co = unmarshal(host_compile_marshal(src, "<lane-f>", "exec", 0));
+    caught: any = None;
+    try {
+        exec_module(co);
+    } except BaseException as boundary_exc {
+        caught = boundary_exc;
+    }
+    assert caught is not None;
+    exc = caught as BaseException;
+    assert type(exc).__name__ == "JSONDecodeError";
+    # The synthesized fallback lives in the ceval bridge module; only the
+    # ORIGINAL object carries json.decoder.
+    assert exc.__module__ == "json.decoder";
 }

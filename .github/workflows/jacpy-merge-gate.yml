@@ -1,0 +1,63 @@
+# jac-py MERGE GATE — the desk's merge signal. Deliberately FAST + RELIABLE:
+# only checks that need no jac binary (the dev-jac build compiles the whole
+# compiler from source and HANGS the hosted runner). Heavy jac-test suites live
+# in the nightly readiness run, not here. Runs in ~2 min, green on tip.
+name: jac-py merge gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [jac-python]
+
+concurrency:
+  group: jacpy-merge-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  merge-gate:
+    name: jac-py merge gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up pinned CPython 3.14.6
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.6"
+      - name: Pin CPython reference checkout
+        run: python3 jac-py/tools/fetch_cpython_reference.py
+      - name: P4 import boundary gate
+        run: python3 jac-py/tools/p4_import_gate.py
+      - name: Token model regeneration gate
+        run: python3 jac-py/tools/tokens2jac.py --check
+      - name: grammar2jac check
+        run: python3 jac-py/tools/grammar2jac.py --check
+      - name: grammar2jac tests
+        run: python3 -m unittest jac-py/tools/test_grammar2jac.py
+      - name: clinic2jac check
+        run: python3 jac-py/tools/clinic2jac.py --check
+      - name: clinic2jac tests
+        run: python3 -m unittest jac-py/tools/test_clinic2jac.py
+      - name: opcode_meta2jac check
+        run: python3 jac-py/tools/opcode_meta2jac.py --check
+      - name: VM opcode fixture coverage gate (non-blocking)
+        continue-on-error: true
+        run: python3 jac-py/tools/vm_opcode_fixtures.py --check
+      - name: Band 6/7 CPython oracle goldens round-trip
+        run: python3 jac-py/tools/check_oracle_goldens.py
+      - name: P1 corpus lift + Tier-B density gate
+        run: python3 -m unittest jac-py/tools/test_p1_corpus_gate.py
+      - name: P2 corpus lift + Tier-B density gate
+        run: python3 -m unittest jac-py/tools/test_p2_corpus_gate.py
+      - name: T8 acceptance validation
+        run: python3 -m unittest jac-py/tools/test_t8_accept.py jac-py/tools/test_t8_driver.py
+      - name: Conformance manifest drift check
+        run: git diff --exit-code jac-py/tests/conformance_manifest.json
+      - name: P3 import cycle gate (non-blocking)
+        continue-on-error: true
+        run: python3 jac-py/tools/p3_import_cycle_gate.py
+      - name: opcode_meta2jac Phase 3 tests (non-blocking)
+        continue-on-error: true
+        run: python3 -m unittest jac-py/tools/test_opcode_meta2jac.py

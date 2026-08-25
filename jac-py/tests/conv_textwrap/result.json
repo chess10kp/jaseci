@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_textwrap/conv_textwrap_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:41:42",
+  "hashes": {
+    "pins_jac": "b55b53c97c564138b071ec12e8d8ea52de21218850feee27dceb3e4029ac8115",
+    "conversion_json": "4e270008056654248db5fed1133dc350388d7d8699e2f6962f6acfb7ce212207",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "textwrap",
+  "status": "passed",
+  "timed_out": false,
+  "counts": {
+    "converted": 68,
+    "runnable": 48,
+    "green": 48,
+    "quarantined": 20,
+    "failed": 0,
+    "infra_failed": 0
+  },
+  "failures": []
+}

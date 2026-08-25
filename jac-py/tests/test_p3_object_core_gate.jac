@@ -45,7 +45,7 @@ def _wave_spec(manifest: dict, stem: str) -> dict {
             return spec;
         }
     }
-    assert False , f"missing c2jac_objects_wave entry {stem!r}";
+    raise ValueError(f"missing c2jac_objects_wave entry {stem!r}");
 }
 
 
@@ -97,10 +97,9 @@ test "P3 manifest: Layer-1 entries gated with honest skip counts (P3.1b)" {
         assert (spec["status"] as str) == "gated";
         assert (spec["gate"] as str) == "P3.1b";
         baseline = spec["baseline"] as dict;
-        assert (baseline["failed"] as int) >= 0;
+        assert (baseline["failed"] as int) == 0;
         assert (baseline["errored"] as int) == 0;
         assert (baseline["passed"] as int) > 0;
-        assert (baseline["skipped"] as int) >= 0;
     }
     for stem in expected_stems {
         assert stem in seen;
@@ -850,7 +849,11 @@ test "P3 manifest: runtime_probe wired for every lift stem (M11)" {
         assert (baseline["failed"] as int) == 0 , stem;
         assert (baseline["passed"] as int) > 0 , stem;
         mod = probe["jacpython_module"] as str;
-        assert os.path.isfile(os.path.join(JACPYTHON_DIR, mod)) , mod;
+        mod_path = os.path.join(JACPYTHON_DIR, mod);
+        if not os.path.isfile(mod_path) {
+            mod_path = os.path.join(REPO_ROOT, mod);
+        }
+        assert os.path.isfile(mod_path) , mod;
     }
 }
 

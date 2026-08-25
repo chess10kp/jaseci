@@ -1,0 +1,195 @@
+#+title: jac-python Decision Log
+#+subtitle: Every meaningful architecture choice: decision, context, options, tradeoff, reversal condition
+#+updated: <2026-08-22 Fri>
+
+Every meaningful architecture choice gets an entry here. Each entry has five
+fields:
+
+- *Decision* — what we chose, stated affirmatively.
+- *Context* — the forces and constraints that made this a real choice.
+- *Options considered* — the realistic alternatives (not strawmen).
+- *Tradeoff* — what we give up by choosing this.
+- *Reversal condition* — the observable evidence that would justify reopening
+  the decision. No reversal condition = not a decision, a preference.
+
+Entries are append-only; superseded entries stay with a =SUPERSEDED-BY= link.
+Format mirrors the Jackal decision log (=jackal/docs/decisions.org=); this
+file is the jac-python-native ledger. (Reviewer finding F1 pointed at
+Jackal's D23 as "the ledger BrightDragon used"; D23 is a Jackal layout-engine
+entry in that repo, so this native ledger was created instead of writing
+jac-python deviations into another project.)
+
+* Index
+
+| ID  | Decision                                                        | Status |
+|-----+-----------------------------------------------------------------+--------|
+| D01 | itertools combinatorics allocate one result tuple per next()    | Active |
+
+* D01 — itertools combinatorics allocate one result tuple per next()
+
+**Decision**
+The wave-12 product/permutations/combinations/combinations_with_replacement
+ports (~jac-py/jacpython/itertoolsmodule.jac~) build and return a *new
+tuple object* from every ~__next__~ call rather than reusing one result
+tuple. Behavior is pinned by =test "wave12 combinatorics results match host
+identity semantics"= in ~jac-py/tests/test_itertools_facade_parity.jac~.
+
+**Context**
+A reviewer finding claimed CPython mutates ONE result tuple in place across
+=next()= calls (held results silently rewritten), making fresh-tuple ports
+observably divergent. *That premise does not reproduce on the pinned host*
+(verified against itertools on 3.14): each iterator keeps its own reference
+to the current result tuple (~lz->result~ / ~co->result~ / &c.), so its
+=_PyObject_IsUniquelyReferenced= guard is never true while a caller holds a
+result, and CPython takes the copy path too. Observed on host:
+=t1 is t2 == False= for all four types, held tuples stay stable after
+further iteration. The port therefore matches host observable semantics
+with the simpler allocation strategy; the pin locks both sides agreeing.
+
+**Options considered**
+1. Fresh tuple per call — chosen: matches observed host behavior exactly;
+   simple; no unique-reference machinery needed.
+2. In-place reuse behind a VM-level unique-reference check — rejected for
+   now: needs ceval/object-core support (~_PyObject_IsUniquelyReferenced~
+   equivalent) that does not exist yet, for zero observable-behavior gain
+   over option 1 today.
+3. Treat the reviewer premise as fact and emulate in-place mutation in user
+   Jac — rejected: impossible without mutable tuples, and would have made
+   the port *diverge* from the verified host behavior.
+
+**Tradeoff**
+Allocation per element where CPython amortizes reuse when its guard ever
+does fire (e.g., intermediate frames where the caller drops its reference).
+Purely a memory/CPU profile difference; no observable semantics gap.
+
+**Reversal condition**
+If a differential test ever shows host handing out the same tuple identity
+across =next()= calls while a caller holds it (a CPython change to the
+stored-result refcounting), or if the VM gains mutable tuples plus a
+unique-reference primitive making zero-allocation reuse profitable,
+revisit: flip to guarded reuse, keep the pin asserting parity with whatever
+the host then does, and mark this entry =SUPERSEDED=.
+
+* D02 -- array facade: three documented host divergences
+:PROPERTIES:
+:ID: wave14-array-divergences
+:END:
+
+**Decision**
+Ship the wave-14 array facade with three known, pinned deviations from
+host CPython 3.14 =array=, each documented in code rather than emulated:
+1. =buffer_info()[0]= (data address) returns 0 — the Jac runtime exposes
+   no raw pointer; the (address, length) tuple shape is preserved with a
+   sentinel address so structural consumers keep working.
+2. The facade does not emit the host's DeprecationWarning for the ='u'=
+   typecode. Warning emission is a host-runner concern; value semantics
+   are fully ported and parity-tested (with host-side warning suppressed
+   in the test harness).
+3. Iterator invalidation-on-resize is untested (host invalidates live
+   array iterators on mutation); current implementation snapshots
+   length at iterator creation.
+
+**Context**
+CPython's array module leaks C-level details (raw addresses, warning
+side channels, iterator invalidation hooks) that have no equivalent in
+the Jac runtime substrate.
+
+**Options considered**
+1. Emulate each behavior faithfully — rejected: requires runtime
+   primitives (raw pointers, warning plumbing, iterator registries)
+   outside Jac's current expressible surface, for edge-case fidelity.
+2. Document + pin as tracked deviations with reversal conditions —
+   chosen.
+3. Omit the affected APIs entirely — rejected: silently narrows the
+   stdlib surface and breaks import-compatibility for real code.
+
+**Tradeoff**
+Byte/identity-level observability differs from host in the three cases
+above. Structural and value semantics — the surface real programs use —
+are bit-exact per the parity suite.
+
+**Reversal condition**
+If the VM gains raw-address introspection, a warnings subsystem, or
+registered-iterator invalidation, revisit each item: emit the host
+behavior, flip pins to two-sided parity, mark this entry =SUPERSEDED=.
+
+* D03 -- waves 17-19 facades: documented divergences
+:PROPERTIES:
+:ID: wave17-19-divergences
+:END:
+
+**Decision**
+Ship _csv, _random, and _collections facades with the following pinned
+deviations, each documented in facade headers:
+1. Module exception types (csv.Error) raise as plain Exception with
+   byte-exact messages (facade policy until facade-defined exception
+   types are supported).
+2. Deque uses a flat list + state counter instead of CPython's 64-slot
+   block links; iterator type identity (_P2DequeIter vs
+   collections._deque_iterator) and __sizeof__ differ.
+3. defaultdict stores parallel lists with == lookup instead of hashkey
+   buckets; heap-type subclass dispatch in copy() unmodeled.
+4. csv Sniffer/Dialect registry pre-seeding absent (lives in Lib/csv.py,
+   out of accelerator scope).
+
+**Context**
+These follow from Jac-runtime substrate limits and the facade policy
+established in D01/D02; observable value semantics are host-exact per
+parity suites.
+
+**Options considered**
+1. Emulate internals faithfully (block links, hash buckets, exception
+   hierarchy) — rejected: needs runtime primitives not yet expressible.
+2. Document + pin with reversal conditions — chosen.
+
+**Tradeoff**
+Memory profile and introspection-level identity differ; value/error
+semantics bit-exact.
+
+**Reversal condition**
+When ceval wires PyObj/PyDict-backed storage for facade containers or
+facade-defined exceptions land, migrate each item, flip parity pins to
+two-sided, mark =SUPERSEDED=.
+
+* D04 -- TODO item 57 trace: builtin str hash bypasses pyhash via launcher init
+:PROPERTIES:
+:ID: item57-str-hash-trace
+:END:
+
+**Decision**
+Record the completed fix-spec trace for TODO item 57 (previously "fix-spec
+pending from trace"). The jac-py dispatch layer is CORRECT and host-exact:
+builtin hash() -> py_hash() -> hash_dispatch.hash_element() ->
+str_hash_obj() -> pyhash.str_hash_text (SipHash-1-3 with PYTHONHASHSEED
+keys). In-guest pyhash.str_hash_text("spam") = -7643603308804133256
+(host-exact under seed 0).
+
+**Root cause**
+Guest modules exec as CPython bytecode on the launcher's embedded
+interpreter. The hermetic init (jac/launcher/embed.zig initInterpreter,
+use_environment=0) never applies PYTHONHASHSEED, so the builtin hash() is
+the embedded interpreter's random-secret CPython hash. Proof: in-guest
+hash(s) == s.__hash__() is True (real CPython str); "" hashes to 0 on
+both paths only because empty-buffer hashing is key-independent.
+
+**Options considered**
+1. Launcher-side: read PYTHONHASHSEED pre-init, pass as PyInitConfig
+   value — preserves hermeticity contract, fixes every route including
+   container-key consistency in one place. CHOSEN DIRECTION.
+2. na_ir_gen emit_hash lowering for JacStr — narrower; leaves container
+   key consistency split across two hashing regimes.
+3. Dispatch-layer workaround — rejected outright: dispatch is already
+   correct; a workaround would corrupt correct code.
+
+**Tradeoff**
+Option 1 touches the Zig launcher and must keep the hermeticity guarantee
+(explicit env read at init, not ambient use_environment).
+
+**Reversal condition**
+If PyInitConfig cannot carry the seed on the pinned interpreter version,
+fall back to option 2 for JacStr and document container-key divergence.
+
+Regression pins landed in jac-py/tests/test_pyhash_secret.jac (seed-0
+goldens incl. UTF-16-lane strings, triple-verified against an independent
+siphash13 reference). Wave-18 auto-arming goldens activate once option 1
+lands.

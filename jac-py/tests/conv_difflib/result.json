@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "f5e921e06eb9d933596b6431443728caa01d1afd",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_difflib/conv_difflib_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:44:11",
+  "hashes": {
+    "pins_jac": "fd763939aaf0d9e32a329a826ed15455eadc487c142574c9edd2c4a9958fe7f1",
+    "conversion_json": "0112e2ae1aa8e0e6184d840691788535515231fa7f8d15685cd1a9042a68d760",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "difflib",
+  "status": "failed",
+  "timed_out": true,
+  "counts": {
+    "converted": 38,
+    "runnable": 32,
+    "green": 25,
+    "quarantined": 6,
+    "failed": 7,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestWithAscii.test_bjunk",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'too many positional arguments'\">"
+    },
+    {
+      "id": "TestSFbugs.test_mdiff_catch_stop_iteration",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'in <string>\\' requires string as left operand, not Differ\"'>"
+    },
+    {
+      "id": "TestSFpatches.test_html_diff",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'findfile' from '<unknown>'\">"
+    },
+    {
+      "id": "TestSFpatches.test_recursion_limit",
+      "status": "fail",
+      "classification": "TIMEOUT",
+      "detail": "jac run hit 60s cap"
+    },
+    {
+      "id": "TestSFpatches.test_make_file_default_charset",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'in <string>\\' requires string as left operand, not HtmlDiff\"'>"
+    },
+    {
+      "id": "TestSFpatches.test_make_file_iso88591_charset",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'in <string>\\' requires string as left operand, not HtmlDiff\"'>"
+    },
+    {
+      "id": "TestSFpatches.test_make_file_usascii_charset_with_nonascii_input",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'in <string>\\' requires string as left operand, not HtmlDiff\"'>"
+    }
+  ]
+}

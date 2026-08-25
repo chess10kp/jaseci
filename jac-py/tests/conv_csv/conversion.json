@@ -1,0 +1,751 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_csv.py",
+    "-o",
+    "/var/tmp/worker6-conv-csv-3483899/jac-py/tests/conv_csv",
+    "--name",
+    "conv_csv"
+  ],
+  "generated_at": "2026-08-25T14:24:56",
+  "hashes": {
+    "pins_jac": "73337f51e2ae8a4392d552cc0c9aaea42ca403b0d9612275026b19f6d55117f6"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_csv.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "csv",
+  "pins_file": "conv_csv_pins.jac",
+  "pins": [
+    {
+      "ident": "Test_Csv.test_reader_arg_valid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\nclass BadIterable:\n\n    def __iter__(self):\n        raise OSError\n\ndef _test_arg_valid(ctor, arg):\n    ctor(arg)\n    try:\n        ctor()\n    except TypeError:\n        pass\n    try:\n        ctor(*(None,))\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), bad_attr=0)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='^^')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='^^')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='^^')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg, 'foo'))\n    except csv.Error:\n        pass\n    try:\n        ctor(*(arg,), delimiter=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), escapechar=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quotechar=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), lineterminator=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), lineterminator=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=csv.QUOTE_ALL, quotechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=csv.QUOTE_ALL, quotechar=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=csv.QUOTE_NONE, quotechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='\\n')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='\\n')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='\\n')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='\\r')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='\\r')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='\\r')\n    except ValueError:\n        pass\n    ctor(arg, delimiter=' ')\n    ctor(arg, escapechar=' ')\n    ctor(arg, quotechar=' ')\n    ctor(arg, delimiter='\\t', skipinitialspace=True)\n    ctor(arg, escapechar='\\t', skipinitialspace=True)\n    ctor(arg, quotechar='\\t', skipinitialspace=True)\n    ctor(arg, delimiter=' ', skipinitialspace=True)\n    try:\n        ctor(*(arg,), escapechar=' ', skipinitialspace=True)\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar=' ', skipinitialspace=True)\n    except ValueError:\n        pass\n    ctor(arg, delimiter='^')\n    ctor(arg, escapechar='^')\n    ctor(arg, quotechar='^')\n    try:\n        ctor(*(arg,), delimiter='^', escapechar='^')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='^', quotechar='^')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='^', quotechar='^')\n    except ValueError:\n        pass\n    ctor(arg, delimiter='\\x85')\n    ctor(arg, escapechar='\\x85')\n    ctor(arg, quotechar='\\x85')\n    ctor(arg, lineterminator='\\x85')\n    try:\n        ctor(*(arg,), delimiter='\\x85', lineterminator='\\x85')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='\\x85', lineterminator='\\x85')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='\\x85', lineterminator='\\x85')\n    except ValueError:\n        pass\n\ndef _t():\n    _test_arg_valid(csv.reader, [])\n    try:\n        csv.reader(*(BadIterable(),))\n    except OSError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_writer_arg_valid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _test_arg_valid(ctor, arg):\n    ctor(arg)\n    try:\n        ctor()\n    except TypeError:\n        pass\n    try:\n        ctor(*(None,))\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), bad_attr=0)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='^^')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='^^')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='^^')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg, 'foo'))\n    except csv.Error:\n        pass\n    try:\n        ctor(*(arg,), delimiter=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), escapechar=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quotechar=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), lineterminator=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), lineterminator=1)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=csv.QUOTE_ALL, quotechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=csv.QUOTE_ALL, quotechar=None)\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), quoting=csv.QUOTE_NONE, quotechar='')\n    except TypeError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='\\n')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='\\n')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='\\n')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='\\r')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='\\r')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='\\r')\n    except ValueError:\n        pass\n    ctor(arg, delimiter=' ')\n    ctor(arg, escapechar=' ')\n    ctor(arg, quotechar=' ')\n    ctor(arg, delimiter='\\t', skipinitialspace=True)\n    ctor(arg, escapechar='\\t', skipinitialspace=True)\n    ctor(arg, quotechar='\\t', skipinitialspace=True)\n    ctor(arg, delimiter=' ', skipinitialspace=True)\n    try:\n        ctor(*(arg,), escapechar=' ', skipinitialspace=True)\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar=' ', skipinitialspace=True)\n    except ValueError:\n        pass\n    ctor(arg, delimiter='^')\n    ctor(arg, escapechar='^')\n    ctor(arg, quotechar='^')\n    try:\n        ctor(*(arg,), delimiter='^', escapechar='^')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), delimiter='^', quotechar='^')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='^', quotechar='^')\n    except ValueError:\n        pass\n    ctor(arg, delimiter='\\x85')\n    ctor(arg, escapechar='\\x85')\n    ctor(arg, quotechar='\\x85')\n    ctor(arg, lineterminator='\\x85')\n    try:\n        ctor(*(arg,), delimiter='\\x85', lineterminator='\\x85')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), escapechar='\\x85', lineterminator='\\x85')\n    except ValueError:\n        pass\n    try:\n        ctor(*(arg,), quotechar='\\x85', lineterminator='\\x85')\n    except ValueError:\n        pass\n\ndef _t():\n    _test_arg_valid(csv.writer, StringIO())\n\n    class BadWriter:\n\n        @property\n        def write(self):\n            raise OSError\n    try:\n        csv.writer(*(BadWriter(),))\n    except OSError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_reader_attrs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _test_default_attrs(ctor, *args):\n    obj = ctor(*args)\n    assert obj.dialect.delimiter == ',', ('assertEqual', obj.dialect.delimiter, ',')\n    assert obj.dialect.doublequote is True, ('assertIs', obj.dialect.doublequote, True)\n    assert obj.dialect.escapechar == None, ('assertEqual', obj.dialect.escapechar, None)\n    assert obj.dialect.lineterminator == '\\r\\n', ('assertEqual', obj.dialect.lineterminator, '\\r\\n')\n    assert obj.dialect.quotechar == '\"', ('assertEqual', obj.dialect.quotechar, '\"')\n    assert obj.dialect.quoting == csv.QUOTE_MINIMAL, ('assertEqual', obj.dialect.quoting, csv.QUOTE_MINIMAL)\n    assert obj.dialect.skipinitialspace is False, ('assertIs', obj.dialect.skipinitialspace, False)\n    assert obj.dialect.strict is False, ('assertIs', obj.dialect.strict, False)\n    try:\n        delattr(*(obj.dialect, 'delimiter'))\n    except AttributeError:\n        pass\n    try:\n        setattr(*(obj.dialect, 'delimiter', ':'))\n    except AttributeError:\n        pass\n    try:\n        delattr(*(obj.dialect, 'quoting'))\n    except AttributeError:\n        pass\n    try:\n        setattr(*(obj.dialect, 'quoting', None))\n    except AttributeError:\n        pass\n\ndef _t():\n    _test_default_attrs(csv.reader, [])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_writer_attrs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _test_default_attrs(ctor, *args):\n    obj = ctor(*args)\n    assert obj.dialect.delimiter == ',', ('assertEqual', obj.dialect.delimiter, ',')\n    assert obj.dialect.doublequote is True, ('assertIs', obj.dialect.doublequote, True)\n    assert obj.dialect.escapechar == None, ('assertEqual', obj.dialect.escapechar, None)\n    assert obj.dialect.lineterminator == '\\r\\n', ('assertEqual', obj.dialect.lineterminator, '\\r\\n')\n    assert obj.dialect.quotechar == '\"', ('assertEqual', obj.dialect.quotechar, '\"')\n    assert obj.dialect.quoting == csv.QUOTE_MINIMAL, ('assertEqual', obj.dialect.quoting, csv.QUOTE_MINIMAL)\n    assert obj.dialect.skipinitialspace is False, ('assertIs', obj.dialect.skipinitialspace, False)\n    assert obj.dialect.strict is False, ('assertIs', obj.dialect.strict, False)\n    try:\n        delattr(*(obj.dialect, 'delimiter'))\n    except AttributeError:\n        pass\n    try:\n        setattr(*(obj.dialect, 'delimiter', ':'))\n    except AttributeError:\n        pass\n    try:\n        delattr(*(obj.dialect, 'quoting'))\n    except AttributeError:\n        pass\n    try:\n        setattr(*(obj.dialect, 'quoting', None))\n    except AttributeError:\n        pass\n\ndef _t():\n    _test_default_attrs(csv.writer, StringIO())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_reader_kw_attrs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _test_kw_attrs(ctor, *args):\n    kwargs = dict(delimiter=':', doublequote=False, escapechar='\\\\', lineterminator='\\r', quotechar='*', quoting=csv.QUOTE_NONE, skipinitialspace=True, strict=True)\n    obj = ctor(*args, **kwargs)\n    assert obj.dialect.delimiter == ':', ('assertEqual', obj.dialect.delimiter, ':')\n    assert obj.dialect.doublequote is False, ('assertIs', obj.dialect.doublequote, False)\n    assert obj.dialect.escapechar == '\\\\', ('assertEqual', obj.dialect.escapechar, '\\\\')\n    assert obj.dialect.lineterminator == '\\r', ('assertEqual', obj.dialect.lineterminator, '\\r')\n    assert obj.dialect.quotechar == '*', ('assertEqual', obj.dialect.quotechar, '*')\n    assert obj.dialect.quoting == csv.QUOTE_NONE, ('assertEqual', obj.dialect.quoting, csv.QUOTE_NONE)\n    assert obj.dialect.skipinitialspace is True, ('assertIs', obj.dialect.skipinitialspace, True)\n    assert obj.dialect.strict is True, ('assertIs', obj.dialect.strict, True)\n\ndef _t():\n    _test_kw_attrs(csv.reader, [])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_writer_kw_attrs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _test_kw_attrs(ctor, *args):\n    kwargs = dict(delimiter=':', doublequote=False, escapechar='\\\\', lineterminator='\\r', quotechar='*', quoting=csv.QUOTE_NONE, skipinitialspace=True, strict=True)\n    obj = ctor(*args, **kwargs)\n    assert obj.dialect.delimiter == ':', ('assertEqual', obj.dialect.delimiter, ':')\n    assert obj.dialect.doublequote is False, ('assertIs', obj.dialect.doublequote, False)\n    assert obj.dialect.escapechar == '\\\\', ('assertEqual', obj.dialect.escapechar, '\\\\')\n    assert obj.dialect.lineterminator == '\\r', ('assertEqual', obj.dialect.lineterminator, '\\r')\n    assert obj.dialect.quotechar == '*', ('assertEqual', obj.dialect.quotechar, '*')\n    assert obj.dialect.quoting == csv.QUOTE_NONE, ('assertEqual', obj.dialect.quoting, csv.QUOTE_NONE)\n    assert obj.dialect.skipinitialspace is True, ('assertIs', obj.dialect.skipinitialspace, True)\n    assert obj.dialect.strict is True, ('assertIs', obj.dialect.strict, True)\n\ndef _t():\n    _test_kw_attrs(csv.writer, StringIO())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_reader_dialect_attrs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _test_dialect_attrs(ctor, *args):\n\n    class dialect:\n        delimiter = '-'\n        doublequote = False\n        escapechar = '^'\n        lineterminator = '$'\n        quotechar = '#'\n        quoting = csv.QUOTE_ALL\n        skipinitialspace = True\n        strict = False\n    args = args + (dialect,)\n    obj = ctor(*args)\n    assert obj.dialect.delimiter == '-', ('assertEqual', obj.dialect.delimiter, '-')\n    assert obj.dialect.doublequote is False, ('assertIs', obj.dialect.doublequote, False)\n    assert obj.dialect.escapechar == '^', ('assertEqual', obj.dialect.escapechar, '^')\n    assert obj.dialect.lineterminator == '$', ('assertEqual', obj.dialect.lineterminator, '$')\n    assert obj.dialect.quotechar == '#', ('assertEqual', obj.dialect.quotechar, '#')\n    assert obj.dialect.quoting == csv.QUOTE_ALL, ('assertEqual', obj.dialect.quoting, csv.QUOTE_ALL)\n    assert obj.dialect.skipinitialspace is True, ('assertIs', obj.dialect.skipinitialspace, True)\n    assert obj.dialect.strict is False, ('assertIs', obj.dialect.strict, False)\n\ndef _t():\n    _test_dialect_attrs(csv.reader, [])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_writer_dialect_attrs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _test_dialect_attrs(ctor, *args):\n\n    class dialect:\n        delimiter = '-'\n        doublequote = False\n        escapechar = '^'\n        lineterminator = '$'\n        quotechar = '#'\n        quoting = csv.QUOTE_ALL\n        skipinitialspace = True\n        strict = False\n    args = args + (dialect,)\n    obj = ctor(*args)\n    assert obj.dialect.delimiter == '-', ('assertEqual', obj.dialect.delimiter, '-')\n    assert obj.dialect.doublequote is False, ('assertIs', obj.dialect.doublequote, False)\n    assert obj.dialect.escapechar == '^', ('assertEqual', obj.dialect.escapechar, '^')\n    assert obj.dialect.lineterminator == '$', ('assertEqual', obj.dialect.lineterminator, '$')\n    assert obj.dialect.quotechar == '#', ('assertEqual', obj.dialect.quotechar, '#')\n    assert obj.dialect.quoting == csv.QUOTE_ALL, ('assertEqual', obj.dialect.quoting, csv.QUOTE_ALL)\n    assert obj.dialect.skipinitialspace is True, ('assertIs', obj.dialect.skipinitialspace, True)\n    assert obj.dialect.strict is False, ('assertIs', obj.dialect.strict, False)\n\ndef _t():\n    _test_dialect_attrs(csv.writer, StringIO())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_write_arg_valid",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_write_bigfield",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_write_quoting",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_write_escape",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_write_lineterminator",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    for lineterminator in ('\\r\\n', '\\n', '\\r', '!@#', '\\x00'):\n        with StringIO() as sio:\n            writer = csv.writer(sio, lineterminator=lineterminator)\n            writer.writerow(['a', 'b'])\n            writer.writerow([1, 2])\n            writer.writerow(['\\r', '\\n'])\n            assert sio.getvalue() == f'a,b{lineterminator}1,2{lineterminator}\"\\r\",\"\\n\"{lineterminator}', ('assertEqual', sio.getvalue(), f'a,b{lineterminator}1,2{lineterminator}\"\\r\",\"\\n\"{lineterminator}')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_write_iterable",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_writerows",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_writerows_with_none",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_write_empty_fields",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_write_empty_fields_space_delimiter",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_writerows_errors",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_read_eol",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "Test_Csv.test_read_nul",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _read_test(input, expect, **kwargs):\n    reader = csv.reader(input, **kwargs)\n    result = list(reader)\n    assert result == expect, ('assertEqual', result, expect)\n\ndef _t():\n    _read_test(['\\x00'], [['\\x00']])\n    _read_test(['a,\\x00b,c'], [['a', '\\x00b', 'c']])\n    _read_test(['a,b\\x00,c'], [['a', 'b\\x00', 'c']])\n    _read_test(['a,b\\\\\\x00,c'], [['a', 'b\\x00', 'c']], escapechar='\\\\')\n    _read_test(['a,\"\\x00b\",c'], [['a', '\\x00b', 'c']])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_read_delimiter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _read_test(input, expect, **kwargs):\n    reader = csv.reader(input, **kwargs)\n    result = list(reader)\n    assert result == expect, ('assertEqual', result, expect)\n\ndef _t():\n    _read_test(['a,b,c'], [['a', 'b', 'c']])\n    _read_test(['a;b;c'], [['a', 'b', 'c']], delimiter=';')\n    _read_test(['a\\x00b\\x00c'], [['a', 'b', 'c']], delimiter='\\x00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_read_escape",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _read_test(input, expect, **kwargs):\n    reader = csv.reader(input, **kwargs)\n    result = list(reader)\n    assert result == expect, ('assertEqual', result, expect)\n\ndef _t():\n    _read_test(['a,\\\\b,c'], [['a', 'b', 'c']], escapechar='\\\\')\n    _read_test(['a,b\\\\,c'], [['a', 'b,c']], escapechar='\\\\')\n    _read_test(['a,\"b\\\\,c\"'], [['a', 'b,c']], escapechar='\\\\')\n    _read_test(['a,\"b,\\\\c\"'], [['a', 'b,c']], escapechar='\\\\')\n    _read_test(['a,\"b,c\\\\\"\"'], [['a', 'b,c\"']], escapechar='\\\\')\n    _read_test(['a,\"b,c\"\\\\'], [['a', 'b,c\\\\']], escapechar='\\\\')\n    _read_test(['a,^b,c'], [['a', 'b', 'c']], escapechar='^')\n    _read_test(['a,\\x00b,c'], [['a', 'b', 'c']], escapechar='\\x00')\n    _read_test(['a,\\\\b,c'], [['a', '\\\\b', 'c']], escapechar=None)\n    _read_test(['a,\\\\b,c'], [['a', '\\\\b', 'c']])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_read_skipinitialspace",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', [['', '', '']], [[None, None, None]])"
+    },
+    {
+      "ident": "Test_Csv.test_read_space_delimiter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _read_test(input, expect, **kwargs):\n    reader = csv.reader(input, **kwargs)\n    result = list(reader)\n    assert result == expect, ('assertEqual', result, expect)\n\ndef _t():\n    _read_test(['a   b', '  a  ', '  ', ''], [['a', '', '', 'b'], ['', '', 'a', '', ''], ['', '', ''], []], delimiter=' ', skipinitialspace=False)\n    _read_test(['a   b', '  a  ', '  ', ''], [['a', 'b'], ['a', ''], [''], []], delimiter=' ', skipinitialspace=True)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_read_linenum",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n    r = csv.reader(['line,1', 'line,2', 'line,3'])\n    assert r.line_num == 0, ('assertEqual', r.line_num, 0)\n    next(r)\n    assert r.line_num == 1, ('assertEqual', r.line_num, 1)\n    next(r)\n    assert r.line_num == 2, ('assertEqual', r.line_num, 2)\n    next(r)\n    assert r.line_num == 3, ('assertEqual', r.line_num, 3)\n    try:\n        next(*(r,))\n    except StopIteration:\n        pass\n    assert r.line_num == 3, ('assertEqual', r.line_num, 3)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_Csv.test_roundtrip_quoteed_newlines",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_roundtrip_escaped_unquoted_newlines",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "Test_Csv.test_reader_reentrant_iterator",
+      "status": "quarantined",
+      "reason": "harness-error:exit -11"
+    },
+    {
+      "ident": "TestDialectRegistry.test_registry_badargs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n    try:\n        csv.list_dialects(*(None,))\n    except TypeError:\n        pass\n    try:\n        csv.get_dialect()\n    except TypeError:\n        pass\n    try:\n        csv.get_dialect(*(None,))\n    except csv.Error:\n        pass\n    try:\n        csv.get_dialect(*('nonesuch',))\n    except csv.Error:\n        pass\n    try:\n        csv.unregister_dialect()\n    except TypeError:\n        pass\n    try:\n        csv.unregister_dialect(*(None,))\n    except csv.Error:\n        pass\n    try:\n        csv.unregister_dialect(*('nonesuch',))\n    except csv.Error:\n        pass\n    try:\n        csv.register_dialect(*(None,))\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*(None, None))\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*('nonesuch', 0, 0))\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*('nonesuch',), badargument=None)\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*('nonesuch',), quoting=None)\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*([],))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDialectRegistry.test_incomplete_dialect",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n\n    class myexceltsv(csv.Dialect):\n        delimiter = '\\t'\n    try:\n        myexceltsv()\n    except csv.Error:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDialectRegistry.test_space_dialect",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectRegistry.test_dialect_apply",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectRegistry.test_copy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import copy\nimport csv\n\ndef _t():\n    for name in csv.list_dialects():\n        dialect = csv.get_dialect(name)\n        try:\n            copy.copy(*(dialect,))\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDialectRegistry.test_pickle",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\nimport pickle\n\ndef _t():\n    for name in csv.list_dialects():\n        dialect = csv.get_dialect(name)\n        for proto in range(pickle.HIGHEST_PROTOCOL + 1):\n            try:\n                pickle.dumps(*(dialect, proto))\n            except TypeError:\n                pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDialectExcel.test_single",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_simple",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_blankline",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_empty_fields",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_singlequoted",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_singlequoted_left_empty",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_singlequoted_right_empty",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_single_quoted_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quoted_quotes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_inline_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_inline_quotes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quotes_and_more",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_lone_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quote_and_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_space_and_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quoted",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quoted_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quoted_nl",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_dubious_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_null",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_single_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_simple_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quotes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_quote_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectExcel.test_newlines",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestEscapedExcel.test_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestEscapedExcel.test_read_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectUnix.test_simple_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectUnix.test_simple_reader",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestQuotedEscapedExcel.test_write_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestQuotedEscapedExcel.test_read_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_writeheader_return_value",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_write_simple_dict",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_write_multiple_dict_rows",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fileobj = StringIO()\n    writer = csv.DictWriter(fileobj, fieldnames=['f1', 'f2', 'f3'])\n    writer.writeheader()\n    assert fileobj.getvalue() == 'f1,f2,f3\\r\\n', ('assertEqual', fileobj.getvalue(), 'f1,f2,f3\\r\\n')\n    writer.writerows([{'f1': 1, 'f2': 'abc', 'f3': 'f'}, {'f1': 2, 'f2': 5, 'f3': 'xyz'}])\n    assert fileobj.getvalue() == 'f1,f2,f3\\r\\n1,abc,f\\r\\n2,5,xyz\\r\\n', ('assertEqual', fileobj.getvalue(), 'f1,f2,f3\\r\\n1,abc,f\\r\\n2,5,xyz\\r\\n')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_write_no_fields",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fileobj = StringIO()\n    try:\n        csv.DictWriter(*(fileobj,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_typo_in_extrasaction_raises_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fileobj = StringIO()\n    try:\n        csv.DictWriter(*(fileobj, ['f1', 'f2']), extrasaction='raised')\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_write_field_not_in_field_names_raise",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fileobj = StringIO()\n    writer = csv.DictWriter(fileobj, ['f1', 'f2'], extrasaction='raise')\n    dictrow = {'f0': 0, 'f1': 1, 'f2': 2, 'f3': 3}\n    try:\n        csv.DictWriter.writerow(*(writer, dictrow))\n    except ValueError:\n        pass\n    writer = csv.DictWriter(fileobj, ['f1', 'f2'], extrasaction='RAISE')\n    try:\n        csv.DictWriter.writerow(*(writer, dictrow))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_write_field_not_in_field_names_ignore",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fileobj = StringIO()\n    writer = csv.DictWriter(fileobj, ['f1', 'f2'], extrasaction='ignore')\n    dictrow = {'f0': 0, 'f1': 1, 'f2': 2, 'f3': 3}\n    csv.DictWriter.writerow(writer, dictrow)\n    assert fileobj.getvalue() == '1,2\\r\\n', ('assertEqual', fileobj.getvalue(), '1,2\\r\\n')\n    writer = csv.DictWriter(fileobj, ['f1', 'f2'], extrasaction='IGNORE')\n    csv.DictWriter.writerow(writer, dictrow)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_dict_reader_fieldnames_accepts_iter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fieldnames = ['a', 'b', 'c']\n    f = StringIO()\n    reader = csv.DictReader(f, iter(fieldnames))\n    assert reader.fieldnames == fieldnames, ('assertEqual', reader.fieldnames, fieldnames)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_dict_reader_fieldnames_accepts_list",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fieldnames = ['a', 'b', 'c']\n    f = StringIO()\n    reader = csv.DictReader(f, fieldnames)\n    assert reader.fieldnames == fieldnames, ('assertEqual', reader.fieldnames, fieldnames)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_dict_reader_set_fieldnames",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fieldnames = ['a', 'b', 'c']\n    f = StringIO()\n    reader = csv.DictReader(f)\n    assert reader.fieldnames is None, ('assertIsNone', reader.fieldnames)\n    reader.fieldnames = fieldnames\n    assert reader.fieldnames == fieldnames, ('assertEqual', reader.fieldnames, fieldnames)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_dict_writer_fieldnames_rejects_iter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fieldnames = ['a', 'b', 'c']\n    f = StringIO()\n    writer = csv.DictWriter(f, iter(fieldnames))\n    assert writer.fieldnames == fieldnames, ('assertEqual', writer.fieldnames, fieldnames)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_dict_writer_fieldnames_accepts_list",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    fieldnames = ['a', 'b', 'c']\n    f = StringIO()\n    writer = csv.DictWriter(f, fieldnames)\n    assert writer.fieldnames == fieldnames, ('assertEqual', writer.fieldnames, fieldnames)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_dict_reader_fieldnames_is_optional",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from io import StringIO\nimport csv\n\ndef _t():\n    f = StringIO()\n    reader = csv.DictReader(f, fieldnames=None)\n    assert reader.fieldnames is None, ('assertIsNone', reader.fieldnames)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_read_dict_fields",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_dict_no_fieldnames",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_dict_fieldnames_from_file",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_dict_fieldnames_chain",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_long",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_long_with_rest",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_long_with_rest_no_fieldnames",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_short",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDictFields.test_read_multi",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n    sample = ['2147483648,43.0e12,17,abc,def\\r\\n', '147483648,43.0e2,17,abc,def\\r\\n', '47483648,43.0,170,abc,def\\r\\n']\n    reader = csv.DictReader(sample, fieldnames='i1 float i2 s1 s2'.split())\n    assert next(reader) == {'i1': '2147483648', 'float': '43.0e12', 'i2': '17', 's1': 'abc', 's2': 'def'}, ('assertEqual', next(reader), {'i1': '2147483648', 'float': '43.0e12', 'i2': '17', 's1': 'abc', 's2': 'def'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_read_with_blanks",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n    reader = csv.DictReader(['1,2,abc,4,5,6\\r\\n', '\\r\\n', '1,2,abc,4,5,6\\r\\n'], fieldnames='1 2 3 4 5 6'.split())\n    assert next(reader) == {'1': '1', '2': '2', '3': 'abc', '4': '4', '5': '5', '6': '6'}, ('assertEqual', next(reader), {'1': '1', '2': '2', '3': 'abc', '4': '4', '5': '5', '6': '6'})\n    assert next(reader) == {'1': '1', '2': '2', '3': 'abc', '4': '4', '5': '5', '6': '6'}, ('assertEqual', next(reader), {'1': '1', '2': '2', '3': 'abc', '4': '4', '5': '5', '6': '6'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDictFields.test_read_semi_sep",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n    reader = csv.DictReader(['1;2;abc;4;5;6\\r\\n'], fieldnames='1 2 3 4 5 6'.split(), delimiter=';')\n    assert next(reader) == {'1': '1', '2': '2', '3': 'abc', '4': '4', '5': '5', '6': '6'}, ('assertEqual', next(reader), {'1': '1', '2': '2', '3': 'abc', '4': '4', '5': '5', '6': '6'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestArrayWrites.test_int_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestArrayWrites.test_double_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestArrayWrites.test_float_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestArrayWrites.test_char_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestDialectValidity.test_invalid_chars",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n\n    def create_invalid(field_name, value, **kwargs):\n\n        class mydialect(csv.Dialect):\n            delimiter = ','\n            quoting = csv.QUOTE_ALL\n            quotechar = '\"'\n            lineterminator = '\\r\\n'\n        setattr(mydialect, field_name, value)\n        for field_name, value in kwargs.items():\n            setattr(mydialect, field_name, value)\n        d = mydialect()\n    for field_name in ('delimiter', 'escapechar', 'quotechar'):\n        try:\n            create_invalid(*(field_name, ''))\n        except csv.Error:\n            pass\n        try:\n            create_invalid(*(field_name, 'abc'))\n        except csv.Error:\n            pass\n        try:\n            create_invalid(*(field_name, b'x'))\n        except csv.Error:\n            pass\n        try:\n            create_invalid(*(field_name, 5))\n        except csv.Error:\n            pass\n        try:\n            create_invalid(*(field_name, '\\n'))\n        except ValueError:\n            pass\n        try:\n            create_invalid(*(field_name, '\\r'))\n        except ValueError:\n            pass\n        if field_name != 'delimiter':\n            try:\n                create_invalid(*(field_name, ' '), skipinitialspace=True)\n            except ValueError:\n                pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSniffer.test_guess_quote_and_delimiter",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "TestUnicode.test_unicode_read",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "TestUnicode.test_unicode_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "ident": "KeyOrderingTest.test_ordered_dict_reader",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "MiscTestCase.test__all__",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "MiscTestCase.test_lazy_import",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "MiscTestCase.test_subclassable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import csv\n\ndef _t():\n\n    class Foo(csv.Error):\n        ...\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestLeaks.test_create_read",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "TestLeaks.test_create_write",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "TestLeaks.test_read",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "TestLeaks.test_write",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "MiscTestCase.test_disallow_instantiation",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "Test_Csv.test_read_oddinputs",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "ident": "Test_Csv.test_read_eof",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "ident": "Test_Csv.test_read_quoting",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "ident": "Test_Csv.test_read_bigfield",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "ident": "TestDialectRegistry.test_registry",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "TestDialectRegistry.test_register_kwargs",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "TestDialectRegistry.test_register_kwargs_override",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "TestDictFields.test_write_fields_not_in_fieldnames",
+      "reason": "unresolved-name:cx"
+    },
+    {
+      "ident": "TestDialectValidity.test_quoting",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "TestDialectValidity.test_delimiter",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "TestDialectValidity.test_escapechar",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "TestDialectValidity.test_lineterminator",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "TestSniffer.test_issue43625",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "ident": "TestSniffer.test_has_header_strings",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "ident": "TestSniffer.test_has_header",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "ident": "TestSniffer.test_has_header_regex_special_delimiter",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "ident": "TestSniffer.test_has_header_checks_20_rows",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "ident": "TestSniffer.test_sniff",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "ident": "TestSniffer.test_delimiters",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "ident": "TestSniffer.test_doublequote",
+      "reason": "unresolved-name:sample17"
+    }
+  ],
+  "counts": {
+    "extracted": 128,
+    "pinned": 34,
+    "quarantined": 94
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_generator_stop.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_generator_stop",
+    "--name",
+    "conv_generator_stop"
+  ],
+  "generated_at": "2026-08-24T14:33:05",
+  "hashes": {
+    "pins_jac": "9bcc5bbef1f1468f869038fe31ca23496e2dd8ed04c6c4f7c52708cd164fd6eb"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_generator_stop.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "generator_stop",
+  "pins_file": "conv_generator_stop_pins.jac",
+  "pins": [
+    {
+      "ident": "TestPEP479.test_stopiteration_wrapping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n\n    def f():\n        raise StopIteration\n\n    def g():\n        yield f()\n    try:\n        next(g())\n    except RuntimeError as _exc:\n        assert _re.search('generator raised StopIteration', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPEP479.test_stopiteration_wrapping_context",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def f():\n        raise StopIteration\n\n    def g():\n        yield f()\n    try:\n        next(g())\n    except RuntimeError as exc:\n        assert type(exc.__cause__) is StopIteration, ('assertIs', type(exc.__cause__), StopIteration)\n        assert type(exc.__context__) is StopIteration, ('assertIs', type(exc.__context__), StopIteration)\n        assert exc.__suppress_context__, ('assertTrue', exc.__suppress_context__)\n    else:\n        raise AssertionError('__cause__, __context__, or __suppress_context__ were not properly set')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 2,
+    "pinned": 2,
+    "quarantined": 0
+  }
+}

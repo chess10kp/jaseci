@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_typechecks/conv_typechecks_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:41:55",
+  "hashes": {
+    "pins_jac": "26f3cec99a5408c13c7e11c70028b2d933e3bccab194ec16593cceea6f09b7bb",
+    "conversion_json": "a929ee185a49699a3005ea93b48f15dc557b9eef6e8e0a4a73d04f53779673b5",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "typechecks",
+  "status": "passed",
+  "timed_out": false,
+  "counts": {
+    "converted": 6,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 6,
+    "failed": 0,
+    "infra_failed": 0
+  },
+  "failures": []
+}

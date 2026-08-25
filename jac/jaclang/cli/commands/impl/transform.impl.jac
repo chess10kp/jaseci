@@ -4,12 +4,12 @@ import from jaclang.cli.console { console }
 import from jaclang.cli.commands.cli_helpers { flatten_append }
 
 impl py2jac(filename: str) -> int {
-    import jaclang.jac0core.unitree as uni;
-    import from jaclang.compiler.passes.main.pyast_load_pass { PyastBuildPass }
-    import from jaclang.compiler.passes.tool.unparse_pass { unparse_module }
-    import from jaclang.jac0core.compiler { run_pass }
-    import from jaclang.jac0core.program { JacProgram }
-    import from jaclang.jac0core.helpers { read_file_with_encoding }
+    import jaclang.compiler.frontend.unitree as uni;
+    import from jaclang.compiler.passes.pyast_load_pass { PyastBuildPass }
+    import from jaclang.compiler.tools.unparse_pass { unparse_module }
+    import from jaclang.compiler.driver.pass_driver { run_pass }
+    import from jaclang.compiler.driver.program { JacProgram }
+    import from jaclang.compiler.frontend.helpers { read_file_with_encoding }
     if filename.endswith('.py') {
         file_source = read_file_with_encoding(filename);
         code = unparse_module(
@@ -52,10 +52,7 @@ impl c2jac(
     project: str | None = None
 ) -> int {
     import os;
-    import from jaclang.compiler.cfront.lift {
-        lift_c_file,
-        render_lifted_jac
-    }
+    import from jaclang.compiler.cfront.lift { lift_c_file, render_lifted_jac }
     import from jaclang.compiler.cfront.report {
         build_c2jac_report,
         write_c2jac_report
@@ -145,9 +142,7 @@ impl c2jac(
         );
         side = write_c2jac_report(output, rep);
         console.print(
-            f"[c2jac] wrote {output} (sidecar {side})",
-            markup=False,
-            highlight=False
+            f"[c2jac] wrote {output} (sidecar {side})", markup=False, highlight=False
         );
     } else {
         console.print(jac_str, markup=False, highlight=False);
@@ -165,8 +160,8 @@ impl c2jac(
         qn = len(res.quarantined_functions);
         console.warning(
             f"[c2jac] {n} best-effort site(s)"
-            + (f", {qn} function(s) quarantined" if qn else "")
-            + " — see the `# c2jac:` header / `.c2jac.report.json` sidecar"
+                + (f", {qn} function(s) quarantined" if qn else "")
+                + " — see the `# c2jac:` header / `.c2jac.report.json` sidecar"
         );
     }
     return 0;
@@ -263,7 +258,7 @@ impl cbindgen(
 }
 
 impl jac2py(filename: str) -> int {
-    import from jaclang.jac0core.program { JacProgram }
+    import from jaclang.compiler.driver.program { JacProgram }
     if filename.endswith('.jac') {
         code = JacProgram().compile(file_path=filename).gen.py;
         if code {
@@ -279,7 +274,7 @@ impl jac2py(filename: str) -> int {
 }
 
 impl jac2js(filename: str) -> int {
-    import from jaclang.jac0core.program { JacProgram }
+    import from jaclang.compiler.driver.program { JacProgram }
     if filename.endswith('.jac') {
         try {
             prog = JacProgram();
@@ -310,7 +305,7 @@ impl jac2js(filename: str) -> int {
 }
 
 impl jac2c(filename: str) -> int {
-    import from jaclang.jac0core.program { JacProgram }
+    import from jaclang.compiler.driver.program { JacProgram }
     import from jaclang.compiler.passes.c.c_gen_pass { emit_translation_units }
     if not filename.endswith('.jac') {
         console.error('Not a .jac file.');

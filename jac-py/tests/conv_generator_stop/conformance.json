@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_generator_stop/conv_generator_stop_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:33:07",
+  "hashes": {
+    "pins_jac": "9bcc5bbef1f1468f869038fe31ca23496e2dd8ed04c6c4f7c52708cd164fd6eb",
+    "conversion_json": "f8b2c5e418799fe37f937d37808605879fcbcca9c3607c52dcaecb1425e84efc",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "generator_stop",
+  "counts": {
+    "converted": 2,
+    "runnable": 2,
+    "green": 1,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "TestPEP479.test_stopiteration_wrapping",
+      "status": "pass"
+    },
+    {
+      "id": "TestPEP479.test_stopiteration_wrapping_context",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC object ''\">"
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "615abfd9c3b5ccaab40667ed7c744a40cd1b6d46",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_long/conv_long_pins.jac"
+  ],
+  "generated_at": "2026-08-24T23:01:03",
+  "hashes": {
+    "pins_jac": "9cfec114d1468d1bd0e5434c818ee73cfc2f27ecc79b82d581a761c787cfaccd",
+    "conversion_json": "2db2c7f9246fc16b6818895b9110e90368f418096033a2a6c44f4f473286b4ba",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "long",
+  "counts": {
+    "converted": 47,
+    "runnable": 33,
+    "green": 30,
+    "quarantined": 14
+  },
+  "pins": [
+    {
+      "id": "LongTest.test_division",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "LongTest.test_karatsuba",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_bitop_identities",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "LongTest.test_format",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "LongTest.test_long",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_conversion",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_float_overflow",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_logs",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test__format__",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_nan_inf",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_mod_division",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_true_division",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_floordiv",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_negative_shift_count",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_lshift_of_zero",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_huge_rshift",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_small_rshift",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_medium_rshift",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_big_rshift",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_small_lshift",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_medium_lshift",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_big_lshift",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_small_ints",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_bit_length",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_bit_count",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_round",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "LongTest.test_to_bytes",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_from_bytes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIs\\', <class \\'int\\'>, <class \\'__main__.myint\\'>)\"'>"
+    },
+    {
+      "id": "LongTest.test_is_integer",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_access_to_nonexistent_digit_0",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_shift_bool",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_as_integer_ratio",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_square",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test___sizeof__",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_hash",
+      "status": "pass"
+    },
+    {
+      "id": "LongTest.test_float_conversion",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "LongTest.test_float_conversion_huge_integer",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "LongTest.test_mixed_compares_huge_integer",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "LongTest.test_correctly_rounded_true_division",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "LongTest.test_huge_lshift_of_zero",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LongTest.test_huge_lshift",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LongTest.test_huge_rshift_of_huge",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LongTest.test_small_ints_in_huge_calculation",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LongTest.test_pow_uses_cached_small_ints",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LongTest.test_divmod_uses_cached_small_ints",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LongTest.test_from_bytes_small",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "LongTest.test_mixed_compares",
+      "status": "quarantined",
+      "reason": "uses-self._cmp__"
+    }
+  ]
+}

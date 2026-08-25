@@ -19,12 +19,17 @@ import from objects {
     PyCode,
     PyInt,
     PyBool,
+    PyDict,
+    PySet,
+    PyList,
     expect_int,
     expect_str,
     is_error,
+    hashkey_equal,
     PyError,
     py_none
 }
+import from opcode_meta { OP_COPY_FREE_VARS, OP_MAKE_CELL }
 import from product_compile { compile_source }
 import from host_oracle { host_compile_marshal }
 import from pyc_first { unmarshal, exec_code, gen_send, py_subscript, PyGenerator }
@@ -72,13 +77,33 @@ def nested_code_by_name(co: PyCode, name: str) -> PyCode {
     return co;
 }
 
+# Strict list-of-ints check: fails loudly unless o is a PyList whose items are
+# exactly the expected ints in order. expect_int alone coerces any non-PyInt to
+# 0, so comparing its result against a literal can pass vacuously on wrong-typed
+# containers; this helper pins both the container type and every element.
+def assert_list_of_ints(o: PyObj, expected: list[int]) {
+    assert isinstance(o, PyList), "not a list: " + o.t;
+    items = (o as PyList).items;
+    assert len(items) == len(expected),
+        "length " + str(len(items)) + " != " + str(len(expected));
+    i = 0;
+    while i < len(expected) {
+        assert isinstance(items[i], PyInt),
+            "item " + str(i) + " not int: " + items[i].t;
+        assert (items[i] as PyInt).val == expected[i],
+            "item " + str(i) + " = " + str((items[i] as PyInt).val)
+            + ", want " + str(expected[i]);
+        i = i + 1;
+    }
+}
+
 def consts_equal(a: list[PyObj], b: list[PyObj]) -> bool {
     if len(a) != len(b) {
         return False;
     }
     i = 0;
     while i < len(a) {
-        if a[i].tp_hashkey() != b[i].tp_hashkey() {
+        if not hashkey_equal(a[i].tp_hashkey(), b[i].tp_hashkey()) {
             return False;
         }
         i = i + 1;
@@ -244,6 +269,51 @@ test "layer9: chained assignment executes in ceval" {
     assert not is_error(out);
     assert expect_int(ns["x"]) == 5;
     assert expect_int(ns["y"]) == 5;
+}
+
+# ---------------- Band 11: PEP 649 module annotations ----------------
+
+# Module-scope annotated assignments execute under ceval: MAKE_CELL on the
+# module cellvar, the synthetic __annotate__ function object, and its
+# format-guarded dict construction all run for real.
+test "layer9: band-11 module annotations execute in ceval" {
+    co = product_exec("x: int = 5\nann = __annotate__(0)\ncond = __conditional_annotations__\n");
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    assert expect_int(ns["x"]) == 5;
+    assert isinstance(ns["ann"], PyDict);
+    ann = ns["ann"] as PyDict;
+    assert "x" in ann.items;
+    assert isinstance(ns["cond"], PySet);
+    cond = ns["cond"] as PySet;
+    assert cond.set_contains(PyInt(t="int", val=0));
+}
+
+test "layer9: band-11 bare annotation registers without inline store" {
+    co = product_exec("y: list\nann = __annotate__(1)\n");
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    assert "y" not in ns;
+    assert isinstance(ns["ann"], PyDict);
+}
+
+# Class-scope annotations execute under ceval through the stored function:
+# the class body runs, __annotate_func__ lands in the class dict and is
+# callable (the OP_LOAD_FROM_DICT_OR_GLOBALS arm it dispatches through landed
+# with the LOAD_FROM_DICT_OR_DEREF family). C.__annotate__/C.__annotations__
+# still need the type-machinery mapping of __annotate_func__ -- a runtime gap
+# tracked for the ceval slice; call D.__annotate_func__(1) directly to drive it.
+test "layer9: band-11 class stores __annotate_func__ in class dict" {
+    co = product_exec("class C:\n    y: str = 'a'\n    z: dict\nr = '__annotate_func__' in C.__dict__\nc = callable(C.__annotate_func__)\n");
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    assert isinstance(ns["r"], PyBool);
+    assert (ns["r"] as PyBool).val;
+    assert isinstance(ns["c"], PyBool);
+    assert (ns["c"] as PyBool).val;
 }
 
 # ---------------- Band 4: thin function slice ----------------
@@ -1174,6 +1244,34 @@ test "layer9: band6 two handlers finally uncaught propagates in ceval" {
     assert expect_int(ns["marker"]) == 9;
 }
 
+test "layer9: band6 try except as finally caught matches oracle" {
+    _layer9_parity(
+        "try:\n"
+        + "    result = 10 // 0\n"
+        + "except ZeroDivisionError as e:\n"
+        + "    result = str(e)\n"
+        + "finally:\n"
+        + "    marker = 9\n"
+    );
+}
+
+test "layer9: band6 try except as finally caught executes in ceval" {
+    src = (
+        "try:\n"
+        + "    result = 10 // 0\n"
+        + "except ZeroDivisionError as e:\n"
+        + "    result = str(e)\n"
+        + "finally:\n"
+        + "    marker = 9\n"
+    );
+    co = product_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    assert expect_str(ns["result"]) == "division by zero";
+    assert expect_int(ns["marker"]) == 9;
+}
+
 # ---------------- Band 7 slice 1: generator yield ----------------
 
 test "layer9: band7 generator yield matches oracle" {
@@ -1663,4 +1761,226 @@ test "layer9: class private attr executes in ceval" {
     out = exec_code(co as PyCode, [], ns);
     assert not is_error(out);
     assert expect_int(ns["result"]) == 1;
+}
+
+# Band 11: function-local annotated assignment executes like a plain store in
+# ceval (PEP 649 drops the annotation at local scope).
+test "layer9: local AnnAssign stores and reads back in ceval" {
+    src = (
+        "def f():\n"
+        + "    q: int = 3\n"
+        + "    return q\n"
+        + "result = f()\n"
+    );
+    co = product_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    assert expect_int(ns["result"]) == 3;
+}
+
+# ---------------- closure cells through class bodies ----------------
+
+test "layer9: class body captures enclosing function cell (PyCode parity)" {
+    # A method inside a class body mutates a cell of the enclosing function.
+    # CPython threads the cell through the class body: the body code object
+    # carries freevars ('log',), __build_class__ receives the closure tuple,
+    # and the class prologue opens with COPY_FREE_VARS before MAKE_CELL.
+    src = (
+        "def mk():\n"
+        + "    log = []\n"
+        + "    class G:\n"
+        + "        def m(self):\n"
+        + "            log.append(1)\n"
+        + "    return G, log\n"
+    );
+    actual = product_exec(src);
+    assert not is_error(actual);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    act = actual as PyCode;
+    exp = expected as PyCode;
+    mk_u = nested_code_by_name(act, "mk");
+    mk_e = nested_code_by_name(exp, "mk");
+    assert mk_u.co_code == mk_e.co_code;
+    g_u = nested_code_by_name(mk_u, "G");
+    g_e = nested_code_by_name(mk_e, "G");
+    assert g_u.co_code == g_e.co_code;
+    assert g_u.freevars == ["log"];
+    assert g_e.freevars == ["log"];
+    m_u = nested_code_by_name(g_u, "m");
+    m_e = nested_code_by_name(g_e, "m");
+    assert m_u.co_code == m_e.co_code;
+    assert m_u.freevars == ["log"];
+}
+
+test "layer9: class body method mutates enclosing function cell in ceval" {
+    src = (
+        "def mk():\n"
+        + "    log = []\n"
+        + "    class G:\n"
+        + "        def m(self):\n"
+        + "            log.append(1)\n"
+        + "    return G, log\n"
+        + "G2, log2 = mk()\n"
+        + "G2().m()\n"
+        + "result = log2\n"
+    );
+    co = product_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    logged = ns["result"];
+    assert isinstance(logged, PyList);
+    items = (logged as PyList).items;
+    assert len(items) == 1;
+    assert expect_int(items[0]) == 1;
+}
+
+test "layer9: class body reads enclosing cell directly in ceval" {
+    # Non-method capture: the class body itself references the enclosing
+    # function's cell (LOAD_DEREF inside the body).
+    src = (
+        "def mk(v):\n"
+        + "    x = v\n"
+        + "    class G:\n"
+        + "        y = x\n"
+        + "    return G\n"
+        + "result = mk(7).y\n"
+    );
+    actual = product_exec(src);
+    assert not is_error(actual);
+    expected = oracle_exec(src, "<f>");
+    exp = expected as PyCode;
+    mk_u = nested_code_by_name(actual as PyCode, "mk");
+    mk_e = nested_code_by_name(exp, "mk");
+    g_u = nested_code_by_name(mk_u, "G");
+    g_e = nested_code_by_name(mk_e, "G");
+    assert g_u.co_code == g_e.co_code;
+    assert g_u.freevars == ["x"];
+    co = actual as PyCode;
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co, [], ns);
+    assert not is_error(out);
+    assert expect_int(ns["result"]) == 7;
+}
+
+test "layer9: COPY_FREE_VARS precedes MAKE_CELL in nested prologues" {
+    # CPython 3.14 flowgraph order for scopes with both free vars and cells:
+    # COPY_FREE_VARS n first, then the MAKE_CELLs. Pin the byte order so the
+    # prologue emitter cannot regress to the reversed layout.
+    src = (
+        "def outer():\n"
+        + "    log = []\n"
+        + "    def inner(a):\n"
+        + "        z = a + 1\n"
+        + "        def deep():\n"
+        + "            return z + log[0]\n"
+        + "        return deep\n"
+        + "    return inner\n"
+    );
+    actual = product_exec(src);
+    assert not is_error(actual);
+    expected = oracle_exec(src, "<f>");
+    exp = expected as PyCode;
+    inner_u = nested_code_by_name(actual as PyCode, "inner");
+    inner_e = nested_code_by_name(exp, "inner");
+    assert len(inner_u.co_code) >= 4;
+    assert inner_u.co_code[0] == OP_COPY_FREE_VARS;
+    assert inner_u.co_code[2] == OP_MAKE_CELL;
+    assert inner_u.co_code == inner_e.co_code;
+}
+
+# ---------------- Dynamic MAKE_CELL / cell-targeted comprehensions (F4) ------
+
+# Two comprehension-bound lambda sets over the SAME target name in ONE scope:
+# each comprehension execution must mint fresh cells (mid-frame MAKE_CELL), so
+# the second run's stores must not clobber cells captured by the first. Before
+# dynamic slot conversion this produced [9, 9, 9] for the first set.
+test "layer9: two cell-targeted comprehensions keep per-run cells" {
+    src = "def f():\n"
+        + "    x = [lambda: i for i in range(3)]\n"
+        + "    y = [lambda: i for i in range(5)]\n"
+        + "    return x, y\n"
+        + "x, y = f()\n"
+        + "a = [g() for g in x]\n"
+        + "b = [g() for g in y]\n";
+    co = product_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    a = ns["a"];
+    b = ns["b"];
+    # Late binding: both sets read their target AFTER both comprehensions ran
+    # (a sees i=2, b sees i=4) -- but through their OWN per-run cells.
+    assert expect_int(py_subscript(a, PyInt(t="int", val=0))) == 2;
+    assert expect_int(py_subscript(b, PyInt(t="int", val=0))) == 4;
+}
+
+# Same source must execute identically under the host oracle's bytecode and the
+# product compiler's -- guards against route divergence on the new shape.
+test "layer9: cell-targeted comprehensions agree with host oracle" {
+    src = "def f():\n"
+        + "    x = [lambda: i for i in range(3)]\n"
+        + "    y = [lambda: i for i in range(5)]\n"
+        + "    return ([g() for g in x], [g() for g in y])\n"
+        + "R = f()\n";
+    ons: dict[str, PyObj] = {};
+    oout = exec_code(oracle_exec(src, "<f>") as PyCode, [], ons);
+    pns: dict[str, PyObj] = {};
+    pout = exec_code(product_exec(src) as PyCode, [], pns);
+    assert not is_error(oout);
+    assert not is_error(pout);
+    # R is a tuple of two lists; extract each lane strictly and pin EVERY
+    # element against the host-oracle late-binding values ([2,2,2] / [4,4,4]).
+    o_x = py_subscript(ons["R"], PyInt(t="int", val=0));
+    o_y = py_subscript(ons["R"], PyInt(t="int", val=1));
+    p_x = py_subscript(pns["R"], PyInt(t="int", val=0));
+    p_y = py_subscript(pns["R"], PyInt(t="int", val=1));
+    assert_list_of_ints(o_x, [2, 2, 2]);
+    assert_list_of_ints(o_y, [4, 4, 4, 4, 4]);
+    assert_list_of_ints(p_x, [2, 2, 2]);
+    assert_list_of_ints(p_y, [4, 4, 4, 4, 4]);
+}
+
+# The tail STORE_FAST restore must put back the ORIGINAL binding even though a
+# mid-frame MAKE_CELL replaced the slot with a fresh cell; immediate calls pin
+# per-iteration values while the outer local survives untouched.
+test "layer9: comprehension save/restore preserves converted slot binding" {
+    src = "def h():\n"
+        + "    i = 7\n"
+        + "    fs = [(lambda: i)() for i in range(3)]\n"
+        + "    return fs + [i]\n"
+        + "R = h()\n";
+    co = product_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    r = ns["R"];
+    assert expect_int(py_subscript(r, PyInt(t="int", val=0))) == 0;
+    assert expect_int(py_subscript(r, PyInt(t="int", val=1))) == 1;
+    assert expect_int(py_subscript(r, PyInt(t="int", val=2))) == 2;
+    assert expect_int(py_subscript(r, PyInt(t="int", val=3))) == 7;
+}
+
+# Cell-targeted set/dict comprehension variants bind through the same path.
+test "layer9: set/dict cell-targeted comprehensions execute" {
+    src = "def f():\n"
+        + "    s = {(lambda: m)() for m in range(3)}\n"
+        + "    d = {n: (lambda: n)() for n in range(3)}\n"
+        + "    return sorted(s), sorted(d.values())\n"
+        + "R = f()\n";
+    co = product_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co as PyCode, [], ns);
+    assert not is_error(out);
+    t = ns["R"];
+    s_list = py_subscript(t, PyInt(t="int", val=0));
+    d_list = py_subscript(t, PyInt(t="int", val=1));
+    si = 0;
+    while si < 3 {
+        assert expect_int(py_subscript(s_list, PyInt(t="int", val=si))) == si;
+        assert expect_int(py_subscript(d_list, PyInt(t="int", val=si))) == si;
+        si = si + 1;
+    }
 }

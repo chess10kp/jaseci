@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_fstring/conv_fstring_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:01:16",
+  "hashes": {
+    "pins_jac": "dac10f3fb4b78ebbcfb6879cad3f3db48e1ff14cf48743bd6118ac731f4cec27",
+    "conversion_json": "5f167480d4e9b51d48583196d60d283bce08d721d2d8d547ebe72455e235618b",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "fstring",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 90,
+    "runnable": 60,
+    "green": 50,
+    "quarantined": 30,
+    "failed": 10,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestCase.test_ast",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestCase.test_docstring",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsNone\\', \\'Not a docstring\\')\"'>"
+    },
+    {
+      "id": "TestCase.test_ast_compile_time_concat",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestCase.test_many_expressions",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestCase.test_global",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "TestCase.test_filename_in_syntaxerror",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    },
+    {
+      "id": "TestCase.test_debug_in_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    },
+    {
+      "id": "TestCase.test_syntax_warning_infinite_recursion_in_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    },
+    {
+      "id": "TestCase.test_fstring_without_formatting_bytecode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: get_intrinsic1_descs'>"
+    },
+    {
+      "id": "TestCase.test_gh139516",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    }
+  ]
+}

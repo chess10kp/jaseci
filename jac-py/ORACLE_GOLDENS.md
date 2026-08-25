@@ -1,9 +1,8 @@
 # CPython oracle goldens for Band 6 deferrals + Band 7 pre-work
 
 **Status:** generate-only pass complete; dumps promoted into
-`jac-py/tools/oracle_goldens/`. Nothing pasted into `compiler_slice.jac` yet
-(that file is owned by the active try/except/finally codegen workstream - do
-not paste from here into it without coordinating).
+`jac-py/tools/oracle_goldens/`. Band 6 try/except/finally, raise-from, and multi-with
+fixtures, plus Band 7 generator/async fixtures, are now covered in `compiler_slice.jac`.
 **Generated:** 2026-08-21 session, via 6 parallel subagents. Zero jac runtime used
 by the generators; promotion is additive files only.
 
@@ -29,6 +28,7 @@ non-empty (see `BAND6_SLICE_LEARNINGS.md` §2.1).
 | `b6_multi_with/` | multi-item + bare with | 8: single-with baseline (matches §2.7), two-item both-as, mixed as/bare, bare with, three-item, nested with, with-inside-try |
 | `b7_generators/` | yield / yield from | 10: minimal gen, yield+return, bare yield, yield from, yield-from-with-return-value, gen return value, yield-in-try-finally, yield-in-try-except, genexpr, non-gen control |
 | `b7_async/` | async def / await | 9: minimal coroutine, await, await+return, async for, async with, await-in-try-except, async generator, async-gen yield+await, sync control |
+| `b11_annotations/` | annotated assignments + PEP 695 type aliases | 10: module ann with value, module bare ann, class-body anns, function-local ann (with/bare), attr target, subscript target, simple TypeAlias, parametrized TypeAlias, plain-assign control |
 
 Each dir contains:
 

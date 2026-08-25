@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_opcodes/conv_opcodes_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:34:41",
+  "hashes": {
+    "pins_jac": "fb2427d67319f564d74a6cedb59d0443c3a9b7007b34b232508261d05cbab842",
+    "conversion_json": "7787acfa902cdef3f8fef424f2451131e69fc3f05be4a647daf2869b7c4b995f",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "opcodes",
+  "counts": {
+    "converted": 8,
+    "runnable": 8,
+    "green": 3,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "OpcodeTest.test_try_inside_for_loop",
+      "status": "pass"
+    },
+    {
+      "id": "OpcodeTest.test_setup_annotations_line",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ModuleNotFoundError: No module named 'test.typinganndata'\">"
+    },
+    {
+      "id": "OpcodeTest.test_default_annotations_exist",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__annotations__'\">"
+    },
+    {
+      "id": "OpcodeTest.test_use_existing_annotations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC SystemError 'unsupported opcode 36'\">"
+    },
+    {
+      "id": "OpcodeTest.test_do_not_recreate_annotations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'swap_item'\">"
+    },
+    {
+      "id": "OpcodeTest.test_raise_class_exceptions",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', BClass(), BClass())\"'>"
+    },
+    {
+      "id": "OpcodeTest.test_compare_function_objects",
+      "status": "pass"
+    },
+    {
+      "id": "OpcodeTest.test_modulo_of_string_subclasses",
+      "status": "pass"
+    }
+  ]
+}

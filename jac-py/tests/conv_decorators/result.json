@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_decorators/conv_decorators_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:31:21",
+  "hashes": {
+    "pins_jac": "e224209aa357bab1f3ce83f6f1d8d380b9a8deee7e63112eac8f5b64c59b4d4d",
+    "conversion_json": "b93a5c8a3218d19d0cf7f3735d0fb5c29f004877b62548e8a6109cf243079bab",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "decorators",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 16,
+    "runnable": 14,
+    "green": 11,
+    "quarantined": 2,
+    "failed": 3,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestDecorators.test_staticmethod",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__wrapped__'\">"
+    },
+    {
+      "id": "TestDecorators.test_classmethod",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__wrapped__'\">"
+    },
+    {
+      "id": "TestDecorators.test_eval_order",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'NameLookupTracer() takes no arguments'\">"
+    }
+  ]
+}

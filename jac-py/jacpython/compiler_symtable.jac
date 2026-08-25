@@ -39,6 +39,8 @@ import from ast_nodes {
     FunctionDef,
     ClassDef,
     AsyncFunctionDef,
+    TypeAlias,
+    TypeVar,
     AsyncFor,
     AsyncWith,
     Set,
@@ -47,6 +49,7 @@ import from ast_nodes {
     SetComp,
     DictComp,
     GeneratorExp,
+    NamedExpr,
     Lambda,
     comprehension,
     Yield,
@@ -103,6 +106,13 @@ obj sym_block {
         generator: bool = False,
         coroutine: bool = False,
         can_see_class_scope: bool = False,
+        # Class scopes only: a child scope referenced __class__ (directly or via
+        # a super load), so the body needs the implicit __class__ cell
+        # (CPython symtable.c drop_class_free -> ste_needs_class_closure).
+        needs_class_closure: bool = False,
+        # Any module-top symbol entry for "super" (CPython codegen.c checks
+        # _PyST_GetScope(st_top, "super") != 0 before optimizing super calls).
+        top_has_super: bool = False,
         comprehension: str | None = None,
         symbols: dict[str, int] = {},
         varnames: list[str] = [],
@@ -189,19 +199,28 @@ def sym_sorted_names(d: dict[str, int]) -> list[str] {
 }
 
 def mangle_name(private: str | None, name: str) -> str {
+    # CPython _Py_Mangle: only __spam forms (>=2 leading underscores, at most 1
+    # trailing underscore) mangle inside a class scope; dunders (__x__) and
+    # dotted names never do, and leading underscores are stripped from the
+    # class name itself.
     if private is None {
         return name;
     }
-    if len(name) < 2 {
+    n = len(name);
+    if n < 2 or name[0] != "_" or name[1] != "_" {
         return name;
     }
-    if name[0] != "_" or name[1] != "_" {
+    if (name[n - 1] == "_" and name[n - 2] == "_") or "." in name {
         return name;
     }
-    if len(name) > 2 and name[2] == "_" {
+    ip = 0;
+    while ip < len(private) and private[ip] == "_" {
+        ip = ip + 1;
+    }
+    if ip == len(private) {
         return name;
     }
-    return "_" + private + name;
+    return "_" + private[ip:] + name;
 }
 
 obj sym_builder {
@@ -355,7 +374,9 @@ def sym_visit_genexp(b: sym_builder, e: GeneratorExp) -> bool {
     }
     nested = sym_compute_nested(b);
     in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
-    if not b.push_block("function", "genexpr", e.lineno, nested, in_class) {
+    if not b.push_block(
+        "function", "genexpr", e.lineno, nested, in_class, e.col_offset
+    ) {
         return False;
     }
     b.cur.comprehension = "gen";
@@ -411,7 +432,13 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
         return False;
     }
     if isinstance(e, Name) {
-        return b.add_use((e as Name).id);
+        ok = b.add_use((e as Name).id);
+        # Special-case super: it counts as a use of __class__
+        # (CPython symtable.c Name_kind Load rule).
+        if ok and (e as Name).id == "super" and sym_is_function_like(b.cur) {
+            ok = b.add_use("__class__");
+        }
+        return ok;
     }
     if isinstance(e, Attribute) {
         return sym_visit_load_expr(b, (e as Attribute).value);
@@ -536,6 +563,16 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
             di = di + 1;
         }
         return True;
+    }
+    if isinstance(e, NamedExpr) {
+        ne = e as NamedExpr;
+        # PEP 572: the walrus target binds in the current scope (for inlined
+        # comprehensions that is the enclosing function, matching the shared
+        # fast-local slots); the value side is an ordinary load.
+        if not sym_visit_store_target(b, ne.target) {
+            return False;
+        }
+        return sym_visit_load_expr(b, ne.value);
     }
     if isinstance(e, ListComp) {
         lc = e as ListComp;
@@ -896,6 +933,12 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
     }
     if isinstance(s, Assign) {
         a = s as Assign;
+        # CPython's symtable defines the value side before the assignment
+        # targets, so a PEP 572 walrus target inside the value lands in
+        # co_varnames ahead of the statement's own targets.
+        if not sym_visit_load_expr(b, a.value) {
+            return False;
+        }
         ti = 0;
         while ti < len(a.targets) {
             if not sym_visit_store_target(b, a.targets[ti]) {
@@ -903,7 +946,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             }
             ti = ti + 1;
         }
-        return sym_visit_load_expr(b, a.value);
+        return True;
     }
     if isinstance(s, AugAssign) {
         aa = s as AugAssign;
@@ -1244,6 +1287,19 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         if not b.add_def(cd.name, DEF_LOCAL, cd.lineno, cd.col_offset) {
             return False;
         }
+        # Decorators evaluate in the ENCLOSING scope (CPython symtable.c
+        # ClassDef_kind visits decorator_list before entering the class block).
+        decs = cd.decorator_list;
+        if decs is None {
+            decs = [];
+        }
+        di = 0;
+        while di < len(decs) {
+            if not sym_visit_load_expr(b, decs[di]) {
+                return False;
+            }
+            di = di + 1;
+        }
         saved_private = b.private;
         nested = b.cur.block_type != "module";
         if not b.push_block("class", cd.name, cd.lineno, nested) {
@@ -1259,6 +1315,87 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             bi = bi + 1;
         }
         b.private = saved_private;
+        return b.pop_block();
+    }
+    if isinstance(s, TypeAlias) {
+        ta = s as TypeAlias;
+        if not isinstance(ta.name, Name) {
+            return b.fail(
+                "SyntaxError", "invalid type alias target", ta.lineno, ta.col_offset
+            );
+        }
+        an = ta.name as Name;
+        tps: list[type_param] = [];
+        if ta.type_params is not None {
+            tps = ta.type_params;
+        }
+        if not b.add_def(an.id, DEF_LOCAL, ta.lineno, ta.col_offset) {
+            return False;
+        }
+        pi = 0;
+        while pi < len(tps) {
+            tp = tps[pi];
+            if not isinstance(tp, TypeVar)
+                or (tp as TypeVar).bound is not None
+                or (tp as TypeVar).default_value is not None {
+                return b.fail(
+                    "NotImplementedError",
+                    "type parameter bounds/defaults/ParamSpec/TypeVarTuple "
+                        + "are not supported in type aliases yet",
+                    tp.lineno,
+                    tp.col_offset
+                );
+            }
+            pi = pi + 1;
+        }
+        nested = sym_compute_nested(b);
+        in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+        if len(tps) > 0 {
+            # PEP 695: the hidden <generic parameters of X> scope binds each
+            # type var as a cell; the lazy value function closes over them.
+            if not b.push_block(
+                "function",
+                "<generic parameters of " + an.id + ">",
+                ta.lineno,
+                nested,
+                in_class,
+                ta.col_offset
+            ) {
+                return False;
+            }
+            pi = 0;
+            while pi < len(tps) {
+                tv = tps[pi] as TypeVar;
+                if not b.add_def(tv.name, DEF_LOCAL, tv.lineno, tv.col_offset) {
+                    return False;
+                }
+                pi = pi + 1;
+            }
+            if not b.push_block(
+                "function", an.id, ta.lineno, True, in_class, ta.col_offset
+            ) {
+                return False;
+            }
+            if not sym_visit_load_expr(b, ta.value) {
+                return False;
+            }
+            if not b.pop_block() {
+                return False;
+            }
+            return b.pop_block();
+        }
+        # Non-generic: the lazy value scope's only parameter is .format.
+        if not b.push_block(
+            "function", an.id, ta.lineno, nested, in_class, ta.col_offset
+        ) {
+            return False;
+        }
+        if not b.add_def(".format", DEF_PARAM, ta.lineno, ta.col_offset) {
+            return False;
+        }
+        if not sym_visit_load_expr(b, ta.value) {
+            return False;
+        }
         return b.pop_block();
     }
     if isinstance(s, Import) {
@@ -1438,9 +1575,15 @@ def sym_analyze_block(
     # Match CPython symtable.c analyze_block: only function-like blocks add their
     # locals to newbound; module/class locals are not closure parents for
     # top-level functions (self-recursion uses LOAD_GLOBAL, not LOAD_DEREF).
+    # Class scopes additionally bind the implicit closure names so children
+    # resolve them FREE (CPython's special-case before analyzing children).
     newbound: dict[str, int] = {};
     if sym_is_function_like(block) {
         newbound = sym_set_union(newbound, local);
+    } elif block.block_type == "class" {
+        for dunder in ["__class__", "__classdict__", "__conditional_annotations__"] {
+            sym_set_add(newbound, dunder);
+        }
     }
     if bound is not None {
         newbound = sym_set_union(newbound, bound);
@@ -1464,6 +1607,21 @@ def sym_analyze_block(
         ci = ci + 1;
     }
     child_free = sym_set_union(child_free, free);
+    if block.block_type == "class" {
+        # CPython drop_class_free: the implicit class-scope names never pass a
+        # class boundary as free variables; __class__ instead becomes the
+        # implicit cell (needs_class_closure) consumed by the body prologue and
+        # returned as __classcell__. __classdict__/__conditional_annotations__
+        # get their own implicit cells at compile time.
+        for dunder in ["__class__", "__classdict__", "__conditional_annotations__"] {
+            if sym_set_contains(child_free, dunder) {
+                sym_set_discard(child_free, dunder);
+                if dunder == "__class__" {
+                    block.needs_class_closure = True;
+                }
+            }
+        }
+    }
     fk_names = sym_set_keys(child_free);
     fi = 0;
     while fi < len(fk_names) {
@@ -1527,7 +1685,21 @@ def build_module_symtable(body: list[stmt]) -> symtable_result {
         return symtable_result(diag=sym_result[1]);
     }
     sym_propagate_module_globals(top);
+    # CPython codegen.c super-call optimization requires 'super' to be unknown
+    # at the module top; record that fact on every block so nested units can
+    # check it without parent links.
+    if sym_dict_get(top.symbols, "super", 0) != 0 {
+        sym_mark_top_has_super(top);
+    }
     return symtable_ok(top);
+}
+
+# Recursively flag every block with the module-top "super" shadowing fact.
+def sym_mark_top_has_super(block: sym_block) {
+    block.top_has_super = True;
+    for child in block.children {
+        sym_mark_top_has_super(child);
+    }
 }
 
 # Normalized facts for oracle comparison (matches Lib/symtable.py queries).
@@ -1636,30 +1808,31 @@ import from compiler_diagnostics { compiler_diag_message }
 import from objects { PyInt }
 import from ast_nodes { Constant, Assign, USub }
 
-::py::
-import symtable as _symtable_mod
+import symtable as _symtable_mod;
 
 
-def _host_sym_normalize(source, mode="exec"):
-    st = _symtable_mod.symtable(source, "<t>", mode)
+def _host_sym_normalize(source: str, mode: str = "exec") -> dict {
+    st = _symtable_mod.symtable(source, "<t>", mode);
 
-    def block_info(st):
+    def block_info(st: any) -> dict {
+        children = [];
         d = {
             "name": st.get_name(),
             "type": st.get_type().value,
             "lineno": st.get_lineno(),
             "nested": st.is_nested(),
             "symbols": {},
-            "children": [],
+            "children": children,
+        };
+        if hasattr(st, "get_parameters") {
+            d["parameters"] = list(st.get_parameters());
+            d["locals"] = list(st.get_locals());
+            d["globals"] = list(st.get_globals());
+            d["nonlocals"] = list(st.get_nonlocals());
+            d["frees"] = list(st.get_frees());
         }
-        if hasattr(st, "get_parameters"):
-            d["parameters"] = list(st.get_parameters())
-            d["locals"] = list(st.get_locals())
-            d["globals"] = list(st.get_globals())
-            d["nonlocals"] = list(st.get_nonlocals())
-            d["frees"] = list(st.get_frees())
-        for name in sorted(st.get_identifiers()):
-            sym = st.lookup(name)
+        for name in sorted(st.get_identifiers()) {
+            sym = st.lookup(name);
             d["symbols"][name] = {
                 "local": sym.is_local(),
                 "global": sym.is_global(),
@@ -1669,15 +1842,19 @@ def _host_sym_normalize(source, mode="exec"):
                 "declared_global": sym.is_declared_global(),
                 "referenced": sym.is_referenced(),
                 "assigned": sym.is_assigned(),
+            };
+        }
+        for ch in st.get_children() {
+            if ch.get_type().value == "annotation" {
+                continue;
             }
-        for ch in st.get_children():
-            if ch.get_type().value == "annotation":
-                continue
-            d["children"].append(block_info(ch))
-        return d
+            children.append(block_info(ch));
+        }
+        return d;
+    }
 
-    return block_info(st)
-::py::
+    return block_info(st);
+}
 
 
 
@@ -1685,15 +1862,14 @@ def _sym_oracle_equal_py(native: any, expected: any) -> bool {
     return _sym_oracle_equal(native, expected) as bool;
 }
 
-::py::
-import json
+import json;
 
 
-def _sym_oracle_equal(native, expected):
-    nj = json.dumps(native, sort_keys=True, default=str)
-    ej = json.dumps(expected, sort_keys=True, default=str)
-    return nj == ej
-::py::
+def _sym_oracle_equal(native: any, expected: any) -> bool {
+    nj = json.dumps(native, sort_keys=True, `default=lambda (x: any) { return str(x); });
+    ej = json.dumps(expected, sort_keys=True, `default=lambda (x: any) { return str(x); });
+    return nj == ej;
+}
 
 
 

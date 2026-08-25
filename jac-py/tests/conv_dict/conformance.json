@@ -1,0 +1,463 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "b1bed97912c863821e93b83c77fd57351337db79",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_dict/conv_dict_pins.jac"
+  ],
+  "generated_at": "2026-08-24T22:51:17",
+  "hashes": {
+    "pins_jac": "7e229ac5d9502f4ccffc58f847dfb9a4784b48448011a0ab46ef5e783a6432d9",
+    "conversion_json": "980309ade31089680b7613b0921066873ed862b1fa05cad039693a00549bd399",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "dict",
+  "counts": {
+    "converted": 92,
+    "runnable": 75,
+    "green": 50,
+    "quarantined": 17
+  },
+  "pins": [
+    {
+      "id": "DictTest.test_invalid_keyword_arguments",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_constructor",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_literal_constructor",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "DictTest.test_merge_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"unsupported operand type(s) for |: \\'dict\\' and \\'list\\'\"'>"
+    },
+    {
+      "id": "DictTest.test_bool",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_keys",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_values",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_items",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_views_mapping",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'mapping'\">"
+    },
+    {
+      "id": "DictTest.test_contains",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_len",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_getitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"cannot use \\'BadHash\\' as a dict key (unhashable type: \\'BadHash\\')\"'>"
+    },
+    {
+      "id": "DictTest.test_clear",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_update",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {}, {1: 1, 2: 2, 3: 3})\"'>"
+    },
+    {
+      "id": "DictTest.test_update_shared_keys",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {\\'a\\': \\'a\\', \\'a\\': \\'a\\', \\'b\\': \\'b\\'}, {\\'a\\': \\'a\\', \\'b\\': \\'b\\'})\"'>"
+    },
+    {
+      "id": "DictTest.test_fromkeys",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsInstance\\', {\\'a\\': None}, <class \\'__main__.dictlike\\'>)\"'>"
+    },
+    {
+      "id": "DictTest.test_copy",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_copy_fuzz",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "DictTest.test_copy_maintains_tracking",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_copy_noncompact",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_get",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_setdefault",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"cannot use \\'BadHash\\' as a dict key (unhashable type: \\'BadHash\\')\"'>"
+    },
+    {
+      "id": "DictTest.test_setdefault_atomic",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', 2, 1)\"'>"
+    },
+    {
+      "id": "DictTest.test_setitem_atomic_at_resize",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', 2, 1)\"'>"
+    },
+    {
+      "id": "DictTest.test_popitem",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_pop",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC KeyError '<unhashable>'\">"
+    },
+    {
+      "id": "DictTest.test_mutating_iteration",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_mutating_iteration_delete",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_mutating_iteration_delete_over_values",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_mutating_iteration_delete_over_items",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_mutating_lookup",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {}, {<__main__.NastyKey object at 0x7f36528d07d0>: 2})\"'>"
+    },
+    {
+      "id": "DictTest.test_repr",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_eq",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_keys_contained",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_errors_in_view_containment_check",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_dictview_set_operations_on_keys",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_dictview_set_operations_on_items",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_items_symmetric_difference",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "DictTest.test_dictview_mixed_set_operations",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_bad_key",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'d\\' is not defined\"'>"
+    },
+    {
+      "id": "DictTest.test_resize1",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_resize2",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_empty_presized_dict_in_freelist",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_container_iterator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIs\\', <__main__.C object at 0x7f3652ed1a50>, None)\"'>"
+    },
+    {
+      "id": "DictTest.test_iterator_pickling",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: module 'builtins' has no attribute 'PicklingError'\">"
+    },
+    {
+      "id": "DictTest.test_itemiterator_pickling",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: module 'builtins' has no attribute 'PicklingError'\">"
+    },
+    {
+      "id": "DictTest.test_valuesiterator_pickling",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: module 'builtins' has no attribute 'PicklingError'\">"
+    },
+    {
+      "id": "DictTest.test_reverseiterator_pickling",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_reverseitemiterator_pickling",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_reversevaluesiterator_pickling",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_instance_dict_getattr_str_subclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError ''\">"
+    },
+    {
+      "id": "DictTest.test_object_set_item_single_instance_non_str_key",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_reentrant_insertion",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_merge_and_mutate",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_free_after_iterating",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "DictTest.test_equal_operator_modifying_operand",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertTrue\\', False)\"'>"
+    },
+    {
+      "id": "DictTest.test_fromkeys_operator_modifying_dict_operand",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_fromkeys_operator_modifying_set_operand",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_dictitems_contains_use_after_free",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_dict_contain_use_after_free",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_init_use_after_free",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_oob_indexing_dictiter_iternextitem",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_reversed",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_reverse_iterator_for_empty_dict",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_reverse_iterator_for_shared_shared_dicts",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_dict_copy_order",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', [(\\'c\\', 3), (\\'b\\', 2), (\\'a\\', 1)], [(\\'a\\', 1), (\\'b\\', 2), (\\'c\\', 3)])\"'>"
+    },
+    {
+      "id": "DictTest.test_store_evilattr",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_str_nonstr",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'check_impl_detail'\">"
+    },
+    {
+      "id": "DictTest.test_overwrite_managed_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'attr'\">"
+    },
+    {
+      "id": "DictTest.test_clear_at_lookup",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_split_table_update_with_str_subclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', 1, 2)\"'>"
+    },
+    {
+      "id": "DictTest.test_split_table_insert_with_str_subclass",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_clear_reentrant_embedded",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_clear_reentrant_cycle",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_clear_reentrant_force_combined",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_clear_reentrant_delete",
+      "status": "pass"
+    },
+    {
+      "id": "DictTest.test_repr_deep",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_wasi_stack_overflow"
+    },
+    {
+      "id": "DictTest.test_splittable_setdefault",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_splittable_del",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_splittable_pop",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_splittable_pop_pending",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_splittable_popitem",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_splittable_update",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_splittable_to_generic_combinedtable",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_dict_items_result_gc",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_dict_items_result_gc_reversed",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "CAPITest.test_getitem_knownhash",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "DictTest.test_update_type_error",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "DictTest.test_missing",
+      "status": "quarantined",
+      "reason": "self.assertNotHasAttr"
+    },
+    {
+      "id": "DictTest.test_tuple_keyerror",
+      "status": "quarantined",
+      "reason": "unresolved-name:c"
+    },
+    {
+      "id": "DictTest.test_unhashable_key",
+      "status": "quarantined",
+      "reason": "uses-self.assertRaisesRegex"
+    },
+    {
+      "id": "DictTest.test_hash_collision_remove_add",
+      "status": "quarantined",
+      "reason": "unresolved-name:CustomHash"
+    }
+  ]
+}

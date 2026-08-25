@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_genericclass/conv_genericclass_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:33:19",
+  "hashes": {
+    "pins_jac": "c22b29091da1f660c7ff30236c9581b47ca8256d1e4e1c4ac4b6c7793d84f77e",
+    "conversion_json": "890df79d1ef53234f67febc46770848fcba9191e77945b0d916c36c6dd61b334",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "genericclass",
+  "counts": {
+    "converted": 22,
+    "runnable": 21,
+    "green": 21,
+    "quarantined": 1
+  },
+  "pins": [
+    {
+      "id": "TestMROEntry.test_mro_entry_signature",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry_none",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry_with_builtins",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry_with_builtins_2",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry_errors",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry_errors_2",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry_metaclass",
+      "status": "pass"
+    },
+    {
+      "id": "TestMROEntry.test_mro_entry_type_call",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_format",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_inheritance",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_inheritance_2",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_classmethod",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_patched",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_with_builtins",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_errors",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_errors_2",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_metaclass",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_with_metaclass",
+      "status": "pass"
+    },
+    {
+      "id": "TestClassGetitem.test_class_getitem_metaclass_first",
+      "status": "pass"
+    },
+    {
+      "id": "CAPITest.test_c_class",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    }
+  ]
+}

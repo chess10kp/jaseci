@@ -1,0 +1,644 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "d16ccf930e72eff9aad7712b877e98223d42915c",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_csv/conv_csv_pins.jac"
+  ],
+  "generated_at": "2026-08-25T14:26:20",
+  "hashes": {
+    "pins_jac": "73337f51e2ae8a4392d552cc0c9aaea42ca403b0d9612275026b19f6d55117f6",
+    "conversion_json": "d0124a04933846a35aafa44e65db0fcf74307c042442943e2966edaaffd5d315",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "csv",
+  "counts": {
+    "converted": 128,
+    "runnable": 34,
+    "green": 29,
+    "quarantined": 94
+  },
+  "pins": [
+    {
+      "id": "Test_Csv.test_reader_arg_valid",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'BadIterable\\' object is not iterable\"'>"
+    },
+    {
+      "id": "Test_Csv.test_writer_arg_valid",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \\'argument 1 must have a \"write\" method\\''>"
+    },
+    {
+      "id": "Test_Csv.test_reader_attrs",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_writer_attrs",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_reader_kw_attrs",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_writer_kw_attrs",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_reader_dialect_attrs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\',\\', \\'-\\')\"'>"
+    },
+    {
+      "id": "Test_Csv.test_writer_dialect_attrs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\',\\', \\'-\\')\"'>"
+    },
+    {
+      "id": "Test_Csv.test_write_arg_valid",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_write_bigfield",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_write_quoting",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_write_escape",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_write_lineterminator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'StringIO.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "Test_Csv.test_write_iterable",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_writerows",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_writerows_with_none",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_write_empty_fields",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_write_empty_fields_space_delimiter",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_writerows_errors",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_read_eol",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "Test_Csv.test_read_nul",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_read_delimiter",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_read_escape",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_read_skipinitialspace",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', [['', '', '']], [[None, None, None]])"
+    },
+    {
+      "id": "Test_Csv.test_read_space_delimiter",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_read_linenum",
+      "status": "pass"
+    },
+    {
+      "id": "Test_Csv.test_roundtrip_quoteed_newlines",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_roundtrip_escaped_unquoted_newlines",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "Test_Csv.test_reader_reentrant_iterator",
+      "status": "quarantined",
+      "reason": "harness-error:exit -11"
+    },
+    {
+      "id": "TestDialectRegistry.test_registry_badargs",
+      "status": "pass"
+    },
+    {
+      "id": "TestDialectRegistry.test_incomplete_dialect",
+      "status": "pass"
+    },
+    {
+      "id": "TestDialectRegistry.test_space_dialect",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectRegistry.test_dialect_apply",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectRegistry.test_copy",
+      "status": "pass"
+    },
+    {
+      "id": "TestDialectRegistry.test_pickle",
+      "status": "pass"
+    },
+    {
+      "id": "TestDialectExcel.test_single",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_simple",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_blankline",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_empty_fields",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_singlequoted",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_singlequoted_left_empty",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_singlequoted_right_empty",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_single_quoted_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quoted_quotes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_inline_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_inline_quotes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quotes_and_more",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_lone_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quote_and_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_space_and_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quoted",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quoted_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quoted_nl",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_dubious_quote",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_null",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_single_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_simple_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quotes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_quote_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectExcel.test_newlines",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestEscapedExcel.test_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestEscapedExcel.test_read_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectUnix.test_simple_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectUnix.test_simple_reader",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestQuotedEscapedExcel.test_write_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestQuotedEscapedExcel.test_read_escape_fieldsep",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_writeheader_return_value",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_write_simple_dict",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_write_multiple_dict_rows",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_write_no_fields",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_typo_in_extrasaction_raises_error",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_write_field_not_in_field_names_raise",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_write_field_not_in_field_names_ignore",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_dict_reader_fieldnames_accepts_iter",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_dict_reader_fieldnames_accepts_list",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_dict_reader_set_fieldnames",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_dict_writer_fieldnames_rejects_iter",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_dict_writer_fieldnames_accepts_list",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_dict_reader_fieldnames_is_optional",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_read_dict_fields",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_dict_no_fieldnames",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_dict_fieldnames_from_file",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_dict_fieldnames_chain",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_long",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_long_with_rest",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_long_with_rest_no_fieldnames",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_short",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDictFields.test_read_multi",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_read_with_blanks",
+      "status": "pass"
+    },
+    {
+      "id": "TestDictFields.test_read_semi_sep",
+      "status": "pass"
+    },
+    {
+      "id": "TestArrayWrites.test_int_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestArrayWrites.test_double_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestArrayWrites.test_float_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestArrayWrites.test_char_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestDialectValidity.test_invalid_chars",
+      "status": "pass"
+    },
+    {
+      "id": "TestSniffer.test_guess_quote_and_delimiter",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "TestUnicode.test_unicode_read",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "TestUnicode.test_unicode_write",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: 'sys.flags' object has no attribute 'context_aware_warnings'"
+    },
+    {
+      "id": "KeyOrderingTest.test_ordered_dict_reader",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "MiscTestCase.test__all__",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "MiscTestCase.test_lazy_import",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "MiscTestCase.test_subclassable",
+      "status": "pass"
+    },
+    {
+      "id": "TestLeaks.test_create_read",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestLeaks.test_create_write",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestLeaks.test_read",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestLeaks.test_write",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "MiscTestCase.test_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "Test_Csv.test_read_oddinputs",
+      "status": "quarantined",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "id": "Test_Csv.test_read_eof",
+      "status": "quarantined",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "id": "Test_Csv.test_read_quoting",
+      "status": "quarantined",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "id": "Test_Csv.test_read_bigfield",
+      "status": "quarantined",
+      "reason": "uses-self._read_test"
+    },
+    {
+      "id": "TestDialectRegistry.test_registry",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "TestDialectRegistry.test_register_kwargs",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "TestDialectRegistry.test_register_kwargs_override",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "TestDictFields.test_write_fields_not_in_fieldnames",
+      "status": "quarantined",
+      "reason": "unresolved-name:cx"
+    },
+    {
+      "id": "TestDialectValidity.test_quoting",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TestDialectValidity.test_delimiter",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TestDialectValidity.test_escapechar",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TestDialectValidity.test_lineterminator",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TestSniffer.test_issue43625",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "id": "TestSniffer.test_has_header_strings",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "id": "TestSniffer.test_has_header",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "id": "TestSniffer.test_has_header_regex_special_delimiter",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "id": "TestSniffer.test_has_header_checks_20_rows",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "id": "TestSniffer.test_sniff",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "id": "TestSniffer.test_delimiters",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    },
+    {
+      "id": "TestSniffer.test_doublequote",
+      "status": "quarantined",
+      "reason": "unresolved-name:sample17"
+    }
+  ]
+}

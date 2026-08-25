@@ -1,0 +1,622 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_named_expressions.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_named_expressions",
+    "--name",
+    "conv_named_expressions"
+  ],
+  "generated_at": "2026-08-24T15:01:16",
+  "hashes": {
+    "pins_jac": "0d10aa961456f0864467d220a6051b321ff2aad5dcb92d8c86988f7a04900334"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_named_expressions.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "named_expressions",
+  "pins_file": "conv_named_expressions_pins.jac",
+  "pins": [
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_01",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'x := 0'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_02",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'x = y := 0'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_03",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'y := f(x)'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_04",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'y0 = y1 := f(x)'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_06",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = '((a, b) := (1, 2))'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('cannot use assignment expressions with tuple', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_07",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'def spam(a = b := 42): pass'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_08",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'def spam(a: b := 42 = 5): pass'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_09",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = \"spam(a=b := 'c')\"\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_10",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'spam(x = y := f(x))'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_11",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'spam(a=1, b := 2)'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('positional argument follows keyword argument', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_12",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'spam(a=1, (b := 2))'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('positional argument follows keyword argument', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_13",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'spam(a=1, (b := 2))'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('positional argument follows keyword argument', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_14",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = '(x := lambda: y := 1)'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_15",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = '(lambda: x := 1)'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('cannot use assignment expressions with lambda', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_16",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = '[i + 1 for i in i := [1,2]]'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('invalid syntax', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_17",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = '[i := 0, j := 1 for i, j in [(1, 2), (3, 4)]]'\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('did you forget parentheses around the comprehension target?', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_in_class_body",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'class Foo():\\n            [(42, 1 + ((( j := i )))) for i in range(5)]\\n        '\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search('assignment expression within a comprehension cannot be used in a class body', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_valid_rebinding_iteration_variable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    cases = [('Complex expression: c', '{0}(c := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: d', '{0}(d := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: e', '{0}(e := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: f', '{0}(f := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: g', '{0}(g := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: h', '{0}(h := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: i', '{0}(i := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: j', '{0}(j := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}')]\n    for test_case, code in cases:\n        for lpar, rpar in [('(', ')'), ('[', ']'), ('{', '}')]:\n            code = code.format(lpar, rpar)\n            try:\n                exec(code, {})\n            except NameError as _exc:\n                pass\n            else:\n                raise AssertionError('assertRaises: did not raise')\n            try:\n                exec(code, {}, {})\n            except NameError as _exc:\n                pass\n            else:\n                raise AssertionError('assertRaises: did not raise')\n            exec(f'lambda: {code}', {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_rebinding_iteration_variable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Complex expression: a', 'a', '{0}(a := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}'), ('Complex expression: b', 'b', '{0}(b := 1) for a, (*b, c[d+e::f(g)], h.i) in j{1}')]\n    for test_case, target, code in cases:\n        msg = f\"assignment expression cannot rebind comprehension iteration variable '{target}'\"\n        for lpar, rpar in [('(', ')'), ('[', ']'), ('{', '}')]:\n            code = code.format(lpar, rpar)\n            try:\n                exec(code, {})\n            except SyntaxError as _exc:\n                assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n            try:\n                exec(code, {}, {})\n            except SyntaxError as _exc:\n                assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n            try:\n                exec(f'lambda: {code}', {})\n            except SyntaxError as _exc:\n                assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_rebinding_list_comprehension_iteration_variable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Local reuse', 'i', '[i := 0 for i in range(5)]'), ('Nested reuse', 'j', '[[(j := 0) for i in range(5)] for j in range(5)]'), ('Reuse inner loop target', 'j', '[(j := 0) for i in range(5) for j in range(5)]'), ('Unpacking reuse', 'i', '[i := 0 for i, j in [(0, 1)]]'), ('Reuse in loop condition', 'i', '[i+1 for i in range(5) if (i := 0)]'), ('Unreachable reuse', 'i', '[False or (i:=0) for i in range(5)]'), ('Unreachable nested reuse', 'i', '[(i, j) for i in range(5) for j in range(5) if True or (i:=10)]')]\n    for case, target, code in cases:\n        msg = f\"assignment expression cannot rebind comprehension iteration variable '{target}'\"\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_rebinding_list_comprehension_inner_loop",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Inner reuse', 'j', '[i for i in range(5) if (j := 0) for j in range(5)]'), ('Inner unpacking reuse', 'j', '[i for i in range(5) if (j := 0) for j, k in [(0, 1)]]')]\n    for case, target, code in cases:\n        msg = f\"comprehension inner loop cannot rebind assignment expression target '{target}'\"\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_list_comprehension_iterable_expression",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Top level', '[i for i in (i := range(5))]'), ('Inside tuple', '[i for i in (2, 3, i := range(5))]'), ('Inside list', '[i for i in [2, 3, i := range(5)]]'), ('Different name', '[i for i in (j := range(5))]'), ('Lambda expression', '[i for i in (lambda:(j := range(5)))()]'), ('Inner loop', '[i for i in range(5) for j in (i := range(5))]'), ('Nested comprehension', '[i for i in [j for j in (k := range(5))]]'), ('Nested comprehension condition', '[i for i in [j for j in range(5) if (j := True)]]'), ('Nested comprehension body', '[i for i in [(j := True) for j in range(5)]]')]\n    msg = 'assignment expression cannot be used in a comprehension iterable expression'\n    for case, code in cases:\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_rebinding_set_comprehension_iteration_variable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Local reuse', 'i', '{i := 0 for i in range(5)}'), ('Nested reuse', 'j', '{{(j := 0) for i in range(5)} for j in range(5)}'), ('Reuse inner loop target', 'j', '{(j := 0) for i in range(5) for j in range(5)}'), ('Unpacking reuse', 'i', '{i := 0 for i, j in {(0, 1)}}'), ('Reuse in loop condition', 'i', '{i+1 for i in range(5) if (i := 0)}'), ('Unreachable reuse', 'i', '{False or (i:=0) for i in range(5)}'), ('Unreachable nested reuse', 'i', '{(i, j) for i in range(5) for j in range(5) if True or (i:=10)}'), ('Complex expression: a', 'a', '{(a := 1) for a, (*b, c[d+e::f(g)], h.i) in j}'), ('Complex expression: b', 'b', '{(b := 1) for a, (*b, c[d+e::f(g)], h.i) in j}')]\n    for case, target, code in cases:\n        msg = f\"assignment expression cannot rebind comprehension iteration variable '{target}'\"\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_rebinding_set_comprehension_inner_loop",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Inner reuse', 'j', '{i for i in range(5) if (j := 0) for j in range(5)}'), ('Inner unpacking reuse', 'j', '{i for i in range(5) if (j := 0) for j, k in {(0, 1)}}')]\n    for case, target, code in cases:\n        msg = f\"comprehension inner loop cannot rebind assignment expression target '{target}'\"\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_set_comprehension_iterable_expression",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Top level', '{i for i in (i := range(5))}'), ('Inside tuple', '{i for i in (2, 3, i := range(5))}'), ('Inside list', '{i for i in {2, 3, i := range(5)}}'), ('Different name', '{i for i in (j := range(5))}'), ('Lambda expression', '{i for i in (lambda:(j := range(5)))()}'), ('Inner loop', '{i for i in range(5) for j in (i := range(5))}'), ('Nested comprehension', '{i for i in {j for j in (k := range(5))}}'), ('Nested comprehension condition', '{i for i in {j for j in range(5) if (j := True)}}'), ('Nested comprehension body', '{i for i in {(j := True) for j in range(5)}}')]\n    msg = 'assignment expression cannot be used in a comprehension iterable expression'\n    for case, code in cases:\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_rebinding_dict_comprehension_iteration_variable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Key reuse', 'i', '{(i := 0): 1 for i in range(5)}'), ('Value reuse', 'i', '{1: (i := 0) for i in range(5)}'), ('Both reuse', 'i', '{(i := 0): (i := 0) for i in range(5)}'), ('Nested reuse', 'j', '{{(j := 0): 1 for i in range(5)} for j in range(5)}'), ('Reuse inner loop target', 'j', '{(j := 0): 1 for i in range(5) for j in range(5)}'), ('Unpacking key reuse', 'i', '{(i := 0): 1 for i, j in {(0, 1)}}'), ('Unpacking value reuse', 'i', '{1: (i := 0) for i, j in {(0, 1)}}'), ('Reuse in loop condition', 'i', '{i+1: 1 for i in range(5) if (i := 0)}'), ('Unreachable reuse', 'i', '{(False or (i:=0)): 1 for i in range(5)}'), ('Unreachable nested reuse', 'i', '{i: j for i in range(5) for j in range(5) if True or (i:=10)}'), ('Complex expression: a', 'a', '{(a := 1): 1 for a, (*b, c[d+e::f(g)], h.i) in j}'), ('Complex expression: b', 'b', '{(b := 1): 1 for a, (*b, c[d+e::f(g)], h.i) in j}')]\n    for case, target, code in cases:\n        msg = f\"assignment expression cannot rebind comprehension iteration variable '{target}'\"\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_rebinding_dict_comprehension_inner_loop",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Inner reuse', 'j', '{i: 1 for i in range(5) if (j := 0) for j in range(5)}'), ('Inner unpacking reuse', 'j', '{i: 1 for i in range(5) if (j := 0) for j, k in {(0, 1)}}')]\n    for case, target, code in cases:\n        msg = f\"comprehension inner loop cannot rebind assignment expression target '{target}'\"\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_dict_comprehension_iterable_expression",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    cases = [('Top level', '{i: 1 for i in (i := range(5))}'), ('Inside tuple', '{i: 1 for i in (2, 3, i := range(5))}'), ('Inside list', '{i: 1 for i in [2, 3, i := range(5)]}'), ('Different name', '{i: 1 for i in (j := range(5))}'), ('Lambda expression', '{i: 1 for i in (lambda:(j := range(5)))()}'), ('Inner loop', '{i: 1 for i in range(5) for j in (i := range(5))}'), ('Nested comprehension', '{i: 1 for i in {j: 2 for j in (k := range(5))}}'), ('Nested comprehension condition', '{i: 1 for i in {j: 2 for j in range(5) if (j := True)}}'), ('Nested comprehension body', '{i: 1 for i in {(j := True) for j in range(5)}}')]\n    msg = 'assignment expression cannot be used in a comprehension iterable expression'\n    for case, code in cases:\n        try:\n            exec(code, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(code, {}, {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            exec(f'lambda: {code}', {})\n        except SyntaxError as _exc:\n            assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionInvalidTest.test_named_expression_invalid_mangled_class_variables",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'class Foo:\\n            def bar(self):\\n                [[(__x:=2) for _ in range(2)] for __x in range(2)]\\n        '\n    try:\n        exec(code, {}, {})\n    except SyntaxError as _exc:\n        assert _re.search(\"assignment expression cannot rebind comprehension iteration variable '__x'\", str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_01",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    (a := 10)\n    assert a == 10, ('assertEqual', a, 10)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_02",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    a = 20\n    (a := a)\n    assert a == 20, ('assertEqual', a, 20)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_03",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    (total := (1 + 2))\n    assert total == 3, ('assertEqual', total, 3)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_04",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    (info := (1, 2, 3))\n    assert info == (1, 2, 3), ('assertEqual', info, (1, 2, 3))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_05",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    ((x := 1), 2)\n    assert x == 1, ('assertEqual', x, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_06",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    (z := (y := (x := 0)))\n    assert x == 0, ('assertEqual', x, 0)\n    assert y == 0, ('assertEqual', y, 0)\n    assert z == 0, ('assertEqual', z, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_07",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    (loc := (1, 2))\n    assert loc == (1, 2), ('assertEqual', loc, (1, 2))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_08",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    if (spam := 'eggs'):\n        assert spam == 'eggs', ('assertEqual', spam, 'eggs')\n    else:\n        raise AssertionError('variable was not assigned using named expression')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_09",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    if True and (spam := True):\n        assert spam, ('assertTrue', spam)\n    else:\n        raise AssertionError('variable was not assigned using named expression')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_10",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    if (match := 10) == 10:\n        assert match == 10, ('assertEqual', match, 10)\n    else:\n        raise AssertionError('variable was not assigned using named expression')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_11",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n    input_data = [1, 2, 3]\n    res = [(x, y, x / y) for x in input_data if (y := spam(x)) > 0]\n    assert res == [(1, 1, 1.0), (2, 2, 1.0), (3, 3, 1.0)], ('assertEqual', res, [(1, 1, 1.0), (2, 2, 1.0), (3, 3, 1.0)])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_12",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n    res = [[(y := spam(x)), x / y] for x in range(1, 5)]\n    assert res == [[1, 1.0], [2, 1.0], [3, 1.0], [4, 1.0]], ('assertEqual', res, [[1, 1.0], [2, 1.0], [3, 1.0], [4, 1.0]])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_13",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    length = len((lines := [1, 2]))\n    assert length == 2, ('assertEqual', length, 2)\n    assert lines == [1, 2], ('assertEqual', lines, [1, 2])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_14",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    \"\"\"\n        Where all variables are positive integers, and a is at least as large\n        as the n'th root of x, this algorithm returns the floor of the n'th\n        root of x (and roughly doubling the number of accurate bits per\n        iteration):\n        \"\"\"\n    a = 9\n    n = 2\n    x = 3\n    while a > (d := (x // a ** (n - 1))):\n        a = ((n - 1) * a + d) // n\n    assert a == 1, ('assertEqual', a, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_15",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    while (a := False):\n        raise AssertionError('While body executed')\n    assert a == False, ('assertEqual', a, False)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_16",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    a, b = (1, 2)\n    fib = {(c := a): (a := b) + (b := (a + c)) - b for __ in range(6)}\n    assert fib == {1: 2, 2: 3, 3: 5, 5: 8, 8: 13, 13: 21}, ('assertEqual', fib, {1: 2, 2: 3, 3: 5, 5: 8, 8: 13, 13: 21})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_17",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    a = [1]\n    element = a[(b := 0)]\n    assert b == 0, ('assertEqual', b, 0)\n    assert element == a[0], ('assertEqual', element, a[0])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionAssignmentTest.test_named_expression_assignment_18",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    class TwoDimensionalList:\n\n        def __init__(self, two_dimensional_list):\n            self.two_dimensional_list = two_dimensional_list\n\n        def __getitem__(self, index):\n            return self.two_dimensional_list[index[0]][index[1]]\n    a = TwoDimensionalList([[1], [2]])\n    element = a[(b := 0), (c := 0)]\n    assert b == 0, ('assertEqual', b, 0)\n    assert c == 0, ('assertEqual', c, 0)\n    assert element == a.two_dimensional_list[b][c], ('assertEqual', element, a.two_dimensional_list[b][c])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_01",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'def spam():\\n    (a := 5)\\nprint(a)'\n    try:\n        exec(code, {}, {})\n    except NameError as _exc:\n        assert _re.search(\"name 'a' is not defined\", str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_02",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    total = 0\n    partial_sums = [(total := (total + v)) for v in range(5)]\n    assert partial_sums == [0, 1, 3, 6, 10], ('assertEqual', partial_sums, [0, 1, 3, 6, 10])\n    assert total == 10, ('assertEqual', total, 10)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_03",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    containsOne = any(((lastNum := num) == 1 for num in [1, 2, 3]))\n    assert containsOne, ('assertTrue', containsOne)\n    assert lastNum == 1, ('assertEqual', lastNum, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_04",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n    res = [[(y := spam(x)), x / y] for x in range(1, 5)]\n    assert y == 4, ('assertEqual', y, 4)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_05",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n    input_data = [1, 2, 3]\n    res = [(x, y, x / y) for x in input_data if (y := spam(x)) > 0]\n    assert res == [(1, 1, 1.0), (2, 2, 1.0), (3, 3, 1.0)], ('assertEqual', res, [(1, 1, 1.0), (2, 2, 1.0), (3, 3, 1.0)])\n    assert y == 3, ('assertEqual', y, 3)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_06",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    res = [[(spam := i) for i in range(3)] for j in range(2)]\n    assert res == [[0, 1, 2], [0, 1, 2]], ('assertEqual', res, [[0, 1, 2], [0, 1, 2]])\n    assert spam == 2, ('assertEqual', spam, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_07",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    len((lines := [1, 2]))\n    assert lines == [1, 2], ('assertEqual', lines, [1, 2])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_08",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n\n    def eggs(b):\n        return b * 2\n    res = [spam((a := eggs((b := h)))) for h in range(2)]\n    assert res == [0, 2], ('assertEqual', res, [0, 2])\n    assert a == 2, ('assertEqual', a, 2)\n    assert b == 1, ('assertEqual', b, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_09",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n\n    def eggs(b):\n        return b * 2\n    res = [spam((a := eggs((a := h)))) for h in range(2)]\n    assert res == [0, 2], ('assertEqual', res, [0, 2])\n    assert a == 2, ('assertEqual', a, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_10",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    res = [(b := [(a := 1) for i in range(2)]) for j in range(2)]\n    assert res == [[1, 1], [1, 1]], ('assertEqual', res, [[1, 1], [1, 1]])\n    assert a == 1, ('assertEqual', a, 1)\n    assert b == [1, 1], ('assertEqual', b, [1, 1])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_11",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    res = [(j := i) for i in range(5)]\n    assert res == [0, 1, 2, 3, 4], ('assertEqual', res, [0, 1, 2, 3, 4])\n    assert j == 4, ('assertEqual', j, 4)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_17",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    b = 0\n    res = [(b := (i + b)) for i in range(5)]\n    assert res == [0, 1, 3, 6, 10], ('assertEqual', res, [0, 1, 3, 6, 10])\n    assert b == 10, ('assertEqual', b, 10)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_18",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n    res = spam((b := 2))\n    assert res == 2, ('assertEqual', res, 2)\n    assert b == 2, ('assertEqual', b, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_19",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n    res = spam((b := 2))\n    assert res == 2, ('assertEqual', res, 2)\n    assert b == 2, ('assertEqual', b, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_20",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a):\n        return a\n    res = spam(a=(b := 2))\n    assert res == 2, ('assertEqual', res, 2)\n    assert b == 2, ('assertEqual', b, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_21",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a, b):\n        return a + b\n    res = spam((c := 2), b=1)\n    assert res == 3, ('assertEqual', res, 3)\n    assert c == 2, ('assertEqual', c, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_22",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a, b):\n        return a + b\n    res = spam((c := 2), b=1)\n    assert res == 3, ('assertEqual', res, 3)\n    assert c == 2, ('assertEqual', c, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_23",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def spam(a, b):\n        return a + b\n    res = spam(b=(c := 2), a=1)\n    assert res == 3, ('assertEqual', res, 3)\n    assert c == 2, ('assertEqual', c, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_24",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    a = 10\n\n    def spam():\n        nonlocal a\n        (a := 20)\n    spam()\n    assert a == 20, ('assertEqual', a, 20)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_25",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    ns = {}\n    code = 'a = 10\\ndef spam():\\n    global a\\n    (a := 20)\\nspam()'\n    exec(code, ns, {})\n    assert ns['a'] == 20, ('assertEqual', ns['a'], 20)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_variable_reuse_in_comprehensions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    rebinding = '[x := i for i in range(3) if (x := i) or not x]'\n    filter_ref = '[x := i for i in range(3) if x or not x]'\n    body_ref = '[x for i in range(3) if (x := i) or not x]'\n    nested_ref = '[j for i in range(3) if x or not x for j in range(3) if (x := i)][:-3]'\n    cases = [('Rebind global', f'x = 1; result = {rebinding}'), ('Rebind nonlocal', f'result, x = (lambda x=1: ({rebinding}, x))()'), ('Filter global', f'x = 1; result = {filter_ref}'), ('Filter nonlocal', f'result, x = (lambda x=1: ({filter_ref}, x))()'), ('Body global', f'x = 1; result = {body_ref}'), ('Body nonlocal', f'result, x = (lambda x=1: ({body_ref}, x))()'), ('Nested global', f'x = 1; result = {nested_ref}'), ('Nested nonlocal', f'result, x = (lambda x=1: ({nested_ref}, x))()')]\n    for case, code in cases:\n        ns = {}\n        exec(code, ns)\n        assert ns['x'] == 2, ('assertEqual', ns['x'], 2)\n        assert ns['result'] == [0, 1, 2], ('assertEqual', ns['result'], [0, 1, 2])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_global_scope",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "GLOBAL_VAR = None\n\ndef _t():\n    sentinel = object()\n    global GLOBAL_VAR\n\n    def f():\n        global GLOBAL_VAR\n        [(GLOBAL_VAR := sentinel) for _ in range(1)]\n        assert GLOBAL_VAR == sentinel, ('assertEqual', GLOBAL_VAR, sentinel)\n    try:\n        f()\n        assert GLOBAL_VAR == sentinel, ('assertEqual', GLOBAL_VAR, sentinel)\n    finally:\n        GLOBAL_VAR = None\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_global_scope_no_global_keyword",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "GLOBAL_VAR = None\n\ndef _t():\n    sentinel = object()\n\n    def f():\n        GLOBAL_VAR = None\n        [(GLOBAL_VAR := sentinel) for _ in range(1)]\n        assert GLOBAL_VAR == sentinel, ('assertEqual', GLOBAL_VAR, sentinel)\n    f()\n    assert GLOBAL_VAR == None, ('assertEqual', GLOBAL_VAR, None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_nonlocal_scope",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    sentinel = object()\n\n    def f():\n        nonlocal_var = None\n\n        def g():\n            nonlocal nonlocal_var\n            [(nonlocal_var := sentinel) for _ in range(1)]\n        g()\n        assert nonlocal_var == sentinel, ('assertEqual', nonlocal_var, sentinel)\n    f()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_nonlocal_scope_no_nonlocal_keyword",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    sentinel = object()\n\n    def f():\n        nonlocal_var = None\n\n        def g():\n            [(nonlocal_var := sentinel) for _ in range(1)]\n        g()\n        assert nonlocal_var == None, ('assertEqual', nonlocal_var, None)\n    f()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_in_genexp",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    a = 1\n    b = [1, 2, 3, 4]\n    genexp = ((c := (i + a)) for i in b)\n    assert 'c' not in locals(), ('assertNotIn', 'c', locals())\n    for idx, elem in enumerate(genexp):\n        assert elem == b[idx] + a, ('assertEqual', elem, b[idx] + a)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "NamedExpressionScopeTest.test_named_expression_scope_mangled_names",
+      "reason": "uses-self.assertEqual"
+    }
+  ],
+  "counts": {
+    "extracted": 74,
+    "pinned": 73,
+    "quarantined": 1
+  }
+}

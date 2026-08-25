@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "615abfd9c3b5ccaab40667ed7c744a40cd1b6d46",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_float/conv_float_pins.jac"
+  ],
+  "generated_at": "2026-08-24T23:00:26",
+  "hashes": {
+    "pins_jac": "159258c8dde793030d351d8249811fc52c0fce3be180a0403f0e623ba5e4a583",
+    "conversion_json": "ae369523616262f892b6b2c507b156a6864f1570f1916dfbae7b5d3e0bf0124f",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "float",
+  "counts": {
+    "converted": 54,
+    "runnable": 26,
+    "green": 20,
+    "quarantined": 28
+  },
+  "pins": [
+    {
+      "id": "GeneralFloatCases.test_float",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_noargs",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_underscores",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"argument of type \\'bool\\' is not a container or iterable\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_non_numeric_input_types",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"float() argument must be a string or a real number, not \\'CustomByteArray\\'\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_memoryview",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_keyword_args",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_keywords_in_subclass",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_is_integer",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_floatasratio",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_containment",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', nan, [nan])\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_floor",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_ceil",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_hash",
+      "status": "pass"
+    },
+    {
+      "id": "GeneralFloatCases.test_hash_nan",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', 8754498913735, 8754498978363)\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_issue_gh143006",
+      "status": "pass"
+    },
+    {
+      "id": "FormatTestCase.test_format",
+      "status": "pass"
+    },
+    {
+      "id": "FormatTestCase.test_issue5864",
+      "status": "pass"
+    },
+    {
+      "id": "FormatTestCase.test_issue35560",
+      "status": "pass"
+    },
+    {
+      "id": "InfNanTest.test_inf_from_str",
+      "status": "pass"
+    },
+    {
+      "id": "InfNanTest.test_inf_as_str",
+      "status": "pass"
+    },
+    {
+      "id": "InfNanTest.test_nan_from_str",
+      "status": "pass"
+    },
+    {
+      "id": "InfNanTest.test_nan_as_str",
+      "status": "pass"
+    },
+    {
+      "id": "InfNanTest.test_inf_signs",
+      "status": "pass"
+    },
+    {
+      "id": "InfNanTest.test_nan_signs",
+      "status": "pass"
+    },
+    {
+      "id": "HexFloatTestCase.test_invalid_inputs",
+      "status": "pass"
+    },
+    {
+      "id": "HexFloatTestCase.test_subclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIs\\', <class \\'float\\'>, <class \\'__main__.F\\'>)\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_with_comma",
+      "status": "quarantined",
+      "reason": "decorator:support.run_with_locale"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_mod",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_pow",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "FormatFunctionsTestCase.test_getformat",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "IEEEFormatTestCase.test_double_specials_do_unpack",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "IEEEFormatTestCase.test_float_specials_do_unpack",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "IEEEFormatTestCase.test_serialized_float_rounding",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "FormatTestCase.test_format_testfile",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "ReprTestCase.test_short_repr",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "RoundTestCase.test_inf_nan",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_inf_nan_ndigits",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_large_n",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_small_n",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_overflow",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_previous_round_bugs",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_matches_float_format",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_format_specials",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_None_ndigits",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "RoundTestCase.test_round_with_none_arg_direct_call",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "GeneralFloatCases.test_error_message",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "GeneralFloatCases.test_floatconversion",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "GeneralFloatCases.test_from_number",
+      "status": "quarantined",
+      "reason": "unresolved-name:cls"
+    },
+    {
+      "id": "GeneralFloatCases.test_from_number_subclass",
+      "status": "quarantined",
+      "reason": "self.test_from_number"
+    },
+    {
+      "id": "ReprTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "id": "HexFloatTestCase.test_ends",
+      "status": "quarantined",
+      "reason": "helper:identical(self.assertFloatsAreIdentical)"
+    },
+    {
+      "id": "HexFloatTestCase.test_whitespace",
+      "status": "quarantined",
+      "reason": "helper:identical(self.assertFloatsAreIdentical)"
+    },
+    {
+      "id": "HexFloatTestCase.test_from_hex",
+      "status": "quarantined",
+      "reason": "helper:identical(self.assertFloatsAreIdentical)"
+    },
+    {
+      "id": "HexFloatTestCase.test_roundtrip",
+      "status": "quarantined",
+      "reason": "helper:identical(self.assertFloatsAreIdentical)"
+    }
+  ]
+}

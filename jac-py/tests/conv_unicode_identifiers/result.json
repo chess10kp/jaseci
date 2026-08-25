@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_unicode_identifiers/conv_unicode_identifiers_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:42:11",
+  "hashes": {
+    "pins_jac": "2b06f7ce92c1db88cd803ede8e0eee52f4f463d5ab6313ee5df9bb813c126298",
+    "conversion_json": "9069f89618824d860491df8a19d6949a4a09b88dce0bb66b01719b551619ad9d",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "unicode_identifiers",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 3,
+    "runnable": 3,
+    "green": 2,
+    "quarantined": 0,
+    "failed": 1,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "PEP3131Test.test_invalid",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC ModuleNotFoundError \"No module named \\'test.tokenizedata\\'\"'>"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_unpack/conv_unpack_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:42:13",
+  "hashes": {
+    "pins_jac": "5855fd045a9e81f6d4b90da029da7184dbe45e642d9c1a92459ca367d2166cc3",
+    "conversion_json": "9edd21be489dbcca5b310f569425872a639c9889a06a98811562d8fc6bd48c5a",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "unpack",
+  "counts": {
+    "converted": 5,
+    "runnable": 2,
+    "green": 0,
+    "quarantined": 3
+  },
+  "pins": [
+    {
+      "id": "TestCornerCases.test_extended_oparg_not_ignored",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC ValueError 'not enough values to unpack (expected 400, got 0)'\">"
+    },
+    {
+      "id": "unpack.doctests:doctests",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'ValueError: not enough values to unpack (expected 3, got 0)'>"
+    },
+    {
+      "id": "unpack.doctests:doctests.ex29",
+      "status": "quarantined",
+      "reason": "doctest-module-qualified-expected"
+    },
+    {
+      "id": "unpack.doctests:doctests.ex30",
+      "status": "quarantined",
+      "reason": "doctest-module-qualified-expected"
+    },
+    {
+      "id": "unpack.doctests:doctests.ex41",
+      "status": "quarantined",
+      "reason": "doctest-depends-on-dropped:['d']"
+    }
+  ]
+}

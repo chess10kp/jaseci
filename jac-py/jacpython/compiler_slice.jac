@@ -10,6 +10,8 @@ import from objects {
     PyCode,
     PyInt,
     PyBool,
+    PyStr,
+    hashkey_equal,
     expect_int,
     expect_str,
     is_error,
@@ -42,11 +44,14 @@ import from ast_nodes {
     Add,
     Mult,
     USub,
+    JoinedStr,
+    FormattedValue,
 }
 import from parser { parse_file }
 import from ast_nodes { Module }
 import from compiler_codegen { compile_eval, compile_exec }
 import from flowgraph { verify_cfg }
+import from pycode_diff { pycode_diff_message }
 import from assembler { assemble }
 import from compiler_validate { validate_module_body }
 import from compiler_symtable { build_module_symtable }
@@ -204,7 +209,7 @@ def consts_equal(a: list[PyObj], b: list[PyObj]) -> bool {
     }
     i = 0;
     while i < len(a) {
-        if a[i].tp_hashkey() != b[i].tp_hashkey() {
+        if not hashkey_equal(a[i].tp_hashkey(), b[i].tp_hashkey()) {
             return False;
         }
         i = i + 1;
@@ -2704,6 +2709,82 @@ test "compiler_slice: band6 assert failure parsed raises AssertionError in ceval
     assert err.exception.message == "fail";
 }
 
+# -------- Band 6 slice 8: except-as binding in combined try/except/finally --------
+
+test "compiler_slice: band6 try except as finally caught parsed matches oracle co_code" {
+    src = (
+        "try:\n"
+        + "    result = 10 // 0\n"
+        + "except ZeroDivisionError as e:\n"
+        + "    result = str(e)\n"
+        + "finally:\n"
+        + "    marker = 9\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.stacksize == exp.stacksize;
+}
+
+test "compiler_slice: band6 try except as finally caught executes in ceval" {
+    src = (
+        "try:\n"
+        + "    result = 10 // 0\n"
+        + "except ZeroDivisionError as e:\n"
+        + "    result = str(e)\n"
+        + "finally:\n"
+        + "    marker = 9\n"
+    );
+    co = compile_parsed_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co, [], ns);
+    assert not is_error(out);
+    assert expect_str(ns["result"]) == "division by zero";
+    assert expect_int(ns["marker"]) == 9;
+}
+
+test "compiler_slice: band6 try except as finally handler raises parsed matches oracle co_code" {
+    src = (
+        "try:\n"
+        + "    raise ValueError('v')\n"
+        + "except ValueError as e:\n"
+        + "    result = str(e)\n"
+        + "    raise KeyError('k')\n"
+        + "finally:\n"
+        + "    marker = 9\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.stacksize == exp.stacksize;
+}
+
+test "compiler_slice: band6 try except as finally handler raises propagates in ceval" {
+    src = (
+        "try:\n"
+        + "    raise ValueError('v')\n"
+        + "except ValueError as e:\n"
+        + "    result = str(e)\n"
+        + "    raise KeyError('k')\n"
+        + "finally:\n"
+        + "    marker = 9\n"
+    );
+    co = compile_parsed_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co, [], ns);
+    assert is_error(out);
+    err = out as PyError;
+    assert err.exception.type_name == "KeyError";
+    assert expect_str(ns["result"]) == "v";
+    assert expect_int(ns["marker"]) == 9;
+}
+
 # ---------------- Band 7 slice 1: generator yield ----------------
 
 test "compiler_slice: band7 generator yield parsed matches oracle nested gen co_code" {
@@ -3601,5 +3682,634 @@ test "compiler_slice: fast-local load borrow/own strength reduction matches orac
         assert af.co_code == ef.co_code;
         assert af.exceptiontable == ef.exceptiontable;
         assert af.stacksize == ef.stacksize;
+    }
+}
+
+# Band 11: function-local annotated assignment (PEP 649). The host oracle
+# emits ONLY the assignment side at local scope (annotations are deferred to
+# module/class __annotate__ plumbing, a separate slice); bare locals emit
+# nothing. Byte-exact against the oracle for value stores on name, attribute,
+# and subscript targets, plus the no-op bare form.
+test "compiler_slice: band-11 local AnnAssign matches oracle bytes" {
+    for src in [
+        "def f():\n    q: int = 3\n    return q\n",
+        "def f(o):\n    o.k: int = 1\n    return o\n",
+        "def f(d):\n    d['k']: int = 1\n    return d\n",
+        "def f(x):\n    (x): int = 4\n    return x\n",
+        "def f():\n    z: float\n",
+        # Annotation referencing an undefined name must not fail at compile
+        # time (laziness): the annotation is dropped locally.
+        "def f():\n    r: LaterAlias = Q()\n    return r\n"
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        af = nested_code_by_name(actual, "f");
+        ef = nested_code_by_name(expected as PyCode, "f");
+        assert af.co_code == ef.co_code;
+        assert af.exceptiontable == ef.exceptiontable;
+        assert af.stacksize == ef.stacksize;
+    }
+}
+
+# Band 11 slice 2: MODULE-scope annotated assignments lower into the PEP 649
+# deferred machinery (cellvar __conditional_annotations__, synthetic
+# __annotate__(format) code object, per-statement SET_ADD registration).
+# Byte-parity against the host oracle for code, tables, stack, name/const
+# pools and scope tables, on the module object and its nested __annotate__.
+test "compiler_slice: band-11 module AnnAssign matches oracle bytes" {
+    for src in [
+        "x: int = 5\n",
+        "x: list\n",
+        "T = int\n\nx: int = 5\ny: list[int]\n",
+        "a = 's'\nx: list\n",
+        "# c\nx: int = 5\n",
+        'x: "int" = 5\n',
+        "x: int = 5\nx: str = 'a'\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert actual.co_code == exp.co_code;
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+        assert actual.names == exp.names;
+        assert actual.varnames == exp.varnames;
+        assert actual.cellvars == exp.cellvars;
+        assert consts_equal(actual.consts, exp.consts);
+        ann_a = nested_code_by_name(actual, "__annotate__");
+        ann_e = nested_code_by_name(exp, "__annotate__");
+        assert ann_a.co_code == ann_e.co_code;
+        assert ann_a.exceptiontable == ann_e.exceptiontable;
+        assert ann_a.stacksize == ann_e.stacksize;
+        assert ann_a.names == ann_e.names;
+        assert ann_a.varnames == ann_e.varnames;
+        assert ann_a.freevars == ann_e.freevars;
+        assert consts_equal(ann_a.consts, ann_e.consts);
+    }
+}
+
+# Attribute/subscript annotated targets never join the annotation dict; they
+# keep plain assignment semantics (bare forms evaluate the target object and
+# discard it). The scope still gains the conditional-annotation set.
+test "compiler_slice: band-11 module attr/subscript AnnAssign matches oracle" {
+    for src in [
+        "o.k: int = 1\n",
+        "d['k']: int = 1\n",
+        "o.k: int\n",
+        "if p:\n    x: int = 5\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert actual.co_code == exp.co_code;
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+        assert actual.names == exp.names;
+        assert actual.cellvars == exp.cellvars;
+        assert consts_equal(actual.consts, exp.consts);
+    }
+}
+
+# Band 11 slice 3: CLASS-scope annotated assignments lower into the PEP 649
+# classdict machinery: cellvar __classdict__, synthetic __annotate__(format)
+# closed over the classdict cell (STORE_NAME __annotate_func__), per-name
+# LOAD_DEREF/LOAD_FROM_DICT_OR_GLOBALS resolution, and COPY 2 above each
+# evaluated annotation before the key push. Byte-parity against the host
+# oracle for code, tables, stack, name/const pools and scope tables, on the
+# class object and its nested __annotate__.
+test "compiler_slice: band-11 class AnnAssign matches oracle bytes" {
+    for src in [
+        "class C:\n    y: str = 'a'\n    z: dict\n",
+        "class C:\n    y: str = 'a'\n",
+        "class C:\n    z: dict\n",
+        "class C:\n    x: int = 1\n    y: list[int]\n    z: 'MyStr'\n    w: mod.Attr[int]\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert actual.co_code == exp.co_code;
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+        assert actual.names == exp.names;
+        assert actual.varnames == exp.varnames;
+        assert actual.cellvars == exp.cellvars;
+        assert consts_equal(actual.consts, exp.consts);
+        cls_a = nested_code_by_name(actual, "C");
+        cls_e = nested_code_by_name(exp, "C");
+        assert cls_a.co_code == cls_e.co_code;
+        assert cls_a.exceptiontable == cls_e.exceptiontable;
+        assert cls_a.stacksize == cls_e.stacksize;
+        assert cls_a.names == cls_e.names;
+        assert cls_a.varnames == cls_e.varnames;
+        assert cls_a.cellvars == cls_e.cellvars;
+        assert cls_a.freevars == cls_e.freevars;
+        assert consts_equal(cls_a.consts, cls_e.consts);
+        ann_a = nested_code_by_name(cls_a, "__annotate__");
+        ann_e = nested_code_by_name(cls_e, "__annotate__");
+        assert ann_a.qualname == ann_e.qualname;
+        assert ann_a.co_code == ann_e.co_code;
+        assert ann_a.exceptiontable == ann_e.exceptiontable;
+        assert ann_a.stacksize == ann_e.stacksize;
+        assert ann_a.names == ann_e.names;
+        assert ann_a.varnames == ann_e.varnames;
+        assert ann_a.freevars == ann_e.freevars;
+        assert consts_equal(ann_a.consts, ann_e.consts);
+    }
+}
+
+# Known gaps NOT covered above (each blocks its shape today; flip to parity
+# coverage when unblocked):
+#  - Conditional entries (AnnAssign under if/while/try in a class body): ANY
+#    control flow in a class body fails to compile with "Invalid CFG,
+#    instructions after terminator" -- pre-existing on HEAD, independent of
+#    annotations (function-scope control flow works). The conditional-entry
+#    emitter (__conditional_annotations__ cellvar, two-cell closure,
+#    membership-guarded annotate body) is implemented and matches the pinned
+#    CPython shape but cannot be exercised until that bug is fixed.
+#  - Nested classes: our compiler lacks <locals>-qualified qualnames for ALL
+#    nested scopes (def-in-def emits co_qualname "g" where CPython emits
+#    "f.<locals>.g"), so the nested-class annotate qualname and the class's
+#    own __qualname__ const differ. collect_ann_plan_class inherits the full
+#    qualname automatically once sym_class_qualname produces it.
+
+# Codegen-parity gap (c): `not` in jump context must fold into an inverted
+# conditional jump (CPython compiler_jump_if_not); UNARY_NOT only survives in
+# value context. Double negation cancels; the `x is None` peephole survives
+# under a folded not with flipped polarity.
+test "compiler_slice: if/while not-test folds to inverted jump matching oracle" {
+    for src in [
+        "if not flag:\n    r = 1\nelse:\n    r = 2\n",
+        "while not flag:\n    flag = g()\n"
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert actual.co_code == exp.co_code;
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+    }
+}
+
+test "compiler_slice: folded-not None-identity peephole matches oracle" {
+    src = "if not (x is None):\n    r = 1\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.stacksize == exp.stacksize;
+}
+
+test "compiler_slice: double negation in test context matches oracle" {
+    src = "if not not flag:\n    r = 1\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.stacksize == exp.stacksize;
+}
+
+test "compiler_slice: value-context not keeps UNARY_NOT" {
+    src = "r = not flag\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+}
+
+# Recursive byte-parity over a code object tree: co_code/exceptiontable/
+# stacksize/name tables/var pools/flags/argcounts plus every nested const code.
+def assert_typealias_parity(actual: PyCode, expected: PyCode) -> None {
+    assert actual.co_code == expected.co_code;
+    assert actual.exceptiontable == expected.exceptiontable;
+    assert actual.stacksize == expected.stacksize;
+    assert actual.names == expected.names;
+    assert actual.varnames == expected.varnames;
+    assert actual.cellvars == expected.cellvars;
+    assert actual.freevars == expected.freevars;
+    assert actual.flags == expected.flags;
+    assert actual.argcount == expected.argcount;
+    assert actual.posonlyargcount == expected.posonlyargcount;
+    assert consts_equal(actual.consts, expected.consts);
+    ci = 0;
+    while ci < len(actual.consts) {
+        ca = actual.consts[ci];
+        cb = expected.consts[ci];
+        if isinstance(ca, PyCode) {
+            assert isinstance(cb, PyCode);
+            assert_typealias_parity(ca as PyCode, cb as PyCode);
+        }
+        ci = ci + 1;
+    }
+}
+
+# Band 11 slice 4: PEP 695 `type X = v` / `type X[T, ...] = v`. CPython 3.14
+# shapes pinned from host dis (b11_frontier dump + live dis):
+#   - non-generic: LOAD_CONST name/None/(1,) + lazy value fn (only param
+#     .format, guard: format > 2 raises NotImplementedError via
+#     LOAD_COMMON_CONSTANT) -> MAKE_FUNCTION -> SET_FUNCTION_ATTRIBUTE 1
+#     (defaults) -> BUILD_TUPLE 3 -> CALL_INTRINSIC_1 11 (TYPEALIAS);
+#   - generic: hidden <generic parameters of X> fn builds one TypeVar per
+#     param into cells (CALL_INTRINSIC_1 7), then (name, tps-tuple,
+#     closure+defaults-wrapped value fn); outer module just calls it;
+#   - direct class body: __classdict__ cell joins the closure chain and the
+#     value scope resolves bare names through it.
+test "compiler_slice: band-11 type alias statements match oracle bytes" {
+    for src in [
+        "type Alias = int\n",
+        "type Pair[T] = tuple[T, T]\n",
+        "type Two[T, U] = list[T | U]\n",
+        "type Deep = list[dict[str, int]]\n",
+        "def f():\n    type Inner = int\n    return Inner\n",
+        "class C:\n    type TA = str\n",
+        "def f():\n    type P[T] = list[T]\n    return P\n",
+        "type A = int\ntype B = list[A]\n",
+        "type R = int\ntype R = str\nx = 1\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        assert_typealias_parity(actual, expected as PyCode);
+    }
+}
+
+# Band 11: call-site * / ** argument unpacking lowers to CALL_FUNCTION_EX.
+# CPython 3.14 shapes pinned from host dis:
+#   - single lone *x evaluates x directly (the VM tuple-izes it);
+#   - otherwise BUILD_LIST over the leading plain run, LIST_EXTEND per
+#     *starred / LIST_APPEND per trailing plain, closed by
+#     CALL_INTRINSIC_1(LIST_TO_TUPLE); a kwargs-only call uses a late-const
+#     empty tuple instead;
+#   - the kwargs side opens with BUILD_MAP over the leading explicit-keyword
+#     run (possibly zero pairs) and DICT_MERGEs every following element in
+#     source order; a pure *args call pushes a NULL placeholder for the slot;
+#   - CALL_FUNCTION_EX itself carries no oparg in 3.14.
+test "compiler_slice: band-11 call-site star unpacking matches oracle bytes" {
+    for src in [
+        "def f(*a, **k):\n    pass\nargs = 'ab'\nr = f(*args)\n",
+        "def f(*a, **k):\n    pass\nkw = {'x': 1}\nr = f(**kw)\n",
+        "def f(*a, **k):\n    pass\nargs = 'ab'\nr = f(1, *args)\n",
+        "def f(*a, **k):\n    pass\nkw = {'y': 3}\nr = f(x=1, **kw)\n",
+        "def f(*a, **k):\n    pass\nargs = 'ab'\nkw = {'z': 7}\nr = f(1, *args, x=2, **kw)\n",
+        "def f(*a, **k):\n    pass\nargs = 'ab'\nmore = 'cd'\nr = f(*args, *more)\n",
+        "def f(*a, **k):\n    pass\nkw = {'a': 1}\nkw2 = {'b': 2}\nr = f(**kw, **kw2)\n",
+        "def f(*a, **k):\n    pass\nargs = 'ab'\nr = f(*args, x=1)\n",
+        "def f(*a, **k):\n    pass\nk1 = {'m': 1}\nk2 = {'n': 2}\nr = f(**k1, y=2, **k2)\n",
+        "def f(*a, **k):\n    pass\np = 1\na2 = 'ef'\nr = f(p, *a2)\n",
+        "def f(*a, **k):\n    pass\np = 1\nr = f(p, 2, y=3, **kw0)\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert actual.co_code == exp.co_code;
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+        assert actual.names == exp.names;
+        assert consts_equal(actual.consts, exp.consts);
+    }
+}
+
+# ---------------- Band 11 slice: try/except* (TryStar) ----------------
+# except* lowers to CPython 3.14's ExceptionGroup walk: a results list
+# accumulates each CHECK_EG_MATCH remainder, then INTRINSIC_PREP_RERAISE_STAR
+# recombines it. Byte-exact against the host oracle including co_names and
+# linetable for the shapes below.
+#
+# Known-blocked shapes (NOT TryStar-lowering bugs):
+#  - any `try` followed by unconsumed module/function code: verify_cfg rejects
+#    with "instructions after terminator" -- pre-existing on HEAD for plain
+#    try too (flip these on when unblocked).
+#  - fresh names bound in an `else` clause get co_names indices allocated at
+#    orelse emit time (before the handler section) instead of CPython's AST
+#    order; reuse existing names in else bodies until that ordering moves.
+
+test "compiler_slice: band11 except* bare handler matches oracle PyCode" {
+    src = (
+        "try:\n"
+        + "    pass\n"
+        + "except* ValueError:\n"
+        + "    pass\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.linetable == exp.linetable;
+    assert actual.stacksize == exp.stacksize;
+}
+
+test "compiler_slice: band11 except* as-binding matches oracle PyCode" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except* ValueError as e:\n"
+        + "    y = e\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.linetable == exp.linetable;
+    assert actual.names == exp.names;
+}
+
+test "compiler_slice: band11 multiple except* mixed binds matches oracle PyCode" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except* ValueError:\n"
+        + "    a = 1\n"
+        + "except* TypeError as e:\n"
+        + "    b = e\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.linetable == exp.linetable;
+    assert actual.names == exp.names;
+}
+
+test "compiler_slice: band11 multiple unbound except* matches oracle PyCode" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except* ValueError:\n"
+        + "    a = 1\n"
+        + "except* TypeError:\n"
+        + "    b = 2\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.linetable == exp.linetable;
+    assert actual.names == exp.names;
+}
+
+test "compiler_slice: band11 except* with else reusing names matches oracle PyCode" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except* ValueError as e:\n"
+        + "    y = e\n"
+        + "else:\n"
+        + "    x = 2\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.linetable == exp.linetable;
+}
+
+# ---------------- band 12: f-string lowering (JoinedStr/FormattedValue) ----------------
+#
+# The tokenizer still emits f-strings as plain STRING tokens and the fstring
+# parser actions are stubs, so these tests hand-build JoinedStr ASTs with
+# CPython 3.14-exact source spans (host ast.parse verified) and diff the
+# compiled PyCode against the host oracle. Representation contract for the
+# parser lane: text segments are plain Constants; every interpolation part --
+# including bare string literals like {"b"} -- is a FormattedValue (conversion
+# -1/115/114/97, format_spec None or an expr); {x=} debug form arrives as a
+# Constant holding "<expr>=" plus a FormattedValue with conversion 114.
+
+def fs_name(id: str, c0: int, c1: int) -> expr {
+    return Name(
+        id=id, ctx=Load(), lineno=1, col_offset=c0, end_lineno=1, end_col_offset=c1
+    );
+}
+
+def fs_text(s: str, c0: int, c1: int) -> expr {
+    return Constant(
+        value=PyStr(t="str", val=s),
+        kind=None,
+        lineno=1,
+        col_offset=c0,
+        end_lineno=1,
+        end_col_offset=c1
+    );
+}
+
+def fs_fmt(v: expr, conversion: int, spec: expr | None, c0: int, c1: int) -> expr {
+    return FormattedValue(
+        value=v,
+        conversion=conversion,
+        format_spec=spec,
+        lineno=1,
+        col_offset=c0,
+        end_lineno=1,
+        end_col_offset=c1
+    );
+}
+
+def fs_js(vals: list[expr], c0: int, c1: int) -> expr {
+    return JoinedStr(
+        values=vals, lineno=1, col_offset=c0, end_lineno=1, end_col_offset=c1
+    );
+}
+
+test "compiler_slice: f-string text-only matches oracle PyCode" {
+    assert_matches_oracle(fs_js([fs_text("plain", 2, 7)], 0, 8), "f'plain'");
+}
+
+test "compiler_slice: f-string single interpolation omits BUILD_STRING 1" {
+    assert_matches_oracle(
+        fs_js([fs_fmt(fs_name("x", 3, 4), -1, None, 2, 5)], 0, 6), "f'{x}'"
+    );
+}
+
+test "compiler_slice: f-string text + interpolation joins BUILD_STRING 2" {
+    assert_matches_oracle(
+        fs_js([fs_text("plain ", 2, 8), fs_fmt(fs_name("n", 9, 10), -1, None, 8, 11)], 0, 12),
+        "f'plain {n}'"
+    );
+}
+
+test "compiler_slice: f-string conversions !r !s !a emit CONVERT_VALUE" {
+    assert_matches_oracle(
+        fs_js([
+            fs_text("a", 2, 3),
+            fs_fmt(fs_name("x", 4, 5), 114, None, 3, 8),
+            fs_text("b", 8, 9),
+            fs_fmt(fs_name("y", 10, 11), 115, None, 9, 14),
+            fs_fmt(fs_name("z", 15, 16), 97, None, 14, 19)
+        ], 0, 20),
+        "f'a{x!r}b{y!s}{z!a}'"
+    );
+}
+
+test "compiler_slice: f-string constant format spec emits FORMAT_WITH_SPEC" {
+    assert_matches_oracle(
+        fs_js([
+            fs_fmt(fs_name("x", 3, 4), -1, fs_js([fs_text(">8", 5, 7)], 4, 7), 2, 8)
+        ], 0, 9),
+        "f'{x:>8}'"
+    );
+}
+
+test "compiler_slice: f-string dynamic format spec formats the spec expression" {
+    assert_matches_oracle(
+        fs_js([
+            fs_fmt(
+                fs_name("x", 3, 4),
+                -1,
+                fs_js([fs_fmt(fs_name("w", 6, 7), -1, None, 5, 8)], 4, 8),
+                2,
+                9
+            )
+        ], 0, 10),
+        "f'{x:{w}}'"
+    );
+}
+
+test "compiler_slice: f-string debug form keeps <expr>= text and repr conversion" {
+    assert_matches_oracle(
+        fs_js([
+            fs_text("x=", 3, 5),
+            fs_fmt(fs_name("x", 3, 4), 114, None, 2, 6),
+            fs_text(" tail y=", 6, 15),
+            fs_fmt(fs_name("y", 13, 14), 114, None, 12, 16)
+        ], 0, 17),
+        "f'{x=} tail {y=}'"
+    );
+}
+
+test "compiler_slice: f-string nested string literal part is formatted" {
+    assert_matches_oracle(
+        fs_js([fs_fmt(fs_text("b", 3, 6), -1, None, 2, 7)], 0, 8),
+        "f'{\"b\"}'"
+    );
+}
+
+# Function scope: name loads resolve through the symtable inside the nested
+# code; co_code compared here (the nested-function RESUME linetable row is a
+# pre-existing prologue gap tracked separately -- identical delta on a no-fstring
+# control).
+test "compiler_slice: f-string in function scope matches oracle nested co_code" {
+    xarg = arg(
+        arg="x",
+        annotation=None,
+        type_comment=None,
+        lineno=1,
+        col_offset=7,
+        end_lineno=1,
+        end_col_offset=8
+    );
+    fv = fs_fmt(fs_name("x", 16, 17), -1, None, 15, 18);
+    fbody = [
+        Return(
+            value=fs_js([fs_text("v=", 13, 15), fv], 11, 19),
+            lineno=2,
+            col_offset=4,
+            end_lineno=2,
+            end_col_offset=19
+        )
+    ];
+    fdef = FunctionDef(
+        name="f",
+        args=arguments(
+            posonlyargs=[],
+            args=[xarg],
+            vararg=None,
+            kwonlyargs=[],
+            kw_defaults=[],
+            kwarg=None,
+            defaults=[]
+        ),
+        body=fbody,
+        decorator_list=[],
+        returns=None,
+        type_comment=None,
+        type_params=[],
+        lineno=1,
+        col_offset=0,
+        end_lineno=2,
+        end_col_offset=19
+    );
+    actual = compile_handbuilt_exec([fdef]);
+    expected = oracle_exec("def f(x):\n    return f'v={x}'\n", "<f>");
+    assert isinstance(expected, PyCode);
+    af = nested_code_by_name(actual, "f");
+    ef = nested_code_by_name(expected as PyCode, "f");
+    assert af.co_code == ef.co_code;
+}
+
+# Byte-parity helpers for parsed-exec sources: full recursive PyCode compare
+# against the host oracle with a precise diff path on mismatch.
+def assert_parsed_matches_oracle(src: str) {
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    msg = pycode_diff_message(expected as PyCode, actual);
+    assert msg == "", msg;
+}
+
+# GAP 3b: def defaults / *args / **kw const interning order must match the
+# host exactly -- scalar default leaves interned at visit time, kwdefault keys
+# next, code object after them (CPython adds it at MAKE_FUNCTION emission),
+# folded defaults tuple appended last by the optimizer; dead leaves dropped by
+# remove_unused_consts except index 0.
+test "compiler_slice: def defaults/*args/**kw shapes match oracle bytes" {
+    for src in [
+        "def f(a, b=2):\n    return a\n",
+        "def f(a, b=(1,3)):\n    return a\n",
+        "def f(a, b=((1,2),3)):\n    return a\n",
+        "def f(a, b=2, *args, c=3, d=4, **kw):\n    return a\n",
+        "def f(a, *args, c=3, **kw):\n    return a\n",
+        "def f(*args, **kw):\n    return args\n",
+        "def f(a, b=(1,2), *args, c={'k':3}, **kw):\n    return a\n",
+        "def f(a, *args, c=300, **kw):\n    return a\n",
+        "def f(a, *args, c='s', **kw):\n    return a\n",
+        "def f(a, b=2):\n    return a\ndef g(q, w=9):\n    return q\n",
+        "def f(a, b=2):\n    return a\nx = 5\ny = 'z'\n",
+        "f = lambda a, b=2, *args, c=3, **kw: a\n",
+        "def f(a, b=x):\n    return a\n",
+        "def f():\n    return 1\n",
+        "def f(x):\n    return x\n",
+        "def f():\n    raise ValueError()\n",
+    ] {
+        assert_parsed_matches_oracle(src);
+    }
+}
+
+# GAP 3c: comprehension filters lower through CPython's codegen_jump_if --
+# `not` folds into the branch polarity, single comparisons keep their
+# bool-oparg COMPARE_OP with no TO_BOOL, every other expression gets TO_BOOL
+# before the branch. Deferred comp cleanup handlers must be emitted even when
+# the enclosing body ends in a terminator.
+test "compiler_slice: comprehension filters match oracle bytes" {
+    for src in [
+        "a = [y*2 for y in z if y % 3]\nb = [y*2 for y in z]\n",
+        "def f(z):\n    return [y*2 for y in z]\n",
+        "def f(z):\n    return [y*2 for y in z if y % 3]\n",
+        "def f(z):\n    return [y for y in z if y < 2]\n",
+        "def f(z):\n    return [y for y in z if not y % 3]\n",
+        "def f(z):\n    return [y for y in z if abs(y)]\n",
+        "def f(z):\n    return {y for y in z if y % 3}\n",
+        "def f(z):\n    return {y: 1 for y in z if y % 3}\n",
+        "def f(z):\n    return [w for w in z if w]\n",
+    ] {
+        assert_parsed_matches_oracle(src);
     }
 }

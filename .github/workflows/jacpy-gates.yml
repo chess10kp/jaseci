@@ -15,7 +15,9 @@ on:
 
 concurrency:
   group: jacpy-gates-${{ github.ref }}
-  cancel-in-progress: false
+  # Supersede stale push-triggered runs, but never kill an explicit
+  # workflow_dispatch run mid-flight (expressions are supported here).
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -263,4 +265,16 @@ jobs:
 
       - name: Directory enumeration tests
         run: jac test jac-py/jacpython/test_dir_enumeration.jac
+
+      - name: Function attribute surface pins
+        run: jac test jac-py/jacpython/test_func_attr_surface.jac
+
+      - name: Attribute protocol pins
+        run: jac test jac-py/jacpython/test_attr_protocol.jac
+
+      - name: Heapq native shim pins
+        run: jac test jac-py/jacpython/test_heapq_shim.jac
+
+      - name: T-string runtime arm pins
+        run: jac test jac-py/jacpython/test_tstring_arms.jac
 

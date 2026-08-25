@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_scope/conv_scope_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:41:29",
+  "hashes": {
+    "pins_jac": "7e408cafd6da1a8b5e52b6ddba5aab94f70add1c0f5f65164827fd3d51360b34",
+    "conversion_json": "527bc85b9ef29208f51f6edb92d4de286260536cf026dde62eb75dc9f7acc627",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "scope",
+  "counts": {
+    "converted": 41,
+    "runnable": 33,
+    "green": 24,
+    "quarantined": 8
+  },
+  "pins": [
+    {
+      "id": "ScopeTests.testSimpleNesting",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testExtraNesting",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testSimpleAndRebinding",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNestingGlobalNoFree",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNestingThroughClass",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNestingPlusFreeRefToGlobal",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNearestEnclosingScope",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testMixedFreevarsAndCellvars",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testFreeVarInMethod",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testCellIsKwonlyArg",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testCellIsArgAndEscapes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__closure__'\">"
+    },
+    {
+      "id": "ScopeTests.testCellIsLocalAndEscapes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__closure__'\">"
+    },
+    {
+      "id": "ScopeTests.testRecursion",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testUnoptimizedNamespaces",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "ScopeTests.testLambdas",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testUnboundLocal",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testUnboundLocal_AfterDel",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC SystemError 'unsupported opcode 62'\">"
+    },
+    {
+      "id": "ScopeTests.testUnboundLocal_AugAssign",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'fail'"
+    },
+    {
+      "id": "ScopeTests.testComplexDefinitions",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testScopeOfGlobalStmt",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "ScopeTests.testLeaks",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    },
+    {
+      "id": "ScopeTests.testClassAndGlobal",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "ScopeTests.testLocalsFunction",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', \\'h\\', {\\'fn\\': <built-in function locals>, \\'args\\': [], \\'kwargs\\': {}})\"'>"
+    },
+    {
+      "id": "ScopeTests.testLocalsClass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', \\'y\\', [\\'fn\\', \\'args\\', \\'kwargs\\'])\"'>"
+    },
+    {
+      "id": "ScopeTests.testBoundAndFree",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testEvalExecFreeVars",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC NameError 'free variable is not set'\">"
+    },
+    {
+      "id": "ScopeTests.testListCompLocalVars",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testEvalFreeVars",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "ScopeTests.testNonLocalFunction",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNonLocalMethod",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testGlobalInParallelNestedFunctions",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNonLocalClass",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNonLocalGenerator",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testNestedNonLocal",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testTopIsNotSignificant",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testCellLeak",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    },
+    {
+      "id": "ScopeTests.test_multiple_nesting",
+      "status": "pass"
+    },
+    {
+      "id": "ScopeTests.testLocalsClass_WithTrace",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "ScopeTests.testInteractionWithTraceFunc",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "ScopeTests.testFreeingCell",
+      "status": "quarantined",
+      "reason": "unresolved-name:nestedcell_get"
+    },
+    {
+      "id": "ScopeTests.testClassNamespaceOverridesClosure",
+      "status": "quarantined",
+      "reason": "self.assertNotHasAttr"
+    }
+  ]
+}

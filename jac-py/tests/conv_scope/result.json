@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_scope/conv_scope_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:41:29",
+  "hashes": {
+    "pins_jac": "7e408cafd6da1a8b5e52b6ddba5aab94f70add1c0f5f65164827fd3d51360b34",
+    "conversion_json": "527bc85b9ef29208f51f6edb92d4de286260536cf026dde62eb75dc9f7acc627",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "scope",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 41,
+    "runnable": 33,
+    "green": 24,
+    "quarantined": 8,
+    "failed": 9,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "ScopeTests.testCellIsArgAndEscapes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__closure__'\">"
+    },
+    {
+      "id": "ScopeTests.testCellIsLocalAndEscapes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__closure__'\">"
+    },
+    {
+      "id": "ScopeTests.testUnboundLocal_AfterDel",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC SystemError 'unsupported opcode 62'\">"
+    },
+    {
+      "id": "ScopeTests.testLeaks",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    },
+    {
+      "id": "ScopeTests.testLocalsFunction",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', \\'h\\', {\\'fn\\': <built-in function locals>, \\'args\\': [], \\'kwargs\\': {}})\"'>"
+    },
+    {
+      "id": "ScopeTests.testLocalsClass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', \\'y\\', [\\'fn\\', \\'args\\', \\'kwargs\\'])\"'>"
+    },
+    {
+      "id": "ScopeTests.testEvalExecFreeVars",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC NameError 'free variable is not set'\">"
+    },
+    {
+      "id": "ScopeTests.testEvalFreeVars",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "ScopeTests.testCellLeak",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    }
+  ]
+}

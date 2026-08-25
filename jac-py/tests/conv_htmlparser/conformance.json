@@ -1,0 +1,413 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_htmlparser/conv_htmlparser_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:33:32",
+  "hashes": {
+    "pins_jac": "ba081137d37d28c0221fbf1795fd5f792d054f8a32b7c5524da402f1d0db02e5",
+    "conversion_json": "051994cc0c1b5fc27153e65cb4981ec2ce9955e23898462348b55885886f237b",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "htmlparser",
+  "counts": {
+    "converted": 67,
+    "runnable": 50,
+    "green": 0,
+    "quarantined": 17
+  },
+  "pins": [
+    {
+      "id": "HTMLParserTestCase.test_processing_instruction_only",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_simple_html",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_malformatted_charref",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_unclosed_entityref",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_in_entityref",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_unclosed_charref",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_in_charref",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_bad_nesting",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_bare_ampersands",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_bare_pointy_brackets",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_starttag_end_boundary",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_buffer_artefacts",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_valid_doctypes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_startendtag",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_get_starttag_text",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_noscript_content",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_plaintext_content",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_comments",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_condcoms",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_tolerant_parsing",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_starttag_junk_chars",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_slashes_in_starttag",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_slashes_in_endtag",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_declaration_junk_chars",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_illegal_declarations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_invalid_end_tags",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_broken_invalid_end_tag",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_correct_detection_of_start_tags",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_in_comments",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_in_declarations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_bogus_comments",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_broken_condcoms",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_cdata_section",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_attr_syntax",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_attr_values",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_attr_nonascii",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_attr_entity_replacement",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_attr_funky_names",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_entityrefs_in_attributes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_attr_funky_names2",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_entities_in_attribute_value",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_malformed_attributes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_malformed_adjacent_attributes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_adjacent_attributes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_missing_attribute_value",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_javascript_attribute_value",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_end_tag_in_attribute_value",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_with_unquoted_attributes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_comma_between_attributes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "AttributesTestCase.test_weird_chars_in_unquoted_attribute_values",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "HTMLParserTestCase.test_script_content",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_style_content",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_rcdata_content",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_rawtext_content",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_script_closing_tag",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_closing_tag",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_invalid_closing_tag",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_invalid_nonascii_closing_tag",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_in_script",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_in_title",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_in_cdata",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_cdata_section_content",
+      "status": "quarantined",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "id": "HTMLParserTestCase.test_eof_no_quadratic_complexity",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "id": "HTMLParserTestCase.test_convert_charrefs",
+      "status": "quarantined",
+      "reason": "unresolved-name:EventCollectorCharrefs"
+    },
+    {
+      "id": "HTMLParserTestCase.test_convert_charrefs_in_attribute_values",
+      "status": "quarantined",
+      "reason": "unresolved-name:EventCollectorCharrefs"
+    },
+    {
+      "id": "HTMLParserTestCase.test_convert_charrefs_dropped_text",
+      "status": "quarantined",
+      "reason": "unresolved-name:EventCollector"
+    },
+    {
+      "id": "TestInheritance.test_base_class_methods_called",
+      "status": "quarantined",
+      "reason": "unresolved-name:EventCollector"
+    }
+  ]
+}

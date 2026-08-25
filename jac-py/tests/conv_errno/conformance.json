@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_errno/conv_errno_pins.jac"
+  ],
+  "generated_at": "2026-08-24T23:14:44",
+  "hashes": {
+    "pins_jac": "13c6c65a637e32c430f5236961964d20e49c17595b8ec85b39fd1220f8e3ad33",
+    "conversion_json": "ed092e0df385353a3bd3e661eb795d3f252e6889d5bc6f37e0727695f6d3c201",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "errno",
+  "counts": {
+    "converted": 3,
+    "runnable": 3,
+    "green": 3,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "ErrnoAttributeTests.test_for_improper_attributes",
+      "status": "pass"
+    },
+    {
+      "id": "ErrnoAttributeTests.test_using_errorcode",
+      "status": "pass"
+    },
+    {
+      "id": "ErrorcodeTests.test_attributes_in_errorcode",
+      "status": "pass"
+    }
+  ]
+}

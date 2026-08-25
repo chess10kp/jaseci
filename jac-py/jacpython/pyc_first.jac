@@ -21,8 +21,10 @@
 import marshal;
 
 import from marshal_reader { unmarshal, }
+import from opcode_meta { NB_LSHIFT, NB_TRUE_DIVIDE }
 
 import from ceval {
+    py_slot_truth,
     PyClass,
     PyFunction,
     PyModule,
@@ -40,11 +42,11 @@ import from ceval {
     exec_module,
     to_host,
     from_host,
+    live_container_bridge,
     py_compare,
     py_hash,
     py_subscript,
     py_binop,
-    py_truth,
     py_attr,
     py_invoke,
     py_isinstance,
@@ -833,11 +835,11 @@ test "pyc-first: true divide, xor, unary neg/invert on non-constant int operands
     assert expect_int(ops["inv"]) == -6;
 
     # int / 0 raises ZeroDivisionError natively rather than returning a bogus int.
-    zdiv = PyInt(t="int", val=1).nb_binop(11, PyInt(t="int", val=0));
+    zdiv = PyInt(t="int", val=1).nb_binop(NB_TRUE_DIVIDE, PyInt(t="int", val=0));
     assert is_error(zdiv);
 
-    # A negative shift count is a ValueError, not a native crash (oparg 3 = <<).
-    negshift = PyInt(t="int", val=1).nb_binop(3, PyInt(t="int", val=-1));
+    # A negative shift count is a ValueError, not a native crash (NB_LSHIFT = <<).
+    negshift = PyInt(t="int", val=1).nb_binop(NB_LSHIFT, PyInt(t="int", val=-1));
     assert is_error(negshift);
 
     # test_augassign::testBasic verbatim: the trailing `x /= 2` on int 6 must
@@ -936,7 +938,7 @@ test "pyc-first: PyFloat nb_binop/tp_richcompare drive natively" {
     assert expect_bool(nans["self_lt"]) == False;
 
     # Division by zero raises rather than falling through to host.
-    zdiv = PyFloat(t="float", val=1.0).nb_binop(11, PyFloat(t="float", val=0.0));
+    zdiv = PyFloat(t="float", val=1.0).nb_binop(NB_TRUE_DIVIDE, PyFloat(t="float", val=0.0));
     assert is_error(zdiv);
 }
 
@@ -1089,7 +1091,7 @@ test "pyc-first: native sets via the hash-key protocol (H3)" {
 
     # A mutable set is unhashable.
     unh = PySet(t="set", items={}, frozen=False).tp_hashkey();
-    assert unh == "";
+    assert is_error(unh);
 }
 
 test "pyc-first: builtin subclassing (Track B)" {
@@ -1714,12 +1716,16 @@ test "pyc-first: set literal first-value-wins + native .pop()/methods (Track d/e
     assert expect_int(err["h2"]) == 1;
 
     # M9: issubset / isdisjoint use element ``==``, not hashkey bucket only.
-    # Identity-keyed user objects (no ``__hash__``) can be ``==`` without sharing
-    # a hashkey — CPython set algebra still treats them as members.
+    # CPython 3.14 pins defining ``__eq__`` without ``__hash__`` to unhashable
+    # (the set literal itself raises), so the class carries an explicit shared
+    # ``__hash__``: both instances land in the same bucket and the confirm
+    # compare runs their ``__eq__`` -- exactly CPython's set_add_entry path.
     subset_eq = run_source(
         "class AlwaysEq:\n"
         "    def __eq__(self, other):\n"
         "        return isinstance(other, AlwaysEq)\n"
+        "    def __hash__(self):\n"
+        "        return 42\n"
         "a, b = AlwaysEq(), AlwaysEq()\n"
         "sub = {a}.issubset({b})\n"
         "le = {a} <= {b}\n"
@@ -1730,6 +1736,22 @@ test "pyc-first: set literal first-value-wins + native .pop()/methods (Track d/e
     assert expect_bool(subset_eq["le"]) == True;
     assert expect_bool(subset_eq["dis"]) == False;
     assert expect_bool(subset_eq["mem"]) == True;
+
+    # The correct new-behavior pin (CPython 3.14): ``__eq__`` without
+    # ``__hash__`` leaves tp_hash NULL, so set construction raises TypeError
+    # with the host-exact two-part message quoting the real class name.
+    eq_only = run_source(
+        "msg = ''\n"
+        "class EqOnly:\n"
+        "    def __eq__(self, other):\n"
+        "        return isinstance(other, EqOnly)\n"
+        "try:\n"
+        "    {EqOnly()}\n"
+        "except TypeError as e:\n"
+        "    msg = str(e)\n"
+    );
+    assert expect_str(eq_only["msg"])
+        == "cannot use 'EqOnly' as a set element (unhashable type: 'EqOnly')";
 }
 
 test "pyc-first: dict mutation during iteration raises RuntimeError (Track b)" {

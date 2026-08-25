@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_posixpath/conv_posixpath_pins.jac"
+  ],
+  "generated_at": "2026-08-24T23:14:56",
+  "hashes": {
+    "pins_jac": "5c218a3473d5854dd42c9b883c51ad3dbd85326af5701706d70ba76a43fe1169",
+    "conversion_json": "9488c488c0b7ba29c61d61c686cf8a497808c7853e272d532c90731421daf1f2",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "posixpath",
+  "counts": {
+    "converted": 64,
+    "runnable": 25,
+    "green": 17,
+    "quarantined": 39
+  },
+  "pins": [
+    {
+      "id": "PosixPathTest.test_join",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_split",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'/foo\\', b\\'bar\\'), (b\\'/foo\\', b\\'bar\\'))\"'>"
+    },
+    {
+      "id": "PosixPathTest.test_splitext",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'foo\\', b\\'.bar\\'), (b\\'foo\\', b\\'.bar\\'))\"'>"
+    },
+    {
+      "id": "PosixPathTest.test_splitroot",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', b\\'\\', b\\'\\'), (b\\'\\', b\\'\\', b\\'\\'))\"'>"
+    },
+    {
+      "id": "PosixPathTest.test_isabs",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_basename",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_dirname",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_islink_invalid_paths",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_ismount",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_ismount_non_existent",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_ismount_invalid_paths",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_ismount_symlinks",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_isjunction",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_expanduser",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_expanduser_home_envvar",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'EnvironmentVarGuard'\">"
+    },
+    {
+      "id": "PosixPathTest.test_normpath",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_strict",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_invalid_paths",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_symlink_loops",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'change_cwd'\">"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_nonterminal_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'TextIOWrapper.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_nonterminal_symlink_to_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'TextIOWrapper.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_nonterminal_symlink_to_symlinks_to_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'TextIOWrapper.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "PosixPathTest.test_relpath",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_relpath_bytes",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_commonpath",
+      "status": "pass"
+    },
+    {
+      "id": "PosixPathTest.test_ismount_different_device",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "PosixPathTest.test_ismount_directory_not_readable",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "PosixPathTest.test_fast_paths_in_use",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "PosixPathTest.test_expanduser_pwd",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "PosixPathTest.test_expanduser_pwd2",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_unreadable_symlink",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_unreadable_symlink_strict",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "PosixPathTest.test_islink",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_curdir",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_pardir",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_basic",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_relative",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_missing_pardir",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_symlink_loops_strict",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_repeated_indirect_symlinks",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_deep_recursion",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_resolve_parents",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_resolve_before_normalizing",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_resolve_first",
+      "status": "quarantined",
+      "reason": "unresolved-name:kwargs"
+    },
+    {
+      "id": "PosixPathTest.test_realpath_unreadable_directory",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "PathLikeTests.test_path_normcase",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_isabs",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_join",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_split",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_splitext",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_splitdrive",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_splitroot",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_basename",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_dirname",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_islink",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_lexists",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_ismount",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_expanduser",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_expandvars",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_normpath",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_abspath",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_realpath",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_relpath",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "PathLikeTests.test_path_commonpath",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    }
+  ]
+}

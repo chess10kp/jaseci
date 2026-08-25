@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_int/conv_int_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:03:15",
+  "hashes": {
+    "pins_jac": "e44d5cce84856af713d7e442b9b6b6ed269c894be34947395b270d88672c6b6b",
+    "conversion_json": "e116da704789d844170942c4605483328884635701554284aa97fe1f370027e8",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "int",
+  "counts": {
+    "converted": 42,
+    "runnable": 16,
+    "green": 13,
+    "quarantined": 26
+  },
+  "pins": [
+    {
+      "id": "IntTestCases.test_basic",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_invalid_signs",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_unicode",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_underscores",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"argument of type \\'bool\\' is not a container or iterable\"'>"
+    },
+    {
+      "id": "IntTestCases.test_no_args",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_keyword_args",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_int_base_limits",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_int_base_bad_types",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_int_base_indexable",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'MyIndexable\\' object cannot be interpreted as an integer\"'>"
+    },
+    {
+      "id": "IntTestCases.test_non_numeric_input_types",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'CustomByteArray\\'\"'>"
+    },
+    {
+      "id": "IntTestCases.test_int_memoryview",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_string_float",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_intconversion",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_int_subclass_with_index",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_int_subclass_with_int",
+      "status": "pass"
+    },
+    {
+      "id": "IntTestCases.test_issue31619",
+      "status": "pass"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_max_str_digits_edge_cases",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_sign_not_counted",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_int_from_other_bases",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_int_max_str_digits_is_per_interpreter",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_int_to_decimal",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_int_divmod",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_str_to_int",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "IntTestCases.test_small_ints",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "IntTestCases.test_round_with_none_arg_direct_call",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_int_to_decimal_2",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_int_divmod_crash",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_misbehavior_error_path_to_str",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_misbehavior_error_path_from_str",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_roundtrip_huge",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "id": "PyLongModuleTests.test_whitebox_dec_str_to_int_inner_failsafe",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "id": "PyLongModuleTests.test_whitebox_dec_str_to_int_inner_monster",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_compute_powers",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "IntTestCases.test_int_returns_int_subclass",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "IntTestCases.test_error_message",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_disabled_limit",
+      "status": "quarantined",
+      "reason": "uses-self.int_class"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_max_str_digits",
+      "status": "quarantined",
+      "reason": "helper:check(uses-self.int_class)"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str",
+      "status": "quarantined",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_denial_of_service_prevented_str_to_int",
+      "status": "quarantined",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_power_of_two_bases_unlimited",
+      "status": "quarantined",
+      "reason": "self.int_class"
+    },
+    {
+      "id": "IntStrDigitLimitsTests.test_underscores_ignored",
+      "status": "quarantined",
+      "reason": "helper:check(uses-self.int_class)"
+    },
+    {
+      "id": "PyLongModuleTests.test_pylong_roundtrip",
+      "status": "quarantined",
+      "reason": "self.assertNotStartsWith"
+    }
+  ]
+}

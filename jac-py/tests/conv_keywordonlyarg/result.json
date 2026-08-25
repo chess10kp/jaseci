@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_keywordonlyarg/conv_keywordonlyarg_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:33:50",
+  "hashes": {
+    "pins_jac": "ef3b6e440f11102ebfe67c3c17f1658e0184a840cdcaa86d51f348a8cf10ebb5",
+    "conversion_json": "42b6f89dec9e3f22b5b97396485cda500e407c31f5ffaf4ac37b24bf8d6a4526",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "keywordonlyarg",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 11,
+    "runnable": 7,
+    "green": 6,
+    "quarantined": 4,
+    "failed": 1,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "KeywordOnlyArgTestCase.test_issue13343",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    }
+  ]
+}

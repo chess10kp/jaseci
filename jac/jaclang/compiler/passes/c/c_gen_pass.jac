@@ -1,19 +1,19 @@
-import jaclang.jac0core.unitree as uni;
-import from jaclang.jac0core.passes.transform { Transform }
-import from jaclang.jac0core.program { JacProgram }
-import from jaclang.compiler.passes.main.layout_pass {
+import jaclang.compiler.frontend.unitree as uni;
+import from jaclang.compiler.passes.transform { Transform }
+import from jaclang.compiler.driver.program { JacProgram }
+import from jaclang.compiler.passes.layout_pass {
     get_layout_registry,
     get_shared_layout_registry,
     LayoutRegistry,
     FieldInfo
 }
-import from jaclang.compiler.passes.main.ownership_facts_pass {
+import from jaclang.compiler.passes.ownership_facts_pass {
     get_ownership_facts,
     OwnershipFacts
 }
 import from jaclang.compiler.type_registry { JAC_TYPE_REGISTRY }
-import from jaclang.jac0core.osp_model { stable_osp_tag }
-import from jaclang.compiler.passes.main.type_facts_pass {
+import from jaclang.runtime.osp_model { stable_osp_tag }
+import from jaclang.compiler.passes.type_facts_pass {
     TypeFacts,
     TypeIdIndex,
     get_shared_type_facts,
@@ -22,7 +22,7 @@ import from jaclang.compiler.passes.main.type_facts_pass {
     type_tag_name,
     ret_type_name as sig_ret_name
 }
-import from jaclang.jac0core.diagnostics { DIAGNOSTICS }
+import from jaclang.compiler.frontend.diagnostics { DIAGNOSTICS }
 
 glob C_PRIM_TYPES: dict[str, str] = {
          "int": "int",

@@ -1,0 +1,438 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_fstring/conv_fstring_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:01:16",
+  "hashes": {
+    "pins_jac": "dac10f3fb4b78ebbcfb6879cad3f3db48e1ff14cf48743bd6118ac731f4cec27",
+    "conversion_json": "5f167480d4e9b51d48583196d60d283bce08d721d2d8d547ebe72455e235618b",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "fstring",
+  "counts": {
+    "converted": 90,
+    "runnable": 60,
+    "green": 50,
+    "quarantined": 30
+  },
+  "pins": [
+    {
+      "id": "TestCase.test__format__lookup",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestCase.test_ast_line_numbers",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_line_numbers_multiple_formattedvalues",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_line_numbers_nested",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_line_numbers_duplicate_expression",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_numbers_fstring_with_formatting",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_line_numbers_multiline_fstring",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_line_numbers_with_parentheses",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_fstring_empty_format_spec",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_fstring_format_spec",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_docstring",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsNone\\', \\'Not a docstring\\')\"'>"
+    },
+    {
+      "id": "TestCase.test_literal_eval",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_ast_compile_time_concat",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestCase.test_compile_time_concat_errors",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_literal",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_unterminated_string",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_syntax_error_in_nested_fstring",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_double_braces",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_compile_time_concat",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_comments",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_many_expressions",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestCase.test_format_specifier_expressions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_side_effect_order",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_missing_expression",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_parens_in_expressions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_newlines_before_syntax_error",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_misformed_unicode_character_name",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_backslashes_in_expression_part",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_invalid_backslashes_inside_fstring_context",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_no_escapes_for_braces",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_newlines_in_expressions",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_lambda",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_valid_prefixes",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_roundtrip_raw_quotes",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_fstring_backslash_prefix_raw",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_fstring_format_spec_greedy_matching",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_yield",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_yield_send",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_expressions_with_triple_quoted_strings",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_multiple_vars",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_closure",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_arguments",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_locals",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_missing_format_spec",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_global",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: __repr__'>"
+    },
+    {
+      "id": "TestCase.test_shadowed_global",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_call",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_nested_fstrings",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_invalid_string_prefixes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_leading_trailing_spaces",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_not_equal",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_equal_equal",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_conversions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_assignment",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_del",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_mismatched_braces",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_if_conditional",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_empty_format_specifier",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_str_format_differences",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_errors",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_filename_in_syntaxerror",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    },
+    {
+      "id": "TestCase.test_loop",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_dict",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_backslash_char",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_debug_conversion",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_debug_expressions_are_raw_strings",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_walrus",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_invalid_syntax_error_message",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_with_two_commas_in_format_specifier",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_with_two_underscore_in_format_specifier",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_with_a_commas_and_an_underscore_in_format_specifier",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_with_an_underscore_and_a_comma_in_format_specifier",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_syntax_error_for_starred_expressions",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_not_closing_quotes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_syntax_error_after_debug",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_debug_in_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    },
+    {
+      "id": "TestCase.test_syntax_warning_infinite_recursion_in_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    },
+    {
+      "id": "TestCase.test_fstring_without_formatting_bytecode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: get_intrinsic1_descs'>"
+    },
+    {
+      "id": "TestCase.test_gh129093",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_newlines_in_format_specifiers",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'str' object is not callable"
+    },
+    {
+      "id": "TestCase.test_raw_fstring_format_spec",
+      "status": "pass"
+    },
+    {
+      "id": "TestCase.test_gh139516",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'temp_cwd' from '<unknown>'\">"
+    },
+    {
+      "id": "TestCase.test_mismatched_parens",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "TestCase.test_fstring_nested_too_deeply",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "TestCase.test_custom_format_specifier",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "TestCase.test_backslashes_in_string_part",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "TestCase.test_fstring_backslash_before_double_bracket",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "TestCase.test_fstring_backslash_before_double_bracket_warns_once",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "TestCase.test_missing_variable",
+      "status": "quarantined",
+      "reason": "unresolved-name:value"
+    }
+  ]
+}

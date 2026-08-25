@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "615abfd9c3b5ccaab40667ed7c744a40cd1b6d46",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_float/conv_float_pins.jac"
+  ],
+  "generated_at": "2026-08-24T23:00:26",
+  "hashes": {
+    "pins_jac": "159258c8dde793030d351d8249811fc52c0fce3be180a0403f0e623ba5e4a583",
+    "conversion_json": "ae369523616262f892b6b2c507b156a6864f1570f1916dfbae7b5d3e0bf0124f",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "float",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 54,
+    "runnable": 26,
+    "green": 20,
+    "quarantined": 28,
+    "failed": 6,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "GeneralFloatCases.test_underscores",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"argument of type \\'bool\\' is not a container or iterable\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_non_numeric_input_types",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"float() argument must be a string or a real number, not \\'CustomByteArray\\'\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_floatasratio",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "GeneralFloatCases.test_float_containment",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', nan, [nan])\"'>"
+    },
+    {
+      "id": "GeneralFloatCases.test_hash_nan",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', 8754498913735, 8754498978363)\"'>"
+    },
+    {
+      "id": "HexFloatTestCase.test_subclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIs\\', <class \\'float\\'>, <class \\'__main__.F\\'>)\"'>"
+    }
+  ]
+}

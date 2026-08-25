@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_tstring/conv_tstring_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:41:48",
+  "hashes": {
+    "pins_jac": "61f9c1b574619b10a9add4c1bcfcf7b2a1968980bbb4d29f2211a47fc9826878",
+    "conversion_json": "9c18c01b10fec70dae83db60923210dd539f4a48f44006c6563574c2a157643c",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "tstring",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 12,
+    "runnable": 3,
+    "green": 1,
+    "quarantined": 9,
+    "failed": 2,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestTString.test_string_representation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC SystemError 'unsupported opcode 2'\">"
+    },
+    {
+      "id": "TestTString.test_nested_templates",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC SystemError 'unsupported opcode 45'\">"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_property/conv_property_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:34:52",
+  "hashes": {
+    "pins_jac": "8f54e4b296b8ba88e0d5060cca7b137f37ae3f8ed08da508eb036e023bb2b375",
+    "conversion_json": "ee0a67b632285f490992bee23c050bebd721c93640495f8b8d6fbb8a5777dc2d",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "property",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 28,
+    "runnable": 5,
+    "green": 1,
+    "quarantined": 23,
+    "failed": 4,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "PropertyTests.test_property___isabstractmethod__descriptor",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIs\\', False, True)\"'>"
+    },
+    {
+      "id": "PropertyTests.test_property_name",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__name__'\">"
+    },
+    {
+      "id": "PropertyTests.test_property_set_name_incorrect_args",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__set_name__'\">"
+    },
+    {
+      "id": "PropertyTests.test_property_setname_on_property_subclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__set_name__'\">"
+    }
+  ]
+}

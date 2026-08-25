@@ -263,19 +263,31 @@ import from compiler_ir {
     comp_handler,
 }
 
-# Fold default expressions when every value is a Constant (CPython LOAD_CONST tuple).
-def fold_default_values(defaults: list[expr]) -> list[PyObj] | None {
-    items: list[PyObj] = [];
-    di = 0;
-    while di < len(defaults) {
-        d = defaults[di];
-        if not isinstance(d, Constant) {
-            return None;
-        }
-        items.append((d as Constant).value);
-        di = di + 1;
+# Deep-fold one default expression into its constant value, collecting the
+# scalar leaf exprs in CPython visit (pre-)order. Tuples fold recursively like
+# CPython's instruction-level BUILD_TUPLE folding; anything else refuses.
+# Returns None when e is not an all-constant display.
+def fold_default_leaf_values(e: expr, leaves: list[expr]) -> PyObj | None {
+    if isinstance(e, Constant) {
+        leaves.append(e);
+        return (e as Constant).value;
     }
-    return items;
+    if isinstance(e, Tuple) {
+        t = e as Tuple;
+        elts = t.elts if t.elts is not None else [];
+        items: list[PyObj] = [];
+        ei = 0;
+        while ei < len(elts) {
+            v = fold_default_leaf_values(elts[ei], leaves);
+            if v is None {
+                return None;
+            }
+            items.append(v);
+            ei = ei + 1;
+        }
+        return PyTuple(t="tuple", items=items);
+    }
+    return None;
 }
 
 def args_have_kw_defaults(args: arguments) -> bool {
@@ -667,6 +679,14 @@ def expr_loc(e: expr) -> cloc {
         l = e as List;
         return nloc(l.lineno, l.end_lineno, l.col_offset, l.end_col_offset);
     }
+    if isinstance(e, FormattedValue) {
+        fv = e as FormattedValue;
+        return nloc(fv.lineno, fv.end_lineno, fv.col_offset, fv.end_col_offset);
+    }
+    if isinstance(e, JoinedStr) {
+        j = e as JoinedStr;
+        return nloc(j.lineno, j.end_lineno, j.col_offset, j.end_col_offset);
+    }
     return loc(1, 1, 0, 0);
 }
 
@@ -966,6 +986,10 @@ def comp_leftmost_leaf(e: expr) -> expr {
     while True {
         if isinstance(cur, BinOp) {
             cur = (cur as BinOp).left;
+        } elif isinstance(cur, NamedExpr) {
+            # PEP 572: the walrus value is evaluated in place, so its leftmost
+            # leaf participates in the lead STORE_FAST_LOAD_FAST fusion.
+            cur = (cur as NamedExpr).value;
         } elif isinstance(cur, Compare) {
             cur = (cur as Compare).left;
         } elif isinstance(cur, UnaryOp) {

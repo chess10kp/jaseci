@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_longexp/conv_longexp_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:33:53",
+  "hashes": {
+    "pins_jac": "50a476facb389f1787f773fb860a4b90659497e8c77e4bb7035c40abd4637d25",
+    "conversion_json": "a7eb5e46be0af23bd928c12159afe82f4011764bd90a28827b0c4c0f14923461",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "longexp",
+  "status": "passed",
+  "timed_out": false,
+  "counts": {
+    "converted": 1,
+    "runnable": 1,
+    "green": 1,
+    "quarantined": 0,
+    "failed": 0,
+    "infra_failed": 0
+  },
+  "failures": []
+}

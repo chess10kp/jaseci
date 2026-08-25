@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_typechecks.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_typechecks",
+    "--name",
+    "conv_typechecks"
+  ],
+  "generated_at": "2026-08-24T14:41:53",
+  "hashes": {
+    "pins_jac": "26f3cec99a5408c13c7e11c70028b2d933e3bccab194ec16593cceea6f09b7bb"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_typechecks.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "typechecks",
+  "pins_file": "conv_typechecks_pins.jac",
+  "pins": [],
+  "quarantined": [
+    {
+      "ident": "TypeChecksTest.testIsSubclassInternal",
+      "reason": "unresolved-name:Integer"
+    },
+    {
+      "ident": "TypeChecksTest.testIsSubclassBuiltin",
+      "reason": "unresolved-name:Integer"
+    },
+    {
+      "ident": "TypeChecksTest.testIsInstanceBuiltin",
+      "reason": "unresolved-name:Integer"
+    },
+    {
+      "ident": "TypeChecksTest.testIsInstanceActual",
+      "reason": "unresolved-name:Integer"
+    },
+    {
+      "ident": "TypeChecksTest.testIsSubclassActual",
+      "reason": "unresolved-name:Integer"
+    },
+    {
+      "ident": "TypeChecksTest.testSubclassBehavior",
+      "reason": "unresolved-name:Integer"
+    }
+  ],
+  "counts": {
+    "extracted": 6,
+    "pinned": 0,
+    "quarantined": 6
+  }
+}

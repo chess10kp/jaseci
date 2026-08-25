@@ -1,0 +1,1457 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "615abfd9c3b5ccaab40667ed7c744a40cd1b6d46",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_codecs/conv_codecs_pins.jac"
+  ],
+  "generated_at": "2026-08-24T23:00:22",
+  "hashes": {
+    "pins_jac": "8440b8898ff2da28cda9a6c3a18b5f75c804b7147100c3ad214440661ead0577",
+    "conversion_json": "d389236cb0bfe22b05500f0cb76fe3c2c507d9ab11dcf299dc7cf70cb7bce6f6",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "codecs",
+  "counts": {
+    "converted": 279,
+    "runnable": 200,
+    "green": 83,
+    "quarantined": 79
+  },
+  "pins": [
+    {
+      "id": "UTF32Test.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32'\">"
+    },
+    {
+      "id": "UTF32LETest.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32BETest.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF16Test.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
+      "id": "UTF16LETest.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_readline",
+      "status": "pass"
+    },
+    {
+      "id": "UTF7Test.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'\">"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'\">"
+    },
+    {
+      "id": "UTF32Test.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32'\">"
+    },
+    {
+      "id": "UTF32LETest.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32BETest.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF16Test.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
+      "id": "UTF16LETest.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_mixed_readline_and_read",
+      "status": "pass"
+    },
+    {
+      "id": "UTF7Test.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'\">"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_mixed_readline_and_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'\">"
+    },
+    {
+      "id": "UTF32Test.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32'\">"
+    },
+    {
+      "id": "UTF32LETest.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32BETest.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF16Test.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
+      "id": "UTF16LETest.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_bug1175396",
+      "status": "pass"
+    },
+    {
+      "id": "UTF7Test.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'\">"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_bug1175396",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'\">"
+    },
+    {
+      "id": "UTF32Test.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF32LETest.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF32BETest.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF16Test.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF16LETest.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF16BETest.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF8SigTest.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF7Test.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_readlinequeue",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "UTF32Test.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32'\">"
+    },
+    {
+      "id": "UTF32LETest.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32BETest.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF16Test.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
+      "id": "UTF16LETest.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_bug1098990_a",
+      "status": "pass"
+    },
+    {
+      "id": "UTF7Test.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'\">"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_bug1098990_a",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'\">"
+    },
+    {
+      "id": "UTF32Test.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32'\">"
+    },
+    {
+      "id": "UTF32LETest.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32BETest.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF16Test.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
+      "id": "UTF16LETest.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_bug1098990_b",
+      "status": "pass"
+    },
+    {
+      "id": "UTF7Test.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'\">"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_bug1098990_b",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'\">"
+    },
+    {
+      "id": "UTF32Test.test_lone_surrogates",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'ill_formed_sequence'"
+    },
+    {
+      "id": "UTF32LETest.test_lone_surrogates",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32BETest.test_lone_surrogates",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF16Test.test_lone_surrogates",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'ill_formed_sequence'"
+    },
+    {
+      "id": "UTF16LETest.test_lone_surrogates",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_lone_surrogates",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_lone_surrogates",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '\\U00010fff\ufffd\ufffd\ufffdA', '\\U00010fff\ufffdA')"
+    },
+    {
+      "id": "UTF7Test.test_lone_surrogates",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', b'[+3IA]', b'[+AFw-udc80]')"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_lone_surrogates",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', b'[\\\\udc80]', b'[\\\\\\\\udc80]')"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_lone_surrogates",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', b'[\\\\udc80]', b'[&#56448;]')"
+    },
+    {
+      "id": "UTF32Test.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32'\">"
+    },
+    {
+      "id": "UTF32LETest.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32BETest.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF16Test.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
+      "id": "UTF16LETest.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogatepass\\'\"'>"
+    },
+    {
+      "id": "UTF7Test.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'\">"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_incremental_surrogatepass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'\">"
+    },
+    {
+      "id": "UTF32Test.test_only_one_bom",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32Test.test_badbom",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32Test.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF32Test.test_handlers",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32Test.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32Test.test_decoder_state",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "UTF32Test.test_issue8941",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32LETest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF32LETest.test_simple",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'\">"
+    },
+    {
+      "id": "UTF32LETest.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32LETest.test_issue8941",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32BETest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF32BETest.test_simple",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'\">"
+    },
+    {
+      "id": "UTF32BETest.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF32BETest.test_issue8941",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16Test.test_only_one_bom",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16Test.test_badbom",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16Test.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF16Test.test_handlers",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16Test.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16Test.test_decoder_state",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "UTF16LETest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF16LETest.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16LETest.test_nonbmp",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "UTF16BETest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF16BETest.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16BETest.test_nonbmp",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF8SigTest.test_decoder_state",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "UTF8SigTest.test_decode_error",
+      "status": "pass"
+    },
+    {
+      "id": "UTF8SigTest.test_surrogatepass_handler",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogatepass\\'\"'>"
+    },
+    {
+      "id": "UTF8SigTest.test_incremental_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF7Test.test_ascii",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UTF7Test.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF7Test.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF7Test.test_nonbmp",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-7'\">"
+    },
+    {
+      "id": "UTF7Test.test_lone_surrogates",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16ExTest.test_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UTF16ExTest.test_bad_args",
+      "status": "pass"
+    },
+    {
+      "id": "ReadBufferTest.test_array",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'spam\\', 4), (b\\'spam\\', 4))\"'>"
+    },
+    {
+      "id": "ReadBufferTest.test_empty",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "ReadBufferTest.test_bad_args",
+      "status": "pass"
+    },
+    {
+      "id": "UTF8SigTest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UTF8SigTest.test_bug1601501",
+      "status": "pass"
+    },
+    {
+      "id": "UTF8SigTest.test_bom",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-8-sig'\">"
+    },
+    {
+      "id": "UTF8SigTest.test_stream_bom",
+      "status": "pass"
+    },
+    {
+      "id": "UTF8SigTest.test_stream_bare",
+      "status": "pass"
+    },
+    {
+      "id": "EscapeDecodeTest.test_empty",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "EscapeDecodeTest.test_raw",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\\\\\\\x000\\', 2), (b\\'\\\\\\\\x000\\', 2))\"'>"
+    },
+    {
+      "id": "EscapeDecodeTest.test_escape",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "EscapeDecodeTest.test_errors",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'[]\\', 6), (b\\'[]\\', 6))\"'>"
+    },
+    {
+      "id": "PunycodeTest.test_encode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: punycode'\">"
+    },
+    {
+      "id": "PunycodeTest.test_decode",
+      "status": "pass"
+    },
+    {
+      "id": "NameprepTest.test_nameprep",
+      "status": "pass"
+    },
+    {
+      "id": "IDNACodecTest.test_builtin_decode",
+      "status": "pass"
+    },
+    {
+      "id": "IDNACodecTest.test_builtin_encode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: idna'\">"
+    },
+    {
+      "id": "IDNACodecTest.test_builtin_decode_length_limit",
+      "status": "pass"
+    },
+    {
+      "id": "IDNACodecTest.test_stream",
+      "status": "pass"
+    },
+    {
+      "id": "IDNACodecTest.test_incremental_decode",
+      "status": "pass"
+    },
+    {
+      "id": "IDNACodecTest.test_incremental_encode",
+      "status": "pass"
+    },
+    {
+      "id": "IDNACodecTest.test_errors",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: idna'\">"
+    },
+    {
+      "id": "CodecsModuleTest.test_decode",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_encode",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_register",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_unregister",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CodecsModuleTest.test_lookup",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_getencoder",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_getdecoder",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_getreader",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_getwriter",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_all",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_undefined",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_file_closes_if_lookup_error_raised",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CodecsModuleTest.test_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', None, \\'utf-8\\')\"'>"
+    },
+    {
+      "id": "CodecsModuleTest.test_deepcopy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', None, \\'utf-8\\')\"'>"
+    },
+    {
+      "id": "CodecsModuleTest.test_pickle",
+      "status": "pass"
+    },
+    {
+      "id": "StreamReaderWriterTest.test_copy",
+      "status": "pass"
+    },
+    {
+      "id": "StreamReaderWriterTest.test_pickle",
+      "status": "pass"
+    },
+    {
+      "id": "EncodedFileTest.test_basic",
+      "status": "pass"
+    },
+    {
+      "id": "BasicUnicodeTest.test_basics",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'Queue\\' object has no attribute \\'write\\'\"'>"
+    },
+    {
+      "id": "BasicUnicodeTest.test_seek",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: big5'\">"
+    },
+    {
+      "id": "BasicUnicodeTest.test_bad_decode_args",
+      "status": "pass"
+    },
+    {
+      "id": "BasicUnicodeTest.test_bad_encode_args",
+      "status": "pass"
+    },
+    {
+      "id": "BasicUnicodeTest.test_encoding_map_type_initialized",
+      "status": "pass"
+    },
+    {
+      "id": "BasicUnicodeTest.test_decoder_state",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "CharmapTest.test_decode_with_string_map",
+      "status": "pass"
+    },
+    {
+      "id": "CharmapTest.test_decode_with_int2str_map",
+      "status": "pass"
+    },
+    {
+      "id": "CharmapTest.test_decode_with_int2int_map",
+      "status": "pass"
+    },
+    {
+      "id": "WithStmtTest.test_encodedfile",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'StreamRecoder.__enter__() takes 1 positional argument but 2 were given'\">"
+    },
+    {
+      "id": "WithStmtTest.test_streamreaderwriter",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'StreamReaderWriter.__enter__() takes 1 positional argument but 2 were given'\">"
+    },
+    {
+      "id": "TypesTest.test_decode_unicode",
+      "status": "pass"
+    },
+    {
+      "id": "TypesTest.test_unicode_escape",
+      "status": "pass"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_empty",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_raw_encode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\' \\', 1), (b\\' \\', 1))\"'>"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_raw_decode",
+      "status": "pass"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_escape_encode",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_escape_decode",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_decode_errors",
+      "status": "pass"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_empty",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_raw_encode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\\\\\\\x00\\', 1), (b\\'\\\\\\\\x00\\', 1))\"'>"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_raw_decode",
+      "status": "pass"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_escape_encode",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_escape_decode",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_decode_errors",
+      "status": "pass"
+    },
+    {
+      "id": "RawUnicodeEscapeTest.test_partial",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "EscapeEncodeTest.test_escape_encode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
+    },
+    {
+      "id": "SurrogateEscapeTest.test_utf8",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
+    },
+    {
+      "id": "SurrogateEscapeTest.test_ascii",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
+    },
+    {
+      "id": "SurrogateEscapeTest.test_charmap",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: iso-8859-3'\">"
+    },
+    {
+      "id": "SurrogateEscapeTest.test_latin1",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
+    },
+    {
+      "id": "TransformCodecTest.test_basics",
+      "status": "pass"
+    },
+    {
+      "id": "TransformCodecTest.test_read",
+      "status": "pass"
+    },
+    {
+      "id": "TransformCodecTest.test_readline",
+      "status": "pass"
+    },
+    {
+      "id": "TransformCodecTest.test_buffer_api_usage",
+      "status": "pass"
+    },
+    {
+      "id": "TransformCodecTest.test_text_to_binary_denylists_text_transforms",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'assertRaisesRegex: message mismatch'\">"
+    },
+    {
+      "id": "TransformCodecTest.test_binary_to_text_denylists_binary_transforms",
+      "status": "pass"
+    },
+    {
+      "id": "TransformCodecTest.test_aliases",
+      "status": "pass"
+    },
+    {
+      "id": "TransformCodecTest.test_alias_modules_exist",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'importlib' has no attribute 'util'"
+    },
+    {
+      "id": "TransformCodecTest.test_quopri_stateless",
+      "status": "pass"
+    },
+    {
+      "id": "TransformCodecTest.test_uu_invalid",
+      "status": "pass"
+    },
+    {
+      "id": "ASCIITest.test_encode",
+      "status": "pass"
+    },
+    {
+      "id": "ASCIITest.test_encode_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
+    },
+    {
+      "id": "ASCIITest.test_encode_surrogateescape_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
+    },
+    {
+      "id": "ASCIITest.test_decode",
+      "status": "pass"
+    },
+    {
+      "id": "ASCIITest.test_decode_error",
+      "status": "pass"
+    },
+    {
+      "id": "Latin1Test.test_encode",
+      "status": "pass"
+    },
+    {
+      "id": "Latin1Test.test_encode_errors",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
+    },
+    {
+      "id": "Latin1Test.test_encode_surrogateescape_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
+    },
+    {
+      "id": "Latin1Test.test_decode",
+      "status": "pass"
+    },
+    {
+      "id": "StreamRecoderTest.test_writelines",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'ascii'\">"
+    },
+    {
+      "id": "StreamRecoderTest.test_write",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'utf_8'\">"
+    },
+    {
+      "id": "StreamRecoderTest.test_seeking_read",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "StreamRecoderTest.test_seeking_write",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'\">"
+    },
+    {
+      "id": "StreamRecoderTest.test_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'ascii'\">"
+    },
+    {
+      "id": "StreamRecoderTest.test_pickle",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'ascii'\">"
+    },
+    {
+      "id": "Rot13Test.test_encode",
+      "status": "pass"
+    },
+    {
+      "id": "Rot13Test.test_decode",
+      "status": "pass"
+    },
+    {
+      "id": "Rot13Test.test_incremental_encode",
+      "status": "pass"
+    },
+    {
+      "id": "Rot13Test.test_incremental_decode",
+      "status": "pass"
+    },
+    {
+      "id": "Rot13UtilTest.test_rot13_func",
+      "status": "pass"
+    },
+    {
+      "id": "CodecNameNormalizationTest.test_encodings_normalize_encoding",
+      "status": "pass"
+    },
+    {
+      "id": "CodecCacheTest.test_cache_bounded",
+      "status": "pass"
+    },
+    {
+      "id": "CodecsModuleTest.test_lookup_issue1813",
+      "status": "quarantined",
+      "reason": "decorator:support.run_with_locale"
+    },
+    {
+      "id": "BasicUnicodeTest.test_basics_capi",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "TransformCodecTest.test_custom_zlib_error_is_noted",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_invalid_code_page",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_code_page_name",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_cp932",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_cp1252",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_cp708",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_cp20106",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_cp_utf7",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_multibyte_encoding",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_code_page_decode_flags",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_incremental",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_mbcs_code_page",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_large_input",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "CodePageTest.test_large_utf8_input",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "LocaleCodecTest.test_encode_strict",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LocaleCodecTest.test_encode_surrogateescape",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LocaleCodecTest.test_encode_surrogatepass",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LocaleCodecTest.test_encode_unsupported_error_handler",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LocaleCodecTest.test_decode_strict",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LocaleCodecTest.test_decode_surrogateescape",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LocaleCodecTest.test_decode_surrogatepass",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "LocaleCodecTest.test_decode_unsupported_error_handler",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "UTF16Test.test_bug691291",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "UTF16Test.test_invalid_modes",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "UTF8SigTest.test_lone_surrogates",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "EscapeDecodeTest.test_warnings",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "PunycodeTest.test_decode_invalid",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "IDNACodecTest.test_builtin_decode_invalid",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "IDNACodecTest.test_builtin_encode_invalid",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "IDNACodecTest.test_incremental_decode_invalid",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "IDNACodecTest.test_incremental_encode_invalid",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "CodecsModuleTest.test_open",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "StreamReaderTest.test_readlines",
+      "status": "quarantined",
+      "reason": "uses-self.reader"
+    },
+    {
+      "id": "StreamReaderTest.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self.reader"
+    },
+    {
+      "id": "StreamReaderTest.test_pickle",
+      "status": "quarantined",
+      "reason": "uses-self.reader"
+    },
+    {
+      "id": "StreamWriterTest.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self.writer"
+    },
+    {
+      "id": "StreamWriterTest.test_pickle",
+      "status": "quarantined",
+      "reason": "uses-self.writer"
+    },
+    {
+      "id": "UnicodeEscapeTest.test_decode_warnings",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "BomTest.test_seek0",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "TransformCodecTest.test_text_to_binary_denylists_binary_transforms",
+      "status": "quarantined",
+      "reason": "unresolved-name:failure"
+    },
+    {
+      "id": "TransformCodecTest.test_binary_to_text_denylists_text_transforms",
+      "status": "quarantined",
+      "reason": "unresolved-name:failure"
+    },
+    {
+      "id": "TransformCodecTest.test_custom_hex_error_is_noted",
+      "status": "quarantined",
+      "reason": "unresolved-name:failure"
+    },
+    {
+      "id": "ExceptionNotesTest.test_raise_by_type",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_raise_by_value",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_raise_grandchild_subclass_exact_size",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_raise_subclass_with_weakref_support",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_init_override",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_new_override",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_instance_attribute",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_non_str_arg",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_multiple_args",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_codec_lookup_failure",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "ExceptionNotesTest.test_unflagged_non_text_codec_handling",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.addCleanup)"
+    },
+    {
+      "id": "CodecNameNormalizationTest.test_codecs_lookup",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_yield_from/conv_yield_from_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:42:23",
+  "hashes": {
+    "pins_jac": "f2bf68a96a8e345899a55154c2270a2a1c9b20efa71b18710430e153ea868f5e",
+    "conversion_json": "59548fcc68ccf95b51157fb2a4a51b8b8fccd4c809fd78eb540d7e73218ff6ae",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "yield_from",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 43,
+    "runnable": 34,
+    "green": 26,
+    "quarantined": 9,
+    "failed": 8,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestPEP380Operation.test_value_attribute_of_StopIteration_exception",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'value'\">"
+    },
+    {
+      "id": "TestPEP380Operation.test_delegation_of_close_to_non_generator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'captured_stderr' from '<unknown>'\">"
+    },
+    {
+      "id": "TestPEP380Operation.test_attempting_to_send_to_non_generator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'tuple index out of range'\">"
+    },
+    {
+      "id": "TestPEP380Operation.test_attempted_yield_from_loop",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'tuple index out of range'\">"
+    },
+    {
+      "id": "TestPEP380Operation.test_throwing_GeneratorExit_into_subgen_that_returns",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC StopIteration ''\">"
+    },
+    {
+      "id": "TestPEP380Operation.test_throwing_GeneratorExit_into_subgenerator_that_yields",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'subgenerator failed to raise GeneratorExit'\">"
+    },
+    {
+      "id": "TestPEP380Operation.test_delegator_is_visible_to_debugger",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>\">"
+    },
+    {
+      "id": "TestPEP380Operation.test_close_with_cleared_frame",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'captured_stderr' from '<unknown>'\">"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_codeop.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_codeop",
+    "--name",
+    "conv_codeop"
+  ],
+  "generated_at": "2026-08-24T23:15:23",
+  "hashes": {
+    "pins_jac": "ba1104a2758033124ab4a810d21a4e9a9bcba96baa8bf5ea8a4d837ed20b75eb"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_codeop.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "codeop",
+  "pins_file": "conv_codeop_pins.jac",
+  "pins": [
+    {
+      "ident": "CodeopTests.test_valid",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertValid'"
+    },
+    {
+      "ident": "CodeopTests.test_incomplete",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertIncomplete'"
+    },
+    {
+      "ident": "CodeopTests.test_invalid",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertInvalid'"
+    },
+    {
+      "ident": "CodeopTests.test_invalid_exec",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertInvalid'"
+    },
+    {
+      "ident": "CodeopTests.test_filename",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from codeop import compile_command, PyCF_DONT_IMPLY_DEDENT\n\ndef _t():\n    assert compile_command('a = 1\\n', 'abc').co_filename == compile('a = 1\\n', 'abc', 'single').co_filename, ('assertEqual', compile_command('a = 1\\n', 'abc').co_filename, compile('a = 1\\n', 'abc', 'single').co_filename)\n    assert compile_command('a = 1\\n', 'abc').co_filename != compile('a = 1\\n', 'def', 'single').co_filename, ('assertNotEqual', compile_command('a = 1\\n', 'abc').co_filename, compile('a = 1\\n', 'def', 'single').co_filename)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "CodeopTests.test_incomplete_warning",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import warnings\nfrom codeop import compile_command, PyCF_DONT_IMPLY_DEDENT\n\ndef assertIncomplete(str, symbol='single'):\n    \"\"\"succeed iff str is the start of a valid piece of code\"\"\"\n    assert compile_command(str, symbol=symbol) == None, ('assertEqual', compile_command(str, symbol=symbol), None)\n\ndef _t():\n    with warnings.catch_warnings(record=True) as w:\n        warnings.simplefilter('always')\n        assertIncomplete(\"'\\\\e' + (\")\n    assert w == [], ('assertEqual', w, [])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "CodeopTests.test_invalid_warning",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport warnings\nfrom codeop import compile_command, PyCF_DONT_IMPLY_DEDENT\n\ndef assertInvalid(str, symbol='single', is_syntax=1):\n    \"\"\"succeed iff str is the start of an invalid piece of code\"\"\"\n    try:\n        compile_command(str, symbol=symbol)\n        raise AssertionError('No exception raised for invalid code')\n    except SyntaxError:\n        assert is_syntax, ('assertTrue', is_syntax)\n    except OverflowError:\n        assert not is_syntax, ('assertTrue', not is_syntax)\n\ndef _t():\n    with warnings.catch_warnings(record=True) as w:\n        warnings.simplefilter('always')\n        assertInvalid(\"'\\\\e' 1\")\n    assert len(w) == 1, ('assertEqual', len(w), 1)\n    assert w[0].category == SyntaxWarning, ('assertEqual', w[0].category, SyntaxWarning)\n    assert _re.search('invalid escape sequence', str(w[0].message)), ('assertRegex', str(w[0].message), 'invalid escape sequence')\n    assert w[0].filename == '<input>', ('assertEqual', w[0].filename, '<input>')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "CodeopTests.test_syntax_errors",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nfrom textwrap import dedent\nfrom codeop import compile_command, PyCF_DONT_IMPLY_DEDENT\n\ndef assertSyntaxErrorMatches(code, message):\n    try:\n        compile_command(code, symbol='exec')\n    except SyntaxError as _exc:\n        assert _re.search(message, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n\ndef _t():\n    assertSyntaxErrorMatches(dedent('                def foo(x,x):\\n                   pass\\n            '), \"duplicate argument 'x' in function definition\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "CodeopTests.test_warning",
+      "reason": "uses-self.assertRaises"
+    }
+  ],
+  "counts": {
+    "extracted": 9,
+    "pinned": 4,
+    "quarantined": 5
+  }
+}

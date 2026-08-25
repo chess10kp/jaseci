@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_struct/conv_struct_pins.jac"
+  ],
+  "generated_at": "2026-08-24T23:15:38",
+  "hashes": {
+    "pins_jac": "0f20d62577e90c6ec9e12e5af7cc91bef02b34a146983e7d18156c8fbbb86747",
+    "conversion_json": "ae937e5c22168133489c3770dfcf623ae0a3e72e636fb6221fe2bfe3c0dab66d",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "struct",
+  "counts": {
+    "converted": 43,
+    "runnable": 34,
+    "green": 29,
+    "quarantined": 9
+  },
+  "pins": [
+    {
+      "id": "StructTest.test_isbigendian",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_consistence",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_transitiveness",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_new_features",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_calcsize",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_p_code",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_705836",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_1530559",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_unpack_from",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'abcd\\',), (b\\'abcd\\',))\"'>"
+    },
+    {
+      "id": "StructTest.test_pack_into",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_pack_into_fn",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_unpack_with_buffer",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_bool",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"Expected OSError: struct.pack(\\'<?\\', ExplodingBool())\"'>"
+    },
+    {
+      "id": "StructTest.test_count_overflow",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_trailing_counter",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_Struct_reinitialization",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_boundary_error_message",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_boundary_error_message_with_negative_offset",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_boundary_error_message_with_large_offset",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_issue29802",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_format_attr",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_struct_cleans_up_at_runtime_shutdown",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ModuleNotFoundError: No module named 'test.support.script_helper'\">"
+    },
+    {
+      "id": "StructTest.test__struct_reference_cycle_cleaned_up",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'import_helper' from '<unknown>'\">"
+    },
+    {
+      "id": "StructTest.test_issue35714",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_struct_subclass_instantiation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'object.__init__() takes exactly one argument (the instance to initialize)'\">"
+    },
+    {
+      "id": "StructTest.test_repr",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_operations_on_half_initialized_Struct",
+      "status": "pass"
+    },
+    {
+      "id": "StructTest.test_float_round_trip",
+      "status": "pass"
+    },
+    {
+      "id": "UnpackIteratorTest.test_construct",
+      "status": "pass"
+    },
+    {
+      "id": "UnpackIteratorTest.test_uninstantiable",
+      "status": "pass"
+    },
+    {
+      "id": "UnpackIteratorTest.test_iterate",
+      "status": "pass"
+    },
+    {
+      "id": "UnpackIteratorTest.test_arbitrary_buffer",
+      "status": "pass"
+    },
+    {
+      "id": "UnpackIteratorTest.test_length_hint",
+      "status": "pass"
+    },
+    {
+      "id": "UnpackIteratorTest.test_module_func",
+      "status": "pass"
+    },
+    {
+      "id": "UnpackIteratorTest.test_half_float",
+      "status": "quarantined",
+      "reason": "host-raised:SkipTest: No module named '_testcapi'"
+    },
+    {
+      "id": "StructTest.test__sizeof__",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "StructTest.test__struct_types_immutable",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "StructTest.test_issue98248",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "StructTest.test_issue98248_error_propagation",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "StructTest.test_endian_table_init_subinterpreters",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "StructTest.test_integers",
+      "status": "quarantined",
+      "reason": "uses-self.assertEqual"
+    },
+    {
+      "id": "StructTest.test_nN_code",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "StructTest.test_c_complex_round_trip",
+      "status": "quarantined",
+      "reason": "self.assertComplexesAreIdentical"
+    }
+  ]
+}

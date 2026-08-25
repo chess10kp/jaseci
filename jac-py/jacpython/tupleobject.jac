@@ -2,61 +2,16 @@
 #
 # c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/tupleobject_core.c``
 # (lift: ``jac-py/Objects/_lifted/tupleobject_core.jac``).
-import from objects { PyObj, PyTuple, PyBool, PyInt, is_error, }
+import from objects { PyObj, PyTuple, PyInt, is_error, _signed_hash, }
+import from pyhash { xx_hash_mix, _PyHASH_XXPRIME_5, }
 import from hash_dispatch { hash_element, }
-import from abstract_protocol {
-    PyObject_RichCompare,
-    PyObject_RichCompareBool,
-    Py_EQ,
-    Py_NE,
-    Py_LT,
-    Py_LE,
-    Py_GT,
-    Py_GE,
-}
 
-glob _PyTuple_HASH_XXPRIME_1: int = 11400714785074694791,
-     _PyTuple_HASH_XXPRIME_2: int = 14029467366897019727,
-     _PyTuple_HASH_XXPRIME_5: int = 2870177450012600261,
-     _PyTuple_MASK: int = 0xFFFFFFFFFFFFFFFF;
+glob _PyTuple_MASK: int = 0xFFFFFFFFFFFFFFFF;
 
-
-def _tuple_xxrotate(acc: int) -> int {
-    return ((acc << 31) | (acc >> 33)) & _PyTuple_MASK;
-}
-
-def _compare_sizes(a: int, b: int, op: int) -> PyObj {
-    if op == Py_LT {
-        return PyBool(t="bool", val=a < b);
-    }
-    if op == Py_LE {
-        return PyBool(t="bool", val=a <= b);
-    }
-    if op == Py_EQ {
-        return PyBool(t="bool", val=a == b);
-    }
-    if op == Py_NE {
-        return PyBool(t="bool", val=a != b);
-    }
-    if op == Py_GT {
-        return PyBool(t="bool", val=a > b);
-    }
-    if op == Py_GE {
-        return PyBool(t="bool", val=a >= b);
-    }
-    return PyBool(t="bool", val=False);
-}
-
-def _signed_hash(acc: int) -> int {
-    if acc >= 0x8000000000000000 {
-        return acc - 0x10000000000000000;
-    }
-    return acc;
-}
-
-# CPython ``tuple_hash`` (xxHash-style lane mixing from ``tupleobject.c``).
+# CPython ``tuple_hash`` (xxHash-style lane mixing from ``tupleobject.c``;
+# the constants/rotate live in ``pyhash.xx_hash_mix``).
 def tuple_hash(v: PyTuple) -> PyObj {
-    acc = _PyTuple_HASH_XXPRIME_5;
+    acc = _PyHASH_XXPRIME_5;
     tlen = len(v.items);
     i = 0;
     while i < tlen {
@@ -64,43 +19,19 @@ def tuple_hash(v: PyTuple) -> PyObj {
         if is_error(lane_obj) {
             return lane_obj;
         }
-        lane = (lane_obj as PyInt).val;
-        acc = (acc + ((lane & _PyTuple_MASK) * _PyTuple_HASH_XXPRIME_2))
-            & _PyTuple_MASK;
-        acc = _tuple_xxrotate(acc);
-        acc = (acc * _PyTuple_HASH_XXPRIME_1) & _PyTuple_MASK;
+        acc = xx_hash_mix(acc, (lane_obj as PyInt).val);
         i = i + 1;
     }
-    acc = (acc + (tlen ^ (_PyTuple_HASH_XXPRIME_5 ^ 3527539))) & _PyTuple_MASK;
+    acc = (acc + (tlen ^ (_PyHASH_XXPRIME_5 ^ 3527539))) & _PyTuple_MASK;
     if acc == _PyTuple_MASK {
         acc = 1546275796;
     }
     return PyInt(t="int", val=_signed_hash(acc));
 }
 
-# CPython ``tuple_richcompare`` — no EQ/NE early-out on length mismatch.
+# Thin wrapper kept for callers that import by name: the implementation lives
+# on the PyTuple.tp_richcompare slot in objects.jac (the leaf owns container
+# value equality so set/dict element confirmation can dispatch through it).
 def tuple_richcompare(op: int, vl: PyTuple, wl: PyTuple) -> PyObj {
-    vlen = len(vl.items);
-    wlen = len(wl.items);
-    i = 0;
-    while i < vlen and i < wlen {
-        k = PyObject_RichCompareBool(vl.items[i], wl.items[i], Py_EQ);
-        if k < 0 {
-            return PyObject_RichCompare(vl.items[i], wl.items[i], Py_EQ);
-        }
-        if k == 0 {
-            break;
-        }
-        i = i + 1;
-    }
-    if i >= vlen or i >= wlen {
-        return _compare_sizes(vlen, wlen, op);
-    }
-    if op == Py_EQ {
-        return PyBool(t="bool", val=False);
-    }
-    if op == Py_NE {
-        return PyBool(t="bool", val=True);
-    }
-    return PyObject_RichCompare(vl.items[i], wl.items[i], op);
+    return vl.tp_richcompare(op, wl);
 }

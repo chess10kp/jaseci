@@ -187,6 +187,43 @@ pub const Embed = struct {
         try check(GetError, cfg, SetInt(cfg, "use_environment", 0));
         try check(GetError, cfg, SetInt(cfg, "user_site_directory", 0));
         try check(GetError, cfg, SetInt(cfg, "write_bytecode", 0));
+        // PYTHONHASHSEED is the one ambient var we forward explicitly: with
+        // use_environment=0, config_init_hash_seed can never see it, so the
+        // embedded interpreter would randomize its SipHash secret every process
+        // even under PYTHONHASHSEED=0 -- breaking cross-run determinism and host
+        // parity for any guest hash() that lands on the host builtin. Mirror
+        // CPython's exact precedence (initconfig.c config_init_hash_seed):
+        //   unset | "random" -> use_hash_seed=0 (randomized)
+        //   integer [0; 4294967295] -> use_hash_seed=1, hash_seed=N
+        //   anything else -> fatal config error
+        if (std.c.getenv("PYTHONHASHSEED")) |seed_c| {
+            const seed_text = std.mem.span(seed_c);
+            if (!std.mem.eql(u8, seed_text, "random")) {
+                // Match CPython's strtoul(seed, &endptr, 10) + endptr contract
+                // EXACTLY (config_init_hash_seed): optional leading ASCII
+                // whitespace and '+' sign, then base-10 digits only -- no '_'
+                // digit separators, no trailing junk -- fully consumed, value in
+                // [0; 4294967295]. std.fmt.parseInt alone is looser (accepts
+                // "1_0") and stricter (rejects " 5") than CPython.
+                const seed: u32 = blk: {
+                    const body = std.mem.trimStart(u8, seed_text, " \t\n\r\x0b\x0c");
+                    const digits = if (body.len > 0 and body[0] == '+') body[1..] else body;
+                    if (digits.len == 0) break :blk null;
+                    for (digits) |ch| {
+                        if (ch < '0' or ch > '9') break :blk null;
+                    }
+                    break :blk std.fmt.parseInt(u32, digits, 10) catch null;
+                } orelse {
+                    std.debug.print(
+                        "jac (embed): PYTHONHASHSEED must be \"random\" or an integer in range [0; 4294967295], got '{s}'\n",
+                        .{seed_text},
+                    );
+                    return Error.InitFailed;
+                };
+                try check(GetError, cfg, SetInt(cfg, "use_hash_seed", 1));
+                try check(GetError, cfg, SetInt(cfg, "hash_seed", @intCast(seed)));
+            }
+        }
         // Force UTF-8 regardless of locale; pin stdio explicitly too -- utf8_mode
         // alone does not pin stdout/stderr under embedding, so a C/POSIX locale
         // would crash on non-ASCII output.

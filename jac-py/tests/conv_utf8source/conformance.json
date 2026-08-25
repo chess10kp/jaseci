@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_utf8source/conv_utf8source_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:42:19",
+  "hashes": {
+    "pins_jac": "4f1f42785512b0c0f4ced22b47fea56245e5454e912b4a1690ac2cc3db0176f5",
+    "conversion_json": "7e5509465a0e4faf66e14ac3ef07c93908e0509480970b899d93664d5ef62d82",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "utf8source",
+  "counts": {
+    "converted": 3,
+    "runnable": 3,
+    "green": 2,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "PEP3120Test.test_pep3120",
+      "status": "pass"
+    },
+    {
+      "id": "PEP3120Test.test_badsyntax",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC ModuleNotFoundError \"No module named \\'test.tokenizedata\\'\"'>"
+    },
+    {
+      "id": "BuiltinCompileTests.test_latin1",
+      "status": "pass"
+    }
+  ]
+}

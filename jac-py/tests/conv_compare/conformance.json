@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "5542c0d7bed70fe5a119f442e06395e8f0cbb3d5",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_compare/conv_compare_pins.jac"
+  ],
+  "generated_at": "2026-08-24T21:02:41",
+  "hashes": {
+    "pins_jac": "bd88f4210dac9b12adaa35a87cfdddafdbb331b3444a0b1354dc82e9e1a0c8f6",
+    "conversion_json": "1d2185c28dba2d2c883ac49a642f96415c3c608cb8303e7aceb572d01feff7f1",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "compare",
+  "counts": {
+    "converted": 16,
+    "runnable": 9,
+    "green": 7,
+    "quarantined": 7
+  },
+  "pins": [
+    {
+      "id": "ComparisonSimpleTest.test_comparisons",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'candidates'"
+    },
+    {
+      "id": "ComparisonSimpleTest.test_other_delegation",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonSimpleTest.test_issue_1393",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'ALWAYS_EQ' from '<unknown>'\">"
+    },
+    {
+      "id": "ComparisonFullTest.test_objects",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonFullTest.test_comp_classes_same",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'all_comp_classes'"
+    },
+    {
+      "id": "ComparisonFullTest.test_comp_classes_different",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'all_comp_classes'"
+    },
+    {
+      "id": "ComparisonFullTest.test_str_subclass",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonFullTest.test_numbers",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'<\\' not supported between instances of \\'int\\' and \\'Fraction\\'\"'>"
+    },
+    {
+      "id": "ComparisonFullTest.test_sequences",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonFullTest.test_bytes",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonFullTest.test_sets",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonFullTest.test_mappings",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonSimpleTest.test_id_comparisons",
+      "status": "quarantined",
+      "reason": "uses-self.Empty"
+    },
+    {
+      "id": "ComparisonSimpleTest.test_ne_defaults_to_not_eq",
+      "status": "quarantined",
+      "reason": "uses-self.Cmp"
+    },
+    {
+      "id": "ComparisonSimpleTest.test_ne_high_priority",
+      "status": "quarantined",
+      "reason": "self.assertSequenceEqual"
+    },
+    {
+      "id": "ComparisonSimpleTest.test_ne_low_priority",
+      "status": "quarantined",
+      "reason": "self.assertSequenceEqual"
+    }
+  ]
+}

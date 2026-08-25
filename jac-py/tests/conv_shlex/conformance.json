@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_shlex/conv_shlex_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:03:04",
+  "hashes": {
+    "pins_jac": "8e943659882a55044bb9504f6b041db2559a28bba261791afe03683b08038e51",
+    "conversion_json": "274c540148f0eff7f059f568de7fc312eb2c49d8d3aaf2f2c8d77a5e7846d709",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "shlex",
+  "counts": {
+    "converted": 19,
+    "runnable": 19,
+    "green": 4,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "ShlexTest.testSplitNone",
+      "status": "pass"
+    },
+    {
+      "id": "ShlexTest.testSplitPosix",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testCompat",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testSyntaxSplitAmpersandAndPipe",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testSyntaxSplitSemicolon",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testSyntaxSplitRedirect",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testSyntaxSplitParen",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testSyntaxSplitCustom",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testTokenTypes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testPunctuationInWordChars",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testPunctuationWithWhitespaceSplit",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testPunctuationWithPosix",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testEmptyStringHandling",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testUnicodeHandling",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testQuote",
+      "status": "pass"
+    },
+    {
+      "id": "ShlexTest.testJoin",
+      "status": "pass"
+    },
+    {
+      "id": "ShlexTest.testJoinRoundtrip",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC IndexError 'pop from an empty deque'\">"
+    },
+    {
+      "id": "ShlexTest.testPunctuationCharsReadOnly",
+      "status": "pass"
+    },
+    {
+      "id": "ShlexTest.test_lazy_imports",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'import_helper' from '<unknown>'\">"
+    }
+  ]
+}

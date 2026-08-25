@@ -7,8 +7,8 @@
 # na-clean leaf: no host calls, no import cycles. Location encoding matches
 # CPython 3.14 (PEP 626); col offsets are 0-based byte offsets, NO_COLUMN = -1.
 
-import from objects { PyObj }
-import from opcode_meta { opcode_cache_count }
+import from objects { PyObj, py_none, hashkey_equal }
+import from opcode_meta { opcode_cache_count, OP_LOAD_CONST }
 import from compiler_diagnostics { compiler_diagnostic }
 import from compiler_symtable { sym_block }
 
@@ -74,11 +74,26 @@ def mk_jump(opcode: int, target: int, lc: cloc) -> cinstr {
     return cinstr(opcode=opcode, oparg=0, loc=lc, target_block=target);
 }
 
+# One emitted break statement: the block holding its JUMP_FORWARD, the index of
+# that jump instruction, and the statement location. The loop visitors revisit
+# these sites after the shared continuation block is built so CPython's
+# small-exit tail duplication can be applied per edge.
+obj break_site {
+    has blk: basicblock,
+        instr_idx: int,
+        loc: cloc;
+}
+
 # Active loop target pair for break/continue lowering (continue_blk, break_blk).
 obj loop_frame {
     has continue_blk: basicblock,
         break_blk: basicblock,
-        break_is_stub: bool = False;
+        break_is_stub: bool = False,
+        # FOR-loop family: unwinding the loop on break pops the iterator
+        # (CPython codegen_unwind_fblock, COMPILE_FBLOCK_FOR_LOOP).
+        pops_iter: bool = False,
+        # Per-break emission sites recorded by visit_stmt (Break).
+        break_sites: list[break_site] = [];
 }
 
 # Enclosing with / async-with frame tracked for return unwinding (mirrors
@@ -131,9 +146,14 @@ obj cfg_builder {
         # regions carry the extra exception stack depth (CPython per-instruction
         # depths); handler_enclosing_unwind is the enclosing try's cleanup block
         # for retargeting nested handler-body regions.
+        # handler_fallthrough_bind is the enclosing handler's `except ... as`
+        # binding (None when unbound): inline epilogues must clear it
+        # (LOAD_CONST None / store / delete) after POP_EXCEPT, matching CPython's
+        # duplicated cleanup on every handler exit path.
         handler_fallthrough_fin: basicblock | None = None,
         handler_fallthrough_backward: bool = False,
         handler_fallthrough_fin_handler: int = -1,
+        handler_fallthrough_bind: str | None = None,
         handler_enclosing_unwind: int = -1,
         handler_fell_through: bool = False,
         handler_nest_depth: int = 0;
@@ -296,14 +316,22 @@ obj unverified_cfg {
         # Set by codegen on unsupported nodes; product_compile checks before
         # flowgraph verification (PLAN.md: no silent codegen paths).
         diag: compiler_diagnostic | None = None,
+        # Folded display consts (tuple/list/frozenset) staged for late interning.
+        # CPython's display folding runs as a post-visit optimizer pass, so its
+        # folded consts land AFTER every visit-time const including the implicit
+        # epilogue None; eager add_const at fold time shifts all later indices.
+        late_consts: list[PyObj] = [],
+        late_flushed: bool = False,
         # CPython keeps one dead small-int const (first 0..255 literal seen).
         dead_small_int_const: bool = False,
         # Set after MAKE_FUNCTION; suppresses dead small-int consts on call args.
         nested_code_emitted: bool = False,
+        # Class-scope __annotate__ mode: bare Name loads compile to
+        # LOAD_DEREF __classdict__ / LOAD_FROM_DICT_OR_GLOBALS (PEP 649 class
+        # namespace resolution) instead of LOAD_GLOBAL.
+        classdict_names: bool = False,
         # except_region indices whose handler_block is the PEP 479 handler (filled at end).
         pending_pep479_regions: list[int] = [],
-        # try/except unwind handler_block indices (filled after reraise epilogue).
-        pending_try_unwind_regions: list[int] = [],
         # Inner try/finally success-path bounds for outer try/except wrapping.
         nested_try_finally_success_start: int = -1,
         nested_try_finally_success_end: int = -1,
@@ -312,6 +340,10 @@ obj unverified_cfg {
         # the outer body span starts here so entries never overlap the inner
         # try's own regions (CPython table is per-instruction innermost).
         nested_try_except_end: int = -1,
+        # Success-epilogue (start, end) block pairs published by the most
+        # recent nested try/except; an enclosing try in carve-out mode emits
+        # regions covering them so cleanup-time raises reach its own handlers.
+        nested_except_epilogue_spans: list[tuple[int, int]] = [],
         # First block (leading NOP) of the most recent nested try/except; the
         # enclosing handler's match span ends here when the nested try's own
         # regions carve out its body/handler coverage.
@@ -341,7 +373,7 @@ obj unverified_cfg {
         key = c.tp_hashkey();
         i = 0;
         while i < len(self.consts) {
-            if self.consts[i].tp_hashkey() == key {
+            if hashkey_equal(self.consts[i].tp_hashkey(), key) {
                 return i;
             }
             i = i + 1;
@@ -360,6 +392,49 @@ obj unverified_cfg {
         }
         self.names.append(n);
         return len(self.names) - 1;
+    }
+
+    # Stage a folded display const for interning at flush time. Returns a
+    # negative placeholder oparg; flush_late_consts patches it to the final
+    # index. Dedup within the staged set mirrors add_const.
+    def stage_late_const(c: PyObj) -> int {
+        key = c.tp_hashkey();
+        k = 0;
+        while k < len(self.late_consts) {
+            if hashkey_equal(self.late_consts[k].tp_hashkey(), key) {
+                return -(k + 1);
+            }
+            k = k + 1;
+        }
+        self.late_consts.append(c);
+        return -len(self.late_consts);
+    }
+
+    # Intern staged consts after every visit-time const (CPython interns them
+    # in a post-visit optimizer pass, after the epilogue None), then patch all
+    # negative OP_LOAD_CONST opargs to final indices. Call exactly once per
+    # unverified_cfg before verification/assembly; no-op when nothing staged.
+    def flush_late_consts() {
+        if self.late_flushed or len(self.late_consts) == 0 {
+            return;
+        }
+        finals: list[int] = [];
+        k = 0;
+        while k < len(self.late_consts) {
+            finals.append(self.add_const(self.late_consts[k]));
+            k = k + 1;
+        }
+        bi = 0;
+        while bi < len(self.blocks) {
+            for ins in self.blocks[bi].instrs {
+                if ins.opcode == OP_LOAD_CONST and ins.oparg < 0 {
+                    ins.oparg = finals[-(ins.oparg) - 1];
+                }
+            }
+            bi = bi + 1;
+        }
+        self.late_consts = [];
+        self.late_flushed = True;
     }
 }
 

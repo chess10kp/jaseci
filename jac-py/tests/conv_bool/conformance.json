@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_bool/conv_bool_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:30:32",
+  "hashes": {
+    "pins_jac": "5efef5815443d97f47fd8904bb5c0397c82af11bf214bb2c43937c5b662c7b98",
+    "conversion_json": "f838bdf53c84d9720022c46b6b5e148a56b7245e877dccdaf111369b0a6f0c9d",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "bool",
+  "counts": {
+    "converted": 31,
+    "runnable": 28,
+    "green": 26,
+    "quarantined": 3
+  },
+  "pins": [
+    {
+      "id": "BoolTest.test_subclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'bool should not be subclassable'\">"
+    },
+    {
+      "id": "BoolTest.test_repr",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_str",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_int",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_float",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_complex",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_convert",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_keyword_args",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_format",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_hasattr",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_callable",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_isinstance",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_issubclass",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_contains",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_string",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_fileclosed",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'TextIOWrapper.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "BoolTest.test_types",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_operator",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_marshal",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_pickle",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_picklevalues",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_interpreter_convert_to_bool_raises",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_from_bytes",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_sane_len",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_blocked",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_real_and_imag",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_bool_called_at_least_once",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_bool_new",
+      "status": "pass"
+    },
+    {
+      "id": "BoolTest.test_math",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "BoolTest.test_boolean",
+      "status": "quarantined",
+      "reason": "self.assertNotIsInstance"
+    },
+    {
+      "id": "BoolTest.test_convert_to_bool",
+      "status": "quarantined",
+      "reason": "uses-self.assertRaises"
+    }
+  ]
+}

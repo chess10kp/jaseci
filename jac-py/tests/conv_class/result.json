@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "e04dddeb5f741bc4740b54f7516f040ca3f0ab48",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_class/conv_class_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:03:25",
+  "hashes": {
+    "pins_jac": "6655067b29338d2b9fa3a33f8433f1d14510e4db6cc082a3e4c865f0dc5f5d55",
+    "conversion_json": "dad1639502bf1b4ee3a16d34c2a2b3c38afa6450192711a83962d0f8c99f55cb",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "class",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 37,
+    "runnable": 3,
+    "green": 1,
+    "quarantined": 34,
+    "failed": 2,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestInlineValues.test_store_attr_deleted_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__dict__'\">"
+    },
+    {
+      "id": "TestInlineValues.test_rematerialize_object_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__dict__'\">"
+    }
+  ]
+}

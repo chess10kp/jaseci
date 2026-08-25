@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_contains/conv_contains_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:30:54",
+  "hashes": {
+    "pins_jac": "2c5aa1cc479cb91a1009f6b45ee20a77ec7f777b070fe6c14358ca56a786ded2",
+    "conversion_json": "34c35b0c1c375619ca79f2a9e16e29b2ee51fa818d8b800db61950f12d154fec",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "contains",
+  "counts": {
+    "converted": 4,
+    "runnable": 3,
+    "green": 2,
+    "quarantined": 1
+  },
+  "pins": [
+    {
+      "id": "TestContains.test_builtin_sequence_types",
+      "status": "pass"
+    },
+    {
+      "id": "TestContains.test_nonreflexive",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'NEVER_EQ' from '<unknown>'\">"
+    },
+    {
+      "id": "TestContains.test_block_fallback",
+      "status": "pass"
+    },
+    {
+      "id": "TestContains.test_common_tests",
+      "status": "quarantined",
+      "reason": "unresolved-name:base_set"
+    }
+  ]
+}

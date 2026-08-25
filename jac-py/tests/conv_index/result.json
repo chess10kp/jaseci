@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_index/conv_index_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:33:35",
+  "hashes": {
+    "pins_jac": "90001942e46c67a1b48a1bc5ba0708872791b9cfca47ade4ea9e0851230191ff",
+    "conversion_json": "0249e5ffe9552477abbce4d9529dcf1ad9cde318df35c8c88a1467fc3678ee0b",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "index",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 20,
+    "runnable": 10,
+    "green": 5,
+    "quarantined": 10,
+    "failed": 5,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "BaseTestCase.test_basic",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'newstyle\\' object cannot be interpreted as an integer\"'>"
+    },
+    {
+      "id": "BaseTestCase.test_slice",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (0, 0, 0), (1, 1, 1))\"'>"
+    },
+    {
+      "id": "ListTestCase.test_setdelitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'list indices must be integers or slices, not newstyle'\">"
+    },
+    {
+      "id": "ListTestCase.test_inplace_repeat",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'newstyle\\' object cannot be interpreted as an integer\"'>"
+    },
+    {
+      "id": "OverflowTestCase.test_getitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: MAX_Py_ssize_t'>"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_int_literal/conv_int_literal_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:33:41",
+  "hashes": {
+    "pins_jac": "7c1155acef23d277e9bff49c02547c91b2a1bd6d02bb08eacdd4c09708a3d423",
+    "conversion_json": "7637893a90c68b4abb1c0d7690800cbe18335d0d8981fbf1c48475a0ad02fbbb",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "int_literal",
+  "counts": {
+    "converted": 6,
+    "runnable": 6,
+    "green": 6,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "TestHexOctBin.test_hex_baseline",
+      "status": "pass"
+    },
+    {
+      "id": "TestHexOctBin.test_hex_unsigned",
+      "status": "pass"
+    },
+    {
+      "id": "TestHexOctBin.test_oct_baseline",
+      "status": "pass"
+    },
+    {
+      "id": "TestHexOctBin.test_oct_unsigned",
+      "status": "pass"
+    },
+    {
+      "id": "TestHexOctBin.test_bin_baseline",
+      "status": "pass"
+    },
+    {
+      "id": "TestHexOctBin.test_bin_unsigned",
+      "status": "pass"
+    }
+  ]
+}

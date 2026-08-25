@@ -475,7 +475,7 @@ test "layer1: dict equality repr and key collision (P3.2a)" {
 test "layer1: bytes hash richcompare and repr (P3.2a)" {
     src = "class TestBytesCore(unittest.TestCase):\n"
     "    def test_bytes_hash(self):\n"
-    "        self.assertEqual(hash(b'abc'), hash(b'abc'))\n"
+    "        self.assertEqual(hash(b'abc') == hash(b'abc'), True)\n"
     "        self.assertNotEqual(hash(b'a'), hash(b'b'))\n"
     "    def test_bytes_richcompare(self):\n"
     "        self.assertEqual(b'abc', b'abc')\n"
@@ -586,7 +586,7 @@ test "layer1: hash routing and compare protocol probes (P3.1e/M10)" {
     "        self.assertEqual(hash(-1), -2)\n"
     "        self.assertNotEqual(hash((-1,)), -1)\n"
     "    def test_hash_str_float_stable(self):\n"
-    "        self.assertEqual(hash('a'), hash('a'))\n"
+    "        self.assertEqual(hash('a') == hash('a'), True)\n"
     "        self.assertEqual(hash(1.5), hash(1.5))\n"
     "        self.assertEqual(hash(1.0), hash(1))\n"
     "        self.assertEqual(hash(1.5), 1152921504606846977)\n"
@@ -598,9 +598,57 @@ test "layer1: hash routing and compare protocol probes (P3.1e/M10)" {
     "        with self.assertRaises(TypeError):\n"
     "            1 < 'a'\n"
     "        with self.assertRaises(TypeError):\n"
-    "            (1, 2) < 'a'\n";
+    "            (1, 2) < 'a'\n"
+    "    def test_ne_derives_from_user_eq(self):\n"
+    "        class V:\n"
+    "            def __init__(self, v):\n"
+    "                self.v = v\n"
+    "            def __eq__(self, other):\n"
+    "                return self.v == other.v\n"
+    "        a = V(1)\n"
+    "        b = V(1)\n"
+    "        self.assertTrue(a == b)\n"
+    "        self.assertFalse(a != b)\n"
+    "        c = V(2)\n"
+    "        self.assertTrue(a != c)\n"
+    "        self.assertFalse(a == c)\n"
+    "    def test_for_loop_over_user_iterator(self):\n"
+    "        class It:\n"
+    "            def __init__(self):\n"
+    "                self.i = 0\n"
+    "            def __iter__(self):\n"
+    "                return self\n"
+    "            def __next__(self):\n"
+    "                if self.i >= 3:\n"
+    "                    raise StopIteration\n"
+    "                self.i += 1\n"
+    "                return self.i\n"
+    "        total = 0\n"
+    "        for x in It():\n"
+    "            total += x\n"
+    "        self.assertEqual(total, 6)\n"
+    "        seen = []\n"
+    "        for x in It():\n"
+    "            seen.append(x)\n"
+    "            if x == 2:\n"
+    "                break\n"
+    "        self.assertEqual(seen, [1, 2])\n"
+    "    def test_iter_two_arg_sentinel(self):\n"
+    "        calls = []\n"
+    "        def popper():\n"
+    "            calls.append(1)\n"
+    "            return len(calls)\n"
+    "        got = []\n"
+    "        for v in iter(popper, 3):\n"
+    "            got.append(v)\n"
+    "        self.assertEqual(got, [1, 2])\n"
+    "        with self.assertRaises(TypeError):\n"
+    "            iter(42, 99)\n"
+    "        it = iter(lambda: 7, 8)\n"
+    "        self.assertEqual(next(it), 7)\n"
+    "        self.assertEqual(list(it), [])\n";
     result = layer1_replay_source(src);
-    assert result.passed == 4;
+    assert result.passed == 7;
     assert result.skipped == 0;
     assert result.failed == 0;
     assert result.errored == 0;
@@ -631,3 +679,110 @@ test "layer1: user subclass construction after type_ready (P5 heap types)" {
 
 # P3 corpus ratchet tests live in ``layer0_replay_p3_gate.jac`` so they run in
 # isolation (this file's 56 replay regression tests mutate ceval state).
+
+# ---- implicit type-slot machinery (branch truthiness, bool(), `in`, hash(),
+# int()/float() conversions, descriptor/attribute protocol attributes) -------
+
+test "layer1: implicit slots - truthiness membership and conversions" {
+    src = "class TestImplicitSlots(unittest.TestCase):\n"
+    "    def test_bool_dunder(self):\n"
+    "        class Falsy:\n"
+    "            def __bool__(self):\n"
+    "                return False\n"
+    "        f = Falsy()\n"
+    "        self.assertFalse(bool(f))\n"
+    "        self.assertEqual('no' if f else 'yes', 'yes')\n"
+    "    def test_len_dunder(self):\n"
+    "        class Empty:\n"
+    "            def __len__(self):\n"
+    "                return 0\n"
+    "        e = Empty()\n"
+    "        self.assertFalse(bool(e))\n"
+    "        self.assertFalse(e)\n"
+    "    def test_plain_truthy(self):\n"
+    "        class Plain:\n"
+    "            pass\n"
+    "        p = Plain()\n"
+    "        self.assertTrue(p)\n"
+    "        self.assertTrue(bool(p))\n"
+    "    def test_contains_dunder(self):\n"
+    "        class Bag:\n"
+    "            def __init__(self):\n"
+    "                self.items = [1, 2]\n"
+    "            def __contains__(self, x):\n"
+    "                return x in self.items\n"
+    "        b = Bag()\n"
+    "        self.assertTrue(2 in b)\n"
+    "        self.assertTrue(9 not in b)\n"
+    "    def test_contains_iter_fallback(self):\n"
+    "        class IterBag:\n"
+    "            def __init__(self):\n"
+    "                self.items = ['a']\n"
+    "            def __iter__(self):\n"
+    "                return iter(self.items)\n"
+    "        ib = IterBag()\n"
+    "        self.assertTrue('a' in ib)\n"
+    "        self.assertTrue('z' not in ib)\n"
+    "    def test_int_float_dunders(self):\n"
+    "        class N:\n"
+    "            def __int__(self):\n"
+    "                return 7\n"
+    "            def __float__(self):\n"
+    "                return 2.5\n"
+    "        n = N()\n"
+    "        self.assertEqual(int(n), 7)\n"
+    "        self.assertEqual(float(n), 2.5)\n";
+    result = layer1_replay_source(src);
+    assert result.passed == 6;
+    assert result.skipped == 0;
+    assert result.failed == 0;
+    assert result.errored == 0;
+}
+
+test "layer1: implicit slots - hash defaults and descriptor attributes" {
+    src = "class TestHashDescSlots(unittest.TestCase):\n"
+    "    def test_default_hash(self):\n"
+    "        class R:\n"
+    "            pass\n"
+    "        r1 = R()\n"
+    "        r2 = R()\n"
+    "        self.assertTrue(hash(r1) == hash(r1))\n"
+    "        self.assertFalse(hash(r1) == hash(r2))\n"
+    "    def test_hash_eq_dict_keys(self):\n"
+    "        class Key:\n"
+    "            def __init__(self, k):\n"
+    "                self.k = k\n"
+    "            def __hash__(self):\n"
+    "                return self.k\n"
+    "            def __eq__(self, o):\n"
+    "                return self.k == o.k\n"
+    "        d = {Key(7): 'v'}\n"
+    "        self.assertEqual(d[Key(7)], 'v')\n"
+    "    def test_eq_without_hash_unhashable(self):\n"
+    "        class EqOnly:\n"
+    "            def __eq__(self, o):\n"
+    "                return True\n"
+    "        with self.assertRaises(TypeError):\n"
+    "            hash(EqOnly())\n"
+    "    def test_property_get_dunder(self):\n"
+    "        class Prop:\n"
+    "            def __init__(self):\n"
+    "                self.x = 5\n"
+    "            def getx(self):\n"
+    "                return self.x\n"
+    "            v = property(getx)\n"
+    "        p = Prop()\n"
+    "        self.assertEqual(Prop.v.__get__(p), 5)\n"
+    "    def test_attribute_protocol_attrs(self):\n"
+    "        class Plain:\n"
+    "            pass\n"
+    "        c = Plain()\n"
+    "        c.name = 'x'\n"
+    "        self.assertTrue(hasattr(c, '__getattribute__'))\n"
+    "        self.assertEqual(c.__getattribute__('name'), 'x')\n";
+    result = layer1_replay_source(src);
+    assert result.passed == 5;
+    assert result.skipped == 0;
+    assert result.failed == 0;
+    assert result.errored == 0;
+}

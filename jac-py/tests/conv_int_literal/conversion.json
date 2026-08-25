@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_int_literal.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_int_literal",
+    "--name",
+    "conv_int_literal"
+  ],
+  "generated_at": "2026-08-24T14:33:38",
+  "hashes": {
+    "pins_jac": "7c1155acef23d277e9bff49c02547c91b2a1bd6d02bb08eacdd4c09708a3d423"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_int_literal.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "int_literal",
+  "pins_file": "conv_int_literal_pins.jac",
+  "pins": [
+    {
+      "ident": "TestHexOctBin.test_hex_baseline",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 0 == 0, ('assertEqual', 0, 0)\n    assert 1 == 1, ('assertEqual', 1, 1)\n    assert 81985529216486895 == 81985529216486895, ('assertEqual', 81985529216486895, 81985529216486895)\n    assert 0 == 0, ('assertEqual', 0, 0)\n    assert 16 == 16, ('assertEqual', 16, 16)\n    assert 2147483647 == 2147483647, ('assertEqual', 2147483647, 2147483647)\n    assert 9223372036854775807 == 9223372036854775807, ('assertEqual', 9223372036854775807, 9223372036854775807)\n    assert -0 == 0, ('assertEqual', -0, 0)\n    assert -16 == -16, ('assertEqual', -16, -16)\n    assert -2147483647 == -2147483647, ('assertEqual', -2147483647, -2147483647)\n    assert -9223372036854775807 == -9223372036854775807, ('assertEqual', -9223372036854775807, -9223372036854775807)\n    assert -0 == 0, ('assertEqual', -0, 0)\n    assert -16 == -16, ('assertEqual', -16, -16)\n    assert -2147483647 == -2147483647, ('assertEqual', -2147483647, -2147483647)\n    assert -9223372036854775807 == -9223372036854775807, ('assertEqual', -9223372036854775807, -9223372036854775807)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHexOctBin.test_hex_unsigned",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 2147483648 == 2147483648, ('assertEqual', 2147483648, 2147483648)\n    assert 4294967295 == 4294967295, ('assertEqual', 4294967295, 4294967295)\n    assert -2147483648 == -2147483648, ('assertEqual', -2147483648, -2147483648)\n    assert -4294967295 == -4294967295, ('assertEqual', -4294967295, -4294967295)\n    assert -2147483648 == -2147483648, ('assertEqual', -2147483648, -2147483648)\n    assert -4294967295 == -4294967295, ('assertEqual', -4294967295, -4294967295)\n    assert 9223372036854775808 == 9223372036854775808, ('assertEqual', 9223372036854775808, 9223372036854775808)\n    assert 18446744073709551615 == 18446744073709551615, ('assertEqual', 18446744073709551615, 18446744073709551615)\n    assert -9223372036854775808 == -9223372036854775808, ('assertEqual', -9223372036854775808, -9223372036854775808)\n    assert -18446744073709551615 == -18446744073709551615, ('assertEqual', -18446744073709551615, -18446744073709551615)\n    assert -9223372036854775808 == -9223372036854775808, ('assertEqual', -9223372036854775808, -9223372036854775808)\n    assert -18446744073709551615 == -18446744073709551615, ('assertEqual', -18446744073709551615, -18446744073709551615)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHexOctBin.test_oct_baseline",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 0 == 0, ('assertEqual', 0, 0)\n    assert 1 == 1, ('assertEqual', 1, 1)\n    assert 342391 == 342391, ('assertEqual', 342391, 342391)\n    assert 0 == 0, ('assertEqual', 0, 0)\n    assert 16 == 16, ('assertEqual', 16, 16)\n    assert 2147483647 == 2147483647, ('assertEqual', 2147483647, 2147483647)\n    assert 9223372036854775807 == 9223372036854775807, ('assertEqual', 9223372036854775807, 9223372036854775807)\n    assert -0 == 0, ('assertEqual', -0, 0)\n    assert -16 == -16, ('assertEqual', -16, -16)\n    assert -2147483647 == -2147483647, ('assertEqual', -2147483647, -2147483647)\n    assert -9223372036854775807 == -9223372036854775807, ('assertEqual', -9223372036854775807, -9223372036854775807)\n    assert -0 == 0, ('assertEqual', -0, 0)\n    assert -16 == -16, ('assertEqual', -16, -16)\n    assert -2147483647 == -2147483647, ('assertEqual', -2147483647, -2147483647)\n    assert -9223372036854775807 == -9223372036854775807, ('assertEqual', -9223372036854775807, -9223372036854775807)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHexOctBin.test_oct_unsigned",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 2147483648 == 2147483648, ('assertEqual', 2147483648, 2147483648)\n    assert 4294967295 == 4294967295, ('assertEqual', 4294967295, 4294967295)\n    assert -2147483648 == -2147483648, ('assertEqual', -2147483648, -2147483648)\n    assert -4294967295 == -4294967295, ('assertEqual', -4294967295, -4294967295)\n    assert -2147483648 == -2147483648, ('assertEqual', -2147483648, -2147483648)\n    assert -4294967295 == -4294967295, ('assertEqual', -4294967295, -4294967295)\n    assert 9223372036854775808 == 9223372036854775808, ('assertEqual', 9223372036854775808, 9223372036854775808)\n    assert 18446744073709551615 == 18446744073709551615, ('assertEqual', 18446744073709551615, 18446744073709551615)\n    assert -9223372036854775808 == -9223372036854775808, ('assertEqual', -9223372036854775808, -9223372036854775808)\n    assert -18446744073709551615 == -18446744073709551615, ('assertEqual', -18446744073709551615, -18446744073709551615)\n    assert -9223372036854775808 == -9223372036854775808, ('assertEqual', -9223372036854775808, -9223372036854775808)\n    assert -18446744073709551615 == -18446744073709551615, ('assertEqual', -18446744073709551615, -18446744073709551615)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHexOctBin.test_bin_baseline",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 0 == 0, ('assertEqual', 0, 0)\n    assert 1 == 1, ('assertEqual', 1, 1)\n    assert 1365 == 1365, ('assertEqual', 1365, 1365)\n    assert 0 == 0, ('assertEqual', 0, 0)\n    assert 16 == 16, ('assertEqual', 16, 16)\n    assert 2147483647 == 2147483647, ('assertEqual', 2147483647, 2147483647)\n    assert 9223372036854775807 == 9223372036854775807, ('assertEqual', 9223372036854775807, 9223372036854775807)\n    assert -0 == 0, ('assertEqual', -0, 0)\n    assert -16 == -16, ('assertEqual', -16, -16)\n    assert -2147483647 == -2147483647, ('assertEqual', -2147483647, -2147483647)\n    assert -9223372036854775807 == -9223372036854775807, ('assertEqual', -9223372036854775807, -9223372036854775807)\n    assert -0 == 0, ('assertEqual', -0, 0)\n    assert -16 == -16, ('assertEqual', -16, -16)\n    assert -2147483647 == -2147483647, ('assertEqual', -2147483647, -2147483647)\n    assert -9223372036854775807 == -9223372036854775807, ('assertEqual', -9223372036854775807, -9223372036854775807)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHexOctBin.test_bin_unsigned",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 2147483648 == 2147483648, ('assertEqual', 2147483648, 2147483648)\n    assert 4294967295 == 4294967295, ('assertEqual', 4294967295, 4294967295)\n    assert -2147483648 == -2147483648, ('assertEqual', -2147483648, -2147483648)\n    assert -4294967295 == -4294967295, ('assertEqual', -4294967295, -4294967295)\n    assert -2147483648 == -2147483648, ('assertEqual', -2147483648, -2147483648)\n    assert -4294967295 == -4294967295, ('assertEqual', -4294967295, -4294967295)\n    assert 9223372036854775808 == 9223372036854775808, ('assertEqual', 9223372036854775808, 9223372036854775808)\n    assert 18446744073709551615 == 18446744073709551615, ('assertEqual', 18446744073709551615, 18446744073709551615)\n    assert -9223372036854775808 == -9223372036854775808, ('assertEqual', -9223372036854775808, -9223372036854775808)\n    assert -18446744073709551615 == -18446744073709551615, ('assertEqual', -18446744073709551615, -18446744073709551615)\n    assert -9223372036854775808 == -9223372036854775808, ('assertEqual', -9223372036854775808, -9223372036854775808)\n    assert -18446744073709551615 == -18446744073709551615, ('assertEqual', -18446744073709551615, -18446744073709551615)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 6,
+    "pinned": 6,
+    "quarantined": 0
+  }
+}

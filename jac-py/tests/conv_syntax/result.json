@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_syntax/conv_syntax_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:41:37",
+  "hashes": {
+    "pins_jac": "9796a51cc357e6bdb8f93145ba4332f5df8df856037cda207b3c64948328c77d",
+    "conversion_json": "3e7fc36793e80dc7abdf69625fe5e36eb4bdeea3b1c5339893b2cad234d748fa",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "syntax",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 44,
+    "runnable": 35,
+    "green": 34,
+    "quarantined": 9,
+    "failed": 1,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "SyntaxErrorTestCase.test_continuation_bad_indentation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"object can\\'t be sent\"'>"
+    }
+  ]
+}

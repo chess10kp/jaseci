@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_baseexception/conv_baseexception_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:30:28",
+  "hashes": {
+    "pins_jac": "eab8308eeb449b253894b2656d6676049e049b4c10d6e5ab88f5b572cd4d01a3",
+    "conversion_json": "049544ba191b74d74f78f10cfa1a5d963ba20d1120adf3bfc0a065cbace34a07",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "baseexception",
+  "counts": {
+    "converted": 11,
+    "runnable": 6,
+    "green": 3,
+    "quarantined": 5
+  },
+  "pins": [
+    {
+      "id": "ExceptionClassTests.test_interface_single_arg",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "ExceptionClassTests.test_interface_multi_arg",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "ExceptionClassTests.test_interface_no_arg",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "ExceptionClassTests.test_setstate_refcount_no_crash",
+      "status": "pass"
+    },
+    {
+      "id": "UsageTests.test_raise_new_style_non_exception",
+      "status": "pass"
+    },
+    {
+      "id": "UsageTests.test_raise_string",
+      "status": "pass"
+    },
+    {
+      "id": "UsageTests.test_catch_non_BaseException",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'TypeError expected when catching <object>'\">"
+    },
+    {
+      "id": "UsageTests.test_catch_BaseException_instance",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'TypeError expected when catching <object>'\">"
+    },
+    {
+      "id": "UsageTests.test_catch_string",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'TypeError expected when catching <object>'\">"
+    },
+    {
+      "id": "ExceptionClassTests.test_builtins_new_style",
+      "status": "quarantined",
+      "reason": "self.assertIsSubclass"
+    },
+    {
+      "id": "ExceptionClassTests.test_inheritance",
+      "status": "quarantined",
+      "reason": "helper:verify_instance_interface(self.assertHasAttr)"
+    }
+  ]
+}

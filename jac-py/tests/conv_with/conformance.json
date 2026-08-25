@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "ac08a64851ccfed082ecf7de18dd723383ee3abb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_with/conv_with_pins.jac"
+  ],
+  "generated_at": "2026-08-24T14:26:40",
+  "hashes": {
+    "pins_jac": "279cfcbef72e44d4f22d0ba137003eb77a1de07135211a3277b430d3217c189f",
+    "conversion_json": "da685987ee9eb1a4d0901299b9caf9b21081ce63401ac73c208cc771cf40febd",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "with",
+  "counts": {
+    "converted": 54,
+    "runnable": 18,
+    "green": 12,
+    "quarantined": 36
+  },
+  "pins": [
+    {
+      "id": "FailureTestCase.testEnterAttributeError",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__enter__'\">"
+    },
+    {
+      "id": "FailureTestCase.testExitAttributeError",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AttributeError \"\\'object\\' object has no attribute \\'__exit__\\'\"'>"
+    },
+    {
+      "id": "FailureTestCase.testWithForAsyncManager",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__exit__'\">"
+    },
+    {
+      "id": "FailureTestCase.testAssignmentToNoneError",
+      "status": "pass"
+    },
+    {
+      "id": "FailureTestCase.testAssignmentToTupleOnlyContainingNoneError",
+      "status": "pass"
+    },
+    {
+      "id": "FailureTestCase.testAssignmentToTupleContainingNoneError",
+      "status": "pass"
+    },
+    {
+      "id": "FailureTestCase.testEnterThrows",
+      "status": "pass"
+    },
+    {
+      "id": "FailureTestCase.testExitThrows",
+      "status": "pass"
+    },
+    {
+      "id": "NonexceptionalTestCase.testInlineGeneratorSyntax",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonexceptionalTestCase.testUnboundGenerator",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonexceptionalTestCase.testInlineGeneratorBoundSyntax",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonexceptionalTestCase.testInlineGeneratorBoundToExistingVariable",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonexceptionalTestCase.testInlineGeneratorBoundToDottedVariable",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonexceptionalTestCase.testBoundGenerator",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonexceptionalTestCase.testNestedSingleStatements",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "ExceptionalTestCase.testSingleResource",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "ExceptionalTestCase.testExceptionNormalized",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "ExceptionalTestCase.testNestedSingleStatements",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "ExceptionalTestCase.testNestedExceptionBeforeInnerStatement",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "ExceptionalTestCase.testNestedExceptionAfterInnerStatement",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "ExceptionalTestCase.testRaisedStopIteration1",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC RuntimeError 'generator raised StopIteration'\">"
+    },
+    {
+      "id": "ExceptionalTestCase.testRaisedStopIteration2",
+      "status": "pass"
+    },
+    {
+      "id": "ExceptionalTestCase.testRaisedStopIteration3",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC RuntimeError 'generator raised StopIteration'\">"
+    },
+    {
+      "id": "ExceptionalTestCase.testRaisedGeneratorExit1",
+      "status": "pass"
+    },
+    {
+      "id": "ExceptionalTestCase.testRaisedGeneratorExit2",
+      "status": "pass"
+    },
+    {
+      "id": "ExceptionalTestCase.testErrorsInBool",
+      "status": "pass"
+    },
+    {
+      "id": "NonLocalFlowControlTestCase.testWithBreak",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonLocalFlowControlTestCase.testWithContinue",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonLocalFlowControlTestCase.testWithReturn",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonLocalFlowControlTestCase.testWithYield",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "NonLocalFlowControlTestCase.testWithRaise",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'MockContextManager' is not defined"
+    },
+    {
+      "id": "AssignmentTargetTestCase.testMultipleComplexTargets",
+      "status": "pass"
+    },
+    {
+      "id": "AssignmentTargetTestCase.testWithExtendedTargets",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC ValueError 'not enough values to unpack (expected at least 2, got 0)'\">"
+    },
+    {
+      "id": "ExitSwallowsExceptionTestCase.testExitTrueSwallowsException",
+      "status": "pass"
+    },
+    {
+      "id": "ExitSwallowsExceptionTestCase.testExitFalseDoesntSwallowException",
+      "status": "pass"
+    },
+    {
+      "id": "FailureTestCase.testNameError",
+      "status": "quarantined",
+      "reason": "unresolved-name:foo"
+    },
+    {
+      "id": "FailureTestCase.testAsyncEnterAttributeError",
+      "status": "quarantined",
+      "reason": "unresolved-name:do_async_with"
+    },
+    {
+      "id": "FailureTestCase.testAsyncExitAttributeError",
+      "status": "quarantined",
+      "reason": "unresolved-name:do_async_with"
+    },
+    {
+      "id": "FailureTestCase.testAsyncWithForSyncManager",
+      "status": "quarantined",
+      "reason": "unresolved-name:do_async_with"
+    },
+    {
+      "id": "NestedNonexceptionalTestCase.testSingleArgInlineGeneratorSyntax",
+      "status": "quarantined",
+      "reason": "unresolved-name:Nested"
+    },
+    {
+      "id": "NestedNonexceptionalTestCase.testSingleArgBoundToNonTuple",
+      "status": "quarantined",
+      "reason": "unresolved-name:Nested"
+    },
+    {
+      "id": "NestedNonexceptionalTestCase.testSingleArgBoundToSingleElementParenthesizedList",
+      "status": "quarantined",
+      "reason": "unresolved-name:Nested"
+    },
+    {
+      "id": "NestedNonexceptionalTestCase.testSingleArgBoundToMultipleElementTupleError",
+      "status": "quarantined",
+      "reason": "unresolved-name:Nested"
+    },
+    {
+      "id": "NestedNonexceptionalTestCase.testSingleArgUnbound",
+      "status": "quarantined",
+      "reason": "unresolved-name:MockNested"
+    },
+    {
+      "id": "NestedNonexceptionalTestCase.testMultipleArgUnbound",
+      "status": "quarantined",
+      "reason": "unresolved-name:MockNested"
+    },
+    {
+      "id": "NestedNonexceptionalTestCase.testMultipleArgBound",
+      "status": "quarantined",
+      "reason": "unresolved-name:MockNested"
+    },
+    {
+      "id": "ExceptionalTestCase.testMultipleResourcesInSingleStatement",
+      "status": "quarantined",
+      "reason": "unresolved-name:MockNested"
+    },
+    {
+      "id": "AssignmentTargetTestCase.testSingleComplexTarget",
+      "status": "quarantined",
+      "reason": "self.assertHasAttr"
+    },
+    {
+      "id": "NestedWith.testNoExceptions",
+      "status": "quarantined",
+      "reason": "uses-self.Dummy"
+    },
+    {
+      "id": "NestedWith.testExceptionInExprList",
+      "status": "quarantined",
+      "reason": "uses-self.Dummy"
+    },
+    {
+      "id": "NestedWith.testExceptionInEnter",
+      "status": "quarantined",
+      "reason": "uses-self.Dummy"
+    },
+    {
+      "id": "NestedWith.testExceptionInExit",
+      "status": "quarantined",
+      "reason": "uses-self.Dummy"
+    },
+    {
+      "id": "NestedWith.testEnterReturnsTuple",
+      "status": "quarantined",
+      "reason": "uses-self.Dummy"
+    },
+    {
+      "id": "NestedWith.testExceptionLocation",
+      "status": "quarantined",
+      "reason": "uses-self.Dummy"
+    }
+  ]
+}
