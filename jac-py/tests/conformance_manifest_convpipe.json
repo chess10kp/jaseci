@@ -2399,11 +2399,11 @@
       "gate_type": "oracle",
       "status": "converted",
       "oracle_tests": [
-        "conv_atexit_pins.jac"
+        "jac-py/tests/conv_atexit/conv_atexit_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "atexit.conv.json"
+      "conversion_meta": "jac-py/tests/conv_atexit/atexit.conv.json"
     }
   ]
 }

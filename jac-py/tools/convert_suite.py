@@ -57,7 +57,7 @@ _DEFAULT_LIB = _REPO / "reference" / "cpython" / "Lib"
 _TESTS_DIR = _REPO / "jac-py" / "tests"
 _MANIFEST = _TESTS_DIR / "conformance_manifest_convpipe.json"
 
-TOOL_VERSION = "conv_suite-0.5.0"
+TOOL_VERSION = "conv_suite-0.5.1"
 CPYTHON_VERSION = "3.14.6"
 
 
@@ -1740,7 +1740,21 @@ def render_snippet(
 
 
 def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
-    """Run one snippet under host CPython in a sandboxed subprocess."""
+    """Run one snippet under host CPython in a sandboxed subprocess.
+
+    The pinned Lib dir is moved to the END of sys.path by the bootstrap:
+    PYTHONPATH entries would otherwise shadow the host interpreter's own
+    stdlib, which only works while the two versions happen to be
+    compatible (a mismatched Lib/re.py aborts with ``SRE module
+    mismatch``). Modules like ``test.support`` exist solely in the pinned
+    Lib, so appending keeps them resolvable without shadowing anything.
+    """
+    bootstrap = (
+        "import sys; p = sys.argv[1]; "
+        "sys.path[:] = [x for x in sys.path if x != p]; sys.path.append(p); "
+        "exec(compile(open(sys.argv[2], encoding='utf-8').read(), "
+        "sys.argv[2], 'exec'))"
+    )
     with tempfile.TemporaryDirectory(prefix="conv_suite_") as td:
         tdp = Path(td)
         script = tdp / "oracle_snippet.py"
@@ -1753,7 +1767,8 @@ def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
         }
         try:
             proc = subprocess.run(
-                [resolve_oracle_python(), str(script)],
+                [resolve_oracle_python(), "-c", bootstrap, str(cpython_lib),
+                 str(script)],
                 cwd=str(tdp),
                 env=env,
                 capture_output=True,
@@ -1826,7 +1841,10 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
             "module_count": 0,
             "modules": [],
         }
-    rel_pins = str(Path(outdir.relative_to(_REPO)) / pins_file) if outdir.is_relative_to(_REPO) else pins_file
+    # Relative --outdir values are anchored to the repo root so manifest
+    # entries always carry repo-relative artifact paths.
+    abs_outdir = outdir if outdir.is_absolute() else _REPO / outdir
+    rel_pins = str(abs_outdir.relative_to(_REPO) / pins_file)
     row = {
         "stem": stem,
         "gate_type": "oracle",
@@ -1834,9 +1852,7 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
         "oracle_tests": [rel_pins],
         "libtest_snippets": [],
         "notes": f"{total} output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-        "conversion_meta": str(Path(outdir.relative_to(_REPO)) / f"{stem}.conv.json")
-        if outdir.is_relative_to(_REPO)
-        else f"{stem}.conv.json",
+        "conversion_meta": str(abs_outdir.relative_to(_REPO) / f"{stem}.conv.json"),
     }
     for i, existing in enumerate(doc["modules"]):
         if existing.get("stem") == stem:
@@ -1913,7 +1929,10 @@ def run_conversion(source: Path, outdir: Path, name: str, cpython_lib: Path, wri
     pins_path = outdir / meta["pins_file"]
     pins_path.write_text(emit_pin_file(survivors, source), encoding="utf-8")
     meta["hashes"] = {"pins_jac": file_sha256(pins_path)}
-    meta_path = outdir / "conversion.json"
+    # Keep the sidecar name aligned with write_manifest_entry's
+    # conversion_meta reference (<stem>.conv.json); a bare conversion.json
+    # left every manifest entry pointing at a nonexistent path.
+    meta_path = outdir / f"{name.removeprefix('conv_')}.conv.json"
     meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
 
     manifest_path = None
