@@ -42,6 +42,7 @@ import ast
 import builtins
 import copy
 import doctest
+import functools
 import json
 import os
 import subprocess
@@ -376,9 +377,6 @@ def _rewrite_raises(call: ast.Call, regex: bool) -> list[ast.stmt]:
     the context-manager form is handled separately in rewrite_with."""
     _need_args(call, 1)
     exc = call.args[0]
-    handler = ast.ExceptHandler(
-        type=exc, name=None, body=[ast.Pass()],
-    )
     body: list[ast.stmt] = []
     if regex:
         _need_args(call, 2)
@@ -427,7 +425,7 @@ def _rewrite_raises(call: ast.Call, regex: bool) -> list[ast.stmt]:
     return [
         ast.Try(
             body=tried,
-            handlers=[handler],
+            handlers=[ast.ExceptHandler(type=exc, name=None, body=[ast.Pass()])],
             orelse=[],
             finalbody=[],
         )
@@ -462,21 +460,49 @@ def rewrite_raises_with(item: ast.withitem, body: list[ast.stmt]) -> ast.Try:
             )
         )
     handler = ast.ExceptHandler(type=exc, name="_exc", body=handler_body or [ast.Pass()])
-    return ast.Try(
+    prelude: list[ast.stmt] = []
+    if item.optional_vars is not None:
+        # ``with self.assertRaises(E) as cm:`` -> expose the caught exception
+        # as ``cm.exception`` so post-block assertions see it. The target name
+        # needs a live object before the try, hence a bare-namespace box
+        # (unittest binds an _AssertRaisesContext; only .exception is read).
+        target = item.optional_vars
+        if not isinstance(target, ast.Name):
+            raise Unsupported("non-name assertRaises target")
+        prelude = ast.parse(
+            "class _ExcBox:\n    pass\n"
+            f"{target.id} = _ExcBox()\n"
+        ).body
+        handler.body.insert(
+            0,
+            ast.Assign(
+                targets=[
+                    ast.Attribute(
+                        value=ast.Name(id=target.id, ctx=ast.Load()),
+                        attr="exception", ctx=ast.Store(),
+                    )
+                ],
+                value=ast.Name(id="_exc", ctx=ast.Load()),
+            ),
+        )
+    return [
+        *prelude,
+        ast.Try(
         body=list(body),
         handlers=[handler],
-        orelse=[
-            ast.Raise(
-                exc=ast.Call(
-                    func=ast.Name(id="AssertionError", ctx=ast.Load()),
-                    args=[ast.Constant(value="assertRaises: did not raise")],
-                    keywords=[],
-                ),
-                cause=None,
-            )
-        ],
-        finalbody=[],
-    )
+            orelse=[
+                ast.Raise(
+                    exc=ast.Call(
+                        func=ast.Name(id="AssertionError", ctx=ast.Load()),
+                        args=[ast.Constant(value="assertRaises: did not raise")],
+                        keywords=[],
+                    ),
+                    cause=None,
+                )
+            ],
+            finalbody=[],
+        ),
+    ]
 
 
 def _is_self_assert_stmt(stmt: ast.stmt) -> bool:
@@ -517,9 +543,9 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                         isinstance(call, ast.Call)
                         and _call_name(call.func) in ("assertRaises", "assertRaisesRegex")
                     ):
-                        out_stmt = rewrite_raises_with(stmt.items[0], stmt.body)
+                        out_stmts = rewrite_raises_with(stmt.items[0], stmt.body)
                         needs_re = needs_re or _with_needs_re(stmt.items[0])
-                        new.append(out_stmt)
+                        new.extend(out_stmts)
                         handled = True
                     elif isinstance(call, ast.Call) and _call_name(call.func) == "subTest":
                         # unittest subTest scopes failure labels without stopping
@@ -532,6 +558,15 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                     stmt.body = rec(stmt.body)
                     new.append(stmt)
             else:
+                # ``(assert_call(),)`` -- a stray trailing comma wraps the
+                # call in a 1-tuple; as a bare statement it is semantically
+                # identical to the unwrapped expression.
+                if (
+                    isinstance(stmt, ast.Expr)
+                    and isinstance(stmt.value, ast.Tuple)
+                    and len(stmt.value.elts) == 1
+                ):
+                    stmt = ast.Expr(value=stmt.value.elts[0])
                 if _is_self_assert_stmt(stmt):
                     new.extend(rewrite_assert_stmt(stmt))
                 else:
@@ -582,6 +617,13 @@ def _bound_names(nodes: ast.AST) -> set[str]:
             out.add(node.asname or node.name.split(".")[0])
         elif isinstance(node, ast.excepthandler) and node.name:
             out.add(node.name)
+        elif (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.ctx, ast.Store)
+            and isinstance(node.value, ast.Name)
+        ):
+            # ``cm.exception = ...`` implies ``cm`` itself is bound.
+            out.add(node.value.id)
     return out
 
 
@@ -835,9 +877,14 @@ class _FixtureVocab:
         # by every test candidate; in-place substitution would leak one
         # candidate's rewriting into the next candidate's lift.
         fn = copy.deepcopy(fn)
-        if fn.decorator_list:
+        is_staticmethod = (
+            len(fn.decorator_list) == 1
+            and isinstance(fn.decorator_list[0], ast.Name)
+            and fn.decorator_list[0].id == "staticmethod"
+        )
+        if fn.decorator_list and not is_staticmethod:
             raise Unsupported("decorated-helper")
-        args = _drop_self_arg(fn)
+        args = _drop_self_arg(fn) if not is_staticmethod else copy.deepcopy(fn.args)
         rewriter = _HelperCallRewriter(self)
         body = [rewriter.visit(stmt) for stmt in fn.body]
         body, needs_re = rewrite_block(body)
@@ -1085,6 +1132,55 @@ def _src(node: ast.AST, source: str) -> str:
     return seg or ast.unparse(node)
 
 
+def _expand_star_imports(stmts: list[ast.stmt]) -> list[ast.stmt]:
+    """Rewrite ``from mod import *`` into its explicit name list.
+
+    Star imports bind nothing statically, so every star-imported name would
+    quarantine as unresolved. Enumerate the host module's public names
+    (``__all__`` when present, else non-underscore dir entries) and emit an
+    explicit ImportFrom; downstream pruning keeps only the names a body uses,
+    so snippets stay minimal. Modules that cannot be imported host-side (or
+    relative imports) pass through unchanged and quarantine as before.
+    """
+    import importlib
+    out: list[ast.stmt] = []
+    for stmt in stmts:
+        if (
+            isinstance(stmt, ast.ImportFrom)
+            and stmt.module is not None
+            and stmt.level == 0
+            and len(stmt.names) == 1
+            and stmt.names[0].name == "*"
+        ):
+            names: list[str] = []
+            try:
+                mod = importlib.import_module(stmt.module)
+                exported = list(getattr(mod, "__all__", ()))
+                if exported and all(
+                    isinstance(n, str) and n.isidentifier() for n in exported
+                ):
+                    names = exported
+                else:
+                    names = sorted(
+                        n for n in dir(mod) if not n.startswith("_")
+                    )
+            except Exception:
+                pass
+            if not names:
+                out.append(stmt)
+                continue
+            out.append(
+                ast.ImportFrom(
+                    module=stmt.module,
+                    names=[ast.alias(name=n, asname=None) for n in names],
+                    level=0,
+                )
+            )
+        else:
+            out.append(stmt)
+    return out
+
+
 def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False) -> tuple[list[ast.stmt], set[str]]:
     """Module-level imports/assigns/function defs/classes usable as prelude.
 
@@ -1099,6 +1195,8 @@ def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False
     for node in tree.body:
         if isinstance(node, (ast.Import, ast.ImportFrom, ast.Assign, ast.AnnAssign,
                              ast.FunctionDef)):
+            if isinstance(node, ast.ImportFrom):
+                node = _expand_star_imports([node])[0]
             stmts.append(node)
             names |= _bound_names(node)
         elif include_classes and isinstance(node, ast.ClassDef):
@@ -1173,6 +1271,15 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
                     continue
                 candidates.append((node.name, ident, list(member.body)))
         elif isinstance(node, ast.FunctionDef) and node.name.startswith("test"):
+            # A module-level function with required parameters (e.g. testR(r),
+            # an N-candidate consumed by a driver loop) cannot execute
+            # standalone; quarantine rather than pin a snippet that would
+            # NameError on the host.
+            if any(
+                a.arg != "self" for a in (node.args.posonlyargs + node.args.args)
+            ) or node.args.kwonlyargs or node.args.vararg or node.args.kwarg:
+                result.quarantined.append(Quarantined(node.name, "parameterized-module-function"))
+                continue
             for deco in node.decorator_list:
                 reason = _decorator_reason(deco)
                 if reason:
@@ -1722,6 +1829,66 @@ def render_snippet(
 # Host oracle capture
 
 
+@functools.lru_cache(maxsize=None)
+def resolve_oracle_python(cpython_lib: str) -> str:
+    """Host interpreter whose stdlib matches the pinned CPython Lib.
+
+    The venv running this tool may be a different minor version than the
+    pinned reference tree (e.g. jac's 3.12 venv vs a 3.14 reference); snippets
+    importing ``test.support`` then die with SyntaxError before running.
+    Probe candidates (CONV_SUITE_ORACLE_PYTHON override, sys.executable, then
+    every python3* on PATH) and return the first that can import the
+    reference ``test.support``. Falls back to sys.executable.
+    """
+    import shutil
+
+    lib = Path(cpython_lib)
+
+    def works(interp: str) -> bool:
+        try:
+            proc = subprocess.run(
+                [interp, "-c", "import test.support"],
+                cwd=str(tempfile.gettempdir()),
+                env={
+                    "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                    "HOME": tempfile.gettempdir(),
+                    "PYTHONPATH": str(lib),
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                },
+                capture_output=True,
+                timeout=30,
+            )
+        except Exception:
+            return False
+        return proc.returncode == 0
+
+    candidates: list[str] = []
+    override = os.environ.get("CONV_SUITE_ORACLE_PYTHON")
+    if override:
+        candidates.append(override)
+    candidates.append(sys.executable)
+    seen = {sys.executable}
+    for pathdir in os.environ.get("PATH", "").split(os.pathsep):
+        try:
+            entries = sorted(os.scandir(pathdir), key=lambda e: e.name)
+        except OSError:
+            continue
+        for entry in entries:
+            if (
+                entry.name.startswith("python3")
+                and entry.is_file()
+                and os.access(entry.path, os.X_OK)
+                and not entry.name.endswith("-config")
+                and entry.path not in seen
+            ):
+                seen.add(entry.path)
+                candidates.append(entry.path)
+    for cand in candidates:
+        if cand and works(cand):
+            return cand
+    return sys.executable
+
+
 def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
     """Run one snippet under host CPython in a sandboxed subprocess."""
     with tempfile.TemporaryDirectory(prefix="conv_suite_") as td:
@@ -1736,7 +1903,7 @@ def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
         }
         try:
             proc = subprocess.run(
-                [sys.executable, str(script)],
+                [resolve_oracle_python(str(cpython_lib)), str(script)],
                 cwd=str(tdp),
                 env=env,
                 capture_output=True,
