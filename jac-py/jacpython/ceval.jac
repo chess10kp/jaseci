@@ -8237,6 +8237,28 @@ def eg_target_family(target: PyObj) -> str {
 # _PyEval_CheckExceptStarTypeValid: every except* target must be an exception
 # class (tuple members included), and none may be an ExceptionGroup subclass
 # (CPython's CANNOT_EXCEPT_STAR_EG TypeError). Returns py_none() when valid.
+# _PyEval_CheckExceptTypeValid for plain `except`: every target -- tuple
+# members included -- must be an exception class; instances, non-exception
+# classes, and arbitrary values raise TypeError. Returns py_none() when valid.
+def exc_validate_match_target(target: PyObj) -> PyObj {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            invalid = exc_validate_match_target(item);
+            if is_error(invalid) {
+                return invalid;
+            }
+        }
+        return py_none();
+    }
+    if eg_target_family(target) != "" {
+        return py_none();
+    }
+    return py_error(
+        "TypeError",
+        "catching classes that do not inherit from BaseException is not allowed"
+    );
+}
+
 def eg_validate_star_target(target: PyObj) -> PyObj {
     if target.t == "tuple" {
         for item in (target as PyTuple).items {
@@ -16489,12 +16511,25 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             return invalid;
         }
         if op == OP_CHECK_EXC_MATCH {
+            # CPython CHECK_EXC_MATCH validates the target before matching
+            # (_PyEval_CheckExceptTypeValid): a non-exception-class target --
+            # an instance, non-exception class, or string -- raises TypeError
+            # instead of simply not matching.
             match_type: PyObj = stack.pop();
-            exception = stack[len(stack) - 1];
-            stack.append(
-                PyBool(t="bool", val=exception_matches(exception, match_type))
-            );
-            continue;
+            invalid = exc_validate_match_target(match_type);
+            if not is_error(invalid) {
+                exception = stack[len(stack) - 1];
+                stack.append(
+                    PyBool(t="bool", val=exception_matches(exception, match_type))
+                );
+                continue;
+            }
+            exc_handler = recover_exception(co, invalid, offset, stack);
+            if exc_handler >= 0 {
+                ip = exc_handler;
+                continue;
+            }
+            return invalid;
         }
         if op == OP_POP_EXCEPT {
             if len(stack) > 0 {
