@@ -133,7 +133,8 @@ test "guest class crossing gets name-faithful stand-in (was null)" {
         "    __import__('json').dumps(Widget)\n"
         "except BaseException as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
-    ) == "TypeError: Object of type type is not JSON serializable";
+    )
+        == "TypeError: Object of type type is not JSON serializable";
 }
 
 test "plain user instance crossing gets name-faithful stand-in (was null)" {
@@ -143,7 +144,8 @@ test "plain user instance crossing gets name-faithful stand-in (was null)" {
         "    __import__('json').dumps(Point())\n"
         "except BaseException as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
-    ) == "TypeError: Object of type Point is not JSON serializable";
+    )
+        == "TypeError: Object of type Point is not JSON serializable";
 }
 
 test "generator crosses lazily - non-consuming host API sees no list" {
@@ -155,7 +157,8 @@ test "generator crosses lazily - non-consuming host API sees no list" {
         "    r = 'drained'\n"
         "except BaseException as e:\n"
         "    r = type(e).__name__\n"
-    ) == "TypeError";
+    )
+        == "TypeError";
 }
 
 test "iterator position SHARED across boundary - no silent consumption" {
@@ -166,7 +169,8 @@ test "iterator position SHARED across boundary - no silent consumption" {
         "next(it)\n"
         "lv = list(__import__('itertools').islice(it, 2))\n"
         "r = str(lv) + '|' + str(next(it))\n"
-    ) == "[2, 3]|4";
+    )
+        == "[2, 3]|4";
 }
 
 test "generator still fully materializes through consuming host APIs" {
@@ -184,7 +188,8 @@ test "host-raised module exception keeps FULL args tuple" {
         "    struct.pack('z', 1)\n"
         "except BaseException as e:\n"
         "    r = repr(e.args)\n"
-    ) == "('bad char in struct format',)";
+    )
+        == "('bad char in struct format',)";
 }
 
 test "except struct.error catches host-raised error by registry identity" {
@@ -194,7 +199,8 @@ test "except struct.error catches host-raised error by registry identity" {
         "    struct.pack('z', 1)\n"
         "except struct.error as e:\n"
         "    r = 'caught:' + str(e.args[0])\n"
-    ) == "caught:bad char in struct format";
+    )
+        == "caught:bad char in struct format";
 }
 
 test "user __repr__ replays through the VM on the stand-in" {
@@ -203,5 +209,6 @@ test "user __repr__ replays through the VM on the stand-in" {
         "    def __repr__(self):\n"
         "        return 'P!<>'\n"
         "r = repr(P())\n"
-    ) == "P!<>";
+    )
+        == "P!<>";
 }

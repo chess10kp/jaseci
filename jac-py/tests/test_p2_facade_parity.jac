@@ -49,6 +49,7 @@ test "P2 bisect facade agrees with host bisect on representative cases" {
         ([1, 2, 2, 3, 3, 3, 4, 4, 4, 4], 3),
         ([0, 0, 0, 0], 0),
         (list(range(20)), 7),
+
     ];
     for (data, item) in cases {
         a = list(data);
@@ -102,8 +103,17 @@ test "P2 heapq facade agrees with host heapq on representative cases" {
 
 test "P2 stat facade agrees with host stat on representative modes" {
     modes: list = [
-        0o000000, 0o100644, 0o100755, 0o040755, 0o120777,
-        0o060600, 0o020666, 0o140000, 0o010000, 0o104710,
+        0o000000,
+        0o100644,
+        0o100755,
+        0o040755,
+        0o120777,
+        0o060600,
+        0o020666,
+        0o140000,
+        0o010000,
+        0o104710,
+
     ];
     for mode in modes {
         assert _p2_S_ISDIR(mode) == host_stat.S_ISDIR(mode) , mode;
@@ -122,7 +132,9 @@ test "P2 stat facade agrees with host stat on representative modes" {
     }
 }
 
-def _host_stack_effect(op: int, oparg: int | None = None, jump: int | None = None) -> int | None {
+def _host_stack_effect(
+    op: int, oparg: int | None = None, jump: int | None = None
+) -> int | None {
     try {
         if oparg is None and jump is None {
             return host_opcode.stack_effect(op);

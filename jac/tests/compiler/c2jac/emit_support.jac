@@ -122,7 +122,14 @@ def _write_driver(work: str, calls: list, rc_live: bool = False) -> str {
     drv = os.path.join(work, "driver.c");
     with open(drv, "w") as f {
         f.write(
-            headers + externs + "int main(void) {\n    printf(\"" + fmt + "\\n\", " + argv + ");\n" + "    return 0;\n}\n"
+            headers
+                + externs
+                + "int main(void) {\n    printf(\""
+                + fmt
+                + "\\n\", "
+                + argv
+                + ");\n"
+                + "    return 0;\n}\n"
         );
     }
     return drv;
@@ -181,9 +188,9 @@ def interpreter_run(fixtures: list, main_fixture: str, calls: list) -> str {
         }
     }
     argv = ", ".join([f"{c}()" for c in calls]);
-    entry = "\n\nwith entry {\n    print(" + argv + ");\n}\n";
+    `entry = "\n\nwith entry {\n    print(" + argv + ");\n}\n";
     with open(os.path.join(work, main_fixture), "a") as f {
-        f.write(entry);
+        f.write(`entry);
     }
     proc = subprocess.run(
         [sys.executable, "-m", "jaclang", "run", os.path.join(work, main_fixture)],

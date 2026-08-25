@@ -12,10 +12,7 @@
 # exposed on native functions yet); cell introspection via `__closure__`
 # (unsupported attribute -- co_freevars + nonlocal mutation stand in).
 
-import from layer0_replay_harness {
-    ReplayResult,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer1_replay_source, }
 import from host_oracle { host_compile_marshal }
 import from pyc_first { unmarshal, exec_code, to_host }
 import from objects { PyObj, PyStr, is_error }

@@ -19,9 +19,7 @@ def _fresh_ns -> dict[str, PyObj] {
 
 def vm_try(src: str) -> PyObj {
     return exec_code(
-        unmarshal(host_compile_marshal(src, "<exc_hierarchy>", "exec")),
-        [],
-        _fresh_ns()
+        unmarshal(host_compile_marshal(src, "<exc_hierarchy>", "exec")), [], _fresh_ns()
     );
 }
 
@@ -39,7 +37,7 @@ def err_msg(outcome: PyObj) -> str {
 def vm_ok(src: str) {
     outcome = vm_try(src);
     if is_error(outcome) {
-        assert False, err_type(outcome) + ": " + err_msg(outcome);
+        assert False , err_type(outcome) + ": " + err_msg(outcome);
     }
 }
 
@@ -47,31 +45,78 @@ def vm_ok(src: str) {
 # type + message (guest asserts carry the actual value in their message).
 def vm_ok(src: str) {
     outcome = vm_try(src);
-    assert not is_error(outcome), err_type(outcome) + ": " + err_msg(outcome);
+    assert not is_error(outcome) , err_type(outcome) + ": " + err_msg(outcome);
 }
 
 test "hierarchy: every builtin exception name resolves" {
     names = [
-        "BaseException", "Exception", "ArithmeticError", "FloatingPointError",
-        "OverflowError", "ZeroDivisionError", "AssertionError", "AttributeError",
-        "BufferError", "EOFError", "ExceptionGroup", "ImportError",
-        "ModuleNotFoundError", "LookupError", "IndexError", "KeyError",
-        "MemoryError", "NameError", "UnboundLocalError", "OSError",
-        "BlockingIOError", "ChildProcessError", "ConnectionError",
-        "BrokenPipeError", "ConnectionAbortedError", "ConnectionRefusedError",
-        "ConnectionResetError", "FileExistsError", "FileNotFoundError",
-        "InterruptedError", "IsADirectoryError", "NotADirectoryError",
-        "PermissionError", "ProcessLookupError", "TimeoutError",
-        "ReferenceError", "RuntimeError", "NotImplementedError",
-        "RecursionError", "StopAsyncIteration", "StopIteration", "SyntaxError",
-        "IndentationError", "TabError", "SystemError", "TypeError",
-        "ValueError", "UnicodeError", "UnicodeDecodeError",
-        "UnicodeEncodeError", "UnicodeTranslateError", "Warning",
-        "BytesWarning", "DeprecationWarning", "EncodingWarning",
-        "FutureWarning", "ImportWarning", "PendingDeprecationWarning",
-        "ResourceWarning", "RuntimeWarning", "SyntaxWarning",
-        "UnicodeWarning", "UserWarning", "GeneratorExit",
-        "KeyboardInterrupt", "SystemExit",
+        "BaseException",
+        "Exception",
+        "ArithmeticError",
+        "FloatingPointError",
+        "OverflowError",
+        "ZeroDivisionError",
+        "AssertionError",
+        "AttributeError",
+        "BufferError",
+        "EOFError",
+        "ExceptionGroup",
+        "ImportError",
+        "ModuleNotFoundError",
+        "LookupError",
+        "IndexError",
+        "KeyError",
+        "MemoryError",
+        "NameError",
+        "UnboundLocalError",
+        "OSError",
+        "BlockingIOError",
+        "ChildProcessError",
+        "ConnectionError",
+        "BrokenPipeError",
+        "ConnectionAbortedError",
+        "ConnectionRefusedError",
+        "ConnectionResetError",
+        "FileExistsError",
+        "FileNotFoundError",
+        "InterruptedError",
+        "IsADirectoryError",
+        "NotADirectoryError",
+        "PermissionError",
+        "ProcessLookupError",
+        "TimeoutError",
+        "ReferenceError",
+        "RuntimeError",
+        "NotImplementedError",
+        "RecursionError",
+        "StopAsyncIteration",
+        "StopIteration",
+        "SyntaxError",
+        "IndentationError",
+        "TabError",
+        "SystemError",
+        "TypeError",
+        "ValueError",
+        "UnicodeError",
+        "UnicodeDecodeError",
+        "UnicodeEncodeError",
+        "UnicodeTranslateError",
+        "Warning",
+        "BytesWarning",
+        "DeprecationWarning",
+        "EncodingWarning",
+        "FutureWarning",
+        "ImportWarning",
+        "PendingDeprecationWarning",
+        "ResourceWarning",
+        "RuntimeWarning",
+        "SyntaxWarning",
+        "UnicodeWarning",
+        "UserWarning",
+        "GeneratorExit",
+        "KeyboardInterrupt",
+        "SystemExit",
+
     ];
     missing: list[str] = [];
     for n in names {
@@ -79,7 +124,7 @@ test "hierarchy: every builtin exception name resolves" {
             missing.append(n);
         }
     }
-    assert len(missing) == 0, "missing builtins: " + ", ".join(missing);
+    assert len(missing) == 0 , "missing builtins: " + ", ".join(missing);
 }
 
 test "oserror: native 3-arg form sets errno/strerror/filename" {
@@ -296,13 +341,17 @@ test "stopiteration: generator return value rides .value" {
 test "kwargs: builtin exception ctors reject keywords byte-exact" {
     outcome = vm_try("OSError(errno=2)\n");
     assert isinstance(outcome, PyError);
-    assert err_type(outcome) == "TypeError", err_type(outcome);
-    assert err_msg(outcome) == "OSError() takes no keyword arguments", err_msg(outcome);
+    assert err_type(outcome) == "TypeError" , err_type(outcome);
+    assert err_msg(outcome) == "OSError() takes no keyword arguments" , err_msg(
+        outcome
+    );
 
     outcome = vm_try("ValueError(x=1)\n");
     assert isinstance(outcome, PyError);
-    assert err_type(outcome) == "TypeError", err_type(outcome);
-    assert err_msg(outcome) == "ValueError() takes no keyword arguments", err_msg(outcome);
+    assert err_type(outcome) == "TypeError" , err_type(outcome);
+    assert err_msg(outcome) == "ValueError() takes no keyword arguments" , err_msg(
+        outcome
+    );
 }
 
 test "kwargs: ImportError still accepts name=/path= (host-only kwarg family)" {

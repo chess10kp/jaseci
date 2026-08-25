@@ -9,10 +9,7 @@ import from objects { PyObj, py_none, py_error, }
 
 # CPython ``descr_check`` type-mismatch guard (descrobject.c).
 def descr_type_applies(
-    applies: bool,
-    owner_type_name: str,
-    obj_type_name: str,
-    descr_name_val: str = ""
+    applies: bool, owner_type_name: str, obj_type_name: str, descr_name_val: str = ""
 ) -> PyObj {
     if applies {
         return py_none();
@@ -23,8 +20,14 @@ def descr_type_applies(
     }
     return py_error(
         "TypeError",
-        "descriptor " + name_part + "for '" + owner_type_name + "' objects "
-        + "doesn't apply to a '" + obj_type_name + "' object"
+        "descriptor "
+            + name_part
+            + "for '"
+            + owner_type_name
+            + "' objects "
+            + "doesn't apply to a '"
+            + obj_type_name
+            + "' object"
     );
 }
 

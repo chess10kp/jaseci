@@ -30,23 +30,13 @@ def vm_bool(ns: dict[str, PyObj], name: str) -> bool {
 }
 
 test "list iadd mutates in place and preserves aliases" {
-    ns = vm_exec(
-        "a = b = [1]\n"
-        "a += [2]\n"
-        "same = a is b\n"
-        "bval = list(b)\n"
-    );
+    ns = vm_exec("a = b = [1]\n" "a += [2]\n" "same = a is b\n" "bval = list(b)\n");
     assert vm_bool(ns, "same");
     assert to_host(ns["bval"]) == [1, 2];
 }
 
 test "list imul mutates in place and preserves aliases" {
-    ns = vm_exec(
-        "g = h = [3]\n"
-        "g *= 2\n"
-        "same = g is h\n"
-        "hval = list(h)\n"
-    );
+    ns = vm_exec("g = h = [3]\n" "g *= 2\n" "same = g is h\n" "hval = list(h)\n");
     assert vm_bool(ns, "same");
     assert to_host(ns["hval"]) == [3, 3];
 }

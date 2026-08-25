@@ -9,10 +9,7 @@
 #     compiler does for PEP 649 __annotate__ bodies, so the arm must stay green).
 # Also pins cell boundness living on the shared PyCell (filled flag), which is
 # what lets an enclosing function's None binding read through a class body.
-import from layer0_replay_harness {
-    ReplayResult,
-    layer0_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer0_replay_source, }
 import from pyc_first { unmarshal, exec_code, to_host }
 import from objects { PyObj, PyStr, PyError, is_error }
 import marshal;
@@ -48,7 +45,7 @@ def _run_globals_opcode(hit_mode: bool) -> str {
         64,
         bytes([22, 0, 91, 0, 35, 0]),
         (),
-        ("g",),
+        ("g", ),
         (),
         "<classscope>",
         "<classscope>",
@@ -61,7 +58,7 @@ def _run_globals_opcode(hit_mode: bool) -> str {
     );
     co = unmarshal(marshal.dumps(co_host) as list[int]);
 
-    def seed_and_run() -> str {
+    def seed_and_run -> str {
         ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
         gco = unmarshal(marshal.dumps(compile("g = 42", "<c>", "exec")) as list[int]);
         outcome0 = exec_code(gco, [], ns);
@@ -102,7 +99,8 @@ test "class scope: direct class-body read of an enclosing function cell" {
         "        w = z + 1\n"
         "    return C.w\n"
         "r = mk()\n"
-    ) == "2";
+    )
+        == "2";
 }
 
 test "class scope: same-named class attribute shadows the cell" {
@@ -115,7 +113,8 @@ test "class scope: same-named class attribute shadows the cell" {
         "        w = z + 1\n"
         "    return C.w\n"
         "r = mk()\n"
-    ) == "11";
+    )
+        == "11";
 }
 
 test "class scope: method-shaped free reads stay green" {
@@ -127,7 +126,8 @@ test "class scope: method-shaped free reads stay green" {
         "            return z * 2\n"
         "    return C().m()\n"
         "r = mk()\n"
-    ) == "6";
+    )
+        == "6";
 }
 
 test "class scope: nested classes read enclosing function cells" {
@@ -141,7 +141,8 @@ test "class scope: nested classes read enclosing function cells" {
         "            c = a * 10\n"
         "    return Outer.Inner.c\n"
         "r = mk()\n"
-    ) == "50";
+    )
+        == "50";
 }
 
 test "class scope: nested-class name resolution matches host exactly" {
@@ -160,7 +161,8 @@ test "class scope: nested-class name resolution matches host exactly" {
         "except Exception as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
         "r = r\n"
-    ) == "\"" + "NameError: name 'b' is not defined" + "\"";
+    )
+        == "\"" + "NameError: name 'b' is not defined" + "\"";
 }
 
 test "class scope: unbound free cell raises the host-exact message" {
@@ -180,7 +182,8 @@ test "class scope: unbound free cell raises the host-exact message" {
         "except Exception as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
         "r = r\n"
-    ) == "\"" + UNBOUND_FREE_MSG + "\"";
+    )
+        == "\"" + UNBOUND_FREE_MSG + "\"";
 }
 
 test "plain deref: unbound free cell raises instead of yielding None" {
@@ -196,7 +199,8 @@ test "plain deref: unbound free cell raises instead of yielding None" {
         "except Exception as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
         "r = r\n"
-    ) == "\"" + UNBOUND_FREE_MSG + "\"";
+    )
+        == "\"" + UNBOUND_FREE_MSG + "\"";
 }
 
 test "cell boundness: a None binding reads as None through the shared cell" {
@@ -212,7 +216,8 @@ test "cell boundness: a None binding reads as None through the shared cell" {
         "        w = z is None\n"
         "    return C.w\n"
         "r = mk()\n"
-    ) == "True";
+    )
+        == "True";
     assert _run(
         "def mk():\n"
         "    def f():\n"
@@ -220,7 +225,8 @@ test "cell boundness: a None binding reads as None through the shared cell" {
         "    z = None\n"
         "    return f()\n"
         "r = mk()\n"
-    ) == "None";
+    )
+        == "None";
 }
 
 test "LOAD_FROM_DICT_OR_GLOBALS: dict hit, globals fallback, exact NameError" {

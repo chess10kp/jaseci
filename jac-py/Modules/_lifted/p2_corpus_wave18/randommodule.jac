@@ -17,12 +17,12 @@
 #   L54 [W4201] cast to `uint64_t` elided — representation-changing conversion (truncation/narrowing/discard) not applied
 #   L54 [W4201] cast to `uint32_t` elided — representation-changing conversion (truncation/narrowing/discard) not applied
 
-glob uint32_t = int;
-glob uint64_t = int;
-glob int64_t = int;
+glob uint32_t = int,
+     uint64_t = int,
+     int64_t = int;
 
 
-def mt_init_genrand(mt: list, s: int) -> None {
+def mt_init_genrand(mt: list, s: int) {
     mti: int = 0;
     prod: int = 0;
     mt[0] = s;
@@ -33,7 +33,7 @@ def mt_init_genrand(mt: list, s: int) -> None {
 }
 
 
-def mt_init_by_array(mt: list, init_key: list, key_length: int) -> None {
+def mt_init_by_array(mt: list, init_key: list, key_length: int) {
     i: int = 0;
     j: int = 0;
     k: int = 0;
@@ -77,7 +77,7 @@ def mt_init_by_array(mt: list, init_key: list, key_length: int) -> None {
 }
 
 
-def mt_generate_block(mt: list) -> None {
+def mt_generate_block(mt: list) {
     y: int = 0;
     mag: int = 0;
     kk: int = 0;

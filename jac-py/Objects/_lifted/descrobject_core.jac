@@ -46,33 +46,41 @@ def descr_name(descr: PyDescrObject) -> PyObj {
     return 0;
 }
 
-def _object_type_check(obj: PyObj, `type: PyTypeObject) -> bool {
+def _object_type_check(`obj: PyObj, `type: PyTypeObject) -> bool {
     return obj.ob_type == `type;
 }
 
-def descr_check(descr: PyDescrObject, obj: PyObj) -> int {
+def descr_check(descr: PyDescrObject, `obj: PyObj) -> int {
     if not _object_type_check(obj, descr.d_type) {
         raise TypeError(
-            "descriptor for '" + descr.d_type.tp_name + "' objects "
-            + "doesn't apply to a '" + obj.ob_type.tp_name + "' object"
+            "descriptor for '"
+                + descr.d_type.tp_name
+                + "' objects "
+                + "doesn't apply to a '"
+                + obj.ob_type.tp_name
+                + "' object"
         );
         return -1;
     }
     return 0;
 }
 
-def descr_setcheck(descr: PyDescrObject, obj: PyObj, value: PyObj) -> int {
+def descr_setcheck(descr: PyDescrObject, `obj: PyObj, value: PyObj) -> int {
     if not _object_type_check(obj, descr.d_type) {
         raise TypeError(
-            "descriptor for '" + descr.d_type.tp_name + "' objects "
-            + "doesn't apply to a '" + obj.ob_type.tp_name + "' object"
+            "descriptor for '"
+                + descr.d_type.tp_name
+                + "' objects "
+                + "doesn't apply to a '"
+                + obj.ob_type.tp_name
+                + "' object"
         );
         return -1;
     }
     return 0;
 }
 
-def getset_get(`self: PyGetSetDescrObject, obj: PyObj, `type: PyObj) -> PyObj {
+def getset_get(`self: PyGetSetDescrObject, `obj: PyObj, `type: PyObj) -> PyObj {
     if obj == 0 {
         return `self;
     }
@@ -88,7 +96,7 @@ def getset_get(`self: PyGetSetDescrObject, obj: PyObj, `type: PyObj) -> PyObj {
     return 0;
 }
 
-def property_descr_get(`self: propertyobject, obj: PyObj, `type: PyObj) -> PyObj {
+def property_descr_get(`self: propertyobject, `obj: PyObj, `type: PyObj) -> PyObj {
     if (obj == 0) {
         return `self;
     }

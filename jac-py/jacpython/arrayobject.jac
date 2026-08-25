@@ -17,19 +17,14 @@
 # (single source of truth). struct's pack raises OverflowError past float32
 # range like CPython PyFloat_Pack4; array's C setitem instead saturates via
 # a plain C cast, so _sat_f32_bits maps that error to +/-inf bits here.
-import from _structmodule {
-    _f64_bits,
-    _bits_f64,
-    _f32_bits,
-    _bits_f32,
-}
+import from _structmodule { _f64_bits, _bits_f64, _f32_bits, _bits_f32, }
 
 
 # ---------------------------------------------------------------------------
 # Descriptor table (mirrors struct arraydescr descriptors[] on LP64)
 # ---------------------------------------------------------------------------
 
-def _tc_table() -> str {
+def _tc_table -> str {
     return "bBuwhHiIlLqQfd";
 }
 
@@ -170,7 +165,9 @@ def _require_int(v: any) -> int {
         raise TypeError("'float' object cannot be interpreted as an integer");
     }
     if not isinstance(v, int) {
-        raise TypeError("'" + _type_name(v) + "' object cannot be interpreted as an integer");
+        raise TypeError(
+            "'" + _type_name(v) + "' object cannot be interpreted as an integer"
+        );
     }
     return v;
 }
@@ -291,7 +288,10 @@ def _checked_char_item(v: any) -> str {
         raise TypeError("array item must be a unicode character, not " + _type_name(v));
     }
     if len(v) != 1 {
-        raise TypeError("array item must be a unicode character, not a string of length " + str(len(v)));
+        raise TypeError(
+            "array item must be a unicode character, not a string of length "
+                + str(len(v))
+        );
     }
     return v;
 }
@@ -305,7 +305,6 @@ obj Array {
     has typecode: str = "b",
         itemsize: int = 1,
         data: bytearray = bytearray();
-
 
     def _n_items -> int {
         return len(self.data) // self.itemsize;
@@ -378,7 +377,9 @@ obj Array {
             }
             return out;
         }
-        raise TypeError("array indices must be integers or slices, not " + _type_name(item));
+        raise TypeError(
+            "array indices must be integers or slices, not " + _type_name(item)
+        );
     }
 
     def __setitem__(item: any, v: any) {
@@ -401,7 +402,9 @@ obj Array {
 
     def _ass_slice(item: slice, v: any) {
         if not isinstance(v, Array) {
-            raise TypeError('can only assign array (not "' + _type_name(v) + '") to array slice');
+            raise TypeError(
+                'can only assign array (not "' + _type_name(v) + '") to array slice'
+            );
         }
         src: Array = v;
         if src.typecode != self.typecode {
@@ -435,7 +438,12 @@ obj Array {
             }
         }
         if dst_count != len(src) {
-            raise ValueError("attempt to assign array of size " + str(len(src)) + " to extended slice of size " + str(dst_count));
+            raise ValueError(
+                "attempt to assign array of size "
+                    + str(len(src))
+                    + " to extended slice of size "
+                    + str(dst_count)
+            );
         }
         si: int = 0;
         j = start;
@@ -597,7 +605,7 @@ obj Array {
         return total;
     }
 
-    def reverse() {
+    def reverse {
         n = self._n_items();
         lo: int = 0;
         hi: int = n - 1;
@@ -612,7 +620,7 @@ obj Array {
         }
     }
 
-    def clear() {
+    def clear {
         self.data = bytearray();
     }
 
@@ -636,7 +644,9 @@ obj Array {
 
     def __add__(other: any) -> any {
         if not isinstance(other, Array) {
-            raise TypeError('can only append array (not "' + _type_name(other) + '") to array');
+            raise TypeError(
+                'can only append array (not "' + _type_name(other) + '") to array'
+            );
         }
         oa: Array = other;
         if oa.typecode != self.typecode {
@@ -649,7 +659,9 @@ obj Array {
 
     def __iadd__(other: any) -> any {
         if not isinstance(other, Array) {
-            raise TypeError('can only extend array with array (not "' + _type_name(other) + '")');
+            raise TypeError(
+                'can only extend array with array (not "' + _type_name(other) + '")'
+            );
         }
         oa: Array = other;
         if oa.typecode != self.typecode {
@@ -734,7 +746,9 @@ obj Array {
 
     def fromunicode(s: str) {
         if not _tc_is_char(self.typecode) {
-            raise ValueError("fromunicode() may only be called on unicode type arrays ('u' or 'w')");
+            raise ValueError(
+                "fromunicode() may only be called on unicode type arrays ('u' or 'w')"
+            );
         }
         i: int = 0;
         while i < len(s) {
@@ -745,7 +759,9 @@ obj Array {
 
     def tounicode -> str {
         if not _tc_is_char(self.typecode) {
-            raise ValueError("tounicode() may only be called on unicode type arrays ('u' or 'w')");
+            raise ValueError(
+                "tounicode() may only be called on unicode type arrays ('u' or 'w')"
+            );
         }
         text = "";
         i: int = 0;
@@ -757,7 +773,7 @@ obj Array {
         return text;
     }
 
-    def byteswap() {
+    def byteswap {
         if self.itemsize == 1 {
             return;
         }
@@ -791,7 +807,9 @@ obj Array {
     def _pack_item(v: any) -> bytes {
         tc = self.typecode;
         if _tc_is_int(tc) {
-            return _pack_int(_checked_int_item(tc, v), self.itemsize, _tc_is_signed_int(tc));
+            return _pack_int(
+                _checked_int_item(tc, v), self.itemsize, _tc_is_signed_int(tc)
+            );
         }
         if _tc_is_char(tc) {
             return _pack_char(_checked_char_item(v));
@@ -859,7 +877,11 @@ obj Array {
 
     def _rich_order(other: any, op: str) -> any {
         if not isinstance(other, Array) {
-            raise TypeError("'<' not supported between instances of 'array.array' and '" + _type_name(other) + "'");
+            raise TypeError(
+                "'<' not supported between instances of 'array.array' and '"
+                    + _type_name(other)
+                    + "'"
+            );
         }
         oa: Array = other;
         i: int = 0;
@@ -928,7 +950,6 @@ obj ArrayIter {
     has arr: any = None,
         idx: int = 0;
 
-
     def __iter__ -> ArrayIter {
         return self;
     }
@@ -952,14 +973,22 @@ obj ArrayIter {
 
 def _p2_array(typecode: any, initializer: any = None) -> Array {
     if not isinstance(typecode, str) {
-        raise TypeError("array() argument 1 must be a unicode character, not " + _type_name(typecode));
+        raise TypeError(
+            "array() argument 1 must be a unicode character, not "
+                + _type_name(typecode)
+        );
     }
     if len(typecode) != 1 {
-        raise TypeError("array() argument 1 must be a unicode character, not a string of length " + str(len(typecode)));
+        raise TypeError(
+            "array() argument 1 must be a unicode character, not a string of length "
+                + str(len(typecode))
+        );
     }
     idx = _tc_index(typecode);
     if idx < 0 {
-        raise ValueError("bad typecode (must be b, B, u, w, h, H, i, I, l, L, q, Q, f or d)");
+        raise ValueError(
+            "bad typecode (must be b, B, u, w, h, H, i, I, l, L, q, Q, f or d)"
+        );
     }
     a = Array();
     a.typecode = typecode;
@@ -974,7 +1003,11 @@ def _p2_array(typecode: any, initializer: any = None) -> Array {
     }
     if isinstance(initializer, str) {
         if not _tc_is_char(a.typecode) {
-            raise TypeError("cannot use a str to initialize an array with typecode '" + a.typecode + "'");
+            raise TypeError(
+                "cannot use a str to initialize an array with typecode '"
+                    + a.typecode
+                    + "'"
+            );
         }
         for ch in initializer {
             a._append_value(ch);

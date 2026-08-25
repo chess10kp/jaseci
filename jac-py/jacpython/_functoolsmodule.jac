@@ -10,8 +10,7 @@
 
 # Sentinel distinguishing "argument omitted" from an explicit None
 # (reduce(initial=...), lru_cache() bare application, accumulate(initial=)).
-obj _P2Missing {
-}
+obj _P2Missing {}
 
 glob P2_MISSING: _P2Missing = _P2Missing();
 
@@ -55,7 +54,6 @@ obj _P2Partial {
     has func: any = None,
         part_args: tuple = (),
         keywords: dict = {};
-
 
     def __call__(*args: tuple, **kwargs: dict) -> any {
         # Forward stored positionals ahead of the new ones and merge stored
@@ -118,7 +116,6 @@ obj _P2CacheInfo {
         maxsize: any = None,
         currsize: int = 0;
 
-
     def __iter__ -> any {
         return iter((self.hits, self.misses, self.maxsize, self.currsize));
     }
@@ -136,14 +133,18 @@ obj _P2CacheInfo {
         if isinstance(other, _P2CacheInfo) {
             o = other as _P2CacheInfo;
             return (
-                self.hits == o.hits and self.misses == o.misses
-                and self.maxsize == o.maxsize and self.currsize == o.currsize
+                self.hits == o.hits
+                and self.misses == o.misses
+                and self.maxsize == o.maxsize
+                and self.currsize == o.currsize
             );
         }
         if isinstance(other, tuple) {
             return (
-                self.hits == other[0] and self.misses == other[1]
-                and self.maxsize == other[2] and self.currsize == other[3]
+                self.hits == other[0]
+                and self.misses == other[1]
+                and self.maxsize == other[2]
+                and self.currsize == other[3]
             );
         }
         return NotImplemented;
@@ -159,10 +160,15 @@ obj _P2CacheInfo {
 
     def __repr__ -> str {
         return (
-            "CacheInfo(hits=" + str(self.hits)
-            + ", misses=" + str(self.misses)
-            + ", maxsize=" + str(self.maxsize)
-            + ", currsize=" + str(self.currsize) + ")"
+            "CacheInfo(hits="
+            + str(self.hits)
+            + ", misses="
+            + str(self.misses)
+            + ", maxsize="
+            + str(self.maxsize)
+            + ", currsize="
+            + str(self.currsize)
+            + ")"
         );
     }
 }
@@ -187,7 +193,6 @@ obj _P2LRUWrapper {
         }
         return self.maxsize;
     }
-
 
     def _make_key(args: tuple, kwargs: dict) -> any {
         # Mirrors the C key layout: positionals, then (kwd_mark, sorted pairs),
@@ -217,7 +222,6 @@ obj _P2LRUWrapper {
         }
         return tuple(key_parts);
     }
-
 
     def __call__(*args: tuple, **kwargs: dict) -> any {
         key: any = self._make_key(args, kwargs);
@@ -272,7 +276,6 @@ obj _P2LRUDecorator {
     has dec_maxsize: any = None,
         dec_typed: bool = False;
 
-
     def __call__(user_function: any) -> any {
         stored: any = self.dec_maxsize;
         if stored is None {
@@ -291,9 +294,7 @@ obj _P2LRUDecorator {
     }
 }
 
-def _p2_lru_cache(
-    user_function: any = P2_MISSING, typed: bool = False
-) -> any {
+def _p2_lru_cache(user_function: any = P2_MISSING, typed: bool = False) -> any {
     # Dispatch mirrors Lib/functools.py decorating_and_caching:
     #   @lru_cache() / @lru_cache          -> defaults maxsize=128
     #   @lru_cache(maxsize)                -> explicit size (None = unbounded)
@@ -324,11 +325,15 @@ def _p2_lru_cache(
 
 # CPython 3.14 tuple (PEP 649/795): __annotate__ / __type_params__ joined.
 glob P2_WRAPPER_ASSIGNMENTS: tuple = (
-    "__module__", "__name__", "__qualname__", "__doc__",
-    "__annotate__", "__type_params__",
-);
+         "__module__",
+         "__name__",
+         "__qualname__",
+         "__doc__",
+         "__annotate__",
+         "__type_params__",
 
-glob P2_WRAPPER_UPDATES: tuple = ("__dict__",);
+     ),
+     P2_WRAPPER_UPDATES: tuple = ("__dict__", );
 
 
 def _p2_update_wrapper(
@@ -358,7 +363,6 @@ obj _P2WrapsDecorator {
         wrap_assigned: any = None,
         wrap_updated: any = None;
 
-
     def __call__(wrapper: any) -> any {
         return _p2_update_wrapper(
             wrapper, self.wrapped, self.wrap_assigned, self.wrap_updated
@@ -387,7 +391,6 @@ obj _P2CmpKey {
         return self.key_cmp(self.`obj, other.`obj);
     }
 
-
     def __lt__(other: any) -> bool {
         return self._cmp_result(other) < 0;
     }
@@ -415,7 +418,6 @@ obj _P2CmpKey {
 
 obj _P2CmpKeyFactory {
     has key_cmp: any = None;
-
 
     def __call__(`obj: any) -> _P2CmpKey {
         return _P2CmpKey(key_cmp=self.key_cmp, `obj=`obj);
@@ -537,58 +539,56 @@ def _p2_total_ordering(cls: any) -> any {
     # __lt__ > __le__ > __gt__ > __ge__; scanning in that order and taking
     # the first user-defined root reproduces it.
     root_op: str = "";
-    if getattr(cls, "__lt__", None) is not getattr(object, "__lt__", None) {
+    if cls?.__lt__ is not object?.__lt__ {
         root_op = "__lt__";
-    } elif getattr(cls, "__le__", None) is not getattr(object, "__le__", None) {
+    } elif cls?.__le__ is not object?.__le__ {
         root_op = "__le__";
-    } elif getattr(cls, "__gt__", None) is not getattr(object, "__gt__", None) {
+    } elif cls?.__gt__ is not object?.__gt__ {
         root_op = "__gt__";
-    } elif getattr(cls, "__ge__", None) is not getattr(object, "__ge__", None) {
+    } elif cls?.__ge__ is not object?.__ge__ {
         root_op = "__ge__";
     }
     if root_op == "" {
-        raise ValueError(
-            "must define at least one ordering operation: < > <= >="
-        );
+        raise ValueError("must define at least one ordering operation: < > <= >=");
     }
     if root_op == "__lt__" {
-        if getattr(cls, "__gt__", None) is getattr(object, "__gt__", None) {
+        if cls?.__gt__ is object?.__gt__ {
             setattr(cls, "__gt__", _p2_gt_from_lt);
         }
-        if getattr(cls, "__le__", None) is getattr(object, "__le__", None) {
+        if cls?.__le__ is object?.__le__ {
             setattr(cls, "__le__", _p2_le_from_lt);
         }
-        if getattr(cls, "__ge__", None) is getattr(object, "__ge__", None) {
+        if cls?.__ge__ is object?.__ge__ {
             setattr(cls, "__ge__", _p2_ge_from_lt);
         }
     } elif root_op == "__le__" {
-        if getattr(cls, "__ge__", None) is getattr(object, "__ge__", None) {
+        if cls?.__ge__ is object?.__ge__ {
             setattr(cls, "__ge__", _p2_ge_from_le);
         }
-        if getattr(cls, "__lt__", None) is getattr(object, "__lt__", None) {
+        if cls?.__lt__ is object?.__lt__ {
             setattr(cls, "__lt__", _p2_lt_from_le);
         }
-        if getattr(cls, "__gt__", None) is getattr(object, "__gt__", None) {
+        if cls?.__gt__ is object?.__gt__ {
             setattr(cls, "__gt__", _p2_gt_from_le);
         }
     } elif root_op == "__gt__" {
-        if getattr(cls, "__lt__", None) is getattr(object, "__lt__", None) {
+        if cls?.__lt__ is object?.__lt__ {
             setattr(cls, "__lt__", _p2_lt_from_gt);
         }
-        if getattr(cls, "__ge__", None) is getattr(object, "__ge__", None) {
+        if cls?.__ge__ is object?.__ge__ {
             setattr(cls, "__ge__", _p2_ge_from_gt);
         }
-        if getattr(cls, "__le__", None) is getattr(object, "__le__", None) {
+        if cls?.__le__ is object?.__le__ {
             setattr(cls, "__le__", _p2_le_from_gt);
         }
     } else {
-        if getattr(cls, "__le__", None) is getattr(object, "__le__", None) {
+        if cls?.__le__ is object?.__le__ {
             setattr(cls, "__le__", _p2_le_from_ge);
         }
-        if getattr(cls, "__gt__", None) is getattr(object, "__gt__", None) {
+        if cls?.__gt__ is object?.__gt__ {
             setattr(cls, "__gt__", _p2_gt_from_ge);
         }
-        if getattr(cls, "__lt__", None) is getattr(object, "__lt__", None) {
+        if cls?.__lt__ is object?.__lt__ {
             setattr(cls, "__lt__", _p2_lt_from_ge);
         }
     }

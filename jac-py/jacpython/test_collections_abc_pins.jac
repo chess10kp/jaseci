@@ -25,10 +25,7 @@
 # registered. VM callables (lambdas/user functions) answer correctly; the pin
 # below asserts those.
 
-import from objects {
-    PyError,
-    is_error,
-}
+import from objects { PyError, is_error, }
 import from pyc_first {
     PyObj,
     PyStr,
@@ -41,7 +38,7 @@ import from pyc_first {
 }
 
 
-def cabc_reset() {
+def cabc_reset {
     # Same clean-VM discipline as layer3_import: real source runs in-VM, no
     # harness shims in the way.
     clear_sys3_modules();
@@ -52,7 +49,7 @@ def cabc_run(source: str) -> dict[str, PyObj] {
     cabc_reset();
     g: dict[str, PyObj] = {"__name__": PyStr(t="str", val="m")};
     outcome = exec_code(unmarshal(host_compile_marshal(source)), [], g);
-    assert not is_error(outcome), _cabc_err(outcome);
+    assert not is_error(outcome) , _cabc_err(outcome);
     return g;
 }
 
@@ -67,8 +64,7 @@ def _cabc_err(outcome: PyObj) -> str {
 
 test "cabc pins: import collections.abc resolves through the sys.modules alias" {
     g = cabc_run(
-        "import collections.abc\n"
-        "ok = isinstance({}, collections.abc.Mapping)\n"
+        "import collections.abc\n" "ok = isinstance({}, collections.abc.Mapping)\n"
     );
     assert to_host(g["ok"]) == True;
 }
@@ -124,10 +120,10 @@ test "cabc pins: genuinely missing submodules keep the CPython error text" {
     );
     g: dict[str, PyObj] = {"__name__": PyStr(t="str", val="m")};
     outcome = exec_code(unmarshal(host_compile_marshal(src)), [], g);
-    assert not is_error(outcome), _cabc_err(outcome);
+    assert not is_error(outcome) , _cabc_err(outcome);
     got = to_host(g["R"]);
     # CPython reports the PARENT of a dotted name when the parent itself is
     # missing (import_native now imports the parent before declaring the
     # submodule missing, mirroring _find_and_load).
-    assert got == "ModuleNotFoundError: No module named 'nosuchpkg_xyz'", str(got);
+    assert got == "ModuleNotFoundError: No module named 'nosuchpkg_xyz'" , str(got);
 }

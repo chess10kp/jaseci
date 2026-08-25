@@ -22,10 +22,7 @@ import from jaclang.compiler.cfront.fidelity {
     fidelity_band,
     band_quarantines
 }
-import from tests.compiler.c2jac.support {
-    FIXTURES,
-    recompile_errors as _recompile
-}
+import from tests.compiler.c2jac.support { FIXTURES, recompile_errors as _recompile }
 
 test "fidelity band table splits style behavior and hole" {
     assert fidelity_band(4201) == FidelityBand.STYLE;
@@ -123,9 +120,8 @@ test "sidecar JSON records band and quarantined functions" {
     assert data["sites"][0]["band"] in ("hole", "behavior");
     assert data["sites"][0]["quarantined"] == True;
     # human header still renders
-    assert "[W4290]" in render_c2jac_report(res.diags) or "[W" in render_c2jac_report(
-        res.diags
-    );
+    assert "[W4290]" in render_c2jac_report(res.diags)
+        or "[W" in render_c2jac_report(res.diags);
 }
 
 test "project mode wires cross-TU imports and writes aggregate report" {

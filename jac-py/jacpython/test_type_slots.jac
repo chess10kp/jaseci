@@ -79,8 +79,5 @@ test "slots dict view excludes members; install gate; member repr" {
     assert not type_slots_in_dict_view("x", ["x", "y"]);
     assert type_slots_should_install_member(False);
     assert not type_slots_should_install_member(True);
-    assert (
-        type_slots_member_repr("x", "C")
-        == "<member 'x' of 'C' objects>"
-    );
+    assert (type_slots_member_repr("x", "C") == "<member 'x' of 'C' objects>");
 }

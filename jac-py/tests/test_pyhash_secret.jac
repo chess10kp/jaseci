@@ -27,10 +27,14 @@ test "pyhash: pinned str/bytes digests match the host oracle (PYTHONHASHSEED=0)"
     }
     assert str_hash_text("spam") == -7643603308804133256 , str_hash_text("spam");
     assert str_hash_text("abc") == -4594863902769663758 , str_hash_text("abc");
-    assert str_hash_text("hello world") == -5642461784034726774 , str_hash_text("hello world");
+    assert str_hash_text("hello world") == -5642461784034726774 , str_hash_text(
+        "hello world"
+    );
     assert str_hash_text("jac") == 8001078755821552746 , str_hash_text("jac");
     # Non-Latin-1 text takes the UTF-16LE payload lane.
     assert str_hash_text("€") == -5529981157763016009 , str_hash_text("€");
     assert str_hash_text("héllo") == 6395329678795984700 , str_hash_text("héllo");
-    assert bytes_hash_data([97, 98, 99]) == -4594863902769663758 , bytes_hash_data([97, 98, 99]);
+    assert bytes_hash_data([97, 98, 99]) == -4594863902769663758 , bytes_hash_data(
+        [97, 98, 99]
+    );
 }

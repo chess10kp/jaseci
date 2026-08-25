@@ -28,13 +28,13 @@ glob REPO_ROOT: str = os.path.dirname(JAC_ROOT),
      JAC_RUN_TIMEOUT: float = 120.0;
 
 
-def jac_diff_enabled() -> bool {
+def jac_diff_enabled -> bool {
     v = os.environ.get(JAC_DIFF_ENV, "1");
     return v not in ["0", "false", "False", ""];
 }
 
 
-def jacpython_enabled() -> bool {
+def jacpython_enabled -> bool {
     v = os.environ.get(JACPYTHON_ENV, "1");
     return v not in ["0", "false", "False", ""];
 }
@@ -71,7 +71,7 @@ def can_run_jac_differential(stem: str) -> bool {
 }
 
 
-def host_python() -> str {
+def host_python -> str {
     for name in ["python3.14", "python3", "python"] {
         found = shutil.which(name);
         if found {
@@ -83,15 +83,10 @@ def host_python() -> str {
 
 
 def run_host_snippet(
-    code: str,
-    expect_stdout: str = "ok",
-    timeout: float = DEFAULT_TIMEOUT
+    code: str, expect_stdout: str = "ok", timeout: float = DEFAULT_TIMEOUT
 ) -> tuple[bool, str] {
     proc = subprocess.run(
-        [host_python(), "-c", code],
-        capture_output=True,
-        text=True,
-        timeout=timeout
+        [host_python(), "-c", code], capture_output=True, text=True, timeout=timeout
     );
     stdout = (proc.stdout or "").strip();
     stderr = (proc.stderr or "").strip();
@@ -99,10 +94,7 @@ def run_host_snippet(
         return (False, stderr or stdout or f"exit {proc.returncode}");
     }
     if stdout != expect_stdout {
-        return (
-            False,
-            f"expected stdout {expect_stdout!r}, got {stdout!r}"
-        );
+        return (False, f"expected stdout {expect_stdout!r}, got {stdout!r}");
     }
     return (True, stdout);
 }
@@ -116,7 +108,7 @@ def libtest_jac_expect_stdout(`case: LibtestSnippet) -> str {
 }
 
 
-def _jac_run_argv() -> list[str] {
+def _jac_run_argv -> list[str] {
     jac_env = os.environ.get("JAC");
     if jac_env and os.path.isfile(jac_env) {
         return [jac_env, "run"];
@@ -133,7 +125,7 @@ def _jac_run_argv() -> list[str] {
 }
 
 
-def _jac_run_env() -> dict[str, str] {
+def _jac_run_env -> dict[str, str] {
     env = dict(os.environ);
     jac_src = os.path.join(REPO_ROOT, "jac");
     existing = env.get("PYTHONPATH", "");
@@ -191,10 +183,7 @@ def run_jac_staged(
     }
     stdout = (proc.stdout or "").strip();
     if stdout != expect_stdout {
-        return (
-            False,
-            f"expected stdout {expect_stdout!r}, got {stdout!r}"
-        );
+        return (False, f"expected stdout {expect_stdout!r}, got {stdout!r}");
     }
     return (True, stdout);
 }
@@ -208,12 +197,11 @@ def run_libtest_host(`case: LibtestSnippet) -> tuple[bool, str] {
 def run_libtest_jacpython(`case: LibtestSnippet) -> tuple[str, str] {
     # Returns (status, detail) with status in pass | fail | skip.
     if not can_run_jacpython_libtest(`case) {
-        return (
-            "skip",
-            f"{`case.name} not jacpython-capable or disabled"
-        );
+        return ("skip", f"{`case.name} not jacpython-capable or disabled");
     }
-    bridge = os.path.join(REPO_ROOT, "jac-py", "tools", "p2_libtest_jacpython_bridge.py");
+    bridge = os.path.join(
+        REPO_ROOT, "jac-py", "tools", "p2_libtest_jacpython_bridge.py"
+    );
     py = os.path.join(REPO_ROOT, ".venv", "bin", "python");
     if not os.path.isfile(py) {
         py = sys.executable;
@@ -282,11 +270,7 @@ def run_libtest_host_for_gate(gate_snippets: list[str]) -> dict {
         assert snip is not None , f"missing libtest snippet {snip_name}";
         (ok, detail) = run_libtest_host(snip);
         cases.append(
-            {
-                "name": snip.name,
-                "passed": ok,
-                "detail": detail if not ok else "ok",
-            }
+            {"name": snip.name, "passed": ok, "detail": detail if not ok else "ok",}
         );
         if ok {
             passed += 1;
@@ -299,6 +283,7 @@ def run_libtest_host_for_gate(gate_snippets: list[str]) -> dict {
         "failed": failed,
         "total": passed + failed,
         "cases": cases,
+
     };
 }
 
@@ -312,13 +297,7 @@ def run_libtest_jacpython_for_gate(gate_snippets: list[str]) -> dict {
         snip = _snippet_by_name(snip_name);
         assert snip is not None , f"missing libtest snippet {snip_name}";
         (status, detail) = run_libtest_jacpython(snip);
-        cases.append(
-            {
-                "name": snip.name,
-                "status": status,
-                "detail": detail,
-            }
-        );
+        cases.append({"name": snip.name, "status": status, "detail": detail,});
         if status == "pass" {
             passed += 1;
         } elif status == "fail" {
@@ -333,6 +312,7 @@ def run_libtest_jacpython_for_gate(gate_snippets: list[str]) -> dict {
         "skipped": skipped,
         "total": passed + failed + skipped,
         "cases": cases,
+
     };
 }
 
@@ -346,13 +326,7 @@ def run_libtest_jac_differential_for_gate(gate_snippets: list[str]) -> dict {
         snip = _snippet_by_name(snip_name);
         assert snip is not None , f"missing libtest snippet {snip_name}";
         (status, detail) = run_libtest_jac_differential(snip);
-        cases.append(
-            {
-                "name": snip.name,
-                "status": status,
-                "detail": detail,
-            }
-        );
+        cases.append({"name": snip.name, "status": status, "detail": detail,});
         if status == "pass" {
             passed += 1;
         } elif status == "fail" {
@@ -367,5 +341,6 @@ def run_libtest_jac_differential_for_gate(gate_snippets: list[str]) -> dict {
         "skipped": skipped,
         "total": passed + failed + skipped,
         "cases": cases,
+
     };
 }

@@ -176,11 +176,7 @@ def realloc_elidable(
     return ptr.name in list_bound or ptr.name in ptr_params;
 }
 
-glob REFCOUNT_VOID_ELIDE: set[str] = {
-         "Py_INCREF",
-         "Py_DECREF",
-         "Py_XDECREF"
-     },
+glob REFCOUNT_VOID_ELIDE: set[str] = {"Py_INCREF", "Py_DECREF", "Py_XDECREF"},
      REFCOUNT_VALUE_ELIDE: set[str] = {"Py_NewRef", "Py_XNewRef"};
 
 def is_refcount_void_elide(nd: c_ast.Node) -> bool {
@@ -378,9 +374,7 @@ def is_char_array_string_decl(nd: c_ast.Decl) -> bool {
     return char_array_string_literal(init) is not None;
 }
 
-def _walk_string_table_refs(
-    c_node: c_ast.Node, candidates: set[str], found: set[str]
-) {
+def _walk_string_table_refs(c_node: c_ast.Node, candidates: set[str], found: set[str]) {
     if isinstance(c_node, c_ast.ArrayRef) {
         base = _array_ref_base_name(c_node.name);
         if base is not None and base in candidates {
@@ -395,8 +389,7 @@ def _walk_string_table_refs(
 def collect_string_table_names(ext: list) -> set[str] {
     candidates: set[str] = set();
     for ext_item in ext {
-        if isinstance(ext_item, c_ast.Decl)
-        and is_char_array_string_decl(ext_item) {
+        if isinstance(ext_item, c_ast.Decl) and is_char_array_string_decl(ext_item) {
             candidates.add(ext_item.name);
         }
     }
@@ -469,16 +462,17 @@ def is_preserving_integral_cast_elidable(nd: c_ast.Cast) -> bool {
         return False;
     }
     lower = target.lower();
-    if lower in (
-        "char",
-        "signed char",
-        "unsigned char",
-        "short",
-        "unsigned short",
-        "float",
-        "double",
-        "long double"
-    ) {
+    if lower
+        in (
+            "char",
+            "signed char",
+            "unsigned char",
+            "short",
+            "unsigned short",
+            "float",
+            "double",
+            "long double"
+        ) {
         return False;
     }
     if (

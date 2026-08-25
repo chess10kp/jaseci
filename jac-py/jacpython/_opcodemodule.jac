@@ -63,37 +63,37 @@ def _p2_has_exc(opcode: int) -> bool {
 }
 
 glob _NB_OPS: list[tuple[str, str]] = [
-        ("NB_ADD", "+"),
-        ("NB_AND", "&"),
-        ("NB_FLOOR_DIVIDE", "//"),
-        ("NB_LSHIFT", "<<"),
-        ("NB_MATRIX_MULTIPLY", "@"),
-        ("NB_MULTIPLY", "*"),
-        ("NB_REMAINDER", "%"),
-        ("NB_OR", "|"),
-        ("NB_POWER", "**"),
-        ("NB_RSHIFT", ">>"),
-        ("NB_SUBTRACT", "-"),
-        ("NB_TRUE_DIVIDE", "/"),
-        ("NB_XOR", "^"),
-        ("NB_INPLACE_ADD", "+="),
-        ("NB_INPLACE_AND", "&="),
-        ("NB_INPLACE_FLOOR_DIVIDE", "//="),
-        ("NB_INPLACE_LSHIFT", "<<="),
-        ("NB_INPLACE_MATRIX_MULTIPLY", "@="),
-        ("NB_INPLACE_MULTIPLY", "*="),
-        ("NB_INPLACE_REMAINDER", "%="),
-        ("NB_INPLACE_OR", "|="),
-        ("NB_INPLACE_POWER", "**="),
-        ("NB_INPLACE_RSHIFT", ">>="),
-        ("NB_INPLACE_SUBTRACT", "-="),
-        ("NB_INPLACE_TRUE_DIVIDE", "/="),
-        ("NB_INPLACE_XOR", "^="),
-        ("NB_SUBSCR", "[]"),
+         ("NB_ADD", "+"),
+         ("NB_AND", "&"),
+         ("NB_FLOOR_DIVIDE", "//"),
+         ("NB_LSHIFT", "<<"),
+         ("NB_MATRIX_MULTIPLY", "@"),
+         ("NB_MULTIPLY", "*"),
+         ("NB_REMAINDER", "%"),
+         ("NB_OR", "|"),
+         ("NB_POWER", "**"),
+         ("NB_RSHIFT", ">>"),
+         ("NB_SUBTRACT", "-"),
+         ("NB_TRUE_DIVIDE", "/"),
+         ("NB_XOR", "^"),
+         ("NB_INPLACE_ADD", "+="),
+         ("NB_INPLACE_AND", "&="),
+         ("NB_INPLACE_FLOOR_DIVIDE", "//="),
+         ("NB_INPLACE_LSHIFT", "<<="),
+         ("NB_INPLACE_MATRIX_MULTIPLY", "@="),
+         ("NB_INPLACE_MULTIPLY", "*="),
+         ("NB_INPLACE_REMAINDER", "%="),
+         ("NB_INPLACE_OR", "|="),
+         ("NB_INPLACE_POWER", "**="),
+         ("NB_INPLACE_RSHIFT", ">>="),
+         ("NB_INPLACE_SUBTRACT", "-="),
+         ("NB_INPLACE_TRUE_DIVIDE", "/="),
+         ("NB_INPLACE_XOR", "^="),
+         ("NB_SUBSCR", "[]"),
 
-    ];
+     ];
 
-def _p2_get_nb_ops() -> list {
+def _p2_get_nb_ops -> list {
     pairs: list = [];
     for (name, symbol) in _NB_OPS {
         pairs.append([name, symbol]);

@@ -16,9 +16,7 @@ def tb_entries(tb: any) -> list[str] {
     frame = tb;
     while frame is not None {
         code = (frame as PyTraceback).code;
-        out.append(
-            (code as PyCode).name + ":" + str((frame as PyTraceback).tb_lineno)
-        );
+        out.append((code as PyCode).name + ":" + str((frame as PyTraceback).tb_lineno));
         frame = (frame as PyTraceback).tb_next;
     }
     return out;
@@ -62,7 +60,7 @@ test "cleanup-throw escape into module handler: one entry per frame" {
         "        r = '|'.join(parts)\n"
     );
     got = str((ns["r"] as PyStr).val);
-    assert got == "<module>:16|outer:9|inner:3", f"cadence mismatch: {got}";
+    assert got == "<module>:16|outer:9|inner:3" , f"cadence mismatch: {got}";
 }
 
 test "cleanup-throw escape out of module: no extra CLEANUP_THROW entry" {
@@ -95,9 +93,7 @@ test "cleanup-throw escape out of module: no extra CLEANUP_THROW entry" {
     );
     assert outcome.t == "error";
     got = "|".join(tb_entries((outcome as PyError).exception.traceback));
-    assert (
-        got == "<module>:15|outer:9|inner:3"
-    ), f"cadence mismatch: {got}";
+    assert (got == "<module>:15|outer:9|inner:3") , f"cadence mismatch: {got}";
 }
 
 test "cleanup-throw caught by generator itself: handled, no leak" {
@@ -122,5 +118,5 @@ test "cleanup-throw caught by generator itself: handled, no leak" {
         "    r = 'LEAKED'\n"
     );
     got = str((ns["r"] as PyStr).val);
-    assert got == "caught", f"expected caught, got: {got}";
+    assert got == "caught" , f"expected caught, got: {got}";
 }

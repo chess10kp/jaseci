@@ -3,7 +3,16 @@
 # Source -> PyCode for if / while / for via native compile_exec, byte-exact
 # against the host oracle plus VM execution smoke tests.
 
-import from objects { PyObj, PyCode, PyInt, PyTuple, expect_int, expect_str, is_error, hashkey_equal }
+import from objects {
+    PyObj,
+    PyCode,
+    PyInt,
+    PyTuple,
+    expect_int,
+    expect_str,
+    is_error,
+    hashkey_equal
+}
 import from product_compile { compile_source }
 import from host_oracle { host_compile_marshal }
 import from pyc_first { unmarshal, exec_code }
@@ -497,10 +506,7 @@ test "layer10: for else break return matches oracle" {
 
 test "layer10: for break with following stmt matches oracle" {
     assert_fn_body_matches_oracle(
-        "def f(it):\n"
-        "    for x in it:\n"
-        "        break\n"
-        "    r = 5\n"
+        "def f(it):\n" "    for x in it:\n" "        break\n" "    r = 5\n"
     );
 }
 
@@ -569,15 +575,17 @@ test "layer10: for else break executes without running orelse" {
     );
     assert not is_error(co);
     assert isinstance(co, PyCode);
-    ns: dict[str, PyObj] = {"y": PyTuple(
-        t="tuple",
-        items=[
-            PyInt(t="int", val=1),
-            PyInt(t="int", val=2),
-            PyInt(t="int", val=3),
+    ns: dict[str, PyObj] = {
+        "y": PyTuple(
+            t="tuple",
+            items=[
+                PyInt(t="int", val=1),
+                PyInt(t="int", val=2),
+                PyInt(t="int", val=3),
 
-        ],
-    )};
+            ],
+        )
+    };
     out = exec_code(co as PyCode, [], ns);
     assert not is_error(out);
     assert expect_int(ns["r"]) == 1;
@@ -585,15 +593,11 @@ test "layer10: for else break executes without running orelse" {
 
 test "layer10: for natural exit runs orelse" {
     co = product_exec(
-        "done = 0\nfor x in y:\n    pass\nelse:\n    done = 99\nr = done\n",
-        "<f>",
+        "done = 0\nfor x in y:\n    pass\nelse:\n    done = 99\nr = done\n", "<f>",
     );
     assert not is_error(co);
     assert isinstance(co, PyCode);
-    ns: dict[str, PyObj] = {"y": PyTuple(
-        t="tuple",
-        items=[PyInt(t="int", val=1)],
-    )};
+    ns: dict[str, PyObj] = {"y": PyTuple(t="tuple", items=[PyInt(t="int", val=1)],)};
     out = exec_code(co as PyCode, [], ns);
     assert not is_error(out);
     assert expect_int(ns["r"]) == 99;

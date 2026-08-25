@@ -42,7 +42,7 @@ test "yield-from value: custom __next__ raising StopIteration(42)" {
         "list(gen())\n"
     );
     got = vm_str(ns, "r");
-    assert got == "[42]", got;
+    assert got == "[42]" , got;
 }
 
 test "yield-from value: tuple and exception payloads" {
@@ -63,7 +63,7 @@ test "yield-from value: tuple and exception payloads" {
         "list(gen(StopIteration(3)))\n"
     );
     got = vm_str(ns, "r");
-    assert got == "[(2,), StopIteration(3)]", got;
+    assert got == "[(2,), StopIteration(3)]" , got;
 }
 
 test "yield-from value: nested delegation chain" {
@@ -89,7 +89,7 @@ test "yield-from value: nested delegation chain" {
         "    o.append(si.value)\n"
     );
     got = vm_str(ns, "m") + "|" + vm_str(ns, "o");
-    assert got == "[7]|[1, 2, None]", got;
+    assert got == "[7]|[1, 2, None]" , got;
 }
 
 test "yield-from value: user StopIteration subclass payload" {
@@ -108,7 +108,7 @@ test "yield-from value: user StopIteration subclass payload" {
         "list(gen())\n"
     );
     got = vm_str(ns, "r");
-    assert got == "['a']", got;
+    assert got == "['a']" , got;
 }
 
 test "yield-from value: explicit guest raise surface" {
@@ -120,7 +120,7 @@ test "yield-from value: explicit guest raise surface" {
         "    r = [repr(si), list(si.args), si.value]\n"
     );
     got = vm_str(ns, "r");
-    assert got == "['StopIteration(42)', [42], 42]", got;
+    assert got == "['StopIteration(42)', [42], 42]" , got;
 }
 
 test "yield-from value: multi-arg raise takes first" {
@@ -137,7 +137,7 @@ test "yield-from value: multi-arg raise takes first" {
         "list(gen())\n"
     );
     got = vm_str(ns, "r");
-    assert got == "[1]", got;
+    assert got == "[1]" , got;
 }
 
 test "yield-from value: argless exhaustion stays None" {
@@ -158,7 +158,7 @@ test "yield-from value: argless exhaustion stays None" {
         "    v = [repr(si), list(si.args), si.value]\n"
     );
     got = vm_str(ns, "r") + "|" + vm_str(ns, "v");
-    assert got == "[None]|['StopIteration()', [], None]", got;
+    assert got == "[None]|['StopIteration()', [], None]" , got;
 }
 
 test "yield-from value: close paths unchanged" {
@@ -184,5 +184,5 @@ test "yield-from value: close paths unchanged" {
         "trace.append(g.close())\n"
     );
     got = vm_str(ns, "trace");
-    assert got == "['s1', 's2', 'a', 'f2', 'f1', None]", got;
+    assert got == "['s1', 's2', 'a', 'f2', 'f1', None]" , got;
 }

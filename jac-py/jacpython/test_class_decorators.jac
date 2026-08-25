@@ -74,24 +74,13 @@ test "class decorators: factory with arguments" {
 }
 
 test "class decorators: dotted attribute decorator expression" {
-    assert_matches_oracle(
-        "import mod\n"
-        "\n"
-        "@mod.deco\n"
-        "class D:\n"
-        "    pass\n"
-    );
+    assert_matches_oracle("import mod\n" "\n" "@mod.deco\n" "class D:\n" "    pass\n");
 }
 
 test "class decorators: empty body, bases, kwargs metaclass" {
     assert_matches_oracle("@deco\nclass C: pass\n");
     assert_matches_oracle(
-        "def deco(c):\n"
-        "    return c\n"
-        "\n"
-        "@deco\n"
-        "class B(dict):\n"
-        "    pass\n"
+        "def deco(c):\n" "    return c\n" "\n" "@deco\n" "class B(dict):\n" "    pass\n"
     );
     assert_matches_oracle(
         "def deco(c):\n"
@@ -122,12 +111,7 @@ test "class decorators: nested class inside function scope" {
 
 test "function decorators stay byte-exact (single, stacked, argful)" {
     assert_matches_oracle(
-        "def deco(f):\n"
-        "    return f\n"
-        "\n"
-        "@deco\n"
-        "def f():\n"
-        "    pass\n"
+        "def deco(f):\n" "    return f\n" "\n" "@deco\n" "def f():\n" "    pass\n"
     );
     assert_matches_oracle(
         "def a(f):\n"

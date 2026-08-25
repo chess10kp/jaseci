@@ -41,6 +41,8 @@ def _pin_host_dir(kind):
 
 ::py::
 
+
+
 # Host-side reference lists are read once per run through the same bridge the
 # VM itself uses; strings cross faithfully.
 def pin_host_dir(kind: str) -> str {
@@ -69,7 +71,7 @@ test "dir: instance equals same-substrate host dir(instance), byte-exact" {
         "f = Foo()\n"
         "out = ','.join(dir(f))\n"
     );
-    assert vm_str(ns, "out") == pin_host_dir("instance"), (
+    assert vm_str(ns, "out") == pin_host_dir("instance") , (
         vm_str(ns, "out") + " != " + pin_host_dir("instance")
     );
 }
@@ -81,7 +83,7 @@ test "dir: class equals same-substrate host dir(class), byte-exact" {
         "    def meth(self): return 1\n"
         "out = ','.join(dir(Foo))\n"
     );
-    assert vm_str(ns, "out") == pin_host_dir("class"), (
+    assert vm_str(ns, "out") == pin_host_dir("class") , (
         vm_str(ns, "out") + " != " + pin_host_dir("class")
     );
 }
@@ -94,7 +96,7 @@ test "dir: no-arg inside a function lists bound fast locals" {
         "    return ','.join(dir())\n"
         "out = g(1)\n"
     );
-    assert vm_str(ns, "out") == "a,b,c,d", vm_str(ns, "out");
+    assert vm_str(ns, "out") == "a,b,c,d" , vm_str(ns, "out");
 }
 
 test "dir: no-arg never leaks trampoline frame names" {
@@ -102,15 +104,12 @@ test "dir: no-arg never leaks trampoline frame names" {
     # holds exactly one local -- __name__ (module locals ARE globals), so the
     # correct answer is that single name and nothing from any host frame.
     ns = vm_exec("out = repr(sorted(dir()))\n");
-    assert vm_str(ns, "out") == "['__name__']", vm_str(ns, "out");
+    assert vm_str(ns, "out") == "['__name__']" , vm_str(ns, "out");
 }
 
 test "dir: module equals same-substrate host dir(module), byte-exact" {
-    ns = vm_exec(
-        "import time\n"
-        "out = ','.join(dir(time))\n"
-    );
-    assert vm_str(ns, "out") == pin_host_dir("module"), (
+    ns = vm_exec("import time\n" "out = ','.join(dir(time))\n");
+    assert vm_str(ns, "out") == pin_host_dir("module") , (
         vm_str(ns, "out") + " != " + pin_host_dir("module")
     );
 }
@@ -123,20 +122,19 @@ test "dir: user __dir__ override wins and result is sorted" {
         "o = DirOverride()\n"
         "out = ','.join(dir(o))\n"
     );
-    assert vm_str(ns, "out") == "alpha,zeta", vm_str(ns, "out");
+    assert vm_str(ns, "out") == "alpha,zeta" , vm_str(ns, "out");
 }
 
 test "star import: names land in the namespace so no-arg dir() sees them" {
     ns = vm_exec(
-        "from math import *\n"
-        "out = str('sqrt' in dir()) + ',' + str('pi' in dir())\n"
+        "from math import *\n" "out = str('sqrt' in dir()) + ',' + str('pi' in dir())\n"
     );
-    assert vm_str(ns, "out") == "True,True", vm_str(ns, "out");
+    assert vm_str(ns, "out") == "True,True" , vm_str(ns, "out");
 }
 
 test "dir: native container equals same-substrate host dir(list)" {
     ns = vm_exec("out = ','.join(dir([1]))\n");
-    assert vm_str(ns, "out") == pin_host_dir("list"), (
+    assert vm_str(ns, "out") == pin_host_dir("list") , (
         vm_str(ns, "out") + " != " + pin_host_dir("list")
     );
 }

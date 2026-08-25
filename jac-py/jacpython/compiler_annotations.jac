@@ -210,7 +210,9 @@ def collect_ann_plan(body: list[stmt]) -> ann_scope_plan {
 
 # Same collection for a CLASS body: head/firstlineno derive from the class
 # statement itself, and control-flow depth marks per-entry conditionality.
-def collect_ann_plan_class(cd: ClassDef, class_qname: str, nested: bool) -> ann_scope_plan {
+def collect_ann_plan_class(
+    cd: ClassDef, class_qname: str, nested: bool
+) -> ann_scope_plan {
     plan = ann_scope_plan();
     plan.is_class = True;
     plan.owner_qualname = class_qname;
@@ -507,9 +509,7 @@ def visit_ann_assign(
     }
     if plan is None {
         codegen_fail(
-            g,
-            "SystemError",
-            "module-scope annotation without an annotation plan"
+            g, "SystemError", "module-scope annotation without an annotation plan"
         );
         return stmt_cont(loc=aloc);
     }
@@ -588,9 +588,7 @@ def ann_store_target_tos(g: cfg_builder, t: expr) -> cloc {
         return sloc;
     }
     codegen_fail(
-        g,
-        "NotImplementedError",
-        "unsupported annotated-assignment target kind"
+        g, "NotImplementedError", "unsupported annotated-assignment target kind"
     );
     return expr_loc(t);
 }
@@ -654,9 +652,7 @@ def finish_module_annotations(g: cfg_builder, plan: ann_scope_plan) {
     sym = ann_synthetic_sym(plan);
     if sym is None {
         codegen_fail(
-            g,
-            "NotImplementedError",
-            "unsupported construct inside deferred annotation"
+            g, "NotImplementedError", "unsupported construct inside deferred annotation"
         );
         return;
     }
@@ -688,7 +684,8 @@ def finish_module_annotations(g: cfg_builder, plan: ann_scope_plan) {
         blk = g.u.blocks[bi];
         while ii2 < len(blk.instrs) {
             ins = blk.instrs[ii2];
-            if ins.opcode == OP_LOAD_CONST and ins.oparg >= ci
+            if ins.opcode == OP_LOAD_CONST
+                and ins.oparg >= ci
                 and ins != plan.load_const_ins {
                 ins.oparg = ins.oparg + 1;
             }
@@ -740,9 +737,7 @@ def finish_class_annotations(g: cfg_builder, plan: ann_scope_plan) {
     sym = ann_synthetic_sym(plan);
     if sym is None {
         codegen_fail(
-            g,
-            "NotImplementedError",
-            "unsupported construct inside deferred annotation"
+            g, "NotImplementedError", "unsupported construct inside deferred annotation"
         );
         return;
     }
@@ -818,12 +813,7 @@ def build_annotate_fn_cfg(
     }
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym);
-    ploc = loc(
-        plan.body_first_lineno,
-        plan.body_first_lineno,
-        0,
-        0
-    );
+    ploc = loc(plan.body_first_lineno, plan.body_first_lineno, 0, 0);
     if class_mode {
         g.emit_op(OP_COPY_FREE_VARS, len(u.freevars), ploc);
     }

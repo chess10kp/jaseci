@@ -60,37 +60,26 @@ def _ensure_pkg_root -> str {
     _write_file(
         base,
         "outer/apkg/sub.py",
-        "WHO = \"apkg.sub\"\n"
-        "def hello():\n"
-        "    return \"hi-from-sub\"\n",
+        "WHO = \"apkg.sub\"\n" "def hello():\n" "    return \"hi-from-sub\"\n",
     );
     _write_file(
-        base,
-        "outer/apkg/deep.py",
-        "from .sub import hello\n"
-        "X = hello()\n",
+        base, "outer/apkg/deep.py", "from .sub import hello\n" "X = hello()\n",
     );
     _write_file(base, "outer/bpkg/__init__.py", "NAME = \"bpkg\"\n");
     _write_file(
-        base,
-        "outer/bpkg/helper.py",
-        "from ..apkg import sub\n"
-        "REF = sub.WHO\n",
+        base, "outer/bpkg/helper.py", "from ..apkg import sub\n" "REF = sub.WHO\n",
     );
     _write_file(base, "circ/__init__.py", "from . import cmod\n");
     _write_file(
         base,
         "circ/cmod.py",
-        "import circ.other\n"
-        "OTHER_OK = hasattr(circ.other, \"Y\")\n",
+        "import circ.other\n" "OTHER_OK = hasattr(circ.other, \"Y\")\n",
     );
     _write_file(base, "circ/other.py", "Y = 1\n");
     _write_file(
         base,
         "starall.py",
-        "__all__ = [\"PUBLIC_ONLY\"]\n"
-        "HIDDEN = 1\n"
-        "PUBLIC_ONLY = 2\n",
+        "__all__ = [\"PUBLIC_ONLY\"]\n" "HIDDEN = 1\n" "PUBLIC_ONLY = 2\n",
     );
     _pkg_roots.append(base);
     return base;
@@ -141,17 +130,19 @@ test "importpkg: absolute submodule import, attr binding, identity, dunder seeds
         "     outer.apkg.sub.__file__.endswith('sub.py')]\n"
     );
     sys.path.pop(0);
-    assert res[0] == "ok", str(res[1]);
-    assert res[1] == [
-        "apkg.sub",
-        "a-init",
-        True,
-        "outer.apkg",
-        "outer.apkg",
-        "outer.apkg.sub",
-        "outer.apkg",
-        True,
-    ], str(res[1]);
+    assert res[0] == "ok" , str(res[1]);
+    assert res[1]
+        == [
+            "apkg.sub",
+            "a-init",
+            True,
+            "outer.apkg",
+            "outer.apkg",
+            "outer.apkg.sub",
+            "outer.apkg",
+            True,
+
+        ] , str(res[1]);
 }
 
 test "importpkg: relative sibling import and parent-level ..pkg form" {
@@ -162,10 +153,10 @@ test "importpkg: relative sibling import and parent-level ..pkg form" {
     deep = _run_guest("import outer.apkg.deep\nR = outer.apkg.deep.X\n");
     helper = _run_guest("import outer.bpkg.helper\nR = outer.bpkg.helper.REF\n");
     sys.path.pop(0);
-    assert deep[0] == "ok", str(deep[1]);
-    assert deep[1] == "hi-from-sub", str(deep[1]);
-    assert helper[0] == "ok", str(helper[1]);
-    assert helper[1] == "apkg.sub", str(helper[1]);
+    assert deep[0] == "ok" , str(deep[1]);
+    assert deep[1] == "hi-from-sub" , str(deep[1]);
+    assert helper[0] == "ok" , str(helper[1]);
+    assert helper[1] == "apkg.sub" , str(helper[1]);
 }
 
 test "importpkg: circular package resolves to the partial module" {
@@ -175,8 +166,8 @@ test "importpkg: circular package resolves to the partial module" {
     sys.path.insert(0, base);
     res = _run_guest("import circ\nR = circ.cmod.OTHER_OK\n");
     sys.path.pop(0);
-    assert res[0] == "ok", str(res[1]);
-    assert res[1] == True, str(res[1]);
+    assert res[0] == "ok" , str(res[1]);
+    assert res[1] == True , str(res[1]);
 }
 
 test "importpkg: star import honors __all__" {
@@ -192,8 +183,8 @@ test "importpkg: star import honors __all__" {
         "R = PUBLIC_ONLY == 2 and not leaked\n"
     );
     sys.path.pop(0);
-    assert res[0] == "ok", str(res[1]);
-    assert res[1] == True, str(res[1]);
+    assert res[0] == "ok" , str(res[1]);
+    assert res[1] == True , str(res[1]);
 }
 
 test "importpkg: ModuleNotFoundError texts match CPython byte-for-byte" {
@@ -218,16 +209,19 @@ test "importpkg: ModuleNotFoundError texts match CPython byte-for-byte" {
         "    R = str(type(e).__name__) + ': ' + str(e)\n"
     );
     sys.path.pop(0);
-    assert missing == (
-        "ok", "ModuleNotFoundError: No module named 'nosuchmod_xyz'"
-    ), str(missing[1]);
-    assert child == (
-        "ok", "ModuleNotFoundError: No module named 'outer.apkg.nosuch'"
-    ), str(child[1]);
-    assert notpkg == (
-        "ok",
-        "ModuleNotFoundError: No module named 'starall.nope'; 'starall' is not a package",
-    ), str(notpkg[1]);
+    assert missing == ("ok", "ModuleNotFoundError: No module named 'nosuchmod_xyz'") , str(
+        missing[1]
+    );
+    assert child
+        == ("ok", "ModuleNotFoundError: No module named 'outer.apkg.nosuch'") , str(
+        child[1]
+    );
+    assert notpkg
+        == (
+            "ok",
+            "ModuleNotFoundError: No module named 'starall.nope'; 'starall' is not a package",
+
+        ) , str(notpkg[1]);
 }
 
 test "importpkg: relative-import ImportErrors match CPython byte-for-byte" {
@@ -244,6 +238,7 @@ test "importpkg: relative-import ImportErrors match CPython byte-for-byte" {
     g: dict[str, PyObj] = {
         "__name__": PyStr(t="str", val="outer.bpkg.helper"),
         "__package__": PyStr(t="str", val="outer.bpkg"),
+
     };
     beyond = _run_guest_in(
         "try:\n"
@@ -253,14 +248,18 @@ test "importpkg: relative-import ImportErrors match CPython byte-for-byte" {
         g,
     );
     sys.path.pop(0);
-    assert noparent == (
-        "ok",
-        "ImportError: attempted relative import with no known parent package",
-    ), str(noparent[1]);
-    assert beyond == (
-        "ok",
-        "ImportError: attempted relative import beyond top-level package",
-    ), str(beyond[1]);
+    assert noparent
+        == (
+            "ok",
+            "ImportError: attempted relative import with no known parent package",
+
+        ) , str(noparent[1]);
+    assert beyond
+        == (
+            "ok",
+            "ImportError: attempted relative import beyond top-level package",
+
+        ) , str(beyond[1]);
 }
 
 test "importpkg: IMPORT_FROM failure raises the canonical cannot-import-name" {
@@ -269,6 +268,7 @@ test "importpkg: IMPORT_FROM failure raises the canonical cannot-import-name" {
     g: dict[str, PyObj] = {
         "__name__": PyStr(t="str", val="outer.bpkg.helper"),
         "__package__": PyStr(t="str", val="outer.bpkg"),
+
     };
     res = _run_guest_in(
         "try:\n"
@@ -278,9 +278,9 @@ test "importpkg: IMPORT_FROM failure raises the canonical cannot-import-name" {
         g,
     );
     sys.path.pop(0);
-    assert res[0] == "ok", str(res[1]);
+    assert res[0] == "ok" , str(res[1]);
     prefix = "ImportError: cannot import name 'nonexistent' from 'outer.apkg' (";
     suffix = "/outer/apkg/__init__.py)";
-    assert res[1][:len(prefix)] == prefix, str(res[1]);
-    assert res[1][len(res[1]) - len(suffix):] == suffix, str(res[1]);
+    assert res[1][:len(prefix)] == prefix , str(res[1]);
+    assert res[1][len(res[1]) - len(suffix):] == suffix , str(res[1]);
 }

@@ -53,7 +53,6 @@ def _l2_host_equal(a: any, b: any) -> bool {
 }
 
 
-
 glob layer2_module_globals: dict[str, PyObj] = {};
 
 # ---------------- assertion helpers -----------------------------------------

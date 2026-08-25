@@ -20,33 +20,39 @@ def _run(src: str, native: bool) -> str {
 
 
 glob SRC_WALK2 = (
-    "def h():\n"
-    "    raise ValueError('deep')\n"
-    "try:\n"
-    "    h()\n"
-    "except ValueError as e:\n"
-    "    parts = []\n"
-    "    t = e.__traceback__\n"
-    "    while t is not None:\n"
-    "        parts.append((t.tb_frame.f_code.co_name, t.tb_lineno))\n"
-    "        t = t.tb_next\n"
-    "raise RuntimeError('OBS ' + repr(parts))\n"
-);
+         "def h():\n"
+         "    raise ValueError('deep')\n"
+         "try:\n"
+         "    h()\n"
+         "except ValueError as e:\n"
+         "    parts = []\n"
+         "    t = e.__traceback__\n"
+         "    while t is not None:\n"
+         "        parts.append((t.tb_frame.f_code.co_name, t.tb_lineno))\n"
+         "        t = t.tb_next\n"
+         "raise RuntimeError('OBS ' + repr(parts))\n"
+     ),
+     SRC_WALK2_INNER = (
+         "def h():\n"
+         "    raise ValueError('deep')\n"
+         "try:\n"
+         "    h()\n"
+         "except ValueError as e:\n"
+         "    parts = []\n"
+         "    t = e.__traceback__\n"
+         "    while t is not None:\n"
+         "        parts.append((t.tb_frame.f_code.co_name, t.tb_lineno))\n"
+         "        t = t.tb_next\n"
+         "    raise RuntimeError('OBS ' + repr(parts))\n"
+     );
 
 # same but raise inside except block
-glob SRC_WALK2_INNER = (
-    "def h():\n"
-    "    raise ValueError('deep')\n"
-    "try:\n"
-    "    h()\n"
-    "except ValueError as e:\n"
-    "    parts = []\n"
-    "    t = e.__traceback__\n"
-    "    while t is not None:\n"
-    "        parts.append((t.tb_frame.f_code.co_name, t.tb_lineno))\n"
-    "        t = t.tb_next\n"
-    "    raise RuntimeError('OBS ' + repr(parts))\n"
-);
+test "bisect walk2 native" {
+    print("native: " + _run(SRC_WALK2, True));
+    print("native-inner: " + _run(SRC_WALK2_INNER, true));
+}
 
-test "bisect walk2 native" { print("native: " + _run(SRC_WALK2, True)); print("native-inner: " + _run(SRC_WALK2_INNER, true)); }
-test "bisect walk2 marshal" { print("marshal: " + _run(SRC_WALK2, False)); print("marshal-inner: " + _run(SRC_WALK2_INNER, false)); }
+test "bisect walk2 marshal" {
+    print("marshal: " + _run(SRC_WALK2, False));
+    print("marshal-inner: " + _run(SRC_WALK2_INNER, false));
+}

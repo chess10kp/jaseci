@@ -18,54 +18,47 @@ def etbl_parity(name: str, src: str) -> bool {
 }
 
 glob SRC_2LVL_MISMATCH = (
-    "try:\n"
-    "    try:\n"
-    "        raise KeyError('x')\n"
-    "    except ValueError:\n"
-    "        r = 'wrong'\n"
-    "except KeyError:\n"
-    "    r = 'outer'\n"
-);
-
-glob SRC_2LVL_MATCH_INNER = (
-    "try:\n"
-    "    try:\n"
-    "        raise ValueError('x')\n"
-    "    except ValueError:\n"
-    "        r = 'inner'\n"
-    "except KeyError:\n"
-    "    r = 'outer'\n"
-);
-
-glob SRC_3LVL = (
-    "try:\n"
-    "    try:\n"
-    "        try:\n"
-    "            raise KeyError('x')\n"
-    "        except ValueError:\n"
-    "            r = 'a'\n"
-    "    except TypeError:\n"
-    "        r = 'b'\n"
-    "except KeyError:\n"
-    "    r = 'outer'\n"
-);
-
-glob SRC_BOUND_HANDLERS = (
-    "try:\n"
-    "    try:\n"
-    "        raise KeyError('x')\n"
-    "    except ValueError as v:\n"
-    "        r = 'wrong'\n"
-    "except KeyError as e:\n"
-    "        r = 'outer'\n"
-);
-
-glob SRC_FLAT_CONTROL = (
-    "try:\n"
-    "    raise KeyError('x')\n"
-    "except KeyError:\n"
-    "    r = 'ok'\n"
-);
+         "try:\n"
+         "    try:\n"
+         "        raise KeyError('x')\n"
+         "    except ValueError:\n"
+         "        r = 'wrong'\n"
+         "except KeyError:\n"
+         "    r = 'outer'\n"
+     ),
+     SRC_2LVL_MATCH_INNER = (
+         "try:\n"
+         "    try:\n"
+         "        raise ValueError('x')\n"
+         "    except ValueError:\n"
+         "        r = 'inner'\n"
+         "except KeyError:\n"
+         "    r = 'outer'\n"
+     ),
+     SRC_3LVL = (
+         "try:\n"
+         "    try:\n"
+         "        try:\n"
+         "            raise KeyError('x')\n"
+         "        except ValueError:\n"
+         "            r = 'a'\n"
+         "    except TypeError:\n"
+         "        r = 'b'\n"
+         "except KeyError:\n"
+         "    r = 'outer'\n"
+     ),
+     SRC_BOUND_HANDLERS = (
+         "try:\n"
+         "    try:\n"
+         "        raise KeyError('x')\n"
+         "    except ValueError as v:\n"
+         "        r = 'wrong'\n"
+         "except KeyError as e:\n"
+         "        r = 'outer'\n"
+     ),
+     SRC_FLAT_CONTROL = (
+         "try:\n" "    raise KeyError('x')\n" "except KeyError:\n" "    r = 'ok'\n"
+     );
 
 test "nested except etbl: two-level mismatched inner" {
     assert etbl_parity("2lvl-mismatch", SRC_2LVL_MISMATCH);
@@ -88,54 +81,50 @@ test "nested except etbl: flat control" {
 }
 
 glob SRC_MULTI_UNBOUND = (
-    "try:\n"
-    "    raise KeyError('x')\n"
-    "except ValueError:\n"
-    "    r = 'a'\n"
-    "except TypeError:\n"
-    "    r = 'b'\n"
-);
-
-glob SRC_MULTI_BOUND = (
-    "try:\n"
-    "    raise KeyError('x')\n"
-    "except ValueError as v:\n"
-    "    r = 'a'\n"
-    "except TypeError as t:\n"
-    "    r = 'b'\n"
-);
-
-glob SRC_MULTI_MIXED = (
-    "try:\n"
-    "    raise KeyError('x')\n"
-    "except ValueError as v:\n"
-    "    r = 'a'\n"
-    "except TypeError:\n"
-    "    r = 'b'\n"
-);
-
-glob SRC_THREE_HANDLERS = (
-    "try:\n"
-    "    raise KeyError('x')\n"
-    "except ValueError:\n"
-    "    r = 'a'\n"
-    "except TypeError:\n"
-    "    r = 'b'\n"
-    "except IndexError:\n"
-    "    r = 'c'\n"
-);
-
-glob SRC_NESTED_MULTI = (
-    "try:\n"
-    "    try:\n"
-    "        raise KeyError('x')\n"
-    "    except ValueError:\n"
-    "        r = 'a'\n"
-    "    except TypeError:\n"
-    "        r = 'b'\n"
-    "except KeyError:\n"
-    "    r = 'outer'\n"
-);
+         "try:\n"
+         "    raise KeyError('x')\n"
+         "except ValueError:\n"
+         "    r = 'a'\n"
+         "except TypeError:\n"
+         "    r = 'b'\n"
+     ),
+     SRC_MULTI_BOUND = (
+         "try:\n"
+         "    raise KeyError('x')\n"
+         "except ValueError as v:\n"
+         "    r = 'a'\n"
+         "except TypeError as t:\n"
+         "    r = 'b'\n"
+     ),
+     SRC_MULTI_MIXED = (
+         "try:\n"
+         "    raise KeyError('x')\n"
+         "except ValueError as v:\n"
+         "    r = 'a'\n"
+         "except TypeError:\n"
+         "    r = 'b'\n"
+     ),
+     SRC_THREE_HANDLERS = (
+         "try:\n"
+         "    raise KeyError('x')\n"
+         "except ValueError:\n"
+         "    r = 'a'\n"
+         "except TypeError:\n"
+         "    r = 'b'\n"
+         "except IndexError:\n"
+         "    r = 'c'\n"
+     ),
+     SRC_NESTED_MULTI = (
+         "try:\n"
+         "    try:\n"
+         "        raise KeyError('x')\n"
+         "    except ValueError:\n"
+         "        r = 'a'\n"
+         "    except TypeError:\n"
+         "        r = 'b'\n"
+         "except KeyError:\n"
+         "    r = 'outer'\n"
+     );
 
 # Chained handlers keep CPython's uncovered NOT_TAKEN block split: adjacent
 # same-target spans must not coalesce across it, and bound-tail segments run
@@ -163,29 +152,28 @@ test "multi handler etbl: nested multi" {
 # Runtime: an exception raised inside an inner handler body must reach the
 # OUTER matching handler instead of escaping every handler.
 glob SRC_RT_ESCAPE = (
-    "out = []\n"
-    "try:\n"
-    "    try:\n"
-    "        raise KeyError('x')\n"
-    "    except ValueError:\n"
-    "        raise RuntimeError('inner handler ran')\n"
-    "except KeyError:\n"
-    "    out.append('outer-keyerror')\n"
-    "assert out == ['outer-keyerror'], out\n"
-);
-
-glob SRC_RT_CHAIN = (
-    "hits = []\n"
-    "try:\n"
-    "    try:\n"
-    "        raise ValueError(7)\n"
-    "    except LookupError:\n"
-    "        hits.append(1)\n"
-    "    raise KeyError('k')\n"
-    "except KeyError:\n"
-    "    hits.append(2)\n"
-    "assert hits == [1, 2], hits\n"
-);
+         "out = []\n"
+         "try:\n"
+         "    try:\n"
+         "        raise KeyError('x')\n"
+         "    except ValueError:\n"
+         "        raise RuntimeError('inner handler ran')\n"
+         "except KeyError:\n"
+         "    out.append('outer-keyerror')\n"
+         "assert out == ['outer-keyerror'], out\n"
+     ),
+     SRC_RT_CHAIN = (
+         "hits = []\n"
+         "try:\n"
+         "    try:\n"
+         "        raise ValueError(7)\n"
+         "    except LookupError:\n"
+         "        hits.append(1)\n"
+         "    raise KeyError('k')\n"
+         "except KeyError:\n"
+         "    hits.append(2)\n"
+         "assert hits == [1, 2], hits\n"
+     );
 
 test "nested except runtime: inner-handler raise reaches outer handler" {
     product_exec(SRC_RT_ESCAPE);

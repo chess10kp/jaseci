@@ -19,7 +19,6 @@
 # else needs a buffer protocol ("argument should be bytes, buffer or ASCII
 # string, not '<type>'").
 
-
 def _binascii_error(msg: str) {
     raise Exception(msg);
 }
@@ -39,7 +38,8 @@ def _ascii_buffer(arg: any) -> list[int] {
             o = ord(ch);
             if o > 127 {
                 raise ValueError(
-                    "string argument should contain only ASCII characters");
+                    "string argument should contain only ASCII characters"
+                );
             }
             out.append(o);
         }
@@ -52,7 +52,9 @@ def _ascii_buffer(arg: any) -> list[int] {
     } except Exception {
         raise TypeError(
             "argument should be bytes, buffer or ASCII string, not '"
-            + _type_name(arg) + "'");
+                + _type_name(arg)
+                + "'"
+        );
     }
     out2: list[int] = [];
     for k in range(n) {
@@ -60,7 +62,9 @@ def _ascii_buffer(arg: any) -> list[int] {
         if item < 0 or item > 255 {
             raise TypeError(
                 "argument should be bytes, buffer or ASCII string, not '"
-                + _type_name(arg) + "'");
+                    + _type_name(arg)
+                    + "'"
+            );
         }
         out2.append(item as int);
     }
@@ -72,7 +76,7 @@ def _ascii_buffer(arg: any) -> list[int] {
 # Hexadecimal: hexlify/b2a_hex, unhexlify/a2b_hex
 #
 
-def _hex_digits() -> str {
+def _hex_digits -> str {
     return "0123456789abcdef";
 }
 
@@ -200,7 +204,7 @@ def _strhex_impl(data: any, sep: any, bytes_per_sep: int) -> bytes {
 # 6-bit drain plus partial-group tail.
 #
 
-def _b64_alphabet() -> str {
+def _b64_alphabet -> str {
     return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 }
 
@@ -233,8 +237,9 @@ def _b64_value(raw: int) -> int {
 def _b64_len1_error(nbytes_emitted: int) {
     _binascii_error(
         "Invalid base64-encoded string: number of data characters ("
-        + str(nbytes_emitted // 3 * 4 + 1)
-        + ") cannot be 1 more than a multiple of 4");
+            + str(nbytes_emitted // 3 * 4 + 1)
+            + ") cannot be 1 more than a multiple of 4"
+    );
 }
 
 def a2b_base64(data: any, strict_mode: bool = False) -> bytes {
@@ -265,8 +270,10 @@ def a2b_base64(data: any, strict_mode: bool = False) -> bytes {
                 stop = True;
             } else {
                 _binascii_error(
-                    "Leading padding not allowed" if (quad_pos == 0 and i == 0)
-                    else "Excess padding not allowed");
+                    "Leading padding not allowed"
+                        if (quad_pos == 0 and i == 0)
+                        else "Excess padding not allowed"
+                );
             }
         } else {
             this_ch = _b64_value(raw);
@@ -279,8 +286,10 @@ def a2b_base64(data: any, strict_mode: bool = False) -> bytes {
             }
             if pads > 0 and strict_mode {
                 _binascii_error(
-                    "Excess data after padding" if quad_pos + pads == 4
-                    else "Discontinuous padding not allowed");
+                    "Excess data after padding"
+                        if quad_pos + pads == 4
+                        else "Discontinuous padding not allowed"
+                );
             }
             pads = 0;
             if quad_pos == 0 {
@@ -513,9 +522,7 @@ def a2b_qp(data: any, header: bool = False) -> bytes {
                 out.append(61);
                 i += 1;
             } elif (
-                i + 1 < datalen
-                and _is_hex_digit(buf[i])
-                and _is_hex_digit(buf[i + 1])
+                i + 1 < datalen and _is_hex_digit(buf[i]) and _is_hex_digit(buf[i + 1])
             ) {
                 out.append(((_hex_val(buf[i]) << 4) + _hex_val(buf[i + 1])) & 0xFF);
                 i += 2;
@@ -547,8 +554,9 @@ def _hex_val(c: int) -> int {
     return c - 87;
 }
 
-def b2a_qp(data: any, quotetabs: bool = False, istext: bool = True,
-           header: bool = False) -> bytes {
+def b2a_qp(
+    data: any, quotetabs: bool = False, istext: bool = True, header: bool = False
+) -> bytes {
     buf = _ascii_buffer(data);
     datalen = len(buf);
 
@@ -573,9 +581,10 @@ def b2a_qp(data: any, quotetabs: bool = False, istext: bool = True,
             linelen += 3;
             delta += 3;
             i += 1;
-        } elif istext and (
-            buf[i] == 10 or (i + 1 < datalen and buf[i] == 13 and buf[i + 1] == 10)
-        ) {
+        } elif istext
+            and (
+                buf[i] == 10 or (i + 1 < datalen and buf[i] == 13 and buf[i + 1] == 10)
+            ) {
             linelen = 0;
             # Protect against whitespace on end of line.
             if i > 0 and (buf[i - 1] == 32 or buf[i - 1] == 9) {
@@ -588,7 +597,9 @@ def b2a_qp(data: any, quotetabs: bool = False, istext: bool = True,
                 i += 1;
             }
         } else {
-            if i + 1 != datalen and buf[i + 1] != 10 and linelen + 1 >= _QP_MAXLINESIZE {
+            if i + 1 != datalen
+                and buf[i + 1] != 10
+                and linelen + 1 >= _QP_MAXLINESIZE {
                 linelen = 0;
                 delta += 3 if crlf else 2;
             }
@@ -623,9 +634,8 @@ def b2a_qp(data: any, quotetabs: bool = False, istext: bool = True,
             o += 3;
             i += 1;
             linelen += 3;
-        } elif istext and (
-            ch == 10 or (i + 1 < datalen and ch == 13 and buf[i + 1] == 10)
-        ) {
+        } elif istext
+            and (ch == 10 or (i + 1 < datalen and ch == 13 and buf[i + 1] == 10)) {
             linelen = 0;
             if o > 0 and (out[o - 1] == 32 or out[o - 1] == 9) {
                 prev = out[o - 1];
@@ -646,7 +656,9 @@ def b2a_qp(data: any, quotetabs: bool = False, istext: bool = True,
                 i += 1;
             }
         } else {
-            if i + 1 != datalen and buf[i + 1] != 10 and linelen + 1 >= _QP_MAXLINESIZE {
+            if i + 1 != datalen
+                and buf[i + 1] != 10
+                and linelen + 1 >= _QP_MAXLINESIZE {
                 out[o] = 61;
                 o += 1;
                 if crlf {
@@ -683,8 +695,15 @@ def _memchr(buf: list[int], v: int) -> int {
 
 # Shared need-encode predicate of both b2a_qp passes; order matches the C
 # disjunction exactly so boundary behavior stays identical.
-def _qp_needs_encode(buf: list[int], datalen: int, i: int, linelen: int,
-                     quotetabs: bool, istext: bool, header: bool) -> bool {
+def _qp_needs_encode(
+    buf: list[int],
+    datalen: int,
+    i: int,
+    linelen: int,
+    quotetabs: bool,
+    istext: bool,
+    header: bool
+) -> bool {
     c = buf[i];
     if c > 126 {
         return True;
@@ -695,9 +714,11 @@ def _qp_needs_encode(buf: list[int], datalen: int, i: int, linelen: int,
     if header and c == 95 {  # '_'
         return True;
     }
-    if c == 46 and linelen == 0 and (
-        i + 1 == datalen or buf[i + 1] == 10 or buf[i + 1] == 13 or buf[i + 1] == 0
-    ) {
+    if c == 46
+        and linelen == 0
+        and (
+            i + 1 == datalen or buf[i + 1] == 10 or buf[i + 1] == 13 or buf[i + 1] == 0
+        ) {
         return True;
     }
     if not istext and (c == 13 or c == 10) {

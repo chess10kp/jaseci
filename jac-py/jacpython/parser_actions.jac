@@ -400,11 +400,16 @@ def pa_decoded_constant_from_token(tok: peg_token | None) -> Constant | None {
 }
 
 def _is_prefixed_int(s: str) -> bool {
-    return len(s) >= 3 and s[0] == "0" and (
-        s[1] == "x" or s[1] == "X" or
-        s[1] == "o" or s[1] == "O" or
-        s[1] == "b" or s[1] == "B"
-    );
+    return len(s) >= 3
+        and s[0] == "0"
+        and (
+            s[1] == "x"
+            or s[1] == "X"
+            or s[1] == "o"
+            or s[1] == "O"
+            or s[1] == "b"
+            or s[1] == "B"
+        );
 }
 
 def _has_float_marker(s: str) -> bool {

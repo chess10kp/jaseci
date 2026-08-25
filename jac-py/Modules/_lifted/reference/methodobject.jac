@@ -25,9 +25,15 @@ glob METH_VARARGS: int = 1,
 
 # ``cfunction_select_vectorcall`` — dispatch kind from ``PyCMethod_New`` switch.
 def cfunction_select_vectorcall(ml_flags: int) -> int {
-    masked = ml_flags & (
-        METH_VARARGS | METH_FASTCALL | METH_NOARGS | METH_O | METH_KEYWORDS | METH_METHOD
-    );
+    masked = ml_flags
+        & (
+            METH_VARARGS
+            | METH_FASTCALL
+            | METH_NOARGS
+            | METH_O
+            | METH_KEYWORDS
+            | METH_METHOD
+        );
     if masked == METH_VARARGS or masked == (METH_VARARGS | METH_KEYWORDS) {
         return CF_VECTORCALL_NONE;
     }

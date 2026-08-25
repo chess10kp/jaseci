@@ -3,24 +3,24 @@ glob Py_ssize_t = int;
 
 @__jac_value__
 obj csv_parse_step {
-    has state: int = 0;
-    has unquoted_field: int = 0;
-    has field_len: int = 0;
-    has action: int = 0;
-    has emit: int = 0;
-    has status: int = 0;
+    has state: int = 0,
+        unquoted_field: int = 0,
+        field_len: int = 0,
+        action: int = 0,
+        emit: int = 0,
+        status: int = 0;
 }
 
 
 @__jac_value__
 obj csv_dialect_cfg {
-    has quoting: int = 0;
-    has doublequote: int = 0;
-    has skipinitialspace: int = 0;
-    has strict: int = 0;
-    has delimiter: int = 0;
-    has quotechar: int = 0;
-    has escapechar: int = 0;
+    has quoting: int = 0,
+        doublequote: int = 0,
+        skipinitialspace: int = 0,
+        strict: int = 0,
+        delimiter: int = 0,
+        quotechar: int = 0,
+        escapechar: int = 0;
 }
 
 def csv_in_chars(c: int, `set: object, set_len: int) -> int {
@@ -301,12 +301,12 @@ def csv_dialect_check_chars(c1: int, c2: int) -> int {
 
 @__jac_value__
 obj csv_join_step {
-    has rec_len: int = 0;
-    has quoted: int = 0;
-    has n_emit: int = 0;
-    has emit0: int = 0;
-    has emit1: int = 0;
-    has status: int = 0;
+    has rec_len: int = 0,
+        quoted: int = 0,
+        n_emit: int = 0,
+        emit0: int = 0,
+        emit1: int = 0,
+        status: int = 0;
 }
 
 

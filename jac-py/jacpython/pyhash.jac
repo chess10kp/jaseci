@@ -46,7 +46,9 @@ def _rotl64(x: int, b: int) -> int {
     return _u64((x << b) | (x >> (64 - b)));
 }
 
-def _half_round(a: int, b: int, c: int, d: int, s: int, t: int) -> tuple[int, int, int, int] {
+def _half_round(
+    a: int, b: int, c: int, d: int, s: int, t: int
+) -> tuple[int, int, int, int] {
     a = _u64(a + b);
     c = _u64(c + d);
     b = _u64(_rotl64(b, s) ^ a);
@@ -123,13 +125,13 @@ def _jac_siphash_keys -> tuple[int, int] {
     } except ValueError {
         raise ValueError(
             "PYTHONHASHSEED must be \"random\" "
-            + "or an integer in range [0; 4294967295]"
+                + "or an integer in range [0; 4294967295]"
         );
     }
     if seed < 0 or seed > _MAX_HASH_SEED {
         raise ValueError(
             "PYTHONHASHSEED must be \"random\" "
-            + "or an integer in range [0; 4294967295]"
+                + "or an integer in range [0; 4294967295]"
         );
     }
     return hash_secret_keys_from_seed(seed);
@@ -137,8 +139,8 @@ def _jac_siphash_keys -> tuple[int, int] {
 
 # Single bootstrap call — random mode must not draw two independent secrets.
 glob _SIPHASH_KEYS: tuple[int, int] = _jac_siphash_keys(),
-     _SIPHASH_K0: int = (_SIPHASH_KEYS[0] as int),
-     _SIPHASH_K1: int = (_SIPHASH_KEYS[1] as int);
+     _SIPHASH_K0: int = _SIPHASH_KEYS[0] as int,
+     _SIPHASH_K1: int = _SIPHASH_KEYS[1] as int;
 
 
 def _siphash13(k0: int, k1: int, data: list[int]) -> int {

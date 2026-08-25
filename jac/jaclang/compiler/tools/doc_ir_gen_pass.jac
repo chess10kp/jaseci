@@ -178,6 +178,7 @@ obj DocIRGenPass(UniPass) {
     def exit_int(nd: uni.Int) -> None;
     def exit_builtin_type(nd: uni.BuiltinType) -> None;
     def exit_float(nd: uni.Float) -> None;
+    def exit_complex(nd: uni.Complex) -> None;
     def exit_string(nd: uni.String) -> None;
     def exit_special_var_ref(nd: uni.SpecialVarRef) -> None;
     def exit_bool(nd: uni.Bool) -> None;

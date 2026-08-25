@@ -33,65 +33,100 @@ def vm_exec(src: str) -> dict[str, PyObj] {
 
 def vm_str(expr: str) -> str {
     ns = vm_exec(
-        "try:\n"
-        "    r = repr(" + expr + ")\n"
-        "except BaseException as e:\n"
-        "    r = type(e).__name__ + ': ' + str(e)\n"
+        "try:\n" "    r = repr("
+            + expr
+            + ")\n"
+            "except BaseException as e:\n"
+            "    r = type(e).__name__ + ': ' + str(e)\n"
     );
     return to_host(ns["r"]) as str;
 }
 
 test "exc group: str/repr -- CPython BaseExceptionGroup_str pluralization + repr shape" {
-    assert vm_str("ExceptionGroup('g',[ValueError('a'),TypeError('b')])") == "ExceptionGroup('g', [ValueError('a'), TypeError('b')])";
-    assert vm_str("str(ExceptionGroup('g',[ValueError('a')]))") == "'g (1 sub-exception)'";
-    assert vm_str("str(ExceptionGroup('g',[ValueError('a'),TypeError('b')]))") == "'g (2 sub-exceptions)'";
-    assert vm_str("repr(BaseExceptionGroup('',[ValueError()]))") == "ExceptionGroup('', [ValueError()])";
+    assert vm_str("ExceptionGroup('g',[ValueError('a'),TypeError('b')])")
+        == "ExceptionGroup('g', [ValueError('a'), TypeError('b')])";
+    assert vm_str("str(ExceptionGroup('g',[ValueError('a')]))")
+        == "'g (1 sub-exception)'";
+    assert vm_str("str(ExceptionGroup('g',[ValueError('a'),TypeError('b')]))")
+        == "'g (2 sub-exceptions)'";
+    assert vm_str("repr(BaseExceptionGroup('',[ValueError()]))")
+        == "ExceptionGroup('', [ValueError()])";
     # msg repr follows unicode_repr smart-quote rules
-    assert vm_str("repr(ExceptionGroup(\"it's\",[ValueError()]))") == "ExceptionGroup(\"it's\", [ValueError()])";
-    assert vm_str("repr(ExceptionGroup('o',[ExceptionGroup('i',[ValueError()]),TypeError('t')]))") == "ExceptionGroup('o', [ExceptionGroup('i', [ValueError()]), TypeError('t')])";
+    assert vm_str("repr(ExceptionGroup(\"it's\",[ValueError()]))")
+        == "ExceptionGroup(\"it's\", [ValueError()])";
+    assert vm_str(
+        "repr(ExceptionGroup('o',[ExceptionGroup('i',[ValueError()]),TypeError('t')]))"
+    )
+        == "ExceptionGroup('o', [ExceptionGroup('i', [ValueError()]), TypeError('t')])";
 }
 
 test "exc group: auto-selection -- exact BaseExceptionGroup with all-Exception leaves yields ExceptionGroup" {
-    assert vm_str("type(BaseExceptionGroup('m',[ValueError('a')])).__name__") == "'ExceptionGroup'";
-    assert vm_str("repr(BaseExceptionGroup('b',[ValueError('a'),KeyboardInterrupt()]))") == "BaseExceptionGroup('b', [ValueError('a'), KeyboardInterrupt()])";
-    assert vm_str("isinstance(BaseExceptionGroup('b',[KeyboardInterrupt()]), Exception)") == "False";
-    assert vm_str("isinstance(BaseExceptionGroup('b',[KeyboardInterrupt()]), BaseExceptionGroup)") == "True";
-    assert vm_str("isinstance(ExceptionGroup('g',[ValueError()]), BaseException)") == "True";
+    assert vm_str("type(BaseExceptionGroup('m',[ValueError('a')])).__name__")
+        == "'ExceptionGroup'";
+    assert vm_str("repr(BaseExceptionGroup('b',[ValueError('a'),KeyboardInterrupt()]))")
+        == "BaseExceptionGroup('b', [ValueError('a'), KeyboardInterrupt()])";
+    assert vm_str(
+        "isinstance(BaseExceptionGroup('b',[KeyboardInterrupt()]), Exception)"
+    )
+        == "False";
+    assert vm_str(
+        "isinstance(BaseExceptionGroup('b',[KeyboardInterrupt()]), BaseExceptionGroup)"
+    )
+        == "True";
+    assert vm_str("isinstance(ExceptionGroup('g',[ValueError()]), BaseException)")
+        == "True";
 }
 
 test "exc group: ctor arity + keyword errors carry the fixed __new__ literal" {
-    assert vm_str("BaseExceptionGroup()") == "TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (0 given)";
-    assert vm_str("ExceptionGroup('m')") == "TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (1 given)";
-    assert vm_str("BaseExceptionGroup(message='m',exceptions=[ValueError()])") == "TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (0 given)";
+    assert vm_str("BaseExceptionGroup()")
+        == "TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (0 given)";
+    assert vm_str("ExceptionGroup('m')")
+        == "TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (1 given)";
+    assert vm_str("BaseExceptionGroup(message='m',exceptions=[ValueError()])")
+        == "TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (0 given)";
 }
 
 test "exc group: keyword rejection names the FINAL selected type" {
-    assert vm_str("BaseExceptionGroup('m',[ValueError()],foo=1)") == "TypeError: ExceptionGroup() takes no keyword arguments";
-    assert vm_str("ExceptionGroup('m',[ValueError()],foo=1)") == "TypeError: ExceptionGroup() takes no keyword arguments";
-    assert vm_str("BaseExceptionGroup('m',[ValueError(),KeyboardInterrupt()],foo=1)") == "TypeError: BaseExceptionGroup() takes no keyword arguments";
+    assert vm_str("BaseExceptionGroup('m',[ValueError()],foo=1)")
+        == "TypeError: ExceptionGroup() takes no keyword arguments";
+    assert vm_str("ExceptionGroup('m',[ValueError()],foo=1)")
+        == "TypeError: ExceptionGroup() takes no keyword arguments";
+    assert vm_str("BaseExceptionGroup('m',[ValueError(),KeyboardInterrupt()],foo=1)")
+        == "TypeError: BaseExceptionGroup() takes no keyword arguments";
 }
 
 test "exc group: sequence + item validation messages" {
-    assert vm_str("BaseExceptionGroup('m',[])") == "ValueError: second argument (exceptions) must be a non-empty sequence";
-    assert vm_str("ExceptionGroup('m',(e for e in [ValueError()]))") == "TypeError: second argument (exceptions) must be a sequence";
-    assert vm_str("BaseExceptionGroup('m','ab')") == "ValueError: Item 0 of second argument (exceptions) is not an exception";
-    assert vm_str("BaseExceptionGroup('m',[42,None])") == "ValueError: Item 0 of second argument (exceptions) is not an exception";
+    assert vm_str("BaseExceptionGroup('m',[])")
+        == "ValueError: second argument (exceptions) must be a non-empty sequence";
+    assert vm_str("ExceptionGroup('m',(e for e in [ValueError()]))")
+        == "TypeError: second argument (exceptions) must be a sequence";
+    assert vm_str("BaseExceptionGroup('m','ab')")
+        == "ValueError: Item 0 of second argument (exceptions) is not an exception";
+    assert vm_str("BaseExceptionGroup('m',[42,None])")
+        == "ValueError: Item 0 of second argument (exceptions) is not an exception";
 }
 
 test "exc group: message str-check precedes item scan; type names byte-exact" {
-    assert vm_str("BaseExceptionGroup(1,[42])") == "TypeError: BaseExceptionGroup.__new__() argument 1 must be str, not int";
-    assert vm_str("BaseExceptionGroup(['m'],[ValueError()])") == "TypeError: BaseExceptionGroup.__new__() argument 1 must be str, not list";
-    assert vm_str("BaseExceptionGroup(True,[ValueError()])") == "TypeError: BaseExceptionGroup.__new__() argument 1 must be str, not bool";
+    assert vm_str("BaseExceptionGroup(1,[42])")
+        == "TypeError: BaseExceptionGroup.__new__() argument 1 must be str, not int";
+    assert vm_str("BaseExceptionGroup(['m'],[ValueError()])")
+        == "TypeError: BaseExceptionGroup.__new__() argument 1 must be str, not list";
+    assert vm_str("BaseExceptionGroup(True,[ValueError()])")
+        == "TypeError: BaseExceptionGroup.__new__() argument 1 must be str, not bool";
 }
 
 test "exc group: nest rejection -- BaseException leaves under ExceptionGroup family" {
-    assert vm_str("ExceptionGroup('m',[KeyboardInterrupt()])") == "TypeError: Cannot nest BaseExceptions in an ExceptionGroup";
-    assert vm_str("ExceptionGroup('m',[BaseExceptionGroup('x',[KeyboardInterrupt()])])") == "TypeError: Cannot nest BaseExceptions in an ExceptionGroup";
+    assert vm_str("ExceptionGroup('m',[KeyboardInterrupt()])")
+        == "TypeError: Cannot nest BaseExceptions in an ExceptionGroup";
+    assert vm_str("ExceptionGroup('m',[BaseExceptionGroup('x',[KeyboardInterrupt()])])")
+        == "TypeError: Cannot nest BaseExceptions in an ExceptionGroup";
 }
 
 test "exc group: members -- .message/.exceptions read-only, .args pair form" {
-    assert vm_str("ExceptionGroup('hello',[ValueError()]).args") == "('hello', [ValueError()])";
-    assert vm_str("ExceptionGroup('g',[ValueError('a')]).exceptions") == "(ValueError('a'),)";
+    assert vm_str("ExceptionGroup('hello',[ValueError()]).args")
+        == "('hello', [ValueError()])";
+    assert vm_str("ExceptionGroup('g',[ValueError('a')]).exceptions")
+        == "(ValueError('a'),)";
     assert vm_str("ExceptionGroup('g',[ValueError('a')]).message") == "'g'";
     ns = vm_exec(
         "eg = ExceptionGroup('g',[ValueError('a')])\n"

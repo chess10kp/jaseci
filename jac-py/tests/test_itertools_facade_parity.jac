@@ -95,8 +95,8 @@ test "wave12 count agrees with host itertools.count" {
     h2 = host_it.count(1, 2);
     assert str(c2) == str(h2) , (str(c2), str(h2));
     # large-step counts stay exact (arbitrary precision, no ssize_t clamp)
-    big = _take(_p2_count(0, 2**64), 3);
-    assert big == [0, 2**64, 2 * 2**64] , big;
+    big = _take(_p2_count(0, 2 ** 64), 3);
+    assert big == [0, 2 ** 64, 2 * 2 ** 64] , big;
 }
 
 
@@ -104,9 +104,8 @@ test "wave12 cycle agrees with host itertools.cycle" {
     sources: list = ["AB", [1], [], (1, 2, 3)];
     for src in sources {
         if len(src) == 0 {
-            assert _take_until_stop(_p2_cycle(src)) == (
-                list(_take_until_stop(host_it.cycle(src)))
-            ) , "empty source exhausts";
+            assert _take_until_stop(_p2_cycle(src))
+                == (list(_take_until_stop(host_it.cycle(src)))) , "empty source exhausts";
             continue;
         }
         got = _take(_p2_cycle(src), 7);
@@ -144,19 +143,14 @@ test "wave12 repeat agrees with host itertools.repeat" {
 
 
 test "wave12 chain agrees with host itertools.chain" {
-    argsets: list = [
-        [],
-        ["ab"],
-        ["ab", [1, 2]],
-        [[], [1], [], (2, 3), ""],
-    ];
+    argsets: list = [[], ["ab"], ["ab", [1, 2]], [[], [1], [], (2, 3), ""], ];
     for args in argsets {
         got = _take_until_stop(_p2_chain(*args));
         want = _take_until_stop(host_it.chain(*args));
         assert got == want , (args, got, want);
     }
-    nested = _take_until_stop(_p2_chain_from_iterable(["ab", [1, 2], (9,)]));
-    want_nested = _take_until_stop(host_it.chain.from_iterable(["ab", [1, 2], (9,)]));
+    nested = _take_until_stop(_p2_chain_from_iterable(["ab", [1, 2], (9, )]));
+    want_nested = _take_until_stop(host_it.chain.from_iterable(["ab", [1, 2], (9, )]));
     assert nested == want_nested , (nested, want_nested);
 }
 
@@ -168,6 +162,7 @@ test "wave12 product agrees with host itertools.product" {
         [[1, 2], [3, 4], [5]],
         [""],
         [[], [1]],
+
     ];
     for args in argsets {
         got = _take_until_stop(_p2_product(args));
@@ -175,9 +170,8 @@ test "wave12 product agrees with host itertools.product" {
         assert got == want , (args, got, want);
     }
     assert _take_until_stop(_p2_product(["ab"], 0)) == [()] , "repeat=0";
-    assert _take_until_stop(_p2_product(["ab"], 2)) == (
-        _take_until_stop(host_it.product("ab", repeat=2))
-    ) , "repeat=2";
+    assert _take_until_stop(_p2_product(["ab"], 2))
+        == (_take_until_stop(host_it.product("ab", repeat=2))) , "repeat=2";
     bad = False;
     try {
         _p2_product(["a"], -1);
@@ -215,8 +209,16 @@ test "wave12 combinations_with_replacement agree with host" {
 }
 
 test "wave12 permutations agree with host itertools.permutations" {
-    cases: list = [("ABCD", None), ("ABCD", 2), (range(3), None), (range(3), 0),
-                   ([1], None), ([], None), ([], 2), ("AB", 5)];
+    cases: list = [
+        ("ABCD", None),
+        ("ABCD", 2),
+        (range(3), None),
+        (range(3), 0),
+        ([1], None),
+        ([], None),
+        ([], 2),
+        ("AB", 5)
+    ];
     for (src, r) in cases {
         if r is None {
             got = _take_until_stop(_p2_permutations(src));
@@ -300,9 +302,8 @@ test "wave12 tee agrees with host itertools.tee" {
     htp = host_it.tee(src);
     ha: any = htp[0];
     hb: any = htp[1];
-    assert _take_until_stop(a) + _take_until_stop(b) == (
-        _take_until_stop(ha) + _take_until_stop(hb)
-    ) , "two-way interleave";
+    assert _take_until_stop(a) + _take_until_stop(b)
+        == (_take_until_stop(ha) + _take_until_stop(hb)) , "two-way interleave";
     clones: list = list(_p2_tee(src, 3));
     hclones: list = list(host_it.tee(src, 3));
     assert len(clones) == 3 and len(hclones) == 3;
@@ -327,23 +328,22 @@ test "wave12 tee agrees with host itertools.tee" {
 
 test "wave12 islice agrees with host itertools.islice" {
     seq = range(20);
-    assert _take_until_stop(_p2_islice_stop(seq, 5)) == (
-        list(host_it.islice(seq, 5))
-    ) , "(seq, stop)";
-    assert _take_until_stop(_p2_islice_stop(seq, None)) == (
-        list(host_it.islice(seq, None))
-    ) , "(seq, None-stop)";
-    assert _take_until_stop(_p2_islice_full(seq, 5, 15, 2)) == (
-        list(host_it.islice(seq, 5, 15, 2))
-    ) , "(start, stop, step)";
-    assert _take_until_stop(_p2_islice_full(seq, None, None, 3)) == (
-        list(host_it.islice(seq, None, None, 3))
-    ) , "(None, None, step)";
+    assert _take_until_stop(_p2_islice_stop(seq, 5))
+        == (list(host_it.islice(seq, 5))) , "(seq, stop)";
+    assert _take_until_stop(_p2_islice_stop(seq, None))
+        == (list(host_it.islice(seq, None))) , "(seq, None-stop)";
+    assert _take_until_stop(_p2_islice_full(seq, 5, 15, 2))
+        == (list(host_it.islice(seq, 5, 15, 2))) , "(start, stop, step)";
+    assert _take_until_stop(_p2_islice_full(seq, None, None, 3))
+        == (list(host_it.islice(seq, None, None, 3))) , "(None, None, step)";
     got = _take_until_stop(_p2_islice_full(range(20), 18, None, None));
     want = list(host_it.islice(range(20), 18, None));
     assert got == want , (got, want);
-    for bad_args in [(range(5), -1, None, None), (range(5), 0, -2, None),
-                     (range(5), None, None, 0)] {
+    for bad_args in [
+        (range(5), -1, None, None),
+        (range(5), 0, -2, None),
+        (range(5), None, None, 0)
+    ] {
         raised = False;
         try {
             _take_until_stop(_p2_islice_full(*bad_args));
@@ -376,12 +376,9 @@ test "wave12 starmap/accumulate/compress agree with host" {
     assert got == want , (got, want);
 
     nums = [1, 2, 3, 4, 5];
-    assert _take_until_stop(_p2_accumulate(nums)) == (
-        list(host_it.accumulate(nums))
-    );
-    assert _take_until_stop(_p2_accumulate(nums, _mul)) == (
-        list(host_it.accumulate(nums, _mul))
-    );
+    assert _take_until_stop(_p2_accumulate(nums)) == (list(host_it.accumulate(nums)));
+    assert _take_until_stop(_p2_accumulate(nums, _mul))
+        == (list(host_it.accumulate(nums, _mul)));
 
     got = _take_until_stop(_p2_compress("ABCDEF", [1, 0, 1, 0, 1, 1]));
     assert got == list(host_it.compress("ABCDEF", [1, 0, 1, 0, 1, 1]));
@@ -412,12 +409,10 @@ test "wave12 dropwhile/takewhile/filterfalse/pairwise agree with host" {
 }
 
 test "wave12 batched/zip_longest agree with host" {
-    assert _take_until_stop(_p2_batched("ABCDEFG", 3)) == (
-        list(host_it.batched("ABCDEFG", 3))
-    );
-    assert _take_until_stop(_p2_batched("ABCDEF", 3, strict=True)) == (
-        list(host_it.batched("ABCDEF", 3, strict=True))
-    );
+    assert _take_until_stop(_p2_batched("ABCDEFG", 3))
+        == (list(host_it.batched("ABCDEFG", 3)));
+    assert _take_until_stop(_p2_batched("ABCDEF", 3, strict=True))
+        == (list(host_it.batched("ABCDEF", 3, strict=True)));
     raised = False;
     try {
         _take_until_stop(_p2_batched("ABCDE", 3, strict=True));
@@ -433,7 +428,7 @@ test "wave12 batched/zip_longest agree with host" {
     }
     assert bad , "n < 1";
 
-    rows = [("abc", [1, 2], (9,)), ("xy", [], (8, 9))];
+    rows = [("abc", [1, 2], (9, )), ("xy", [], (8, 9))];
     for args in rows {
         got = _take_until_stop(_p2_zip_longest(list(args)));
         want = _take_until_stop(host_it.zip_longest(*args));
@@ -445,9 +440,8 @@ test "wave12 batched/zip_longest agree with host" {
 }
 
 test "wave12 islice accepts bool indices like host (bool is an int)" {
-    assert _take_until_stop(_p2_islice_stop(range(3), True)) == (
-        list(host_it.islice(range(3), True))
-    ) , "stop=True";
+    assert _take_until_stop(_p2_islice_stop(range(3), True))
+        == (list(host_it.islice(range(3), True))) , "stop=True";
     got = _take_until_stop(_p2_islice_full(range(10), False, True, True));
     want = list(host_it.islice(range(10), False, True, True));
     assert got == want , (got, want);
@@ -630,8 +624,12 @@ test "wave20 accumulate initial seeds without pulling and stays lazy" {
     want = _take(host_it.accumulate([1, 2, 3], initial=10), 4);
     assert got == want , (got, want);
 
-    got = _p2_take_until_stop(_p2_accumulate([1, 2, 3], lambda (a: any, b: any) { a * b; }, 2));
-    want = _p2_take_until_stop(host_it.accumulate([1, 2, 3], lambda (x: any, y: any) { x * y; }, initial=2));
+    got = _p2_take_until_stop(
+        _p2_accumulate([1, 2, 3], lambda (a: any, b: any) { a * b; }, 2)
+    );
+    want = _p2_take_until_stop(
+        host_it.accumulate([1, 2, 3], lambda (x: any, y: any) { x * y; }, initial=2)
+    );
     assert got == want , (got, want);
 
     # empty source with initial yields exactly [initial] on both sides

@@ -332,9 +332,8 @@ glob table_a2b_base64: list[int] = [
          255,
          255,
          255
-     ];
-
-glob table_b2a_base64: list[int] = [
+     ],
+     table_b2a_base64: list[int] = [
          65,
          66,
          67,
@@ -404,11 +403,11 @@ glob table_b2a_base64: list[int] = [
 
 @__jac_value__
 obj b64_step {
-    has quad_pos: int = 0;
-    has leftchar: int = 0;
-    has pads: int = 0;
-    has action: int = 0;
-    has out: int = 0;
+    has quad_pos: int = 0,
+        leftchar: int = 0,
+        pads: int = 0,
+        action: int = 0,
+        out: int = 0;
 }
 
 
@@ -531,8 +530,8 @@ def binascii_a2b_uu_binlen(lench: int) -> int {
 
 @__jac_value__
 obj uu_char_class {
-    has kind: int = 0;
-    has sixbits: int = 0;
+    has kind: int = 0,
+        sixbits: int = 0;
 }
 
 def binascii_a2b_uu_class(this_ch: int) -> uu_char_class {
@@ -1107,8 +1106,8 @@ def binascii_crc32_final(crc: int) -> int {
 
 @__jac_value__
 obj qp_hex_pair {
-    has hi: int = 0;
-    has lo: int = 0;
+    has hi: int = 0,
+        lo: int = 0;
 }
 
 def binascii_qp_to_hex(ch: int) -> qp_hex_pair {

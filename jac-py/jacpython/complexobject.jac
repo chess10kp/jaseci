@@ -342,6 +342,7 @@ def complex_parse_text(src: str) -> tuple[bool, str, float, float] {
             "could not convert string to complex: '" + src + "'",
             0.0,
             0.0,
+
         );
     }
     if err != "" {
@@ -366,6 +367,7 @@ def complex_parse_text(src: str) -> tuple[bool, str, float, float] {
             "could not convert string to complex: '" + src + "'",
             0.0,
             0.0,
+
         );
     }
     if err != "" or not im2 or i != len(s) {

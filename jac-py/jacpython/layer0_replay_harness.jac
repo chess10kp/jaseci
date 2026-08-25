@@ -21,7 +21,8 @@ def _l0_harvest(source: str) -> list {
         if (
             isinstance(x, ast.Call)
             and isinstance(getattr(x, "func"), ast.Attribute)
-            and str(getattr(getattr(x, "func"), "attr")) in ("assertEqual", "assertEquals")
+            and str(getattr(getattr(x, "func"), "attr"))
+                in ("assertEqual", "assertEquals")
             and len(getattr(x, "args")) >= 2
         ) {
             a = ast.get_source_segment(source, getattr(x, "args")[0]);
@@ -82,21 +83,46 @@ def _l0_host_equal(a: any, b: any) -> bool {
 # corpus, and threads generator state across a method's asserts exactly as
 # CPython does when it runs the method once.
 glob _L1_CHECKS = {
-    "assertEqual", "assertNotEqual", "assertTrue", "assertFalse",
-    "assertIs", "assertIsNot", "assertIsNone", "assertIsNotNone",
-    "assertGreater", "assertLess", "assertGreaterEqual", "assertLessEqual",
-};
+         "assertEqual",
+         "assertNotEqual",
+         "assertTrue",
+         "assertFalse",
+         "assertIs",
+         "assertIsNot",
+         "assertIsNone",
+         "assertIsNotNone",
+         "assertGreater",
+         "assertLess",
+         "assertGreaterEqual",
+         "assertLessEqual",
+
+     },
+     _L1_FIXTURE_CHECKS = {
+         "assertListEqual",
+         "assertTupleEqual",
+         "assertSetEqual",
+         "assertDictEqual",
+         "assertIn",
+         "assertNotIn",
+         "assertCountEqual",
+         "assertIsInstance",
+         "assertNotIsInstance",
+
+     },
+     _L1_IDENTITY_CHECKS = {
+         "assertIs",
+         "assertIsNot",
+         "assertIsInstance",
+         "assertNotIsInstance",
+
+     };
+
 
 # Fixture-mode-only extensions. Legacy stems must keep their exact harvest
 # sets (ratcheted baselines), so these extra assert families are recognized
 # only when fixtures=True. Semantics are the harness's established per-arg
 # differential one: each argument expression is evaluated on both engines and
 # compared cross-engine -- not the assertion relation itself.
-glob _L1_FIXTURE_CHECKS = {
-    "assertListEqual", "assertTupleEqual", "assertSetEqual", "assertDictEqual",
-    "assertIn", "assertNotIn", "assertCountEqual",
-    "assertIsInstance", "assertNotIsInstance",
-};
 
 # Identity-family asserts evaluate the assertion RELATION atomically on each
 # engine -- `(a) is (b)` wholly in jacpython, `host_a is host_b` over
@@ -105,11 +131,6 @@ glob _L1_FIXTURE_CHECKS = {
 # mapping can make a guest type object is-identical to the host's own class
 # object (cf. TODO item 58; same identity-non-round-trip class as deviation
 # D-RANGE-ID).
-glob _L1_IDENTITY_CHECKS = {
-    "assertIs", "assertIsNot", "assertIsInstance", "assertNotIsInstance",
-};
-
-
 def _stmt_scope_nodes(stmt: any) -> any {
     # ast.walk(stmt) minus nested function/class subtrees: names bound in an
     # inner scope (e.g. a method parameter named `self`) are not fixture-state
@@ -262,7 +283,11 @@ def _l1_lift_try_checks(try_node: any) -> list {
     #
     # Returns (check_nodes_in_order).
     lifted = [];
-    for region in (getattr(try_node, "body"), getattr(try_node, "orelse"), getattr(try_node, "finalbody")) {
+    for region in (
+        getattr(try_node, "body"),
+        getattr(try_node, "orelse"),
+        getattr(try_node, "finalbody")
+    ) {
         for s in region {
             if isinstance(s, ast.Try) {
                 lifted.extend(_l1_lift_try_checks(s));
@@ -343,7 +368,9 @@ def _l1_harvest_one(source: str, method_node: any, allow_self: bool = False) -> 
         # ("assertRaises", [exc_src, body_src]); body_src is a dedented
         # statement block whose execution must raise a matching exception.
         if _l1_is_raises_with(stmt) {
-            ctx_args = getattr(getattr(getattr(stmt, "items")[0], "context_expr"), "args");
+            ctx_args = getattr(
+                getattr(getattr(stmt, "items")[0], "context_expr"), "args"
+            );
             exc_src = ast.get_source_segment(source, ctx_args[0]);
             body_nodes: list = list(getattr(stmt, "body"));
             body_segs: list[str | None] = [];
@@ -354,7 +381,8 @@ def _l1_harvest_one(source: str, method_node: any, allow_self: bool = False) -> 
             if not allow_self {
                 for s in body_nodes {
                     for n in _stmt_scope_nodes(s) {
-                        if isinstance(n, ast.Name) and str(getattr(n, "id")) == "self" {
+                        if isinstance(n, ast.Name)
+                            and str(getattr(n, "id")) == "self" {
                             self_touched = True;
                         }
                     }
@@ -372,10 +400,17 @@ def _l1_harvest_one(source: str, method_node: any, allow_self: bool = False) -> 
             fixed_parts: list[str] = [];
             for idx in range(len(body_nodes)) {
                 fixed_parts.append(
-                    _dedent_segment(body_segs[idx], getattr(body_nodes[idx], "col_offset"))
+                    _dedent_segment(
+                        body_segs[idx], getattr(body_nodes[idx], "col_offset")
+                    )
                 );
             }
-            checks.append(("assertRaises", [str(exc_src), textwrap.dedent("\n".join(fixed_parts))]));
+            checks.append(
+                (
+                    "assertRaises",
+                    [str(exc_src), textwrap.dedent("\n".join(fixed_parts))]
+                )
+            );
             continue;
         }
         # A bare `self.assertRaises(E, callable, *args, **kwargs)` call. Stored
@@ -409,11 +444,17 @@ def _l1_harvest_one(source: str, method_node: any, allow_self: bool = False) -> 
             for a in arg_srcs {
                 joined.append(str(a));
             }
-            checks.append(("assertRaises", [str(exc_src), str(fn_src) + "(" + ", ".join(joined) + ")"]));
+            checks.append(
+                (
+                    "assertRaises",
+                    [str(exc_src), str(fn_src) + "(" + ", ".join(joined) + ")"]
+                )
+            );
             continue;
         }
         # A bare docstring/expression constant is inert setup.
-        if isinstance(stmt, ast.Expr) and isinstance(getattr(stmt, "value"), ast.Constant) {
+        if isinstance(stmt, ast.Expr)
+            and isinstance(getattr(stmt, "value"), ast.Constant) {
             continue;
         }
         # Kept-intact Try: control flow must not be rewritten (see
@@ -479,7 +520,10 @@ def _l1_harvest_methods_parsed(tree: any, source: str) -> list {
     # host self-containment probe also declines them.
     out: list = [];
     for ast_node in ast.walk(tree) {
-        if not (isinstance(ast_node, ast.FunctionDef) and str(getattr(ast_node, "name")).startswith("test")) {
+        if not (
+            isinstance(ast_node, ast.FunctionDef)
+            and str(getattr(ast_node, "name")).startswith("test")
+        ) {
             continue;
         }
         harvested = _l1_harvest_one(source, ast_node);
@@ -530,7 +574,6 @@ def _l1_harvest_methods(source: str) -> list {
 # and counts as skipped -- never passed; both legs always execute identical
 # source, so there is no fixture-shaped false green.
 
-
 def _l1_fixture_preamble(tree: any, source: str) -> str {
     # Module-level statements carried into every fixture-mode setup: imports,
     # simple assigns, function/class defs, and Try/If blocks that conditionally
@@ -548,11 +591,13 @@ def _l1_fixture_preamble(tree: any, source: str) -> str {
             for n in _stmt_scope_nodes(stmt) {
                 if isinstance(n, ast.Compare) {
                     left = getattr(n, "left");
-                    if isinstance(left, ast.Constant) and str(getattr(left, "value")) == "__main__" {
+                    if isinstance(left, ast.Constant)
+                        and str(getattr(left, "value")) == "__main__" {
                         is_main_guard = True;
                     }
                     for x in getattr(n, "comparators") {
-                        if isinstance(x, ast.Constant) and str(getattr(x, "value")) == "__main__" {
+                        if isinstance(x, ast.Constant)
+                            and str(getattr(x, "value")) == "__main__" {
                             is_main_guard = True;
                         }
                     }
@@ -566,15 +611,31 @@ def _l1_fixture_preamble(tree: any, source: str) -> str {
             continue;
         }
         emit = None;
-        if isinstance(stmt, (ast.Import, ast.ImportFrom, ast.Assign,
-                             ast.AnnAssign, ast.FunctionDef,
-                             ast.AsyncFunctionDef, ast.Try, ast.If)) {
+        if isinstance(
+            stmt,
+            (
+                ast.Import,
+                ast.ImportFrom,
+                ast.Assign,
+                ast.AnnAssign,
+                ast.FunctionDef,
+                ast.AsyncFunctionDef,
+                ast.Try,
+                ast.If
+            )
+        ) {
             emit = stmt;
         } elif isinstance(stmt, ast.ClassDef) {
             carries_testcase_base = False;
             for b in getattr(stmt, "bases") {
-                if (isinstance(b, ast.Name) and str(getattr(b, "id")).find("TestCase") != -1)
-                    or (isinstance(b, ast.Attribute) and str(getattr(b, "attr")).find("TestCase") != -1) {
+                if (
+                    isinstance(b, ast.Name)
+                    and str(getattr(b, "id")).find("TestCase") != -1
+                )
+                    or (
+                        isinstance(b, ast.Attribute)
+                        and str(getattr(b, "attr")).find("TestCase") != -1
+                    ) {
                     carries_testcase_base = True;
                 }
             }
@@ -591,7 +652,9 @@ def _l1_fixture_preamble(tree: any, source: str) -> str {
         }
         seg = _dedent_segment(seg, getattr(emit, "col_offset"));
         parts.append(
-            "try:\n" + textwrap.indent(seg, "    ") + "\nexcept BaseException:\n    pass"
+            "try:\n"
+                + textwrap.indent(seg, "    ")
+                + "\nexcept BaseException:\n    pass"
         );
     }
     return "\n".join(parts);
@@ -627,7 +690,7 @@ def _l1_class_attr_lines(cls_node: any, source: str) -> list[str] {
     # to the fixture class so attribute access binds self like a real method.
     lines: list[str] = [];
     for stmt in getattr(cls_node, "body") {
-        value = getattr(stmt, "value", None);
+        value = stmt?.value;
         if value is None {
             continue;
         }
@@ -692,11 +755,13 @@ def _l1_fixture_setup_body(cls_node: any, source: str) -> any {
     # Dedented setUp body of cls_node (docstrings dropped), or None.
     import textwrap;
     for stmt in getattr(cls_node, "body") {
-        if isinstance(stmt, ast.FunctionDef) and str(getattr(stmt, "name")) == "setUp" {
+        if isinstance(stmt, ast.FunctionDef)
+            and str(getattr(stmt, "name")) == "setUp" {
             parts: list[str] = [];
             missing_seg = False;
             for s in getattr(stmt, "body") {
-                if isinstance(s, ast.Expr) and isinstance(getattr(s, "value"), ast.Constant) {
+                if isinstance(s, ast.Expr)
+                    and isinstance(getattr(s, "value"), ast.Constant) {
                     continue;
                 }
                 seg = ast.get_source_segment(source, s);
@@ -734,7 +799,10 @@ def _l1_harvest_methods_fixture(tree: any, source: str) -> list {
     preamble = _l1_fixture_preamble(tree, source);
     out: list = [];
     for ast_node in ast.walk(tree) {
-        if not (isinstance(ast_node, ast.FunctionDef) and str(getattr(ast_node, "name")).startswith("test")) {
+        if not (
+            isinstance(ast_node, ast.FunctionDef)
+            and str(getattr(ast_node, "name")).startswith("test")
+        ) {
             continue;
         }
         harvested = _l1_harvest_one(source, ast_node, allow_self=True);
@@ -841,7 +909,6 @@ def _l1_compile_setup(setup_src: str) -> any {
     }
     return marshal.dumps(compile(src, "<layer1>", "exec"));
 }
-
 
 
 # The two-dimensional ledger TODO.md Layer 1 calls for, seeded at Layer 0:
@@ -990,9 +1057,7 @@ def _l1_replay_method(setup_src: str, checks: any) -> int {
                 } elif name_id == "assertIsInstance" {
                     rel_src = "isinstance((" + a_src + "), (" + b_src + "))";
                 } else {
-                    rel_src = (
-                        "not isinstance((" + a_src + "), (" + b_src + "))"
-                    );
+                    rel_src = "not isinstance((" + a_src + "), (" + b_src + "))";
                 }
                 jac_rel = to_host(layer1_eval_in(ns_jac, rel_src));
                 host_a = _l1_host_eval_in(ns_host, a_src);

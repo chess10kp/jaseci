@@ -42,9 +42,15 @@ obj PyCMethodObject {
 
 
 def cfunction_select_vectorcall(ml_flags: int) -> int {
-    masked = ml_flags & (
-        METH_VARARGS | METH_FASTCALL | METH_NOARGS | METH_O | METH_KEYWORDS | METH_METHOD
-    );
+    masked = ml_flags
+        & (
+            METH_VARARGS
+            | METH_FASTCALL
+            | METH_NOARGS
+            | METH_O
+            | METH_KEYWORDS
+            | METH_METHOD
+        );
     if masked == METH_VARARGS or masked == (METH_VARARGS | METH_KEYWORDS) {
         return CF_VECTORCALL_NONE;
     }
@@ -99,10 +105,6 @@ def meth_repr(m: PyCFunctionObject, tp_name: str, is_module_self: bool) -> str {
         return "<built-in function " + m.m_ml.ml_name + ">";
     }
     return (
-        "<built-in method "
-        + m.m_ml.ml_name
-        + " of "
-        + tp_name
-        + " object at 0x0>"
+        "<built-in method " + m.m_ml.ml_name + " of " + tp_name + " object at 0x0>"
     );
 }

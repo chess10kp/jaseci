@@ -19,9 +19,7 @@ def tb_entries(tb: any) -> list[str] {
     frame = tb;
     while frame is not None {
         code = (frame as PyTraceback).code;
-        out.append(
-            (code as PyCode).name + ":" + str((frame as PyTraceback).tb_lineno)
-        );
+        out.append((code as PyCode).name + ":" + str((frame as PyTraceback).tb_lineno));
         frame = (frame as PyTraceback).tb_next;
     }
     return out;
@@ -53,7 +51,7 @@ test "cleanup-RERAISE escape: finally adds no extra tb entry" {
         "\n"
         "middle()\n"
     );
-    assert got == "<module>:10|middle:8|inner:3", f"cadence mismatch: {got}";
+    assert got == "<module>:10|middle:8|inner:3" , f"cadence mismatch: {got}";
 }
 
 test "bare reraise in except: single entry per frame" {
@@ -66,7 +64,7 @@ test "bare reraise in except: single entry per frame" {
         "\n"
         "f()\n"
     );
-    assert got == "<module>:7|f:3", f"cadence mismatch: {got}";
+    assert got == "<module>:7|f:3" , f"cadence mismatch: {got}";
 }
 
 # Exec `src` on ceval with fresh module globals; returns module globals.
@@ -116,7 +114,7 @@ test "nested double-finally escape: one entry per frame" {
         "\n"
         "mid()\n"
     );
-    assert got == "<module>:13|mid:9|deep:3", f"cadence mismatch: {got}";
+    assert got == "<module>:13|mid:9|deep:3" , f"cadence mismatch: {got}";
 }
 
 test "finally raising a new error: single entry at the new raise line" {
@@ -129,5 +127,5 @@ test "finally raising a new error: single entry at the new raise line" {
         "\n"
         "f()\n"
     );
-    assert got == "<module>:7|f:5", f"cadence mismatch: {got}";
+    assert got == "<module>:7|f:5" , f"cadence mismatch: {got}";
 }

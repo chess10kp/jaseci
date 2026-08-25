@@ -26,8 +26,7 @@ def _golden_words(seed: int) -> list[int] {
 }
 
 
-def _expect_setstate_error(label: str, state: any, want_type_name: str,
-                           want_msg: str) {
+def _expect_setstate_error(label: str, state: any, want_type_name: str, want_msg: str) {
     raised = False;
     got_type = "";
     got_msg = "";
@@ -45,8 +44,7 @@ def _expect_setstate_error(label: str, state: any, want_type_name: str,
 }
 
 
-def _expect_getrandbits_error(label: str, k: any, want_type_name: str,
-                              want_msg: str) {
+def _expect_getrandbits_error(label: str, k: any, want_type_name: str, want_msg: str) {
     raised = False;
     got_type = "";
     got_msg = "";
@@ -66,27 +64,116 @@ def _expect_getrandbits_error(label: str, k: any, want_type_name: str,
 
 test "wave18 seeded uint32 streams are bit-exact" {
     cases: list = [
-        (0, [3626764237, 1654615998, 3255389356, 3823568514, 1806341205,
-             173879092, 1112038970, 4146640122, 2195908194, 2087043557]),
-        (1, [577090037, 2444712010, 3639700191, 3445702192, 3280387012,
-             271041745, 1095513148, 506456969, 2127877499, 3268308804]),
-        (42, [2746317213, 478163327, 107420369, 3184935163, 1181241943,
-              1051802512, 958682846, 599310825, 3163119785, 440213415]),
+        (
+            0,
+            [
+                3626764237,
+                1654615998,
+                3255389356,
+                3823568514,
+                1806341205,
+                173879092,
+                1112038970,
+                4146640122,
+                2195908194,
+                2087043557
+            ]
+        ),
+        (
+            1,
+            [
+                577090037,
+                2444712010,
+                3639700191,
+                3445702192,
+                3280387012,
+                271041745,
+                1095513148,
+                506456969,
+                2127877499,
+                3268308804
+            ]
+        ),
+        (
+            42,
+            [
+                2746317213,
+                478163327,
+                107420369,
+                3184935163,
+                1181241943,
+                1051802512,
+                958682846,
+                599310825,
+                3163119785,
+                440213415
+            ]
+        ),
         # 2**32-1: single-word key of all ones.
-        (4294967295, [2728839433, 2661025012, 872737089, 924893097,
-                      2608619700, 2243681748, 1251276551, 2590083323,
-                      1460408326, 4130059007]),
+        (
+            4294967295,
+            [
+                2728839433,
+                2661025012,
+                872737089,
+                924893097,
+                2608619700,
+                2243681748,
+                1251276551,
+                2590083323,
+                1460408326,
+                4130059007
+            ]
+        ),
         # 2**64: key splits into two words (low, high) = (0, 1).
-        (18446744073709551616,
-         [4198958755, 3158798261, 1593907883, 395124210, 2146018685,
-          4228699401, 2682463428, 598568243, 2673150525, 2212753496]),
+        (
+            18446744073709551616,
+            [
+                4198958755,
+                3158798261,
+                1593907883,
+                395124210,
+                2146018685,
+                4228699401,
+                2682463428,
+                598568243,
+                2673150525,
+                2212753496
+            ]
+        ),
         # Negative ints take abs(); -5 == 5 for seeding.
-        (-5, [2675342405, 1097127993, 3185950873, 1539898300, 3415330359,
-              2965446622, 4047793130, 3614262064, 3177840169, 2800454814]),
+        (
+            -5,
+            [
+                2675342405,
+                1097127993,
+                3185950873,
+                1539898300,
+                3415330359,
+                2965446622,
+                4047793130,
+                3614262064,
+                3177840169,
+                2800454814
+            ]
+        ),
         # Multi-word big int: three 32-bit key words plus carry word.
-        (123456789012345678901234567890,
-         [3124625047, 947073620, 685135262, 3525393358, 50734197,
-          2263638147, 1156635141, 4102715694, 3788331372, 3203362323]),
+        (
+            123456789012345678901234567890,
+            [
+                3124625047,
+                947073620,
+                685135262,
+                3525393358,
+                50734197,
+                2263638147,
+                1156635141,
+                4102715694,
+                3788331372,
+                3203362323
+            ]
+        ),
+
     ];
     for c in cases {
         lbl: str = "words seed=" + str(c[0]);
@@ -99,15 +186,37 @@ test "wave18 random() doubles match the host to all 53 bits" {
     # genrand_res53 composition: exact power-of-two scaling, so the repr
     # must equal the host stdlib digit for digit.
     cases: list = [
-        (42, ["0.6394267984578837", "0.025010755222666936",
-              "0.27502931836911926", "0.22321073814882275",
-              "0.7364712141640124"]),
-        (0, ["0.8444218515250481", "0.7579544029403025", "0.420571580830845",
-             "0.25891675029296335", "0.5112747213686085"]),
-        (123456789012345678901234567890,
-         ["0.7275084571578186", "0.1595204831720859",
-          "0.011812474780114934", "0.2693001103046382",
-          "0.8820396344798871"]),
+        (
+            42,
+            [
+                "0.6394267984578837",
+                "0.025010755222666936",
+                "0.27502931836911926",
+                "0.22321073814882275",
+                "0.7364712141640124"
+            ]
+        ),
+        (
+            0,
+            [
+                "0.8444218515250481",
+                "0.7579544029403025",
+                "0.420571580830845",
+                "0.25891675029296335",
+                "0.5112747213686085"
+            ]
+        ),
+        (
+            123456789012345678901234567890,
+            [
+                "0.7275084571578186",
+                "0.1595204831720859",
+                "0.011812474780114934",
+                "0.2693001103046382",
+                "0.8820396344798871"
+            ]
+        ),
+
     ];
     for c in cases {
         r = Random_new(c[0]);
@@ -136,14 +245,16 @@ test "wave18 getrandbits edge sizes match host word order" {
     for k in [33, 64, 65, 96, 128, 100] {
         seq.append(g.getrandbits(k));
     }
-    assert seq == [
-        958682846,
-        1890702223848595625,
-        32109652365136375149,
-        46783636658334524660808229940,
-        31882839497307630496007576300860674457,
-        753091833484192460678735898763,
-    ] , seq;
+    assert seq
+        == [
+            958682846,
+            1890702223848595625,
+            32109652365136375149,
+            46783636658334524660808229940,
+            31882839497307630496007576300860674457,
+            753091833484192460678735898763,
+
+        ] , seq;
     # A wide result keeps its low words intact (host-checked modulus).
     big = Random_new(42).getrandbits(2048);
     assert big % 18446744073709551616 == 2053695854357871005 , "k=2048 low";
@@ -157,10 +268,17 @@ test "wave18 getstate/setstate round trip is exact" {
     }
     st = ra.getstate();
     assert len(st) == 625 , len(st);
-    assert list(st[:8]) == [2468570525, 44967195, 2667364560, 2449893699,
-                            1652692239, 766678126, 273175325, 1513475390] , (
-        "state head"
-    );
+    assert list(st[:8])
+        == [
+            2468570525,
+            44967195,
+            2667364560,
+            2449893699,
+            1652692239,
+            766678126,
+            273175325,
+            1513475390
+        ] , ("state head");
     assert st[624] == 34 , "index element";
 
     rb = Random_new(0);
@@ -172,8 +290,12 @@ test "wave18 getstate/setstate round trip is exact" {
         orig.append(repr(ra.random()));
     }
     assert restored == orig , "restored instance continues the stream";
-    assert restored == ["0.5892656838759087", "0.8094304566778266",
-                        "0.006498759678061017"] , restored;
+    assert restored
+        == [
+            "0.5892656838759087",
+            "0.8094304566778266",
+            "0.006498759678061017"
+        ] , restored;
 
     # index == N is the legal wrap boundary from the C validation.
     boundary: list = [0] * 625;
@@ -188,33 +310,50 @@ test "wave18 getstate/setstate round trip is exact" {
 test "wave18 setstate/getrandbits raise oracle messages" {
     bad: list = [0] * 625;
 
-    _expect_setstate_error("list state", [1] * 625, "TypeError",
-                           "state vector must be a tuple");
-    _expect_setstate_error("short state", tuple(range(624)), "ValueError",
-                           "state vector is the wrong size");
+    _expect_setstate_error(
+        "list state", [1] * 625, "TypeError", "state vector must be a tuple"
+    );
+    _expect_setstate_error(
+        "short state", tuple(range(624)), "ValueError", "state vector is the wrong size"
+    );
     bad[0] = -1;
-    _expect_setstate_error("negative word", tuple(bad), "OverflowError",
-                           "can't convert negative value to unsigned int");
+    _expect_setstate_error(
+        "negative word",
+        tuple(bad),
+        "OverflowError",
+        "can't convert negative value to unsigned int"
+    );
     bad[0] = 0;
     bad[624] = 625;
-    _expect_setstate_error("index too big", tuple(bad), "ValueError",
-                           "invalid state");
+    _expect_setstate_error("index too big", tuple(bad), "ValueError", "invalid state");
     bad[624] = -1;
-    _expect_setstate_error("index negative", tuple(bad), "ValueError",
-                           "invalid state");
+    _expect_setstate_error("index negative", tuple(bad), "ValueError", "invalid state");
     bad[624] = "x";
-    _expect_setstate_error("non-int index", tuple(bad), "TypeError",
-                           "an integer is required");
+    _expect_setstate_error(
+        "non-int index", tuple(bad), "TypeError", "an integer is required"
+    );
 
-    _expect_getrandbits_error("getrandbits negative", -1, "ValueError",
-                              "Cannot convert negative int");
-    _expect_getrandbits_error("getrandbits float", 1.5, "TypeError",
-                              "'float' object cannot be interpreted as an integer");
-    _expect_getrandbits_error("getrandbits str", "x", "TypeError",
-                              "'str' object cannot be interpreted as an integer");
-    _expect_getrandbits_error("getrandbits overflow", 18446744073709551616,
-                              "OverflowError",
-                              "Python int too large for C uint64_t");
+    _expect_getrandbits_error(
+        "getrandbits negative", -1, "ValueError", "Cannot convert negative int"
+    );
+    _expect_getrandbits_error(
+        "getrandbits float",
+        1.5,
+        "TypeError",
+        "'float' object cannot be interpreted as an integer"
+    );
+    _expect_getrandbits_error(
+        "getrandbits str",
+        "x",
+        "TypeError",
+        "'str' object cannot be interpreted as an integer"
+    );
+    _expect_getrandbits_error(
+        "getrandbits overflow",
+        18446744073709551616,
+        "OverflowError",
+        "Python int too large for C uint64_t"
+    );
 }
 
 
@@ -251,9 +390,19 @@ test "wave18 non-int seeding hashes then splits like size_t" {
     }
     # Captured from host CPython 3.14.6 with PYTHONHASHSEED=0:
     # _random.Random().seed(b"abc") then ten getrandbits(32) draws.
-    assert wa == [1399766851, 1564118375, 2785668419, 1563851763,
-                  3101890135, 3843218830, 4087631572, 3024535857,
-                  3531209205, 2721367187] , wa;
+    assert wa
+        == [
+            1399766851,
+            1564118375,
+            2785668419,
+            1563851763,
+            3101890135,
+            3843218830,
+            4087631572,
+            3024535857,
+            3531209205,
+            2721367187
+        ] , wa;
     spam = Random_new("spam");
     ws: list[int] = [];
     for _ in range(10) {
@@ -261,9 +410,19 @@ test "wave18 non-int seeding hashes then splits like size_t" {
     }
     # Captured from host CPython 3.14.6 with PYTHONHASHSEED=0:
     # _random.Random().seed("spam") then ten getrandbits(32) draws.
-    assert ws == [4173631440, 81402601, 2196835559, 2439179921,
-                  3761322200, 1838750950, 3875367247, 1645180411,
-                  499267165, 2764153328] , ws;
+    assert ws
+        == [
+            4173631440,
+            81402601,
+            2196835559,
+            2439179921,
+            3761322200,
+            1838750950,
+            3875367247,
+            1645180411,
+            499267165,
+            2764153328
+        ] , ws;
 }
 
 

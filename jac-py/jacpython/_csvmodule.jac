@@ -19,35 +19,33 @@
 # EOL (-2); the reader machine keeps the two legal fall-throughs of
 # parse_process_char duplicated inline, verbatim otherwise.
 
-glob QUOTE_MINIMAL: int = 0;
-glob QUOTE_ALL: int = 1;
-glob QUOTE_NONNUMERIC: int = 2;
-glob QUOTE_NONE: int = 3;
-glob QUOTE_STRINGS: int = 4;
-glob QUOTE_NOTNULL: int = 5;
+glob QUOTE_MINIMAL: int = 0,
+     QUOTE_ALL: int = 1,
+     QUOTE_NONNUMERIC: int = 2,
+     QUOTE_NONE: int = 3,
+     QUOTE_STRINGS: int = 4,
+     QUOTE_NOTNULL: int = 5,
+     _ST_START_RECORD: int = 0,
+     _ST_START_FIELD: int = 1,
+     _ST_ESCAPED_CHAR: int = 2,
+     _ST_IN_FIELD: int = 3,
+     _ST_IN_QUOTED_FIELD: int = 4,
+     _ST_ESCAPE_IN_QUOTED_FIELD: int = 5,
+     _ST_QUOTE_IN_QUOTED_FIELD: int = 6,
+     _ST_EAT_CRNL: int = 7,
+     _ST_AFTER_ESCAPED_CRNL: int = 8,
+     _state: dict = {"field_limit": 131072, "dialects": {}};
 
 # ParserState values (Modules/_csv.c).
-glob _ST_START_RECORD: int = 0;
-glob _ST_START_FIELD: int = 1;
-glob _ST_ESCAPED_CHAR: int = 2;
-glob _ST_IN_FIELD: int = 3;
-glob _ST_IN_QUOTED_FIELD: int = 4;
-glob _ST_ESCAPE_IN_QUOTED_FIELD: int = 5;
-glob _ST_QUOTE_IN_QUOTED_FIELD: int = 6;
-glob _ST_EAT_CRNL: int = 7;
-glob _ST_AFTER_ESCAPED_CRNL: int = 8;
 
 # Module state boxed in a dict so rebinding stays unnecessary:
 # _csvstate.field_limit (128 * 1024) and the dialect registry.
-glob _state: dict = {"field_limit": 131072, "dialects": {}};
-
 # "Keyword not given" marker; distinct from every legal value including
 # None (quotechar=None/escapechar=None disable those characters).
 obj _Unset {}
-glob _UNSET: _Unset = _Unset();
-
-glob _NOT_SET: int = -1;
-glob _EOL: int = -2;
+glob _UNSET: _Unset = _Unset(),
+     _NOT_SET: int = -1,
+     _EOL: int = -2;
 
 
 def _csv_error(msg: str) {
@@ -68,8 +66,7 @@ def _set_bool(v: any) -> bool {
 # _set_int: PyLong_CheckExact (bool is rejected), then int coercion.
 def _set_int_exact(name: str, v: any) -> int {
     if type(v) is not int {
-        raise TypeError(
-            '"' + name + '" must be an integer, not ' + _tp_name(v));
+        raise TypeError('"' + name + '" must be an integer, not ' + _tp_name(v));
     }
     return v as int;
 }
@@ -79,15 +76,19 @@ def _set_int_exact(name: str, v: any) -> int {
 def _set_char(name: str, v: any) -> int {
     if not isinstance(v, str) {
         raise TypeError(
-            '"' + name + '" must be a unicode character, not '
-            + _tp_name(v));
+            '"' + name + '" must be a unicode character, not ' + _tp_name(v)
+        );
     }
     s = v as str;
     n = len(s);
     if n != 1 {
         raise TypeError(
-            '"' + name + '" must be a unicode character, not a string '
-            + "of length " + str(n));
+            '"'
+                + name
+                + '" must be a unicode character, not a string '
+                + "of length "
+                + str(n)
+        );
     }
     return ord(s);
 }
@@ -100,15 +101,19 @@ def _set_char_or_none(name: str, v: any) -> int {
     }
     if not isinstance(v, str) {
         raise TypeError(
-            '"' + name + '" must be a unicode character or None, not '
-            + _tp_name(v));
+            '"' + name + '" must be a unicode character or None, not ' + _tp_name(v)
+        );
     }
     s = v as str;
     n = len(s);
     if n != 1 {
         raise TypeError(
-            '"' + name + '" must be a unicode character or None, not a '
-            + "string of length " + str(n));
+            '"'
+                + name
+                + '" must be a unicode character or None, not a '
+                + "string of length "
+                + str(n)
+        );
     }
     return ord(s);
 }
@@ -116,8 +121,7 @@ def _set_char_or_none(name: str, v: any) -> int {
 
 def _set_str(name: str, v: any) -> str {
     if not isinstance(v, str) {
-        raise TypeError(
-            '"' + name + '" must be a string, not ' + _tp_name(v));
+        raise TypeError('"' + name + '" must be a string, not ' + _tp_name(v));
     }
     return v as str;
 }
@@ -128,14 +132,14 @@ def _set_str(name: str, v: any) -> str {
 #
 
 obj _Dialect {
-    has delimiter: int = 44;             # ','
-    has doublequote: bool = True;
-    has escapechar: int = -1;            # NOT_SET
-    has lineterminator: str = "\r\n";
-    has quotechar: int = 34;             # '"'
-    has quoting: int = 0;                # QUOTE_MINIMAL
-    has skipinitialspace: bool = False;
-    has strict: bool = False;
+    has delimiter: int = 44,
+        doublequote: bool = True,
+        escapechar: int = -1,
+        lineterminator: str = "\r\n",
+        quotechar: int = 34,
+        quoting: int = 0,
+        skipinitialspace: bool = False,
+        strict: bool = False;  # ','
 
     def __repr__ -> str {
         return "<_csv.Dialect object>";
@@ -143,6 +147,10 @@ obj _Dialect {
 }
 
 
+# NOT_SET
+
+# '"'
+# QUOTE_MINIMAL
 # DIALECT_GETATTR for plain objects: missing attributes fall back to
 # the default (GetAttrString + PyErr_Clear).
 def _get_attr_default(src: any, name: str) -> any {
@@ -166,8 +174,7 @@ def _dialect_attr_param(c: int) -> any {
 
 
 # dialect_check_char: BAD_VALUE(-1) / BAD_LINETERM(-2) verdict.
-def _check_dialect_char(name: str, c: int, allowspace: bool,
-                        lineterminator: str) {
+def _check_dialect_char(name: str, c: int, allowspace: bool, lineterminator: str) {
     if c == 13 or c == 10 or (c == 32 and not allowspace) {
         raise ValueError("bad " + name + " value");
     }
@@ -191,10 +198,17 @@ def _is_unset(v: any) -> bool {
 
 # dialect_new(): builds a validated _Dialect from an optional base
 # dialect (instance or registered name) plus overriding parameters.
-def _build_dialect(dialect: any, delimiter: any, doublequote: any,
-                   escapechar: any, lineterminator: any, quotechar: any,
-                   quoting: any, skipinitialspace: any,
-                   strict: any) -> _Dialect {
+def _build_dialect(
+    dialect: any,
+    delimiter: any,
+    doublequote: any,
+    escapechar: any,
+    lineterminator: any,
+    quotechar: any,
+    quoting: any,
+    skipinitialspace: any,
+    strict: any
+) -> _Dialect {
     quotechar_given_none = False;
     if not _is_unset(quotechar) and quotechar is None {
         quotechar_given_none = True;
@@ -208,17 +222,20 @@ def _build_dialect(dialect: any, delimiter: any, doublequote: any,
                 _csv_error("unknown dialect");
             }
             src = reg[dialect as str];
-        }
-        else {
+        } else {
             src = dialect;
         }
         # Reuse a Dialect instance when nothing overrides it.
         if (
             isinstance(src, _Dialect)
-            and _is_unset(delimiter) and _is_unset(doublequote)
-            and _is_unset(escapechar) and _is_unset(lineterminator)
-            and _is_unset(quotechar) and _is_unset(quoting)
-            and _is_unset(skipinitialspace) and _is_unset(strict)
+            and _is_unset(delimiter)
+            and _is_unset(doublequote)
+            and _is_unset(escapechar)
+            and _is_unset(lineterminator)
+            and _is_unset(quotechar)
+            and _is_unset(quoting)
+            and _is_unset(skipinitialspace)
+            and _is_unset(strict)
         ) {
             return src as _Dialect;
         }
@@ -231,8 +248,7 @@ def _build_dialect(dialect: any, delimiter: any, doublequote: any,
                 doublequote = (src as _Dialect).doublequote;
             }
             if _is_unset(escapechar) {
-                escapechar = _dialect_attr_param(
-                    (src as _Dialect).escapechar);
+                escapechar = _dialect_attr_param((src as _Dialect).escapechar);
             }
             if _is_unset(lineterminator) {
                 lineterminator = (src as _Dialect).lineterminator;
@@ -269,8 +285,7 @@ def _build_dialect(dialect: any, delimiter: any, doublequote: any,
                 quoting = _get_attr_default(src, "quoting");
             }
             if _is_unset(skipinitialspace) {
-                skipinitialspace = _get_attr_default(
-                    src, "skipinitialspace");
+                skipinitialspace = _get_attr_default(src, "skipinitialspace");
             }
             if _is_unset(strict) {
                 strict = _get_attr_default(src, "strict");
@@ -334,16 +349,11 @@ def _build_dialect(dialect: any, delimiter: any, doublequote: any,
     }
     lt = self.lineterminator;
     _check_dialect_char("delimiter", self.delimiter, True, lt);
-    _check_dialect_char(
-        "escapechar", self.escapechar, not self.skipinitialspace, lt);
-    _check_dialect_char(
-        "quotechar", self.quotechar, not self.skipinitialspace, lt);
-    _check_dialect_chars(
-        "delimiter", "escapechar", self.delimiter, self.escapechar);
-    _check_dialect_chars(
-        "delimiter", "quotechar", self.delimiter, self.quotechar);
-    _check_dialect_chars(
-        "escapechar", "quotechar", self.escapechar, self.quotechar);
+    _check_dialect_char("escapechar", self.escapechar, not self.skipinitialspace, lt);
+    _check_dialect_char("quotechar", self.quotechar, not self.skipinitialspace, lt);
+    _check_dialect_chars("delimiter", "escapechar", self.delimiter, self.escapechar);
+    _check_dialect_chars("delimiter", "quotechar", self.delimiter, self.quotechar);
+    _check_dialect_chars("escapechar", "quotechar", self.escapechar, self.quotechar);
     return self;
 }
 
@@ -353,13 +363,13 @@ def _build_dialect(dialect: any, delimiter: any, doublequote: any,
 #
 
 obj _Reader {
-    has input_iter: any = None;
-    has dialect: any = None;
-    has fields: list = [];
-    has state: int = 0;
-    has field: list[int] = [];
-    has unquoted_field: bool = False;
-    has line_num: int = 0;
+    has input_iter: any = None,
+        dialect: any = None,
+        fields: list = [],
+        state: int = 0,
+        field: list[int] = [],
+        unquoted_field: bool = False,
+        line_num: int = 0;
 
     def __iter__ -> any {
         return self;
@@ -369,7 +379,8 @@ obj _Reader {
     def _save_field {
         quoting = (self.dialect as _Dialect).quoting;
         if (
-            self.unquoted_field and len(self.field) == 0
+            self.unquoted_field
+            and len(self.field) == 0
             and (quoting == QUOTE_NOTNULL or quoting == QUOTE_STRINGS)
         ) {
             self.fields.append(None);
@@ -377,7 +388,8 @@ obj _Reader {
         }
         s: any = "".join([chr(x) for x in self.field]);
         if (
-            self.unquoted_field and len(self.field) != 0
+            self.unquoted_field
+            and len(self.field) != 0
             and (quoting == QUOTE_NONNUMERIC or quoting == QUOTE_STRINGS)
         ) {
             s = float(s);
@@ -391,7 +403,9 @@ obj _Reader {
         if len(self.field) >= (_state["field_limit"] as int) {
             _csv_error(
                 "field larger than field limit ("
-                + str(_state["field_limit"] as int) + ")");
+                    + str(_state["field_limit"] as int)
+                    + ")"
+            );
         }
         self.field.append(c);
     }
@@ -544,8 +558,12 @@ obj _Reader {
                 return;
             }
             _csv_error(
-                "'" + chr(dia.delimiter) + "' expected after '"
-                + chr(dia.quotechar) + "'");
+                "'"
+                    + chr(dia.delimiter)
+                    + "' expected after '"
+                    + chr(dia.quotechar)
+                    + "'"
+            );
             return;
         }
 
@@ -559,7 +577,8 @@ obj _Reader {
             }
             _csv_error(
                 "new-line character seen in unquoted field - do you "
-                + "need to open the file with newline=''?");
+                    + "need to open the file with newline=''?"
+            );
         }
     }
 
@@ -579,9 +598,7 @@ obj _Reader {
             }
             if eof {
                 # End of input OR exception
-                if len(self.field) != 0
-                    or self.state == _ST_IN_QUOTED_FIELD
-                {
+                if len(self.field) != 0 or self.state == _ST_IN_QUOTED_FIELD {
                     if (self.dialect as _Dialect).strict {
                         _csv_error("unexpected end of data");
                     }
@@ -593,8 +610,9 @@ obj _Reader {
             if not isinstance(lineobj, str) {
                 _csv_error(
                     "iterator should return strings, not "
-                    + _tp_name(lineobj)
-                    + " (the file should be opened in text mode)");
+                        + _tp_name(lineobj)
+                        + " (the file should be opened in text mode)"
+                );
             }
             self.line_num = self.line_num + 1;
             for ch in lineobj as str {
@@ -617,23 +635,25 @@ obj _Reader {
 #
 
 obj _Writer {
-    has write_fn: any = None;
-    has dialect: any = None;
-    has num_fields: int = 0;
-    has _pending: list[str] = [];
+    has write_fn: any = None,
+        dialect: any = None,
+        num_fields: int = 0,
+        _pending: list[str] = [];
 
     # One join_append_data() character pass. mode 1 counts/validates
     # (updating quoted), mode 2 copies into out. Returns the updated
     # running length delta contribution via out list append.
-    def _join_chars(s: str, quoted_flag: list[int],
-                    out: list[str] | None) -> int {
+    def _join_chars(s: str, quoted_flag: list[int], out: list[str] | None) -> int {
         dia = self.dialect as _Dialect;
         added = 0;
         for ch in s {
             c = ord(ch);
             special = (
-                c == dia.delimiter or c == dia.escapechar
-                or c == dia.quotechar or c == 10 or c == 13
+                c == dia.delimiter
+                or c == dia.escapechar
+                or c == dia.quotechar
+                or c == 10
+                or c == 13
                 or (dia.lineterminator as str).find(ch) >= 0
             );
             if special {
@@ -686,13 +706,15 @@ obj _Writer {
         if len(s) == 0 and dia.delimiter == 32 and dia.skipinitialspace {
             if (
                 dia.quoting == QUOTE_NONE
-                or (field_val is None
-                    and (dia.quoting == QUOTE_STRINGS
-                         or dia.quoting == QUOTE_NOTNULL))
+                or (
+                    field_val is None
+                    and (dia.quoting == QUOTE_STRINGS or dia.quoting == QUOTE_NOTNULL)
+                )
             ) {
                 _csv_error(
                     "empty field must be quoted if delimiter is a space "
-                    + "and skipinitialspace is true");
+                        + "and skipinitialspace is true"
+                );
             }
             quoted = 1;
         }
@@ -726,8 +748,7 @@ obj _Writer {
             it = seq.__iter__();
         } except Exception as e {
             if type(e).__name__ == "TypeError"
-                or type(e).__name__ == "AttributeError"
-            {
+                or type(e).__name__ == "AttributeError" {
                 _csv_error("iterable expected, not " + _tp_name(seq));
             }
             raise e;
@@ -768,9 +789,10 @@ obj _Writer {
         if self.num_fields > 0 and len(rec_len) == 0 {
             if (
                 dia.quoting == QUOTE_NONE
-                or (null_field
-                    and (dia.quoting == QUOTE_STRINGS
-                         or dia.quoting == QUOTE_NOTNULL))
+                or (
+                    null_field
+                    and (dia.quoting == QUOTE_STRINGS or dia.quoting == QUOTE_NOTNULL)
+                )
             ) {
                 _csv_error("single empty field record must be quoted");
             }
@@ -814,11 +836,18 @@ def _number_check(v: any) -> bool {
 # Module-level API
 #
 
-def reader(iterable: any, dialect: any = _UNSET, delimiter: any = _UNSET,
-           doublequote: any = _UNSET, escapechar: any = _UNSET,
-           lineterminator: any = _UNSET, quotechar: any = _UNSET,
-           quoting: any = _UNSET, skipinitialspace: any = _UNSET,
-           strict: any = _UNSET) -> _Reader {
+def reader(
+    iterable: any,
+    dialect: any = _UNSET,
+    delimiter: any = _UNSET,
+    doublequote: any = _UNSET,
+    escapechar: any = _UNSET,
+    lineterminator: any = _UNSET,
+    quotechar: any = _UNSET,
+    quoting: any = _UNSET,
+    skipinitialspace: any = _UNSET,
+    strict: any = _UNSET
+) -> _Reader {
     if iterable is _UNSET {
         raise TypeError("reader expected at least 1 argument, got 0");
     }
@@ -826,17 +855,22 @@ def reader(iterable: any, dialect: any = _UNSET, delimiter: any = _UNSET,
     try {
         it = iterable.__iter__();
     } except Exception as e {
-        if type(e).__name__ == "TypeError"
-            or type(e).__name__ == "AttributeError"
-        {
-            raise TypeError("'" + _tp_name(iterable)
-                            + "' object is not iterable");
+        if type(e).__name__ == "TypeError" or type(e).__name__ == "AttributeError" {
+            raise TypeError("'" + _tp_name(iterable) + "' object is not iterable");
         }
         raise e;
     }
-    d = _build_dialect(dialect, delimiter, doublequote, escapechar,
-                       lineterminator, quotechar, quoting,
-                       skipinitialspace, strict);
+    d = _build_dialect(
+        dialect,
+        delimiter,
+        doublequote,
+        escapechar,
+        lineterminator,
+        quotechar,
+        quoting,
+        skipinitialspace,
+        strict
+    );
     r = _Reader();
     r.input_iter = it;
     r.dialect = d;
@@ -844,11 +878,18 @@ def reader(iterable: any, dialect: any = _UNSET, delimiter: any = _UNSET,
 }
 
 
-def writer(fileobj: any, dialect: any = _UNSET, delimiter: any = _UNSET,
-           doublequote: any = _UNSET, escapechar: any = _UNSET,
-           lineterminator: any = _UNSET, quotechar: any = _UNSET,
-           quoting: any = _UNSET, skipinitialspace: any = _UNSET,
-           strict: any = _UNSET) -> _Writer {
+def writer(
+    fileobj: any,
+    dialect: any = _UNSET,
+    delimiter: any = _UNSET,
+    doublequote: any = _UNSET,
+    escapechar: any = _UNSET,
+    lineterminator: any = _UNSET,
+    quotechar: any = _UNSET,
+    quoting: any = _UNSET,
+    skipinitialspace: any = _UNSET,
+    strict: any = _UNSET
+) -> _Writer {
     if fileobj is _UNSET {
         raise TypeError("writer expected at least 1 argument, got 0");
     }
@@ -861,25 +902,47 @@ def writer(fileobj: any, dialect: any = _UNSET, delimiter: any = _UNSET,
     if w.write_fn is None or not callable(w.write_fn) {
         raise TypeError('argument 1 must have a "write" method');
     }
-    w.dialect = _build_dialect(dialect, delimiter, doublequote, escapechar,
-                               lineterminator, quotechar, quoting,
-                               skipinitialspace, strict);
+    w.dialect = _build_dialect(
+        dialect,
+        delimiter,
+        doublequote,
+        escapechar,
+        lineterminator,
+        quotechar,
+        quoting,
+        skipinitialspace,
+        strict
+    );
     return w;
 }
 
 
-def register_dialect(name: any, dialect: any = _UNSET,
-                     delimiter: any = _UNSET, doublequote: any = _UNSET,
-                     escapechar: any = _UNSET, lineterminator: any = _UNSET,
-                     quotechar: any = _UNSET, quoting: any = _UNSET,
-                     skipinitialspace: any = _UNSET,
-                     strict: any = _UNSET) -> None {
+def register_dialect(
+    name: any,
+    dialect: any = _UNSET,
+    delimiter: any = _UNSET,
+    doublequote: any = _UNSET,
+    escapechar: any = _UNSET,
+    lineterminator: any = _UNSET,
+    quotechar: any = _UNSET,
+    quoting: any = _UNSET,
+    skipinitialspace: any = _UNSET,
+    strict: any = _UNSET
+) -> None {
     if not isinstance(name, str) {
         raise TypeError("dialect name must be a string");
     }
-    d = _build_dialect(dialect, delimiter, doublequote, escapechar,
-                       lineterminator, quotechar, quoting,
-                       skipinitialspace, strict);
+    d = _build_dialect(
+        dialect,
+        delimiter,
+        doublequote,
+        escapechar,
+        lineterminator,
+        quotechar,
+        quoting,
+        skipinitialspace,
+        strict
+    );
     (_state["dialects"] as dict)[name as str] = d;
     return;
 }
@@ -904,7 +967,7 @@ def get_dialect(name: any) -> _Dialect {
 }
 
 
-def list_dialects() -> list {
+def list_dialects -> list {
     return list((_state["dialects"] as dict).keys());
 }
 

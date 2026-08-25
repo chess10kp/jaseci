@@ -8,7 +8,9 @@ import from layer_p2_libtest { p2_libtest_run_snippet }
 # Source: test_longexp.py
 
 test "LongExpText.test_longexp" {
-    (ok, detail) = p2_libtest_run_snippet("def _t():\n    REPS = 65580\n    l = eval('[' + '2,' * REPS + ']')\n    assert len(l) == REPS, ('assertEqual', len(l), REPS)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    (ok, detail) = p2_libtest_run_snippet(
+        "def _t():\n    REPS = 65580\n    l = eval('[' + '2,' * REPS + ']')\n    assert len(l) == REPS, ('assertEqual', len(l), REPS)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }

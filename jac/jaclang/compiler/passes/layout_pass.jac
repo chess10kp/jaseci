@@ -618,12 +618,11 @@ obj LayoutPass(Transform) {
     def resolve_ref(arch: Archetype, name: str) -> str;
     def resolve_type_tag(arch: Archetype, tag: str) -> str;
     def _collect_archetypes(module: Module) -> dict[str, Archetype];
-    def _merge_archetypes(
-        module: Module, arch_map: dict[str, Archetype]
-    ) -> None;
+    def _merge_archetypes(module: Module, arch_map: dict[str, Archetype]) -> None;
     def _build_registry_over(
         arch_map: dict[str, Archetype], modules: list[Module]
     ) -> None;
+
     def _collect_isinstance_targets(module: Module) -> None;
     def _build_hierarchy(archetypes: dict[str, Archetype]) -> None;
     def _compute_c3_mro(class_name: str) -> list[str];

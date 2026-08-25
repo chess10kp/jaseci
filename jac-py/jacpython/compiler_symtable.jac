@@ -1823,6 +1823,7 @@ def _host_sym_normalize(source: str, mode: str = "exec") -> dict {
             "nested": st.is_nested(),
             "symbols": {},
             "children": children,
+
         };
         if hasattr(st, "get_parameters") {
             d["parameters"] = list(st.get_parameters());
@@ -1842,6 +1843,7 @@ def _host_sym_normalize(source: str, mode: str = "exec") -> dict {
                 "declared_global": sym.is_declared_global(),
                 "referenced": sym.is_referenced(),
                 "assigned": sym.is_assigned(),
+
             };
         }
         for ch in st.get_children() {
@@ -1857,7 +1859,6 @@ def _host_sym_normalize(source: str, mode: str = "exec") -> dict {
 }
 
 
-
 def _sym_oracle_equal_py(native: any, expected: any) -> bool {
     return _sym_oracle_equal(native, expected) as bool;
 }
@@ -1866,11 +1867,14 @@ import json;
 
 
 def _sym_oracle_equal(native: any, expected: any) -> bool {
-    nj = json.dumps(native, sort_keys=True, `default=lambda (x: any) { return str(x); });
-    ej = json.dumps(expected, sort_keys=True, `default=lambda (x: any) { return str(x); });
+    nj = json.dumps(
+        native, sort_keys=True, `default=lambda (x: any) { return str(x); }
+    );
+    ej = json.dumps(
+        expected, sort_keys=True, `default=lambda (x: any) { return str(x); }
+    );
     return nj == ej;
 }
-
 
 
 def host_sym_normalize(source: str, mode: str = "exec") -> dict[str, any] {

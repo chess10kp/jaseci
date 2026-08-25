@@ -75,7 +75,9 @@ def _tb_collect(tb: any) -> tuple[list[PyCode], list[int]] {
     return (codes, linenos);
 }
 
-def _tb_apply_limit(codes: list[PyCode], linenos: list[int], limit: any) -> tuple[list[PyCode], list[int]] {
+def _tb_apply_limit(
+    codes: list[PyCode], linenos: list[int], limit: any
+) -> tuple[list[PyCode], list[int]] {
     if isinstance(limit, PyInt) {
         n = (limit as PyInt).val;
         if n < 0 {
@@ -117,7 +119,10 @@ obj TBFrameSummaryObj(PyObj) {
             }
             return PyStr(t="str", val=text);
         }
-        return py_error("AttributeError", "'" + "FrameSummary" + "' object has no attribute '" + name2 + "'");
+        return py_error(
+            "AttributeError",
+            "'" + "FrameSummary" + "' object has no attribute '" + name2 + "'"
+        );
     }
 }
 
@@ -125,7 +130,9 @@ obj TBExtractFn(PyObj) {
     # extract_tb(tb, limit=None) -> list[FrameSummary]
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 1 {
-            return py_error("TypeError", "extract_tb expected at least 1 argument, got 0");
+            return py_error(
+                "TypeError", "extract_tb expected at least 1 argument, got 0"
+            );
         }
         limit = py_none();
         if len(args) > 1 {
@@ -153,7 +160,9 @@ obj TBFormatTbFn(PyObj) {
     # to the interpreter's File/line/in block (repetition collapse included).
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 1 {
-            return py_error("TypeError", "format_tb expected at least 1 argument, got 0");
+            return py_error(
+                "TypeError", "format_tb expected at least 1 argument, got 0"
+            );
         }
         limit = py_none();
         if len(args) > 1 {
@@ -224,7 +233,9 @@ obj TBFmtExcFn(PyObj) {
     # __traceback__ attribute plus a stack-only rendering.
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 1 {
-            return py_error("TypeError", "format_exception expected at least 1 argument, got 0");
+            return py_error(
+                "TypeError", "format_exception expected at least 1 argument, got 0"
+            );
         }
         exc = args[0];
         return PyList(t="list", items=[format_exception_text(exc)]);
@@ -340,8 +351,9 @@ def _tbe_capture_stack(tb: any, limit: any) -> tuple[list[str], list[PyObj]] {
 # cause/context. `seen` carries every exception visited on this walk; a chained
 # exception already seen is dropped silently (CPython's id-not-in-_seen rule).
 # Returns py_none() when the chain arm must stay unset.
-def _tbe_capture(exc: PyObj, tb: any, limit: any, compact: bool,
-    seen: list[PyObj]) -> PyObj {
+def _tbe_capture(
+    exc: PyObj, tb: any, limit: any, compact: bool, seen: list[PyObj]
+) -> PyObj {
     seen.append(exc);
 
     exc_type_name = "";
@@ -403,9 +415,7 @@ def _tbe_capture(exc: PyObj, tb: any, limit: any, compact: bool,
         }
         cause_attr = exc.tp_getattro("__cause__");
         if not is_error(cause_attr) and not isinstance(cause_attr, PyNoneType) {
-            sub3 = _tbe_capture(
-                cause_attr, _attr_tb(cause_attr), limit, compact, seen
-            );
+            sub3 = _tbe_capture(cause_attr, _attr_tb(cause_attr), limit, compact, seen);
             if not is_error(sub3) {
                 cause_obj = sub3;
             }
@@ -420,9 +430,7 @@ def _tbe_capture(exc: PyObj, tb: any, limit: any, compact: bool,
             and not isinstance(ctx_attr, PyNoneType)
             and need_ctx2
         ) {
-            sub4 = _tbe_capture(
-                ctx_attr, _attr_tb(ctx_attr), limit, compact, seen
-            );
+            sub4 = _tbe_capture(ctx_attr, _attr_tb(ctx_attr), limit, compact, seen);
             if not is_error(sub4) {
                 context_obj = sub4;
             }
@@ -519,8 +527,7 @@ obj TBExcCtorFn(PyObj) {
         }
         if len(args) > 3 {
             return py_error(
-                "TypeError",
-                "TracebackException() takes at most 3 positional arguments"
+                "TypeError", "TracebackException() takes at most 3 positional arguments"
             );
         }
         if len(args) == 1 {
@@ -655,11 +662,12 @@ obj TBExcPrintFn(PyObj) {
                 continue;
             }
             if k == "file" {
-                return py_error("TypeError", "print(): non-default file= not supported");
+                return py_error(
+                    "TypeError", "print(): non-default file= not supported"
+                );
             }
             return py_error(
-                "TypeError",
-                "print() got an unexpected keyword argument '" + k + "'",
+                "TypeError", "print() got an unexpected keyword argument '" + k + "'",
             );
         }
         text = "";
@@ -776,7 +784,9 @@ obj TBFmtExcOnlyFn(PyObj) {
     # returns the single-element list CPython uses.
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 1 {
-            return py_error("TypeError", "format_exception_only expected at least 1 argument");
+            return py_error(
+                "TypeError", "format_exception_only expected at least 1 argument"
+            );
         }
         exc = args[len(args) - 1];
         if len(args) >= 2 and not isinstance(args[0], PyException) {
@@ -852,6 +862,7 @@ def _tb_shim_type_tags -> dict[str, PyStr] {
     return {
         "TracebackException": PyStr(t="str", val="traceback_exception"),
         "FrameSummary": PyStr(t="str", val="frame_summary"),
+
     };
 }
 
@@ -875,10 +886,7 @@ obj TBFrameSummaryCtorFn(PyObj) {
             name = (args[2] as PyStr).val;
         }
         return TBFrameSummaryObj(
-            t="frame_summary",
-            fs_filename=fname,
-            fs_name=name,
-            fs_lineno=lineno,
+            t="frame_summary", fs_filename=fname, fs_name=name, fs_lineno=lineno,
         );
     }
 }
@@ -897,5 +905,6 @@ def traceback_module_attrs -> dict[str, PyObj] {
         "TracebackException": TBExcCtorFn(t="type"),
         "FrameSummary": TBFrameSummaryCtorFn(t="type"),
         "__jac_shim_types__": _tb_shim_type_tags(),
+
     };
 }

@@ -47,9 +47,7 @@ def vm_str(ns: dict[str, PyObj], name: str) -> str {
 def vm_raise_message(src: str) -> str {
     ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
     outcome = exec_code(
-        unmarshal(host_compile_marshal(src, "<class_getitem_raise>", "exec")),
-        [],
-        ns,
+        unmarshal(host_compile_marshal(src, "<class_getitem_raise>", "exec")), [], ns,
     );
     if is_error(outcome) {
         return ((outcome as PyError).exception.message);
@@ -58,11 +56,7 @@ def vm_raise_message(src: str) -> str {
 }
 
 test "plain class miss raises CPython's exact subscript error" {
-    msg = vm_raise_message(
-        "class Box:\n"
-        "    pass\n"
-        "Box[int]\n"
-    );
+    msg = vm_raise_message("class Box:\n" "    pass\n" "Box[int]\n");
     # Host: TypeError: type 'Box' is not subscriptable
     assert msg == "type 'Box' is not subscriptable";
 }
@@ -111,5 +105,3 @@ test "subclass override shadows inherited __class_getitem__" {
     );
     assert vm_str(ns, "r") == "over";
 }
-
-

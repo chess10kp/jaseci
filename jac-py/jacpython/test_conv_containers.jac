@@ -9,17 +9,13 @@
 #
 # Test harness only: layer0_replay_harness uses host compile/marshal/ast solely
 # to produce the expected side of every diff -- same carve-out as layer0_replay.
-import from layer0_replay_harness {
-    ReplayResult,
-    replay_expr,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, replay_expr, layer1_replay_source, }
 
 def _pins_clean(stem: str, result: ReplayResult) {
-    assert result.passed >= 1, stem + ": nothing replayed";
-    assert result.skipped == 0, stem + " skipped=" + str(result.skipped);
-    assert result.failed == 0, stem + " failed=" + str(result.failures);
-    assert result.errored == 0, stem + " errored=" + str(result.errors);
+    assert result.passed >= 1 , stem + ": nothing replayed";
+    assert result.skipped == 0 , stem + " skipped=" + str(result.skipped);
+    assert result.failed == 0 , stem + " failed=" + str(result.failures);
+    assert result.errored == 0 , stem + " errored=" + str(result.errors);
 }
 
 # ---------------- stem: test_list ----------------

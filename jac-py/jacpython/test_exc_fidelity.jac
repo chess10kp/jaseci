@@ -236,12 +236,13 @@ test "exception-attribute writes enforce CPython types" {
         "    except TypeError as te:\n"
         "        msgs.append(str(te))\n"
     );
-    assert vm_str(ns, "msgs") == (
-        "['exception cause must be None or derive from BaseException', "
-        "'exception context must be None or derive from BaseException', "
-        "'__traceback__ must be a traceback or None', "
-        "'attribute value type must be bool']"
-    );
+    assert vm_str(ns, "msgs")
+        == (
+            "['exception cause must be None or derive from BaseException', "
+            "'exception context must be None or derive from BaseException', "
+            "'__traceback__ must be a traceback or None', "
+            "'attribute value type must be bool']"
+        );
 }
 
 test "setting __cause__ implies __suppress_context__" {

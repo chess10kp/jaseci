@@ -21,8 +21,8 @@ def _strfmt_probe(name: str, src: str) -> ReplayResult {
 }
 
 def _strfmt_expect_pass(result: ReplayResult, name: str) {
-    assert result.failed == 0, name + " failed: " + str(result.failures);
-    assert result.errored == 0, name + " errored: " + str(result.errors);
+    assert result.failed == 0 , name + " failed: " + str(result.failures);
+    assert result.errored == 0 , name + " errored: " + str(result.errors);
 }
 
 test "strfmt: scalar %s/%r formatting still replays against the host" {

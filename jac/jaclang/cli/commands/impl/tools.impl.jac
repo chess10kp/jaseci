@@ -16,6 +16,7 @@ impl tool(tool: str, args: list = []) -> int {
             "py2jac": _transform.py2jac,
             "jac2js": _transform.jac2js,
             "jac2c": _transform.jac2c,
+
         };
         return fwd[tool](args[0]);
     }
@@ -88,21 +89,22 @@ def _run_c_transform(tool: str, args: list) -> int {
         }
 
         val: str | None = None;
-        wants_val = a in (
-            "-I",
-            "--incdir",
-            "-D",
-            "--define",
-            "-U",
-            "--undef",
-            "--force-include",
-            "--lib",
-            "--allow",
-            "--block",
-            "-o",
-            "--output",
-            "--project"
-        );
+        wants_val = a
+            in (
+                "-I",
+                "--incdir",
+                "-D",
+                "--define",
+                "-U",
+                "--undef",
+                "--force-include",
+                "--lib",
+                "--allow",
+                "--block",
+                "-o",
+                "--output",
+                "--project"
+            );
         short_glued = len(a) > 2 and a[:2] in ("-I", "-D", "-U", "-o");
         if short_glued {
             val = a[2:];
@@ -150,7 +152,9 @@ def _run_c_transform(tool: str, args: list) -> int {
     }
     if tool == "c2jac" and project {
         if positional {
-            console.error("Usage: jac tool c2jac --project <dir> -o <outdir> [options]");
+            console.error(
+                "Usage: jac tool c2jac --project <dir> -o <outdir> [options]"
+            );
             return 1;
         }
         return c2jac(

@@ -25,10 +25,10 @@ obj _P2Count {
         long_cnt: any = None,
         long_step: any = None;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         cur: any = self.long_cnt;
         if cur is None {
@@ -59,10 +59,10 @@ obj _P2Cycle {
         index: int = 0,
         firstpass: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         src: any = self.it;
         while src is not None {
@@ -95,10 +95,10 @@ obj _P2Repeat {
     has element: any = None,
         remaining: int = -1;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.remaining == 0 {
             raise StopIteration();
@@ -131,10 +131,10 @@ obj _P2Chain {
     has source: any = None,
         active: any = None;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         src: any = self.source;
         act: any = self.active;
@@ -237,10 +237,10 @@ obj _P2Product {
         started: bool = False,
         stopped: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.stopped {
             raise StopIteration();
@@ -289,10 +289,10 @@ obj _P2Combinations {
         started: bool = False,
         stopped: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.stopped {
             raise StopIteration();
@@ -327,10 +327,10 @@ obj _P2Cwr {
         started: bool = False,
         stopped: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.stopped {
             raise StopIteration();
@@ -367,10 +367,10 @@ obj _P2Permutations {
         started: bool = False,
         stopped: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.stopped {
             raise StopIteration();
@@ -516,10 +516,10 @@ obj _P2Groupby {
         currgrouper: int = -1,
         last_serial: int = 0;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def step -> bool {
         try {
             newvalue: any = _advance(self.it);
@@ -572,10 +572,10 @@ obj _P2Grouper {
         tgtkey: any = None,
         serial: int = 0;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         gbo = self.parent;
         if gbo.currgrouper != self.serial {
@@ -613,10 +613,10 @@ obj _P2Tee {
         done: bool = False,
         index: int = 0;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         while len(self.buf) <= self.index {
             if self.done {
@@ -664,10 +664,10 @@ obj _P2Islice {
         step: int = 1,
         cnt: int = 0;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.it is None {
             raise StopIteration();
@@ -706,7 +706,7 @@ def _p2_islice_stop(seq: any, stop: any) -> _P2Islice {
         if not isinstance(stop, int) or stop < 0 {
             raise ValueError(
                 "Stop argument for islice() must be None or "
-                + "an integer: 0 <= x <= sys.maxsize."
+                    + "an integer: 0 <= x <= sys.maxsize."
             );
         }
         lz.stop = stop;
@@ -723,7 +723,7 @@ def _p2_islice_full(seq: any, start: any, stop: any, step: any) -> _P2Islice {
         if not isinstance(start, int) or start < 0 {
             raise ValueError(
                 "Indices for islice() must be None or "
-                + "an integer: 0 <= x <= sys.maxsize."
+                    + "an integer: 0 <= x <= sys.maxsize."
             );
         }
         s = start;
@@ -732,7 +732,7 @@ def _p2_islice_full(seq: any, start: any, stop: any, step: any) -> _P2Islice {
         if not isinstance(stop, int) or stop < 0 {
             raise ValueError(
                 "Indices for islice() must be None or "
-                + "an integer: 0 <= x <= sys.maxsize."
+                    + "an integer: 0 <= x <= sys.maxsize."
             );
         }
         e = stop;
@@ -753,10 +753,10 @@ obj _P2Starmap {
     has func: any = None,
         it: any = None;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         args: any = _advance(self.it);
         return self.func(*args);
@@ -770,8 +770,7 @@ def _p2_starmap(func: any, iterable: any) -> _P2Starmap {
 
 # Sentinel separating "initial omitted" from an explicit initial=None
 # (accumulate's initial parameter is keyword-only with no default value).
-obj _AccInitial {
-}
+obj _AccInitial {}
 
 glob ACC_INITIAL_MISSING: _AccInitial = _AccInitial();
 
@@ -782,10 +781,10 @@ obj _P2Accumulate {
         started: bool = False,
         seeded: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if not self.started {
             self.started = True;
@@ -816,9 +815,7 @@ def _p2_accumulate(
         lz = _P2Accumulate(it=_get_iter(iterable), func=func);
         return lz;
     }
-    lz = _P2Accumulate(
-        it=_get_iter(iterable), func=func, total=initial, seeded=True
-    );
+    lz = _P2Accumulate(it=_get_iter(iterable), func=func, total=initial, seeded=True);
     return lz;
 }
 
@@ -826,10 +823,10 @@ obj _P2Compress {
     has data_it: any = None,
         sel_it: any = None;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         while True {
             selector: any = _advance(self.sel_it);
@@ -851,10 +848,10 @@ obj _P2Dropwhile {
         it: any = None,
         started: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if not self.started {
             while True {
@@ -879,10 +876,10 @@ obj _P2Takewhile {
         it: any = None,
         stopped: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.stopped {
             raise StopIteration();
@@ -905,10 +902,10 @@ obj _P2Filterfalse {
     has func: any = None,
         it: any = None;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         while True {
             item: any = _advance(self.it);
@@ -933,10 +930,10 @@ obj _P2Pairwise {
         prev: any = None,
         started: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if not self.started {
             self.prev = _advance(self.it);
@@ -959,10 +956,10 @@ obj _P2Batched {
         n: int = 1,
         strict: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         batch: list = [];
         while len(batch) < self.n {
@@ -998,10 +995,10 @@ obj _P2ZipLongest {
         fillvalue: any = None,
         numactive: int = 0;
 
-
     def __iter__ -> any {
         return self;
     }
+
     def __next__ -> any {
         if self.numactive == 0 {
             raise StopIteration();

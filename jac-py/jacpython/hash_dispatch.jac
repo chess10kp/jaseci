@@ -4,7 +4,20 @@
 # dict/set key protocol only. ``hash()`` and container hashes (tuple/set lanes)
 # must route through CPython algorithms (``long_hash``, native str/float hash,
 # ``bytes_hash``, etc.).
-import from objects { PyObj, PyInt, PyStr, PyFloat, PyBool, PyBytes, PySlice, PyNoneType, PyComplex, is_error, hashkey_str, _signed_hash, }
+import from objects {
+    PyObj,
+    PyInt,
+    PyStr,
+    PyFloat,
+    PyBool,
+    PyBytes,
+    PySlice,
+    PyNoneType,
+    PyComplex,
+    is_error,
+    hashkey_str,
+    _signed_hash,
+}
 import from abstract_protocol { PyObject_HashNotImplemented, _hashkey_digest, }
 import from pyhash { xx_hash_mix, _PyHASH_XXPRIME_5, _U64, }
 import from longobject { long_hash_obj, long_hash, }

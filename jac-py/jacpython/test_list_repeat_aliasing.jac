@@ -74,9 +74,7 @@ test "zero and negative multipliers yield empty sequences" {
 
 test "bool multiplier indexes as int" {
     ns = vm_exec(
-        "one = [7] * True\n"
-        "zero = [7] * False\n"
-        "ok = one == [7] and zero == []\n"
+        "one = [7] * True\n" "zero = [7] * False\n" "ok = one == [7] and zero == []\n"
     );
     assert vm_bool(ns, "ok");
 }
@@ -95,9 +93,7 @@ test "literal and variable operands behave identically" {
 
 test "value-type repeats stay by value" {
     ns = vm_exec(
-        "s = 'ab' * 3\n"
-        "b = b'ab' * 2\n"
-        "ok = s == 'ababab' and b == b'abab'\n"
+        "s = 'ab' * 3\n" "b = b'ab' * 2\n" "ok = s == 'ababab' and b == b'abab'\n"
     );
     assert vm_bool(ns, "ok");
 }

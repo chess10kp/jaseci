@@ -23,6 +23,7 @@ import from opcode_meta {
     NB_TRUE_DIVIDE,
     NB_XOR,
 }
+
 #
 # Behavior dispatches through virtual slot methods (CPython's tp_*/nb_*/sq_*/mp_*
 # tables as overridable methods -> na vtable, no function-pointer indirection).
@@ -137,8 +138,12 @@ def int_true_divide(av: int, bv: int) -> PyObj {
     negative = (av < 0) != (bv < 0);
     a = av;
     b = bv;
-    if a < 0 { a = -a; }
-    if b < 0 { b = -b; }
+    if a < 0 {
+        a = -a;
+    }
+    if b < 0 {
+        b = -b;
+    }
     if a >= DBL_MIN_OVERFLOW * b {
         return py_error(
             "OverflowError", "integer division result too large for a float"
@@ -255,9 +260,7 @@ obj PyInt(PyObj) {
             # raised...", the int slot says "zero to a negative power".
             if b < 0 {
                 if a == 0 {
-                    return py_error(
-                        "ZeroDivisionError", "zero to a negative power"
-                    );
+                    return py_error("ZeroDivisionError", "zero to a negative power");
                 }
                 return PyFloat(t="float", val=float(a) ** float(b));
             }
@@ -513,9 +516,7 @@ obj PyFloat(PyObj) {
             # with a negative exponent is ZeroDivisionError and a too-large
             # finite result is OverflowError (Objects/floatobject.c).
             if a == 0.0 and b < 0.0 {
-                return py_error(
-                    "ZeroDivisionError", "zero to a negative power"
-                );
+                return py_error("ZeroDivisionError", "zero to a negative power");
             }
             try {
                 return PyFloat(t="float", val=a ** b);
@@ -1003,9 +1004,7 @@ obj PyComplexMethod(PyObj) {
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(kwargs) > 0 {
-            return py_error(
-                "TypeError", self.name + "() takes no keyword arguments"
-            );
+            return py_error("TypeError", self.name + "() takes no keyword arguments");
         }
         if len(args) != 0 {
             return py_error(
@@ -1013,9 +1012,7 @@ obj PyComplexMethod(PyObj) {
                 self.name + "() takes no arguments (" + str(len(args)) + " given)",
             );
         }
-        return PyComplex(
-            t="complex", real=self.target.real, imag=-self.target.imag
-        );
+        return PyComplex(t="complex", real=self.target.real, imag=-self.target.imag);
     }
 }
 
@@ -1042,7 +1039,9 @@ obj PySliceIndices(PyObj) {
         if len(args) != 1 {
             return py_error(
                 "TypeError",
-                "slice.indices() takes exactly one argument (" + str(len(args)) + " given)",
+                "slice.indices() takes exactly one argument ("
+                    + str(len(args))
+                    + " given)",
             );
         }
         err = _zero_step_error(self.sl);
@@ -1567,7 +1566,9 @@ obj PyCode(PyObj) {
         if name == "co_firstlineno" {
             return PyInt(t="int", val=self.firstlineno);
         }
-        if name == "co_names" or name == "co_varnames" or name == "co_cellvars"
+        if name == "co_names"
+            or name == "co_varnames"
+            or name == "co_cellvars"
             or name == "co_freevars" {
             items: list[PyObj] = [];
             src_names: list[str] = [];
@@ -1591,7 +1592,9 @@ obj PyCode(PyObj) {
         if name == "co_code" {
             return PyBytes(t="bytes", val=self.co_code);
         }
-        return py_error("AttributeError", "'code' object has no attribute '" + name + "'");
+        return py_error(
+            "AttributeError", "'code' object has no attribute '" + name + "'"
+        );
     }
 }
 
@@ -1687,8 +1690,7 @@ obj PyTypeVar(PyObj) {
         # has_default() is a zero-arg probe needing a callable wrapper built
         # on the ceval side of the substrate boundary -- served by py_attr.
         return py_error(
-            "AttributeError",
-            "'typing.TypeVar' object has no attribute '" + name + "'"
+            "AttributeError", "'typing.TypeVar' object has no attribute '" + name + "'"
         );
     }
 }
@@ -2162,15 +2164,22 @@ def _base_type_name(v: PyObj) -> str {
 # "'<' not supported between instances of 'int' and 'str'".
 # ``type_name_fn`` resolves each operand's type name so callers with richer
 # operand kinds (user classes, dict views) can supply their own namer.
-def py_ordering_type_error(op_kind: int, v: PyObj, w: PyObj, type_name_fn: any) -> PyObj {
+def py_ordering_type_error(
+    op_kind: int, v: PyObj, w: PyObj, type_name_fn: any
+) -> PyObj {
     ops = ["<", "<=", "", "", ">", ">="];
     if op_kind < 0 or op_kind >= len(ops) or ops[op_kind] == "" {
         return py_error("TypeError", "invalid rich comparison opcode");
     }
     return py_error(
         "TypeError",
-        "'" + ops[op_kind] + "' not supported between instances of '"
-            + (type_name_fn(v) as str) + "' and '" + (type_name_fn(w) as str) + "'"
+        "'"
+            + ops[op_kind]
+            + "' not supported between instances of '"
+            + (type_name_fn(v) as str)
+            + "' and '"
+            + (type_name_fn(w) as str)
+            + "'"
     );
 }
 
@@ -2251,8 +2260,7 @@ def _unhashable_error(what: str, v: PyObj) -> PyObj {
     name = v.tp_type_name();
     return py_error(
         "TypeError",
-        "cannot use '" + name + "' as " + what
-            + " (unhashable type: '" + name + "')"
+        "cannot use '" + name + "' as " + what + " (unhashable type: '" + name + "')"
     );
 }
 
@@ -2394,79 +2402,101 @@ obj PyTracebackFrame(PyObj) {
 # subclass tests (except-matching, isinstance/issubclass, per-type str/repr
 # dispatch); exceptions_core and ceval build on this via exc_is_subclass_of.
 glob EXC_PARENT: dict[str, str] = {
-    "BaseExceptionGroup": "BaseException",
-    "GeneratorExit": "BaseException",
-    "KeyboardInterrupt": "BaseException",
-    "SystemExit": "BaseException",
-    "Exception": "BaseException",
-    "ArithmeticError": "Exception",
-    "FloatingPointError": "ArithmeticError",
-    "OverflowError": "ArithmeticError",
-    "ZeroDivisionError": "ArithmeticError",
-    "AssertionError": "Exception",
-    "AttributeError": "Exception",
-    "BufferError": "Exception",
-    "EOFError": "Exception",
-    "ExceptionGroup": "Exception",
-    # dataclasses.FrozenInstanceError: CPython defines it under AttributeError
-    # (Lib/dataclasses.py), so guest `except AttributeError` catches frozen
-    # assignment errors through the name-level hierarchy walk.
-    "FrozenInstanceError": "AttributeError",
-    "ImportError": "Exception",
-    "ModuleNotFoundError": "ImportError",
-    "LookupError": "Exception",
-    "IndexError": "LookupError",
-    "KeyError": "LookupError",
-    "MemoryError": "Exception",
-    "NameError": "Exception",
-    "UnboundLocalError": "NameError",
-    "OSError": "Exception",
-    "BlockingIOError": "OSError",
-    "ChildProcessError": "OSError",
-    "ConnectionError": "OSError",
-    "BrokenPipeError": "ConnectionError",
-    "ConnectionAbortedError": "ConnectionError",
-    "ConnectionRefusedError": "ConnectionError",
-    "ConnectionResetError": "ConnectionError",
-    "FileExistsError": "OSError",
-    "FileNotFoundError": "OSError",
-    "InterruptedError": "OSError",
-    "IsADirectoryError": "OSError",
-    "NotADirectoryError": "OSError",
-    "PermissionError": "OSError",
-    "ProcessLookupError": "OSError",
-    "TimeoutError": "OSError",
-    "ReferenceError": "Exception",
-    "RuntimeError": "Exception",
-    "NotImplementedError": "RuntimeError",
-    "PythonFinalizationError": "RuntimeError",
-    "RecursionError": "RuntimeError",
-    "StopAsyncIteration": "Exception",
-    "StopIteration": "Exception",
-    "SyntaxError": "Exception",
-    "IndentationError": "SyntaxError",
-    "TabError": "IndentationError",
-    "_IncompleteInputError": "SyntaxError",
-    "SystemError": "Exception",
-    "TypeError": "Exception",
-    "ValueError": "Exception",
-    "UnicodeError": "ValueError",
-    "UnicodeDecodeError": "UnicodeError",
-    "UnicodeEncodeError": "UnicodeError",
-    "UnicodeTranslateError": "UnicodeError",
-    "Warning": "Exception",
-    "BytesWarning": "Warning",
-    "DeprecationWarning": "Warning",
-    "EncodingWarning": "Warning",
-    "FutureWarning": "Warning",
-    "ImportWarning": "Warning",
-    "PendingDeprecationWarning": "Warning",
-    "ResourceWarning": "Warning",
-    "RuntimeWarning": "Warning",
-    "SyntaxWarning": "Warning",
-    "UnicodeWarning": "Warning",
-    "UserWarning": "Warning",
-};
+         "BaseExceptionGroup": "BaseException",
+         "GeneratorExit": "BaseException",
+         "KeyboardInterrupt": "BaseException",
+         "SystemExit": "BaseException",
+         "Exception": "BaseException",
+         "ArithmeticError": "Exception",
+         "FloatingPointError": "ArithmeticError",
+         "OverflowError": "ArithmeticError",
+         "ZeroDivisionError": "ArithmeticError",
+         "AssertionError": "Exception",
+         "AttributeError": "Exception",
+         "BufferError": "Exception",
+         "EOFError": "Exception",
+         "ExceptionGroup": "Exception",
+         # dataclasses.FrozenInstanceError: CPython defines it under AttributeError
+         # (Lib/dataclasses.py), so guest `except AttributeError` catches frozen
+         # assignment errors through the name-level hierarchy walk.
+         "FrozenInstanceError": "AttributeError",
+         "ImportError": "Exception",
+         "ModuleNotFoundError": "ImportError",
+         "LookupError": "Exception",
+         "IndexError": "LookupError",
+         "KeyError": "LookupError",
+         "MemoryError": "Exception",
+         "NameError": "Exception",
+         "UnboundLocalError": "NameError",
+         "OSError": "Exception",
+         "BlockingIOError": "OSError",
+         "ChildProcessError": "OSError",
+         "ConnectionError": "OSError",
+         "BrokenPipeError": "ConnectionError",
+         "ConnectionAbortedError": "ConnectionError",
+         "ConnectionRefusedError": "ConnectionError",
+         "ConnectionResetError": "ConnectionError",
+         "FileExistsError": "OSError",
+         "FileNotFoundError": "OSError",
+         "InterruptedError": "OSError",
+         "IsADirectoryError": "OSError",
+         "NotADirectoryError": "OSError",
+         "PermissionError": "OSError",
+         "ProcessLookupError": "OSError",
+         "TimeoutError": "OSError",
+         "ReferenceError": "Exception",
+         "RuntimeError": "Exception",
+         "NotImplementedError": "RuntimeError",
+         "PythonFinalizationError": "RuntimeError",
+         "RecursionError": "RuntimeError",
+         "StopAsyncIteration": "Exception",
+         "StopIteration": "Exception",
+         "SyntaxError": "Exception",
+         "IndentationError": "SyntaxError",
+         "TabError": "IndentationError",
+         "_IncompleteInputError": "SyntaxError",
+         "SystemError": "Exception",
+         "TypeError": "Exception",
+         "ValueError": "Exception",
+         "UnicodeError": "ValueError",
+         "UnicodeDecodeError": "UnicodeError",
+         "UnicodeEncodeError": "UnicodeError",
+         "UnicodeTranslateError": "UnicodeError",
+         "Warning": "Exception",
+         "BytesWarning": "Warning",
+         "DeprecationWarning": "Warning",
+         "EncodingWarning": "Warning",
+         "FutureWarning": "Warning",
+         "ImportWarning": "Warning",
+         "PendingDeprecationWarning": "Warning",
+         "ResourceWarning": "Warning",
+         "RuntimeWarning": "Warning",
+         "SyntaxWarning": "Warning",
+         "UnicodeWarning": "Warning",
+         "UserWarning": "Warning",
+
+     },
+     EXC_EXTRA_PARENTS: dict[str, str] = {"ExceptionGroup": "BaseExceptionGroup",},
+     OSERROR_ERRNO_MAP: dict[int, str] = {
+         1: "PermissionError",  # EPERM
+         2: "FileNotFoundError",  # ENOENT
+         3: "ProcessLookupError",  # ESRCH
+         4: "InterruptedError",  # EINTR
+         11: "BlockingIOError",  # EAGAIN / EWOULDBLOCK
+         13: "PermissionError",  # EACCES
+         17: "FileExistsError",  # EEXIST
+         20: "NotADirectoryError",  # ENOTDIR
+         21: "IsADirectoryError",  # EISDIR
+         32: "BrokenPipeError",  # EPIPE
+         103: "ConnectionAbortedError",  # ECONNABORTED
+         104: "ConnectionResetError",  # ECONNRESET
+         108: "BrokenPipeError",  # ESHUTDOWN
+         110: "TimeoutError",  # ETIMEDOUT
+         111: "ConnectionRefusedError",  # ECONNREFUSED
+         114: "BlockingIOError",  # EALREADY
+         115: "BlockingIOError",  # EINPROGRESS
+
+     };
 
 # Extra direct parents for multiple-inheritance nodes of the builtin tree.
 # CPython has exactly one (``class ExceptionGroup(BaseExceptionGroup,
@@ -2474,9 +2504,6 @@ glob EXC_PARENT: dict[str, str] = {
 # ``issubclass(ExceptionGroup, BaseExceptionGroup)`` must hold even though
 # BaseExceptionGroup is not reachable through Exception. Consulted by
 # exc_is_subclass_of alongside EXC_PARENT.
-glob EXC_EXTRA_PARENTS: dict[str, str] = {
-    "ExceptionGroup": "BaseExceptionGroup",
-};
 
 # CPython's OSError smart-mapping (Python/errors.c,
 # PyErr_SetFromErrnoWithFilenameObjects): when OSError itself is called with
@@ -2484,26 +2511,6 @@ glob EXC_EXTRA_PARENTS: dict[str, str] = {
 # Values are the Linux (asm-generic) errno numbering, each entry probed
 # against the host interpreter; errnos absent here stay plain OSError
 # (verified: EBUSY(16), EINVAL(22), ... do NOT map on host).
-glob OSERROR_ERRNO_MAP: dict[int, str] = {
-    1: "PermissionError",        # EPERM
-    2: "FileNotFoundError",      # ENOENT
-    3: "ProcessLookupError",     # ESRCH
-    4: "InterruptedError",       # EINTR
-    11: "BlockingIOError",       # EAGAIN / EWOULDBLOCK
-    13: "PermissionError",       # EACCES
-    17: "FileExistsError",       # EEXIST
-    20: "NotADirectoryError",    # ENOTDIR
-    21: "IsADirectoryError",     # EISDIR
-    32: "BrokenPipeError",       # EPIPE
-    103: "ConnectionAbortedError",   # ECONNABORTED
-    104: "ConnectionResetError",     # ECONNRESET
-    108: "BrokenPipeError",          # ESHUTDOWN
-    110: "TimeoutError",             # ETIMEDOUT
-    111: "ConnectionRefusedError",   # ECONNREFUSED
-    114: "BlockingIOError",          # EALREADY
-    115: "BlockingIOError",          # EINPROGRESS
-};
-
 # Membership test for the builtin exception tree (every name in EXC_PARENT
 # plus the BaseException root).
 def is_builtin_exception_name(name: str) -> bool {
@@ -2616,14 +2623,19 @@ def _construct_oserror(name: str, args: list[PyObj]) -> PyException {
         message = expect_str(exc_args[0]);
     }
     return PyException(
-        t="exception", type_name=type_name, message=message,
-        args=exc_args, type_fields=parsed
+        t="exception",
+        type_name=type_name,
+        message=message,
+        args=exc_args,
+        type_fields=parsed
     );
 }
 
 # CPython ``ImportError.__init__``: msg[, name[, path]] positional plus name= /
 # path= kwargs. Positional extras stay in .args verbatim; kwargs never enter it.
-def _construct_import_error(name: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyException {
+def _construct_import_error(
+    name: str, args: list[PyObj], kwargs: dict[str, PyObj]
+) -> PyException {
     fields: dict[str, PyObj] = {};
     if "name" in kwargs {
         fields["name"] = kwargs["name"];
@@ -2646,8 +2658,11 @@ def _construct_import_error(name: str, args: list[PyObj], kwargs: dict[str, PyOb
         message = expect_str(args[0]);
     }
     return PyException(
-        t="exception", type_name=name, message=message,
-        args=exc_args, type_fields=fields
+        t="exception",
+        type_name=name,
+        message=message,
+        args=exc_args,
+        type_fields=fields
     );
 }
 
@@ -2683,8 +2698,11 @@ def _construct_syntax_error(name: str, args: list[PyObj]) -> PyException {
         message = expect_str(args[0]);
     }
     return PyException(
-        t="exception", type_name=name, message=message,
-        args=exc_args, type_fields=fields
+        t="exception",
+        type_name=name,
+        message=message,
+        args=exc_args,
+        type_fields=fields
     );
 }
 
@@ -2715,8 +2733,11 @@ def _construct_unicode_error(name: str, args: list[PyObj]) -> PyObj {
         message = expect_str(args[0]);
     }
     return PyException(
-        t="exception", type_name=name, message=message,
-        args=exc_args, type_fields=fields
+        t="exception",
+        type_name=name,
+        message=message,
+        args=exc_args,
+        type_fields=fields
     );
 }
 
@@ -2759,26 +2780,26 @@ def _py_sequence_tuple(o: PyObj, out: list[PyObj]) -> bool {
 # rejection under ExceptionGroup subclasses, auto-selection of ExceptionGroup
 # for exact-BaseExceptionGroup calls whose leaves are all Exceptions, and the
 # keyword check LAST.
-def _construct_exc_group(name: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+def _construct_exc_group(
+    name: str, args: list[PyObj], kwargs: dict[str, PyObj]
+) -> PyObj {
     if len(args) != 2 {
         return py_error(
             "TypeError",
             "BaseExceptionGroup.__new__() takes exactly 2 arguments ("
-                + str(len(args)) + " given)",
+                + str(len(args))
+                + " given)",
         );
     }
     if args[0].t != "str" {
         return py_error(
             "TypeError",
-            "BaseExceptionGroup.__new__() argument 1 must be str, not "
-                + args[0].t,
+            "BaseExceptionGroup.__new__() argument 1 must be str, not " + args[0].t,
         );
     }
     seq_items: list[PyObj] = [];
     if not _py_sequence_tuple(args[1], seq_items) {
-        return py_error(
-            "TypeError", "second argument (exceptions) must be a sequence"
-        );
+        return py_error("TypeError", "second argument (exceptions) must be a sequence");
     }
     items: list[PyObj] = [];
     has_base_leaf = False;
@@ -2790,7 +2811,8 @@ def _construct_exc_group(name: str, args: list[PyObj], kwargs: dict[str, PyObj])
         if item.t != "exception" {
             return py_error(
                 "ValueError",
-                "Item " + str(idx)
+                "Item "
+                    + str(idx)
                     + " of second argument (exceptions) is not an exception",
             );
         }
@@ -2831,8 +2853,11 @@ def _construct_exc_group(name: str, args: list[PyObj], kwargs: dict[str, PyObj])
     excs_copy: list[PyObj] = [];
     excs_copy.extend(items);
     return PyExcGroup(
-        t="exception", type_name=final_name, message=(args[0] as PyStr).val,
-        args=exc_args, excs=excs_copy
+        t="exception",
+        type_name=final_name,
+        message=(args[0] as PyStr).val,
+        args=exc_args,
+        excs=excs_copy
     );
 }
 
@@ -2863,10 +2888,13 @@ obj PyExceptionType(PyObj) {
         # Families with dedicated constructor semantics (CPython oserror_init,
         # ImportError/SyntaxError/Unicode*Error __init__) parse their arguments
         # into typed fields before falling through to the generic form.
-        if self.name != "Exception" and self.name != "BaseException"
+        if self.name != "Exception"
+            and self.name != "BaseException"
             and exc_is_subclass_of(self.name, "OSError") {
             if len(kwargs) > 0 {
-                return py_error("TypeError", self.name + "() takes no keyword arguments");
+                return py_error(
+                    "TypeError", self.name + "() takes no keyword arguments"
+                );
             }
             return _construct_oserror(self.name, args);
         }
@@ -2875,7 +2903,8 @@ obj PyExceptionType(PyObj) {
         if self.name == "ImportError" or self.name == "ModuleNotFoundError" {
             return _construct_import_error(self.name, args, kwargs);
         }
-        if self.name == "BaseExceptionGroup" or self.name == "ExceptionGroup"
+        if self.name == "BaseExceptionGroup"
+            or self.name == "ExceptionGroup"
             or exc_is_subclass_of(self.name, "BaseExceptionGroup") {
             return _construct_exc_group(self.name, args, kwargs);
         }
@@ -2888,7 +2917,8 @@ obj PyExceptionType(PyObj) {
         if exc_is_subclass_of(self.name, "SyntaxError") {
             return _construct_syntax_error(self.name, args);
         }
-        if self.name == "UnicodeDecodeError" or self.name == "UnicodeEncodeError"
+        if self.name == "UnicodeDecodeError"
+            or self.name == "UnicodeEncodeError"
             or self.name == "UnicodeTranslateError" {
             return _construct_unicode_error(self.name, args);
         }
@@ -2914,7 +2944,10 @@ obj PyExceptionType(PyObj) {
             }
         }
         return PyException(
-            t="exception", type_name=self.name, message=message, args=exc_args,
+            t="exception",
+            type_name=self.name,
+            message=message,
+            args=exc_args,
             value=si_value
         );
     }
@@ -2933,7 +2966,8 @@ obj ExcSetStateFn(PyObj) {
         }
         if not isinstance(args[0], PyDict) {
             return py_error(
-                "TypeError", "__setstate__() argument must be a dict, not '" + args[0].t + "'"
+                "TypeError",
+                "__setstate__() argument must be a dict, not '" + args[0].t + "'"
             );
         }
         state = args[0] as PyDict;
@@ -3079,9 +3113,12 @@ obj PyException(PyObj) {
         # instances that bypassed the typed OSError constructor. (Note:
         # characters_written is NOT defaulted -- CPython raises AttributeError
         # for it until an IO write sets it.)
-        if name == "errno" or name == "strerror"
-            or name == "filename" or name == "filename2" {
-            if self.family == "OSError" or exc_is_subclass_of(self.type_name, "OSError") {
+        if name == "errno"
+            or name == "strerror"
+            or name == "filename"
+            or name == "filename2" {
+            if self.family == "OSError"
+                or exc_is_subclass_of(self.type_name, "OSError") {
                 return py_none();
             }
         }
@@ -3106,7 +3143,9 @@ obj PyException(PyObj) {
             } elif isinstance(value, PyList) {
                 items.extend((value as PyList).items);
             } else {
-                return py_error("TypeError", "'" + value.t + "' object is not iterable");
+                return py_error(
+                    "TypeError", "'" + value.t + "' object is not iterable"
+                );
             }
             self.args = [];
             self.args.extend(items);
@@ -3114,7 +3153,9 @@ obj PyException(PyObj) {
         }
         if name == "__traceback__" {
             if not isinstance(value, PyTraceback) and value.t != "none" {
-                return py_error("TypeError", "__traceback__ must be a traceback or None");
+                return py_error(
+                    "TypeError", "__traceback__ must be a traceback or None"
+                );
             }
             self.traceback = value;
             return py_none();
@@ -3124,7 +3165,8 @@ obj PyException(PyObj) {
             # and setting a real cause implies __suppress_context__ = True.
             if value.t != "none" and value.t != "exception" {
                 return py_error(
-                    "TypeError", "exception cause must be None or derive from BaseException"
+                    "TypeError",
+                    "exception cause must be None or derive from BaseException"
                 );
             }
             self.cause = value;
@@ -3136,7 +3178,8 @@ obj PyException(PyObj) {
         if name == "__context__" {
             if value.t != "none" and value.t != "exception" {
                 return py_error(
-                    "TypeError", "exception context must be None or derive from BaseException"
+                    "TypeError",
+                    "exception context must be None or derive from BaseException"
                 );
             }
             self.context = value;
@@ -3944,7 +3987,7 @@ def str_mod_format(
             if str_fn is not None {
                 # Callback path (native __str__ slot dispatch from ceval); a
                 # raised exception propagates as an error result.
-                sv = (str_fn(arg) as PyObj);
+                sv = str_fn(arg) as PyObj;
                 if is_error(sv) {
                     return sv;
                 }
@@ -3954,7 +3997,7 @@ def str_mod_format(
             }
         } elif conv == "r" {
             if repr_fn is not None {
-                rv = (repr_fn(arg) as PyObj);
+                rv = repr_fn(arg) as PyObj;
                 if is_error(rv) {
                     return rv;
                 }

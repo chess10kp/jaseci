@@ -32,19 +32,27 @@ obj _Ctx {
         parse_constant: any = None;
 }
 
-glob _CONSTANTS: dict = {"NaN": float("nan"),
-                         "Infinity": float("inf"),
-                         "-Infinity": float("-inf")};
+glob _CONSTANTS: dict = {
+         "NaN": float("nan"),
+         "Infinity": float("inf"),
+         "-Infinity": float("-inf")
+     };
 
 # JSONDecodeError.__init__ rendering of (msg, doc, pos): byte-exact.
 def _decode_err_msg(msg: str, doc: str, pos: int) -> str {
     lineno = doc.count("\n", 0, pos) + 1;
     colno = pos - doc.rfind("\n", 0, pos);
-    return msg + ": line " + str(lineno) + " column " + str(colno)
-        + " (char " + str(pos) + ")";
+    return msg
+        + ": line "
+        + str(lineno)
+        + " column "
+        + str(colno)
+        + " (char "
+        + str(pos)
+        + ")";
 }
 
-def _default_ctx() -> _Ctx {
+def _default_ctx -> _Ctx {
     c = _Ctx();
     c.parse_float = float;
     c.parse_int = int;
@@ -69,8 +77,7 @@ def _loads(s: str) -> any {
     try {
         (val, end) = _raw_decode(s, i);
     } except StopIteration as e {
-        raise Exception(_decode_err_msg("Expecting value", s,
-                                        e.value as int));
+        raise Exception(_decode_err_msg("Expecting value", s, e.value as int));
     }
     while end < len(s) and s[end] in " \t\n\r" {
         end = end + 1;
@@ -94,42 +101,58 @@ def _expect_error(label: str, fn: any, want_msg: str) {
     assert got == want_msg , (label, got, want_msg);
 }
 
-def _dumps(val: any, markers: dict = {}, default_fn: any = None,
-           indent: any = None, sort_keys: bool = False,
-           skipkeys: bool = False, allow_nan: bool = True,
-           item_sep: str = ", ", key_sep: str = ": ") -> str {
-    enc = make_encoder(markers, default_fn, encode_basestring_ascii,
-                       indent, key_sep, item_sep, sort_keys, skipkeys,
-                       allow_nan);
+def _dumps(
+    val: any,
+    markers: dict = {},
+    default_fn: any = None,
+    indent: any = None,
+    sort_keys: bool = False,
+    skipkeys: bool = False,
+    allow_nan: bool = True,
+    item_sep: str = ", ",
+    key_sep: str = ": "
+) -> str {
+    enc = make_encoder(
+        markers,
+        default_fn,
+        encode_basestring_ascii,
+        indent,
+        key_sep,
+        item_sep,
+        sort_keys,
+        skipkeys,
+        allow_nan
+    );
     got = enc(val, 0)[0];
     return got as str;
 }
 
 def _default_raises(o: any) -> any {
     # Mirrors the Lib/json default() for unserializable types.
-    raise TypeError("Object of type " + type(o).__name__
-                    + " is not JSON serializable");
+    raise TypeError("Object of type " + type(o).__name__ + " is not JSON serializable");
 }
 
 
 test "wave15 string escaping matches the oracle" {
-    assert encode_basestring_ascii("a\"b\\c\n\x01é𝄞") == (
-        "\"a\\\"b\\\\c\\n\\u0001\\u00e9\\ud834\\udd1e\"") , "ascii escapes";
-    assert encode_basestring("a\"b\\c\n\x01é𝄞") == (
-        "\"a\\\"b\\\\c\\n\\u0001é𝄞\"") , "plain keeps non-ascii literal";
+    assert encode_basestring_ascii("a\"b\\c\n\x01é𝄞")
+        == ("\"a\\\"b\\\\c\\n\\u0001\\u00e9\\ud834\\udd1e\"") , "ascii escapes";
+    assert encode_basestring("a\"b\\c\n\x01é𝄞") == ("\"a\\\"b\\\\c\\n\\u0001é𝄞\"") , "plain keeps non-ascii literal";
     # Short escapes and control-character range.
-    assert encode_basestring_ascii("\b\f\n\r\t") == (
-        "\"\\b\\f\\n\\r\\t\"") , "short escapes";
-    assert encode_basestring_ascii("\x00\x1f\x20~\x7f") == (
-        "\"\\u0000\\u001f ~\\u007f\"") , "control range boundaries";
+    assert encode_basestring_ascii("\b\f\n\r\t") == ("\"\\b\\f\\n\\r\\t\"") , "short escapes";
+    assert encode_basestring_ascii("\x00\x1f\x20~\x7f")
+        == ("\"\\u0000\\u001f ~\\u007f\"") , "control range boundaries";
     # Uppercase/lowercase hex digits round trip through ord arithmetic.
     assert encode_basestring_ascii("") == "\"\"" , "empty string";
-    _expect_error("esc-ascii type int",
-                  lambda { encode_basestring_ascii(42); },
-                  "first argument must be a string, not int");
-    _expect_error("esc-plain type bytes",
-                  lambda { encode_basestring(b"x"); },
-                  "first argument must be a string, not bytes");
+    _expect_error(
+        "esc-ascii type int",
+        lambda { encode_basestring_ascii(42); },
+        "first argument must be a string, not int"
+    );
+    _expect_error(
+        "esc-plain type bytes",
+        lambda { encode_basestring(b"x"); },
+        "first argument must be a string, not bytes"
+    );
 }
 
 
@@ -147,38 +170,57 @@ test "wave15 scanstring decodes all escape forms" {
     # next_end is a raw index after the closing quote.
     assert scanstring("\"\"", 1) == ("", 2) , "empty string";
 
-    _expect_error("unterminated", lambda { scanstring('"abc', 1); },
-                  "Unterminated string starting at: line 1 column 1"
-                  + " (char 0)");
-    _expect_error("bad short escape", lambda { scanstring('"a\\qb"', 1); },
-                  "Invalid \\escape: line 1 column 3 (char 2)");
-    _expect_error("bad hex digit", lambda { scanstring("\"\\udzzz\"", 1); },
-                  "Invalid \\uXXXX escape: line 1 column 3 (char 2)");
-    _expect_error("bad pair hex digit",
-                  lambda { scanstring("\"\\ud834\\uxzzz\"", 1); },
-                  "Invalid \\uXXXX escape: line 1 column 9 (char 8)");
-    _expect_error("truncated uescape",
-                  lambda { scanstring('"a\\u12"', 1); },
-                  "Invalid \\uXXXX escape: line 1 column 4 (char 3)");
-    _expect_error("control char strict",
-                  lambda { scanstring('"a\x01b"', 1); },
-                  "Invalid control character at: line 1 column 3 (char 2)");
+    _expect_error(
+        "unterminated",
+        lambda { scanstring('"abc', 1); },
+        "Unterminated string starting at: line 1 column 1" + " (char 0)"
+    );
+    _expect_error(
+        "bad short escape",
+        lambda { scanstring('"a\\qb"', 1); },
+        "Invalid \\escape: line 1 column 3 (char 2)"
+    );
+    _expect_error(
+        "bad hex digit",
+        lambda { scanstring("\"\\udzzz\"", 1); },
+        "Invalid \\uXXXX escape: line 1 column 3 (char 2)"
+    );
+    _expect_error(
+        "bad pair hex digit",
+        lambda { scanstring("\"\\ud834\\uxzzz\"", 1); },
+        "Invalid \\uXXXX escape: line 1 column 9 (char 8)"
+    );
+    _expect_error(
+        "truncated uescape",
+        lambda { scanstring('"a\\u12"', 1); },
+        "Invalid \\uXXXX escape: line 1 column 4 (char 3)"
+    );
+    _expect_error(
+        "control char strict",
+        lambda { scanstring('"a\x01b"', 1); },
+        "Invalid control character at: line 1 column 3 (char 2)"
+    );
     # strict=False allows literal control characters.
     assert scanstring("\"a\x01b\"", 1, False)[0] == "a\x01b" , "non-strict control char";
-    _expect_error("end out of bounds", lambda { scanstring('"abc"', 99); },
-                  "end is out of bounds");
-    _expect_error("end negative", lambda { scanstring('"abc"', -1); },
-                  "end is out of bounds");
-    _expect_error("scanstring type", lambda { scanstring(42, 1); },
-                  "first argument must be a string, not int");
+    _expect_error(
+        "end out of bounds", lambda { scanstring('"abc"', 99); }, "end is out of bounds"
+    );
+    _expect_error(
+        "end negative", lambda { scanstring('"abc"', -1); }, "end is out of bounds"
+    );
+    _expect_error(
+        "scanstring type",
+        lambda { scanstring(42, 1); },
+        "first argument must be a string, not int"
+    );
 }
 
 
 test "wave15 scanner value grammar is host exact" {
     # Numbers: ints, floats with fractions/exponents/signs, big ints.
     assert _loads("[1, -2, 0, -0]") == [1, -2, 0, 0] , "int forms";
-    assert repr(_raw_decode("123456789012345678901234567890", 0)[0]) == (
-        "123456789012345678901234567890") , "big int exact digits";
+    assert repr(_raw_decode("123456789012345678901234567890", 0)[0])
+        == ("123456789012345678901234567890") , "big int exact digits";
     assert repr(_raw_decode("5e-324", 0)[0]) == "5e-324" , "subnormal";
     assert repr(_raw_decode("-2.5e+3", 0)[0]) == "-2500.0" , "signed exp";
     assert repr(_raw_decode("1E2", 0)[0]) == "100.0" , "capital E";
@@ -186,22 +228,25 @@ test "wave15 scanner value grammar is host exact" {
     # decoder glue's "Expecting value".
     for bad in ["-", "x", "+1", ".5", "tru", "nul"] {
         lbl: str = "reject " + bad;
-        _expect_error(lbl, lambda { _loads(bad); },
-                      _decode_err_msg("Expecting value", bad, 0));
+        _expect_error(
+            lbl, lambda { _loads(bad); }, _decode_err_msg("Expecting value", bad, 0)
+        );
     }
     # Partial-number forms stop mid-string instead (Extra data).
     for partial in ["01", "1.", "1e"] {
         lbl2: str = "partial " + partial;
-        _expect_error(lbl2, lambda { _loads(partial); },
-                      _decode_err_msg("Extra data", partial, 1));
+        _expect_error(
+            lbl2, lambda { _loads(partial); }, _decode_err_msg("Extra data", partial, 1)
+        );
     }
     # Constants.
     vals = _loads("[null, true, false, NaN, Infinity, -Infinity]");
     assert vals[0] is None and vals[1] is True and vals[2] is False , "const identity";
-    assert repr(vals[3]) == "nan" and repr(vals[4]) == "inf" and repr(vals[5]) == "-inf" , "float constants";
+    assert repr(vals[3]) == "nan"
+        and repr(vals[4]) == "inf"
+        and repr(vals[5]) == "-inf" , "float constants";
     # Nesting with whitespace everywhere.
-    assert _loads(" { \"x\" : [ 1 , { \"y\" : 2 } ] } ") == (
-        {"x": [1, {"y": 2}]}) , "whitespace tolerance";
+    assert _loads(" { \"x\" : [ 1 , { \"y\" : 2 } ] } ") == ({"x": [1, {"y": 2}]}) , "whitespace tolerance";
     # Duplicate keys: last wins (memo interns the key object).
     assert _loads("{\"k\": 1, \"k\": 2}") == {"k": 2} , "duplicate keys";
     # Strings decode surrogate pairs inside containers too.
@@ -210,32 +255,61 @@ test "wave15 scanner value grammar is host exact" {
 
 
 test "wave15 decoder glue raises oracle positions" {
-    _expect_error("object prop name", lambda { _loads("{"); },
-                  "Expecting property name enclosed in double quotes:"
-                  + " line 1 column 2 (char 1)");
-    _expect_error("colon delimiter", lambda { _loads('{"a"'); },
-                  "Expecting ':' delimiter: line 1 column 5 (char 4)");
-    _expect_error("value after colon", lambda { _loads('{"a":}'); },
-                  "Expecting value: line 1 column 6 (char 5)");
-    _expect_error("array comma", lambda { _loads("[1,"); },
-                  "Expecting value: line 1 column 4 (char 3)");
-    _expect_error("array close", lambda { _loads("[1 2]"); },
-                  "Expecting ',' delimiter: line 1 column 4 (char 3)");
-    _expect_error("trailing comma array", lambda { _loads("[1,]"); },
-                  "Illegal trailing comma before end of array:"
-                  + " line 1 column 3 (char 2)");
-    _expect_error("trailing comma object", lambda { _loads('{"a":1,}'); },
-                  "Illegal trailing comma before end of object:"
-                  + " line 1 column 7 (char 6)");
-    _expect_error("extra data", lambda { _loads("01"); },
-                  "Extra data: line 1 column 2 (char 1)");
+    _expect_error(
+        "object prop name",
+        lambda { _loads("{"); },
+        "Expecting property name enclosed in double quotes:"
+            + " line 1 column 2 (char 1)"
+    );
+    _expect_error(
+        "colon delimiter",
+        lambda { _loads('{"a"'); },
+        "Expecting ':' delimiter: line 1 column 5 (char 4)"
+    );
+    _expect_error(
+        "value after colon",
+        lambda { _loads('{"a":}'); },
+        "Expecting value: line 1 column 6 (char 5)"
+    );
+    _expect_error(
+        "array comma",
+        lambda { _loads("[1,"); },
+        "Expecting value: line 1 column 4 (char 3)"
+    );
+    _expect_error(
+        "array close",
+        lambda { _loads("[1 2]"); },
+        "Expecting ',' delimiter: line 1 column 4 (char 3)"
+    );
+    _expect_error(
+        "trailing comma array",
+        lambda { _loads("[1,]"); },
+        "Illegal trailing comma before end of array:" + " line 1 column 3 (char 2)"
+    );
+    _expect_error(
+        "trailing comma object",
+        lambda { _loads('{"a":1,}'); },
+        "Illegal trailing comma before end of object:" + " line 1 column 7 (char 6)"
+    );
+    _expect_error(
+        "extra data", lambda { _loads("01"); }, "Extra data: line 1 column 2 (char 1)"
+    );
     # Multi-line docs count newlines for line/column.
-    _expect_error("multiline value", lambda { _loads('{\n  "a": x}'); },
-                  "Expecting value: line 2 column 8 (char 9)");
-    _expect_error("multiline delimiter", lambda { _loads('[\n 1,\n 2'); },
-                  "Expecting ',' delimiter: line 3 column 3 (char 8)");
-    _expect_error("multiline control char", lambda { _loads('{\n"a\nb": 1}'); },
-                  "Invalid control character at: line 2 column 3 (char 4)");
+    _expect_error(
+        "multiline value",
+        lambda { _loads('{\n  "a": x}'); },
+        "Expecting value: line 2 column 8 (char 9)"
+    );
+    _expect_error(
+        "multiline delimiter",
+        lambda { _loads('[\n 1,\n 2'); },
+        "Expecting ',' delimiter: line 3 column 3 (char 8)"
+    );
+    _expect_error(
+        "multiline control char",
+        lambda { _loads('{\n"a\nb": 1}'); },
+        "Invalid control character at: line 2 column 3 (char 4)"
+    );
     # strict=False passes literal control characters through.
     assert _loads_ctx_strict_false("\"a\x01b\"") == "a\x01b" , "decoder strict=False";
 }
@@ -270,7 +344,9 @@ test "wave15 parse hooks receive raw text and pairs" {
     }
     ctx.parse_constant = _pc;
     got = make_scanner(ctx)("{\"k\": 42, \"m\": [7.5, NaN]}", 0)[0];
-    assert got["k"] == "int<42>" and got["m"][0] == "float<7.5>" and got["m"][1] == "NaN" , ("hooks", got);
+    assert got["k"] == "int<42>"
+        and got["m"][0] == "float<7.5>"
+        and got["m"][1] == "NaN" , ("hooks", got);
 
     # object_pairs_hook replaces the dict build entirely.
     pctx = _Ctx();
@@ -299,44 +375,51 @@ test "wave15 parse hooks receive raw text and pairs" {
 
 
 test "wave15 encoder core semantics match the oracle" {
-    assert _dumps([1, 2.5, True, False, None, "s\"x"]) == (
-        "[1, 2.5, true, false, null, \"s\\\"x\"]") , "basic types";
+    assert _dumps([1, 2.5, True, False, None, "s\"x"])
+        == ("[1, 2.5, true, false, null, \"s\\\"x\"]") , "basic types";
     # Float repr parity: shortest-repr, exponents, signed zero.
-    assert _dumps([3.0, 1e100, -0.0, 1e-05, 0.1, 5e-324]) == (
-        "[3.0, 1e+100, -0.0, 1e-05, 0.1, 5e-324]") , "float repr";
+    assert _dumps([3.0, 1e100, -0.0, 1e-05, 0.1, 5e-324])
+        == ("[3.0, 1e+100, -0.0, 1e-05, 0.1, 5e-324]") , "float repr";
     assert _dumps(-7.0) == "-7.0" , "negative integral float";
-    assert _dumps([123456789012345678901234567890]) == (
-        "[123456789012345678901234567890]") , "big int";
+    assert _dumps([123456789012345678901234567890])
+        == ("[123456789012345678901234567890]") , "big int";
     # Non-finite floats per allow_nan.
-    assert _dumps([float("inf"), float("-inf"), float("nan")]) == (
-        "[Infinity, -Infinity, NaN]") , "allow_nan literals";
-    _expect_error("allow_nan false",
-                  lambda { _dumps(float("nan"), allow_nan=False); },
-                  "Out of range float values are not JSON compliant: nan");
-    _expect_error("allow_nan false inf",
-                  lambda { _dumps(float("inf"), allow_nan=False); },
-                  "Out of range float values are not JSON compliant: inf");
+    assert _dumps([float("inf"), float("-inf"), float("nan")])
+        == ("[Infinity, -Infinity, NaN]") , "allow_nan literals";
+    _expect_error(
+        "allow_nan false",
+        lambda { _dumps(float("nan"), allow_nan=False); },
+        "Out of range float values are not JSON compliant: nan"
+    );
+    _expect_error(
+        "allow_nan false inf",
+        lambda { _dumps(float("inf"), allow_nan=False); },
+        "Out of range float values are not JSON compliant: inf"
+    );
     # Tuples encode as arrays.
-    assert _dumps((1, ("two",))) == "[1, [\"two\"]]" , "tuple nesting";
+    assert _dumps((1, ("two", ))) == "[1, [\"two\"]]" , "tuple nesting";
     # Separators flow through verbatim.
-    assert _dumps([[1, {"x": []}]], item_sep="", key_sep="") == (
-        "[[1{\"x\"[]}]]") , "empty separators";
+    assert _dumps([[1, {"x": []}]], item_sep="", key_sep="") == ("[[1{\"x\"[]}]]") , "empty separators";
     # sort_keys sorts items by key.
-    assert _dumps({"b": 1, "a": 2}, sort_keys=True) == (
-        "{\"a\": 2, \"b\": 1}") , "sort_keys";
+    assert _dumps({"b": 1, "a": 2}, sort_keys=True) == ("{\"a\": 2, \"b\": 1}") , "sort_keys";
 }
 
 
 test "wave15 encoder key coercion rules" {
-    assert _dumps({None: 0, False: 1, True: 2, 3: 3, 4.5: 4}) == (
-        "{\"null\": 0, \"false\": 1, \"true\": 2, \"3\": 3, \"4.5\": 4}") , "coercible keys";
+    assert _dumps({None: 0, False: 1, True: 2, 3: 3, 4.5: 4})
+        == ("{\"null\": 0, \"false\": 1, \"true\": 2, \"3\": 3, \"4.5\": 4}") , "coercible keys";
     assert _dumps({float("nan"): 1}) == "{\"NaN\": 1}" , "nan key";
-    _expect_error("bad key type", lambda { _dumps({(1, 2): "a"}); },
-                  "keys must be str, int, float, bool or None, not tuple");
-    _expect_error("bad key type bytes", lambda { _dumps({b"x": 1}); },
-                  "keys must be str, int, float, bool or None, not bytes");
-    assert _dumps({(1, 2): "a", "ok": 1}, skipkeys=True) == (
-        "{\"ok\": 1}") , "skipkeys drops bad keys";
+    _expect_error(
+        "bad key type",
+        lambda { _dumps({(1, 2): "a"}); },
+        "keys must be str, int, float, bool or None, not tuple"
+    );
+    _expect_error(
+        "bad key type bytes",
+        lambda { _dumps({b"x": 1}); },
+        "keys must be str, int, float, bool or None, not bytes"
+    );
+    assert _dumps({(1, 2): "a", "ok": 1}, skipkeys=True) == ("{\"ok\": 1}") , "skipkeys drops bad keys";
 }
 
 
@@ -346,23 +429,28 @@ test "wave15 encoder default hook and circular references" {
     }
     assert _dumps(_Widget(), default_fn=_listify) == "[]" , "default hook result is encoded recursively";
     w = _Widget();
-    _expect_error("custom obj unserializable",
-                  lambda { _dumps(w, default_fn=_widget_default); },
-                  "Object of type _Widget is not JSON serializable");
+    _expect_error(
+        "custom obj unserializable",
+        lambda { _dumps(w, default_fn=_widget_default); },
+        "Object of type _Widget is not JSON serializable"
+    );
 
     l: list = [];
     l.append(l);
-    _expect_error("self referential list", lambda { _dumps(l); },
-                  "Circular reference detected");
+    _expect_error(
+        "self referential list", lambda { _dumps(l); }, "Circular reference detected"
+    );
     d: dict = {};
     d["self"] = d;
-    _expect_error("self referential dict", lambda { _dumps(d); },
-                  "Circular reference detected");
+    _expect_error(
+        "self referential dict", lambda { _dumps(d); }, "Circular reference detected"
+    );
     inner: list = [];
     outer: list = [inner];
     inner.append(outer);
-    _expect_error("mutually nested", lambda { _dumps(outer); },
-                  "Circular reference detected");
+    _expect_error(
+        "mutually nested", lambda { _dumps(outer); }, "Circular reference detected"
+    );
     # Repeated but non-circular sharing is fine without markers.
     shared: list = [1];
     assert _dumps([shared, shared], markers={}) == "[[1], [1]]" , "shared subtree ok";
@@ -381,15 +469,15 @@ def _widget_default(o: any) -> any {
 
 
 test "wave15 indent layout matches the oracle" {
-    assert _dumps([[1, 2], {"a": 3}], indent="  ",
-                  item_sep=",") == ("[\n  [\n    1,\n    2\n  ],\n"
-                                    "  {\n    \"a\": 3\n  }\n]") , "indent 2 spaces";
+    assert _dumps([[1, 2], {"a": 3}], indent="  ", item_sep=",")
+        == ("[\n  [\n    1,\n    2\n  ],\n" "  {\n    \"a\": 3\n  }\n]") , "indent 2 spaces";
     assert _dumps([], indent="..") == "[]" , "empty list no indent";
     assert _dumps({}, indent="..") == "{}" , "empty dict no indent";
     assert _dumps([[[]]], indent="ab") == "[\nab[\nabab[]\nab]\n]" , "custom indent unit";
     # Initial indent level shifts the cache baseline (encoder_call arg).
-    enc_l1 = make_encoder({}, _default_raises, encode_basestring_ascii,
-                          "..", ":", ",", False, False, True);
+    enc_l1 = make_encoder(
+        {}, _default_raises, encode_basestring_ascii, "..", ":", ",", False, False, True
+    );
     assert enc_l1([1], 1)[0] == "[\n....1\n..]" , "initial level 1";
     # Indented dicts put each pair on its own line.
     got = _dumps({"a": 1, "b": 2}, indent="  ", item_sep=",");
@@ -398,11 +486,15 @@ test "wave15 indent layout matches the oracle" {
 
 
 test "wave15 make_encoder argument validation" {
-    _expect_error("markers type", _make_encoder_bad_markers,
-                  "make_encoder() argument 1 must be dict or None, not list");
+    _expect_error(
+        "markers type",
+        _make_encoder_bad_markers,
+        "make_encoder() argument 1 must be dict or None, not list"
+    );
 }
 
-def _make_encoder_bad_markers() {
-    make_encoder([], _default_raises, encode_basestring_ascii,
-                 None, ":", ",", False, False, True);
+def _make_encoder_bad_markers {
+    make_encoder(
+        [], _default_raises, encode_basestring_ascii, None, ":", ",", False, False, True
+    );
 }

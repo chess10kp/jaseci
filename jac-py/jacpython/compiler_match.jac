@@ -2,13 +2,7 @@
 # Pure mechanical move; see compiler_codegen.jac for the module-initialization
 # ordering contract.
 
-import from objects {
-    PyInt,
-    PyObj,
-    PyStr,
-    PyTuple,
-    hashkey_equal,
-}
+import from objects { PyInt, PyObj, PyStr, PyTuple, hashkey_equal, }
 import from opcode_meta {
     CMP_EQ,
     CMP_GE,
@@ -60,13 +54,7 @@ import from ast_nodes {
     pattern,
     stmt,
 }
-import from compiler_ir {
-    basicblock,
-    cfg_builder,
-    cloc,
-    loc,
-    stmt_cont,
-}
+import from compiler_ir { basicblock, cfg_builder, cloc, loc, stmt_cont, }
 import from flowgraph { optimize_swap_range }
 import from compiler_emit {
     codegen_busy,
@@ -87,7 +75,13 @@ import from codegen_util {
     stmt_loc,
 }
 import from compiler_annotations { ann_scope_plan }
-import from compiler_codegen { emit_module_return, emit_name_store, visit_stmt_tail, visit_stmts }
+import from compiler_codegen {
+    emit_module_return,
+    emit_name_store,
+    visit_stmt_tail,
+    visit_stmts
+}
+
 obj match_pat_ctx {
     has stores: list[str],
         on_top: int,
@@ -1126,7 +1120,9 @@ def visit_match(
         if ci != loop_end - 1 {
             g.emit_op(OP_POP_TOP, 0, ploc);
         }
-        body_cont = visit_stmts(g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx);
+        body_cont = visit_stmts(
+            g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=mloc);
         }
@@ -1154,7 +1150,9 @@ def visit_match(
             }
             emit_branch_if_test_false(g, guard_kind, match_end.id, gloc);
         }
-        body_cont = visit_stmts(g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx);
+        body_cont = visit_stmts(
+            g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=mloc);
         }

@@ -38,73 +38,79 @@ def run_src(src: str) -> str {
 test "class cell: zero-arg super() single inheritance" {
     assert run_src(
         "class A:\n"
-        + "    def who(self):\n"
-        + "        return 'A'\n"
-        + "class B(A):\n"
-        + "    def who(self):\n"
-        + "        return 'B+' + super().who()\n"
-        + "r = B().who()\n"
-    ) == "'B+A'";
+            + "    def who(self):\n"
+            + "        return 'A'\n"
+            + "class B(A):\n"
+            + "    def who(self):\n"
+            + "        return 'B+' + super().who()\n"
+            + "r = B().who()\n"
+    )
+        == "'B+A'";
 }
 
 test "class cell: zero-arg super() multi-level chain" {
     assert run_src(
         "class A:\n"
-        + "    def who(self):\n"
-        + "        return 'A'\n"
-        + "class B(A):\n"
-        + "    def who(self):\n"
-        + "        return 'B+' + super().who()\n"
-        + "class C(B):\n"
-        + "    def who(self):\n"
-        + "        return 'C+' + super().who()\n"
-        + "r = C().who()\n"
-    ) == "'C+B+A'";
+            + "    def who(self):\n"
+            + "        return 'A'\n"
+            + "class B(A):\n"
+            + "    def who(self):\n"
+            + "        return 'B+' + super().who()\n"
+            + "class C(B):\n"
+            + "    def who(self):\n"
+            + "        return 'C+' + super().who()\n"
+            + "r = C().who()\n"
+    )
+        == "'C+B+A'";
 }
 
 test "class cell: two-arg super(Cls, self) still works" {
     assert run_src(
         "class A:\n"
-        + "    def who(self):\n"
-        + "        return 'A'\n"
-        + "class H(A):\n"
-        + "    def who(self):\n"
-        + "        return 'H+' + super(H, self).who()\n"
-        + "r = H().who()\n"
-    ) == "'H+A'";
+            + "    def who(self):\n"
+            + "        return 'A'\n"
+            + "class H(A):\n"
+            + "    def who(self):\n"
+            + "        return 'H+' + super(H, self).who()\n"
+            + "r = H().who()\n"
+    )
+        == "'H+A'";
 }
 
 test "class cell: bare super() in class body raises like CPython" {
     # Host: RuntimeError("super(): no arguments"); no __class__ cell exists.
     assert run_src(
         "r = ''\n"
-        + "try:\n"
-        + "    class D:\n"
-        + "        x = super()\n"
-        + "except RuntimeError as e:\n"
-        + "    r = 'RuntimeError: ' + str(e)\n"
-    ) == "'RuntimeError: super(): no arguments'";
+            + "try:\n"
+            + "    class D:\n"
+            + "        x = super()\n"
+            + "except RuntimeError as e:\n"
+            + "    r = 'RuntimeError: ' + str(e)\n"
+    )
+        == "'RuntimeError: super(): no arguments'";
 }
 
 test "class cell: direct __class__ deref inside a method" {
     assert run_src(
         "class G:\n"
-        + "    def m(self):\n"
-        + "        return __class__.__name__\n"
-        + "r = G().m()\n"
-    ) == "'G'";
+            + "    def m(self):\n"
+            + "        return __class__.__name__\n"
+            + "r = G().m()\n"
+    )
+        == "'G'";
 }
 
 test "class cell: __classcell__ never leaks into the class namespace" {
     # type.__new__ pops __classcell__; the attribute must not exist on the class.
     assert run_src(
         "r = ''\n"
-        + "class A:\n"
-        + "    def m(self):\n"
-        + "        return 1\n"
-        + "try:\n"
-        + "    A.__classcell__\n"
-        + "except AttributeError:\n"
-        + "    r = 'AttributeError'\n"
-    ) == "'AttributeError'";
+            + "class A:\n"
+            + "    def m(self):\n"
+            + "        return 1\n"
+            + "try:\n"
+            + "    A.__classcell__\n"
+            + "except AttributeError:\n"
+            + "    r = 'AttributeError'\n"
+    )
+        == "'AttributeError'";
 }

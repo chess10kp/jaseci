@@ -15,8 +15,8 @@ def c_imod(a: int, b: int) -> int {
     return a - c_idiv(a, b) * b;
 }
 
-glob Py_ssize_t = int;
-glob size_t_ull = int;
+glob Py_ssize_t = int,
+     size_t_ull = int;
 
 
 def deque_valid_index(i: int, limit: int) -> int {

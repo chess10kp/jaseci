@@ -4,10 +4,7 @@
 # object.__*attr__ slot wrappers running the DEFAULT protocol as the recursion
 # guard for delegation. Regression tests in the layer0_replay idiom: import
 # layer0_replay_harness (NOT layer0_replay) for a clean ceval slate.
-import from layer0_replay_harness {
-    ReplayResult,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer1_replay_source, }
 
 # ---------------- __getattribute__ ----------------
 test "attr protocol: __getattribute__ override is the get protocol" {

@@ -1,9 +1,3 @@
-"""Shared LP64 C name → FFI scalar map for bindgen and c2jac lift.
-
-Matched by typedef *name* ahead of alias resolution so placeholder or
-porting typedef spellings both map to the same widths (native LP64 only).
-"""
-
 glob LP64_SCALARS: dict[str, str] = {
          "int8_t": "i8",
          "uint8_t": "u8",

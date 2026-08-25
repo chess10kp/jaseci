@@ -56,8 +56,25 @@ def _scalar_case(
     fn: str = c_expr.split("(")[0];
     return (
         name,
-        "#include <stdio.h>\n" + "int " + fn + "();\n" + c_helpers + "int main(void) {\n" + c_prelude + "    printf(\"%d\\n\", " + c_expr + ");\n" + "    return 0;\n" + "}\n",
-        jac_helpers + "with entry {\n" + jac_prelude + "    print(" + jac_expr + ");\n" + "}\n",
+        "#include <stdio.h>\n"
+            + "int "
+            + fn
+            + "();\n"
+            + c_helpers
+            + "int main(void) {\n"
+            + c_prelude
+            + "    printf(\"%d\\n\", "
+            + c_expr
+            + ");\n"
+            + "    return 0;\n"
+            + "}\n",
+        jac_helpers
+            + "with entry {\n"
+            + jac_prelude
+            + "    print("
+            + jac_expr
+            + ");\n"
+            + "}\n",
         fn
     );
 }
@@ -223,10 +240,10 @@ def _codes_are_style_or_none(codes: list[str]) -> bool {
 test "lift oracle: every callable fixture obeys its fidelity claim" {
     mismatches: list = [];
     ran: int = 0;
-    for (name, driver, entry, entry_fn) in _BREADTH_CASES {
+    for (name, driver, `entry, entry_fn) in _BREADTH_CASES {
         path = os.path.join(FIXTURES, name);
         (status, detail) = assert_lift_matches_c_or_traps(
-            path, driver, entry, entry_fn
+            path, driver, `entry, entry_fn
         );
         ran += 1;
         if status != "ok" {

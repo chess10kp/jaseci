@@ -6,7 +6,16 @@
 # Runtime dicts use hashkey-backed ``dict[str, DictEntry]`` in ``objects.jac``;
 # CPython's open-addressing table is not modeled. The c2jac reference lives in
 # ``Objects/_lifted/dictobject_core.jac`` if a native table lands later.
-import from objects { PyObj, PyDict, PyStr, is_error, py_error, expect_str, Py_EQ, Py_NE, }
+import from objects {
+    PyObj,
+    PyDict,
+    PyStr,
+    is_error,
+    py_error,
+    expect_str,
+    Py_EQ,
+    Py_NE,
+}
 
 # Thin wrappers kept for callers that import by name (the ``compare_fn``
 # parameter is obsolete): the implementation lives on the PyDict.tp_richcompare

@@ -428,37 +428,6 @@ import from compiler_annotations {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def emit_name_store(g: cfg_builder, name: str, tloc: cloc) {
     name = codegen_mangle(g, name);
     fi = fast_local_index(g, name);
@@ -511,10 +480,6 @@ def emit_name_delete(g: cfg_builder, name: str, tloc: cloc) {
 }
 
 
-
-
-
-
 # Non-constant slice STORE (value already on the stack, container just pushed).
 # 2-element: STORE_SLICE (fused). 3-element: BUILD_SLICE 3 + STORE_SUBSCR.
 def emit_slice_store(g: cfg_builder, sl: Slice, lc: cloc) {
@@ -546,23 +511,11 @@ def emit_slice_delete(g: cfg_builder, sl: Slice, lc: cloc) {
 }
 
 
-
-
-
-
 def emit_compare_cleanup(g: cfg_builder, cleanup: basicblock, lc: cloc) {
     g.use(cleanup);
     g.emit_op(OP_SWAP, 2, lc);
     g.emit_op(OP_POP_TOP, 0, lc);
 }
-
-
-
-
-
-
-
-
 
 
 # Build a unverified_cfg for an eval-mode expression. Emits RESUME (module/eval
@@ -679,8 +632,6 @@ def visit_store_target_tos(g: cfg_builder, t: expr) -> stmt_cont {
 }
 
 
-
-
 # With the sequence value on TOS, emit UNPACK_SEQUENCE (no star) or UNPACK_EX
 # (starred), then store each element target left-to-right. Nested Tuple/List
 # targets recurse; a Starred target stores the captured list into its .value.
@@ -792,47 +743,12 @@ def visit_delete_target(g: cfg_builder, t: expr) -> stmt_cont {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Module-level epilogue (LOAD_CONST None; RETURN_VALUE).
 def emit_module_return(g: cfg_builder, lc: cloc) {
     none_idx = g.u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, lc);
     g.emit_op(OP_RETURN_VALUE, 0, lc);
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Lower assert (test + optional message).
@@ -914,9 +830,7 @@ def visit_stmt_tail(
     more_follows_after: bool = False,
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
-    return visit_stmts(
-        g, tail, from_idx, more_follows_after, None, 0, None, ann_ctx
-    );
+    return visit_stmts(g, tail, from_idx, more_follows_after, None, 0, None, ann_ctx);
 }
 
 # Emit tail suffix and finish the module when CPython duplicates it per branch.
@@ -934,48 +848,6 @@ def emit_tail_and_finish(
     emit_module_return(g, tail_cont.loc);
     return stmt_cont(loc=end_loc, next_si=len(tail), terminated=True);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Lower one statement into the builder's current block.
@@ -1190,7 +1062,9 @@ def visit_stmt(
     if isinstance(s, If) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return visit_if(g, s as If, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+        return visit_if(
+            g, s as If, more_code_follows, tail, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, While) {
         # tail stays None in loop-body contexts: the continuation is the
@@ -1205,7 +1079,9 @@ def visit_stmt(
     if isinstance(s, AsyncFor) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return visit_async_for(g, s as AsyncFor, more_code_follows, tail, tail_idx, ann_ctx);
+        return visit_async_for(
+            g, s as AsyncFor, more_code_follows, tail, tail_idx, ann_ctx
+        );
     }
     if isinstance(s, Break) {
         b = s as Break;
@@ -1269,14 +1145,18 @@ def visit_stmt(
         if t is None {
             t = [];
         }
-        return visit_try(g, s as Try, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return visit_try(
+            g, s as Try, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, TryStar) {
         t = tail;
         if t is None {
             t = [];
         }
-        return visit_try_star(g, s as TryStar, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return visit_try_star(
+            g, s as TryStar, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, Raise) {
         return visit_raise_stmt(g, s as Raise);
@@ -1286,7 +1166,9 @@ def visit_stmt(
         if t is None {
             t = [];
         }
-        return visit_with(g, s as With, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return visit_with(
+            g, s as With, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, AsyncWith) {
         t = tail;
@@ -1294,14 +1176,17 @@ def visit_stmt(
             t = [];
         }
         return visit_async_with(
-            g, s as AsyncWith, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+            g, s as AsyncWith, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, Match) {
         t = tail;
         if t is None {
             t = [];
         }
-        return visit_match(g, s as Match, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return visit_match(
+            g, s as Match, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, Assert) {
         return visit_assert_stmt(g, s as Assert);
@@ -1330,7 +1215,9 @@ def visit_return_stmt(
             name = codegen_mangle(g, n.id);
             fi = fast_local_index(g, name);
             if fi >= 0 {
-                nloc_name = nloc(n.lineno, n.end_lineno, n.col_offset, n.end_col_offset);
+                nloc_name = nloc(
+                    n.lineno, n.end_lineno, n.col_offset, n.end_col_offset
+                );
                 if check_fast {
                     g.emit_op(OP_LOAD_FAST_CHECK, fi, nloc_name);
                 } elif borrow_fast {
@@ -1354,19 +1241,6 @@ def visit_return_stmt(
     g.emit_op(OP_LOAD_CONST, none_idx, rloc);
     g.emit_op(OP_RETURN_VALUE, 0, rloc);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Build a unverified_cfg for an exec-mode module body. Emits RESUME (module scope:
@@ -1406,7 +1280,9 @@ def compile_exec(
     g = new_cfg_builder(u, entry_blk, sym_top);
     ploc0 = loc(0, firstlineno, 0, 0);
     if ann_plan.any_annotation {
-        g.emit_op(OP_MAKE_CELL, localsplus_index_u(u, "__conditional_annotations__"), no_loc());
+        g.emit_op(
+            OP_MAKE_CELL, localsplus_index_u(u, "__conditional_annotations__"), no_loc()
+        );
     }
     g.emit_op(OP_RESUME, 0, ploc0);
     if ann_plan.any_annotation {
@@ -1494,12 +1370,7 @@ import from compiler_exc {
     visit_with,
     visit_async_with
 }
-import from compiler_loops {
-    visit_if,
-    visit_while,
-    visit_for,
-    visit_async_for
-}
+import from compiler_loops { visit_if, visit_while, visit_for, visit_async_for }
 import from compiler_defs {
     visit_import,
     visit_import_from,

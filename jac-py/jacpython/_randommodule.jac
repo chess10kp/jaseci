@@ -27,13 +27,16 @@
 
 import os;
 
-glob MT_N = 624;
-glob MT_M = 397;
-glob MATRIX_A = 2567483615;      # 0x9908b0dfU
-glob UPPER_MASK = 2147483648;    # 0x80000000U
-glob LOWER_MASK = 2147483647;    # 0x7fffffffU
+glob MT_N = 624,
+     MT_M = 397,
+     MATRIX_A = 2567483615,
+     UPPER_MASK = 2147483648,
+     LOWER_MASK = 2147483647;
 
 
+# 0x9908b0dfU
+# 0x80000000U
+# 0x7fffffffU
 obj Random {
     has state: list[int] = [],
         index: int = 0;
@@ -62,7 +65,7 @@ obj Random {
 
     def _temper(y: int) -> int {
         y ^= y >> 11;
-        y ^= (y << 7) & 2636928640;   # 0x9d2c5680U
+        y ^= (y << 7) & 2636928640;  # 0x9d2c5680U
         y ^= (y << 15) & 4022730752;  # 0xefc60000U
         y ^= y >> 18;
         return y;
@@ -83,8 +86,7 @@ obj Random {
         mt[0] = s;
         for mti in range(1, MT_N) {
             mt[mti] = (
-                (1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti)
-                & 0xFFFFFFFF
+                (1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti) & 0xFFFFFFFF
             );
         }
         self.state = mt;
@@ -101,10 +103,11 @@ obj Random {
         while k {
             mt[i] = (
                 (
-                    (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525
-                              & 0xFFFFFFFF))
-                    + key[j] + j
-                ) & 0xFFFFFFFF
+                    (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525 & 0xFFFFFFFF))
+                    + key[j]
+                    + j
+                )
+                & 0xFFFFFFFF
             );
             i = i + 1;
             j = j + 1;
@@ -122,10 +125,14 @@ obj Random {
             # (mt[i] ^ prod32) - i mod 2^32; the mask realizes unsigned wrap.
             mt[i] = (
                 (
-                    (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941
-                              & 0xFFFFFFFF))
-                    + 0x100000000 - i
-                ) & 0xFFFFFFFF
+                    (
+                        mt[i]
+                        ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941 & 0xFFFFFFFF)
+                    )
+                        + 0x100000000
+                    - i
+                )
+                & 0xFFFFFFFF
             );
             i = i + 1;
             if i >= MT_N {
@@ -147,8 +154,12 @@ obj Random {
             key: list[int] = [];
             for i in range(0, MT_N * 4, 4) {
                 key.append(
-                    (raw[i] | (raw[i + 1] << 8) | (raw[i + 2] << 16)
-                     | (raw[i + 3] << 24)) as int
+                    (
+                        raw[i]
+                        | (raw[i + 1] << 8)
+                        | (raw[i + 2] << 16)
+                        | (raw[i + 3] << 24)
+                    ) as int
                 );
             }
             self._init_by_array(key);
@@ -192,8 +203,7 @@ obj Random {
     def getrandbits(k: any) -> int {
         if not isinstance(k, int) {
             raise TypeError(
-                "'" + type(k).__name__
-                + "' object cannot be interpreted as an integer"
+                "'" + type(k).__name__ + "' object cannot be interpreted as an integer"
             );
         }
         kv = k as int;
@@ -248,9 +258,7 @@ obj Random {
             }
             ev = element as int;
             if ev < 0 {
-                raise OverflowError(
-                    "can't convert negative value to unsigned int"
-                );
+                raise OverflowError("can't convert negative value to unsigned int");
             }
             new_state.append(ev & 0xFFFFFFFF);
         }

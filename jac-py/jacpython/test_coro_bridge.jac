@@ -48,20 +48,16 @@ def run_async(scenario_body: str, guest_src: str) -> list[any] {
 
 test "asyncio.run awaits a guest coroutine to its return value" {
     r = run_async(
-        "async def main():\n"
-        "    return await _coro\n",
-        "async def _coro():\n"
-        "    return 42\n"
-        "_coro = _coro()\n"
+        "async def main():\n" "    return await _coro\n",
+        "async def _coro():\n" "    return 42\n" "_coro = _coro()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "42", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "42" , str(r[1]);
 }
 
 test "gather over guest coroutines with sleep(0)" {
     r = run_async(
-        "async def main():\n"
-        "    return await asyncio.gather(_coro, _coro1)\n",
+        "async def main():\n" "    return await asyncio.gather(_coro, _coro1)\n",
         "import asyncio\n"
         "async def mk():\n"
         "    await asyncio.sleep(0)\n"
@@ -69,8 +65,8 @@ test "gather over guest coroutines with sleep(0)" {
         "_coro = mk()\n"
         "_coro1 = mk()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "[7, 7]", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "[7, 7]" , str(r[1]);
 }
 
 test "task group over guest coroutines" {
@@ -87,20 +83,17 @@ test "task group over guest coroutines" {
         "_coro1 = mk()\n"
         "_coro2 = mk()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "40", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "40" , str(r[1]);
 }
 
 test "guest exception propagates out of asyncio.run" {
     r = run_async(
-        "async def main():\n"
-        "    return await _coro\n",
-        "async def _coro():\n"
-        "    raise ValueError('boom')\n"
-        "_coro = _coro()\n"
+        "async def main():\n" "    return await _coro\n",
+        "async def _coro():\n" "    raise ValueError('boom')\n" "_coro = _coro()\n"
     );
     assert not r[0];
-    assert "ValueError: boom" == str(r[1]), str(r[1]);
+    assert "ValueError: boom" == str(r[1]) , str(r[1]);
 }
 
 test "host-thrown exception enters the suspended guest frame and is catchable" {
@@ -127,8 +120,8 @@ test "host-thrown exception enters the suspended guest frame and is catchable" {
         "    return 'done'\n"
         "_coro = _coro()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "guest-caught:caught-in-guest", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "guest-caught:caught-in-guest" , str(r[1]);
 }
 
 test "task.cancel raises CancelledError inside the guest frame" {
@@ -153,8 +146,8 @@ test "task.cancel raises CancelledError inside the guest frame" {
         "    return 'done'\n"
         "_coro = _coro()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "cancelled", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "cancelled" , str(r[1]);
 }
 
 test "cancel without guest handling surfaces CancelledError at await" {
@@ -174,8 +167,8 @@ test "cancel without guest handling surfaces CancelledError at await" {
         "    return 'done'\n"
         "_coro = _coro()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "cancelled", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "cancelled" , str(r[1]);
 }
 
 test "bridged coroutine presents the CPython coroutine surface" {
@@ -187,12 +180,10 @@ test "bridged coroutine presents the CPython coroutine surface" {
         "        for m in ('send', 'throw', 'close', '__await__')\n"
         "    )\n"
         "    return names_ok and methods_ok and bool(await _coro)\n",
-        "async def _coro():\n"
-        "    return 1\n"
-        "_coro = _coro()\n"
+        "async def _coro():\n" "    return 1\n" "_coro = _coro()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "True", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "True" , str(r[1]);
 }
 
 test "async for over a guest async generator from host" {
@@ -208,8 +199,8 @@ test "async for over a guest async generator from host" {
         "    yield 3\n"
         "_coro = _coro()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "[1, 2, 3]", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "[1, 2, 3]" , str(r[1]);
 }
 
 test "guest async-for drives its own async generator" {
@@ -232,7 +223,7 @@ test "guest async-for drives its own async generator" {
     } except BaseException as e {
         err_txt = type(e).__name__ + ": " + str(e);
     }
-    assert str(result) == "[1, 2]", "failed: " + err_txt;
+    assert str(result) == "[1, 2]" , "failed: " + err_txt;
 }
 
 test "in-body await inside a guest async generator suspends to the host loop" {
@@ -249,6 +240,6 @@ test "in-body await inside a guest async generator suspends to the host loop" {
         "    yield 2\n"
         "_coro1 = agen()\n"
     );
-    assert r[0], str(r[1]);
-    assert str(r[1]) == "[1, 2]", str(r[1]);
+    assert r[0] , str(r[1]);
+    assert str(r[1]) == "[1, 2]" , str(r[1]);
 }

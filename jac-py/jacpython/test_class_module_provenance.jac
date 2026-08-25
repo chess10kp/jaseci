@@ -42,8 +42,8 @@ test "native type_new inherits __module__ from the nearest base carrying one" {
         "r = M.__module__\n"
         "rr = repr(M)\n"
     );
-    assert vm_str(ns, "r") == "enum", vm_str(ns, "r");
-    assert vm_str(ns, "rr") == "<class 'enum.M'>", vm_str(ns, "rr");
+    assert vm_str(ns, "r") == "enum" , vm_str(ns, "r");
+    assert vm_str(ns, "rr") == "<class 'enum.M'>" , vm_str(ns, "rr");
 }
 
 test "native type_new reuses the defining-context name when no base has one" {
@@ -58,8 +58,8 @@ test "native type_new reuses the defining-context name when no base has one" {
         "r = M.__module__\n"
         "rr = repr(M)\n"
     );
-    assert vm_str(ns, "r") == "enum", vm_str(ns, "r");
-    assert vm_str(ns, "rr") == "<class 'enum.M'>", vm_str(ns, "rr");
+    assert vm_str(ns, "r") == "enum" , vm_str(ns, "r");
+    assert vm_str(ns, "rr") == "<class 'enum.M'>" , vm_str(ns, "rr");
 }
 
 test "native type_new reads calling-frame globals with no other provenance" {
@@ -74,6 +74,6 @@ test "native type_new reads calling-frame globals with no other provenance" {
         "r = N.__module__\n"
         "rr = repr(N)\n"
     );
-    assert vm_str(ns, "r") == "enum", vm_str(ns, "r");
-    assert vm_str(ns, "rr") == "<class 'enum.N'>", vm_str(ns, "rr");
+    assert vm_str(ns, "r") == "enum" , vm_str(ns, "r");
+    assert vm_str(ns, "rr") == "<class 'enum.N'>" , vm_str(ns, "rr");
 }

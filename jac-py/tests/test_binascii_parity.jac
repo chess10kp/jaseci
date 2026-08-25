@@ -46,8 +46,7 @@ def _expect_unhex_error(label: str, arg: any, want_type: str, want_msg: str) {
 }
 
 
-def _expect_sep_error(label: str, sep: any, bps: int, want_type: str,
-                      want_msg: str) {
+def _expect_sep_error(label: str, sep: any, bps: int, want_type: str, want_msg: str) {
     raised = False;
     got = "";
     got_type = "";
@@ -92,21 +91,19 @@ test "wave16 hexlify separator scheduling" {
 
 
 test "wave16 separator errors match host" {
-    _expect_sep_error("sep len 2", b"--", 1, "ValueError",
-                      "sep must be length 1.");
-    _expect_sep_error("sep empty", b"", 1, "ValueError",
-                      "sep must be length 1.");
-    _expect_sep_error("sep non-ascii str", "\xff", 1, "ValueError",
-                      "sep must be ASCII.");
-    _expect_sep_error("sep int", 5, 1, "TypeError",
-                      "object of type 'int' has no len()");
-    _expect_sep_error("sep list", [48], 1, "TypeError",
-                      "sep must be str or bytes.");
+    _expect_sep_error("sep len 2", b"--", 1, "ValueError", "sep must be length 1.");
+    _expect_sep_error("sep empty", b"", 1, "ValueError", "sep must be length 1.");
+    _expect_sep_error(
+        "sep non-ascii str", "\xff", 1, "ValueError", "sep must be ASCII."
+    );
+    _expect_sep_error(
+        "sep int", 5, 1, "TypeError", "object of type 'int' has no len()"
+    );
+    _expect_sep_error("sep list", [48], 1, "TypeError", "sep must be str or bytes.");
 }
 
 
-def _expect_b64_error(label: str, arg: any, strict_mode: bool,
-                      want_msg: str) {
+def _expect_b64_error(label: str, arg: any, strict_mode: bool, want_msg: str) {
     raised = False;
     got = "";
     try {
@@ -138,31 +135,35 @@ test "wave16 base64 round trips" {
 
 
 test "wave16 base64 strict mode matches host" {
-    _expect_b64_error("leading pad", b"=Yg==", True,
-                      "Leading padding not allowed");
-    _expect_b64_error("excess pad", b"Yg===", True,
-                      "Excess padding not allowed");
-    _expect_b64_error("excess pad long", b"Yg====", True,
-                      "Excess padding not allowed");
-    _expect_b64_error("non-alpha", b"Yg!*", True,
-                      "Only base64 data is allowed");
-    _expect_b64_error("excess data after pad", b"Yg==YQ", True,
-                      "Excess data after padding");
+    _expect_b64_error("leading pad", b"=Yg==", True, "Leading padding not allowed");
+    _expect_b64_error("excess pad", b"Yg===", True, "Excess padding not allowed");
+    _expect_b64_error("excess pad long", b"Yg====", True, "Excess padding not allowed");
+    _expect_b64_error("non-alpha", b"Yg!*", True, "Only base64 data is allowed");
+    _expect_b64_error(
+        "excess data after pad", b"Yg==YQ", True, "Excess data after padding"
+    );
     # 'Y=g=': the '=' at quad_pos 1 breaks the loop; final validation
     # reports the len-1 message with 0 emitted bytes -> count 1.
-    _expect_b64_error("discontinuous pad", b"Y=g=", True,
-                      "Invalid base64-encoded string: number of data characters"
-                      " (1) cannot be 1 more than a multiple of 4");
+    _expect_b64_error(
+        "discontinuous pad",
+        b"Y=g=",
+        True,
+        "Invalid base64-encoded string: number of data characters"
+        " (1) cannot be 1 more than a multiple of 4"
+    );
 }
 
 
 test "wave16 base64 decode length errors match host" {
-    _expect_b64_error("one char", b"Y", False,
-                      "Invalid base64-encoded string: number of data characters"
-                      " (1) cannot be 1 more than a multiple of 4");
+    _expect_b64_error(
+        "one char",
+        b"Y",
+        False,
+        "Invalid base64-encoded string: number of data characters"
+        " (1) cannot be 1 more than a multiple of 4"
+    );
     _expect_b64_error("two chars", b"Yg", False, "Incorrect padding");
-    _expect_b64_error("ignored junk two chars", b"Yg*", False,
-                      "Incorrect padding");
+    _expect_b64_error("ignored junk two chars", b"Yg*", False, "Incorrect padding");
 }
 
 
@@ -248,16 +249,25 @@ test "wave16 uuencode errors match host" {
 
 
 test "wave16 unhexlify errors match host" {
-    _expect_unhex_error("odd length", "abc", "Exception",
-                        "Odd-length string");
-    _expect_unhex_error("non-hex digit", "zz", "Exception",
-                        "Non-hexadecimal digit found");
-    _expect_unhex_error("non-hex tail", b"61zz", "Exception",
-                        "Non-hexadecimal digit found");
-    _expect_unhex_error("non-ascii str", "\xff", "ValueError",
-                        "string argument should contain only ASCII characters");
-    _expect_unhex_error("int arg", 5, "TypeError",
-                        "argument should be bytes, buffer or ASCII string, not 'int'");
+    _expect_unhex_error("odd length", "abc", "Exception", "Odd-length string");
+    _expect_unhex_error(
+        "non-hex digit", "zz", "Exception", "Non-hexadecimal digit found"
+    );
+    _expect_unhex_error(
+        "non-hex tail", b"61zz", "Exception", "Non-hexadecimal digit found"
+    );
+    _expect_unhex_error(
+        "non-ascii str",
+        "\xff",
+        "ValueError",
+        "string argument should contain only ASCII characters"
+    );
+    _expect_unhex_error(
+        "int arg",
+        5,
+        "TypeError",
+        "argument should be bytes, buffer or ASCII string, not 'int'"
+    );
 }
 
 

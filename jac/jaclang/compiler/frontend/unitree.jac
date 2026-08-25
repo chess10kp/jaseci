@@ -1889,13 +1889,12 @@ def _decode_str_escapes(text: str) -> str {
             code = _hex_escape_value(text, i, width, nxt);
             i += 2 + width;
             if (width == 4 and 0xD800 <= code <= 0xDBFF) {
-                # JSON/JS-style surrogate-pair escapes (the conversion pipeline
-                # emits json.dumps(ensure_ascii=True) literals) denote one
-                # astral code point; combine when a low surrogate follows.
                 if ((i + 6) <= n and text[i] == '\\' and text[i + 1] == 'u') {
                     low = _hex_escape_value(text, i, 4, 'u');
                     if (0xDC00 <= low <= 0xDFFF) {
-                        out.append(chr(0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00)));
+                        out.append(
+                            chr(0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00))
+                        );
                         i += 6;
                         continue;
                     }

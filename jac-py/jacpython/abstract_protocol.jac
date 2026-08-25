@@ -8,14 +8,7 @@
 # _base_type_name / py_ordering_type_error) lives in objects.jac next to the
 # tp_richcompare slots it drives -- container value equality must run element
 # compares through that protocol, and Jac forbids import cycles.
-import from objects {
-    PyObj,
-    PyInt,
-    is_error,
-    hashkey_str,
-    py_error,
-    _signed_hash,
-}
+import from objects { PyObj, PyInt, is_error, hashkey_str, py_error, _signed_hash, }
 
 # Deterministic digest of ``tp_hashkey()`` for dict/set keying only — not the
 # user-facing ``hash()`` int (see ``hash_dispatch.hash_element`` / ``py_hash``).
@@ -51,8 +44,11 @@ def PyObject_Hash(v: PyObj) -> PyObj {
 
 # ``abstract.c`` iterator surface: ``tp_iter`` + iterator-type check.
 def PyIter_Check(value: PyObj) -> bool {
-    return value.t == "iter" or value.t == "generator" or value.t == "dictiter"
-        or value.t == "rangeiter" or value.t == "seqiter";
+    return value.t == "iter"
+        or value.t == "generator"
+        or value.t == "dictiter"
+        or value.t == "rangeiter"
+        or value.t == "seqiter";
 }
 
 def PyObject_GetIter(o: PyObj) -> PyObj {

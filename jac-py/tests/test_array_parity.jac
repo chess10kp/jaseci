@@ -7,9 +7,7 @@ Run with JACPATH=jac-py/jacpython (same pattern as test_p2_facade_parity).
 """
 
 import array as host_arr;
-import from arrayobject {
-    _p2_array,
-}
+import from arrayobject { _p2_array, }
 import from warnings { catch_warnings, simplefilter }
 
 
@@ -26,7 +24,22 @@ def _take(it: any) -> list {
 
 
 test "wave14 typecode table matches host itemsize" {
-    codes: list = ["b", "B", "u", "w", "h", "H", "i", "I", "l", "L", "q", "Q", "f", "d"];
+    codes: list = [
+        "b",
+        "B",
+        "u",
+        "w",
+        "h",
+        "H",
+        "i",
+        "I",
+        "l",
+        "L",
+        "q",
+        "Q",
+        "f",
+        "d"
+    ];
     for tc in codes {
         mine = _p2_array(tc);
         # Host promotes DeprecationWarning to error under the test runner;
@@ -43,7 +56,8 @@ test "wave14 typecode table matches host itemsize" {
     try {
         _p2_array("z");
     } except ValueError as e {
-        raised = str(e) == "bad typecode (must be b, B, u, w, h, H, i, I, l, L, q, Q, f or d)";
+        raised = str(e)
+            == "bad typecode (must be b, B, u, w, h, H, i, I, l, L, q, Q, f or d)";
     }
     assert raised , "unknown typecode";
 }
@@ -61,30 +75,42 @@ test "wave14 int storage round-trips within typecode bounds" {
         ("L", [18446744073709551615, 0]),
         ("q", [9223372036854775807, -9223372036854775808]),
         ("Q", [18446744073709551615, 0]),
+
     ];
     for (tc, vals) in cases {
         mine = _p2_array(tc, vals);
         host = host_arr.array(tc, vals);
-        assert mine.tolist() == host.tolist() , (tc,);
+        assert mine.tolist() == host.tolist() , (tc, );
         assert str(mine) == str(host) , (tc, str(mine), str(host));
     }
     # byte-level identity for multi-byte signed/unsigned pairs
     assert _p2_array("i", [-2]).tobytes() == host_arr.array("i", [-2]).tobytes();
-    assert _p2_array("I", [4294967294]).tobytes() == host_arr.array("I", [4294967294]).tobytes();
+    assert _p2_array("I", [4294967294]).tobytes()
+        == host_arr.array("I", [4294967294]).tobytes();
 }
 
 
 test "wave14 overflow and type errors agree with host messages" {
     bads: list = [
-        ("b", 128), ("b", -129),
-        ("B", 256), ("B", -1),
-        ("h", 32768), ("h", -32769),
-        ("H", 65536), ("H", -1),
-        ("i", 2147483648), ("i", -2147483649),
-        ("I", 4294967296), ("I", -1),
-        ("l", 9223372036854775808), ("l", -9223372036854775809),
-        ("q", 9223372036854775808), ("q", -9223372036854775809),
-        ("Q", 18446744073709551616), ("Q", -1),
+        ("b", 128),
+        ("b", -129),
+        ("B", 256),
+        ("B", -1),
+        ("h", 32768),
+        ("h", -32769),
+        ("H", 65536),
+        ("H", -1),
+        ("i", 2147483648),
+        ("i", -2147483649),
+        ("I", 4294967296),
+        ("I", -1),
+        ("l", 9223372036854775808),
+        ("l", -9223372036854775809),
+        ("q", 9223372036854775808),
+        ("q", -9223372036854775809),
+        ("Q", 18446744073709551616),
+        ("Q", -1),
+
     ];
     for (tc, v) in bads {
         got_msg: str = "";
@@ -186,7 +212,8 @@ test "wave14 char arrays match host u/w behavior" {
 
 test "wave14 construction from bytes/list/array agrees with host" {
     src_b = b"\x01\x02\x03\x04";
-    assert _p2_array("H", bytearray(src_b)).tolist() == host_arr.array("H", bytearray(src_b)).tolist();
+    assert _p2_array("H", bytearray(src_b)).tolist()
+        == host_arr.array("H", bytearray(src_b)).tolist();
     assert _p2_array("h", src_b).tolist() == host_arr.array("h", src_b).tolist();
     assert _p2_array("d", host_arr.array("d", [1.5]).tobytes()).tolist() == [1.5];
     m = _p2_array("b", [1, 2]);
@@ -222,7 +249,13 @@ test "wave14 index access and slices agree with host" {
         oob = str(e) == "array index out of range";
     }
     assert oob;
-    for sl in [(1, 3, 1), (None, None, 2), (3, None, -1), (None, None, -2), (0, 0, 1)] {
+    for sl in [
+        (1, 3, 1),
+        (None, None, 2),
+        (3, None, -1),
+        (None, None, -2),
+        (0, 0, 1)
+    ] {
         s = slice(sl[0], sl[1], sl[2]);
         assert mine[s].tolist() == host[s].tolist() , sl;
         assert str(mine[s]) == str(host[s]) , sl;
@@ -329,6 +362,7 @@ test "wave14 comparisons agree with host" {
         ([1, 2], [1, 2, 3]),
         ([], []),
         ([2], [1, 9]),
+
     ];
     for (x, y) in cases {
         mx = _p2_array("b", x);
@@ -343,9 +377,8 @@ test "wave14 comparisons agree with host" {
         assert (mx >= my) == (hx >= hy) , (x, y);
     }
     # cross-typecode equality compares values, not typecodes
-    assert (_p2_array("b", [1]) == _p2_array("B", [1])) == (
-        host_arr.array("b", [1]) == host_arr.array("B", [1])
-    );
+    assert (_p2_array("b", [1]) == _p2_array("B", [1]))
+        == (host_arr.array("b", [1]) == host_arr.array("B", [1]));
 }
 
 

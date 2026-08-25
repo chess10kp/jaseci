@@ -1,9 +1,3 @@
-"""Machine-readable c2jac fidelity sidecars.
-
-Human comment headers stay in lift.render_c2jac_report; this module owns the
-JSON provenance artifact for re-lifts, project aggregates, and the AI loop.
-"""
-
 import json;
 import os;
 import from jaclang.compiler.cfront.fidelity { band_of_code }
@@ -34,7 +28,7 @@ obj C2JacReport {
 def site_to_dict(site: CLiftSite) -> dict {
     return {
         "code": site.code,
-        "band": site.band if site.band else band_of_code(site.code),
+        "band": site.band or band_of_code(site.code),
         "line": site.line,
         "msg": site.msg,
         "function": site.function,
@@ -67,7 +61,6 @@ def build_c2jac_report_from_diags(
     quarantined: list[str] | None = None,
     lenient: bool = True
 ) -> C2JacReport {
-    # Back-compat path when only (code, msg, line) triples are available.
     qset = set(quarantined or []);
     sites: list[dict] = [];
     for (code, msg, line) in diags {
@@ -96,7 +89,7 @@ def report_sidecar_path(jac_or_c_path: str) -> str {
     stem = jac_or_c_path;
     for suf in [".c2jac.report.json", ".jac", ".c", ".i"] {
         if stem.endswith(suf) {
-            stem = stem[: -len(suf)];
+            stem = stem[:-len(suf)];
             break;
         }
     }

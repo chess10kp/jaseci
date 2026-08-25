@@ -23,6 +23,7 @@ test "P2 bisect facade agrees with host bisect on representative cases" {
         ([1, 2, 2, 3, 3, 3, 4, 4, 4, 4], 3),
         ([0, 0, 0, 0], 0),
         (list(range(20)), 7),
+
     ];
     for (data, item) in cases {
         a = list(data);

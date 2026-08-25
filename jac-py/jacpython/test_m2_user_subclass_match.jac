@@ -59,7 +59,8 @@ test "m2: user KeyError subclass matches except LookupError" {
         "    raise MyErr('x')\n"
         "except LookupError:\n"
         "    r = 'caught'\n"
-    ) == "caught";
+    )
+        == "caught";
 }
 
 test "m2: two-level guest chain matches grandparent target" {
@@ -74,7 +75,8 @@ test "m2: two-level guest chain matches grandparent target" {
         "    raise Leaf('x')\n"
         "except LookupError:\n"
         "    r = 'caught'\n"
-    ) == "caught";
+    )
+        == "caught";
 }
 
 test "m2: user subclass matches broad Exception target" {
@@ -87,7 +89,8 @@ test "m2: user subclass matches broad Exception target" {
         "    raise MyErr('x')\n"
         "except Exception:\n"
         "    r = 'caught'\n"
-    ) == "caught";
+    )
+        == "caught";
 }
 
 test "m2: unrelated family still escapes" {

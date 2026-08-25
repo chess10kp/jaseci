@@ -53,7 +53,7 @@ def _run_hand_assembled(names: tuple[str, str], seed_ns: bool) -> str {
         3,
         64,
         bytes([22, 0, 91, 0, 116, 1, 82, 0, 35, 0]),
-        (None,),
+        (None, ),
         names,
         (),
         "<o91>",
@@ -68,7 +68,9 @@ def _run_hand_assembled(names: tuple[str, str], seed_ns: bool) -> str {
     co = unmarshal(marshal.dumps(co_host) as list[int]);
     ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
     if seed_ns {
-        seedco = unmarshal(marshal.dumps(compile("v = 42", "<o91>", "exec")) as list[int]);
+        seedco = unmarshal(
+            marshal.dumps(compile("v = 42", "<o91>", "exec")) as list[int]
+        );
         out0 = exec_code(seedco, [], ns);
         if is_error(out0) {
             e0 = out0 as PyError;
@@ -107,36 +109,31 @@ test "o91 hand-assembled: globals miss falls back to builtins" {
 
 test "o91 hand-assembled: full miss raises exact NAME_ERROR_MSG" {
     # Host oracle: NameError: name 'v' is not defined.
-    assert _run_hand_assembled(("v", "r"), False) == "NameError: name 'v' is not defined";
+    assert _run_hand_assembled(("v", "r"), False)
+        == "NameError: name 'v' is not defined";
 }
 
 test "o91 native emission: __annotate__ body resolves builtin through classdict" {
     # Host oracle (PEP 649): D.__annotations__ == {'y': list}.
     assert _run_native(
-        "class D:\n"
-        "    y: list\n"
-        "r = D.__annotate_func__(1)['y'] is list\n"
-    ) == "True";
+        "class D:\n" "    y: list\n" "r = D.__annotate_func__(1)['y'] is list\n"
+    )
+        == "True";
 }
 
 test "o91 native emission: __annotate__ body resolves module global" {
     # Host oracle (PEP 649): g = 7; E.__annotations__ == {'z': 7}.
     assert _run_native(
-        "g = 7\n"
-        "class E:\n"
-        "    z: g\n"
-        "r = E.__annotate_func__(1)['z'] == 7\n"
-    ) == "True";
+        "g = 7\n" "class E:\n" "    z: g\n" "r = E.__annotate_func__(1)['z'] == 7\n"
+    )
+        == "True";
 }
 
 test "o91 native emission: __annotate__ missing name raises exact NameError" {
     # Host oracle: accessing F.__annotations__ raises
     # NameError: name 'nosuch' is not defined.
-    assert _run_native(
-        "class F:\n"
-        "    w: nosuch\n"
-        "r = F.__annotate_func__(1)\n"
-    ) == "NameError: name 'nosuch' is not defined";
+    assert _run_native("class F:\n" "    w: nosuch\n" "r = F.__annotate_func__(1)\n")
+        == "NameError: name 'nosuch' is not defined";
 }
 
 test "o91 module differential: module-level from-import of dataclass binds callable" {
@@ -148,7 +145,7 @@ test "o91 module differential: module-level from-import of dataclass binds calla
     # the host-class bridge (BridgePolicy.STANDIN has no to_host arm) -- a
     # separate interop gap, not an opcode-91 semantics gap.
     assert _run_native(
-        "from dataclasses import dataclass\n"
-        "r = callable(dataclass)\n"
-    ) == "True";
+        "from dataclasses import dataclass\n" "r = callable(dataclass)\n"
+    )
+        == "True";
 }

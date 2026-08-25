@@ -53,7 +53,6 @@ obj _P2Counter {
     has keylist: list = [],
         vallist: list = [];
 
-
     def _pos_of(key: any) -> int {
         i: int = 0;
         while i < len(self.keylist) {
@@ -71,7 +70,7 @@ obj _P2Counter {
         if x is y {
             return True;
         }
-        ev = (x == y);
+        ev = x == y;
         return isinstance(ev, bool) and ev;
     }
 
@@ -127,7 +126,7 @@ obj _P2Counter {
         return self.vallist[pos];
     }
 
-    def clear() {
+    def clear {
         self.keylist = [];
         self.vallist = [];
     }
@@ -181,7 +180,9 @@ obj _P2Counter {
         if not isinstance(n, int) {
             raise TypeError(
                 "'>=' not supported between instances of '"
-                + _p2_counter_type_name(n) + "' and 'int'");
+                    + _p2_counter_type_name(n)
+                    + "' and 'int'"
+            );
         }
         if n < 0 {
             return [];
@@ -391,8 +392,12 @@ obj _P2Counter {
     def _require_counter(other: any, op: str) {
         if not isinstance(other, _P2Counter) {
             raise TypeError(
-                "unsupported operand type(s) for " + op + ": 'Counter' and '"
-                + _p2_counter_type_name(other) + "'");
+                "unsupported operand type(s) for "
+                    + op
+                    + ": 'Counter' and '"
+                    + _p2_counter_type_name(other)
+                    + "'"
+            );
         }
     }
 }
@@ -426,7 +431,6 @@ obj _P2OrderedDict {
     has keylist: list = [],
         vallist: list = [];
 
-
     def _pos_of(key: any) -> int {
         i: int = 0;
         while i < len(self.keylist) {
@@ -444,7 +448,7 @@ obj _P2OrderedDict {
         if x is y {
             return True;
         }
-        ev = (x == y);
+        ev = x == y;
         return isinstance(ev, bool) and ev;
     }
 
@@ -557,7 +561,7 @@ obj _P2OrderedDict {
         }
     }
 
-    def clear() {
+    def clear {
         self.keylist = [];
         self.vallist = [];
     }
@@ -697,18 +701,18 @@ def _p2_ordereddict_fromkeys(seq: any, value: any = None) -> _P2OrderedDict {
 # against the pinned host oracle.
 # ---------------------------------------------------------------------------
 
-def _p2_nt_check_name(name: any) -> None {
+def _p2_nt_check_name(name: any) {
     # Typename ladder: identifier, then keyword. Field-specific rules live in
     # the caller loop.
     if not name.isidentifier() {
         raise ValueError(
-            "Type names and field names must be valid identifiers: "
-            + _p2_nt_repr(name));
+            "Type names and field names must be valid identifiers: " + _p2_nt_repr(name)
+        );
     }
     if _keyword.iskeyword(name) {
         raise ValueError(
-            "Type names and field names cannot be a keyword: "
-            + _p2_nt_repr(name));
+            "Type names and field names cannot be a keyword: " + _p2_nt_repr(name)
+        );
     }
 }
 
@@ -723,7 +727,6 @@ obj _P2NamedTupleType {
         field_names: list = [],
         field_defaults: dict = {};
 
-
     def __call__(*args: list, **kwargs: dict) -> any {
         # nt_new: positional args fill fields left to right, keywords fill
         # named fields; defaults cover trailing omissions. Arity errors carry
@@ -732,9 +735,13 @@ obj _P2NamedTupleType {
         n = len(self.field_names);
         if len(args) > n {
             raise TypeError(
-                self.type_name + ".__new__() takes " + str(n + 1)
-                + " positional arguments but " + str(len(args) + 1)
-                + " were given");
+                self.type_name
+                    + ".__new__() takes "
+                    + str(n + 1)
+                    + " positional arguments but "
+                    + str(len(args) + 1)
+                    + " were given"
+            );
         }
         i: int = 0;
         while i < len(args) {
@@ -753,13 +760,21 @@ obj _P2NamedTupleType {
             }
             if idx == -1 {
                 raise TypeError(
-                    self.type_name + ".__new__() got an unexpected keyword"
-                    + " argument '" + k + "'");
+                    self.type_name
+                        + ".__new__() got an unexpected keyword"
+                        + " argument '"
+                        + k
+                        + "'"
+                );
             }
             if idx < len(vals) {
                 raise TypeError(
-                    self.type_name + ".__new__() got multiple values for"
-                    + " argument '" + k + "'");
+                    self.type_name
+                        + ".__new__() got multiple values for"
+                        + " argument '"
+                        + k
+                        + "'"
+                );
             }
             while len(vals) < idx {
                 vals.append(None);
@@ -772,8 +787,12 @@ obj _P2NamedTupleType {
                 vals.append(self.field_defaults[name]);
             } else {
                 raise TypeError(
-                    self.type_name + ".__new__() missing 1 required"
-                    + " positional argument: '" + name + "'");
+                    self.type_name
+                        + ".__new__() missing 1 required"
+                        + " positional argument: '"
+                        + name
+                        + "'"
+                );
             }
         }
         return _p2_nt_instance(self, vals);
@@ -786,8 +805,11 @@ obj _P2NamedTupleType {
         }
         if len(vals) != len(self.field_names) {
             raise TypeError(
-                "Expected " + str(len(self.field_names))
-                + " arguments, got " + str(len(vals)));
+                "Expected "
+                    + str(len(self.field_names))
+                    + " arguments, got "
+                    + str(len(vals))
+            );
         }
         return _p2_nt_instance(self, vals);
     }
@@ -804,17 +826,15 @@ obj _P2NamedTupleType {
             return self.type_name;
         }
         raise AttributeError(
-            "type object '" + self.type_name + "' has no attribute '" + name
-            + "'");
+            "type object '" + self.type_name + "' has no attribute '" + name + "'"
+        );
     }
-
 }
 
 
 obj _P2NamedTupleInst {
     has tp: any = None,
         vals: list = [];
-
 
     def _field_index(name: str) -> int {
         i: int = 0;
@@ -842,8 +862,8 @@ obj _P2NamedTupleInst {
             return self.tp.type_name;
         }
         raise AttributeError(
-            "'" + self.tp.type_name + "' object has no attribute '" + name
-            + "'");
+            "'" + self.tp.type_name + "' object has no attribute '" + name + "'"
+        );
     }
 
     def _asdict -> any {
@@ -916,8 +936,8 @@ obj _P2NamedTupleInst {
             return self.vals[i];
         }
         raise TypeError(
-            "tuple indices must be integers or slices, not "
-            + _p2_nt_type_of(item));
+            "tuple indices must be integers or slices, not " + _p2_nt_type_of(item)
+        );
     }
 
     def __iter__ -> any {
@@ -942,7 +962,7 @@ obj _P2NamedTupleInst {
                 i += 1;
                 continue;
             }
-            ev = (lhs == rhs);
+            ev = lhs == rhs;
             if not (isinstance(ev, bool) and ev) {
                 return False;
             }
@@ -968,8 +988,7 @@ obj _P2NamedTupleInst {
         parts: list = [];
         i: int = 0;
         while i < len(self.vals) {
-            parts.append(
-                self.tp.field_names[i] + "=" + repr(self.vals[i]));
+            parts.append(self.tp.field_names[i] + "=" + repr(self.vals[i]));
             i += 1;
         }
         return self.tp.type_name + "(" + ", ".join(parts) + ")";
@@ -1019,20 +1038,21 @@ def _p2_namedtuple(
                 if not name.isidentifier() {
                     raise ValueError(
                         "Type names and field names must be valid"
-                        + " identifiers: " + repr(name));
+                            + " identifiers: "
+                            + repr(name)
+                    );
                 }
                 if _keyword.iskeyword(name) {
                     raise ValueError(
-                        "Type names and field names cannot be a keyword: "
-                        + repr(name));
+                        "Type names and field names cannot be a keyword: " + repr(name)
+                    );
                 }
                 if name.startswith("_") {
                     raise ValueError(
-                        "Field names cannot start with an underscore: "
-                        + repr(name));
+                        "Field names cannot start with an underscore: " + repr(name)
+                    );
                 }
-                raise ValueError(
-                    "Encountered duplicate field name: " + repr(name));
+                raise ValueError("Encountered duplicate field name: " + repr(name));
             }
         }
         seen[names[i]] = True;
@@ -1044,8 +1064,7 @@ def _p2_namedtuple(
     if defaults is not None {
         dl = list(defaults);
         if len(dl) > len(names) {
-            raise TypeError(
-                "Got more default values than field names");
+            raise TypeError("Got more default values than field names");
         }
         offset = len(names) - len(dl);
         j: int = 0;
