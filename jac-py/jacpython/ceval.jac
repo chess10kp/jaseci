@@ -5085,7 +5085,14 @@ def py_type_of(o: PyObj) -> PyObj {
         if e.raw is not None and isinstance(e.raw, PyUserObj) {
             return (e.raw as PyUserObj).cls as PyObj;
         }
-        return host_builtin(e.type_name);
+        t = host_builtin(e.type_name);
+        if not is_error(t) {
+            return t;
+        }
+        # Synthetic (shim-raised) exception names (unittest.SkipTest et al)
+        # are not builtins: serve the canonical exception-type marker instead
+        # of crashing type()/__name__ lookups on a faithfully raised error.
+        return py_exception_type(e.type_name);
     }
     # Native callable wrappers have no faithful host object (to_host drops
     # them), so answer with the matching HOST callable type instead of NoneType
