@@ -3193,7 +3193,12 @@ def default_user_getattro(u: PyUserObj, name: str) -> PyObj {
         return (classattr as PyMemberDescr)._get(u);
     }
     if name in u.attrs {
-        return bind_attribute(u.attrs[name], u);
+        # Instance-__dict__ values return RAW: CPython applies function
+        # descriptor binding only to class/MRO entries, never instance-dict
+        # data (enum.py:1075 copies found_descriptor.fget and then CALLS it
+        # explicitly with the member -- an implicitly bound copy overflows
+        # the getter with a doubled receiver).
+        return u.attrs[name];
     }
     found = classattr;
     if not is_error(found) {
@@ -4002,6 +4007,13 @@ def descriptor_get(value: PyObj, instance: PyObj, owner: PyObj) -> PyObj {
     }
     if value.t == "function" and not isinstance(instance, PyNoneType) {
         return PyBoundMethod(t="bound_method", function=value, receiver=instance);
+    }
+    # Guest-defined descriptors (enum.property subclasses
+    # DynamicClassAttribute/property): ANY object answering __get__ participates
+    # in the protocol -- invoke it instead of returning the raw wrapper
+    # (X.A.value otherwise reads as '<enum.property object>').
+    if isinstance(value, PyUserObj) and user_has_dunder(value, "__get__") {
+        return call_user_dunder(value, "__get__", [instance, owner]);
     }
     return value;
 }
@@ -9948,6 +9960,20 @@ def py_isinstance(ob: PyObj, typ: PyObj) -> bool {
     # answered False against marker builtins -- the marker never survives to
     # isinstance dispatch through the PyClass arms because builtin exception
     # bases are PyExceptionType objects, not PyClass nodes.
+    # Descriptor-family ctor markers used as second args of isinstance:
+    # Lib code branches on isinstance(v, staticmethod)/classmethod/property
+    # (enum.py unwraps value.__func__ only through that gate). The builtins
+    # resolve to the ctor marker objects, so match them against the wrapper
+    # types they construct.
+    if typ.t == "staticmethod_ctor" {
+        return isinstance(ob, PyStaticMethod);
+    }
+    if typ.t == "classmethod_ctor" {
+        return isinstance(ob, PyClassMethod);
+    }
+    if typ.t == "property_ctor" {
+        return isinstance(ob, PyProperty);
+    }
     if isinstance(ob, PyUserObj) and typ.t == "exception_type" {
         for klass in class_mro((ob as PyUserObj).cls) {
             for base in (klass as PyClass).bases {
