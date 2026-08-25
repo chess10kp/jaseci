@@ -2258,6 +2258,19 @@ obj PyHostProxy(PyObj) {
     }
 
     def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # CPython type_setattro policy: writes onto IMMUTABLE builtin base
+        # types (int/str/list/...) never stick -- only heap types (guest
+        # subclasses included) have a writable type dict. Gate natively so the
+        # error is byte-exact and independent of the assigned value's boundary
+        # coercibility; every other proxied host surface keeps host routing.
+        immutable_base: str = str(_jac_builtin_base_name(self.val));
+        if immutable_base != "" {
+            return py_error(
+                "TypeError",
+                "cannot set '" + name + "' attribute of immutable type '"
+                    + immutable_base + "'",
+            );
+        }
         return host_setattr(self, name, value);
     }
 
