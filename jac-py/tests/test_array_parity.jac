@@ -6,11 +6,25 @@ jacpython/arrayobject.jac against the pinned host oracle (CPython 3.14).
 Run with JACPATH=jac-py/jacpython (same pattern as test_p2_facade_parity).
 """
 
-import array as host_arr;
+import importlib.util as ilu;
+import importlib.machinery as mach;
 import from arrayobject {
     _p2_array,
 }
 import from warnings { catch_warnings, simplefilter }
+
+
+def _load_host_array() -> any {
+    # A plain ``import array`` would resolve to jacpython/array.jac (the wave-14
+    # module surface, found via JACPATH ahead of sys.path), so load the genuine
+    # builtin host array through the interpreter's BuiltinImporter instead.
+    spec = ilu.spec_from_loader("array", mach.BuiltinImporter as any);
+    mod = ilu.module_from_spec(spec);
+    (mach.BuiltinImporter as any).exec_module(mod);
+    return mod;
+}
+
+glob host_arr: any = _load_host_array();
 
 
 def _take(it: any) -> list {
@@ -306,7 +320,7 @@ test "wave14 arithmetic agrees with host" {
     c = _p2_array("b", [1]);
     hc = host_arr.array("b", [1]);
     c += _p2_array("b", [2, 3]);
-    hc += host_arr.array("b", [2, 3]);
+    hc.__iadd__(host_arr.array("b", [2, 3]));
     assert str(c) == str(hc);
     assert str(a * 2) == str(ha * 2);
     assert str(3 * b) == str(3 * hb);
@@ -318,7 +332,7 @@ test "wave14 arithmetic agrees with host" {
     }
     assert add_bad;
     mul_neg = a * -1;
-    assert len(mul_neg) == 0 and len(ha * -1) == 0;
+    assert len(mul_neg) == 0 and len(ha.__mul__(-1)) == 0;
 }
 
 
@@ -337,10 +351,10 @@ test "wave14 comparisons agree with host" {
         hy = host_arr.array("b", y);
         assert (mx == my) == (hx == hy) , (x, y);
         assert (mx != my) == (hx != hy) , (x, y);
-        assert (mx < my) == (hx < hy) , (x, y);
-        assert (mx <= my) == (hx <= hy) , (x, y);
-        assert (mx > my) == (hx > hy) , (x, y);
-        assert (mx >= my) == (hx >= hy) , (x, y);
+        assert (mx < my) == bool(hx.__lt__(hy)) , (x, y);
+        assert (mx <= my) == bool(hx.__le__(hy)) , (x, y);
+        assert (mx > my) == bool(hx.__gt__(hy)) , (x, y);
+        assert (mx >= my) == bool(hx.__ge__(hy)) , (x, y);
     }
     # cross-typecode equality compares values, not typecodes
     assert (_p2_array("b", [1]) == _p2_array("B", [1])) == (
