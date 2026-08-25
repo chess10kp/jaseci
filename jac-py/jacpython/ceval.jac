@@ -6191,7 +6191,8 @@ def py_str(value: PyObj) -> PyObj {
     # self-referential structures hit the repr cycle guards instead of
     # recursing unbounded inside to_host conversion.
     if isinstance(value, PyDict) or isinstance(value, PyList)
-        or isinstance(value, PyTuple) or isinstance(value, PyMappingProxy) {
+        or isinstance(value, PyTuple) or isinstance(value, PyMappingProxy)
+        or isinstance(value, PyGenerator) {
         return py_repr(value);
     }
     return host_convert(value, 1);
@@ -6369,6 +6370,11 @@ def py_repr(value: PyObj) -> PyObj {
         # repr is observational: it must NOT route through to_host, whose drain
         # would exhaust the iterator as a side effect.
         return PyStr(t="str", val="<iterator object>");
+    }
+    if isinstance(value, PyGenerator) {
+        # gen_repr is native: crossing would hand back the LAZY_ITER wrapper,
+        # repr'd <callable_iterator object ...>.
+        return (value as PyGenerator).tp_repr();
     }
     result = host_convert(value, 2);
     if is_error(result) {
@@ -14327,6 +14333,25 @@ obj PyGenerator(PyObj) {
             return py_error("TypeError", "'async_generator' object is not iterable");
         }
         return self;
+    }
+
+    # CPython gen_repr: "<generator object <genexpr> at 0x...>" (async flavor
+    # for CO_ASYNC_GENERATOR). Without this, repr crossed to the host and the
+    # LAZY_ITER wrapper answered <callable_iterator object ...>.
+    def tp_repr -> PyObj {
+        kind = "generator";
+        if self.t == "async_generator" {
+            kind = "async_generator";
+        }
+        name = self.gen_name;
+        if name == "" {
+            name = self.frame.co.name;
+        }
+        return PyStr(
+            t="str",
+            val="<" + kind + " object " + name + " at 0x"
+                + _uint_to_str(py_id(self as PyObj), 16, "0123456789abcdef") + ">"
+        );
     }
 
     # gen.send / gen.throw / gen.close / gen.__next__ resolve to native bound

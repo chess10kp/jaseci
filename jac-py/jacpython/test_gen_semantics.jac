@@ -375,3 +375,28 @@ test "m13: yield-from delegated return payload reaches args" {
     );
     assert vm_str(ns, "r") == "[[42], 42]", vm_str(ns, "r");
 }
+
+# ---------------- gen_repr (repr/str of generator objects) ----------------
+# CPython: "<generator object <genexpr> at 0x...>" with the code name; async
+# flavor for CO_ASYNC_GENERATOR. Crossing to the host handed back the
+# LAZY_ITER wrapper repr'd <callable_iterator object ...>.
+test "gen semantics: genexpr repr is native generator-object form" {
+    ns = vm_exec(
+        "def f():\n"
+        "    g = (i for i in range(3))\n"
+        "    r = str(g)\n"
+        "    return [r.startswith('<generator object <genexpr> at 0x'), r.endswith('>'), list(g)]\n"
+        "rv = str(f())\n"
+    );
+    assert vm_str(ns, "rv") == "[True, True, [0, 1, 2]]", vm_str(ns, "rv");
+}
+
+test "gen semantics: named generator uses function name; str == repr" {
+    ns = vm_exec(
+        "def mygen():\n"
+        "    yield 1\n"
+        "g = mygen()\n"
+        "rv = str(g) == repr(g) and '<generator object mygen at 0x' in repr(g)\n"
+    );
+    assert vm_str(ns, "rv") == "True", vm_str(ns, "rv");
+}
