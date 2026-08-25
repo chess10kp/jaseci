@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_ipaddress/conv_ipaddress_pins.jac"
+  ],
+  "generated_at": "2026-08-25T00:01:05",
+  "hashes": {
+    "pins_jac": "57a46aff9bec1439bdef9a791548c53fe2e93ab34e7830d20c7e976455f467a6",
+    "conversion_json": "e058f3528ffff77f88b7ad78416a96bc6b50ead93f9755321fb1f3423d9393c6",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "ipaddress",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 211,
+    "runnable": 83,
+    "green": 62,
+    "quarantined": 128,
+    "failed": 21,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "IpaddrUnitTest.testGetNetwork",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'<functools.cached_property object at 0x7fc970eb16e0>\\', \\'::ffff:ffff:ffff:ffff\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetBroadcast",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testHosts",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testFancySubnetting",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSubnets",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testSubnet2",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSubnets3",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetNum_Addresses",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testNth",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testCollapsing",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', [], [IPv4Network(\\'1.1.1.0/30\\'), IPv4Network(\\'1.1.1.4/32\\')])\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testOverlaps",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'version'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testReservedIpv4",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'is_reserved'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testPrivateNetworks",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'version'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testReservedIpv6",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'is_multicast'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpv4MappedLoopbackCheck",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'is_loopback'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testAddrExclude",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'>=\\' not supported between instances of \\'cached_property\\' and \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv6NetworkHelpers",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'2001:658:22a:cafe::/::ffff:ffff:ffff:ffff\\', \\'2001:658:22a:cafe::/<functools.cached_property object at 0x7fc970eb16e0>\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv4NetworkHelpers",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'1.2.3.0/0.0.0.255\\', \\'1.2.3.0/<functools.cached_property object at 0x7fc970eb16e0>\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testWithStar",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'1.2.3.4/<functools.cached_property object at 0x7fc970eb1cd0>\\', \\'1.2.3.4/0.0.0.255\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testNetworkElementCaching",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', <functools.cached_property object at 0x7fc97033a850>, IPv4Address(\\'1.2.3.255\\'))\"'>"
+    }
+  ]
+}

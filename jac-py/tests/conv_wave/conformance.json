@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_wave/conv_wave_pins.jac"
+  ],
+  "generated_at": "2026-08-25T00:01:26",
+  "hashes": {
+    "pins_jac": "7557274e515dae9ccd240d31dcb9cebf7daaebf31cb335d832c6fe9f86fb9e49",
+    "conversion_json": "631ac196e2c7e1e38278e7750a17e904896ab228cd163fe649eb70e6c3ed23fd",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "wave",
+  "counts": {
+    "converted": 13,
+    "runnable": 10,
+    "green": 9,
+    "quarantined": 3
+  },
+  "pins": [
+    {
+      "id": "MiscTestCase.test__all__",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_no_chunks",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_no_riff_chunk",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_not_wave",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_no_fmt_no_data_chunk",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_no_data_chunk",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_no_fmt_chunk",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_wrong_form",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_wrong_number_of_channels",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_read_wrong_sample_width",
+      "status": "pass"
+    },
+    {
+      "id": "WaveLowLevelTest.test_open_in_write_raises",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'catch_unraisable_exception'\">"
+    },
+    {
+      "id": "MiscTestCase.test_read_deprecations",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "MiscTestCase.test_write_deprecations",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    }
+  ]
+}

@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_pprint.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_pprint",
+    "--name",
+    "conv_pprint"
+  ],
+  "generated_at": "2026-08-24T23:51:52",
+  "hashes": {
+    "pins_jac": "08e66770eb5edda79c3ecbea8f47f987af6cc99f470cc7fdadfeedec2a9a260a"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_pprint.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "pprint",
+  "pins_file": "conv_pprint_pins.jac",
+  "pins": [
+    {
+      "ident": "QueryTestCase.test_lazy_import",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import ensure_lazy_imports\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    ensure_lazy_imports('pprint', {'dataclasses', 're'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_init",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import io\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    pp = pprint.PrettyPrinter()\n    pp = pprint.PrettyPrinter(indent=4, width=40, depth=5, stream=io.StringIO(), compact=True)\n    pp = pprint.PrettyPrinter(4, 40, 5, io.StringIO())\n    pp = pprint.PrettyPrinter(sort_dicts=False)\n    try:\n        pp = pprint.PrettyPrinter(4, 40, 5, io.StringIO(), True)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        pprint.PrettyPrinter(indent=-1)\n    except ValueError:\n        pass\n    try:\n        pprint.PrettyPrinter(depth=0)\n    except ValueError:\n        pass\n    try:\n        pprint.PrettyPrinter(depth=-1)\n    except ValueError:\n        pass\n    try:\n        pprint.PrettyPrinter(width=0)\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_basic",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    pp = pprint.PrettyPrinter()\n    for safe in (2, 2.0, 2j, 'abc', [3], (2, 2), {3: 3}, b'def', bytearray(b'ghi'), True, False, None, ..., self.a, self.b):\n        assert not pprint.isrecursive(safe), ('assertFalse', pprint.isrecursive(safe))\n        assert pprint.isreadable(safe), ('assertTrue', pprint.isreadable(safe))\n        assert not pp.isrecursive(safe), ('assertFalse', pp.isrecursive(safe))\n        assert pp.isreadable(safe), ('assertTrue', pp.isreadable(safe))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_stdout_is_None",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import contextlib\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    with contextlib.redirect_stdout(None):\n        value = 'this should not fail'\n        pprint.pprint(value)\n        pprint.PrettyPrinter().pprint(value)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_knotted",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    self.b[67] = self.a\n    self.d = {}\n    self.d[0] = self.d[1] = self.d[2] = self.d\n    pp = pprint.PrettyPrinter()\n    for icky in (self.a, self.b, self.d, (self.d, self.d)):\n        assert pprint.isrecursive(icky), ('assertTrue', pprint.isrecursive(icky))\n        assert not pprint.isreadable(icky), ('assertFalse', pprint.isreadable(icky))\n        assert pp.isrecursive(icky), ('assertTrue', pp.isrecursive(icky))\n        assert not pp.isreadable(icky), ('assertFalse', pp.isreadable(icky))\n    self.d.clear()\n    del self.a[:]\n    del self.b[:]\n    for safe in (self.a, self.b, self.d, (self.d, self.d)):\n        assert not pprint.isrecursive(safe), ('assertFalse', pprint.isrecursive(safe))\n        assert pprint.isreadable(safe), ('assertTrue', pprint.isreadable(safe))\n        assert not pp.isrecursive(safe), ('assertFalse', pp.isrecursive(safe))\n        assert pp.isreadable(safe), ('assertTrue', pp.isreadable(safe))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_unreadable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    pp = pprint.PrettyPrinter()\n    for unreadable in (object(), int, pprint, pprint.isrecursive):\n        assert not pprint.isrecursive(unreadable), ('assertFalse', pprint.isrecursive(unreadable))\n        assert not pprint.isreadable(unreadable), ('assertFalse', pprint.isreadable(unreadable))\n        assert not pp.isrecursive(unreadable), ('assertFalse', pp.isrecursive(unreadable))\n        assert not pp.isreadable(unreadable), ('assertFalse', pp.isreadable(unreadable))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_same_as_repr",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertTrue'"
+    },
+    {
+      "ident": "QueryTestCase.test_container_repr_override_called",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\nclass list_custom_repr(list):\n\n    def __repr__(self):\n        return '*' * len(list.__repr__(self))\n\nclass tuple_custom_repr(tuple):\n\n    def __repr__(self):\n        return '*' * len(tuple.__repr__(self))\n\nclass set_custom_repr(set):\n\n    def __repr__(self):\n        return '*' * len(set.__repr__(self))\n\nclass frozenset_custom_repr(frozenset):\n\n    def __repr__(self):\n        return '*' * len(frozenset.__repr__(self))\n\nclass dict_custom_repr(dict):\n\n    def __repr__(self):\n        return '*' * len(dict.__repr__(self))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    N = 1000\n    for cont in (list_custom_repr(), list_custom_repr([1, 2, 3]), list_custom_repr(range(N)), tuple_custom_repr(), tuple_custom_repr([1, 2, 3]), tuple_custom_repr(range(N)), set_custom_repr(), set_custom_repr([1, 2, 3]), set_custom_repr(range(N)), frozenset_custom_repr(), frozenset_custom_repr([1, 2, 3]), frozenset_custom_repr(range(N)), dict_custom_repr(), dict_custom_repr({5: 6}), dict_custom_repr(zip(range(N), range(N)))):\n        native = repr(cont)\n        expected = '*' * len(native)\n        assert pprint.pformat(cont) == expected, ('assertEqual', pprint.pformat(cont), expected)\n        assert pprint.pformat(cont, width=1, indent=0) == expected, ('assertEqual', pprint.pformat(cont, width=1, indent=0), expected)\n        assert pprint.saferepr(cont) == expected, ('assertEqual', pprint.saferepr(cont), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_basic_line_wrap",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\nclass list2(list):\n    pass\n\nclass tuple2(tuple):\n    pass\n\nclass dict2(dict):\n    pass\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    o = {'RPM_cal': 0, 'RPM_cal2': 48059, 'Speed_cal': 0, 'controldesk_runtime_us': 0, 'main_code_runtime_us': 0, 'read_io_runtime_us': 0, 'write_io_runtime_us': 43690}\n    exp = \"{'RPM_cal': 0,\\n 'RPM_cal2': 48059,\\n 'Speed_cal': 0,\\n 'controldesk_runtime_us': 0,\\n 'main_code_runtime_us': 0,\\n 'read_io_runtime_us': 0,\\n 'write_io_runtime_us': 43690}\"\n    for type in [dict, dict2]:\n        assert pprint.pformat(type(o)) == exp, ('assertEqual', pprint.pformat(type(o)), exp)\n    o = range(100)\n    exp = '[%s]' % ',\\n '.join(map(str, o))\n    for type in [list, list2]:\n        assert pprint.pformat(type(o)) == exp, ('assertEqual', pprint.pformat(type(o)), exp)\n    o = tuple(range(100))\n    exp = '(%s)' % ',\\n '.join(map(str, o))\n    for type in [tuple, tuple2]:\n        assert pprint.pformat(type(o)) == exp, ('assertEqual', pprint.pformat(type(o)), exp)\n    o = range(100)\n    exp = '[   %s]' % ',\\n    '.join(map(str, o))\n    for type in [list, list2]:\n        assert pprint.pformat(type(o), indent=4) == exp, ('assertEqual', pprint.pformat(type(o), indent=4), exp)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_nested_indentations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    o1 = list(range(10))\n    o2 = dict(first=1, second=2, third=3)\n    o = [o1, o2]\n    expected = \"[   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],\\n    {'first': 1, 'second': 2, 'third': 3}]\"\n    assert pprint.pformat(o, indent=4, width=42) == expected, ('assertEqual', pprint.pformat(o, indent=4, width=42), expected)\n    expected = \"[   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],\\n    {   'first': 1,\\n        'second': 2,\\n        'third': 3}]\"\n    assert pprint.pformat(o, indent=4, width=41) == expected, ('assertEqual', pprint.pformat(o, indent=4, width=41), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_width",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'set2' is not defined"
+    },
+    {
+      "ident": "QueryTestCase.test_integer",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    assert pprint.pformat(1234567) == '1234567', ('assertEqual', pprint.pformat(1234567), '1234567')\n    assert pprint.pformat(1234567, underscore_numbers=True) == '1_234_567', ('assertEqual', pprint.pformat(1234567, underscore_numbers=True), '1_234_567')\n\n    class Temperature(int):\n\n        def __new__(cls, celsius_degrees):\n            return super().__new__(Temperature, celsius_degrees)\n\n        def __repr__(self):\n            kelvin_degrees = self + 273.15\n            return f'{kelvin_degrees:.2f}\u00b0K'\n    assert pprint.pformat(Temperature(1000)) == '1273.15\u00b0K', ('assertEqual', pprint.pformat(Temperature(1000)), '1273.15\u00b0K')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_sorted_dict",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = {'a': 1, 'b': 1, 'c': 1}\n    assert pprint.pformat(d) == \"{'a': 1, 'b': 1, 'c': 1}\", ('assertEqual', pprint.pformat(d), \"{'a': 1, 'b': 1, 'c': 1}\")\n    assert pprint.pformat([d, d]) == \"[{'a': 1, 'b': 1, 'c': 1}, {'a': 1, 'b': 1, 'c': 1}]\", ('assertEqual', pprint.pformat([d, d]), \"[{'a': 1, 'b': 1, 'c': 1}, {'a': 1, 'b': 1, 'c': 1}]\")\n    assert pprint.pformat({'xy\\tab\\n': (3,), 5: [[]], (): {}}) == \"{5: [[]], 'xy\\\\tab\\\\n': (3,), (): {}}\", ('assertEqual', pprint.pformat({'xy\\tab\\n': (3,), 5: [[]], (): {}}), \"{5: [[]], 'xy\\\\tab\\\\n': (3,), (): {}}\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_sort_dict",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = dict.fromkeys('cba')\n    assert pprint.pformat(d, sort_dicts=False) == \"{'c': None, 'b': None, 'a': None}\", ('assertEqual', pprint.pformat(d, sort_dicts=False), \"{'c': None, 'b': None, 'a': None}\")\n    assert pprint.pformat([d, d], sort_dicts=False) == \"[{'c': None, 'b': None, 'a': None}, {'c': None, 'b': None, 'a': None}]\", ('assertEqual', pprint.pformat([d, d], sort_dicts=False), \"[{'c': None, 'b': None, 'a': None}, {'c': None, 'b': None, 'a': None}]\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_ordered_dict",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport itertools\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.OrderedDict()\n    assert pprint.pformat(d, width=1) == 'OrderedDict()', ('assertEqual', pprint.pformat(d, width=1), 'OrderedDict()')\n    d = collections.OrderedDict([])\n    assert pprint.pformat(d, width=1) == 'OrderedDict()', ('assertEqual', pprint.pformat(d, width=1), 'OrderedDict()')\n    words = 'the quick brown fox jumped over a lazy dog'.split()\n    d = collections.OrderedDict(zip(words, itertools.count()))\n    assert pprint.pformat(d) == \"OrderedDict([('the', 0),\\n             ('quick', 1),\\n             ('brown', 2),\\n             ('fox', 3),\\n             ('jumped', 4),\\n             ('over', 5),\\n             ('a', 6),\\n             ('lazy', 7),\\n             ('dog', 8)])\", ('assertEqual', pprint.pformat(d), \"OrderedDict([('the', 0),\\n             ('quick', 1),\\n             ('brown', 2),\\n             ('fox', 3),\\n             ('jumped', 4),\\n             ('over', 5),\\n             ('a', 6),\\n             ('lazy', 7),\\n             ('dog', 8)])\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_mapping_proxy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport itertools\nimport pprint\nimport types\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    words = 'the quick brown fox jumped over a lazy dog'.split()\n    d = dict(zip(words, itertools.count()))\n    m = types.MappingProxyType(d)\n    assert pprint.pformat(m) == \"mappingproxy({'a': 6,\\n              'brown': 2,\\n              'dog': 8,\\n              'fox': 3,\\n              'jumped': 4,\\n              'lazy': 7,\\n              'over': 5,\\n              'quick': 1,\\n              'the': 0})\", ('assertEqual', pprint.pformat(m), \"mappingproxy({'a': 6,\\n              'brown': 2,\\n              'dog': 8,\\n              'fox': 3,\\n              'jumped': 4,\\n              'lazy': 7,\\n              'over': 5,\\n              'quick': 1,\\n              'the': 0})\")\n    d = collections.OrderedDict(zip(words, itertools.count()))\n    m = types.MappingProxyType(d)\n    assert pprint.pformat(m) == \"mappingproxy(OrderedDict([('the', 0),\\n                          ('quick', 1),\\n                          ('brown', 2),\\n                          ('fox', 3),\\n                          ('jumped', 4),\\n                          ('over', 5),\\n                          ('a', 6),\\n                          ('lazy', 7),\\n                          ('dog', 8)]))\", ('assertEqual', pprint.pformat(m), \"mappingproxy(OrderedDict([('the', 0),\\n                          ('quick', 1),\\n                          ('brown', 2),\\n                          ('fox', 3),\\n                          ('jumped', 4),\\n                          ('over', 5),\\n                          ('a', 6),\\n                          ('lazy', 7),\\n                          ('dog', 8)]))\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_empty_simple_namespace",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\nimport types\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    ns = types.SimpleNamespace()\n    formatted = pprint.pformat(ns)\n    assert formatted == 'namespace()', ('assertEqual', formatted, 'namespace()')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_small_simple_namespace",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\nimport types\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    ns = types.SimpleNamespace(a=1, b=2)\n    formatted = pprint.pformat(ns)\n    assert formatted == 'namespace(a=1, b=2)', ('assertEqual', formatted, 'namespace(a=1, b=2)')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_simple_namespace",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\nimport types\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    ns = types.SimpleNamespace(the=0, quick=1, brown=2, fox=3, jumped=4, over=5, a=6, lazy=7, dog=8)\n    formatted = pprint.pformat(ns, width=60, indent=4)\n    assert formatted == 'namespace(the=0,\\n          quick=1,\\n          brown=2,\\n          fox=3,\\n          jumped=4,\\n          over=5,\\n          a=6,\\n          lazy=7,\\n          dog=8)', ('assertEqual', formatted, 'namespace(the=0,\\n          quick=1,\\n          brown=2,\\n          fox=3,\\n          jumped=4,\\n          over=5,\\n          a=6,\\n          lazy=7,\\n          dog=8)')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_simple_namespace_subclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\nimport types\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n\n    class AdvancedNamespace(types.SimpleNamespace):\n        pass\n    ns = AdvancedNamespace(the=0, quick=1, brown=2, fox=3, jumped=4, over=5, a=6, lazy=7, dog=8)\n    formatted = pprint.pformat(ns, width=60)\n    assert formatted == 'AdvancedNamespace(the=0,\\n                  quick=1,\\n                  brown=2,\\n                  fox=3,\\n                  jumped=4,\\n                  over=5,\\n                  a=6,\\n                  lazy=7,\\n                  dog=8)', ('assertEqual', formatted, 'AdvancedNamespace(the=0,\\n                  quick=1,\\n                  brown=2,\\n                  fox=3,\\n                  jumped=4,\\n                  over=5,\\n                  a=6,\\n                  lazy=7,\\n                  dog=8)')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_empty_dataclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import dataclasses\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    dc = dataclasses.make_dataclass('MyDataclass', ())()\n    formatted = pprint.pformat(dc)\n    assert formatted == 'MyDataclass()', ('assertEqual', formatted, 'MyDataclass()')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_small_dataclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import dataclasses\nimport pprint\n\n@dataclasses.dataclass\nclass dataclass1:\n    field1: str\n    field2: int\n    field3: bool = False\n    field4: int = dataclasses.field(default=1, repr=False)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    dc = dataclass1('text', 123)\n    formatted = pprint.pformat(dc)\n    assert formatted == \"dataclass1(field1='text', field2=123, field3=False)\", ('assertEqual', formatted, \"dataclass1(field1='text', field2=123, field3=False)\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_larger_dataclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import dataclasses\nimport pprint\n\n@dataclasses.dataclass\nclass dataclass1:\n    field1: str\n    field2: int\n    field3: bool = False\n    field4: int = dataclasses.field(default=1, repr=False)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    dc = dataclass1('some fairly long text', int(10000000000.0), True)\n    formatted = pprint.pformat([dc, dc], width=60, indent=4)\n    assert formatted == \"[   dataclass1(field1='some fairly long text',\\n               field2=10000000000,\\n               field3=True),\\n    dataclass1(field1='some fairly long text',\\n               field2=10000000000,\\n               field3=True)]\", ('assertEqual', formatted, \"[   dataclass1(field1='some fairly long text',\\n               field2=10000000000,\\n               field3=True),\\n    dataclass1(field1='some fairly long text',\\n               field2=10000000000,\\n               field3=True)]\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_dataclass_with_repr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import dataclasses\nimport pprint\n\n@dataclasses.dataclass\nclass dataclass2:\n    a: int = 1\n\n    def __repr__(self):\n        return \"custom repr that doesn't fit within pprint width\"\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    dc = dataclass2()\n    formatted = pprint.pformat(dc, width=20)\n    assert formatted == \"custom repr that doesn't fit within pprint width\", ('assertEqual', formatted, \"custom repr that doesn't fit within pprint width\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_dataclass_no_repr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport dataclasses\nimport pprint\nimport re\n\n@dataclasses.dataclass(repr=False)\nclass dataclass3:\n    a: int = 1\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    dc = dataclass3()\n    formatted = pprint.pformat(dc, width=10)\n    assert _re.search(f'<{re.escape(__name__)}.dataclass3 object at \\\\w+>', formatted), ('assertRegex', formatted, f'<{re.escape(__name__)}.dataclass3 object at \\\\w+>')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_recursive_dataclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import dataclasses\nimport pprint\n\n@dataclasses.dataclass\nclass dataclass4:\n    a: 'dataclass4'\n    b: int = 1\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    dc = dataclass4(None)\n    dc.a = dc\n    formatted = pprint.pformat(dc, width=10)\n    assert formatted == 'dataclass4(a=...,\\n           b=1)', ('assertEqual', formatted, 'dataclass4(a=...,\\n           b=1)')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_cyclic_dataclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import dataclasses\nimport pprint\n\n@dataclasses.dataclass\nclass dataclass5:\n    a: 'dataclass6'\n    b: int = 1\n\n@dataclasses.dataclass\nclass dataclass6:\n    c: 'dataclass5'\n    d: int = 1\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    dc5 = dataclass5(None)\n    dc6 = dataclass6(None)\n    dc5.a = dc6\n    dc6.c = dc5\n    formatted = pprint.pformat(dc5, width=10)\n    assert formatted == 'dataclass5(a=dataclass6(c=...,\\n                        d=1),\\n           b=1)', ('assertEqual', formatted, 'dataclass5(a=dataclass6(c=...,\\n                        d=1),\\n           b=1)')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_subclassing",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\nclass DottedPrettyPrinter(pprint.PrettyPrinter):\n\n    def format(self, object, context, maxlevels, level):\n        if isinstance(object, str):\n            if ' ' in object:\n                return (repr(object), 1, 0)\n            else:\n                return (object, 0, 0)\n        else:\n            return pprint.PrettyPrinter.format(self, object, context, maxlevels, level)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    o = {'names with spaces': 'should be presented using repr()', 'others.should.not.be': 'like.this'}\n    exp = \"{'names with spaces': 'should be presented using repr()',\\n others.should.not.be: like.this}\"\n    dotted_printer = DottedPrettyPrinter()\n    assert dotted_printer.pformat(o) == exp, ('assertEqual', dotted_printer.pformat(o), exp)\n    o1 = ['with space']\n    exp1 = \"['with space']\"\n    assert dotted_printer.pformat(o1) == exp1, ('assertEqual', dotted_printer.pformat(o1), exp1)\n    o2 = ['without.space']\n    exp2 = '[without.space]'\n    assert dotted_printer.pformat(o2) == exp2, ('assertEqual', dotted_printer.pformat(o2), exp2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_set_reprs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\nclass set2(set):\n    pass\n\nclass set3(set):\n\n    def __repr__(self):\n        return set.__repr__(self)\n\nclass frozenset2(frozenset):\n    pass\n\nclass frozenset3(frozenset):\n\n    def __repr__(self):\n        return frozenset.__repr__(self)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    assert pprint.pformat(set()) == 'set()', ('assertEqual', pprint.pformat(set()), 'set()')\n    assert pprint.pformat(set(range(3))) == '{0, 1, 2}', ('assertEqual', pprint.pformat(set(range(3))), '{0, 1, 2}')\n    assert pprint.pformat(set(range(7)), width=20) == '{0,\\n 1,\\n 2,\\n 3,\\n 4,\\n 5,\\n 6}', ('assertEqual', pprint.pformat(set(range(7)), width=20), '{0,\\n 1,\\n 2,\\n 3,\\n 4,\\n 5,\\n 6}')\n    assert pprint.pformat(set2(range(7)), width=20) == 'set2({0,\\n      1,\\n      2,\\n      3,\\n      4,\\n      5,\\n      6})', ('assertEqual', pprint.pformat(set2(range(7)), width=20), 'set2({0,\\n      1,\\n      2,\\n      3,\\n      4,\\n      5,\\n      6})')\n    assert pprint.pformat(set3(range(7)), width=20) == 'set3({0, 1, 2, 3, 4, 5, 6})', ('assertEqual', pprint.pformat(set3(range(7)), width=20), 'set3({0, 1, 2, 3, 4, 5, 6})')\n    assert pprint.pformat(frozenset()) == 'frozenset()', ('assertEqual', pprint.pformat(frozenset()), 'frozenset()')\n    assert pprint.pformat(frozenset(range(3))) == 'frozenset({0, 1, 2})', ('assertEqual', pprint.pformat(frozenset(range(3))), 'frozenset({0, 1, 2})')\n    assert pprint.pformat(frozenset(range(7)), width=20) == 'frozenset({0,\\n           1,\\n           2,\\n           3,\\n           4,\\n           5,\\n           6})', ('assertEqual', pprint.pformat(frozenset(range(7)), width=20), 'frozenset({0,\\n           1,\\n           2,\\n           3,\\n           4,\\n           5,\\n           6})')\n    assert pprint.pformat(frozenset2(range(7)), width=20) == 'frozenset2({0,\\n            1,\\n            2,\\n            3,\\n            4,\\n            5,\\n            6})', ('assertEqual', pprint.pformat(frozenset2(range(7)), width=20), 'frozenset2({0,\\n            1,\\n            2,\\n            3,\\n            4,\\n            5,\\n            6})')\n    assert pprint.pformat(frozenset3(range(7)), width=20) == 'frozenset3({0, 1, 2, 3, 4, 5, 6})', ('assertEqual', pprint.pformat(frozenset3(range(7)), width=20), 'frozenset3({0, 1, 2, 3, 4, 5, 6})')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_set_of_sets_reprs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    import textwrap\n    fs0 = frozenset()\n    fs1 = frozenset(('abc', 'xyz'))\n    data = frozenset((fs0, fs1))\n    assert pprint.pformat(data) == 'frozenset({%r, %r})' % (fs0, fs1), ('assertEqual', pprint.pformat(data), 'frozenset({%r, %r})' % (fs0, fs1))\n    assert pprint.pformat(data) == repr(data), ('assertEqual', pprint.pformat(data), repr(data))\n    fs2 = frozenset(('one', 'two'))\n    data = {fs2: frozenset((fs0, fs1))}\n    assert pprint.pformat(data) == '{%r: frozenset({%r, %r})}' % (fs2, fs0, fs1), ('assertEqual', pprint.pformat(data), '{%r: frozenset({%r, %r})}' % (fs2, fs0, fs1))\n    assert pprint.pformat(data) == repr(data), ('assertEqual', pprint.pformat(data), repr(data))\n    fs1 = frozenset(('xyz', 'qwerty'))\n    fs2 = frozenset(('abcd', 'spam'))\n    fs = frozenset((fs1, fs2))\n    assert pprint.pformat(fs) == repr(fs), ('assertEqual', pprint.pformat(fs), repr(fs))\n\n    def check(res, invariants):\n        assert res in [textwrap.dedent(i).strip() for i in invariants], ('assertIn', res, [textwrap.dedent(i).strip() for i in invariants])\n    fs1 = frozenset(('regular string', 'other string'))\n    fs2 = frozenset(('third string', 'one more string'))\n    check(pprint.pformat(frozenset((fs1, fs2))), ['\\n                frozenset({%r,\\n                           %r})\\n                ' % (fs1, fs2), '\\n                frozenset({%r,\\n                           %r})\\n                ' % (fs2, fs1)])\n    check(pprint.pformat(frozenset((frozenset(('xyz very-very long string', 'qwerty is also absurdly long')), frozenset(('abcd is even longer that before', 'spam is not so long'))))), [\"\\n                frozenset({frozenset({'abcd is even longer that before',\\n                                      'spam is not so long'}),\\n                           frozenset({'qwerty is also absurdly long',\\n                                      'xyz very-very long string'})})\\n                \", \"\\n                frozenset({frozenset({'abcd is even longer that before',\\n                                      'spam is not so long'}),\\n                           frozenset({'xyz very-very long string',\\n                                      'qwerty is also absurdly long'})})\\n                \", \"\\n                frozenset({frozenset({'qwerty is also absurdly long',\\n                                      'xyz very-very long string'}),\\n                           frozenset({'abcd is even longer that before',\\n                                      'spam is not so long'})})\\n                \", \"\\n                frozenset({frozenset({'qwerty is also absurdly long',\\n                                      'xyz very-very long string'}),\\n                           frozenset({'spam is not so long',\\n                                      'abcd is even longer that before'})})\\n                \"])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_depth",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    nested_tuple = (1, (2, (3, (4, (5, 6)))))\n    nested_dict = {1: {2: {3: {4: {5: {6: 6}}}}}}\n    nested_list = [1, [2, [3, [4, [5, [6, []]]]]]]\n    assert pprint.pformat(nested_tuple) == repr(nested_tuple), ('assertEqual', pprint.pformat(nested_tuple), repr(nested_tuple))\n    assert pprint.pformat(nested_dict) == repr(nested_dict), ('assertEqual', pprint.pformat(nested_dict), repr(nested_dict))\n    assert pprint.pformat(nested_list) == repr(nested_list), ('assertEqual', pprint.pformat(nested_list), repr(nested_list))\n    lv1_tuple = '(1, (...))'\n    lv1_dict = '{1: {...}}'\n    lv1_list = '[1, [...]]'\n    assert pprint.pformat(nested_tuple, depth=1) == lv1_tuple, ('assertEqual', pprint.pformat(nested_tuple, depth=1), lv1_tuple)\n    assert pprint.pformat(nested_dict, depth=1) == lv1_dict, ('assertEqual', pprint.pformat(nested_dict, depth=1), lv1_dict)\n    assert pprint.pformat(nested_list, depth=1) == lv1_list, ('assertEqual', pprint.pformat(nested_list, depth=1), lv1_list)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_sort_unorderable_values",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\nimport random\n\nclass Unorderable:\n\n    def __repr__(self):\n        return str(id(self))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    n = 20\n    keys = [Unorderable() for i in range(n)]\n    random.shuffle(keys)\n    skeys = sorted(keys, key=id)\n    clean = lambda s: s.replace(' ', '').replace('\\n', '')\n    assert clean(pprint.pformat(set(keys))) == '{' + ','.join(map(repr, skeys)) + '}', ('assertEqual', clean(pprint.pformat(set(keys))), '{' + ','.join(map(repr, skeys)) + '}')\n    assert clean(pprint.pformat(frozenset(keys))) == 'frozenset({' + ','.join(map(repr, skeys)) + '})', ('assertEqual', clean(pprint.pformat(frozenset(keys))), 'frozenset({' + ','.join(map(repr, skeys)) + '})')\n    assert clean(pprint.pformat(dict.fromkeys(keys))) == '{' + ','.join(('%r:None' % k for k in skeys)) + '}', ('assertEqual', clean(pprint.pformat(dict.fromkeys(keys))), '{' + ','.join(('%r:None' % k for k in skeys)) + '}')\n    assert pprint.pformat({Unorderable: 0, 1: 0}) == '{1: 0, ' + repr(Unorderable) + ': 0}', ('assertEqual', pprint.pformat({Unorderable: 0, 1: 0}), '{1: 0, ' + repr(Unorderable) + ': 0}')\n    keys = [(1,), (None,)]\n    assert pprint.pformat(dict.fromkeys(keys, 0)) == '{%r: 0, %r: 0}' % tuple(sorted(keys, key=id)), ('assertEqual', pprint.pformat(dict.fromkeys(keys, 0)), '{%r: 0, %r: 0}' % tuple(sorted(keys, key=id)))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_sort_orderable_and_unorderable_values",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\nclass Unorderable:\n\n    def __repr__(self):\n        return str(id(self))\n\nclass Orderable:\n\n    def __init__(self, hash):\n        self._hash = hash\n\n    def __lt__(self, other):\n        return False\n\n    def __gt__(self, other):\n        return self != other\n\n    def __le__(self, other):\n        return self == other\n\n    def __ge__(self, other):\n        return True\n\n    def __eq__(self, other):\n        return self is other\n\n    def __ne__(self, other):\n        return self is not other\n\n    def __hash__(self):\n        return self._hash\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    a = Unorderable()\n    b = Orderable(hash(a))\n    assert a < b, ('assertLess', a, b)\n    assert str(type(b)) < str(type(a)), ('assertLess', str(type(b)), str(type(a)))\n    assert sorted([b, a]) == [a, b], ('assertEqual', sorted([b, a]), [a, b])\n    assert sorted([a, b]) == [a, b], ('assertEqual', sorted([a, b]), [a, b])\n    assert pprint.pformat(set([b, a]), width=1) == '{%r,\\n %r}' % (a, b), ('assertEqual', pprint.pformat(set([b, a]), width=1), '{%r,\\n %r}' % (a, b))\n    assert pprint.pformat(set([a, b]), width=1) == '{%r,\\n %r}' % (a, b), ('assertEqual', pprint.pformat(set([a, b]), width=1), '{%r,\\n %r}' % (a, b))\n    assert pprint.pformat(dict.fromkeys([b, a]), width=1) == '{%r: None,\\n %r: None}' % (a, b), ('assertEqual', pprint.pformat(dict.fromkeys([b, a]), width=1), '{%r: None,\\n %r: None}' % (a, b))\n    assert pprint.pformat(dict.fromkeys([a, b]), width=1) == '{%r: None,\\n %r: None}' % (a, b), ('assertEqual', pprint.pformat(dict.fromkeys([a, b]), width=1), '{%r: None,\\n %r: None}' % (a, b))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_str_wrap",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    fox = 'the quick brown fox jumped over a lazy dog'\n    assert pprint.pformat(fox, width=19) == \"('the quick brown '\\n 'fox jumped over '\\n 'a lazy dog')\", ('assertEqual', pprint.pformat(fox, width=19), \"('the quick brown '\\n 'fox jumped over '\\n 'a lazy dog')\")\n    assert pprint.pformat({'a': 1, 'b': fox, 'c': 2}, width=25) == \"{'a': 1,\\n 'b': 'the quick brown '\\n      'fox jumped over '\\n      'a lazy dog',\\n 'c': 2}\", ('assertEqual', pprint.pformat({'a': 1, 'b': fox, 'c': 2}, width=25), \"{'a': 1,\\n 'b': 'the quick brown '\\n      'fox jumped over '\\n      'a lazy dog',\\n 'c': 2}\")\n    special = 'Portons dix bons \"whiskys\"\\n\u00e0 l\\'avocat goujat\\t qui fumait au zoo'\n    assert pprint.pformat(special, width=68) == repr(special), ('assertEqual', pprint.pformat(special, width=68), repr(special))\n    assert pprint.pformat(special, width=31) == '(\\'Portons dix bons \"whiskys\"\\\\n\\'\\n \"\u00e0 l\\'avocat goujat\\\\t qui \"\\n \\'fumait au zoo\\')', ('assertEqual', pprint.pformat(special, width=31), '(\\'Portons dix bons \"whiskys\"\\\\n\\'\\n \"\u00e0 l\\'avocat goujat\\\\t qui \"\\n \\'fumait au zoo\\')')\n    assert pprint.pformat(special, width=20) == '(\\'Portons dix bons \\'\\n \\'\"whiskys\"\\\\n\\'\\n \"\u00e0 l\\'avocat \"\\n \\'goujat\\\\t qui \\'\\n \\'fumait au zoo\\')', ('assertEqual', pprint.pformat(special, width=20), '(\\'Portons dix bons \\'\\n \\'\"whiskys\"\\\\n\\'\\n \"\u00e0 l\\'avocat \"\\n \\'goujat\\\\t qui \\'\\n \\'fumait au zoo\\')')\n    assert pprint.pformat([[[[[special]]]]], width=35) == '[[[[[\\'Portons dix bons \"whiskys\"\\\\n\\'\\n     \"\u00e0 l\\'avocat goujat\\\\t qui \"\\n     \\'fumait au zoo\\']]]]]', ('assertEqual', pprint.pformat([[[[[special]]]]], width=35), '[[[[[\\'Portons dix bons \"whiskys\"\\\\n\\'\\n     \"\u00e0 l\\'avocat goujat\\\\t qui \"\\n     \\'fumait au zoo\\']]]]]')\n    assert pprint.pformat([[[[[special]]]]], width=25) == '[[[[[\\'Portons dix bons \\'\\n     \\'\"whiskys\"\\\\n\\'\\n     \"\u00e0 l\\'avocat \"\\n     \\'goujat\\\\t qui \\'\\n     \\'fumait au zoo\\']]]]]', ('assertEqual', pprint.pformat([[[[[special]]]]], width=25), '[[[[[\\'Portons dix bons \\'\\n     \\'\"whiskys\"\\\\n\\'\\n     \"\u00e0 l\\'avocat \"\\n     \\'goujat\\\\t qui \\'\\n     \\'fumait au zoo\\']]]]]')\n    assert pprint.pformat([[[[[special]]]]], width=23) == '[[[[[\\'Portons dix \\'\\n     \\'bons \"whiskys\"\\\\n\\'\\n     \"\u00e0 l\\'avocat \"\\n     \\'goujat\\\\t qui \\'\\n     \\'fumait au \\'\\n     \\'zoo\\']]]]]', ('assertEqual', pprint.pformat([[[[[special]]]]], width=23), '[[[[[\\'Portons dix \\'\\n     \\'bons \"whiskys\"\\\\n\\'\\n     \"\u00e0 l\\'avocat \"\\n     \\'goujat\\\\t qui \\'\\n     \\'fumait au \\'\\n     \\'zoo\\']]]]]')\n    unwrappable = 'x' * 100\n    assert pprint.pformat(unwrappable, width=80) == repr(unwrappable), ('assertEqual', pprint.pformat(unwrappable, width=80), repr(unwrappable))\n    assert pprint.pformat('') == \"''\", ('assertEqual', pprint.pformat(''), \"''\")\n    special *= 10\n    for width in range(3, 40):\n        formatted = pprint.pformat(special, width=width)\n        assert eval(formatted) == special, ('assertEqual', eval(formatted), special)\n        formatted = pprint.pformat([special] * 2, width=width)\n        assert eval(formatted) == [special] * 2, ('assertEqual', eval(formatted), [special] * 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_compact",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    o = [list(range(i * i)) for i in range(5)] + [list(range(i)) for i in range(6)]\n    expected = '[[], [0], [0, 1, 2, 3],\\n [0, 1, 2, 3, 4, 5, 6, 7, 8],\\n [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,\\n  14, 15],\\n [], [0], [0, 1], [0, 1, 2], [0, 1, 2, 3],\\n [0, 1, 2, 3, 4]]'\n    assert pprint.pformat(o, width=47, compact=True) == expected, ('assertEqual', pprint.pformat(o, width=47, compact=True), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_compact_width",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    levels = 20\n    number = 10\n    o = [0] * number\n    for i in range(levels - 1):\n        o = [o]\n    for w in range(levels * 2 + 1, levels + 3 * number - 1):\n        lines = pprint.pformat(o, width=w, compact=True).splitlines()\n        maxwidth = max(map(len, lines))\n        assert maxwidth <= w, ('assertLessEqual', maxwidth, w)\n        assert maxwidth > w - 3, ('assertGreater', maxwidth, w - 3)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_bytes_wrap",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    assert pprint.pformat(b'', width=1) == \"b''\", ('assertEqual', pprint.pformat(b'', width=1), \"b''\")\n    assert pprint.pformat(b'abcd', width=1) == \"b'abcd'\", ('assertEqual', pprint.pformat(b'abcd', width=1), \"b'abcd'\")\n    letters = b'abcdefghijklmnopqrstuvwxyz'\n    assert pprint.pformat(letters, width=29) == repr(letters), ('assertEqual', pprint.pformat(letters, width=29), repr(letters))\n    assert pprint.pformat(letters, width=19) == \"(b'abcdefghijkl'\\n b'mnopqrstuvwxyz')\", ('assertEqual', pprint.pformat(letters, width=19), \"(b'abcdefghijkl'\\n b'mnopqrstuvwxyz')\")\n    assert pprint.pformat(letters, width=18) == \"(b'abcdefghijkl'\\n b'mnopqrstuvwx'\\n b'yz')\", ('assertEqual', pprint.pformat(letters, width=18), \"(b'abcdefghijkl'\\n b'mnopqrstuvwx'\\n b'yz')\")\n    assert pprint.pformat(letters, width=16) == \"(b'abcdefghijkl'\\n b'mnopqrstuvwx'\\n b'yz')\", ('assertEqual', pprint.pformat(letters, width=16), \"(b'abcdefghijkl'\\n b'mnopqrstuvwx'\\n b'yz')\")\n    special = bytes(range(16))\n    assert pprint.pformat(special, width=61) == repr(special), ('assertEqual', pprint.pformat(special, width=61), repr(special))\n    assert pprint.pformat(special, width=48) == \"(b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\", ('assertEqual', pprint.pformat(special, width=48), \"(b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\")\n    assert pprint.pformat(special, width=32) == \"(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n b'\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\", ('assertEqual', pprint.pformat(special, width=32), \"(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n b'\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\")\n    assert pprint.pformat(special, width=1) == \"(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n b'\\\\x04\\\\x05\\\\x06\\\\x07'\\n b'\\\\x08\\\\t\\\\n\\\\x0b'\\n b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\", ('assertEqual', pprint.pformat(special, width=1), \"(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n b'\\\\x04\\\\x05\\\\x06\\\\x07'\\n b'\\\\x08\\\\t\\\\n\\\\x0b'\\n b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\")\n    assert pprint.pformat({'a': 1, 'b': letters, 'c': 2}, width=21) == \"{'a': 1,\\n 'b': b'abcdefghijkl'\\n      b'mnopqrstuvwx'\\n      b'yz',\\n 'c': 2}\", ('assertEqual', pprint.pformat({'a': 1, 'b': letters, 'c': 2}, width=21), \"{'a': 1,\\n 'b': b'abcdefghijkl'\\n      b'mnopqrstuvwx'\\n      b'yz',\\n 'c': 2}\")\n    assert pprint.pformat({'a': 1, 'b': letters, 'c': 2}, width=20) == \"{'a': 1,\\n 'b': b'abcdefgh'\\n      b'ijklmnop'\\n      b'qrstuvwxyz',\\n 'c': 2}\", ('assertEqual', pprint.pformat({'a': 1, 'b': letters, 'c': 2}, width=20), \"{'a': 1,\\n 'b': b'abcdefgh'\\n      b'ijklmnop'\\n      b'qrstuvwxyz',\\n 'c': 2}\")\n    assert pprint.pformat([[[[[[letters]]]]]], width=25) == \"[[[[[[b'abcdefghijklmnop'\\n      b'qrstuvwxyz']]]]]]\", ('assertEqual', pprint.pformat([[[[[[letters]]]]]], width=25), \"[[[[[[b'abcdefghijklmnop'\\n      b'qrstuvwxyz']]]]]]\")\n    assert pprint.pformat([[[[[[special]]]]]], width=41) == \"[[[[[[b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07'\\n      b'\\\\x08\\\\t\\\\n\\\\x0b\\\\x0c\\\\r\\\\x0e\\\\x0f']]]]]]\", ('assertEqual', pprint.pformat([[[[[[special]]]]]], width=41), \"[[[[[[b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07'\\n      b'\\\\x08\\\\t\\\\n\\\\x0b\\\\x0c\\\\r\\\\x0e\\\\x0f']]]]]]\")\n    for width in range(1, 64):\n        formatted = pprint.pformat(special, width=width)\n        assert eval(formatted) == special, ('assertEqual', eval(formatted), special)\n        formatted = pprint.pformat([special] * 2, width=width)\n        assert eval(formatted) == [special] * 2, ('assertEqual', eval(formatted), [special] * 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_bytearray_wrap",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    assert pprint.pformat(bytearray(), width=1) == \"bytearray(b'')\", ('assertEqual', pprint.pformat(bytearray(), width=1), \"bytearray(b'')\")\n    letters = bytearray(b'abcdefghijklmnopqrstuvwxyz')\n    assert pprint.pformat(letters, width=40) == repr(letters), ('assertEqual', pprint.pformat(letters, width=40), repr(letters))\n    assert pprint.pformat(letters, width=28) == \"bytearray(b'abcdefghijkl'\\n          b'mnopqrstuvwxyz')\", ('assertEqual', pprint.pformat(letters, width=28), \"bytearray(b'abcdefghijkl'\\n          b'mnopqrstuvwxyz')\")\n    assert pprint.pformat(letters, width=27) == \"bytearray(b'abcdefghijkl'\\n          b'mnopqrstuvwx'\\n          b'yz')\", ('assertEqual', pprint.pformat(letters, width=27), \"bytearray(b'abcdefghijkl'\\n          b'mnopqrstuvwx'\\n          b'yz')\")\n    assert pprint.pformat(letters, width=25) == \"bytearray(b'abcdefghijkl'\\n          b'mnopqrstuvwx'\\n          b'yz')\", ('assertEqual', pprint.pformat(letters, width=25), \"bytearray(b'abcdefghijkl'\\n          b'mnopqrstuvwx'\\n          b'yz')\")\n    special = bytearray(range(16))\n    assert pprint.pformat(special, width=72) == repr(special), ('assertEqual', pprint.pformat(special, width=72), repr(special))\n    assert pprint.pformat(special, width=57) == \"bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n          b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\", ('assertEqual', pprint.pformat(special, width=57), \"bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n          b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\")\n    assert pprint.pformat(special, width=41) == \"bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n          b'\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n          b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\", ('assertEqual', pprint.pformat(special, width=41), \"bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n          b'\\\\x04\\\\x05\\\\x06\\\\x07\\\\x08\\\\t\\\\n\\\\x0b'\\n          b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\")\n    assert pprint.pformat(special, width=1) == \"bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n          b'\\\\x04\\\\x05\\\\x06\\\\x07'\\n          b'\\\\x08\\\\t\\\\n\\\\x0b'\\n          b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\", ('assertEqual', pprint.pformat(special, width=1), \"bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03'\\n          b'\\\\x04\\\\x05\\\\x06\\\\x07'\\n          b'\\\\x08\\\\t\\\\n\\\\x0b'\\n          b'\\\\x0c\\\\r\\\\x0e\\\\x0f')\")\n    assert pprint.pformat({'a': 1, 'b': letters, 'c': 2}, width=31) == \"{'a': 1,\\n 'b': bytearray(b'abcdefghijkl'\\n                b'mnopqrstuvwx'\\n                b'yz'),\\n 'c': 2}\", ('assertEqual', pprint.pformat({'a': 1, 'b': letters, 'c': 2}, width=31), \"{'a': 1,\\n 'b': bytearray(b'abcdefghijkl'\\n                b'mnopqrstuvwx'\\n                b'yz'),\\n 'c': 2}\")\n    assert pprint.pformat([[[[[letters]]]]], width=37) == \"[[[[[bytearray(b'abcdefghijklmnop'\\n               b'qrstuvwxyz')]]]]]\", ('assertEqual', pprint.pformat([[[[[letters]]]]], width=37), \"[[[[[bytearray(b'abcdefghijklmnop'\\n               b'qrstuvwxyz')]]]]]\")\n    assert pprint.pformat([[[[[special]]]]], width=50) == \"[[[[[bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07'\\n               b'\\\\x08\\\\t\\\\n\\\\x0b\\\\x0c\\\\r\\\\x0e\\\\x0f')]]]]]\", ('assertEqual', pprint.pformat([[[[[special]]]]], width=50), \"[[[[[bytearray(b'\\\\x00\\\\x01\\\\x02\\\\x03\\\\x04\\\\x05\\\\x06\\\\x07'\\n               b'\\\\x08\\\\t\\\\n\\\\x0b\\\\x0c\\\\r\\\\x0e\\\\x0f')]]]]]\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_default_dict",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport itertools\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.defaultdict(int)\n    assert pprint.pformat(d, width=1) == \"defaultdict(<class 'int'>, {})\", ('assertEqual', pprint.pformat(d, width=1), \"defaultdict(<class 'int'>, {})\")\n    words = 'the quick brown fox jumped over a lazy dog'.split()\n    d = collections.defaultdict(int, zip(words, itertools.count()))\n    assert pprint.pformat(d) == \"defaultdict(<class 'int'>,\\n            {'a': 6,\\n             'brown': 2,\\n             'dog': 8,\\n             'fox': 3,\\n             'jumped': 4,\\n             'lazy': 7,\\n             'over': 5,\\n             'quick': 1,\\n             'the': 0})\", ('assertEqual', pprint.pformat(d), \"defaultdict(<class 'int'>,\\n            {'a': 6,\\n             'brown': 2,\\n             'dog': 8,\\n             'fox': 3,\\n             'jumped': 4,\\n             'lazy': 7,\\n             'over': 5,\\n             'quick': 1,\\n             'the': 0})\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_counter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.Counter()\n    assert pprint.pformat(d, width=1) == 'Counter()', ('assertEqual', pprint.pformat(d, width=1), 'Counter()')\n    d = collections.Counter('senselessness')\n    assert pprint.pformat(d, width=40) == \"Counter({'s': 6,\\n         'e': 4,\\n         'n': 2,\\n         'l': 1})\", ('assertEqual', pprint.pformat(d, width=40), \"Counter({'s': 6,\\n         'e': 4,\\n         'n': 2,\\n         'l': 1})\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_chainmap",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport itertools\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.ChainMap()\n    assert pprint.pformat(d, width=1) == 'ChainMap({})', ('assertEqual', pprint.pformat(d, width=1), 'ChainMap({})')\n    words = 'the quick brown fox jumped over a lazy dog'.split()\n    items = list(zip(words, itertools.count()))\n    d = collections.ChainMap(dict(items))\n    assert pprint.pformat(d) == \"ChainMap({'a': 6,\\n          'brown': 2,\\n          'dog': 8,\\n          'fox': 3,\\n          'jumped': 4,\\n          'lazy': 7,\\n          'over': 5,\\n          'quick': 1,\\n          'the': 0})\", ('assertEqual', pprint.pformat(d), \"ChainMap({'a': 6,\\n          'brown': 2,\\n          'dog': 8,\\n          'fox': 3,\\n          'jumped': 4,\\n          'lazy': 7,\\n          'over': 5,\\n          'quick': 1,\\n          'the': 0})\")\n    d = collections.ChainMap(dict(items), collections.OrderedDict(items))\n    assert pprint.pformat(d) == \"ChainMap({'a': 6,\\n          'brown': 2,\\n          'dog': 8,\\n          'fox': 3,\\n          'jumped': 4,\\n          'lazy': 7,\\n          'over': 5,\\n          'quick': 1,\\n          'the': 0},\\n         OrderedDict([('the', 0),\\n                      ('quick', 1),\\n                      ('brown', 2),\\n                      ('fox', 3),\\n                      ('jumped', 4),\\n                      ('over', 5),\\n                      ('a', 6),\\n                      ('lazy', 7),\\n                      ('dog', 8)]))\", ('assertEqual', pprint.pformat(d), \"ChainMap({'a': 6,\\n          'brown': 2,\\n          'dog': 8,\\n          'fox': 3,\\n          'jumped': 4,\\n          'lazy': 7,\\n          'over': 5,\\n          'quick': 1,\\n          'the': 0},\\n         OrderedDict([('the', 0),\\n                      ('quick', 1),\\n                      ('brown', 2),\\n                      ('fox', 3),\\n                      ('jumped', 4),\\n                      ('over', 5),\\n                      ('a', 6),\\n                      ('lazy', 7),\\n                      ('dog', 8)]))\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_deque",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport itertools\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.deque()\n    assert pprint.pformat(d, width=1) == 'deque([])', ('assertEqual', pprint.pformat(d, width=1), 'deque([])')\n    d = collections.deque(maxlen=7)\n    assert pprint.pformat(d, width=1) == 'deque([], maxlen=7)', ('assertEqual', pprint.pformat(d, width=1), 'deque([], maxlen=7)')\n    words = 'the quick brown fox jumped over a lazy dog'.split()\n    d = collections.deque(zip(words, itertools.count()))\n    assert pprint.pformat(d) == \"deque([('the', 0),\\n       ('quick', 1),\\n       ('brown', 2),\\n       ('fox', 3),\\n       ('jumped', 4),\\n       ('over', 5),\\n       ('a', 6),\\n       ('lazy', 7),\\n       ('dog', 8)])\", ('assertEqual', pprint.pformat(d), \"deque([('the', 0),\\n       ('quick', 1),\\n       ('brown', 2),\\n       ('fox', 3),\\n       ('jumped', 4),\\n       ('over', 5),\\n       ('a', 6),\\n       ('lazy', 7),\\n       ('dog', 8)])\")\n    d = collections.deque(zip(words, itertools.count()), maxlen=7)\n    assert pprint.pformat(d) == \"deque([('brown', 2),\\n       ('fox', 3),\\n       ('jumped', 4),\\n       ('over', 5),\\n       ('a', 6),\\n       ('lazy', 7),\\n       ('dog', 8)],\\n      maxlen=7)\", ('assertEqual', pprint.pformat(d), \"deque([('brown', 2),\\n       ('fox', 3),\\n       ('jumped', 4),\\n       ('over', 5),\\n       ('a', 6),\\n       ('lazy', 7),\\n       ('dog', 8)],\\n      maxlen=7)\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_user_dict",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport itertools\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.UserDict()\n    assert pprint.pformat(d, width=1) == '{}', ('assertEqual', pprint.pformat(d, width=1), '{}')\n    words = 'the quick brown fox jumped over a lazy dog'.split()\n    d = collections.UserDict(zip(words, itertools.count()))\n    assert pprint.pformat(d) == \"{'a': 6,\\n 'brown': 2,\\n 'dog': 8,\\n 'fox': 3,\\n 'jumped': 4,\\n 'lazy': 7,\\n 'over': 5,\\n 'quick': 1,\\n 'the': 0}\", ('assertEqual', pprint.pformat(d), \"{'a': 6,\\n 'brown': 2,\\n 'dog': 8,\\n 'fox': 3,\\n 'jumped': 4,\\n 'lazy': 7,\\n 'over': 5,\\n 'quick': 1,\\n 'the': 0}\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_user_list",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport itertools\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.UserList()\n    assert pprint.pformat(d, width=1) == '[]', ('assertEqual', pprint.pformat(d, width=1), '[]')\n    words = 'the quick brown fox jumped over a lazy dog'.split()\n    d = collections.UserList(zip(words, itertools.count()))\n    assert pprint.pformat(d) == \"[('the', 0),\\n ('quick', 1),\\n ('brown', 2),\\n ('fox', 3),\\n ('jumped', 4),\\n ('over', 5),\\n ('a', 6),\\n ('lazy', 7),\\n ('dog', 8)]\", ('assertEqual', pprint.pformat(d), \"[('the', 0),\\n ('quick', 1),\\n ('brown', 2),\\n ('fox', 3),\\n ('jumped', 4),\\n ('over', 5),\\n ('a', 6),\\n ('lazy', 7),\\n ('dog', 8)]\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "QueryTestCase.test_user_string",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nimport pprint\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.a = list(range(100))\n    self.b = list(range(200))\n    self.a[-12] = self.b\n    d = collections.UserString('')\n    assert pprint.pformat(d, width=1) == \"''\", ('assertEqual', pprint.pformat(d, width=1), \"''\")\n    d = collections.UserString('the quick brown fox jumped over a lazy dog')\n    assert pprint.pformat(d, width=20) == \"('the quick brown '\\n 'fox jumped over '\\n 'a lazy dog')\", ('assertEqual', pprint.pformat(d, width=20), \"('the quick brown '\\n 'fox jumped over '\\n 'a lazy dog')\")\n    assert pprint.pformat({1: d}, width=20) == \"{1: 'the quick '\\n    'brown fox '\\n    'jumped over a '\\n    'lazy dog'}\", ('assertEqual', pprint.pformat({1: d}, width=20), \"{1: 'the quick '\\n    'brown fox '\\n    'jumped over a '\\n    'lazy dog'}\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 45,
+    "pinned": 43,
+    "quarantined": 2
+  }
+}

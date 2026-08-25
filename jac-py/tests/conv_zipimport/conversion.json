@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_zipimport.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_zipimport",
+    "--name",
+    "conv_zipimport"
+  ],
+  "generated_at": "2026-08-24T23:52:37",
+  "hashes": {
+    "pins_jac": "ef2f2455f5a3905d79f8bca2d9c6ae3ac63178efb1c12c3480e653f5cf0da1b9"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_zipimport.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "zipimport",
+  "pins_file": "conv_zipimport_pins.jac",
+  "pins": [
+    {
+      "ident": "BadFileZipImportTestCase.testNoFile",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import zipimport\n\ndef assertZipFailure(filename):\n    try:\n        zipimport.zipimporter(*(filename,))\n    except zipimport.ZipImportError:\n        pass\n\ndef _t():\n    assertZipFailure('AdfjdkFJKDFJjdklfjs')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BadFileZipImportTestCase.testEmptyFilename",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import zipimport\n\ndef assertZipFailure(filename):\n    try:\n        zipimport.zipimporter(*(filename,))\n    except zipimport.ZipImportError:\n        pass\n\ndef _t():\n    assertZipFailure('')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BadFileZipImportTestCase.testBadArgs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os\nimport zipimport\nTESTMOD = 'ziptestmodule'\n\ndef _t():\n    try:\n        zipimport.zipimporter(*(None,))\n    except TypeError:\n        pass\n    try:\n        zipimport.zipimporter(*(TESTMOD,), kwd=None)\n    except TypeError:\n        pass\n    try:\n        zipimport.zipimporter(*(list(os.fsencode(TESTMOD)),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BadFileZipImportTestCase.testFilenameTooLong",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import zipimport\n\ndef assertZipFailure(filename):\n    try:\n        zipimport.zipimporter(*(filename,))\n    except zipimport.ZipImportError:\n        pass\n\ndef _t():\n    assertZipFailure('A' * 33000)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BadFileZipImportTestCase.testEmptyFile",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import os_helper\nimport zipimport\nTESTMOD = 'ziptestmodule'\n\ndef assertZipFailure(filename):\n    try:\n        zipimport.zipimporter(*(filename,))\n    except zipimport.ZipImportError:\n        pass\n\ndef _t():\n    os_helper.unlink(TESTMOD)\n    os_helper.create_empty_file(TESTMOD)\n    assertZipFailure(TESTMOD)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BadFileZipImportTestCase.testNotZipFile",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import os_helper\nimport zipimport\nTESTMOD = 'ziptestmodule'\n\ndef assertZipFailure(filename):\n    try:\n        zipimport.zipimporter(*(filename,))\n    except zipimport.ZipImportError:\n        pass\n\ndef _t():\n    os_helper.unlink(TESTMOD)\n    fp = open(TESTMOD, 'w+')\n    fp.write('a' * 22)\n    fp.close()\n    assertZipFailure(TESTMOD)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "UncompressedZipImportTestCase.testUnencodable",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "UncompressedZipImportTestCase.testZip64",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "ident": "UncompressedZipImportTestCase.testZip64CruftAndComment",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "ident": "BadFileZipImportTestCase.testFileUnreadable",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testAFakeZlib",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPy",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPyc",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBoth",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testUncheckedHashBasedPyc",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.test_checked_hash_based_change_pyc",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testEmptyPy",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBadMagic",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBadMagic2",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBadMTime",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.test2038MTime",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPackage",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testSubPackage",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testSubNamespacePackage",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPackageExplicitDirectories",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPackageImplicitDirectories",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testNamespacePackageExplicitDirectories",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testNamespacePackageImplicitDirectories",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testMixedNamespacePackage",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testNamespacePackage",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testZipImporterMethods",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testInvalidateCaches",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testInvalidateCachesWithMultipleZipimports",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testZipImporterMethodsInSubDirectory",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetDataExplicitDirectories",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetDataImplicitDirectories",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testImporterAttr",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testDefaultOptimizationLevel",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testImport_WithStuff",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetSource",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetCompiledSource",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testDoctestFile",
+      "reason": "helper:runDoctest(helper:doTest(helper:makeZip(self.addCleanup)))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testDoctestSuite",
+      "reason": "helper:runDoctest(helper:doTest(helper:makeZip(self.addCleanup)))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testTraceback",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBytesPath",
+      "reason": "helper:makeZip(self.addCleanup)"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testComment",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBeginningCruftAndComment",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testLargestPossibleComment",
+      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testZip64LargeFile",
+      "reason": "self.addCleanup"
+    }
+  ],
+  "counts": {
+    "extracted": 49,
+    "pinned": 6,
+    "quarantined": 43
+  }
+}

@@ -1,0 +1,1042 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_ipaddress/conv_ipaddress_pins.jac"
+  ],
+  "generated_at": "2026-08-25T00:01:05",
+  "hashes": {
+    "pins_jac": "57a46aff9bec1439bdef9a791548c53fe2e93ab34e7830d20c7e976455f467a6",
+    "conversion_json": "e058f3528ffff77f88b7ad78416a96bc6b50ead93f9755321fb1f3423d9393c6",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "ipaddress",
+  "counts": {
+    "converted": 211,
+    "runnable": 83,
+    "green": 62,
+    "quarantined": 128
+  },
+  "pins": [
+    {
+      "id": "AddressTestCase_v4.test_format",
+      "status": "pass"
+    },
+    {
+      "id": "AddressTestCase_v4.test_ipv6_mapped",
+      "status": "pass"
+    },
+    {
+      "id": "AddressTestCase_v6.test_format",
+      "status": "pass"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_subnet_of_mixed_types",
+      "status": "pass"
+    },
+    {
+      "id": "ComparisonTests.test_incompatible_versions",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testRepr",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv4Tuple",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv6Tuple",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testAddressIntMath",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testInvalidIntToBytes",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testInternals",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetNetwork",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'<functools.cached_property object at 0x7fc970eb16e0>\\', \\'::ffff:ffff:ffff:ffff\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpFromInt",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpFromPacked",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetIp",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv6IPv4MappedStringRepresentation",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetScopeId",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetNetmask",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testZeroNetmask",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv4Net",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetBroadcast",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetPrefixlen",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSupernet",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSupernet3",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSupernet4",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testHosts",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testFancySubnetting",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSubnets",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSubnetForSingle32",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSubnetForSingle128",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testSubnet2",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetSubnets3",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testSubnetFailsForLargeCidrDiff",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testSupernetFailsForLargeCidrDiff",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testSubnetFailsForNegativeCidrDiff",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetNum_Addresses",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testContains",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testNth",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testGetitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"int() argument must be a string, a bytes-like object or a real number, not \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testEqual",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testNotEqual",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testSlash32Constructor",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testSlash128Constructor",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testSlash0Constructor",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testCollapsing",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', [], [IPv4Network(\\'1.1.1.0/30\\'), IPv4Network(\\'1.1.1.4/32\\')])\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testSummarizing",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testAddressComparison",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testInterfaceComparison",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testNetworkComparison",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testStrictNetworks",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testOverlaps",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'version'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testEmbeddedIpv4",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv6AddressTooLarge",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPVersion",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testMaxPrefixLength",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testPacked",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpType",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testReservedIpv4",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'is_reserved'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testPrivateNetworks",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'version'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testReservedIpv6",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'is_multicast'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpv4Mapped",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpv4MappedProperties",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpv4MappedPrivateCheck",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIpv4MappedLoopbackCheck",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'is_loopback'\">"
+    },
+    {
+      "id": "IpaddrUnitTest.testAddrExclude",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'>=\\' not supported between instances of \\'cached_property\\' and \\'cached_property\\'\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testHash",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPBases",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv6NetworkHelpers",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'2001:658:22a:cafe::/::ffff:ffff:ffff:ffff\\', \\'2001:658:22a:cafe::/<functools.cached_property object at 0x7fc970eb16e0>\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testIPv4NetworkHelpers",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'1.2.3.0/0.0.0.255\\', \\'1.2.3.0/<functools.cached_property object at 0x7fc970eb16e0>\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testCopyConstructor",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testCompressIPv6Address",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testExplodeShortHandIpStr",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testReversePointer",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testIntRepresentation",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testForceVersion",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testWithStar",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'1.2.3.4/<functools.cached_property object at 0x7fc970eb1cd0>\\', \\'1.2.3.4/0.0.0.255\\')\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testNetworkElementCaching",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', <functools.cached_property object at 0x7fc97033a850>, IPv4Address(\\'1.2.3.255\\'))\"'>"
+    },
+    {
+      "id": "IpaddrUnitTest.testTeredo",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testsixtofour",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testV4HashIsNotConstant",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testV6HashIsNotConstant",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testNetworkV4HashCollisions",
+      "status": "pass"
+    },
+    {
+      "id": "IpaddrUnitTest.testNetworkV6HashCollisions",
+      "status": "pass"
+    },
+    {
+      "id": "AddressTestCase_v4.test_empty_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_empty_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_empty_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_empty_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_empty_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_empty_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_floats_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_floats_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_floats_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_floats_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_floats_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_floats_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_not_an_index_issue15559",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_not_an_index_issue15559",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_not_an_index_issue15559",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "AddressTestCase_v6.test_not_an_index_issue15559",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_not_an_index_issue15559",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_not_an_index_issue15559",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "AddressTestCase_v4.test_leading_zeros",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_leading_zeros",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_leading_zeros",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_int",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_int",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_int",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_packed",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_packed",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_packed",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_negative_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_negative_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_negative_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_large_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_large_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_large_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_bad_packed_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_bad_packed_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_bad_packed_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_leading_zeros",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_leading_zeros",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_leading_zeros",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_int",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_int",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_int",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_packed",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_packed",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_packed",
+      "status": "quarantined",
+      "reason": "helper:assertInstancesEqual(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_negative_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_negative_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_negative_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_large_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_large_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_large_ints_rejected",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_packed_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_bad_packed_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_bad_packed_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_blank_scope_id",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_blank_scope_id",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_blank_scope_id",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_invalid_scope_id_with_percent",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_invalid_scope_id_with_percent",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_invalid_scope_id_with_percent",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_network_passed_as_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_bad_address_split",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_empty_octet",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_invalid_characters",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_octet_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_octet_limit",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_pickle",
+      "status": "quarantined",
+      "reason": "helper:pickle_test(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v4.test_weakref",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "AddressTestCase_v6.test_network_passed_as_address",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_not_enough_parts",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_too_many_colons",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_too_long",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_too_many_parts",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_too_many_parts_with_double_colon",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_repeated_double_colon",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_leading_colon",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_address_split_v6_trailing_colon",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_bad_v4_part_in",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_invalid_characters",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_part_length",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_pickle",
+      "status": "quarantined",
+      "reason": "helper:pickle_test(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "AddressTestCase_v6.test_weakref",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "AddressTestCase_v6.test_copy",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_no_mask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_no_mask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_split_netmask",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_split_netmask",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_address_errors",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_address_errors",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_valid_netmask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_valid_netmask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_netmask_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_netmask_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_netmask_in_tuple_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_netmask_in_tuple_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v4.test_pickle",
+      "status": "quarantined",
+      "reason": "helper:pickle_test(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_pickle",
+      "status": "quarantined",
+      "reason": "helper:pickle_test(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_subnet_of",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v4.test_supernet_of",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_no_mask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_no_mask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_split_netmask",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_split_netmask",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_address_errors",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_address_errors",
+      "status": "quarantined",
+      "reason": "helper:assertAddressError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_valid_netmask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_valid_netmask",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_netmask_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_netmask_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_netmask_in_tuple_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_netmask_in_tuple_errors",
+      "status": "quarantined",
+      "reason": "helper:assertNetmaskError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "InterfaceTestCase_v6.test_pickle",
+      "status": "quarantined",
+      "reason": "helper:pickle_test(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_pickle",
+      "status": "quarantined",
+      "reason": "helper:pickle_test(helper:factory(decorated-helper))"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_subnet_of",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "NetworkTestCase_v6.test_supernet_of",
+      "status": "quarantined",
+      "reason": "helper:factory(decorated-helper)"
+    },
+    {
+      "id": "FactoryFunctionErrors.test_ip_address",
+      "status": "quarantined",
+      "reason": "helper:assertFactoryError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "FactoryFunctionErrors.test_ip_interface",
+      "status": "quarantined",
+      "reason": "helper:assertFactoryError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "FactoryFunctionErrors.test_ip_network",
+      "status": "quarantined",
+      "reason": "helper:assertFactoryError(helper:assertCleanError(decorated-helper))"
+    },
+    {
+      "id": "ComparisonTests.test_foreign_type_equality",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_mixed_type_equality",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_scoped_ipv6_equality",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_v4_with_v6_scoped_equality",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_same_type_equality",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_same_type_ordering",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_containment",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_mixed_type_ordering",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_foreign_type_ordering",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    },
+    {
+      "id": "ComparisonTests.test_mixed_type_key",
+      "status": "quarantined",
+      "reason": "unresolved-name:objects"
+    }
+  ]
+}

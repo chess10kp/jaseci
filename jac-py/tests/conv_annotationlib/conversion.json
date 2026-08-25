@@ -1,0 +1,795 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_annotationlib.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_annotationlib",
+    "--name",
+    "conv_annotationlib"
+  ],
+  "generated_at": "2026-08-24T23:51:54",
+  "hashes": {
+    "pins_jac": "66bf06a3800ce3969e38543efcdd504cbc57df427dc09a12b0aa30d6a9ac2b83"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_annotationlib.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "annotationlib",
+  "pins_file": "conv_annotationlib_pins.jac",
+  "pins": [
+    {
+      "ident": "TestFormat.test_enum",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    assert Format.VALUE.value == 1, ('assertEqual', Format.VALUE.value, 1)\n    assert Format.VALUE == 1, ('assertEqual', Format.VALUE, 1)\n    assert Format.VALUE_WITH_FAKE_GLOBALS.value == 2, ('assertEqual', Format.VALUE_WITH_FAKE_GLOBALS.value, 2)\n    assert Format.VALUE_WITH_FAKE_GLOBALS == 2, ('assertEqual', Format.VALUE_WITH_FAKE_GLOBALS, 2)\n    assert Format.FORWARDREF.value == 3, ('assertEqual', Format.FORWARDREF.value, 3)\n    assert Format.FORWARDREF == 3, ('assertEqual', Format.FORWARDREF, 3)\n    assert Format.STRING.value == 4, ('assertEqual', Format.STRING.value, 4)\n    assert Format.STRING == 4, ('assertEqual', Format.STRING, 4)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefFormat.test_closure",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def inner(arg: x):\n        pass\n    anno = get_annotations(inner, format=Format.FORWARDREF)\n    fwdref = anno['arg']\n    assert isinstance(fwdref, ForwardRef), ('assertIsInstance', fwdref, ForwardRef)\n    assert fwdref.__forward_arg__ == 'x', ('assertEqual', fwdref.__forward_arg__, 'x')\n    try:\n        fwdref.evaluate()\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    x = 1\n    assert fwdref.evaluate() == x, ('assertEqual', fwdref.evaluate(), x)\n    anno = get_annotations(inner, format=Format.FORWARDREF)\n    assert anno['arg'] == x, ('assertEqual', anno['arg'], x)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefFormat.test_multiple_closure",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def inner(arg: x[y]):\n        pass\n    fwdref = get_annotations(inner, format=Format.FORWARDREF)['arg']\n    assert isinstance(fwdref, ForwardRef), ('assertIsInstance', fwdref, ForwardRef)\n    assert fwdref.__forward_arg__ == 'x[y]', ('assertEqual', fwdref.__forward_arg__, 'x[y]')\n    try:\n        fwdref.evaluate()\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    y = str\n    fwdref = get_annotations(inner, format=Format.FORWARDREF)['arg']\n    assert isinstance(fwdref, ForwardRef), ('assertIsInstance', fwdref, ForwardRef)\n    extra_name, extra_val = next(iter(fwdref.__extra_names__.items()))\n    assert fwdref.__forward_arg__.replace(extra_name, extra_val.__name__) == 'x[str]', ('assertEqual', fwdref.__forward_arg__.replace(extra_name, extra_val.__name__), 'x[str]')\n    try:\n        fwdref.evaluate()\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    x = list\n    assert fwdref.evaluate() == x[y], ('assertEqual', fwdref.evaluate(), x[y])\n    fwdref = get_annotations(inner, format=Format.FORWARDREF)['arg']\n    assert fwdref == x[y], ('assertEqual', fwdref, x[y])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStringFormat.test_closure",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    x = 0\n\n    def inner(arg: x):\n        pass\n    anno = get_annotations(inner, format=Format.STRING)\n    assert anno == {'arg': 'x'}, ('assertEqual', anno, {'arg': 'x'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStringFormat.test_closure_undefined",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    if False:\n        x = 0\n\n    def inner(arg: x):\n        pass\n    anno = get_annotations(inner, format=Format.STRING)\n    assert anno == {'arg': 'x'}, ('assertEqual', anno, {'arg': 'x'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStringFormat.test_reverse_ops",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import functools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef times_three(fn):\n\n    @functools.wraps(fn)\n    def wrapper(a, b):\n        return fn(a * 3, b * 3)\n    return wrapper\n\ndef _t():\n\n    def f(radd: 1 + a, rsub: 1 - a, rmul: 1 * a, rmatmul: 1 @ a, rtruediv: 1 / a, rmod: 1 % a, rlshift: 1 << a, rrshift: 1 >> a, ror: 1 | a, rxor: 1 ^ a, rand: 1 & a, rfloordiv: 1 // a, rpow: 1 ** a):\n        pass\n    anno = get_annotations(f, format=Format.STRING)\n    assert anno == {'radd': '1 + a', 'rsub': '1 - a', 'rmul': '1 * a', 'rmatmul': '1 @ a', 'rtruediv': '1 / a', 'rmod': '1 % a', 'rlshift': '1 << a', 'rrshift': '1 >> a', 'ror': '1 | a', 'rxor': '1 ^ a', 'rand': '1 & a', 'rfloordiv': '1 // a', 'rpow': '1 ** a'}, ('assertEqual', anno, {'radd': '1 + a', 'rsub': '1 - a', 'rmul': '1 * a', 'rmatmul': '1 @ a', 'rtruediv': '1 / a', 'rmod': '1 % a', 'rlshift': '1 << a', 'rrshift': '1 >> a', 'ror': '1 | a', 'rxor': '1 ^ a', 'rand': '1 & a', 'rfloordiv': '1 // a', 'rpow': '1 ** a'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStringFormat.test_literals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def f(a: 1, b: 1.0, c: 'hello', d: b'hello', e: True, f: None, g: ..., h: 1j):\n        pass\n    anno = get_annotations(f, format=Format.STRING)\n    assert anno == {'a': '1', 'b': '1.0', 'c': 'hello', 'd': \"b'hello'\", 'e': 'True', 'f': 'None', 'g': '...', 'h': '1j'}, ('assertEqual', anno, {'a': '1', 'b': '1.0', 'c': 'hello', 'd': \"b'hello'\", 'e': 'True', 'f': 'None', 'g': '...', 'h': '1j'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStringFormat.test_displays",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import functools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef times_three(fn):\n\n    @functools.wraps(fn)\n    def wrapper(a, b):\n        return fn(a * 3, b * 3)\n    return wrapper\n\ndef _t():\n\n    def f(x: a[[int, str], float]):\n        pass\n    anno = get_annotations(f, format=Format.STRING)\n    assert anno == {'x': 'a[[int, str], float]'}, ('assertEqual', anno, {'x': 'a[[int, str], float]'})\n\n    def g(w: a[[int, str], float], x: a[{int}, 3], y: a[{int: str}, 4], z: a[(int, str), 5]):\n        pass\n    anno = get_annotations(g, format=Format.STRING)\n    assert anno == {'w': 'a[[int, str], float]', 'x': 'a[{int}, 3]', 'y': 'a[{int: str}, 4]', 'z': 'a[(int, str), 5]'}, ('assertEqual', anno, {'w': 'a[[int, str], float]', 'x': 'a[{int}, 3]', 'y': 'a[{int: str}, 4]', 'z': 'a[(int, str), 5]'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStringFormat.test_unsupported_operations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport functools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef times_three(fn):\n\n    @functools.wraps(fn)\n    def wrapper(a, b):\n        return fn(a * 3, b * 3)\n    return wrapper\n\ndef _t():\n    format_msg = 'Cannot stringify annotation containing string formatting'\n\n    def f(fstring: f'{a}'):\n        pass\n    try:\n        get_annotations(f, format=Format.STRING)\n    except TypeError as _exc:\n        assert _re.search(format_msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n\n    def f(fstring_format: f'{a:02d}'):\n        pass\n    try:\n        get_annotations(f, format=Format.STRING)\n    except TypeError as _exc:\n        assert _re.search(format_msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStringFormat.test_shenanigans",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def f(x: x | 1 .__class__, y: 1 .__class__):\n        pass\n    assert get_annotations(f, format=Format.STRING) == {'x': \"x | <class 'int'>\", 'y': \"<class 'int'>\"}, ('assertEqual', get_annotations(f, format=Format.STRING), {'x': \"x | <class 'int'>\", 'y': \"<class 'int'>\"})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_builtin_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    assert get_annotations(int) == {}, ('assertEqual', get_annotations(int), {})\n    assert get_annotations(object) == {}, ('assertEqual', get_annotations(object), {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_custom_metaclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class Meta(type):\n        pass\n\n    class C(metaclass=Meta):\n        x: int\n    assert get_annotations(C) == {'x': int}, ('assertEqual', get_annotations(C), {'x': int})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_missing_dunder_dict",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class NoDict(type):\n\n        @property\n        def __dict__(cls):\n            raise AttributeError\n        b: str\n\n    class C1(metaclass=NoDict):\n        a: int\n    assert get_annotations(C1) == {'a': int}, ('assertEqual', get_annotations(C1), {'a': int})\n    assert get_annotations(C1, format=Format.FORWARDREF) == {'a': int}, ('assertEqual', get_annotations(C1, format=Format.FORWARDREF), {'a': int})\n    assert get_annotations(C1, format=Format.STRING) == {'a': 'int'}, ('assertEqual', get_annotations(C1, format=Format.STRING), {'a': 'int'})\n    assert get_annotations(NoDict) == {'b': str}, ('assertEqual', get_annotations(NoDict), {'b': str})\n    assert get_annotations(NoDict, format=Format.FORWARDREF) == {'b': str}, ('assertEqual', get_annotations(NoDict, format=Format.FORWARDREF), {'b': str})\n    assert get_annotations(NoDict, format=Format.STRING) == {'b': 'str'}, ('assertEqual', get_annotations(NoDict, format=Format.STRING), {'b': 'str'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_custom_object_with_annotations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    class C:\n\n        def __init__(self):\n            self.__annotations__ = {'x': int, 'y': str}\n    assert get_annotations(C()) == {'x': int, 'y': str}, ('assertEqual', get_annotations(C()), {'x': int, 'y': str})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_custom_format_eval_str",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def foo():\n        pass\n    try:\n        get_annotations(foo, format=Format.FORWARDREF, eval_str=True)\n        get_annotations(foo, format=Format.STRING, eval_str=True)\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_eval_str_wrapped_cycle_self",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def f(x: 'int') -> 'str':\n        ...\n    f.__wrapped__ = f\n    result = get_annotations(f, eval_str=True)\n    assert result == {'x': int, 'return': str}, ('assertEqual', result, {'x': int, 'return': str})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_eval_str_wrapped_cycle_mutual",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import functools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef times_three(fn):\n\n    @functools.wraps(fn)\n    def wrapper(a, b):\n        return fn(a * 3, b * 3)\n    return wrapper\n\ndef _t():\n\n    def a(x: 'int'):\n        ...\n\n    def b():\n        ...\n    a.__wrapped__ = b\n    b.__wrapped__ = a\n    result = get_annotations(a, eval_str=True)\n    assert result == {'x': int}, ('assertEqual', result, {'x': int})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_eval_str_wrapped_chain_no_cycle",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def inner(x: 'int'):\n        ...\n\n    def outer(x: 'int'):\n        ...\n    outer.__wrapped__ = inner\n    result = get_annotations(outer, eval_str=True)\n    assert result == {'x': int}, ('assertEqual', result, {'x': int})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stock_annotations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def foo(a: int, b: str):\n        pass\n    for format in (Format.VALUE, Format.FORWARDREF):\n        assert get_annotations(foo, format=format) == {'a': int, 'b': str}, ('assertEqual', get_annotations(foo, format=format), {'a': int, 'b': str})\n    assert get_annotations(foo, format=Format.STRING) == {'a': 'int', 'b': 'str'}, ('assertEqual', get_annotations(foo, format=Format.STRING), {'a': 'int', 'b': 'str'})\n    foo.__annotations__ = {'a': 'foo', 'b': 'str'}\n    for format in Format:\n        if format == Format.VALUE_WITH_FAKE_GLOBALS:\n            continue\n        assert get_annotations(foo, format=format) == {'a': 'foo', 'b': 'str'}, ('assertEqual', get_annotations(foo, format=format), {'a': 'foo', 'b': 'str'})\n    assert get_annotations(foo, eval_str=True, locals=locals()) == {'a': foo, 'b': str}, ('assertEqual', get_annotations(foo, eval_str=True, locals=locals()), {'a': foo, 'b': str})\n    assert get_annotations(foo, eval_str=True, globals=locals()) == {'a': foo, 'b': str}, ('assertEqual', get_annotations(foo, eval_str=True, globals=locals()), {'a': foo, 'b': str})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stock_annotations_in_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test.test_inspect import inspect_stock_annotations\n\ndef _t():\n    isa = inspect_stock_annotations\n    for kwargs in [{}, {'eval_str': False}, {'format': Format.VALUE}, {'format': Format.FORWARDREF}, {'format': Format.VALUE, 'eval_str': False}, {'format': Format.FORWARDREF, 'eval_str': False}]:\n        assert get_annotations(isa, **kwargs) == {'a': int, 'b': str}, ('assertEqual', get_annotations(isa, **kwargs), {'a': int, 'b': str})\n        assert get_annotations(isa.MyClass, **kwargs) == {'a': int, 'b': str}, ('assertEqual', get_annotations(isa.MyClass, **kwargs), {'a': int, 'b': str})\n        assert get_annotations(isa.function, **kwargs) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(isa.function, **kwargs), {'a': int, 'b': str, 'return': isa.MyClass})\n        assert get_annotations(isa.function2, **kwargs) == {'a': int, 'b': 'str', 'c': isa.MyClass, 'return': isa.MyClass}, ('assertEqual', get_annotations(isa.function2, **kwargs), {'a': int, 'b': 'str', 'c': isa.MyClass, 'return': isa.MyClass})\n        assert get_annotations(isa.function3, **kwargs) == {'a': 'int', 'b': 'str', 'c': 'MyClass'}, ('assertEqual', get_annotations(isa.function3, **kwargs), {'a': 'int', 'b': 'str', 'c': 'MyClass'})\n        assert get_annotations(annotationlib, **kwargs) == {}, ('assertEqual', get_annotations(annotationlib, **kwargs), {})\n        assert get_annotations(isa.UnannotatedClass, **kwargs) == {}, ('assertEqual', get_annotations(isa.UnannotatedClass, **kwargs), {})\n        assert get_annotations(isa.unannotated_function, **kwargs) == {}, ('assertEqual', get_annotations(isa.unannotated_function, **kwargs), {})\n    for kwargs in [{'eval_str': True}, {'format': Format.VALUE, 'eval_str': True}]:\n        assert get_annotations(isa, **kwargs) == {'a': int, 'b': str}, ('assertEqual', get_annotations(isa, **kwargs), {'a': int, 'b': str})\n        assert get_annotations(isa.MyClass, **kwargs) == {'a': int, 'b': str}, ('assertEqual', get_annotations(isa.MyClass, **kwargs), {'a': int, 'b': str})\n        assert get_annotations(isa.function, **kwargs) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(isa.function, **kwargs), {'a': int, 'b': str, 'return': isa.MyClass})\n        assert get_annotations(isa.function2, **kwargs) == {'a': int, 'b': str, 'c': isa.MyClass, 'return': isa.MyClass}, ('assertEqual', get_annotations(isa.function2, **kwargs), {'a': int, 'b': str, 'c': isa.MyClass, 'return': isa.MyClass})\n        assert get_annotations(isa.function3, **kwargs) == {'a': int, 'b': str, 'c': isa.MyClass}, ('assertEqual', get_annotations(isa.function3, **kwargs), {'a': int, 'b': str, 'c': isa.MyClass})\n        assert get_annotations(annotationlib, **kwargs) == {}, ('assertEqual', get_annotations(annotationlib, **kwargs), {})\n        assert get_annotations(isa.UnannotatedClass, **kwargs) == {}, ('assertEqual', get_annotations(isa.UnannotatedClass, **kwargs), {})\n        assert get_annotations(isa.unannotated_function, **kwargs) == {}, ('assertEqual', get_annotations(isa.unannotated_function, **kwargs), {})\n    assert get_annotations(isa, format=Format.STRING) == {'a': 'int', 'b': 'str'}, ('assertEqual', get_annotations(isa, format=Format.STRING), {'a': 'int', 'b': 'str'})\n    assert get_annotations(isa.MyClass, format=Format.STRING) == {'a': 'int', 'b': 'str'}, ('assertEqual', get_annotations(isa.MyClass, format=Format.STRING), {'a': 'int', 'b': 'str'})\n    assert get_annotations(isa.function, format=Format.STRING) == {'a': 'int', 'b': 'str', 'return': 'MyClass'}, ('assertEqual', get_annotations(isa.function, format=Format.STRING), {'a': 'int', 'b': 'str', 'return': 'MyClass'})\n    assert get_annotations(isa.function2, format=Format.STRING) == {'a': 'int', 'b': 'str', 'c': 'MyClass', 'return': 'MyClass'}, ('assertEqual', get_annotations(isa.function2, format=Format.STRING), {'a': 'int', 'b': 'str', 'c': 'MyClass', 'return': 'MyClass'})\n    assert get_annotations(isa.function3, format=Format.STRING) == {'a': 'int', 'b': 'str', 'c': 'MyClass'}, ('assertEqual', get_annotations(isa.function3, format=Format.STRING), {'a': 'int', 'b': 'str', 'c': 'MyClass'})\n    assert get_annotations(annotationlib, format=Format.STRING) == {}, ('assertEqual', get_annotations(annotationlib, format=Format.STRING), {})\n    assert get_annotations(isa.UnannotatedClass, format=Format.STRING) == {}, ('assertEqual', get_annotations(isa.UnannotatedClass, format=Format.STRING), {})\n    assert get_annotations(isa.unannotated_function, format=Format.STRING) == {}, ('assertEqual', get_annotations(isa.unannotated_function, format=Format.STRING), {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stock_annotations_on_wrapper",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import functools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test.test_inspect import inspect_stock_annotations\n\ndef times_three(fn):\n\n    @functools.wraps(fn)\n    def wrapper(a, b):\n        return fn(a * 3, b * 3)\n    return wrapper\n\ndef _t():\n    isa = inspect_stock_annotations\n    wrapped = times_three(isa.function)\n    assert wrapped(1, 'x') == isa.MyClass(3, 'xxx'), ('assertEqual', wrapped(1, 'x'), isa.MyClass(3, 'xxx'))\n    assert wrapped.__globals__ is not isa.function.__globals__, ('assertIsNot', wrapped.__globals__, isa.function.__globals__)\n    assert get_annotations(wrapped) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(wrapped), {'a': int, 'b': str, 'return': isa.MyClass})\n    assert get_annotations(wrapped, format=Format.FORWARDREF) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(wrapped, format=Format.FORWARDREF), {'a': int, 'b': str, 'return': isa.MyClass})\n    assert get_annotations(wrapped, format=Format.STRING) == {'a': 'int', 'b': 'str', 'return': 'MyClass'}, ('assertEqual', get_annotations(wrapped, format=Format.STRING), {'a': 'int', 'b': 'str', 'return': 'MyClass'})\n    assert get_annotations(wrapped, eval_str=True) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(wrapped, eval_str=True), {'a': int, 'b': str, 'return': isa.MyClass})\n    assert get_annotations(wrapped, eval_str=False) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(wrapped, eval_str=False), {'a': int, 'b': str, 'return': isa.MyClass})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotations_in_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test.test_inspect import inspect_stringized_annotations\n\ndef _t():\n    isa = inspect_stringized_annotations\n    for kwargs in [{}, {'eval_str': False}, {'format': Format.VALUE}, {'format': Format.FORWARDREF}, {'format': Format.STRING}, {'format': Format.VALUE, 'eval_str': False}, {'format': Format.FORWARDREF, 'eval_str': False}, {'format': Format.STRING, 'eval_str': False}]:\n        assert get_annotations(isa, **kwargs) == {'a': 'int', 'b': 'str'}, ('assertEqual', get_annotations(isa, **kwargs), {'a': 'int', 'b': 'str'})\n        assert get_annotations(isa.MyClass, **kwargs) == {'a': 'int', 'b': 'str'}, ('assertEqual', get_annotations(isa.MyClass, **kwargs), {'a': 'int', 'b': 'str'})\n        assert get_annotations(isa.function, **kwargs) == {'a': 'int', 'b': 'str', 'return': 'MyClass'}, ('assertEqual', get_annotations(isa.function, **kwargs), {'a': 'int', 'b': 'str', 'return': 'MyClass'})\n        assert get_annotations(isa.function2, **kwargs) == {'a': 'int', 'b': \"'str'\", 'c': 'MyClass', 'return': 'MyClass'}, ('assertEqual', get_annotations(isa.function2, **kwargs), {'a': 'int', 'b': \"'str'\", 'c': 'MyClass', 'return': 'MyClass'})\n        assert get_annotations(isa.function3, **kwargs) == {'a': \"'int'\", 'b': \"'str'\", 'c': \"'MyClass'\"}, ('assertEqual', get_annotations(isa.function3, **kwargs), {'a': \"'int'\", 'b': \"'str'\", 'c': \"'MyClass'\"})\n        assert get_annotations(isa.UnannotatedClass, **kwargs) == {}, ('assertEqual', get_annotations(isa.UnannotatedClass, **kwargs), {})\n        assert get_annotations(isa.unannotated_function, **kwargs) == {}, ('assertEqual', get_annotations(isa.unannotated_function, **kwargs), {})\n    for kwargs in [{'eval_str': True}, {'eval_str': True, 'globals': isa.__dict__, 'locals': {}}, {'eval_str': True, 'globals': {}, 'locals': isa.__dict__}, {'format': Format.VALUE, 'eval_str': True}]:\n        assert get_annotations(isa, **kwargs) == {'a': int, 'b': str}, ('assertEqual', get_annotations(isa, **kwargs), {'a': int, 'b': str})\n        assert get_annotations(isa.MyClass, **kwargs) == {'a': int, 'b': str}, ('assertEqual', get_annotations(isa.MyClass, **kwargs), {'a': int, 'b': str})\n        assert get_annotations(isa.function, **kwargs) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(isa.function, **kwargs), {'a': int, 'b': str, 'return': isa.MyClass})\n        assert get_annotations(isa.function2, **kwargs) == {'a': int, 'b': 'str', 'c': isa.MyClass, 'return': isa.MyClass}, ('assertEqual', get_annotations(isa.function2, **kwargs), {'a': int, 'b': 'str', 'c': isa.MyClass, 'return': isa.MyClass})\n        assert get_annotations(isa.function3, **kwargs) == {'a': 'int', 'b': 'str', 'c': 'MyClass'}, ('assertEqual', get_annotations(isa.function3, **kwargs), {'a': 'int', 'b': 'str', 'c': 'MyClass'})\n        assert get_annotations(isa.UnannotatedClass, **kwargs) == {}, ('assertEqual', get_annotations(isa.UnannotatedClass, **kwargs), {})\n        assert get_annotations(isa.unannotated_function, **kwargs) == {}, ('assertEqual', get_annotations(isa.unannotated_function, **kwargs), {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotations_in_empty_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test.test_inspect import inspect_stringized_annotations_2\n\ndef _t():\n    isa2 = inspect_stringized_annotations_2\n    assert get_annotations(isa2) == {}, ('assertEqual', get_annotations(isa2), {})\n    assert get_annotations(isa2, eval_str=True) == {}, ('assertEqual', get_annotations(isa2, eval_str=True), {})\n    assert get_annotations(isa2, eval_str=False) == {}, ('assertEqual', get_annotations(isa2, eval_str=False), {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotations_with_star_unpack",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def f(*args: '*tuple[int, ...]'):\n        ...\n    assert get_annotations(f, eval_str=True) == {'args': (*tuple[int, ...],)[0]}, ('assertEqual', get_annotations(f, eval_str=True), {'args': (*tuple[int, ...],)[0]})\n\n    def f(*args: ' *tuple[int, ...]'):\n        ...\n    assert get_annotations(f, eval_str=True) == {'args': (*tuple[int, ...],)[0]}, ('assertEqual', get_annotations(f, eval_str=True), {'args': (*tuple[int, ...],)[0]})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotations_on_wrapper",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import functools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test.test_inspect import inspect_stringized_annotations\n\ndef times_three(fn):\n\n    @functools.wraps(fn)\n    def wrapper(a, b):\n        return fn(a * 3, b * 3)\n    return wrapper\n\ndef _t():\n    isa = inspect_stringized_annotations\n    wrapped = times_three(isa.function)\n    assert wrapped(1, 'x') == isa.MyClass(3, 'xxx'), ('assertEqual', wrapped(1, 'x'), isa.MyClass(3, 'xxx'))\n    assert wrapped.__globals__ is not isa.function.__globals__, ('assertIsNot', wrapped.__globals__, isa.function.__globals__)\n    assert get_annotations(wrapped) == {'a': 'int', 'b': 'str', 'return': 'MyClass'}, ('assertEqual', get_annotations(wrapped), {'a': 'int', 'b': 'str', 'return': 'MyClass'})\n    assert get_annotations(wrapped, eval_str=True) == {'a': int, 'b': str, 'return': isa.MyClass}, ('assertEqual', get_annotations(wrapped, eval_str=True), {'a': int, 'b': str, 'return': isa.MyClass})\n    assert get_annotations(wrapped, eval_str=False) == {'a': 'int', 'b': 'str', 'return': 'MyClass'}, ('assertEqual', get_annotations(wrapped, eval_str=False), {'a': 'int', 'b': 'str', 'return': 'MyClass'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotations_on_partial_wrapper",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotations_on_class",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test.test_inspect import inspect_stringized_annotations\n\ndef _t():\n    isa = inspect_stringized_annotations\n    assert get_annotations(isa.MyClassWithLocalAnnotations) == {'x': 'mytype'}, ('assertEqual', get_annotations(isa.MyClassWithLocalAnnotations), {'x': 'mytype'})\n    assert get_annotations(isa.MyClassWithLocalAnnotations, eval_str=True) == {'x': int}, ('assertEqual', get_annotations(isa.MyClassWithLocalAnnotations, eval_str=True), {'x': int})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotations_on_custom_object",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class HasAnnotations:\n\n        @property\n        def __annotations__(self):\n            return {'x': 'int'}\n    ha = HasAnnotations()\n    assert get_annotations(ha) == {'x': 'int'}, ('assertEqual', get_annotations(ha), {'x': 'int'})\n    assert get_annotations(ha, eval_str=True) == {'x': int}, ('assertEqual', get_annotations(ha, eval_str=True), {'x': int})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_stringized_annotation_permutations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import itertools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test import support\n\ndef _t():\n\n    def define_class(name, has_future, has_annos, base_text, extra_names=None):\n        lines = []\n        if has_future:\n            lines.append('from __future__ import annotations')\n        lines.append(f'class {name}({base_text}):')\n        if has_annos:\n            lines.append(f'    {name}_attr: int')\n        else:\n            lines.append('    pass')\n        code = '\\n'.join(lines)\n        ns = support.run_code(code, extra_names=extra_names)\n        return ns[name]\n\n    def check_annotations(cls, has_future, has_annos):\n        if has_annos:\n            if has_future:\n                anno = 'int'\n            else:\n                anno = int\n            assert get_annotations(cls) == {f'{cls.__name__}_attr': anno}, ('assertEqual', get_annotations(cls), {f'{cls.__name__}_attr': anno})\n        else:\n            assert get_annotations(cls) == {}, ('assertEqual', get_annotations(cls), {})\n    for meta_future, base_future, child_future, meta_has_annos, base_has_annos, child_has_annos in itertools.product((False, True), (False, True), (False, True), (False, True), (False, True), (False, True)):\n        meta = define_class('Meta', has_future=meta_future, has_annos=meta_has_annos, base_text='type')\n        base = define_class('Base', has_future=base_future, has_annos=base_has_annos, base_text='metaclass=Meta', extra_names={'Meta': meta})\n        child = define_class('Child', has_future=child_future, has_annos=child_has_annos, base_text='Base', extra_names={'Base': base})\n        check_annotations(meta, meta_future, meta_has_annos)\n        check_annotations(base, base_future, base_has_annos)\n        check_annotations(child, child_future, child_has_annos)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_modify_annotations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def f(x: int):\n        pass\n    assert get_annotations(f) == {'x': int}, ('assertEqual', get_annotations(f), {'x': int})\n    assert get_annotations(f, format=Format.FORWARDREF) == {'x': int}, ('assertEqual', get_annotations(f, format=Format.FORWARDREF), {'x': int})\n    f.__annotations__['x'] = str\n    assert get_annotations(f) == {'x': str}, ('assertEqual', get_annotations(f), {'x': str})\n    assert get_annotations(f, format=Format.FORWARDREF) == {'x': str}, ('assertEqual', get_annotations(f, format=Format.FORWARDREF), {'x': str})\n    assert get_annotations(f, format=Format.STRING) == {'x': 'int'}, ('assertEqual', get_annotations(f, format=Format.STRING), {'x': 'int'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_annotations_on_custom_object",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class HasAnnotations:\n\n        @property\n        def __annotations__(self):\n            return {'x': int}\n    ha = HasAnnotations()\n    assert get_annotations(ha, format=Format.VALUE) == {'x': int}, ('assertEqual', get_annotations(ha, format=Format.VALUE), {'x': int})\n    assert get_annotations(ha, format=Format.FORWARDREF) == {'x': int}, ('assertEqual', get_annotations(ha, format=Format.FORWARDREF), {'x': int})\n    assert get_annotations(ha, format=Format.STRING) == {'x': 'int'}, ('assertEqual', get_annotations(ha, format=Format.STRING), {'x': 'int'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_raising_annotations_on_custom_object",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class HasRaisingAnnotations:\n\n        @property\n        def __annotations__(self):\n            return {'x': undefined}\n    hra = HasRaisingAnnotations()\n    try:\n        get_annotations(hra, format=Format.VALUE)\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        get_annotations(hra, format=Format.FORWARDREF)\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    undefined = float\n    assert get_annotations(hra, format=Format.VALUE) == {'x': float}, ('assertEqual', get_annotations(hra, format=Format.VALUE), {'x': float})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_forwardref_prefers_annotations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class HasBoth:\n\n        @property\n        def __annotations__(self):\n            return {'x': int}\n\n        @property\n        def __annotate__(self):\n            return lambda format: {'x': str}\n    hb = HasBoth()\n    assert get_annotations(hb, format=Format.VALUE) == {'x': int}, ('assertEqual', get_annotations(hb, format=Format.VALUE), {'x': int})\n    assert get_annotations(hb, format=Format.FORWARDREF) == {'x': int}, ('assertEqual', get_annotations(hb, format=Format.FORWARDREF), {'x': int})\n    assert get_annotations(hb, format=Format.STRING) == {'x': str}, ('assertEqual', get_annotations(hb, format=Format.STRING), {'x': str})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_only_annotate",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def f(x: int):\n        pass\n\n    class OnlyAnnotate:\n\n        @property\n        def __annotate__(self):\n            return f.__annotate__\n    oa = OnlyAnnotate()\n    assert get_annotations(oa, format=Format.VALUE) == {'x': int}, ('assertEqual', get_annotations(oa, format=Format.VALUE), {'x': int})\n    assert get_annotations(oa, format=Format.FORWARDREF) == {'x': int}, ('assertEqual', get_annotations(oa, format=Format.FORWARDREF), {'x': int})\n    assert get_annotations(oa, format=Format.STRING) == {'x': 'int'}, ('assertEqual', get_annotations(oa, format=Format.STRING), {'x': 'int'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_no_annotations",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class CustomClass:\n        pass\n\n    class MyCallable:\n\n        def __call__(self):\n            pass\n    for format in Format:\n        if format == Format.VALUE_WITH_FAKE_GLOBALS:\n            continue\n        for obj in (None, 1, object(), CustomClass()):\n            try:\n                get_annotations(obj, format=format)\n            except TypeError as _exc:\n                pass\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        for obj in (int, len, MyCallable()):\n            assert get_annotations(obj, format=format) == {}, ('assertEqual', get_annotations(obj, format=format), {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep695_generic_class_with_future_annotations",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep695_generic_class_with_future_annotations_and_local_shadowing",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep695_generic_class_with_future_annotations_name_clash_with_global_vars",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep_695_generic_function_with_future_annotations",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep_695_generic_function_with_future_annotations_name_clash_with_global_vars",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep_695_generic_method_with_future_annotations",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep_695_generic_method_with_future_annotations_name_clash_with_global_vars",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep_695_generic_method_with_future_annotations_name_clash_with_global_and_local_vars",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_pep_695_generics_with_future_annotations_nested_in_function",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestGetAnnotations.test_partial_evaluation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import builtins\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test import support\n\ndef _t():\n\n    def f(x: builtins.undef, y: list[int], z: 1 + int, a: builtins.int, b: [builtins.undef, builtins.int]):\n        pass\n    assert get_annotations(f, format=Format.FORWARDREF) == {'x': support.EqualToForwardRef('builtins.undef', owner=f), 'y': list[int], 'z': support.EqualToForwardRef('1 + int', owner=f), 'a': int, 'b': [support.EqualToForwardRef('builtins.undef', owner=f), support.EqualToForwardRef('builtins.int', owner=f)]}, ('assertEqual', get_annotations(f, format=Format.FORWARDREF), {'x': support.EqualToForwardRef('builtins.undef', owner=f), 'y': list[int], 'z': support.EqualToForwardRef('1 + int', owner=f), 'a': int, 'b': [support.EqualToForwardRef('builtins.undef', owner=f), support.EqualToForwardRef('builtins.int', owner=f)]})\n    assert get_annotations(f, format=Format.STRING) == {'x': 'builtins.undef', 'y': 'list[int]', 'z': '1 + int', 'a': 'builtins.int', 'b': '[builtins.undef, builtins.int]'}, ('assertEqual', get_annotations(f, format=Format.STRING), {'x': 'builtins.undef', 'y': 'list[int]', 'z': '1 + int', 'a': 'builtins.int', 'b': '[builtins.undef, builtins.int]'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_partial_evaluation_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test import support\n\ndef _t():\n\n    def f(x: range[1]):\n        pass\n    try:\n        f.__annotations__\n    except TypeError as _exc:\n        assert _re.search(\"type 'range' is not subscriptable\", str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert get_annotations(f, format=Format.FORWARDREF) == {'x': support.EqualToForwardRef('range[1]', owner=f)}, ('assertEqual', get_annotations(f, format=Format.FORWARDREF), {'x': support.EqualToForwardRef('range[1]', owner=f)})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_partial_evaluation_cell",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test import support\n\ndef _t():\n    obj = object()\n\n    class RaisesAttributeError:\n        attriberr: obj.missing\n    anno = get_annotations(RaisesAttributeError, format=Format.FORWARDREF)\n    assert anno == {'attriberr': support.EqualToForwardRef('obj.missing', is_class=True, owner=RaisesAttributeError)}, ('assertEqual', anno, {'attriberr': support.EqualToForwardRef('obj.missing', is_class=True, owner=RaisesAttributeError)})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_nonlocal_in_annotation_scope",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class Demo:\n        nonlocal sequence_b\n        x: sequence_b\n        y: sequence_b[int]\n    fwdrefs = get_annotations(Demo, format=Format.FORWARDREF)\n    assert isinstance(fwdrefs['x'], ForwardRef), ('assertIsInstance', fwdrefs['x'], ForwardRef)\n    assert isinstance(fwdrefs['y'], ForwardRef), ('assertIsInstance', fwdrefs['y'], ForwardRef)\n    sequence_b = list\n    assert fwdrefs['x'].evaluate() is list, ('assertIs', fwdrefs['x'].evaluate(), list)\n    assert fwdrefs['y'].evaluate() == list[int], ('assertEqual', fwdrefs['y'].evaluate(), list[int])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGetAnnotations.test_raises_error_from_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class DemoException(Exception):\n        ...\n\n    def annotate(format, /):\n        if format == Format.VALUE:\n            raise DemoException()\n        else:\n            raise NotImplementedError(format)\n\n    def f():\n        ...\n    f.__annotate__ = annotate\n    for fmt in [Format.VALUE, Format.FORWARDREF, Format.STRING]:\n        try:\n            get_annotations(f, format=fmt)\n        except DemoException as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallEvaluateFunction.test_fake_global_evaluation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nimport builtins\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test import support\n\ndef _t():\n\n    def evaluate_union(format, exc=NotImplementedError):\n        if format == Format.VALUE_WITH_FAKE_GLOBALS:\n            return builtins.undefined | list[int]\n        raise exc\n    assert annotationlib.call_evaluate_function(evaluate_union, Format.FORWARDREF) == support.EqualToForwardRef('builtins.undefined | list[int]'), ('assertEqual', annotationlib.call_evaluate_function(evaluate_union, Format.FORWARDREF), support.EqualToForwardRef('builtins.undefined | list[int]'))\n\n    def evaluate_intermediate(format, exc=NotImplementedError):\n        if format == Format.VALUE_WITH_FAKE_GLOBALS:\n            intermediate = builtins.undefined\n            return intermediate is None\n        raise exc\n    assert annotationlib.call_evaluate_function(evaluate_intermediate, Format.FORWARDREF) is False, ('assertIs', annotationlib.call_evaluate_function(evaluate_intermediate, Format.FORWARDREF), False)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_user_annotate_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /):\n        if format == Format.VALUE:\n            return {'x': str}\n        else:\n            raise NotImplementedError(format)\n    annotations = annotationlib.call_annotate_function(annotate, Format.VALUE)\n    assert annotations == {'x': str}, ('assertEqual', annotations, {'x': str})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_user_annotate_forwardref_supported",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /, __Format=Format, __NotImplementedError=NotImplementedError):\n        if format == __Format.VALUE:\n            return {'x': str}\n        elif format == __Format.VALUE_WITH_FAKE_GLOBALS:\n            return {'x': int}\n        elif format == __Format.FORWARDREF:\n            return {'x': float}\n        else:\n            raise __NotImplementedError(format)\n    annotations = annotationlib.call_annotate_function(annotate, Format.FORWARDREF)\n    assert annotations == {'x': float}, ('assertEqual', annotations, {'x': float})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_user_annotate_forwardref_fakeglobals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /, __Format=Format, __NotImplementedError=NotImplementedError):\n        if format == __Format.VALUE:\n            return {'x': str}\n        elif format == __Format.VALUE_WITH_FAKE_GLOBALS:\n            return {'x': int}\n        else:\n            raise __NotImplementedError(format)\n    annotations = annotationlib.call_annotate_function(annotate, Format.FORWARDREF)\n    assert annotations == {'x': int}, ('assertEqual', annotations, {'x': int})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_user_annotate_forwardref_value_fallback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /, __Format=Format, __NotImplementedError=NotImplementedError):\n        if format == __Format.VALUE:\n            return {'x': str}\n        else:\n            raise __NotImplementedError(format)\n    annotations = annotationlib.call_annotate_function(annotate, Format.FORWARDREF)\n    assert annotations == {'x': str}, ('assertEqual', annotations, {'x': str})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_user_annotate_string_supported",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /, __Format=Format, __NotImplementedError=NotImplementedError):\n        if format == __Format.VALUE:\n            return {'x': str}\n        elif format == __Format.VALUE_WITH_FAKE_GLOBALS:\n            return {'x': int}\n        elif format == __Format.STRING:\n            return {'x': 'float'}\n        else:\n            raise __NotImplementedError(format)\n    annotations = annotationlib.call_annotate_function(annotate, Format.STRING)\n    assert annotations == {'x': 'float'}, ('assertEqual', annotations, {'x': 'float'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_user_annotate_string_fakeglobals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /, __Format=Format, __NotImplementedError=NotImplementedError):\n        if format == __Format.VALUE:\n            return {'x': str}\n        elif format == __Format.VALUE_WITH_FAKE_GLOBALS:\n            return {'x': int}\n        else:\n            raise __NotImplementedError(format)\n    annotations = annotationlib.call_annotate_function(annotate, Format.STRING)\n    assert annotations == {'x': 'int'}, ('assertEqual', annotations, {'x': 'int'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_user_annotate_string_value_fallback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /, __Format=Format, __NotImplementedError=NotImplementedError):\n        if format == __Format.VALUE:\n            return {'x': str}\n        else:\n            raise __NotImplementedError(format)\n    annotations = annotationlib.call_annotate_function(annotate, Format.STRING)\n    assert annotations == {'x': 'str'}, ('assertEqual', annotations, {'x': 'str'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_condition_not_stringified",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /):\n        if format == Format.FORWARDREF:\n            return {'x': str}\n        else:\n            raise NotImplementedError(format)\n    try:\n        annotationlib.call_annotate_function(annotate, Format.STRING)\n    except NotImplementedError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_unsupported_formats",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    def annotate(format, /):\n        if format == Format.FORWARDREF:\n            return {'x': str}\n        else:\n            raise NotImplementedError(format)\n    try:\n        annotationlib.call_annotate_function(annotate, Format.VALUE_WITH_FAKE_GLOBALS)\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        annotationlib.call_annotate_function(annotate, Format.VALUE)\n    except RuntimeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        annotationlib.call_annotate_function(annotate, 7)\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_error_from_value_raised",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class DemoException(Exception):\n        ...\n\n    def annotate(format, /):\n        if format == Format.VALUE:\n            raise DemoException()\n        else:\n            raise NotImplementedError(format)\n    for fmt in [Format.VALUE, Format.FORWARDREF, Format.STRING]:\n        try:\n            annotationlib.call_annotate_function(annotate, format=fmt)\n        except DemoException as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MetaclassTests.test_annotated_meta",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class Meta(type):\n        a: int\n\n    class X(metaclass=Meta):\n        pass\n\n    class Y(metaclass=Meta):\n        b: float\n    assert get_annotations(Meta) == {'a': int}, ('assertEqual', get_annotations(Meta), {'a': int})\n    assert Meta.__annotate__(Format.VALUE) == {'a': int}, ('assertEqual', Meta.__annotate__(Format.VALUE), {'a': int})\n    assert get_annotations(X) == {}, ('assertEqual', get_annotations(X), {})\n    assert X.__annotate__ is None, ('assertIs', X.__annotate__, None)\n    assert get_annotations(Y) == {'b': float}, ('assertEqual', get_annotations(Y), {'b': float})\n    assert Y.__annotate__(Format.VALUE) == {'b': float}, ('assertEqual', Y.__annotate__(Format.VALUE), {'b': float})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MetaclassTests.test_unannotated_meta",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n\n    class Meta(type):\n        pass\n\n    class X(metaclass=Meta):\n        a: str\n\n    class Y(X):\n        pass\n    assert get_annotations(Meta) == {}, ('assertEqual', get_annotations(Meta), {})\n    assert Meta.__annotate__ is None, ('assertIs', Meta.__annotate__, None)\n    assert get_annotations(Y) == {}, ('assertEqual', get_annotations(Y), {})\n    assert Y.__annotate__ is None, ('assertIs', Y.__annotate__, None)\n    assert get_annotations(X) == {'a': str}, ('assertEqual', get_annotations(X), {'a': str})\n    assert X.__annotate__(Format.VALUE) == {'a': str}, ('assertEqual', X.__annotate__(Format.VALUE), {'a': str})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MetaclassTests.test_ordering",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import itertools\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\nclass A:\n    pass\n\ndef _t():\n\n    def make_classes():\n\n        class Meta(type):\n            a: int\n            expected_annotations = {'a': int}\n\n        class A(type, metaclass=Meta):\n            b: float\n            expected_annotations = {'b': float}\n\n        class B(metaclass=A):\n            c: str\n            expected_annotations = {'c': str}\n\n        class C(B):\n            expected_annotations = {}\n\n        class D(metaclass=Meta):\n            expected_annotations = {}\n        return (Meta, A, B, C, D)\n    classes = make_classes()\n    class_count = len(classes)\n    for order in itertools.permutations(range(class_count), class_count):\n        names = ', '.join((classes[i].__name__ for i in order))\n        classes = make_classes()\n        for i in order:\n            get_annotations(classes[i])\n        for c in classes:\n            assert get_annotations(c) == c.expected_annotations, ('assertEqual', get_annotations(c), c.expected_annotations)\n            annotate_func = getattr(c, '__annotate__', None)\n            if c.expected_annotations:\n                assert annotate_func(Format.VALUE) == c.expected_annotations, ('assertEqual', annotate_func(Format.VALUE), c.expected_annotations)\n            else:\n                assert annotate_func is None, ('assertIs', annotate_func, None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTypeRepr.test_type_repr",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '__main__._t.<locals>.Nested', '__main__.TestTypeRepr.test_type_repr.<locals>.Nested')"
+    },
+    {
+      "ident": "TestAnnotationsToString.test_annotations_to_string",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    assert annotations_to_string({}) == {}, ('assertEqual', annotations_to_string({}), {})\n    assert annotations_to_string({'x': int}) == {'x': 'int'}, ('assertEqual', annotations_to_string({'x': int}), {'x': 'int'})\n    assert annotations_to_string({'x': 'int'}) == {'x': 'int'}, ('assertEqual', annotations_to_string({'x': 'int'}), {'x': 'int'})\n    assert annotations_to_string({'x': int, 'y': str}) == {'x': 'int', 'y': 'str'}, ('assertEqual', annotations_to_string({'x': int, 'y': str}), {'x': 'int', 'y': 'str'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forwardref_instance_type_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    fr = ForwardRef('int')\n    try:\n        isinstance(42, fr)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forwardref_subclass_type_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    fr = ForwardRef('int')\n    try:\n        issubclass(int, fr)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forwardref_only_str_arg",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    try:\n        ForwardRef(1)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_equality",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_equality_get_type_hints",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_equality_hash",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_equality_namespace",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_repr",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_recursion_actually",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_syntax_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_delayed_syntax_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_syntax_error_empty_string",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_or",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_multiple_ways_to_create",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_special_attrs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pickle\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    fr = ForwardRef('set[Any]')\n    assert not hasattr(fr, '__name__'), ('assertNotHasAttr', fr, '__name__')\n    assert not hasattr(fr, '__qualname__'), ('assertNotHasAttr', fr, '__qualname__')\n    assert fr.__module__ == 'annotationlib', ('assertEqual', fr.__module__, 'annotationlib')\n    fr.__forward_code__\n    for proto in range(pickle.HIGHEST_PROTOCOL + 1):\n        try:\n            pickle.dumps(fr, proto)\n        except TypeError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_evaluate_string_format",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    fr = ForwardRef('set[Any]')\n    assert fr.evaluate(format=Format.STRING) == 'set[Any]', ('assertEqual', fr.evaluate(format=Format.STRING), 'set[Any]')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_evaluate_forwardref_format",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\nfrom test import support\n\ndef _t():\n    fr = ForwardRef('undef')\n    evaluated = fr.evaluate(format=Format.FORWARDREF)\n    assert fr is evaluated, ('assertIs', fr, evaluated)\n    fr = ForwardRef('set[undefined]')\n    evaluated = fr.evaluate(format=Format.FORWARDREF)\n    assert evaluated == set[support.EqualToForwardRef('undefined')], ('assertEqual', evaluated, set[support.EqualToForwardRef('undefined')])\n    fr = ForwardRef('a + b')\n    assert fr.evaluate(format=Format.FORWARDREF) == support.EqualToForwardRef('a + b'), ('assertEqual', fr.evaluate(format=Format.FORWARDREF), support.EqualToForwardRef('a + b'))\n    assert fr.evaluate(format=Format.FORWARDREF, locals={'a': 1, 'b': 2}) == 3, ('assertEqual', fr.evaluate(format=Format.FORWARDREF, locals={'a': 1, 'b': 2}), 3)\n    fr = ForwardRef('\"a\" + 1')\n    assert fr.evaluate(format=Format.FORWARDREF) == support.EqualToForwardRef('\"a\" + 1'), ('assertEqual', fr.evaluate(format=Format.FORWARDREF), support.EqualToForwardRef('\"a\" + 1'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_evaluate_with_type_params",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (typing.py, line 1991)"
+    },
+    {
+      "ident": "TestForwardRefClass.test_evaluate_with_type_params_and_scope_conflict",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestForwardRefClass.test_fwdref_with_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    assert ForwardRef('Format', module='annotationlib').evaluate() is Format, ('assertIs', ForwardRef('Format', module='annotationlib').evaluate(), Format)\n    assert ForwardRef('Counter', module='collections').evaluate() is collections.Counter, ('assertIs', ForwardRef('Counter', module='collections').evaluate(), collections.Counter)\n    assert ForwardRef('Counter[int]', module='collections').evaluate() == collections.Counter[int], ('assertEqual', ForwardRef('Counter[int]', module='collections').evaluate(), collections.Counter[int])\n    try:\n        ForwardRef('Format', module='annotationlib').evaluate(globals={})\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_fwdref_to_builtin",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    assert ForwardRef('int').evaluate() is int, ('assertIs', ForwardRef('int').evaluate(), int)\n    assert ForwardRef('int', module='collections').evaluate() is int, ('assertIs', ForwardRef('int', module='collections').evaluate(), int)\n    assert ForwardRef('int', owner=str).evaluate() is int, ('assertIs', ForwardRef('int', owner=str).evaluate(), int)\n    assert ForwardRef('int').evaluate(globals={}) is int, ('assertIs', ForwardRef('int').evaluate(globals={}), int)\n    obj = object()\n    assert ForwardRef('int').evaluate(globals={'int': obj}) is obj, ('assertIs', ForwardRef('int').evaluate(globals={'int': obj}), obj)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_fwdref_value_is_not_cached",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    fr = ForwardRef('hello')\n    try:\n        fr.evaluate()\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert fr.evaluate(globals={'hello': str}) is str, ('assertIs', fr.evaluate(globals={'hello': str}), str)\n    try:\n        fr.evaluate()\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_fwdref_with_owner",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import collections\nfrom annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    assert ForwardRef('Counter[int]', owner=collections).evaluate() == collections.Counter[int], ('assertEqual', ForwardRef('Counter[int]', owner=collections).evaluate(), collections.Counter[int])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_fwdref_invalid_syntax",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    fr = ForwardRef('if')\n    try:\n        fr.evaluate()\n    except SyntaxError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    fr = ForwardRef('1+')\n    try:\n        fr.evaluate()\n    except SyntaxError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_re_evaluate_generics",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    global global_alias\n    if 'global_alias' in globals():\n        del global_alias\n\n    class C:\n        x: global_alias[int]\n    evaluated = get_annotations(C, format=Format.FORWARDREF)['x'].evaluate(format=Format.FORWARDREF)\n    global_alias = list\n    assert evaluated.evaluate() == list[int], ('assertEqual', evaluated.evaluate(), list[int])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestForwardRefClass.test_fwdref_final_class",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from annotationlib import Format, ForwardRef, get_annotations, annotations_to_string, type_repr\n\ndef _t():\n    try:\n\n        class C(ForwardRef):\n            pass\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestAnnotationLib.test__all__",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestAnnotationLib.test_lazy_imports",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestForwardRefFormat.test_function",
+      "reason": "unresolved-name:doesntexist"
+    },
+    {
+      "ident": "TestForwardRefFormat.test_nonexistent_attribute",
+      "reason": "unresolved-name:module"
+    },
+    {
+      "ident": "TestForwardRefFormat.test_partially_nonexistent",
+      "reason": "unresolved-name:call_func"
+    },
+    {
+      "ident": "TestForwardRefFormat.test_partially_nonexistent_union",
+      "reason": "unresolved-name:undefined"
+    },
+    {
+      "ident": "TestStringFormat.test_function",
+      "reason": "unresolved-name:doesntexist"
+    },
+    {
+      "ident": "TestStringFormat.test_expressions",
+      "reason": "unresolved-name:c"
+    },
+    {
+      "ident": "TestStringFormat.test_template_str",
+      "reason": "unresolved-name:d"
+    },
+    {
+      "ident": "TestStringFormat.test_getitem",
+      "reason": "unresolved-name:undef1"
+    },
+    {
+      "ident": "TestStringFormat.test_slice",
+      "reason": "unresolved-name:c"
+    },
+    {
+      "ident": "TestStringFormat.test_nested_expressions",
+      "reason": "unresolved-name:Annotated"
+    },
+    {
+      "ident": "TestGetAnnotations.test_format",
+      "reason": "unresolved-name:undefined"
+    },
+    {
+      "ident": "TestGetAnnotations.test_non_dict_annotations",
+      "reason": "uses-self.assertRaisesRegex"
+    },
+    {
+      "ident": "TestGetAnnotations.test_non_dict_annotate",
+      "reason": "uses-self.assertRaisesRegex"
+    },
+    {
+      "ident": "TestCallEvaluateFunction.test_evaluation",
+      "reason": "unresolved-name:undefined"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_basic_non_function_annotate",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "TestCallAnnotateFunction.test_full_non_function_annotate",
+      "reason": "unresolved-name:unknown"
+    },
+    {
+      "ident": "TestGetAnnotateFromClassNamespace.test_with_metaclass",
+      "reason": "uses-self.assertIsNone"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_equality_and_hash_with_cells",
+      "reason": "uses-self.assertIs"
+    },
+    {
+      "ident": "TestForwardRefClass.test_forward_repr_extra_names",
+      "reason": "unresolved-name:undefined"
+    },
+    {
+      "ident": "TestForwardRefClass.test_evaluate_string_format_extra_names",
+      "reason": "unresolved-name:unknown"
+    },
+    {
+      "ident": "TestForwardRefClass.test_evaluate_notimplemented_format",
+      "reason": "unresolved-name:alias"
+    },
+    {
+      "ident": "TestForwardRefClass.test_name_lookup_without_eval",
+      "reason": "unresolved-name:exc"
+    },
+    {
+      "ident": "TestForwardRefClass.test_evaluate_undefined_generic",
+      "reason": "self.assertNotIsInstance"
+    },
+    {
+      "ident": "TestForwardRefClass.test_fwdref_evaluate_argument_mutation",
+      "reason": "unresolved-name:T"
+    }
+  ],
+  "counts": {
+    "extracted": 117,
+    "pinned": 67,
+    "quarantined": 50
+  }
+}

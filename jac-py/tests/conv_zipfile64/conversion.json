@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_zipfile64.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_zipfile64",
+    "--name",
+    "conv_zipfile64"
+  ],
+  "generated_at": "2026-08-24T23:52:28",
+  "hashes": {
+    "pins_jac": "18dff0399916f8da1ac5b5c30e21caa3aa561160db0372965bedbe4dee59e0b7"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_zipfile64.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "zipfile64",
+  "pins_file": "conv_zipfile64_pins.jac",
+  "pins": [
+    {
+      "ident": "TestsWithSourceFile.testStored",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestsWithSourceFile.testDeflated",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "OtherTests.testMoreThan64kFiles",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import zipfile, unittest\nfrom test.support import os_helper\nTESTFN = os_helper.TESTFN\n\ndef _t():\n    with zipfile.ZipFile(TESTFN, mode='w', allowZip64=True) as zipf:\n        zipf.debug = 100\n        numfiles = (1 << 16) * 3 // 2\n        for i in range(numfiles):\n            zipf.writestr('foo%08d' % i, '%d' % (i ** 3 % 57))\n        assert len(zipf.namelist()) == numfiles, ('assertEqual', len(zipf.namelist()), numfiles)\n    with zipfile.ZipFile(TESTFN, mode='r') as zipf2:\n        assert len(zipf2.namelist()) == numfiles, ('assertEqual', len(zipf2.namelist()), numfiles)\n        for i in range(numfiles):\n            content = zipf2.read('foo%08d' % i).decode('ascii')\n            assert content == '%d' % (i ** 3 % 57), ('assertEqual', content, '%d' % (i ** 3 % 57))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "OtherTests.testMoreThan64kFilesAppend",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import zipfile, unittest\nfrom test.support import os_helper\nTESTFN = os_helper.TESTFN\n\ndef _t():\n    with zipfile.ZipFile(TESTFN, mode='w', allowZip64=False) as zipf:\n        zipf.debug = 100\n        numfiles = (1 << 16) - 1\n        for i in range(numfiles):\n            zipf.writestr('foo%08d' % i, '%d' % (i ** 3 % 57))\n        assert len(zipf.namelist()) == numfiles, ('assertEqual', len(zipf.namelist()), numfiles)\n        try:\n            zipf.writestr('foo%08d' % numfiles, b'')\n        except zipfile.LargeZipFile as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        assert len(zipf.namelist()) == numfiles, ('assertEqual', len(zipf.namelist()), numfiles)\n    with zipfile.ZipFile(TESTFN, mode='a', allowZip64=False) as zipf:\n        zipf.debug = 100\n        assert len(zipf.namelist()) == numfiles, ('assertEqual', len(zipf.namelist()), numfiles)\n        try:\n            zipf.writestr('foo%08d' % numfiles, b'')\n        except zipfile.LargeZipFile as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        assert len(zipf.namelist()) == numfiles, ('assertEqual', len(zipf.namelist()), numfiles)\n    with zipfile.ZipFile(TESTFN, mode='a', allowZip64=True) as zipf:\n        zipf.debug = 100\n        assert len(zipf.namelist()) == numfiles, ('assertEqual', len(zipf.namelist()), numfiles)\n        numfiles2 = (1 << 16) * 3 // 2\n        for i in range(numfiles, numfiles2):\n            zipf.writestr('foo%08d' % i, '%d' % (i ** 3 % 57))\n        assert len(zipf.namelist()) == numfiles2, ('assertEqual', len(zipf.namelist()), numfiles2)\n    with zipfile.ZipFile(TESTFN, mode='r') as zipf2:\n        assert len(zipf2.namelist()) == numfiles2, ('assertEqual', len(zipf2.namelist()), numfiles2)\n        for i in range(numfiles2):\n            content = zipf2.read('foo%08d' % i).decode('ascii')\n            assert content == '%d' % (i ** 3 % 57), ('assertEqual', content, '%d' % (i ** 3 % 57))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 4,
+    "pinned": 2,
+    "quarantined": 2
+  }
+}

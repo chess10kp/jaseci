@@ -1,0 +1,434 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_annotationlib/conv_annotationlib_pins.jac"
+  ],
+  "generated_at": "2026-08-25T00:00:56",
+  "hashes": {
+    "pins_jac": "66bf06a3800ce3969e38543efcdd504cbc57df427dc09a12b0aa30d6a9ac2b83",
+    "conversion_json": "d48d0a294415641c1d4b6dde9fc7a8fafe28c0d096abd6cdad176991b39b1ec5",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "annotationlib",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 117,
+    "runnable": 67,
+    "green": 0,
+    "quarantined": 50,
+    "failed": 67,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestFormat.test_enum",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefFormat.test_closure",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefFormat.test_multiple_closure",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestStringFormat.test_closure",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestStringFormat.test_closure_undefined",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestStringFormat.test_reverse_ops",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestStringFormat.test_literals",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestStringFormat.test_displays",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestStringFormat.test_unsupported_operations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestStringFormat.test_shenanigans",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_builtin_type",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_custom_metaclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_missing_dunder_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_custom_object_with_annotations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_custom_format_eval_str",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_eval_str_wrapped_cycle_self",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_eval_str_wrapped_cycle_mutual",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_eval_str_wrapped_chain_no_cycle",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stock_annotations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stock_annotations_in_module",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stock_annotations_on_wrapper",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stringized_annotations_in_module",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stringized_annotations_in_empty_module",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stringized_annotations_with_star_unpack",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stringized_annotations_on_wrapper",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stringized_annotations_on_class",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stringized_annotations_on_custom_object",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_stringized_annotation_permutations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_modify_annotations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_annotations_on_custom_object",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_raising_annotations_on_custom_object",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_forwardref_prefers_annotations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_only_annotate",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_no_annotations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_partial_evaluation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_partial_evaluation_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_partial_evaluation_cell",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_nonlocal_in_annotation_scope",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestGetAnnotations.test_raises_error_from_value",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallEvaluateFunction.test_fake_global_evaluation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_user_annotate_value",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_user_annotate_forwardref_supported",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_user_annotate_forwardref_fakeglobals",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_user_annotate_forwardref_value_fallback",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_user_annotate_string_supported",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_user_annotate_string_fakeglobals",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_user_annotate_string_value_fallback",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_condition_not_stringified",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_unsupported_formats",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestCallAnnotateFunction.test_error_from_value_raised",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "MetaclassTests.test_annotated_meta",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "MetaclassTests.test_unannotated_meta",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "MetaclassTests.test_ordering",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestAnnotationsToString.test_annotations_to_string",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_forwardref_instance_type_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_forwardref_subclass_type_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_forwardref_only_str_arg",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_special_attrs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_evaluate_string_format",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_evaluate_forwardref_format",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_fwdref_with_module",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_fwdref_to_builtin",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_fwdref_value_is_not_cached",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_fwdref_with_owner",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_fwdref_invalid_syntax",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_re_evaluate_generics",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "TestForwardRefClass.test_fwdref_final_class",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    }
+  ]
+}
