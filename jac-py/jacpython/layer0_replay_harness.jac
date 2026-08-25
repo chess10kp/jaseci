@@ -4,6 +4,24 @@
 # clean ceval slate.
 import from objects { PyObj, PyStr, PyError, is_error }
 import from pyc_first { unmarshal, exec_code, exec_module, to_host, build_copy_module }
+import from host_oracle { host_compile_marshal }
+
+
+# Raw ceval exec bridge for conformance probes whose module stem trips the
+# P3 object-helper gate (*object.jac), so they cannot import pyc_first
+# directly (see test_exc_group_object.jac).
+def layer0_raw_exec(src: str, filename: str) -> dict[str, PyObj] {
+    ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
+    outcome = exec_code(
+        unmarshal(host_compile_marshal(src, filename, "exec")), [], ns
+    );
+    assert not is_error(outcome);
+    return ns;
+}
+
+def layer0_to_host(value: PyObj) -> any {
+    return to_host(value);
+}
 
 import ast;
 import marshal;

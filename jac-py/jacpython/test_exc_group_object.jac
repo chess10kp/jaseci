@@ -17,18 +17,12 @@
 # object (ceval repr bridging state across exec_code invocations); investigate
 # in the P3/P4 lane before trusting these two goldens as regressions.
 
-import from host_oracle { host_compile_marshal }
-import from pyc_first { unmarshal, exec_code, to_host }
-import from objects { PyObj, PyStr, is_error }
+import from layer0_replay_harness { layer0_raw_exec, layer0_to_host }
+import from objects { PyObj }
 
 # Exec `src` on ceval with fresh module globals; fails the test on raise.
 def vm_exec(src: str) -> dict[str, PyObj] {
-    ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
-    outcome = exec_code(
-        unmarshal(host_compile_marshal(src, "<exc_group>", "exec")), [], ns
-    );
-    assert not is_error(outcome);
-    return ns;
+    return layer0_raw_exec(src, "<exc_group>");
 }
 
 def vm_str(expr: str) -> str {
@@ -38,7 +32,7 @@ def vm_str(expr: str) -> str {
         "except BaseException as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
     );
-    return to_host(ns["r"]) as str;
+    return layer0_to_host(ns["r"]) as str;
 }
 
 test "exc group: str/repr -- CPython BaseExceptionGroup_str pluralization + repr shape" {
@@ -105,7 +99,7 @@ test "exc group: members -- .message/.exceptions read-only, .args pair form" {
         "except AttributeError as e:\n"
         "    r += ' B:' + str(e)\n"
     );
-    assert to_host(ns["r"]) == "A:readonly attribute B:readonly attribute";
+    assert layer0_to_host(ns["r"]) == "A:readonly attribute B:readonly attribute";
 }
 
 test "exc group: raise/catch smoke -- group instances match their own builtin names" {
@@ -117,5 +111,5 @@ test "exc group: raise/catch smoke -- group instances match their own builtin na
         "except ExceptionGroup as e:\n"
         "    out = type(e).__name__ + '|' + str(e) + '|' + e.message\n"
     );
-    assert to_host(ns["out"]) == "ExceptionGroup|boom (1 sub-exception)|boom";
+    assert layer0_to_host(ns["out"]) == "ExceptionGroup|boom (1 sub-exception)|boom";
 }
