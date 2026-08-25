@@ -1724,6 +1724,7 @@ int next_id(void) {
 
 `jac c2jac` emits:
 
+<!-- jac-skip -->
 ```jac
 # c2jac: 1 best-effort (Tier-B) site - each is listed below and marked inline at its site
 #   L12  function-local 'static' loses cross-call persistence
