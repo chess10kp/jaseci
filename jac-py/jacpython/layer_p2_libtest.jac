@@ -185,6 +185,33 @@ obj P2OsHelperFakePathFn(PyObj) {
     }
 }
 
+obj P2SupportGcCollectFn(PyObj) {
+    # test.support.gc_collect: Lib/test/support/__init__.py forces as much
+    # garbage as possible to die (cycles plus __del__ resurrection) by
+    # importing gc and calling collect() three times. Collection must run on
+    # the HOST interpreter where the guest's refcounting/GC actually lives,
+    # so this bridges over the host gc module like the os_helper fns above.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        gc_mod_res = _jac_host_import("gc", PyList(t="list", items=[PyStr(t="str", val="*")]));
+        if not ((gc_mod_res[0] as bool)) {
+            return py_error(str(gc_mod_res[1]), str(gc_mod_res[2]));
+        }
+        collect_res = _jac_host_getattr(gc_mod_res[1], "collect");
+        if not ((collect_res[0] as bool)) {
+            return py_error(str(collect_res[1]), str(collect_res[2]));
+        }
+        i = 0;
+        while i < 3 {
+            res = _jac_host_call(collect_res[1], [], {});
+            if not ((res[0] as bool)) {
+                return py_error(str(res[1]), str(res[2]));
+            }
+            i += 1;
+        }
+        return py_none();
+    }
+}
+
 obj P2LibtestPlatformFn(PyObj) {
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         return PyStr(t="str", val=Py_GetPlatform());
@@ -670,6 +697,7 @@ def p2_libtest_reset {
         "is_apple": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
+        "gc_collect": P2SupportGcCollectFn(t="function"),
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
     os_helper_attrs: dict[str, PyObj] = {
