@@ -882,7 +882,11 @@ test "reparsing a module with generated test names yields an identical tree (#81
 test "complex literal lexes as IMAG" {
     (tokens, errs) = tokenize("1j 0.5j 1e-3J 10_000j .25j 0J", "");
     assert not errs;
-    imag_toks = [t for t in tokens if t.kind == TokenKind.IMAG];
+    imag_toks = [
+        t
+        for t in tokens
+        if t.kind == TokenKind.IMAG
+    ];
     assert [t.value for t in imag_toks]
         == ["1j", "0.5j", "1e-3J", "10_000j", ".25j", "0J"];
     # Without a j/J suffix the same spellings stay INT/FLOAT.
@@ -895,20 +899,21 @@ test "complex literal parse and value" {
     (module, had_error) = rd_parse('glob z = 1.5j;', "");
     assert not had_error;
     cplx = [
-        nd for nd in module._in_mod_nodes
+        nd
+        for nd in module._in_mod_nodes
         if isinstance(nd, uni.Complex)
     ];
     assert len(cplx) == 1;
     assert cplx[0].value == "1.5j";
-    assert cplx[0].lit_value == 1.5j;
+    assert cplx[0].lit_value == complex(0, 1.5);
 }
 
 test "complex suffix rejected on radix literals" {
     for src in ['glob a = 0x1j;', 'glob b = 0b1j;', 'glob c = 0o7j;'] {
         (_tokens, _comments, lex_diags, lex_errs) = tokenize_full(src, "");
         assert lex_errs == 1 , f"expected one lexer error for {src}";
-        assert any("complex suffix 'j' is not allowed" in d.message for d in lex_diags), (
-            f"unclear diagnostic for {src}"
-        );
+        assert any(
+            "complex suffix 'j' is not allowed" in d.message for d in lex_diags
+        ) , (f"unclear diagnostic for {src}");
     }
 }
