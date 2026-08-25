@@ -959,6 +959,15 @@ impl Parser.parse_term -> Expr {
 }
 
 impl Parser.parse_power -> Expr {
+    # Match Python grammar: u_expr ::= power | "-" u_expr | "+" u_expr | "~" u_expr
+    # and power ::= primary ["**" u_expr], so `**` binds tighter than unary
+    # operators (e.g. -2**100 parses as -(2**100)).
+    if self.check_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS) {
+        tok = self.expect_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS);
+        op = self.make_uni_token(tok);
+        operand = self.parse_power();
+        return UnaryExpr(operand=operand, op=op, kid=[op, operand]);
+    }
     left = self.parse_factor();
     if self.match_tok(TokenKind.STAR_POW) {
         op = self.make_uni_token(self.previous());
@@ -969,12 +978,6 @@ impl Parser.parse_power -> Expr {
 }
 
 impl Parser.parse_factor -> Expr {
-    if self.check_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS) {
-        tok = self.expect_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS);
-        op = self.make_uni_token(tok);
-        operand = self.parse_factor();
-        return UnaryExpr(operand=operand, op=op, kid=[op, operand]);
-    }
     return self.parse_connect();
 }
 
