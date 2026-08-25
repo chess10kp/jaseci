@@ -1,0 +1,21 @@
+{
+ "description": "Handoff repro pins from exceptions-lane task 135 (getattr/range triage). Replay via FUZZ_CASES_FILE=jac-py/tools/fuzz_getattr_tail_repros.json with tools/fuzz_run.py / _fuzz_smoke.jac. -repro- cases are owned by the OBJECTS lane (attribute dispatch + iter consumers); -ctl- controls should already be GREEN at tip.",
+ "cases": [
+  {
+   "name": "repro-getattr-tail-basic",
+   "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class Proxy():\n            def __getattr__(me, name): return 'fb:' + name\n        p = Proxy()\n        self.assertEqual(p.whatever, 'fb:whatever')\n"
+  },
+  {
+   "name": "repro-descr-attrerror-falls-to-getattr",
+   "src": "class T(unittest.TestCase):\n    def test_case(self):\n        def probe():\n            class Boom():\n                def __get__(me, obj, owner):\n                    raise AttributeError('nope')\n            class C():\n                x = Boom()\n                def __getattr__(me, name):\n                    return 'tail:' + name\n            return C().x\n        self.assertEqual(probe(), 'tail:x')\n"
+  },
+  {
+   "name": "repro-consumer-sum-user-iter",
+   "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class It():\n            def __init__(me, data): me.data = data\n            def __iter__(me): return iter(me.data)\n        self.assertEqual(sum(It([1, 2])), 3)\n"
+  },
+  {
+   "name": "repro-consumer-tuple-enumerate-user-iter",
+   "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class It():\n            def __init__(me, data): me.data = data\n            def __iter__(me): return iter(me.data)\n        self.assertEqual(tuple(It([1, 2])), (1, 2))\n        self.assertEqual(list(enumerate(It(['a']))), [(0, 'a')])\n"
+  }
+ ]
+}
