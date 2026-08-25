@@ -19,8 +19,9 @@ import from _jsonmodule { dumps, loads }
 import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
+    PyWarningsCatchCtx,
 }
-import from ceval { _sys3_forget, set_layer3_active, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
+import from ceval { _sys3_forget, set_layer3_active, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, import_native, }
 import from _collectionsmodule {
     _p2_deque,
     _p2_defaultdict,
@@ -315,6 +316,50 @@ obj P2SupportSortdictFn(PyObj) {
             idx += 1;
         }
         return PyStr(t="str", val=out + "}");
+    }
+}
+
+obj P2ImportHelperImportModuleFn(PyObj) {
+    # CPython test.support.import_helper.import_module: import and return the
+    # module, letting ModuleNotFoundError propagate (converted pins assert on
+    # outcomes instead of skipping). import_native is the same resolution path
+    # a plain `import` inside a snippet takes: guest shims first, host
+    # fallback last.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) < 1 or not isinstance(args[0], PyStr) {
+            return py_error(
+                "TypeError", "import_module expected a module name string"
+            );
+        }
+        return import_native((args[0] as PyStr).val);
+    }
+}
+
+obj P2WarnHelperCheckWarningsFn(PyObj) {
+    # CPython test.support.warnings_helper.check_warnings(quiet=True): capture
+    # context that records warnings, forces the "always" action, restores the
+    # previous filters on exit, and never asserts on unmatched warnings (that
+    # is exactly what quiet=True with no filter arguments means). Implemented
+    # as catch_warnings(record=True); converted pins only use this form.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) > 0 {
+            return py_error(
+                "NotImplementedError",
+                "check_warnings supports only quiet=True with no filter arguments",
+            );
+        }
+        quiet = True;
+        kw_quiet = kwargs.get("quiet");
+        if kw_quiet is not None and isinstance(kw_quiet, PyBool) {
+            quiet = (kw_quiet as PyBool).val;
+        }
+        if not quiet {
+            return py_error(
+                "NotImplementedError",
+                "check_warnings supports only quiet=True with no filter arguments",
+            );
+        }
+        return PyWarningsCatchCtx(t="catch_warnings", record_flag=True);
     }
 }
 
@@ -668,6 +713,8 @@ def p2_libtest_reset {
         "is_emscripten": PyBool(t="bool", val=False),
         "is_apple_mobile": PyBool(t="bool", val=False),
         "is_apple": PyBool(t="bool", val=False),
+        # test.support.verbose: verbosity flag; snippets run unattended (0).
+        "verbose": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
     };
@@ -760,6 +807,30 @@ def p2_libtest_reset {
     numbers_mod = PyModule(t="module", name="test.support.numbers", attrs=numbers_attrs);
     register_shim_module("test.support.numbers", numbers_mod);
     support_attrs["numbers"] = numbers_mod;
+    # Lib/test/support/import_helper.py: dynamic import surface used by
+    # converted pins (`from test.support import import_helper` then
+    # import_helper.import_module(...)). Deleted C substrate requested through
+    # it (_testcapi et al) is quarantined at conversion, never served here.
+    import_helper_attrs: dict[str, PyObj] = {
+        "import_module": P2ImportHelperImportModuleFn(t="function"),
+    };
+    import_helper_mod = PyModule(
+        t="module", name="test.support.import_helper", attrs=import_helper_attrs
+    );
+    register_shim_module("test.support.import_helper", import_helper_mod);
+    support_attrs["import_helper"] = import_helper_mod;
+    # Lib/test/support/warnings_helper.py check_warnings(quiet=True): the only
+    # form converted pins use; see P2WarnHelperCheckWarningsFn.
+    warnings_helper_attrs: dict[str, PyObj] = {
+        "check_warnings": P2WarnHelperCheckWarningsFn(t="function"),
+    };
+    warnings_helper_mod = PyModule(
+        t="module",
+        name="test.support.warnings_helper",
+        attrs=warnings_helper_attrs,
+    );
+    register_shim_module("test.support.warnings_helper", warnings_helper_mod);
+    support_attrs["warnings_helper"] = warnings_helper_mod;
 
     register_shim_module(
         "test", PyModule(t="module", name="test", attrs={"support": support_mod})
@@ -1137,6 +1208,57 @@ test "layer_p2_libtest: collections_namedtuple snippet prints ok on JacPython" {
         "assert R._fields == ('x', '_1')\n"
         "Q = collections.namedtuple('Q', ['x', 'y'])\n"
         "assert Q._fields == ('x', 'y')\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: test.support.import_helper import_module resolves guest shims" {
+    snippet = (
+        "from test.support import import_helper\n"
+        "mod = import_helper.import_module('bisect')\n"
+        "assert mod.bisect_right([1, 2, 3], 2) == 2\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: import_helper.import_module missing module raises ModuleNotFoundError" {
+    snippet = (
+        "from test.support import import_helper\n"
+        "try:\n"
+        "    import_helper.import_module('_jac_no_such_module_probe')\n"
+        "except ModuleNotFoundError as e:\n"
+        "    print('ORACLE_EXC ModuleNotFoundError ' + type(e).__name__)\n"
+        "else:\n"
+        "    print('no-error')\n"
+    );
+    # A module nothing provides (shim, delegate, or host) must surface as
+    # ModuleNotFoundError from the helper rather than an import-surface
+    # failure of test.support.import_helper itself.
+    (ok, detail) = p2_libtest_run_snippet(snippet);
+    assert ok , detail;
+    assert detail.startswith("ORACLE_EXC ModuleNotFoundError") , detail;
+}
+
+test "layer_p2_libtest: warnings_helper check_warnings quiet form captures and restores" {
+    snippet = (
+        "from test.support import warnings_helper\n"
+        "import warnings\n"
+        "with warnings_helper.check_warnings(quiet=True):\n"
+        "    warnings.warn('census probe', UserWarning)\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: test.support.verbose is False for unattended snippets" {
+    snippet = (
+        "from test import support\n"
+        "assert support.verbose is False\n"
         "print('ok')\n"
     );
     (ok, detail) = p2_libtest_expect_ok(snippet);

@@ -71,6 +71,52 @@ class TestSkipped(unittest.TestCase):
 '''
 
 
+class DeletedSubstrateQuarantineTests(unittest.TestCase):
+    """Snippets dynamically importing PLAN §3 deleted C substrate
+    (import_helper.import_module('_testinternalcapi')) must quarantine at
+    conversion instead of pinning a RUN failure the guest can never satisfy.
+    Census gap fp-v1:8e23f48882c8 (TestRareEventCounters pins).
+    """
+
+    SNIPPET = '''\
+from test.support import import_helper
+_testinternalcapi = import_helper.import_module("_testinternalcapi")
+
+
+class TestRare(unittest.TestCase):
+    def test_set_class(self):
+        _testinternalcapi.reset_rare_event_counters()
+        assert True
+'''
+
+    def test_quarantined_with_forbidden_import_reason(self) -> None:
+        extraction = cs.extract_tests(ast.parse(self.SNIPPET), self.SNIPPET)
+        reasons = {q.ident: q.reason for q in extraction.quarantined}
+        self.assertEqual(
+            reasons.get("TestRare.test_set_class"),
+            "forbidden-import:_testinternalcapi",
+        )
+        self.assertEqual(extraction.pinned, [])
+
+    def test_pure_dynamic_import_still_pins(self) -> None:
+        # The same import-helper surface for a non-substrate module must not
+        # quarantine -- only the deleted C substrate roots trigger.
+        snippet = '''\
+from test.support import import_helper
+_bisect = import_helper.import_module("bisect")
+
+
+class TestPure(unittest.TestCase):
+    def test_bisect(self):
+        assert _bisect.bisect_right([1, 2, 3], 2) == 2
+'''
+        extraction = cs.extract_tests(ast.parse(snippet), snippet)
+        self.assertEqual(
+            {p.ident for p in extraction.pinned}, {"TestPure.test_bisect"}
+        )
+        self.assertEqual(extraction.quarantined, [])
+
+
 class ExtractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

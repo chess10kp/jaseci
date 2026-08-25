@@ -38,6 +38,8 @@ other suites), e.g.::
 from __future__ import annotations
 
 import argparse
+
+from suite_router import DELETED_C_SUBSTRATE_ROOTS, collect_imports
 import ast
 import builtins
 import copy
@@ -1199,6 +1201,10 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
             result.quarantined.append(Quarantined(ident, str(exc)))
             continue
         snippet = render_snippet(rewritten, kept_prelude, needs_re)
+        sub = _deleted_substrate_root(snippet)
+        if sub is not None:
+            result.quarantined.append(Quarantined(ident, f"forbidden-import:{sub}"))
+            continue
         result.pinned.append(Pinned(ident, snippet, oracle={}))
 
     # self.skipTest anywhere in candidate bodies -> quarantine (checked after
@@ -1209,6 +1215,27 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
             result.pinned.remove(pin)
             result.quarantined.append(Quarantined(pin.ident, "self.skipTest"))
     return result
+
+
+def _deleted_substrate_root(snippet: str) -> str | None:
+    """Root module of the deleted C substrate (PLAN §3) a snippet depends on.
+
+    Suite-level routing (suite_router.detect_quarantine) already buckets whole
+    suites importing this substrate; per-test snippets hide it behind
+    ``import_helper.import_module('_testcapi')``-style dynamic imports that
+    survive prelude pruning because the test body references the binding.
+    Such pins can never go green on the guest -- quarantine with the same
+    ``forbidden-import:<root>`` reason vocabulary suite_router uses.
+    """
+    try:
+        tree = ast.parse(snippet)
+    except SyntaxError:
+        return None
+    for mod in sorted(collect_imports(tree, snippet)):
+        root = mod.split(".")[0]
+        if root in DELETED_C_SUBSTRATE_ROOTS:
+            return root
+    return None
 
 
 # ---------------------------------------------------------------------------

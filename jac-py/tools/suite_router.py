@@ -52,15 +52,24 @@ BUCKET_ORDER = (
     "MECHANICAL",
 )
 
+# C test scaffolding deleted from the port target per PLAN §3 (C-extension ABI
+# non-goal). Shared with convert_suite.py, which quarantines individual test
+# snippets that dynamically pull these in via
+# ``import_helper.import_module('_testinternalcapi')`` -- suite_router's
+# whole-suite bucket cannot see inside a suite's per-test snippets.
+DELETED_C_SUBSTRATE_ROOTS = frozenset(
+    {
+        "_testcapi", "_testinternalcapi", "_testbuffer", "_testmultiphase",
+        "_xxsubinterpreters", "_interpreters",
+    }
+)
+
 # jac-py/PLAN.md v1 non-goals / deferred substrate, expressed as imported
 # module roots. Direct imports only -- test.support internals do not count.
-# (The C-extension ABI is a stated non-goal; _testcapi/_testinternalcapi are
-# deleted from the port target per PLAN §3.)
 _FORBIDDEN_ROOTS = frozenset(
     {
         # C test scaffolding (non-goal, deleted substrate)
-        "_testcapi", "_testinternalcapi", "_testbuffer", "_testmultiphase",
-        "_xxsubinterpreters", "_interpreters",
+        *DELETED_C_SUBSTRATE_ROOTS,
         # threading / multiprocessing / signals (deferred, PLAN §12.4)
         "threading", "_thread", "multiprocessing", "signal", "_signal",
         # socket / network stack (bind-later wrappers)
