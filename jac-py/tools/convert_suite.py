@@ -959,7 +959,10 @@ def _class_attr_seeds(
         if info is not None:
             stack.extend(reversed(info.bases))
     seeds: dict[str, ast.expr] = {}
-    for name in chain:
+    # chain lists a node before any ancestor it pushed onto the stack, so
+    # reversed(chain) visits base classes first and later (sub)class
+    # assignments override earlier ones, mirroring attribute lookup.
+    for name in reversed(chain):
         cd = mod_classes.get(name)
         if cd is None:
             continue
@@ -1724,6 +1727,9 @@ def render_snippet(
 
 def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
     """Run one snippet under host CPython in a sandboxed subprocess."""
+    # The subprocess runs from a throwaway cwd; a relative lib dir on
+    # PYTHONPATH would silently stop resolving.
+    cpython_lib = cpython_lib.resolve()
     with tempfile.TemporaryDirectory(prefix="conv_suite_") as td:
         tdp = Path(td)
         script = tdp / "oracle_snippet.py"
@@ -1798,6 +1804,11 @@ def emit_pin_file(pins: list[Pinned], source_file: Path) -> str:
 
 
 def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) -> Path:
+    # Accept relative outdirs (cwd-relative or repo-relative): normalize against
+    # the repo root so manifest rows always carry repo-relative artifact paths.
+    if not outdir.is_absolute():
+        candidate = Path.cwd() / outdir
+        outdir = candidate if candidate.is_relative_to(_REPO) else (_REPO / outdir)
     doc: dict = {}
     if _MANIFEST.is_file():
         doc = json.loads(_MANIFEST.read_text(encoding="utf-8"))
@@ -1810,6 +1821,7 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
             "modules": [],
         }
     rel_pins = str(Path(outdir.relative_to(_REPO)) / pins_file) if outdir.is_relative_to(_REPO) else pins_file
+    meta_rel = str(Path(outdir.relative_to(_REPO)) / f"{stem}.conv.json") if outdir.is_relative_to(_REPO) else f"{stem}.conv.json"
     row = {
         "stem": stem,
         "gate_type": "oracle",
@@ -1817,9 +1829,7 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
         "oracle_tests": [rel_pins],
         "libtest_snippets": [],
         "notes": f"{total} output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-        "conversion_meta": str(Path(outdir.relative_to(_REPO)) / f"{stem}.conv.json")
-        if outdir.is_relative_to(_REPO)
-        else f"{stem}.conv.json",
+        "conversion_meta": meta_rel,
     }
     for i, existing in enumerate(doc["modules"]):
         if existing.get("stem") == stem:
