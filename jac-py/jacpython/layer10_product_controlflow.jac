@@ -466,7 +466,8 @@ test "layer10: for loop executes in ceval" {
 # CPython lowers break as unwind (POP_TOP for the FOR family) plus a jump to the
 # loop exit anchor placed AFTER orelse; its flowgraph then tail-duplicates that
 # anchor into each break edge when the continuation is a small scope-exit block.
-# Regression coverage for the loop break-edge rework in compiler_loops.jac.
+# Regression coverage for the loop break-edge rework in the loop/if codegen
+# slice (formerly compiler_loops.jac, now part of compiler_codegen.jac).
 
 def assert_fn_body_matches_oracle(source: str) {
     actual = product_exec(source, "<f>");

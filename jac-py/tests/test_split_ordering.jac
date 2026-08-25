@@ -1,14 +1,13 @@
-"""Split-ordering conformance lock.
+"""Product-path entry smoke test.
 
-Locks the compiler module-split's loading contract (VERIFIED 2026-08-22):
-compiler_codegen must finish loading before any split sibling binds names
-from it. Sibling-first entry is illegal and fails loudly - importing e.g.
-compiler_defs directly pauses its body at its own codegen import, so
-codegen's late-import block re-enters a partially initialized module and
-raises "cannot import name ... from partially initialized module". This
-file enters through product_compile (the legal path) and drives one full
-native compile, so any regression of the split's loading order surfaces
-here.
+Historically this locked the compiler module-split's loading contract:
+compiler_codegen had to finish loading before split-out sibling modules
+(compiler_defs/exc/loops/match) bound names from it, because the codegen
+late-import block re-entered partially initialized modules on sibling-first
+entry. The siblings were merged back into compiler_codegen.jac (breaking
+the codegen<->sibling import cycles tracked by p3_import_cycle_gate.py),
+so that ordering contract is gone; the test remains as a cheap end-to-end
+check that the product entry path compiles a full program.
 """
 
 import from objects { is_error }
