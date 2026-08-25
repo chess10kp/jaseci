@@ -48,16 +48,15 @@ def _tb_stderr_write(text):
 ::py::
 
 
+
 # Lib/traceback.py StackSummary._RECURSIVE_CUTOFF (also hardcoded in
 # traceback.c): within a run of consecutive identical frames this many are
 # shown before collapsing into a repetition marker.
-glob _TB_RECURSIVE_CUTOFF: int = 3;
-
-glob _TB_CAUSE_MESSAGE: str = (
+glob _TB_RECURSIVE_CUTOFF: int = 3,
+     _TB_CAUSE_MESSAGE: str = (
          "\nThe above exception was the direct cause of the following exception:\n\n"
-     );
-
-glob _TB_CONTEXT_MESSAGE: str = (
+     ),
+     _TB_CONTEXT_MESSAGE: str = (
          "\nDuring handling of the above exception, another exception occurred:\n\n"
      );
 
@@ -140,8 +139,9 @@ def tb_format_stack(tb: any) -> str {
 # _format_final_exc_line: an empty str() collapses to just the type name.
 # KeyError overrides __str__ to repr() its single argument (exceptions.c
 # KeyError_str); mirror that with the leaf repr helpers for scalars.
-def tb_exception_only(exc: PyException, repr_fn: any = None,
-    str_fn: any = None) -> str {
+def tb_exception_only(
+    exc: PyException, repr_fn: any = None, str_fn: any = None
+) -> str {
     valuestr = baseexception_str(exc, repr_fn, str_fn).val;
     if exc.type_name == "KeyError" and len(exc.args) == 1 {
         valuestr = _tb_keyerror_arg_repr(exc.args[0], str_fn);

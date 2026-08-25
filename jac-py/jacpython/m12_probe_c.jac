@@ -17,11 +17,11 @@ for _p in ("probes_m12/scenario_c_asyncfor_raise.py", "jac-py/jacpython/probes_m
         continue
 ::py::
 
+
+
 with entry {
     ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
-    outcome = exec_code(
-        unmarshal(host_compile_marshal(SRC)), [], ns
-    );
+    outcome = exec_code(unmarshal(host_compile_marshal(SRC)), [], ns);
     if is_error(outcome) {
         exc = (outcome as PyError).exception;
         print("WRAPPER-ERROR:", exc.type_name, exc.message);

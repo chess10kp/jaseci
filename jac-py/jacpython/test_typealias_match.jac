@@ -56,11 +56,11 @@ test "type alias evaluates lazily on first __value__ access and caches" {
         "    log.append('ev')\n"
         "    return 42\n"
         "type A = mk()\n"
-        "untouched = log == []\n"      # nothing ran at declaration
+        "untouched = log == []\n"  # nothing ran at declaration
         "first = A.__value__\n"
         "evaluated_once = log == ['ev']\n"
         "second = A.__value__\n"
-        "cached = log == ['ev']\n"     # second access did not re-run mk()
+        "cached = log == ['ev']\n"  # second access did not re-run mk()
     );
     assert vm_bool(ns, "untouched");
     assert to_host(ns["first"]) == 42;
@@ -89,7 +89,7 @@ test "type alias value resolves names at access time through globals" {
         "type B = base\n"
         "v1 = B.__value__\n"
         "base = 'changed'\n"
-        "v2 = B.__value__\n"           # cached: still the first resolution
+        "v2 = B.__value__\n"  # cached: still the first resolution
         "fresh = []\n"
     );
     assert vm_str(ns, "v1") == "resolved";
@@ -103,7 +103,7 @@ test "type alias errors propagate uncached from __value__" {
         "    Bad.__value__\n"
         "except NameError:\n"
         "    pass\n"
-        "Bad.__value__\n"              # re-raises on retry instead of caching ""
+        "Bad.__value__\n"  # re-raises on retry instead of caching ""
     );
     assert msg == "name 'undefined_name' is not defined";
 }

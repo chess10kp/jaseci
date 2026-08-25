@@ -241,16 +241,13 @@ def instruction_byte_width(op: int) -> int {
 def verify_code_layout(co: PyCode, path: str) -> PyCodeDiff {
     code = co.co_code;
     if len(code) % 2 != 0 {
-        return diff_fail(
-            path + ".co_code", "C1.1 odd byte length " + str(len(code))
-        );
+        return diff_fail(path + ".co_code", "C1.1 odd byte length " + str(len(code)));
     }
     ip = 0;
     while ip < len(code) {
         if ip + 1 >= len(code) {
             return diff_fail(
-                path + ".co_code",
-                "C1.4 truncated instruction at byte " + str(ip)
+                path + ".co_code", "C1.4 truncated instruction at byte " + str(ip)
             );
         }
         op = code[ip];
@@ -261,9 +258,7 @@ def verify_code_layout(co: PyCode, path: str) -> PyCodeDiff {
             if code[off] != OP_CACHE or code[off + 1] != 0 {
                 return diff_fail(
                     path + ".co_code",
-                    "C1.3 cache slot at byte "
-                        + str(off)
-                        + " is not (CACHE, 0)"
+                    "C1.3 cache slot at byte " + str(off) + " is not (CACHE, 0)"
                 );
             }
             k = k + 1;
@@ -338,8 +333,7 @@ def verify_exception_table(co: PyCode, path: str) -> PyCodeDiff {
         target = vals[2];
         if size == 0 {
             return diff_fail(
-                path + ".exceptiontable",
-                "C3.x entry " + str(ei) + " has empty range"
+                path + ".exceptiontable", "C3.x entry " + str(ei) + " has empty range"
             );
         }
         if start <= prev_start {
@@ -484,10 +478,7 @@ def pycode_contract_check(co: PyCode, path: str) -> PyCodeDiff {
         c = co.consts[i];
         if isinstance(c, PyCode) {
             child = c as PyCode;
-            d = pycode_contract_check(
-                child,
-                _append_path(path, child.name)
-            );
+            d = pycode_contract_check(child, _append_path(path, child.name));
             if not d.ok {
                 return d;
             }

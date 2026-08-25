@@ -132,8 +132,7 @@ obj DCField(PyObj) {
         if name == "default" {
             if self.fdefault is DC_MISSING {
                 return py_error(
-                    "AttributeError",
-                    "'Field' object has no attribute 'default'",
+                    "AttributeError", "'Field' object has no attribute 'default'",
                 );
             }
             return self.fdefault;
@@ -235,8 +234,7 @@ def dc_selected_fields(spec: DCSpec, mode: str) -> list[DCField] {
         if mode == "eq" and not f.fcompare {
             continue;
         }
-        if (mode != "repr" and mode != "hash" and mode != "eq")
-            and not f.fcompare {
+        if (mode != "repr" and mode != "hash" and mode != "eq") and not f.fcompare {
             continue;
         }
         out.append(f);
@@ -286,9 +284,7 @@ obj DCReprOp(PyObj) {
             }
             parts.append(f.fname + "=" + expect_str(r));
         }
-        return PyStr(
-            t="str", val=spec.cls.name + "(" + dc_join(parts, ", ") + ")"
-        );
+        return PyStr(t="str", val=spec.cls.name + "(" + dc_join(parts, ", ") + ")");
     }
 }
 
@@ -397,22 +393,17 @@ obj DCFrozenSetattrOp(PyObj) {
 obj DCFrozenDelattrOp(PyObj) {
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         return py_error(
-            "FrozenInstanceError",
-            "cannot delete field '" + expect_str(args[2]) + "'",
+            "FrozenInstanceError", "cannot delete field '" + expect_str(args[2]) + "'",
         );
     }
 }
 
-glob DC_REPR_OP: DCReprOp = DCReprOp(t="dc_repr_op");
-glob DC_EQ_OP: DCEqOp = DCEqOp(t="dc_eq_op");
-glob DC_ORDER_OP: DCOrderOp = DCOrderOp(t="dc_order_op");
-glob DC_HASH_OP: DCHashOp = DCHashOp(t="dc_hash_op");
-glob DC_FROZEN_SET_OP: DCFrozenSetattrOp = DCFrozenSetattrOp(
-    t="dc_frozen_set_op"
-);
-glob DC_FROZEN_DEL_OP: DCFrozenDelattrOp = DCFrozenDelattrOp(
-    t="dc_frozen_del_op"
-);
+glob DC_REPR_OP: DCReprOp = DCReprOp(t="dc_repr_op"),
+     DC_EQ_OP: DCEqOp = DCEqOp(t="dc_eq_op"),
+     DC_ORDER_OP: DCOrderOp = DCOrderOp(t="dc_order_op"),
+     DC_HASH_OP: DCHashOp = DCHashOp(t="dc_hash_op"),
+     DC_FROZEN_SET_OP: DCFrozenSetattrOp = DCFrozenSetattrOp(t="dc_frozen_set_op"),
+     DC_FROZEN_DEL_OP: DCFrozenDelattrOp = DCFrozenDelattrOp(t="dc_frozen_del_op");
 
 # ---------------- decorator ent points ----------------
 
@@ -422,9 +413,7 @@ obj PyDataclassWithParams(PyObj) {
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) != 1 or not isinstance(args[0], PyClass) {
-            return py_error(
-                "TypeError", "@dataclass(...) expected exactly one class"
-            );
+            return py_error("TypeError", "@dataclass(...) expected exactly one class");
         }
         return dc_process_class(args[0] as PyClass, self.params);
     }
@@ -441,8 +430,7 @@ obj DCDataclassFn(PyObj) {
             }
             if not isinstance(args[0], PyClass) {
                 return py_error(
-                    "TypeError",
-                    "@dataclass expected a class, got '" + args[0].t + "'",
+                    "TypeError", "@dataclass expected a class, got '" + args[0].t + "'",
                 );
             }
             return dc_process_class(args[0] as PyClass, DCParams(t="dc_params"));
@@ -451,9 +439,7 @@ obj DCDataclassFn(PyObj) {
         if is_error(params) {
             return params;
         }
-        return PyDataclassWithParams(
-            t="dc_with_params", params=params as DCParams
-        );
+        return PyDataclassWithParams(t="dc_with_params", params=params as DCParams);
     }
 }
 
@@ -496,7 +482,9 @@ obj DCFieldFn(PyObj) {
             }
             fmetadata = PyMappingProxy(t="mappingproxy", target=mv as PyDict);
         } else {
-            fmetadata = PyMappingProxy(t="mappingproxy", target=PyDict(t="dict", items={}));
+            fmetadata = PyMappingProxy(
+                t="mappingproxy", target=PyDict(t="dict", items={})
+            );
         }
         return DCField(
             t="dc_field",
@@ -576,14 +564,12 @@ obj DCIsDataclassFn(PyObj) {
         v = args[0];
         if isinstance(v, PyClass) {
             return PyBool(
-                t="bool",
-                val="__dataclass_fields__" in (v as PyClass).attrs,
+                t="bool", val="__dataclass_fields__" in (v as PyClass).attrs,
             );
         }
         if isinstance(v, PyUserObj) {
             return PyBool(
-                t="bool",
-                val="__dataclass_fields__" in (v as PyUserObj).cls.attrs,
+                t="bool", val="__dataclass_fields__" in (v as PyUserObj).cls.attrs,
             );
         }
         return PyBool(t="bool", val=False);
@@ -762,8 +748,7 @@ obj DCReplaceFn(PyObj) {
         cls = dc_is_dataclass_instance(args[0]);
         if cls is None {
             return py_error(
-                "TypeError",
-                "replace() should be called on dataclass instances",
+                "TypeError", "replace() should be called on dataclass instances",
             );
         }
         stored = dc_stored_fields(cls);
@@ -792,14 +777,19 @@ obj DCReplaceFn(PyObj) {
             if k not in known {
                 return py_error(
                     "TypeError",
-                    "(" + (cls as PyClass).name
-                        + ") got an unexpected keyword argument '" + k + "'",
+                    "("
+                        + (cls as PyClass).name
+                        + ") got an unexpected keyword argument '"
+                        + k
+                        + "'",
                 );
             }
             if not known[k].finit {
                 return py_error(
                     "ValueError",
-                    "field " + k + " is declared with "
+                    "field "
+                        + k
+                        + " is declared with "
                         + "init=False, it cannot be specified with replace()",
                 );
             }
@@ -812,8 +802,18 @@ obj DCReplaceFn(PyObj) {
 # ---------------- parameter parsing ----------------
 
 def dc_parse_params(kwargs: dict[str, PyObj]) -> PyObj {
-    known = ["init", "repr", "eq", "order", "unsafe_hash", "frozen", "kw_only",
-        "match_args", "slots", "weakref_slot"];
+    known = [
+        "init",
+        "repr",
+        "eq",
+        "order",
+        "unsafe_hash",
+        "frozen",
+        "kw_only",
+        "match_args",
+        "slots",
+        "weakref_slot"
+    ];
     for k in kwargs {
         ok = False;
         for cand in known {
@@ -999,7 +999,10 @@ def dc_collect_fields(cls: PyClass, anns: PyObj, params: DCParams) -> PyObj {
             if mutable != "" {
                 return py_error(
                     "ValueError",
-                    "mutable default " + mutable + " for field " + name
+                    "mutable default "
+                        + mutable
+                        + " for field "
+                        + name
                         + " is not allowed: use default_factory",
                 );
             }
@@ -1203,14 +1206,20 @@ def dc_process_class(cls: PyClass, params: DCParams) -> PyObj {
         if seen_default_name != "" {
             return py_error(
                 "TypeError",
-                "non-default argument '" + f.fname + "' follows default argument '"
-                    + seen_default_name + "'",
+                "non-default argument '"
+                    + f.fname
+                    + "' follows default argument '"
+                    + seen_default_name
+                    + "'",
             );
         }
     }
     resolved_post = class_lookup_attr(cls, "__post_init__");
     spec = DCSpec(
-        t="dc_spec", cls=cls, fields=fields_list, params=params,
+        t="dc_spec",
+        cls=cls,
+        fields=fields_list,
+        params=params,
         has_post_init=not is_error(resolved_post),
     );
     ns: dict[str, PyObj] = {
@@ -1219,6 +1228,7 @@ def dc_process_class(cls: PyClass, params: DCParams) -> PyObj {
         # Frozen __init__ bodies assign through object.__setattr__, whose
         # attribute access resolves to the default-protocol wrapper in-VM.
         "object": host_builtin("object"),
+
     };
     if params.init {
         made = dc_build_init(spec, ns);
@@ -1260,12 +1270,18 @@ def dc_process_class(cls: PyClass, params: DCParams) -> PyObj {
     }
     if params.order {
         ns["_dc_order_op"] = DC_ORDER_OP;
-        order_dunders = [["__lt__", "<"], ["__le__", "<="],
-            ["__gt__", ">"], ["__ge__", ">="]];
+        order_dunders = [
+            ["__lt__", "<"],
+            ["__le__", "<="],
+            ["__gt__", ">"],
+            ["__ge__", ">="]
+        ];
         for pair in order_dunders {
-            src = "def " + pair[0]
+            src = "def "
+                + pair[0]
                 + "(self, other):\n    return _dc_order_op(_DC_SPEC, self, other, '"
-                + pair[1] + "')\n";
+                + pair[1]
+                + "')\n";
             made4 = dc_make_fn(ns, src, pair[0]);
             if is_error(made4) {
                 return made4;
@@ -1323,19 +1339,17 @@ def dc_process_class(cls: PyClass, params: DCParams) -> PyObj {
 
 # ---------------- module registration ----------------
 
-glob DC_DATACLASS_FN: DCDataclassFn = DCDataclassFn(t="dc_dataclass_fn");
-glob DC_FIELD_FN: DCFieldFn = DCFieldFn(t="dc_field_fn");
+glob DC_DATACLASS_FN: DCDataclassFn = DCDataclassFn(t="dc_dataclass_fn"),
+     DC_FIELD_FN: DCFieldFn = DCFieldFn(t="dc_field_fn"),
+     DC_FIELD_CLASS_MARK: PyObj = PyObj(t="dc_field_class_mark");
 
 # Stand-in for the dataclasses.Field CLASS object (isinstance checks against it
 # are out of scope; field() instances are the real DCFields).
-glob DC_FIELD_CLASS_MARK: PyObj = PyObj(t="dc_field_class_mark");
-
 obj DCMakeDataclassFn(PyObj) {
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 2 {
             return py_error(
-                "TypeError",
-                "make_dataclass() missing 2 required positional arguments"
+                "TypeError", "make_dataclass() missing 2 required positional arguments"
             );
         }
         cls_name = expect_str(args[0]);
@@ -1399,6 +1413,7 @@ obj DCMakeDataclassFn(PyObj) {
         ns: dict[str, PyObj] = {
             "__name__": PyStr(t="str", val="dataclasses"),
             "dataclass": DC_DATACLASS_FN,
+
         };
         src = "@" + dec + "\nclass " + cls_name + ":\n";
         body = "";
@@ -1416,8 +1431,7 @@ obj DCMakeDataclassFn(PyObj) {
                 items = (sp as PyTuple).items;
                 if len(items) < 2 {
                     return py_error(
-                        "ValueError",
-                        "field tuples must be (name, type[, default])"
+                        "ValueError", "field tuples must be (name, type[, default])"
                     );
                 }
                 name = expect_str(items[0]);
@@ -1464,7 +1478,9 @@ obj DCMakeDataclassFn(PyObj) {
     }
 }
 
-glob DC_MAKE_DATACLASS_FN: DCMakeDataclassFn = DCMakeDataclassFn(t="dc_make_dataclass_fn");
+glob DC_MAKE_DATACLASS_FN: DCMakeDataclassFn = DCMakeDataclassFn(
+         t="dc_make_dataclass_fn"
+     );
 
 def register_dataclasses_module {
     attrs: dict[str, PyObj] = {
@@ -1483,6 +1499,7 @@ def register_dataclasses_module {
         "FrozenInstanceError": PyExceptionType(
             t="exception_type", name="FrozenInstanceError"
         ),
+
     };
     register_shim_module(
         "dataclasses", PyModule(t="module", name="dataclasses", attrs=attrs)

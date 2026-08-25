@@ -48,9 +48,7 @@ test "wave21 days_in_month/days_before_month match host calendar tables" {
             }
             first = host_dt.date(year, month, 1);
             dim_host = nxt.toordinal() - first.toordinal();
-            assert datetime_days_in_month(year, month) == dim_host , (
-                year, month
-            );
+            assert datetime_days_in_month(year, month) == dim_host , (year, month);
         }
     }
     # pinned python3 values
@@ -74,10 +72,22 @@ test "wave21 days_before_year anchors the proleptic epoch" {
 
 test "wave21 ymd_to_ord round-trips against host toordinal" {
     probes: list = [
-        (1, 1, 1), (1, 12, 31), (2, 1, 1), (4, 12, 31), (5, 1, 1),
-        (100, 12, 31), (101, 1, 1), (400, 12, 31), (401, 1, 1),
-        (1600, 2, 29), (1970, 1, 1), (1999, 12, 31), (2000, 2, 29),
-        (2024, 1, 4), (9999, 12, 31),
+        (1, 1, 1),
+        (1, 12, 31),
+        (2, 1, 1),
+        (4, 12, 31),
+        (5, 1, 1),
+        (100, 12, 31),
+        (101, 1, 1),
+        (400, 12, 31),
+        (401, 1, 1),
+        (1600, 2, 29),
+        (1970, 1, 1),
+        (1999, 12, 31),
+        (2000, 2, 29),
+        (2024, 1, 4),
+        (9999, 12, 31),
+
     ];
     for (y, m, d) in probes {
         got = datetime_ymd_to_ord(y, m, d);
@@ -89,7 +99,12 @@ test "wave21 ymd_to_ord round-trips against host toordinal" {
 
 test "wave21 weekday matches host Monday==0 convention" {
     probes: list = [
-        (1, 1, 1), (2024, 1, 4), (2026, 2, 17), (2000, 1, 1), (9999, 12, 31),
+        (1, 1, 1),
+        (2024, 1, 4),
+        (2026, 2, 17),
+        (2000, 1, 1),
+        (9999, 12, 31),
+
     ];
     for (y, m, d) in probes {
         got = datetime_weekday(y, m, d);

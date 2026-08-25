@@ -67,9 +67,7 @@ test "wave21 islice stop-only matches host" {
 test "wave21 zip_longest pads with fillvalue and stops when all dry" {
     la: list = [1, 2, 3];
     lb: list = ["a"];
-    got_native = _drain(
-        _p2_zip_longest([iter(la), iter(lb)], fillvalue="FILL")
-    );
+    got_native = _drain(_p2_zip_longest([iter(la), iter(lb)], fillvalue="FILL"));
     got_host = list(host_it.zip_longest(la, lb, fillvalue="FILL"));
     want: list = [(1, "a"), (2, "FILL"), (3, "FILL")];
     assert got_native == want , got_native;
@@ -173,7 +171,5 @@ test "wave21 lazy iterators observe post-creation source mutations" {
     zl = _p2_zip_longest([iter(la), iter(lb)], fillvalue="FILL");
     la.append(4);
     la[0] = -1;
-    assert _drain(zl) == [
-        (-1, "a"), (2, "b"), (3, "FILL"), (4, "FILL")
-    ] , "zip_longest laziness";
+    assert _drain(zl) == [(-1, "a"), (2, "b"), (3, "FILL"), (4, "FILL")] , "zip_longest laziness";
 }

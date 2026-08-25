@@ -54,7 +54,9 @@ def product_exec(source: str, filename: str = "<p1exc>") -> PyObj {
 def run_code(co: PyCode) -> dict[str, PyObj] {
     ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
     outcome = exec_code(co, [], ns);
-    assert not is_error(outcome), f"exec failed: {(outcome as PyError).exception.message}";
+    assert not is_error(outcome) , f"exec failed: {(
+        outcome as PyError
+    ).exception.message}";
     return ns;
 }
 
@@ -122,7 +124,7 @@ test "except* bound multi-handler lowering matches oracle bytes" {
         }
         i = i + 2;
     }
-    assert found, "no CALL_INTRINSIC_2 oparg 1 in lowered stream";
+    assert found , "no CALL_INTRINSIC_2 oparg 1 in lowered stream";
 }
 
 
@@ -133,20 +135,29 @@ test "PREP_RERAISE_STAR: all handlers matched (all-None list) -> None" {
         [value_error("v"), PyNoneType(t="none")],
         ["r"],
         [
-            OP_RESUME, 0,
-            OP_LOAD_CONST, 0,
-            OP_BUILD_LIST, 0,
-            OP_LOAD_CONST, 1,
-            OP_LIST_APPEND, 1,
-            OP_CALL_INTRINSIC_2, 1,
-            OP_STORE_NAME, 0,
-            OP_RETURN_VALUE, 0,
+            OP_RESUME,
+            0,
+            OP_LOAD_CONST,
+            0,
+            OP_BUILD_LIST,
+            0,
+            OP_LOAD_CONST,
+            1,
+            OP_LIST_APPEND,
+            1,
+            OP_CALL_INTRINSIC_2,
+            1,
+            OP_STORE_NAME,
+            0,
+            OP_RETURN_VALUE,
+            0,
+
         ],
     );
     ns = run_code(co);
     r = ns["r"];
     assert not is_error(r);
-    assert isinstance(r, PyNoneType), f"expected None, got {r.t}";
+    assert isinstance(r, PyNoneType) , f"expected None, got {r.t}";
 }
 
 test "PREP_RERAISE_STAR: unmatched rest propagates verbatim" {
@@ -155,21 +166,30 @@ test "PREP_RERAISE_STAR: unmatched rest propagates verbatim" {
         [orig, PyNoneType(t="none")],
         ["r"],
         [
-            OP_RESUME, 0,
-            OP_LOAD_CONST, 0,
-            OP_BUILD_LIST, 0,
-            OP_LOAD_CONST, 0,
-            OP_LIST_APPEND, 1,
-            OP_CALL_INTRINSIC_2, 1,
-            OP_STORE_NAME, 0,
-            OP_RETURN_VALUE, 0,
+            OP_RESUME,
+            0,
+            OP_LOAD_CONST,
+            0,
+            OP_BUILD_LIST,
+            0,
+            OP_LOAD_CONST,
+            0,
+            OP_LIST_APPEND,
+            1,
+            OP_CALL_INTRINSIC_2,
+            1,
+            OP_STORE_NAME,
+            0,
+            OP_RETURN_VALUE,
+            0,
+
         ],
     );
     ns = run_code(co);
     r = ns["r"];
     assert not is_error(r);
     # Identity: the naked path returns excs[0] itself, no re-wrap.
-    assert r is orig, "naked PrepReraiseStar must return excs[0] by identity";
+    assert r is orig , "naked PrepReraiseStar must return excs[0] by identity";
 }
 
 test "PREP_RERAISE_STAR: empty excs list -> None" {
@@ -177,18 +197,25 @@ test "PREP_RERAISE_STAR: empty excs list -> None" {
         [value_error("v")],
         ["r"],
         [
-            OP_RESUME, 0,
-            OP_LOAD_CONST, 0,
-            OP_BUILD_LIST, 0,
-            OP_CALL_INTRINSIC_2, 1,
-            OP_STORE_NAME, 0,
-            OP_RETURN_VALUE, 0,
+            OP_RESUME,
+            0,
+            OP_LOAD_CONST,
+            0,
+            OP_BUILD_LIST,
+            0,
+            OP_CALL_INTRINSIC_2,
+            1,
+            OP_STORE_NAME,
+            0,
+            OP_RETURN_VALUE,
+            0,
+
         ],
     );
     ns = run_code(co);
     r = ns["r"];
     assert not is_error(r);
-    assert isinstance(r, PyNoneType), f"expected None, got {r.t}";
+    assert isinstance(r, PyNoneType) , f"expected None, got {r.t}";
 }
 
 test "PREP_RERAISE_STAR: malformed operand -> SystemError" {
@@ -196,20 +223,25 @@ test "PREP_RERAISE_STAR: malformed operand -> SystemError" {
         [value_error("v")],
         [],
         [
-            OP_RESUME, 0,
-            OP_LOAD_CONST, 0,
-            OP_LOAD_CONST, 0,
-            OP_CALL_INTRINSIC_2, 1,
-            OP_RETURN_VALUE, 0,
+            OP_RESUME,
+            0,
+            OP_LOAD_CONST,
+            0,
+            OP_LOAD_CONST,
+            0,
+            OP_CALL_INTRINSIC_2,
+            1,
+            OP_RETURN_VALUE,
+            0,
+
         ],
     );
     outcome = exec_code(co, [], {"__name__": PyStr(t="str", val="__main__")});
     assert is_error(outcome);
     err = (outcome as PyError).exception;
-    assert err.type_name == "SystemError", f"got {err.type_name}";
+    assert err.type_name == "SystemError" , f"got {err.type_name}";
     assert "PREP_RERAISE_STAR" in err.message;
 }
-
 
 # NOTE: the scope doc's P1 gate also lists a host-diff pin of
 # ExceptionGroup("g", [...]) construction failing with the exact ctor
@@ -217,4 +249,3 @@ test "PREP_RERAISE_STAR: malformed operand -> SystemError" {
 # (PyExcGroup obj + ctor); verified on this tree that ExceptionGroup(...)
 # currently raises nothing, so the pin moves to the P2 lane rather than
 # pinning a not-yet-existing behavior here.
-

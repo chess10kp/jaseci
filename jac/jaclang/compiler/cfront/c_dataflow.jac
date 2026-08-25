@@ -28,8 +28,8 @@ def collect_lb_kills(nd: c_ast.Node, killed: set[str]) {
         return;
     }
     if isinstance(nd, c_ast.Assignment)
-    and nd.op == "="
-    and isinstance(nd.lvalue, c_ast.ID) {
+        and nd.op == "="
+        and isinstance(nd.lvalue, c_ast.ID) {
         if lb_assignment_kills(nd.lvalue.name, nd.rvalue) {
             killed.add(nd.lvalue.name);
         }

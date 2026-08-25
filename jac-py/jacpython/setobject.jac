@@ -4,9 +4,7 @@
 # (lift: ``jac-py/Objects/_lifted/setobject_core.jac``).
 import from objects { PyObj, PySet, PyInt, is_error, _signed_hash, }
 import from hash_dispatch { hash_element, }
-import from abstract_protocol {
-    PyObject_HashNotImplemented,
-}
+import from abstract_protocol { PyObject_HashNotImplemented, }
 
 glob _PySet_MASK: int = 0xFFFFFFFFFFFFFFFF;
 

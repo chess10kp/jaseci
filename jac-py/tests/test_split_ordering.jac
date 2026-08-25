@@ -17,5 +17,5 @@ import from product_compile { compile_source }
 
 test "split: product-path entry compiles after full sibling graph load" {
     r = compile_source("1 + 2", "<split-ordering>", "eval", 0);
-    assert not is_error(r), r;
+    assert not is_error(r) , r;
 }

@@ -47,7 +47,7 @@ test "item2: throw caught then return" {
         "    r = type(e).__name__\n"
     );
     assert "r" in ns;
-    assert vm_str(ns, "r") == "SI:'ret'", vm_str(ns, "r");
+    assert vm_str(ns, "r") == "SI:'ret'" , vm_str(ns, "r");
 }
 
 test "item2b: throw forms" {
@@ -99,7 +99,7 @@ test "item2b: throw forms" {
         "exceptions must be classes or instances deriving from BaseException, not int; "
         "instance exception may not have a separate value"
     );
-    assert vm_str(ns, "r") == expect, vm_str(ns, "r");
+    assert vm_str(ns, "r") == expect , vm_str(ns, "r");
 }
 
 test "item3: coroutine reuse" {
@@ -144,9 +144,15 @@ test "item3: coroutine reuse" {
         "except RuntimeError as e:\n"
         "    r3 = 'outer RE:' + str(e)\n"
     );
-    assert vm_str(ns, "r") == "RE:cannot reuse already awaited coroutine", vm_str(ns, "r");
-    assert vm_str(ns, "r2") == "RE:cannot reuse already awaited coroutine", vm_str(ns, "r2");
-    assert vm_str(ns, "r3") == "outer RE:cannot reuse already awaited coroutine", vm_str(ns, "r3");
+    assert vm_str(ns, "r") == "RE:cannot reuse already awaited coroutine" , vm_str(
+        ns, "r"
+    );
+    assert vm_str(ns, "r2") == "RE:cannot reuse already awaited coroutine" , vm_str(
+        ns, "r2"
+    );
+    assert vm_str(ns, "r3") == "outer RE:cannot reuse already awaited coroutine" , vm_str(
+        ns, "r3"
+    );
 }
 
 test "item5: await plain generator rejected; marked one accepted" {
@@ -174,7 +180,8 @@ test "item5: await plain generator rejected; marked one accepted" {
         "except StopIteration as e:\n"
         "    r = str(step1) + '|' + e.value\n"
     );
-    assert vm_str(ns, "r") == "7|TE:'generator' object can't be awaited; 99; sent=None", vm_str(ns, "r");
+    assert vm_str(ns, "r")
+        == "7|TE:'generator' object can't be awaited; 99; sent=None" , vm_str(ns, "r");
 }
 
 test "item6: send/close arity + kwargs" {
@@ -217,7 +224,7 @@ test "item6: send/close arity + kwargs" {
         "generator.send() takes no keyword arguments; "
         "generator.close() takes no keyword arguments"
     );
-    assert vm_str(ns, "r") == expect, vm_str(ns, "r");
+    assert vm_str(ns, "r") == expect , vm_str(ns, "r");
 }
 
 test "item7: bare raise across yield w/ noise exc" {
@@ -243,8 +250,8 @@ test "item7: bare raise across yield w/ noise exc" {
         "except BaseException as e:\n"
         "    r = 'WRONG: ' + type(e).__name__ + ' ' + str(e)\n"
     );
-    assert vm_str(ns, "v") == "2", vm_str(ns, "v");
-    assert vm_str(ns, "r") == "KeyError re-raised", vm_str(ns, "r");
+    assert vm_str(ns, "v") == "2" , vm_str(ns, "v");
+    assert vm_str(ns, "r") == "KeyError re-raised" , vm_str(ns, "r");
 }
 
 test "item8: gi_yieldfrom + names + setters" {
@@ -275,12 +282,22 @@ test "item8: gi_yieldfrom + names + setters" {
         "    errs.append('AttributeError')\n"
         "errstr = '; '.join(errs)\n"
     );
-    got = vm_str(ns, "yf") + "|" + vm_str(ns, "yf0") + "|" + vm_str(ns, "nm")
-        + "|" + vm_str(ns, "qn") + "|" + vm_str(ns, "nm2") + "|" + vm_str(ns, "qn2")
-        + "|" + vm_str(ns, "errstr");
+    got = vm_str(ns, "yf")
+        + "|"
+        + vm_str(ns, "yf0")
+        + "|"
+        + vm_str(ns, "nm")
+        + "|"
+        + vm_str(ns, "qn")
+        + "|"
+        + vm_str(ns, "nm2")
+        + "|"
+        + vm_str(ns, "qn2")
+        + "|"
+        + vm_str(ns, "errstr");
     expect = "inner|None|outer|outer|renamed|ns.outer|"
-        "__qualname__ must be set to a string object; AttributeError";
-    assert got == expect, got;
+    "__qualname__ must be set to a string object; AttributeError";
+    assert got == expect , got;
 }
 
 # ---- StopIteration payload surface (M13): .value must equal .args ----------
@@ -306,8 +323,7 @@ test "m13: next exhaustion carries payload in args and repr" {
         "except StopIteration as si:\n"
         "    r = [repr(si), str(si), list(si.args), si.value]\n"
     );
-    assert vm_str(ns, "r") == "['StopIteration(42)', '42', [42], 42]",
-        vm_str(ns, "r");
+    assert vm_str(ns, "r") == "['StopIteration(42)', '42', [42], 42]" , vm_str(ns, "r");
 }
 
 test "m13: bare return keeps argless StopIteration" {
@@ -321,7 +337,7 @@ test "m13: bare return keeps argless StopIteration" {
         "except StopIteration as si:\n"
         "    r = [repr(si), list(si.args), si.value]\n"
     );
-    assert vm_str(ns, "r") == "['StopIteration()', [], None]", vm_str(ns, "r");
+    assert vm_str(ns, "r") == "['StopIteration()', [], None]" , vm_str(ns, "r");
 }
 
 test "m13: send exhaustion carries payload in args" {
@@ -336,7 +352,7 @@ test "m13: send exhaustion carries payload in args" {
         "except StopIteration as si:\n"
         "    r = [list(si.args), si.value]\n"
     );
-    assert vm_str(ns, "r") == "[[42], 42]", vm_str(ns, "r");
+    assert vm_str(ns, "r") == "[[42], 42]" , vm_str(ns, "r");
 }
 
 test "m13: throw caught-and-return surfaces string payload via args" {
@@ -353,8 +369,7 @@ test "m13: throw caught-and-return surfaces string payload via args" {
         "except StopIteration as si:\n"
         "    r = [repr(si), list(si.args)]\n"
     );
-    assert vm_str(ns, "r") == "[\"StopIteration('ret')\", ['ret']]",
-        vm_str(ns, "r");
+    assert vm_str(ns, "r") == "[\"StopIteration('ret')\", ['ret']]" , vm_str(ns, "r");
 }
 
 test "m13: yield-from delegated return payload reaches args" {
@@ -373,5 +388,5 @@ test "m13: yield-from delegated return payload reaches args" {
         "except StopIteration as si:\n"
         "    r = [list(si.args), si.value]\n"
     );
-    assert vm_str(ns, "r") == "[[42], 42]", vm_str(ns, "r");
+    assert vm_str(ns, "r") == "[[42], 42]" , vm_str(ns, "r");
 }

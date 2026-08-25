@@ -7,18 +7,15 @@
 # each assert argument on BOTH engines and diffs cross-engine, so every line
 # doubles as an exactness oracle -- including the 3.14 lazy encode-error-handler
 # semantics pinned in "strmeth: encode handler validation is lazy".
-import from layer0_replay_harness {
-    ReplayResult,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer1_replay_source, }
 
 def _sm_probe(name: str, src: str) -> ReplayResult {
     return layer1_replay_source(src);
 }
 
 def _sm_expect_pass(result: ReplayResult, name: str) {
-    assert result.failed == 0, name + " failed: " + str(result.failures);
-    assert result.errored == 0, name + " errored: " + str(result.errors);
+    assert result.failed == 0 , name + " failed: " + str(result.failures);
+    assert result.errored == 0 , name + " errored: " + str(result.errors);
 }
 
 test "strmeth: case transforms incl. title apostrophe rule" {

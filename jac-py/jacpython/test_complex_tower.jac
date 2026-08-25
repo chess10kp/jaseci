@@ -21,10 +21,11 @@ def vm_exec(src: str) -> dict[str, PyObj] {
 
 def vm_str(expr: str) -> str {
     ns = vm_exec(
-        "try:\n"
-        "    r = repr(" + expr + ")\n"
-        "except BaseException as e:\n"
-        "    r = type(e).__name__ + ': ' + str(e)\n"
+        "try:\n" "    r = repr("
+            + expr
+            + ")\n"
+            "except BaseException as e:\n"
+            "    r = type(e).__name__ + ': ' + str(e)\n"
     );
     return to_host(ns["r"]) as str;
 }
@@ -45,7 +46,8 @@ test "complex tower: arithmetic -- add sub mul div over the tower incl inf propa
     assert vm_str("1e308*10+0j") == "(inf+0j)";
     assert vm_str("(1+2j)/0") == "ZeroDivisionError: division by zero";
     assert vm_str("(1+2j)/(0j)") == "ZeroDivisionError: division by zero";
-    assert vm_str("(1+2j)//2") == "TypeError: unsupported operand type(s) for //: 'complex' and 'int'";
+    assert vm_str("(1+2j)//2")
+        == "TypeError: unsupported operand type(s) for //: 'complex' and 'int'";
     assert vm_str("(1e300+0j)**2") == "OverflowError: complex exponentiation";
     assert vm_str("(1+2j)**2.5") == "(-6.960664459571901+2.7296244647840084j)";
 }
@@ -55,16 +57,21 @@ test "complex tower: division-zero -- true divide by any zero raises plain divis
 }
 
 test "complex tower: floormod -- floor-div mod raise CPython generic binop TypeError; divmod likewise" {
-    assert vm_str("2//(1+2j)") == "TypeError: unsupported operand type(s) for //: 'int' and 'complex'";
-    assert vm_str("(1+2j)%2.5") == "TypeError: unsupported operand type(s) for %: 'complex' and 'float'";
-    assert vm_str("divmod(1+2j,2)") == "TypeError: unsupported operand type(s) for divmod(): 'complex' and 'int'";
-    assert vm_str("(3+4j)//(0+1j)") == "TypeError: unsupported operand type(s) for //: 'complex' and 'complex'";
+    assert vm_str("2//(1+2j)")
+        == "TypeError: unsupported operand type(s) for //: 'int' and 'complex'";
+    assert vm_str("(1+2j)%2.5")
+        == "TypeError: unsupported operand type(s) for %: 'complex' and 'float'";
+    assert vm_str("divmod(1+2j,2)")
+        == "TypeError: unsupported operand type(s) for divmod(): 'complex' and 'int'";
+    assert vm_str("(3+4j)//(0+1j)")
+        == "TypeError: unsupported operand type(s) for //: 'complex' and 'complex'";
 }
 
 test "complex tower: pow -- integer-exponent repeated squaring natively; zero and overflow rules exact" {
     assert vm_str("(1j)**2") == "(-1+0j)";
     assert vm_str("(0j)**0") == "(1+0j)";
-    assert vm_str("(0j)**-1") == "ZeroDivisionError: zero to a negative or complex power";
+    assert vm_str("(0j)**-1")
+        == "ZeroDivisionError: zero to a negative or complex power";
     assert vm_str("(1+1j)**10") == "32j";
     assert vm_str("2**(3+0j)") == "(8+0j)";
     assert vm_str("(3+0j)**(-0.5)") == "(0.5773502691896257-0j)";
@@ -78,8 +85,10 @@ test "complex tower: comparisons -- eq ne numeric across int float bool; orderin
     assert vm_str("(2+0j)==2.0") == "True";
     assert vm_str("(1+0j)==True") == "True";
     assert vm_str("(1+2j)=='a'") == "False";
-    assert vm_str("(1+2j)<(3+4j)") == "TypeError: '<' not supported between instances of 'complex' and 'complex'";
-    assert vm_str("(1+2j)<=1") == "TypeError: '<=' not supported between instances of 'complex' and 'int'";
+    assert vm_str("(1+2j)<(3+4j)")
+        == "TypeError: '<' not supported between instances of 'complex' and 'complex'";
+    assert vm_str("(1+2j)<=1")
+        == "TypeError: '<=' not supported between instances of 'complex' and 'int'";
     assert vm_str("complex(float('nan'),0)==float('nan')") == "False";
     assert vm_str("complex(float('nan'),0)!=float('nan')") == "True";
 }
@@ -131,16 +140,25 @@ test "complex tower: parsing-valid -- complex str parsing j suffix parens words 
 }
 
 test "complex tower: parsing-errors -- exact ValueError texts for malformed strings" {
-    assert vm_str("complex('abc')") == "ValueError: complex() arg is a malformed string";
+    assert vm_str("complex('abc')")
+        == "ValueError: complex() arg is a malformed string";
     assert vm_str("complex('')") == "ValueError: complex() arg is a malformed string";
-    assert vm_str("complex('  1 + 2j ')") == "ValueError: complex() arg is a malformed string";
-    assert vm_str("complex('_1j')") == "ValueError: could not convert string to complex: '_1j'";
-    assert vm_str("complex('1_j')") == "ValueError: could not convert string to complex: '1_j'";
-    assert vm_str("complex('1++2j')") == "ValueError: complex() arg is a malformed string";
-    assert vm_str("complex('3j+2')") == "ValueError: complex() arg is a malformed string";
-    assert vm_str("complex('0x1j')") == "ValueError: complex() arg is a malformed string";
-    assert vm_str("complex('1j2j')") == "ValueError: complex() arg is a malformed string";
-    assert vm_str("complex('((1j))')") == "ValueError: complex() arg is a malformed string";
+    assert vm_str("complex('  1 + 2j ')")
+        == "ValueError: complex() arg is a malformed string";
+    assert vm_str("complex('_1j')")
+        == "ValueError: could not convert string to complex: '_1j'";
+    assert vm_str("complex('1_j')")
+        == "ValueError: could not convert string to complex: '1_j'";
+    assert vm_str("complex('1++2j')")
+        == "ValueError: complex() arg is a malformed string";
+    assert vm_str("complex('3j+2')")
+        == "ValueError: complex() arg is a malformed string";
+    assert vm_str("complex('0x1j')")
+        == "ValueError: complex() arg is a malformed string";
+    assert vm_str("complex('1j2j')")
+        == "ValueError: complex() arg is a malformed string";
+    assert vm_str("complex('((1j))')")
+        == "ValueError: complex() arg is a malformed string";
 }
 
 test "complex tower: constructor-types -- numeric promotion and TypeError shapes" {
@@ -150,10 +168,14 @@ test "complex tower: constructor-types -- numeric promotion and TypeError shapes
     assert vm_str("complex(True)") == "(1+0j)";
     assert vm_str("complex(2,3).conjugate()") == "(2-3j)";
     assert vm_str("complex(1+2j, 3)") == "(1+5j)";
-    assert vm_str("complex(None)") == "TypeError: complex() argument must be a string or a number, not NoneType";
-    assert vm_str("complex(b'1j')") == "TypeError: complex() argument must be a string or a number, not bytes";
-    assert vm_str("complex('1+2j','2')") == "TypeError: complex() argument 'real' must be a real number, not str";
-    assert vm_str("complex(1,2,3)") == "TypeError: complex() takes at most 2 arguments (3 given)";
+    assert vm_str("complex(None)")
+        == "TypeError: complex() argument must be a string or a number, not NoneType";
+    assert vm_str("complex(b'1j')")
+        == "TypeError: complex() argument must be a string or a number, not bytes";
+    assert vm_str("complex('1+2j','2')")
+        == "TypeError: complex() argument 'real' must be a real number, not str";
+    assert vm_str("complex(1,2,3)")
+        == "TypeError: complex() takes at most 2 arguments (3 given)";
 }
 
 test "complex tower: attrs-methods -- real imag floats conjugate truthiness" {

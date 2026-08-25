@@ -2659,7 +2659,7 @@ impl TypeEvaluator._get_type_of_symbol_decl(
                 collection_type = self.get_type_of_expression(node_.parent.collection);
 
                 if isinstance(collection_type, AnyType)
-                and collection_type.is_foreign {
+                    and collection_type.is_foreign {
                     node_.type = collection_type;
                     return collection_type;
                 }

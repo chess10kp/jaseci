@@ -20,7 +20,7 @@ import os;
 import from layer0_replay_harness { layer1_replay_source }
 
 
-def _cases_path() -> str {
+def _cases_path -> str {
     # Scratch-discipline override so concurrent agents never share a file;
     # legacy default kept for the documented manual invocation.
     return os.environ.get("FUZZ_CASES_FILE") or "/tmp/fuzz_cases.json";
@@ -56,13 +56,22 @@ with entry {
                 green += 1;
             }
             print(
-                "ok " + name + " passed: " + str(result.passed)
-                + " skipped: " + str(result.skipped)
+                "ok "
+                    + name
+                    + " passed: "
+                    + str(result.passed)
+                    + " skipped: "
+                    + str(result.skipped)
             );
         }
     }
     print(
-        "smoke: " + str(green) + " green / " + str(red) + " red / "
-        + str(len(cases)) + " cases"
+        "smoke: "
+            + str(green)
+            + " green / "
+            + str(red)
+            + " red / "
+            + str(len(cases))
+            + " cases"
     );
 }

@@ -29,10 +29,11 @@ def vm_exec(src: str) -> dict[str, PyObj] {
 
 def vm_str(expr: str) -> str {
     ns = vm_exec(
-        "try:\n"
-        "    r = " + expr + "\n"
-        "except BaseException as e:\n"
-        "    r = type(e).__name__ + ': ' + str(e)\n"
+        "try:\n" "    r = "
+            + expr
+            + "\n"
+            "except BaseException as e:\n"
+            "    r = type(e).__name__ + ': ' + str(e)\n"
     );
     return to_host(ns["r"]) as str;
 }
@@ -83,7 +84,8 @@ test "deque.remove missing value pins membership wording" {
         "    r = deque([1]).remove(9)\n"
         "except BaseException as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
-    ) == "ValueError: deque.remove(x): x not in deque";
+    )
+        == "ValueError: deque.remove(x): x not in deque";
 }
 
 test "deque.pop empty pins empty wording" {
@@ -93,7 +95,8 @@ test "deque.pop empty pins empty wording" {
         "    r = deque().pop()\n"
         "except BaseException as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
-    ) == "IndexError: pop from an empty deque";
+    )
+        == "IndexError: pop from an empty deque";
 }
 
 test "array.insert non-int pins interpreted-as-integer form" {
@@ -103,7 +106,8 @@ test "array.insert non-int pins interpreted-as-integer form" {
         "    r = array('i').insert('x', 1)\n"
         "except BaseException as e:\n"
         "    r = type(e).__name__ + ': ' + str(e)\n"
-    ) == "TypeError: 'str' object cannot be interpreted as an integer";
+    )
+        == "TypeError: 'str' object cannot be interpreted as an integer";
 }
 
 test "csv.reader zero args pins at-least-got form" {

@@ -14,7 +14,7 @@ def _wave_number(path: str) -> int {
 }
 
 
-def _manifest_paths() -> list {
+def _manifest_paths -> list {
     paths: list = [];
     for name in os.listdir(TESTS) {
         if name.startswith("conformance_manifest_wave") and name.endswith(".json") {
@@ -77,7 +77,9 @@ def _jac_loc(path: str) -> int {
 
 def _check_wave(wave: int) -> str {
     try {
-        corpus_dir = os.path.join(REPO_ROOT, "jac-py", "tools", f"p2_corpus_wave{wave}");
+        corpus_dir = os.path.join(
+            REPO_ROOT, "jac-py", "tools", f"p2_corpus_wave{wave}"
+        );
         manifest = _load_json(os.path.join(corpus_dir, "manifest.json"));
         baseline = _load_json(
             os.path.join(corpus_dir, "baseline", "project.c2jac.report.json")
@@ -88,17 +90,21 @@ def _check_wave(wave: int) -> str {
         current = _load_json(current_path);
         expected = _expected_stems(wave);
         assert len(manifest["files"] as list) == len(expected);
-        assert len(current["files"] as list) == len(expected), current;
-        assert (current["tier_b_total"] as int) <= (baseline["tier_b_total"] as int), (
-            f"Tier-B regressed: {current['tier_b_total']} > baseline {baseline['tier_b_total']}"
+        assert len(current["files"] as list) == len(expected) , current;
+        assert (current["tier_b_total"] as int) <= (baseline["tier_b_total"] as int) , (
+            f"Tier-B regressed: {current['tier_b_total']} > baseline {baseline[
+                'tier_b_total'
+            ]}"
         );
         if wave <= 3 {
             total_loc = 0;
             for row in (current["files"] as list) {
                 total_loc += _jac_loc(os.path.join(REPO_ROOT, row["output"]));
             }
-            density = (current["tier_b_total"] as int) / total_loc if total_loc else 0.0;
-            assert density < 0.15, f"density {density:.6f} >= 0.15";
+            density = (current["tier_b_total"] as int) / total_loc
+                if total_loc
+                else 0.0;
+            assert density < 0.15 , f"density {density:.6f} >= 0.15";
         }
         return "";
     } except Exception as e {
@@ -110,7 +116,7 @@ def _check_wave(wave: int) -> str {
 test "P2 waves 2-11 corpus density ratchets" {
     failures: list = [];
     paths = _manifest_paths();
-    assert len(paths) > 0, "no conformance wave manifests found";
+    assert len(paths) > 0 , "no conformance wave manifests found";
     for path in paths {
         wave = _wave_number(path);
         error = _check_wave(wave);
@@ -125,5 +131,5 @@ test "P2 waves 2-11 corpus density ratchets" {
             }
         }
     }
-    assert not failures, "\n".join(failures);
+    assert not failures , "\n".join(failures);
 }

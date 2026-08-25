@@ -82,17 +82,24 @@ def nested_code_by_name(co: PyCode, name: str) -> PyCode {
 # 0, so comparing its result against a literal can pass vacuously on wrong-typed
 # containers; this helper pins both the container type and every element.
 def assert_list_of_ints(o: PyObj, expected: list[int]) {
-    assert isinstance(o, PyList), "not a list: " + o.t;
+    assert isinstance(o, PyList) , "not a list: " + o.t;
     items = (o as PyList).items;
-    assert len(items) == len(expected),
-        "length " + str(len(items)) + " != " + str(len(expected));
+    assert len(items) == len(expected) , "length "
+        + str(len(items))
+        + " != "
+        + str(len(expected));
     i = 0;
     while i < len(expected) {
-        assert isinstance(items[i], PyInt),
-            "item " + str(i) + " not int: " + items[i].t;
-        assert (items[i] as PyInt).val == expected[i],
-            "item " + str(i) + " = " + str((items[i] as PyInt).val)
-            + ", want " + str(expected[i]);
+        assert isinstance(items[i], PyInt) , "item "
+            + str(i)
+            + " not int: "
+            + items[i].t;
+        assert (items[i] as PyInt).val == expected[i] , "item "
+            + str(i)
+            + " = "
+            + str((items[i] as PyInt).val)
+            + ", want "
+            + str(expected[i]);
         i = i + 1;
     }
 }
@@ -277,7 +284,9 @@ test "layer9: chained assignment executes in ceval" {
 # module cellvar, the synthetic __annotate__ function object, and its
 # format-guarded dict construction all run for real.
 test "layer9: band-11 module annotations execute in ceval" {
-    co = product_exec("x: int = 5\nann = __annotate__(0)\ncond = __conditional_annotations__\n");
+    co = product_exec(
+        "x: int = 5\nann = __annotate__(0)\ncond = __conditional_annotations__\n"
+    );
     ns: dict[str, PyObj] = {};
     out = exec_code(co as PyCode, [], ns);
     assert not is_error(out);
@@ -306,7 +315,9 @@ test "layer9: band-11 bare annotation registers without inline store" {
 # still need the type-machinery mapping of __annotate_func__ -- a runtime gap
 # tracked for the ceval slice; call D.__annotate_func__(1) directly to drive it.
 test "layer9: band-11 class stores __annotate_func__ in class dict" {
-    co = product_exec("class C:\n    y: str = 'a'\n    z: dict\nr = '__annotate_func__' in C.__dict__\nc = callable(C.__annotate_func__)\n");
+    co = product_exec(
+        "class C:\n    y: str = 'a'\n    z: dict\nr = '__annotate_func__' in C.__dict__\nc = callable(C.__annotate_func__)\n"
+    );
     ns: dict[str, PyObj] = {};
     out = exec_code(co as PyCode, [], ns);
     assert not is_error(out);
@@ -1157,13 +1168,13 @@ def _layer9_parity(src: str) {
 test "layer9: band6 two handlers finally caught by first matches oracle" {
     _layer9_parity(
         "try:\n"
-        + "    raise ValueError('x')\n"
-        + "except ValueError:\n"
-        + "    result = 1\n"
-        + "except KeyError:\n"
-        + "    result = 2\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "    raise ValueError('x')\n"
+            + "except ValueError:\n"
+            + "    result = 1\n"
+            + "except KeyError:\n"
+            + "    result = 2\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -1189,17 +1200,17 @@ test "layer9: band6 two handlers finally caught by first executes in ceval" {
 test "layer9: band6 three handlers else finally no-exception matches oracle" {
     _layer9_parity(
         "try:\n"
-        + "    result = 1\n"
-        + "except ValueError:\n"
-        + "    result = 2\n"
-        + "except KeyError:\n"
-        + "    result = 3\n"
-        + "except TypeError:\n"
-        + "    result = 4\n"
-        + "else:\n"
-        + "    result = 5\n"
-        + "finally:\n"
-        + "    result = 6\n"
+            + "    result = 1\n"
+            + "except ValueError:\n"
+            + "    result = 2\n"
+            + "except KeyError:\n"
+            + "    result = 3\n"
+            + "except TypeError:\n"
+            + "    result = 4\n"
+            + "else:\n"
+            + "    result = 5\n"
+            + "finally:\n"
+            + "    result = 6\n"
     );
 }
 
@@ -1247,11 +1258,11 @@ test "layer9: band6 two handlers finally uncaught propagates in ceval" {
 test "layer9: band6 try except as finally caught matches oracle" {
     _layer9_parity(
         "try:\n"
-        + "    result = 10 // 0\n"
-        + "except ZeroDivisionError as e:\n"
-        + "    result = str(e)\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "    result = 10 // 0\n"
+            + "except ZeroDivisionError as e:\n"
+            + "    result = str(e)\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -1766,12 +1777,7 @@ test "layer9: class private attr executes in ceval" {
 # Band 11: function-local annotated assignment executes like a plain store in
 # ceval (PEP 649 drops the annotation at local scope).
 test "layer9: local AnnAssign stores and reads back in ceval" {
-    src = (
-        "def f():\n"
-        + "    q: int = 3\n"
-        + "    return q\n"
-        + "result = f()\n"
-    );
+    src = "def f():\n" + "    q: int = 3\n" + "    return q\n" + "result = f()\n";
     co = product_exec(src);
     ns: dict[str, PyObj] = {};
     out = exec_code(co as PyCode, [], ns);

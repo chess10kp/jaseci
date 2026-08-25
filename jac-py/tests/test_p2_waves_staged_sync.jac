@@ -14,7 +14,7 @@ def _wave_number(path: str) -> int {
 }
 
 
-def _manifest_paths() -> list {
+def _manifest_paths -> list {
     paths: list = [];
     for name in os.listdir(TESTS) {
         if name.startswith("conformance_manifest_wave") and name.endswith(".json") {
@@ -73,8 +73,8 @@ def _check_manifest(wave: int) -> str {
         modules = manifest["modules"] as list;
         expected = _expected_stems(wave);
         actual = sorted([row["stem"] for row in modules]);
-        assert len(modules) == len(expected), len(modules);
-        assert actual == expected, actual;
+        assert len(modules) == len(expected) , len(modules);
+        assert actual == expected , actual;
         return "";
     } except Exception as e {
         return f"wave {wave}: staged manifest module check failed: {e}";
@@ -100,8 +100,8 @@ def _check_staged_matches(wave: int) -> str {
             staging = row["staging"] as str;
             staged_path = os.path.join(staged_dir, f"{stem}.jac");
             lifted_path = os.path.join(lifted_dir, f"{stem}.jac");
-            assert os.path.isfile(staged_path), staged_path;
-            assert os.path.isfile(lifted_path), lifted_path;
+            assert os.path.isfile(staged_path) , staged_path;
+            assert os.path.isfile(lifted_path) , lifted_path;
             if staging == "lift" {
                 if _read_text(staged_path) != _read_text(lifted_path) {
                     mismatches.append(
@@ -110,12 +110,12 @@ def _check_staged_matches(wave: int) -> str {
                 }
             } elif staging == "hand" {
                 note = row.get("note");
-                assert note, f"hand module {stem} needs manifest note";
+                assert note , f"hand module {stem} needs manifest note";
             } else {
-                assert False, f"unknown staging {staging!r} for {stem}";
+                assert False , f"unknown staging {staging!r} for {stem}";
             }
         }
-        assert not mismatches, "\n".join(mismatches);
+        assert not mismatches , "\n".join(mismatches);
         return "";
     } except Exception as e {
         return f"wave {wave}: staged/lifted corpus check failed: {e}";
@@ -126,11 +126,15 @@ def _check_staged_matches(wave: int) -> str {
 test "P2 waves 2-11 staged vs lifted drift gates" {
     failures: list = [];
     paths = _manifest_paths();
-    assert len(paths) > 0, "no conformance wave manifests found";
+    assert len(paths) > 0 , "no conformance wave manifests found";
     for path in paths {
         wave = _wave_number(path);
         checks = [_check_manifest(wave), _check_staged_matches(wave)];
-        wave_failures = [item for item in checks if item];
+        wave_failures = [
+            item
+            for item in checks
+            if item
+        ];
         if len(wave_failures) > 0 {
             print(f"wave {wave}: FAIL");
             failures.extend(wave_failures);
@@ -138,5 +142,5 @@ test "P2 waves 2-11 staged vs lifted drift gates" {
             print(f"wave {wave}: PASS (2 staged checks)");
         }
     }
-    assert not failures, "\n".join(failures);
+    assert not failures , "\n".join(failures);
 }

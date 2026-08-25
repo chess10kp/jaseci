@@ -30,7 +30,7 @@ glob FIXTURES: str = os.path.join(
      JAC_RUN_TIMEOUT: float = 120.0;
 
 
-def _jac_run_argv() -> list[str] {
+def _jac_run_argv -> list[str] {
     jac_env = os.environ.get("JAC");
     if jac_env and os.path.isfile(jac_env) {
         return [jac_env, "run"];
@@ -47,7 +47,7 @@ def _jac_run_argv() -> list[str] {
 }
 
 
-def _jac_run_env() -> dict[str, str] {
+def _jac_run_env -> dict[str, str] {
     env = dict(os.environ);
     existing = env.get("PYTHONPATH", "");
     if JAC_ROOT not in existing.split(os.pathsep) {
@@ -191,10 +191,7 @@ def lift_to_jac(c_path: str, include_dirs: list[str] | None = None) -> str {
 
 
 def run_lifted(
-    jac_src: str,
-    entry_src: str,
-    label: str = "",
-    timeout: float = JAC_RUN_TIMEOUT
+    jac_src: str, entry_src: str, label: str = "", timeout: float = JAC_RUN_TIMEOUT
 ) -> tuple[str, int, str, str] {
     # Returns (line_or_HANG_or_empty, returncode, stdout, stderr).
     # Hang → (HANG, -1, "", ""); success with int line → (line, 0, ...);
@@ -335,7 +332,9 @@ def assert_lift_matches_c_or_traps(
     expect_trap = entry_fn in res.quarantined_functions;
 
     try {
-        c_out = run_c(_c_sources(c_path, extra_sources), incs, c_driver, timeout=timeout);
+        c_out = run_c(
+            _c_sources(c_path, extra_sources), incs, c_driver, timeout=timeout
+        );
     } except Exception as e {
         return ("mismatch", f"C side failed: {e}");
     }
@@ -346,7 +345,10 @@ def assert_lift_matches_c_or_traps(
     if expect_trap {
         (line, rc, out, err) = run_lifted(jac_src, jac_entry, c_path);
         if line == HANG {
-            return ("hang", f"expected TRAP for '{entry_fn}' but hung under timeout={JAC_RUN_TIMEOUT}");
+            return (
+                "hang",
+                f"expected TRAP for '{entry_fn}' but hung under timeout={JAC_RUN_TIMEOUT}"
+            );
         }
         if rc == 0 {
             return (
@@ -366,7 +368,10 @@ def assert_lift_matches_c_or_traps(
 
     (j_out, rc, out, err) = run_lifted(jac_src, jac_entry, c_path);
     if j_out == HANG {
-        return ("hang", f"expected MATCH for '{entry_fn}' but hung under timeout={JAC_RUN_TIMEOUT}");
+        return (
+            "hang",
+            f"expected MATCH for '{entry_fn}' but hung under timeout={JAC_RUN_TIMEOUT}"
+        );
     }
     if rc != 0 {
         if "quarantined function" in (out + err) {

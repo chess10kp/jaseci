@@ -31,9 +31,9 @@ glob Py_ssize_t = int;
 
 @__jac_value__
 obj struct_formatdef {
-    has format: int = 0;
-    has size: int = 0;
-    has alignment: int = 0;
+    has format: int = 0,
+        size: int = 0,
+        alignment: int = 0;
 }
 
 
@@ -60,9 +60,8 @@ glob struct_native_table: list[struct_formatdef] = [
          struct_formatdef(format=100, size=8, alignment=8),
          struct_formatdef(format=80, size=8, alignment=8),
          struct_formatdef(format=0, size=0, alignment=0)
-     ];
-
-glob struct_lilendian_table: list[struct_formatdef] = [
+     ],
+     struct_lilendian_table: list[struct_formatdef] = [
          struct_formatdef(format=120, size=1, alignment=0),
          struct_formatdef(format=98, size=1, alignment=0),
          struct_formatdef(format=66, size=1, alignment=0),
@@ -82,9 +81,8 @@ glob struct_lilendian_table: list[struct_formatdef] = [
          struct_formatdef(format=102, size=4, alignment=0),
          struct_formatdef(format=100, size=8, alignment=0),
          struct_formatdef(format=0, size=0, alignment=0)
-     ];
-
-glob struct_bigendian_table: list[struct_formatdef] = [
+     ],
+     struct_bigendian_table: list[struct_formatdef] = [
          struct_formatdef(format=120, size=1, alignment=0),
          struct_formatdef(format=98, size=1, alignment=0),
          struct_formatdef(format=66, size=1, alignment=0),
@@ -143,10 +141,10 @@ def struct_align(size: int, c: int, e: struct_formatdef) -> int {
 
 @__jac_value__
 obj struct_code {
-    has fmtdef: int = 0;
-    has offset: int = 0;
-    has size: int = 0;
-    has repeat: int = 0;
+    has fmtdef: int = 0,
+        offset: int = 0,
+        size: int = 0,
+        repeat: int = 0;
 }
 
 
@@ -157,7 +155,7 @@ def struct_prepare_s(
 }
 
 
-def struct_np_pack(x: int, size: int, p: str) -> None {
+def struct_np_pack(x: int, size: int, p: str) {
     i: int = 0;
     for i = 0 while i < size with i += 1 {
         p[i] = x & 255;
@@ -166,7 +164,7 @@ def struct_np_pack(x: int, size: int, p: str) -> None {
 }
 
 
-def struct_lp_pack(x: int, size: int, p: str) -> None {
+def struct_lp_pack(x: int, size: int, p: str) {
     i: int = 0;
     for i = 0 while i < size with i += 1 {
         p[i] = x & 255;
@@ -175,7 +173,7 @@ def struct_lp_pack(x: int, size: int, p: str) -> None {
 }
 
 
-def struct_bp_pack(x: int, size: int, p: str) -> None {
+def struct_bp_pack(x: int, size: int, p: str) {
     i: int = 0;
     i = size;
     while True {
@@ -250,7 +248,7 @@ def struct_s_fill(src: str, n: int, codesize: int, dst: str) -> int {
 }
 
 
-def struct_p_fill(src: str, n: int, codesize: int, dst: str) -> None {
+def struct_p_fill(src: str, n: int, codesize: int, dst: str) {
     i: int = 0;
     if (codesize == 0) {
         n = 0;

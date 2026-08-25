@@ -53,8 +53,12 @@ def _object_type_check(`obj: PyObj, `type: PyTypeObject) -> bool {
 def descr_check(descr: PyDescrObject, `obj: PyObj) -> int {
     if not _object_type_check(`obj, descr.d_type) {
         raise TypeError(
-            "descriptor for '" + descr.d_type.tp_name + "' objects "
-            + "doesn't apply to a '" + obj.ob_type.tp_name + "' object"
+            "descriptor for '"
+                + descr.d_type.tp_name
+                + "' objects "
+                + "doesn't apply to a '"
+                + obj.ob_type.tp_name
+                + "' object"
         );
         return -1;
     }
@@ -64,8 +68,12 @@ def descr_check(descr: PyDescrObject, `obj: PyObj) -> int {
 def descr_setcheck(descr: PyDescrObject, `obj: PyObj, value: PyObj) -> int {
     if not _object_type_check(`obj, descr.d_type) {
         raise TypeError(
-            "descriptor for '" + descr.d_type.tp_name + "' objects "
-            + "doesn't apply to a '" + obj.ob_type.tp_name + "' object"
+            "descriptor for '"
+                + descr.d_type.tp_name
+                + "' objects "
+                + "doesn't apply to a '"
+                + obj.ob_type.tp_name
+                + "' object"
         );
         return -1;
     }

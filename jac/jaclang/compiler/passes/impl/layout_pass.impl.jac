@@ -806,9 +806,7 @@ impl LayoutRegistry.get_topo_order -> list[str] {
     return self.topo_order;
 }
 
-impl LayoutRegistry.get_method_slot(
-    class_name: str, method_name: str
-) -> (int | None) {
+impl LayoutRegistry.get_method_slot(class_name: str, method_name: str) -> (int | None) {
     layout = self.layouts.get(class_name);
     return layout.method_index.get(method_name) if layout is not None else None;
 }

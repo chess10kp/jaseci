@@ -42,6 +42,7 @@ def _tb_test_stderr_text(buf):
 ::py::
 
 
+
 # Run `src` on ceval and return the escaping exception (bypassing exec_code so
 # the final-surface display stays silent during fixture collection; the display
 # itself is pinned separately below).
@@ -291,10 +292,7 @@ test "tb: assert payload renders through the full str dispatch" {
     # CPython BaseException_str does str(args[i]); a tuple assert message used
     # to collapse to "" and render as bare AssertionError. The display path
     # passes ceval's py_str so non-scalar args survive.
-    text = tb_format(
-        vm_exc("msg = 'boom'\nassert 0, ('tuple', msg)\n"),
-        py_str
-    );
+    text = tb_format(vm_exc("msg = 'boom'\nassert 0, ('tuple', msg)\n"), py_str);
     assert text
         == (
             "Traceback (most recent call last):\n"

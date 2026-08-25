@@ -58,5 +58,6 @@ test "interpreter and jac2c agree when a methodless archetype is aliased and mut
     py_out = interpreter_run([FIXTURE], FIXTURE, CALLS);
     c_out = link_and_run(emit_units(FIXTURE), CALLS);
     assert py_out == "9" , f"interpreter no longer aliases: {py_out!r}";
-    assert c_out == py_out , f"jac2c {c_out!r} != interpreter {py_out!r}: methodless archetype " + "must be reference-semantic on both backends";
+    assert c_out == py_out , f"jac2c {c_out!r} != interpreter {py_out!r}: methodless archetype "
+        + "must be reference-semantic on both backends";
 }

@@ -198,9 +198,6 @@ obj JacTypeRegistry {
     }
 
     def exception_type_id(name: str) -> int {
-        # Exception is the sole dense sentinel (throw/match base). Every other
-        # name — builtins included — is SHA256-derived so registry insertion
-        # order never renumbers the ABI.
         if name == "Exception" {
             return 0;
         }

@@ -4,5 +4,4 @@
 # outcome (host oracle captured at generation time).
 import from layer_p2_libtest { p2_libtest_run_snippet }
 
-
 # Source: test_typechecks.py

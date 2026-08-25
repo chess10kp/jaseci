@@ -5101,8 +5101,8 @@ impl Parser.parse_from_path -> tuple[(ModulePath | None, bool, String | None)] {
     is_clib_import = False;
     clib_header: String | None = None;
     if self.check_name()
-    and self.current().value == "clib"
-    and self.check_peek(TokenKind.LPAREN) {
+        and self.current().value == "clib"
+        and self.check_peek(TokenKind.LPAREN) {
         clib_kw = self.advance();
         path_kid.append(self.make_name(clib_kw));
         path_kid.append(self.make_uni_token(self.expect(TokenKind.LPAREN)));

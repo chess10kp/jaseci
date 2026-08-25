@@ -9,26 +9,38 @@ import from layer_p2_libtest { p2_libtest_run_snippet }
 
 
 test "plain class inherits object.__repr__ slot wrapper" {
-    (ok, detail) = p2_libtest_run_snippet("class C: pass\nr = repr(C.__repr__)\nprint(r)");
+    (ok, detail) = p2_libtest_run_snippet(
+        "class C: pass\nr = repr(C.__repr__)\nprint(r)"
+    );
     assert ok , "RUN<" + detail + ">";
-    assert detail == "<slot wrapper '__repr__' of 'object' objects>" , "GOT<" + detail + ">";
+    assert detail == "<slot wrapper '__repr__' of 'object' objects>" , "GOT<"
+        + detail
+        + ">";
 }
 
 test "native-base class inherits its base's wrapper" {
-    (ok, detail) = p2_libtest_run_snippet("class D(dict): pass\nprint(repr(D.__repr__))");
+    (ok, detail) = p2_libtest_run_snippet(
+        "class D(dict): pass\nprint(repr(D.__repr__))"
+    );
     assert ok , "RUN<" + detail + ">";
-    assert detail == "<slot wrapper '__repr__' of 'dict' objects>" , "GOT<" + detail + ">";
+    assert detail == "<slot wrapper '__repr__' of 'dict' objects>" , "GOT<"
+        + detail
+        + ">";
 }
 
 test "wrapper identity follows host object across lookups" {
-    (ok, detail) = p2_libtest_run_snippet("class C: pass\na = C.__repr__\nb = C.__repr__\nprint(a is b, a == b)");
+    (ok, detail) = p2_libtest_run_snippet(
+        "class C: pass\na = C.__repr__\nb = C.__repr__\nprint(a is b, a == b)"
+    );
     assert ok , "RUN<" + detail + ">";
     # CPython: the same underlying slot wrapper object every lookup -> `is` True.
     assert detail == "True True" , "GOT<" + detail + ">";
 }
 
 test "explicitly defined dunder still wins over inherited wrapper" {
-    (ok, detail) = p2_libtest_run_snippet("class D:\n    def __repr__(self):\n        return 'D!'\nr = repr(D.__repr__)\nprint(r.startswith('<function D.__repr__ at 0x'), repr(D()))");
+    (ok, detail) = p2_libtest_run_snippet(
+        "class D:\n    def __repr__(self):\n        return 'D!'\nr = repr(D.__repr__)\nprint(r.startswith('<function D.__repr__ at 0x'), repr(D()))"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "True D!" , "GOT<" + detail + ">";
 }
@@ -38,13 +50,17 @@ test "globals() crosses to host-delegated format_map live" {
     # host-delegated consumer of globals() died with 'policy FAIL but no
     # to_host conversion arm' (getopt test_issue4629 family). The view must be
     # LIVE: entries defined after the crossing stay visible.
-    (ok, detail) = p2_libtest_run_snippet("g = globals()\ny = 7\nprint('Y={y}'.format_map(g))");
+    (ok, detail) = p2_libtest_run_snippet(
+        "g = globals()\ny = 7\nprint('Y={y}'.format_map(g))"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "Y=7" , "GOT<" + detail + ">";
 }
 
 test "crossed globals view raises KeyError like CPython dict" {
-    (ok, detail) = p2_libtest_run_snippet("g = globals()\ntry:\n    '{nope}'.format_map(g)\n    print('NOFAIL')\nexcept KeyError:\n    print('KeyError')");
+    (ok, detail) = p2_libtest_run_snippet(
+        "g = globals()\ntry:\n    '{nope}'.format_map(g)\n    print('NOFAIL')\nexcept KeyError:\n    print('KeyError')"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "KeyError" , "GOT<" + detail + ">";
 }

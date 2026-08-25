@@ -27,10 +27,11 @@ def vm_exec(src: str) -> dict[str, PyObj] {
 
 def vm_str(expr: str) -> str {
     ns = vm_exec(
-        "try:\n"
-        "    r = " + expr + "\n"
-        "except Exception as e:\n"
-        "    r = type(e).__name__ + ': ' + str(e)\n"
+        "try:\n" "    r = "
+            + expr
+            + "\n"
+            "except Exception as e:\n"
+            "    r = type(e).__name__ + ': ' + str(e)\n"
     );
     return repr(to_host(ns["r"]));
 }
@@ -94,8 +95,7 @@ test "num: float.hex / fromhex round trips" {
     assert vm_val("(255.0).hex()") == "0x1.fe00000000000p+7";
     assert vm_val("(-0.0).hex()") == "-0x0.0p+0";
     assert vm_val("(5e-324).hex()") == "0x0.0000000000001p-1022";
-    assert vm_val("(2.2250738585072014e-308).hex()")
-        == "0x1.0000000000000p-1022";
+    assert vm_val("(2.2250738585072014e-308).hex()") == "0x1.0000000000000p-1022";
     assert vm_val("float.fromhex((2.5).hex()) == 2.5");
     assert vm_val("float.fromhex('-Infinity')") == float("-inf");
     assert vm_val("str(float.fromhex('nan'))") == "nan";
@@ -159,22 +159,20 @@ test "num: int(float) truncation and boundary errors" {
         == "'OverflowError: cannot convert float infinity to integer'";
     assert vm_str("int(float('nan'))")
         == "'ValueError: cannot convert float NaN to integer'";
-    assert vm_val("int(10**400) if False else "
-        "(float(10**308) * 10 == float('inf'))");
+    assert vm_val(
+        "int(10**400) if False else " "(float(10**308) * 10 == float('inf'))"
+    );
 }
 
 test "num: huge left shift raises guest OverflowError" {
     # Was a fatal runtime error before the nb_binop shift-bound guard.
-    assert vm_str("1 << 2**70")
-        == "'OverflowError: too many digits in integer'";
+    assert vm_str("1 << 2**70") == "'OverflowError: too many digits in integer'";
     assert vm_val("(2**64) >> 2**70") == 0;
 }
 
 test "num: 0 ** negative uses the int ZeroDivisionError wording" {
-    assert vm_str("0 ** -2")
-        == "'ZeroDivisionError: zero to a negative power'";
-    assert vm_str("0 ** -1")
-        == "'ZeroDivisionError: zero to a negative power'";
+    assert vm_str("0 ** -2") == "'ZeroDivisionError: zero to a negative power'";
+    assert vm_str("0 ** -1") == "'ZeroDivisionError: zero to a negative power'";
 }
 
 test "num: bool vs float equality is a value compare" {

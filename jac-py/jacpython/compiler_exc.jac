@@ -75,7 +75,16 @@ import from codegen_util {
     try_handler_span,
 }
 import from compiler_annotations { ann_scope_plan }
-import from compiler_codegen { emit_module_return, emit_name_delete, emit_name_store, visit_return_stmt, visit_stmt_tail, visit_stmts, visit_store_target_tos }
+import from compiler_codegen {
+    emit_module_return,
+    emit_name_delete,
+    emit_name_store,
+    visit_return_stmt,
+    visit_stmt_tail,
+    visit_stmts,
+    visit_store_target_tos
+}
+
 # Suspendable functions: PEP 479 StopIteration handler at end of co_code.
 def emit_generator_except_handler(g: cfg_builder, protect_start: int) {
     if protect_start < 0 {
@@ -464,13 +473,14 @@ def emit_finally_inline_block(
 # one try, optional else and finally. Handlers may bind via `except E as e`;
 # each bound handler gets its own as-cleanup unwind block.
 
-
 # Coalesce spans that share handler/depth/lasti into maximal runs (CPython's
 # exception-table builder merges contiguous same-target ranges; overlapping
 # spans with identical handler metadata also fold into the covering range).
 # Comparison is in LAYOUT position, not block id: deferred blocks are placed
 # at first use, so id order does not match layout order.
-def merge_except_spans(g: cfg_builder, spans: list[except_region]) -> list[except_region] {
+def merge_except_spans(
+    g: cfg_builder, spans: list[except_region]
+) -> list[except_region] {
     pos_of: dict[int, int] = {};
     bi = 0;
     while bi < len(g.u.blocks) {
@@ -1114,7 +1124,9 @@ def visit_try_except_finally(
             more_code_follows,
             tail,
             tail_idx,
-            tloc, ann_ctx);
+            tloc,
+            ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=tloc);
         }
@@ -1166,9 +1178,12 @@ def visit_try(
     if t.finalbody is not None and len(t.finalbody) > 0 {
         if t.handlers is not None and len(t.handlers) > 0 {
             return visit_try_except_finally(
-                g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+                g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx
+            );
         }
-        return visit_try_finally(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+        return visit_try_finally(
+            g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx
+        );
     }
     if t.handlers is None or len(t.handlers) == 0 {
         codegen_fail(g, "NotImplementedError", "try without except");
@@ -1198,7 +1213,9 @@ def visit_try(
     if not try_follows and tail is not None and tail_idx < len(tail) {
         try_follows = True;
     }
-    body_cont = visit_stmts(g, t.body, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
+    body_cont = visit_stmts(
+        g, t.body, 0, try_follows, tail, tail_idx, tail_join, ann_ctx
+    );
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
@@ -1208,7 +1225,9 @@ def visit_try(
     g.use(after_try_epilogue);
     normal_terminated = body_cont.terminated;
     if t.orelse is not None and len(t.orelse) > 0 and not body_cont.terminated {
-        else_cont = visit_stmts(g, t.orelse, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
+        else_cont = visit_stmts(
+            g, t.orelse, 0, try_follows, tail, tail_idx, tail_join, ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=tloc);
         }
@@ -1238,7 +1257,9 @@ def visit_try(
                     body_cont.loc
                 );
             } else {
-                g.emit_jump(OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, body_cont.loc);
+                g.emit_jump(
+                    OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, body_cont.loc
+                );
             }
         } elif try_follows {
             tail_more = False;
@@ -1286,12 +1307,8 @@ def visit_try(
             handler_store_blks.append(g.new_deferred_block());
         }
         handler_body_entries.append(g.new_deferred_block());
-        handler_tails.append(
-            (g.new_deferred_block(), g.new_deferred_block())
-        );
-        as_unwind_tails.append(
-            (g.new_deferred_block(), g.new_deferred_block())
-        );
+        handler_tails.append((g.new_deferred_block(), g.new_deferred_block()));
+        as_unwind_tails.append((g.new_deferred_block(), g.new_deferred_block()));
         if hi < len(t.handlers) - 1 {
             next_handlers.append(g.new_deferred_block());
         }
@@ -1516,17 +1533,17 @@ def visit_try(
                     )
                 );
             } else {
-            append_try_unwind_region(
-                g,
-                ownidx,
-                except_region(
-                    start_block=handler_region_start,
-                    end_block=handler_body_start,
-                    handler_block=-1,
-                    stack_depth=3 + g.handler_nest_depth,
-                    preserve_lasti=True
-                )
-            );
+                append_try_unwind_region(
+                    g,
+                    ownidx,
+                    except_region(
+                        start_block=handler_region_start,
+                        end_block=handler_body_start,
+                        handler_block=-1,
+                        stack_depth=3 + g.handler_nest_depth,
+                        preserve_lasti=True
+                    )
+                );
             }
             as_unwind = as_unwind_tails[hi][0];
             g.use(as_unwind);
@@ -1832,7 +1849,9 @@ def visit_try_star(
         codegen_fail(g, "NotImplementedError", "except* inside except handler");
         return stmt_cont(loc=tloc);
     }
-    return visit_try_star_except(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+    return visit_try_star_except(
+        g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx
+    );
 }
 
 
@@ -1880,7 +1899,9 @@ def visit_try_star_except(
     if not try_follows and tail is not None and tail_idx < len(tail) {
         try_follows = True;
     }
-    body_cont = visit_stmts(g, t.body, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
+    body_cont = visit_stmts(
+        g, t.body, 0, try_follows, tail, tail_idx, tail_join, ann_ctx
+    );
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
@@ -1888,7 +1909,9 @@ def visit_try_star_except(
     g.use(protect_end);
     normal_terminated = body_cont.terminated;
     if t.orelse is not None and len(t.orelse) > 0 and not body_cont.terminated {
-        else_cont = visit_stmts(g, t.orelse, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
+        else_cont = visit_stmts(
+            g, t.orelse, 0, try_follows, tail, tail_idx, tail_join, ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=tloc);
         }
@@ -2206,7 +2229,9 @@ def visit_with(
     if not with_follows and tail is not None and tail_idx < len(tail) {
         with_follows = True;
     }
-    body_cont = visit_stmts(g, w.body, 0, with_follows, tail, tail_idx, tail_join, ann_ctx);
+    body_cont = visit_stmts(
+        g, w.body, 0, with_follows, tail, tail_idx, tail_join, ann_ctx
+    );
     if codegen_busy(g) {
         return stmt_cont(loc=wloc);
     }
@@ -2398,7 +2423,9 @@ def visit_async_with(
     if not with_follows and tail is not None and tail_idx < len(tail) {
         with_follows = True;
     }
-    body_cont = visit_stmts(g, w.body, 0, with_follows, tail, tail_idx, tail_join, ann_ctx);
+    body_cont = visit_stmts(
+        g, w.body, 0, with_follows, tail, tail_idx, tail_join, ann_ctx
+    );
     if codegen_busy(g) {
         return stmt_cont(loc=wloc);
     }

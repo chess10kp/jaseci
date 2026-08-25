@@ -726,12 +726,12 @@ impl JacCompiler.parse_str(
             run_codespace_infer = True;
         }
         if not had_error
-        and any(
-            [
-                imp.clib_header is not None
-                for imp in mod.get_all_sub_nodes(typ=uni.Import)
-            ]
-        ) {
+            and any(
+                [
+                    imp.clib_header is not None
+                    for imp in mod.get_all_sub_nodes(typ=uni.Import)
+                ]
+            ) {
             import from jaclang.compiler.cfront.clib_bind { synthesize_clib_bindings }
             synthesize_clib_bindings(mod, file_path);
         }

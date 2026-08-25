@@ -969,8 +969,8 @@ def is_untyped_third_party_module(path: str) -> bool {
 
     in_vendor = '/jaclang/vendor/' in normalized;
     if ('/site-packages/' not in normalized)
-    and ('/dist-packages/' not in normalized)
-    and not in_vendor {
+        and ('/dist-packages/' not in normalized)
+        and not in_vendor {
         return False;
     }
     mod_path = Path(path);

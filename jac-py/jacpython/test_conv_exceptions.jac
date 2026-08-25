@@ -18,10 +18,7 @@
 # PyTraceback -- py_type_of has no traceback-tag branch; tb-rendering lane),
 # generator-region internals beyond PEP 479.
 
-import from layer0_replay_harness {
-    ReplayResult,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer1_replay_source, }
 
 # ---------------- tests ----------------
 test "conv exceptions: raise reraise forms replay against the host" {

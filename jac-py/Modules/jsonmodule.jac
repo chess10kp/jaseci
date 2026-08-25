@@ -15,9 +15,9 @@
 #   L400 [W4201] cast to `Py_UCS4` elided — representation-changing conversion (truncation/narrowing/discard) not applied
 #   L400 [W4201] cast to `char` elided — representation-changing conversion (truncation/narrowing/discard) not applied
 
-glob Py_ssize_t = int;
-glob Py_UCS4 = int;
-glob Py_UCS1 = int;
+glob Py_ssize_t = int,
+     Py_UCS4 = int,
+     Py_UCS1 = int;
 
 
 def json_is_whitespace(c: Py_UCS4) -> int {

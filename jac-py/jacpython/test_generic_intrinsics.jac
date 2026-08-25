@@ -115,12 +115,7 @@ test "parameter default evaluates lazily; absence is NoDefault" {
 }
 
 test "generic function still calls normally" {
-    ns = vm_exec(
-        "def f[T](x):\n"
-        "    return x\n"
-        "a = f(3)\n"
-        "s = f('hi')\n"
-    );
+    ns = vm_exec("def f[T](x):\n" "    return x\n" "a = f(3)\n" "s = f('hi')\n");
     assert to_host(ns["a"]) == 3;
     assert vm_str(ns, "s") == "hi";
 }
@@ -158,10 +153,6 @@ test "generic class instantiates and dispatches methods" {
 }
 
 test "generic class body sees its parameters through the closure" {
-    ns = vm_exec(
-        "class P[T]:\n"
-        "    tp = T.__name__\n"
-        "val = P.tp\n"
-    );
+    ns = vm_exec("class P[T]:\n" "    tp = T.__name__\n" "val = P.tp\n");
     assert vm_str(ns, "val") == "T";
 }

@@ -1455,7 +1455,12 @@ import from exceptions_core {
 }
 import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
-import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
+import from tracebackmodule {
+    traceback_module_attrs,
+    format_exception_text,
+    tb_write_bound,
+    _tb_shim_type_tags
+}
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -1722,19 +1727,19 @@ def shim_module_get(name: str) -> PyObj {
 # machinery (__loader__/__spec__/__path__/__builtins__ never round-trip
 # meaningfully); synthesized __name__ always wins over the host's copy.
 glob delegate_modules: dict[str, str] = {
-    "re": "full",
-    "datetime": "full",
-    "hashlib": "full",
-    "base64": "full",
-    "zlib": "full",
-    "binascii": "full",
-    "uuid": "full",
-};
+         "re": "full",
+         "datetime": "full",
+         "hashlib": "full",
+         "base64": "full",
+         "zlib": "full",
+         "binascii": "full",
+         "uuid": "full",
+
+     },
+     delegate_cache: dict[str, PyObj] = {};
 
 # sys.modules semantics: one delegated PyModule per name, identity-stable
 # across repeated imports in guest code.
-glob delegate_cache: dict[str, PyObj] = {};
-
 def register_delegate_module(name: str, policy: str) {
     if policy != "full" {
         raise ValueError("unknown delegation policy: " + policy);
@@ -1766,8 +1771,10 @@ def delegated_module(name: str) -> PyObj {
     }
     attrs: dict[str, PyObj] = {};
     for attr_name in names_res[1] {
-        if attr_name == "__loader__" or attr_name == "__spec__"
-            or attr_name == "__path__" or attr_name == "__builtins__"
+        if attr_name == "__loader__"
+            or attr_name == "__spec__"
+            or attr_name == "__path__"
+            or attr_name == "__builtins__"
             or attr_name == "__name__" {
             continue;
         }
@@ -1910,7 +1917,9 @@ def import_native(absname: str) -> PyObj {
             (sysmod as PyModule).attrs["intern"] = PyNativeBuiltin(
                 t="native_builtin", name="intern"
             );
-            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(
+                t="str", val="installed"
+            );
             shim_modules["sys"] = sysmod;
         }
     }
@@ -1935,9 +1944,7 @@ def import_native(absname: str) -> PyObj {
         for tname in tagmap {
             raw_ctor = (tbmod as PyModule).attrs[tname];
             (tbmod as PyModule).attrs[tname] = ShimTypeMarker(
-                t="shim_type_marker",
-                tag=(tagmap[tname] as PyStr).val,
-                ctor=raw_ctor,
+                t="shim_type_marker", tag=(tagmap[tname] as PyStr).val, ctor=raw_ctor,
             );
         }
 
@@ -1992,9 +1999,7 @@ def import_native(absname: str) -> PyObj {
         if looked_status == "hit" {
             alias = PyHostProxy(t="host", val=looked[1]);
             if "." in absname {
-                bound = py_set_attr(
-                    pmod, _last_component(absname), alias as PyObj
-                );
+                bound = py_set_attr(pmod, _last_component(absname), alias as PyObj);
                 if is_error(bound) {
                     return bound;
                 }
@@ -2054,9 +2059,7 @@ def import_native(absname: str) -> PyObj {
         # FunctionType/CodeType identity, which native PyFunction lacks -- its
         # fallback wrapper then hands back plain generators that GET_AWAITABLE
         # must reject. Serve CPython's fast-path semantics natively instead.
-        (module as PyModule).attrs["coroutine"] = PyTypesCoroutine(
-            t="types_coroutine"
-        );
+        (module as PyModule).attrs["coroutine"] = PyTypesCoroutine(t="types_coroutine");
     }
     # attrs aliases modglobals (same dict), so STORE_NAME writes are already live.
     if parent != "" and isinstance(sys3_modules[parent], PyModule) {
@@ -2240,8 +2243,11 @@ obj PyHostProxy(PyObj) {
         # v)). A host proxy would see to_host(instance) == None; route through
         # PyObjectAttrSlot instead, which runs the default protocol in-VM.
         if _jac_is_object_type(self.val)
-            and (name == "__getattribute__" or name == "__setattr__"
-                or name == "__delattr__") {
+            and (
+                name == "__getattribute__"
+                or name == "__setattr__"
+                or name == "__delattr__"
+            ) {
             return PyObjectAttrSlot(t="obj_attr_slot", op=name);
         }
         # A subclassable builtin's __new__ (str.__new__, int.__new__, ...) builds a
@@ -2759,9 +2765,7 @@ obj PyClass(PyObj) {
         if not is_error(cgi) {
             return bind_attribute(cgi, self).tp_call([index], {});
         }
-        return py_error(
-            "TypeError", "type '" + self.name + "' is not subscriptable"
-        );
+        return py_error("TypeError", "type '" + self.name + "' is not subscriptable");
     }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
@@ -2805,8 +2809,7 @@ obj PyClass(PyObj) {
                 and instance_of_class(made as PyUserObj, self) {
                 made_is_meta_inst = True;
             }
-            if isinstance(made, PyClass)
-                and (made as PyClass).metaclass is self {
+            if isinstance(made, PyClass) and (made as PyClass).metaclass is self {
                 made_is_meta_inst = True;
             }
             if made_is_meta_inst {
@@ -2823,9 +2826,7 @@ obj PyClass(PyObj) {
                     # list/tuple/frozenset resolve leniently here (their slot
                     # inheritance drops excess args); dict consumed **kwds at
                     # __new__ time.
-                    return py_error(
-                        "TypeError", "set() takes no keyword arguments"
-                    );
+                    return py_error("TypeError", "set() takes no keyword arguments");
                 }
             }
             return made;
@@ -2841,8 +2842,7 @@ obj PyClass(PyObj) {
         has_user_init = not is_error(init);
         boxed: PyObj = py_none();
         if self.native_base != "" {
-            if not has_user_init and len(kwargs) > 0
-                and self.native_base != "dict" {
+            if not has_user_init and len(kwargs) > 0 and self.native_base != "dict" {
                 # With no user __init__ the MRO-resolved initializer is the
                 # builtin base's own -- it rejects keywords exactly as the bare
                 # constructor does (`Sub(sequence=())` must TypeError).
@@ -2858,12 +2858,13 @@ obj PyClass(PyObj) {
             if is_error(boxed) {
                 return boxed;
             }
-            if not has_user_init and self.native_base == "dict"
-                and len(kwargs) > 0 {
+            if not has_user_init and self.native_base == "dict" and len(kwargs) > 0 {
                 # dict is the one base whose constructor consumes **kwds.
                 upd = PyDictMethod(
                     t="dict_method", target=(boxed as PyDict), name="update"
-                ).tp_call([], kwargs);
+                ).tp_call(
+                    [], kwargs
+                );
                 if upd.t == "error" {
                     return upd;
                 }
@@ -3156,8 +3157,7 @@ def default_user_getattro(u: PyUserObj, name: str) -> PyObj {
     # object's attribute-protocol methods are real attributes of every
     # instance (hasattr(inst, '__getattribute__') is True); expose them as
     # bound slot wrappers over the generic attribute dispatch.
-    if name == "__getattribute__" or name == "__setattr__"
-        or name == "__delattr__" {
+    if name == "__getattribute__" or name == "__setattr__" or name == "__delattr__" {
         return PyObjectAttrSlot(t="obj_attr_slot", target=u as PyObj, op=name);
     }
     return py_error("AttributeError", name);
@@ -3185,18 +3185,21 @@ def default_user_setattro(u: PyUserObj, name: str, value: PyObj) -> PyObj {
     # __slots__ enforcement: a declared-slot class with no instance dict only
     # accepts its member names -- anything else is the host's two-clause error
     # (the same text delattr produces; CPython shares the no-dict path).
-    if u.cls.slots_declared and not u.cls.instance_has_dict
+    if u.cls.slots_declared
+        and not u.cls.instance_has_dict
         and not type_slots_attr_allowed(name, False, u.cls.slot_members) {
         return py_error(
             "AttributeError",
-            "'" + u.cls.name + "' object has no attribute '" + name
+            "'"
+                + u.cls.name
+                + "' object has no attribute '"
+                + name
                 + "' and no __dict__ for setting new attributes",
         );
     }
     u.attrs[name] = value;
     # Keep the live __dict__ view current (identity-stable mirror).
-    if u.dict_cache is not None
-        and type_slots_in_dict_view(name, u.cls.slot_members) {
+    if u.dict_cache is not None and type_slots_in_dict_view(name, u.cls.slot_members) {
         d = u.dict_cache as PyDict;
         (d as PyInstanceDict).view_set(name, value);
     }
@@ -3226,11 +3229,15 @@ def default_user_delattro(u: PyUserObj, name: str) -> PyObj {
     }
     # Same no-dict gate as writes: deleting an undeclared name on a slotted,
     # dict-less instance raises the host's two-clause AttributeError.
-    if u.cls.slots_declared and not u.cls.instance_has_dict
+    if u.cls.slots_declared
+        and not u.cls.instance_has_dict
         and not type_slots_attr_allowed(name, False, u.cls.slot_members) {
         return py_error(
             "AttributeError",
-            "'" + u.cls.name + "' object has no attribute '" + name
+            "'"
+                + u.cls.name
+                + "' object has no attribute '"
+                + name
                 + "' and no __dict__ for setting new attributes",
         );
     }
@@ -3330,8 +3337,7 @@ obj PyInstanceDict(PyDict) {
 def user_instance_dict(u: PyUserObj) -> PyObj {
     if not u.cls.instance_has_dict {
         return py_error(
-            "AttributeError",
-            "'" + u.cls.name + "' object has no attribute '__dict__'",
+            "AttributeError", "'" + u.cls.name + "' object has no attribute '__dict__'",
         );
     }
     if u.dict_cache is not None {
@@ -3374,15 +3380,13 @@ obj PyMappingProxy(PyObj) {
         # wrapped dict's native methods; keys/values/items construct live
         # set-like views exactly as a plain dict does.
         if name == "keys" or name == "values" or name == "items" {
-            return PyDictViewCtor(
-                t="view_ctor", d=self.target, mode=name
-            );
+            return PyDictViewCtor(t="view_ctor", d=self.target, mode=name);
         }
-        if name == "get" or name == "copy" or name == "__contains__"
+        if name == "get"
+            or name == "copy"
+            or name == "__contains__"
             or name == "__getitem__" {
-            return PyDictMethod(
-                t="dict_method", target=self.target, name=name
-            );
+            return PyDictMethod(t="dict_method", target=self.target, name=name);
         }
         return py_error("AttributeError", name);
     }
@@ -3402,7 +3406,10 @@ obj PyClassMroMethod(PyObj) {
         if len(args) > 0 {
             return py_error(
                 "TypeError",
-                self.cls.name + ".mro() takes no arguments (" + str(len(args)) + " given)",
+                self.cls.name
+                    + ".mro() takes no arguments ("
+                    + str(len(args))
+                    + " given)",
             );
         }
         return PyList(t="list", items=class_full_mro(self.cls));
@@ -3456,12 +3463,11 @@ obj PyGenericMroEntries(PyObj) {
 
 # typing.NoDefault sentinel (PEP 696): a type parameter without an explicit
 # default answers __default__ with this immortal singleton.
-obj PyNoDefault(PyObj) {
-}
+obj PyNoDefault(PyObj) {}
 
 glob _no_default_singleton: any = None;
 
-def no_default_sentinel() -> PyObj {
+def no_default_sentinel -> PyObj {
     if _no_default_singleton is None {
         _no_default_singleton = PyNoDefault(t="nodefault");
     }
@@ -3474,7 +3480,7 @@ glob _generic_class_cache: any = None;
 # parameters resolve to through __mro_entries__, so a generic class's MRO
 # reads (C, Generic, object) like CPython's. Cached -- every generic class
 # shares this one base object, so identity comparisons hold.
-def typing_generic_class() -> PyClass {
+def typing_generic_class -> PyClass {
     if _generic_class_cache is None {
         _generic_class_cache = PyClass(
             t="class",
@@ -3482,6 +3488,7 @@ def typing_generic_class() -> PyClass {
             attrs={
                 "__module__": PyStr(t="str", val="typing"),
                 "__qualname__": PyStr(t="str", val="Generic"),
+
             },
         );
     }
@@ -3744,8 +3751,7 @@ obj PyObjectAttrSlot(PyObj) {
         }
         if len(rest) != 1 {
             return py_error(
-                "TypeError",
-                "__delattr__ expected 1 argument, got " + str(len(rest)),
+                "TypeError", "__delattr__ expected 1 argument, got " + str(len(rest)),
             );
         }
         name3 = expect_str(rest[0]);
@@ -3846,9 +3852,7 @@ obj PyMemberDescr(PyObj) {
     }
 
     def tp_str -> PyObj {
-        return PyStr(
-            t="str", val=type_slots_member_repr(self.member, self.owner)
-        );
+        return PyStr(t="str", val=type_slots_member_repr(self.member, self.owner));
     }
 
     # slot-member read: unset raises the generic getattro message (host:
@@ -3899,7 +3903,10 @@ obj PyMemberAccess(PyObj) {
                 return py_error(
                     "TypeError",
                     "__set__ takes (instance, value) -- descriptor '"
-                        + d.member + "' of '" + d.owner + "' objects",
+                        + d.member
+                        + "' of '"
+                        + d.owner
+                        + "' objects",
                 );
             }
             return d._set(args[0] as PyUserObj, args[1]);
@@ -3908,7 +3915,10 @@ obj PyMemberAccess(PyObj) {
             return py_error(
                 "TypeError",
                 "__delete__ takes (instance) -- descriptor '"
-                    + d.member + "' of '" + d.owner + "' objects",
+                    + d.member
+                    + "' of '"
+                    + d.owner
+                    + "' objects",
             );
         }
         return d._del(args[0] as PyUserObj);
@@ -4112,6 +4122,7 @@ obj PyFunction(PyObj) {
         }
         return self.kwdefaults;
     }
+
     def tp_hashkey -> PyObj {
         return PyStr(t="str", val="obj:" + str(id(self)));
     }
@@ -4137,11 +4148,21 @@ def host_result_ok(result: any) -> bool {
 # Function fixed-surface names: never visible in f.__dict__ (CPython stores
 # them as type-level descriptors, not dict entries).
 def func_attr_is_fixed(name: str) -> bool {
-    return name in {
-        "__name__", "__qualname__", "__doc__", "__module__",
-        "__defaults__", "__kwdefaults__", "__code__", "__globals__",
-        "__closure__", "__builtins__", "__dict__", "__wrapped__"
-    };
+    return name
+        in {
+            "__name__",
+            "__qualname__",
+            "__doc__",
+            "__module__",
+            "__defaults__",
+            "__kwdefaults__",
+            "__code__",
+            "__globals__",
+            "__closure__",
+            "__builtins__",
+            "__dict__",
+            "__wrapped__"
+        };
 }
 
 # Live ``f.__dict__`` view: mutations write through to the function attribute
@@ -4220,9 +4241,7 @@ obj PyFuncKwDefaults(PyDict) {
             name = (index as PyStr).val;
             (self.owner as PyFunction).kwdefaults[name] = value;
         } else {
-            return py_error(
-                "TypeError", "keywords must be strings"
-            );
+            return py_error("TypeError", "keywords must be strings");
         }
         self.items[hk] = DictEntry(key=index, value=value);
         self.version = self.version + 1;
@@ -4252,22 +4271,22 @@ obj PyFuncKwDefaults(PyDict) {
         return py_error("KeyError", dict_key_repr(index));
     }
 }
+
 # Cycle guard for from_host container conversion (host marshal/pickle can
 # hand back SELF-REFERENTIAL structures, e.g. marshal.loads(b'[<R>]')). Keyed
 # on host id(); list/dict/set placeholders are registered BEFORE filling so
 # re-entry returns the same guest container (identity preserved); tuples are
 # immutable so a re-entrant reference degrades to a host proxy instead of
 # recursing forever.
-glob _from_host_memo: dict[int, PyObj] = {};
+glob _from_host_memo: dict[int, PyObj] = {},
+     _handled_exc_stack: list[PyObj] = [];
 
 # Process-wide mirror of the per-frame exc_handling stack: the exception
 # currently being handled, for sys.exc_info()/traceback.format_exc(). Pushed at
 # OP_PUSH_EXC_INFO, popped at OP_POP_EXCEPT. Divergence vs CPython: a generator
 # suspended inside an except block keeps its entry visible to unrelated frames
 # until it resumes/pops (single-threaded VM approximation).
-glob _handled_exc_stack: list[PyObj] = [];
-
-def current_handled_exc() -> PyObj {
+def current_handled_exc -> PyObj {
     if len(_handled_exc_stack) == 0 {
         return py_none();
     }
@@ -4285,12 +4304,15 @@ def live_container_bridge(value: PyObj) -> any {
     match value {
         case PyList():
             return _jac_make_live_list(value);
+
         case PyDict():
             return _jac_make_live_dict(value);
+
         case PySet():
             if not (value as PySet).frozen {
                 return _jac_make_live_set(value as PySet);
             }
+
     }
     return None;
 }
@@ -4298,7 +4320,7 @@ def live_container_bridge(value: PyObj) -> any {
 # Identity-counting removal of one occurrence per item: generator suspend must
 # deactivate exactly ITS handler entries so unrelated frames stop seeing them
 # (CPython exc_info is dynamic; the global stack is a single-threaded mirror).
-def _handled_stack_remove_each(items: list[PyObj]) -> None {
+def _handled_stack_remove_each(items: list[PyObj]) {
     for it in items {
         idx = -1;
         i = 0;
@@ -4310,12 +4332,13 @@ def _handled_stack_remove_each(items: list[PyObj]) -> None {
             i = i + 1;
         }
         if idx >= 0 {
-            _handled_exc_stack = _handled_exc_stack[:idx] + _handled_exc_stack[idx + 1:];
+            _handled_exc_stack = _handled_exc_stack[:idx]
+                + _handled_exc_stack[idx + 1:];
         }
     }
 }
 
-def _handled_stack_append_each(items: list[PyObj]) -> None {
+def _handled_stack_append_each(items: list[PyObj]) {
     for it in items {
         _handled_exc_stack.append(it);
     }
@@ -4790,7 +4813,6 @@ def to_host(value: PyObj) -> any {
             # consumption position (islice-then-next keeps working).
             return _jac_make_host_iterator(value);
 
-
         case PyGlobalsProxy():
             # globals() crossing to host-delegated code stays LIVE: a snapshot
             # would silently drop host-side writes and guest-side visibility
@@ -4832,10 +4854,10 @@ def to_host(value: PyObj) -> any {
     }
     raise RuntimeError(
         "bridge-table: type '"
-        + value.t
-        + "' has policy "
-        + str(policy)
-        + " but no to_host conversion arm"
+            + value.t
+            + "' has policy "
+            + str(policy)
+            + " but no to_host conversion arm"
     );
 }
 
@@ -5007,7 +5029,9 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
             (sysmod as PyModule).attrs["intern"] = PyNativeBuiltin(
                 t="native_builtin", name="intern"
             );
-            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(
+                t="str", val="installed"
+            );
             shim_modules["sys"] = sysmod;
         }
     }
@@ -5031,9 +5055,7 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         for tname in tagmap {
             raw_ctor = (tbmod as PyModule).attrs[tname];
             (tbmod as PyModule).attrs[tname] = ShimTypeMarker(
-                t="shim_type_marker",
-                tag=(tagmap[tname] as PyStr).val,
-                ctor=raw_ctor,
+                t="shim_type_marker", tag=(tagmap[tname] as PyStr).val, ctor=raw_ctor,
             );
         }
         shim_modules["traceback"] = tbmod;
@@ -5092,8 +5114,10 @@ def py_type_of(o: PyObj) -> PyObj {
     # via the to_host fallthrough. CPython distinguishes builtin_function_or_
     # method (builtins/bound builtins), method (bound user functions), and the
     # concrete iterator types.
-    if isinstance(o, PyNativeBuiltin) or isinstance(o, PyListMethod)
-        or isinstance(o, PyDictMethod) or isinstance(o, PySetMethod)
+    if isinstance(o, PyNativeBuiltin)
+        or isinstance(o, PyListMethod)
+        or isinstance(o, PyDictMethod)
+        or isinstance(o, PySetMethod)
         or isinstance(o, PyStrMethod) {
         return from_host(_jac_builtin_function_or_method_type());
     }
@@ -5396,7 +5420,8 @@ def py_convert_int(x: PyObj) -> PyObj {
         return py_error(
             "TypeError",
             "int() argument must be a string, a bytes-like object or a real number, not '"
-                + u.cls.name + "'",
+                + u.cls.name
+                + "'",
         );
     }
     return py_host_convert("int", x);
@@ -5434,8 +5459,7 @@ def py_convert_complex(args: list[PyObj]) -> PyObj {
     n = len(args);
     if n > 2 {
         return py_error(
-            "TypeError",
-            "complex() takes at most 2 arguments (" + str(n) + " given)",
+            "TypeError", "complex() takes at most 2 arguments (" + str(n) + " given)",
         );
     }
     if n == 0 {
@@ -5526,7 +5550,8 @@ def py_convert_float(x: PyObj) -> PyObj {
         return py_error(
             "TypeError",
             "float() argument must be a string or a real number, not '"
-                + u.cls.name + "'",
+                + u.cls.name
+                + "'",
         );
     }
     # Plain int: guard the host conversion so oversized ints raise the
@@ -5638,8 +5663,11 @@ def default_obj_repr_text(u: PyUserObj) -> str {
             mod = (m as PyStr).val;
         }
     }
-    return "<" + type_tp_name(u.cls.name, mod) + " object at 0x"
-        + _uint_to_str(py_id(u as PyObj), 16, "0123456789abcdef") + ">";
+    return "<"
+        + type_tp_name(u.cls.name, mod)
+        + " object at 0x"
+        + _uint_to_str(py_id(u as PyObj), 16, "0123456789abcdef")
+        + ">";
 }
 
 # The repr slot: explicit __repr__, then a boxed builtin base's own repr,
@@ -5655,8 +5683,7 @@ def user_repr_slot(u: PyUserObj) -> PyObj {
         }
         return py_error(
             "TypeError",
-            "__repr__ returned non-string (type '" + _slot_result_type_name(res)
-                + "')",
+            "__repr__ returned non-string (type '" + _slot_result_type_name(res) + "')",
         );
     }
     # A builtin-exception ancestor contributes ITS repr slot even though
@@ -5685,8 +5712,7 @@ def user_str_slot(u: PyUserObj) -> PyObj {
         }
         return py_error(
             "TypeError",
-            "__str__ returned non-string (type '" + _slot_result_type_name(res)
-                + "')",
+            "__str__ returned non-string (type '" + _slot_result_type_name(res) + "')",
         );
     }
     # A boxed builtin base contributes ITS str slot (str.__str__ returns the
@@ -5747,8 +5773,10 @@ def py_str(value: PyObj) -> PyObj {
     # Containers have no tp_str in CPython: str == repr, answered in-VM so
     # self-referential structures hit the repr cycle guards instead of
     # recursing unbounded inside to_host conversion.
-    if isinstance(value, PyDict) or isinstance(value, PyList)
-        or isinstance(value, PyTuple) or isinstance(value, PyMappingProxy) {
+    if isinstance(value, PyDict)
+        or isinstance(value, PyList)
+        or isinstance(value, PyTuple)
+        or isinstance(value, PyMappingProxy) {
         return py_repr(value);
     }
     return host_convert(value, 1);
@@ -5793,8 +5821,7 @@ def py_repr(value: PyObj) -> PyObj {
         # stop-only form (host oracle: repr(range(5)) == 'range(0, 5)').
         if rg.step == 1 {
             return PyStr(
-                t="str",
-                val="range(" + str(rg.start) + ", " + str(rg.stop) + ")",
+                t="str", val="range(" + str(rg.start) + ", " + str(rg.stop) + ")",
             );
         }
         return PyStr(
@@ -5870,9 +5897,7 @@ def py_repr(value: PyObj) -> PyObj {
     }
     if isinstance(value, PyMemberDescr) {
         m = value as PyMemberDescr;
-        return PyStr(
-            t="str", val=type_slots_member_repr(m.member, m.owner)
-        );
+        return PyStr(t="str", val=type_slots_member_repr(m.member, m.owner));
     }
     if isinstance(value, PyStr) {
         return str_repr(value as PyStr);
@@ -5897,19 +5922,33 @@ def py_repr(value: PyObj) -> PyObj {
     # drops them to None, which would repr as 'None'), so synthesize the
     # CPython-style repr minus the embedded address.
     if isinstance(value, PyListMethod) {
-        return PyStr(t="str", val="<built-in method " + (value as PyListMethod).name + " of list object>");
+        return PyStr(
+            t="str",
+            val="<built-in method " + (value as PyListMethod).name + " of list object>"
+        );
     }
     if isinstance(value, PyStrMethod) {
-        return PyStr(t="str", val="<built-in method " + (value as PyStrMethod).name + " of str object>");
+        return PyStr(
+            t="str",
+            val="<built-in method " + (value as PyStrMethod).name + " of str object>"
+        );
     }
     if isinstance(value, PyDictMethod) {
-        return PyStr(t="str", val="<built-in method " + (value as PyDictMethod).name + " of dict object>");
+        return PyStr(
+            t="str",
+            val="<built-in method " + (value as PyDictMethod).name + " of dict object>"
+        );
     }
     if isinstance(value, PySetMethod) {
-        return PyStr(t="str", val="<built-in method " + (value as PySetMethod).name + " of set object>");
+        return PyStr(
+            t="str",
+            val="<built-in method " + (value as PySetMethod).name + " of set object>"
+        );
     }
     if isinstance(value, PyNativeBuiltin) {
-        return PyStr(t="str", val="<built-in function " + (value as PyNativeBuiltin).name + ">");
+        return PyStr(
+            t="str", val="<built-in function " + (value as PyNativeBuiltin).name + ">"
+        );
     }
     if isinstance(value, PyIter) {
         # repr is observational: it must NOT route through to_host, whose drain
@@ -5976,7 +6015,8 @@ def py_compare(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
     # would fall to NotImplemented -> TypeError where CPython compares the
     # host values. Unorderable host types surface the host TypeError verbatim.
     if (
-        isinstance(lhs, PyHostProxy) and isinstance(rhs, PyHostProxy)
+        isinstance(lhs, PyHostProxy)
+        and isinstance(rhs, PyHostProxy)
         and (kind == 0 or kind == 1 or kind == 4 or kind == 5)
     ) {
         res = _jac_host_richcompare(kind, lhs.val, rhs.val);
@@ -6276,8 +6316,13 @@ def user_binop(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
     op = symbols[kind] if kind >= 0 and kind < len(symbols) else "?";
     return py_error(
         "TypeError",
-        "unsupported operand type(s) for " + op + ": '"
-            + _compare_type_name(lhs) + "' and '" + _compare_type_name(rhs) + "'"
+        "unsupported operand type(s) for "
+            + op
+            + ": '"
+            + _compare_type_name(lhs)
+            + "' and '"
+            + _compare_type_name(rhs)
+            + "'"
     );
 }
 
@@ -6422,8 +6467,10 @@ def set_inplace_binop(s: PySet, kind: int, rhs: PyObj) -> PyObj {
     if s.frozen {
         return PY_NOT_IMPLEMENTED;
     }
-    if kind != NB_INPLACE_OR and kind != NB_INPLACE_AND
-        and kind != NB_INPLACE_SUBTRACT and kind != NB_INPLACE_XOR {
+    if kind != NB_INPLACE_OR
+        and kind != NB_INPLACE_AND
+        and kind != NB_INPLACE_SUBTRACT
+        and kind != NB_INPLACE_XOR {
         return PY_NOT_IMPLEMENTED;
     }
     # All four arms consume any iterable (set_update-family semantics); drain
@@ -6522,7 +6569,8 @@ def py_binop(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
     # TypeError ('%d' % X() raises even when X defines __rmod__). The result,
     # success or error, propagates; scalar-only args keep the lifted fast path
     # with its host-bridge error fallback below.
-    if kind == NB_REMAINDER and isinstance(lhs, PyStr)
+    if kind == NB_REMAINDER
+        and isinstance(lhs, PyStr)
         and mod_args_need_user_slots(rhs) {
         return str_mod_format((lhs as PyStr).val, rhs, py_str, py_repr);
     }
@@ -6815,7 +6863,9 @@ def dict_mapping_pairs(source: PyObj, kwargs_call: bool) -> PyObj {
     }
     tname = _compare_type_name(source);
     if kwargs_call {
-        return py_error("TypeError", "argument after ** must be a mapping, not " + tname);
+        return py_error(
+            "TypeError", "argument after ** must be a mapping, not " + tname
+        );
     }
     return py_error("TypeError", "'" + tname + "' object is not a mapping");
 }
@@ -6996,7 +7046,9 @@ def py_attr(value: PyObj, name: str) -> PyObj {
         # needs a callable wrapper built on this side of the substrate
         # boundary, like the dict/list/set method wrappers below.
         if name == "has_default" {
-            return PyTypeVarMethod(t="typevar_method", tv=value as PyTypeVar, name=name);
+            return PyTypeVarMethod(
+                t="typevar_method", tv=value as PyTypeVar, name=name
+            );
         }
     }
     # typing.Generic[T, ...] stand-ins answer origin/args/parameters plus the
@@ -7048,7 +7100,8 @@ def py_attr(value: PyObj, name: str) -> PyObj {
     if is_error(result) and isinstance(value, PyException) and name == "add_note" {
         return PyAddNoteMethod(t="add_note_method", target=value as PyException);
     }
-    if is_error(result) and isinstance(value, PyExcGroup)
+    if is_error(result)
+        and isinstance(value, PyExcGroup)
         and (name == "split" or name == "subgroup") {
         return PyExcGroupMethod(
             t="egroup_method", target=value as PyExcGroup, name=name
@@ -7060,13 +7113,19 @@ def py_attr(value: PyObj, name: str) -> PyObj {
     # (silently losing dict mutation staleness -- test_dict exc62/65), and
     # native iterators otherwise expose no callable __next__ at all.
     # MUST precede the _is_host_backed fallback or it never runs.
-    if is_error(result) and name == "__iter__"
-        and (isinstance(value, PyDict) or isinstance(value, PyList)
-            or isinstance(value, PySet) or isinstance(value, PyTuple)
-            or isinstance(value, PyStr)) {
+    if is_error(result)
+        and name == "__iter__"
+        and (
+            isinstance(value, PyDict)
+            or isinstance(value, PyList)
+            or isinstance(value, PySet)
+            or isinstance(value, PyTuple)
+            or isinstance(value, PyStr)
+        ) {
         return PyNativeIterMethod(t="native_iter_method", target=value);
     }
-    if is_error(result) and name == "__next__"
+    if is_error(result)
+        and name == "__next__"
         and (PyIter_Check(value) or isinstance(value, PyCallableIter)) {
         return PyNativeNextMethod(t="native_next_method", target=value);
     }
@@ -7408,7 +7467,9 @@ def py_get_awaitable(value: PyObj) -> PyObj {
         return value;
     }
     if value.t == "async_generator" {
-        return py_error("TypeError", "object async_generator can't be used in 'await' expression");
+        return py_error(
+            "TypeError", "object async_generator can't be used in 'await' expression"
+        );
     }
     if isinstance(value, PyHostProxy) {
         hp = value as PyHostProxy;
@@ -7546,8 +7607,10 @@ def py_type_has_sequence_flag(value: PyObj) -> bool {
         if _jac_type_has_flag(host_val, _TPFLAGS_SEQUENCE) {
             return True;
         }
-        return (_jac_isinstance_of_builtin(host_val, "list")
-            or _jac_isinstance_of_builtin(host_val, "tuple")) as bool;
+        return (
+            _jac_isinstance_of_builtin(host_val, "list")
+            or _jac_isinstance_of_builtin(host_val, "tuple")
+        ) as bool;
     }
     return False;
 }
@@ -7571,7 +7634,9 @@ def py_type_has_mapping_flag(value: PyObj) -> bool {
 
 def py_type_has_match_self_flag(type_obj: PyObj) -> bool {
     if isinstance(type_obj, PyHostProxy) {
-        return _jac_type_has_flag((type_obj as PyHostProxy).val, _TPFLAGS_MATCH_SELF) as bool;
+        return _jac_type_has_flag(
+            (type_obj as PyHostProxy).val, _TPFLAGS_MATCH_SELF
+        ) as bool;
     }
     return False;
 }
@@ -7865,12 +7930,16 @@ def format_exc_unbound(co: PyCode, arg: int) -> PyObj {
     if arg < len(co.varnames) + ncell {
         return py_error(
             "UnboundLocalError",
-            "cannot access local variable '" + lpname + "' where it is not associated with a value",
+            "cannot access local variable '"
+                + lpname
+                + "' where it is not associated with a value",
         );
     }
     return py_error(
         "NameError",
-        "cannot access free variable '" + lpname + "' where it is not associated with a value in enclosing scope",
+        "cannot access free variable '"
+            + lpname
+            + "' where it is not associated with a value in enclosing scope",
     );
 }
 
@@ -7886,10 +7955,7 @@ def fast_value(co: PyCode, arg: int, fast: list[PyObj]) -> PyObj {
 }
 
 def fast_value_check(
-    co: PyCode,
-    arg: int,
-    fast: list[PyObj],
-    assigned: list[bool],
+    co: PyCode, arg: int, fast: list[PyObj], assigned: list[bool],
 ) -> PyObj {
     # LOAD_FAST_CHECK: like LOAD_FAST but raises UnboundLocalError when the
     # plain-local slot was never STORE_FAST-bound (CPython 3.14+ null check).
@@ -8055,11 +8121,7 @@ def recover_exception(
 # lasti (when flagged; `lasti_offset` lets re-raises push the RESTORED lasti,
 # matching CPython's instr_ptr restore) and the exception, and jump.
 def dispatch_exception(
-    co: PyCode,
-    value: PyObj,
-    offset: int,
-    lasti_offset: int,
-    stack: list[PyObj]
+    co: PyCode, value: PyObj, offset: int, lasti_offset: int, stack: list[PyObj]
 ) -> int {
     handler = find_handler(co, offset);
     if handler is None {
@@ -8346,14 +8408,14 @@ def eg_build(message: str, members: list[PyObj]) -> PyObj {
     stored_args: list[PyObj] = [
         PyStr(t="str", val=message),
         PyList(t="list", items=inner),
+
     ];
     excs_copy: list[PyObj] = [];
     excs_copy.extend(members);
     # Construct the typed group object so rebuilt groups carry the full
     # member surface (.message/.exceptions), same as tp_call construction.
     return PyExcGroup(
-        t="exception", type_name=name, message=message,
-        args=stored_args, excs=excs_copy
+        t="exception", type_name=name, message=message, args=stored_args, excs=excs_copy
     );
 }
 
@@ -8396,8 +8458,10 @@ obj PyExcGroupMethod(PyObj) {
         if len(args) != 1 {
             return py_error(
                 "TypeError",
-                self.name + "() takes exactly one argument ("
-                + str(len(args)) + " given)"
+                self.name
+                    + "() takes exactly one argument ("
+                    + str(len(args))
+                    + " given)"
             );
         }
         if self.name == "split" {
@@ -8407,7 +8471,7 @@ obj PyExcGroupMethod(PyObj) {
     }
 }
 
-def eg_condition_error() -> PyObj {
+def eg_condition_error -> PyObj {
     return py_error(
         "TypeError",
         "expected an exception type, a tuple of exception types, or a "
@@ -8511,7 +8575,7 @@ def eg_split_rec(gexc: PyObj, kind: str, cond: PyObj) -> tuple[PyObj, PyObj, PyO
 
 # split_recursive tail: derived partitions inherit the original group's
 # __context__/__cause__ when set (CPython SetContext/SetCause).
-def eg_copy_chain(orig: PyObj, derived: PyObj) -> None {
+def eg_copy_chain(orig: PyObj, derived: PyObj) {
     o = orig as PyException;
     d = derived as PyException;
     if o.context is not None {
@@ -8630,8 +8694,12 @@ def user_exception_view(u: PyUserObj) -> PyException {
         }
     }
     return PyException(
-        t="exception", type_name=u.cls.name, message="", args=exc_args,
-        family=family, value=stopiter_value_from_args(family, u.cls.name, exc_args)
+        t="exception",
+        type_name=u.cls.name,
+        message="",
+        args=exc_args,
+        family=family,
+        value=stopiter_value_from_args(family, u.cls.name, exc_args)
     );
 }
 
@@ -8640,7 +8708,8 @@ def user_exception_view(u: PyUserObj) -> PyException {
 # PyUserObj wrapper view, so derive the payload there too -- yield-from
 # unwinding reads exc.value off this view.
 def stopiter_value_from_args(family: str, name: str, args: list[PyObj]) -> PyObj {
-    if name == "StopIteration" or family == "StopIteration"
+    if name == "StopIteration"
+        or family == "StopIteration"
         or exc_is_subclass_of(name, "StopIteration")
         or (family != "" and exc_is_subclass_of(family, "StopIteration")) {
         if len(args) > 0 {
@@ -8697,8 +8766,10 @@ def py_raise_value(value: PyObj) -> PyObj {
         # object) must TypeError here; recursing on the same input would
         # loop forever (gen.throw(E) VM-crash fingerprint).
         if isinstance(instance, PyClass)
-            or (isinstance(instance, PyUserObj)
-                and not instance_of_class(instance as PyUserObj, value as PyClass)) {
+            or (
+                isinstance(instance, PyUserObj)
+                and not instance_of_class(instance as PyUserObj, value as PyClass)
+            ) {
             return py_error(
                 "TypeError", "should have returned an instance of BaseException"
             );
@@ -8751,13 +8822,27 @@ def py_call_host(
             i = i + 1;
         }
         if owner == "list" and isinstance(recv, PyList) and is_list_method(meth) {
-            return PyListMethod(t="list_method", target=(recv as PyList), name=meth).tp_call(rest, kwargs);
+            return PyListMethod(
+                t="list_method", target=(recv as PyList), name=meth
+            ).tp_call(
+                rest, kwargs
+            );
         }
         if owner == "dict" and isinstance(recv, PyDict) and is_dict_method(meth) {
-            return PyDictMethod(t="dict_method", target=(recv as PyDict), name=meth).tp_call(rest, kwargs);
+            return PyDictMethod(
+                t="dict_method", target=(recv as PyDict), name=meth
+            ).tp_call(
+                rest, kwargs
+            );
         }
-        if owner == "set" and isinstance(recv, PySet) and is_set_method(meth, (recv as PySet).frozen) {
-            return PySetMethod(t="set_method", target=(recv as PySet), name=meth).tp_call(rest, kwargs);
+        if owner == "set"
+            and isinstance(recv, PySet)
+            and is_set_method(meth, (recv as PySet).frozen) {
+            return PySetMethod(
+                t="set_method", target=(recv as PySet), name=meth
+            ).tp_call(
+                rest, kwargs
+            );
         }
     }
     # The `list` constructor consults iteration IN-VM before any bridge attempt:
@@ -8767,7 +8852,9 @@ def py_call_host(
     # tp_iter/__iter__/boxed bases; on error fall through to the host call,
     # which stays authoritative for host-only iterables (dict views) and raises
     # the exact CPython TypeError for non-iterables.
-    if len(args) == 1 and len(kwargs) == 0 and _jac_builtin_base_name(fn.val) == "list" {
+    if len(args) == 1
+        and len(kwargs) == 0
+        and _jac_builtin_base_name(fn.val) == "list" {
         it = py_iter(args[0]);
         if not is_error(it) {
             return drain_to_list(it);
@@ -8778,7 +8865,8 @@ def py_call_host(
     # boxed-int subclasses); ANY other arg shape -- non-int args, wrong arity,
     # keyword args, step == 0 -- falls through to the host call so error
     # messages stay byte-exact CPython.
-    if len(kwargs) == 0 and _jac_is_range_type(fn.val)
+    if len(kwargs) == 0
+        and _jac_is_range_type(fn.val)
         and (len(args) > 0 and len(args) < 4) {
         vals: list[int] = [];
         all_int = True;
@@ -8815,7 +8903,9 @@ def py_call_host(
     if len(kwargs) == 0 and len(args) == 1 and _jac_is_builtin_func(fn.val, "str") {
         return py_str(args[0]);
     }
-    if len(kwargs) == 0 and len(args) >= 1 and len(args) <= 2
+    if len(kwargs) == 0
+        and len(args) >= 1
+        and len(args) <= 2
         and _jac_is_builtin_func(fn.val, "format")
         and (len(args) == 1 or isinstance(args[1], PyStr)) {
         spec = "";
@@ -8876,10 +8966,26 @@ def py_invoke(fn: PyObj, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
 # iff their MRO resolves __call__ (or they box a callable builtin base);
 # host proxies delegate the probe to the wrapped value.
 def obj_is_callable(x: PyObj) -> bool {
-    if isinstance(x, (PyFunction, PyNativeBuiltin, PyClass, PyExceptionType,
-                      PyBoundMethod, PyClassMethodCtor, PyStaticMethodCtor,
-                      PyListMethod, PyDictMethod, PySetMethod, PyRangeMethod,
-                      PyNsMethod, PyGenMethod, PyBuiltinSuperMethod, PyStrMethod)) {
+    if isinstance(
+        x,
+        (
+            PyFunction,
+            PyNativeBuiltin,
+            PyClass,
+            PyExceptionType,
+            PyBoundMethod,
+            PyClassMethodCtor,
+            PyStaticMethodCtor,
+            PyListMethod,
+            PyDictMethod,
+            PySetMethod,
+            PyRangeMethod,
+            PyNsMethod,
+            PyGenMethod,
+            PyBuiltinSuperMethod,
+            PyStrMethod
+        )
+    ) {
         return True;
     }
     if isinstance(x, PyUserObj) {
@@ -9176,7 +9282,11 @@ def py_dir_add_class(names: dict[str, bool], cls: PyClass) -> PyObj {
     # access instead), and __classdictcell__ is this VM's internal anchor for
     # method-scope class references. Emitting them would diverge from host
     # dir(cls)/dir(instance).
-    skip_names: dict[str, bool] = {"__name__": True, "__qualname__": True, "__classdictcell__": True};
+    skip_names: dict[str, bool] = {
+        "__name__": True,
+        "__qualname__": True,
+        "__classdictcell__": True
+    };
     for klass in class_mro(cls) {
         for k in klass.attrs.keys() {
             if k not in skip_names {
@@ -9204,9 +9314,7 @@ def py_dir_sorted(names: dict[str, bool]) -> PyObj {
     for k in names {
         items.append(PyStr(t="str", val=k));
     }
-    return builtin_sorted_min_max(
-        "sorted", [PyList(t="list", items=items)], {}
-    );
+    return builtin_sorted_min_max("sorted", [PyList(t="list", items=items)], {});
 }
 
 # dir(arg): one argument. Order mirrors CPython builtin_dir -- a type-level
@@ -9265,10 +9373,21 @@ def py_dir(arg: PyObj) -> PyObj {
     # real list). User objects/classes must NOT cross here -- to_host loses
     # them -- they fall through to the native walks below.
     tag = arg.t;
-    if tag == "none" or tag == "bool" or tag == "int" or tag == "float"
-        or tag == "complex" or tag == "str" or tag == "bytes" or tag == "tuple"
-        or tag == "list" or tag == "dict" or tag == "set" or tag == "frozenset"
-        or tag == "slice" or tag == "range" or tag == "notimplemented"
+    if tag == "none"
+        or tag == "bool"
+        or tag == "int"
+        or tag == "float"
+        or tag == "complex"
+        or tag == "str"
+        or tag == "bytes"
+        or tag == "tuple"
+        or tag == "list"
+        or tag == "dict"
+        or tag == "set"
+        or tag == "frozenset"
+        or tag == "slice"
+        or tag == "range"
+        or tag == "notimplemented"
         or tag == "dictview_obj" {
         h_r = to_host_coerce(arg);
         if not ((h_r[0] as bool)) {
@@ -9355,9 +9474,7 @@ obj PyExcSuperSlot(PyObj) {
         if self.name == "__init__" {
             # CPython BaseException_init: replaces args wholesale.
             if len(kwargs) > 0 {
-                return py_error(
-                    "TypeError", "__init__() takes no keyword arguments"
-                );
+                return py_error("TypeError", "__init__() takes no keyword arguments");
             }
             stored: list[PyObj] = [];
             stored.extend(args);
@@ -9477,11 +9594,15 @@ obj PyBuiltinSuperMethod(PyObj) {
         if not boxed {
             # object-surface fallback (MRO exhausted above a base-less class).
             if n == "__repr__" {
-                return PyStr(t="str", val=default_obj_repr_text(self.owner as PyUserObj));
+                return PyStr(
+                    t="str", val=default_obj_repr_text(self.owner as PyUserObj)
+                );
             }
             if n == "__str__" {
                 # object.__str__ IS object.__repr__ (the identity form).
-                return PyStr(t="str", val=default_obj_repr_text(self.owner as PyUserObj));
+                return PyStr(
+                    t="str", val=default_obj_repr_text(self.owner as PyUserObj)
+                );
             }
             if n == "__init__" {
                 if len(args) == 0 {
@@ -9510,41 +9631,35 @@ obj PyBuiltinSuperMethod(PyObj) {
             if isinstance(b, PyList) {
                 lst = b as PyList;
                 if len(kwargs) > 0 {
-                    return py_error(
-                        "TypeError", "list() takes no keyword arguments"
-                    );
+                    return py_error("TypeError", "list() takes no keyword arguments");
                 }
                 if len(args) > 1 {
-                    return py_error(
-                        "TypeError", "list() takes at most one argument"
-                    );
+                    return py_error("TypeError", "list() takes at most one argument");
                 }
                 lst.items = [];
-                return PyListMethod(
-                    t="list_method", target=lst, name="extend"
-                ).tp_call([args[0]], {});
+                return PyListMethod(t="list_method", target=lst, name="extend").tp_call(
+                    [args[0]], {}
+                );
             }
             if isinstance(b, PySet) {
                 s = b as PySet;
                 if len(kwargs) > 0 {
-                    return py_error(
-                        "TypeError", "set() takes no keyword arguments"
-                    );
+                    return py_error("TypeError", "set() takes no keyword arguments");
                 }
                 if len(args) > 1 {
-                    return py_error(
-                        "TypeError", "set() takes at most one argument"
-                    );
+                    return py_error("TypeError", "set() takes at most one argument");
                 }
                 s.set_clear();
-                return PySetMethod(
-                    t="set_method", target=s, name="update"
-                ).tp_call(args, {});
+                return PySetMethod(t="set_method", target=s, name="update").tp_call(
+                    args, {}
+                );
             }
             if isinstance(b, PyDict) {
                 return PyDictMethod(
                     t="dict_method", target=(b as PyDict), name="update"
-                ).tp_call(args, kwargs);
+                ).tp_call(
+                    args, kwargs
+                );
             }
             return py_none();
         }
@@ -9554,7 +9669,8 @@ obj PyBuiltinSuperMethod(PyObj) {
             return py_store_subscript(b, args[0], args[1]);
         }
         if n == "__getitem__" {
-            if isinstance(b, PyDict) and isinstance(self.owner, PyUserObj)
+            if isinstance(b, PyDict)
+                and isinstance(self.owner, PyUserObj)
                 and not user_has_dunder(self.owner as PyUserObj, "__getitem__") {
                 return dict_subscript_missing(
                     self.owner as PyUserObj, b as PyDict, args[0]
@@ -9640,14 +9756,14 @@ def super_lookup(defining_cls: PyObj, instance: PyObj, name: str) -> PyObj {
             past = True;
         }
     }
-        # A CLASS receiver means we are inside a metaclass body chaining
-        # super().__init__ during creation: class_mro nodes end at the newest
-        # guest class (implicit object/type roots are not class_mro nodes), so
-        # the walk found nothing. CPython's terminal there is type.__init__ --
-        # arg-validation + no-op over the already-built class.
-        if name == "__init__" and isinstance(instance, PyClass) {
-            return PyNoOpInit(t="noop_init");
-        }
+    # A CLASS receiver means we are inside a metaclass body chaining
+    # super().__init__ during creation: class_mro nodes end at the newest
+    # guest class (implicit object/type roots are not class_mro nodes), so
+    # the walk found nothing. CPython's terminal there is type.__init__ --
+    # arg-validation + no-op over the already-built class.
+    if name == "__init__" and isinstance(instance, PyClass) {
+        return PyNoOpInit(t="noop_init");
+    }
     # No python ancestor defines it. A super().<dunder>() on a boxed-builtin
     # subclass (dict/list/... subclass calling super().__setitem__ etc.) delegates
     # to the base value's own slot.
@@ -9658,16 +9774,14 @@ def super_lookup(defining_cls: PyObj, instance: PyObj, name: str) -> PyObj {
         # -- never a re-dispatch through the override that called super(). This
         # is the recursion guard inside user __setattr__/__delattr__/
         # __getattribute__ implementations.
-        if name == "__getattribute__" or name == "__setattr__"
+        if name == "__getattribute__"
+            or name == "__setattr__"
             or name == "__delattr__" {
             return PyObjectAttrSlot(t="obj_attr_slot", target=inst as PyObj, op=name);
         }
         if inst._has_base() {
             return PyBuiltinSuperMethod(
-                t="builtin_super",
-                base=inst._base_obj(),
-                name=name,
-                owner=instance
+                t="builtin_super", base=inst._base_obj(), name=name, owner=instance
             );
         }
         # Exception-derived user classes have no boxed builtin layout: the
@@ -9709,9 +9823,7 @@ def super_lookup(defining_cls: PyObj, instance: PyObj, name: str) -> PyObj {
         }
         return PyNativeNew(t="native_new", base_name=base);
     }
-    return py_error(
-        "AttributeError", "'super' object has no attribute '" + name + "'"
-    );
+    return py_error("AttributeError", "'super' object has no attribute '" + name + "'");
 }
 
 # Box a builtin subclass instance by running the builtin constructor over the
@@ -9996,12 +10108,12 @@ def compute_class_slots(
                 PyList(
                     t="list",
                     items=[
-                        PyStr(t="str", val=m)
-                        for m in _inherited_slot_members(bases)
+                        PyStr(t="str", val=m) for m in _inherited_slot_members(bases)
                     ],
                 ),
                 PyBool(t="bool", val=False),
                 PyBool(t="bool", val=True),
+
             ],
         );
     }
@@ -10018,7 +10130,8 @@ def compute_class_slots(
                 return py_error(
                     "TypeError",
                     "__slots__ items must be strings, not '"
-                        + _slot_item_type_name(item) + "'",
+                        + _slot_item_type_name(item)
+                        + "'",
                 );
             }
             raw.append((item as PyStr).val);
@@ -10072,9 +10185,7 @@ def compute_class_slots(
         }
     }
     if nonempty_layout_bases > 1 {
-        return py_error(
-            "TypeError", "multiple bases have instance lay-out conflict"
-        );
+        return py_error("TypeError", "multiple bases have instance lay-out conflict");
     }
     merged = type_slots_merge_names(local, inherited);
     has_dict = type_slots_has_dict(True, wants_dict, base_has_dict);
@@ -10084,6 +10195,7 @@ def compute_class_slots(
             PyList(t="list", items=[PyStr(t="str", val=m) for m in merged]),
             PyBool(t="bool", val=True),
             PyBool(t="bool", val=has_dict),
+
         ],
     );
 }
@@ -10220,7 +10332,8 @@ def _jac_validate_type_bases(bases: list[PyObj]) -> PyObj | None {
         if isinstance(tb, PyClass) {
             continue;
         }
-        if isinstance(tb, PyHostProxy) and _jac_host_val_is_type((tb as PyHostProxy).val) {
+        if isinstance(tb, PyHostProxy)
+            and _jac_host_val_is_type((tb as PyHostProxy).val) {
             continue;
         }
         hook = py_attr(tb, "__mro_entries__");
@@ -10385,8 +10498,10 @@ def update_build_class_bases(bases: list[PyObj], out: list[PyObj]) -> PyObj {
     while ub_j < len(bases) {
         base = bases[ub_j];
         if isinstance(base, PyClass)
-            or (isinstance(base, PyHostProxy)
-                and _jac_host_val_is_type((base as PyHostProxy).val)) {
+            or (
+                isinstance(base, PyHostProxy)
+                and _jac_host_val_is_type((base as PyHostProxy).val)
+            ) {
             new_bases.append(base);
             ub_j = ub_j + 1;
             continue;
@@ -10473,8 +10588,13 @@ def py_build_class(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
     # for the body namespace, then call the metaclass as the class factory.
     if isinstance(metaclass, PyClass) {
         return build_class_via_metaclass(
-            metaclass as PyClass, class_name, bases, body, class_kwds,
-            orig_base_list, bases_changed
+            metaclass as PyClass,
+            class_name,
+            bases,
+            body,
+            class_kwds,
+            orig_base_list,
+            bases_changed
         );
     }
     # CPython __build_class__ seeds the body namespace's __name__ from the
@@ -10580,9 +10700,12 @@ def build_class_via_metaclass(
         # the metaclass call and later as cls.__orig_bases__.
         if bases_changed {
             res_ob = call_user_dunder(
-                mapping, "__setitem__",
-                [PyStr(t="str", val="__orig_bases__"),
-                    PyTuple(t="tuple", items=orig_bases)]
+                mapping,
+                "__setitem__",
+                [
+                    PyStr(t="str", val="__orig_bases__"),
+                    PyTuple(t="tuple", items=orig_bases)
+                ]
             );
             if is_error(res_ob) {
                 return res_ob;
@@ -10598,10 +10721,10 @@ def build_class_via_metaclass(
                 }
             }
         }
-            # NOTE: no __name__ injection into custom mappings here - enum's
-            # _EnumDict diverges from host on dunder writes (raises where host
-            # ignores); the module identity is stamped on the RESULTING class
-            # below instead, mirroring type.__new__'s frame-globals fallback.
+        # NOTE: no __name__ injection into custom mappings here - enum's
+        # _EnumDict diverges from host on dunder writes (raises where host
+        # ignores); the module identity is stamped on the RESULTING class
+        # below instead, mirroring type.__new__'s frame-globals fallback.
         call_args: list[PyObj] = [
             PyStr(t="str", val=class_name),
             bases_tuple,
@@ -10733,7 +10856,6 @@ obj PyNativeBuiltin(PyObj) {
     has name: str;
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-
         if self.name == "exc_info" {
             # sys.exc_info() over GUEST handled-exception state (host sys cannot
             # see guest frames). Returns (type, value, traceback); empty stack
@@ -10776,14 +10898,16 @@ obj PyNativeBuiltin(PyObj) {
             # coroutine wrapping and is documented as absent for now.
             if len(args) < 1 or len(args) > 2 {
                 return py_error(
-                    "TypeError", "anext expected at least 1 argument, got " + str(len(args))
+                    "TypeError",
+                    "anext expected at least 1 argument, got " + str(len(args))
                 );
             }
             result = py_anext(args[0]);
             if is_error(result) {
-                if len(args) == 2 and exc_name_matches(
-                    (result as PyError).exception.type_name, "StopAsyncIteration"
-                ) {
+                if len(args) == 2
+                    and exc_name_matches(
+                        (result as PyError).exception.type_name, "StopAsyncIteration"
+                    ) {
                     return args[1];
                 }
                 return result;
@@ -10811,13 +10935,13 @@ obj PyNativeBuiltin(PyObj) {
             # fresh host string, breaking `intern(s) is s`; keep it in-VM.
             if len(args) != 1 {
                 return py_error(
-                    "TypeError",
-                    "intern expected 1 argument, got " + str(len(args))
+                    "TypeError", "intern expected 1 argument, got " + str(len(args))
                 );
             }
             if not isinstance(args[0], PyStr) {
                 return py_error(
-                    "TypeError", "intern() argument must be str, not " + args[0].tp_type_name()
+                    "TypeError",
+                    "intern() argument must be str, not " + args[0].tp_type_name()
                 );
             }
             return args[0];
@@ -10839,11 +10963,15 @@ obj PyNativeBuiltin(PyObj) {
                 if wkey == "file" {
                     target = kwargs[wkey];
                 } else {
-                    return py_error("TypeError", "unsupported keyword argument: " + wkey);
+                    return py_error(
+                        "TypeError", "unsupported keyword argument: " + wkey
+                    );
                 }
             }
             no_pos = len(args) == 0;
-            if self.name == "tb_print_exc" and len(args) > 0 and isinstance(args[0], PyNoneType) {
+            if self.name == "tb_print_exc"
+                and len(args) > 0
+                and isinstance(args[0], PyNoneType) {
                 no_pos = True;
             }
             if no_pos {
@@ -10852,11 +10980,9 @@ obj PyNativeBuiltin(PyObj) {
                     return py_error("RuntimeError", "No active exception to re-raise");
                 }
                 text = format_exception_text(e);
-            }
-            elif self.name == "tb_print_exc_legacy" and len(args) >= 2 {
+            } elif self.name == "tb_print_exc_legacy" and len(args) >= 2 {
                 text = format_exception_text(args[1]);
-            }
-            else {
+            } else {
                 text = format_exception_text(args[0]);
             }
             w = py_attr(target, "write");
@@ -10884,7 +11010,8 @@ obj PyNativeBuiltin(PyObj) {
             }
             if len(args) != 1 {
                 return py_error(
-                    "TypeError", "id() takes exactly one argument (" + str(len(args)) + " given)"
+                    "TypeError",
+                    "id() takes exactly one argument (" + str(len(args)) + " given)"
                 );
             }
             return PyInt(t="int", val=py_id(args[0]));
@@ -10892,7 +11019,8 @@ obj PyNativeBuiltin(PyObj) {
         if self.name == "len" {
             if len(args) != 1 {
                 return py_error(
-                    "TypeError", "len() takes exactly one argument (" + str(len(args)) + " given)"
+                    "TypeError",
+                    "len() takes exactly one argument (" + str(len(args)) + " given)"
                 );
             }
             return py_len(args[0]);
@@ -10900,7 +11028,8 @@ obj PyNativeBuiltin(PyObj) {
         if self.name == "hash" {
             if len(args) != 1 {
                 return py_error(
-                    "TypeError", "hash() takes exactly one argument (" + str(len(args)) + " given)"
+                    "TypeError",
+                    "hash() takes exactly one argument (" + str(len(args)) + " given)"
                 );
             }
             return py_hash(args[0]);
@@ -10908,7 +11037,8 @@ obj PyNativeBuiltin(PyObj) {
         if self.name == "repr" {
             if len(args) != 1 {
                 return py_error(
-                    "TypeError", "repr() takes exactly one argument (" + str(len(args)) + " given)"
+                    "TypeError",
+                    "repr() takes exactly one argument (" + str(len(args)) + " given)"
                 );
             }
             return py_repr(args[0]);
@@ -10935,7 +11065,9 @@ obj PyNativeBuiltin(PyObj) {
             if len(args) != 1 {
                 return py_error(
                     "TypeError",
-                    "callable() takes exactly one argument (" + str(len(args)) + " given)",
+                    "callable() takes exactly one argument ("
+                        + str(len(args))
+                        + " given)",
                 );
             }
             return PyBool(t="bool", val=obj_is_callable(args[0]));
@@ -10960,8 +11092,7 @@ obj PyNativeBuiltin(PyObj) {
         if self.name == "hasattr" {
             if len(args) != 2 {
                 return py_error(
-                    "TypeError",
-                    "hasattr expected 2 arguments, got " + str(len(args)),
+                    "TypeError", "hasattr expected 2 arguments, got " + str(len(args)),
                 );
             }
             probe = py_attr(args[0], expect_str(args[1]));
@@ -10969,7 +11100,9 @@ obj PyNativeBuiltin(PyObj) {
         }
         if self.name == "setattr" {
             if len(args) != 3 {
-                return py_error("TypeError", "setattr expected 3 arguments, got " + str(len(args)));
+                return py_error(
+                    "TypeError", "setattr expected 3 arguments, got " + str(len(args))
+                );
             }
             return py_set_attr(args[0], expect_str(args[1]), args[2]);
         }
@@ -10994,7 +11127,8 @@ obj PyNativeBuiltin(PyObj) {
             }
             if len(args) > 1 {
                 return py_error(
-                    "TypeError", "dir expected at most 1 argument, got " + str(len(args))
+                    "TypeError",
+                    "dir expected at most 1 argument, got " + str(len(args))
                 );
             }
             return py_dir(args[0]);
@@ -11011,7 +11145,8 @@ obj PyNativeBuiltin(PyObj) {
             }
             if len(args) > 1 {
                 return py_error(
-                    "TypeError", "vars expected at most 1 argument, got " + str(len(args))
+                    "TypeError",
+                    "vars expected at most 1 argument, got " + str(len(args))
                 );
             }
             # A user instance answers with its LIVE __dict__ (identity-stable
@@ -11022,8 +11157,7 @@ obj PyNativeBuiltin(PyObj) {
                 return user_instance_dict(o as PyUserObj);
             }
             d = py_attr(o, "__dict__");
-            if is_error(d)
-                and (d as PyError).exception.type_name == "AttributeError" {
+            if is_error(d) and (d as PyError).exception.type_name == "AttributeError" {
                 return py_error(
                     "TypeError", "vars() argument must have __dict__ attribute"
                 );
@@ -11056,7 +11190,9 @@ obj PyNativeBuiltin(PyObj) {
             return py_error("TypeError", "next expected at least 1 argument, got 0");
         }
         if len(args) > 2 {
-            return py_error("TypeError", "next expected at most 2 arguments, got " + str(len(args)));
+            return py_error(
+                "TypeError", "next expected at most 2 arguments, got " + str(len(args))
+            );
         }
         if args[0].t == "async_generator" {
             # PyAsyncGenObject has no tp_iternext; CPython rejects it in
@@ -11522,7 +11658,9 @@ obj PyStrMethod(PyObj) {
 
 # Positional-or-keyword argument fetch. Absent arguments come back as the
 # PY_NOT_IMPLEMENTED sentinel (never a legit method argument).
-def _sm_arg(args: list[PyObj], kwargs: dict[str, PyObj], idx: int, kwname: str) -> PyObj {
+def _sm_arg(
+    args: list[PyObj], kwargs: dict[str, PyObj], idx: int, kwname: str
+) -> PyObj {
     if idx < len(args) {
         return args[idx];
     }
@@ -11543,7 +11681,10 @@ def _sm_noargs(n: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         return py_error("TypeError", "str." + n + "() takes no keyword arguments");
     }
     if len(args) > 0 {
-        return py_error("TypeError", "str." + n + "() takes no arguments (" + str(len(args)) + " given)");
+        return py_error(
+            "TypeError",
+            "str." + n + "() takes no arguments (" + str(len(args)) + " given)"
+        );
     }
     return py_none();
 }
@@ -11553,7 +11694,10 @@ def _sm_noargs(n: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
 def _sm_one_arg(n: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
     total = len(args) + len(kwargs);
     if total != 1 {
-        return py_error("TypeError", "str." + n + "() takes exactly one argument (" + str(total) + " given)");
+        return py_error(
+            "TypeError",
+            "str." + n + "() takes exactly one argument (" + str(total) + " given)"
+        );
     }
     if len(args) == 1 {
         return args[0];
@@ -11569,7 +11713,10 @@ def _sm_one_arg(n: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
 def _sm_int(o: PyObj) -> PyObj {
     r = o.to_index();
     if is_error(r) {
-        return py_error("TypeError", "'" + o.tp_type_name() + "' object cannot be interpreted as an integer");
+        return py_error(
+            "TypeError",
+            "'" + o.tp_type_name() + "' object cannot be interpreted as an integer"
+        );
     }
     return r;
 }
@@ -11582,7 +11729,10 @@ def _sm_slice_int(o: PyObj) -> PyObj {
     }
     r = o.to_index();
     if is_error(r) {
-        return py_error("TypeError", "slice indices must be integers or None or have an __index__ method");
+        return py_error(
+            "TypeError",
+            "slice indices must be integers or None or have an __index__ method"
+        );
     }
     return r;
 }
@@ -11590,30 +11740,43 @@ def _sm_slice_int(o: PyObj) -> PyObj {
 # Drain any native iterable into elems for join(); True iff supported.
 def _sm_iter_elems(src: PyObj, elems: list[PyObj]) -> bool {
     if isinstance(src, PyList) {
-        for x in (src as PyList).items { elems.append(x); }
+        for x in (src as PyList).items {
+            elems.append(x);
+        }
         return True;
     }
     if isinstance(src, PyTuple) {
-        for x in tuple_value(src) { elems.append(x); }
+        for x in tuple_value(src) {
+            elems.append(x);
+        }
         return True;
     }
     if isinstance(src, PySet) {
-        for x in (src as PySet).set_members() { elems.append(x); }
+        for x in (src as PySet).set_members() {
+            elems.append(x);
+        }
         return True;
     }
     if isinstance(src, PyDict) {
         d = src as PyDict;
-        for hk in d.items { elems.append(d.items[hk].key); }
+        for hk in d.items {
+            elems.append(d.items[hk].key);
+        }
         return True;
     }
     if isinstance(src, PyStr) {
-        for ch in (src as PyStr).val { elems.append(PyStr(t="str", val=ch)); }
+        for ch in (src as PyStr).val {
+            elems.append(PyStr(t="str", val=ch));
+        }
         return True;
     }
     if isinstance(src, PyIter) {
         it = src as PyIter;
         i = it.index;
-        while i < len(it.items) { elems.append(it.items[i]); i = i + 1; }
+        while i < len(it.items) {
+            elems.append(it.items[i]);
+            i = i + 1;
+        }
         return True;
     }
     return False;
@@ -11632,10 +11795,28 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
     surrogates_only = False;
     if enc == "utf-8" or enc == "utf8" {
         surrogates_only = True;
-    } elif enc == "ascii" or enc == "us-ascii" or enc == "us" or enc == "646" or enc == "ansi_x3.4-1968" or enc == "iso-ir-6" or enc == "iso646-us" or enc == "csascii" or enc == "cp367" or enc == "ibm367" {
+    } elif enc == "ascii"
+        or enc == "us-ascii"
+        or enc == "us"
+        or enc == "646"
+        or enc == "ansi_x3.4-1968"
+        or enc == "iso-ir-6"
+        or enc == "iso646-us"
+        or enc == "csascii"
+        or enc == "cp367"
+        or enc == "ibm367" {
         limit = 127;
         canon = "ascii";
-    } elif enc == "latin-1" or enc == "latin1" or enc == "iso-8859-1" or enc == "iso8859-1" or enc == "l1" or enc == "8859-1" or enc == "cp819" or enc == "iso-ir-100" or enc == "latin" or enc == "cp28591" {
+    } elif enc == "latin-1"
+        or enc == "latin1"
+        or enc == "iso-8859-1"
+        or enc == "iso8859-1"
+        or enc == "l1"
+        or enc == "8859-1"
+        or enc == "cp819"
+        or enc == "iso-ir-100"
+        or enc == "latin"
+        or enc == "cp28591" {
         limit = 255;
         canon = "latin-1";
     } else {
@@ -11663,13 +11844,18 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
     out: list[int] = [];
     if bad_pos < 0 {
         bb = s.encode(encoding);
-        for v in bb { out.append(v); }
+        for v in bb {
+            out.append(v);
+        }
         return PyBytes(t="bytes", val=out);
     }
     # An error was actually consulted: validate the handler now (3.14 semantics).
     h = errors.lower().replace("_", "-").replace(" ", "");
-    known = h == "strict" or h == "ignore" or h == "replace"
-        or h == "backslashreplace" or h == "xmlcharrefreplace";
+    known = h == "strict"
+        or h == "ignore"
+        or h == "replace"
+        or h == "backslashreplace"
+        or h == "xmlcharrefreplace";
     if not known {
         return py_error("LookupError", "unknown error handler name '" + errors + "'");
     }
@@ -11678,8 +11864,14 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
         if surrogates_only {
             reason = "surrogates not allowed";
         }
-        msg = "'" + canon + "' codec can't encode character '"
-            + _repr_unicode_escape(bad_cp) + "' in position " + str(bad_pos) + ": " + reason;
+        msg = "'"
+            + canon
+            + "' codec can't encode character '"
+            + _repr_unicode_escape(bad_cp)
+            + "' in position "
+            + str(bad_pos)
+            + ": "
+            + reason;
         return py_error("UnicodeEncodeError", msg);
     }
     i = 0;
@@ -11694,18 +11886,25 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
         }
         if not viol {
             bb2 = ch.encode(encoding);
-            for v in bb2 { out.append(v); }
-        } elif h == "ignore" {
-        } elif h == "replace" {
+            for v in bb2 {
+                out.append(v);
+            }
+        } elif h == "ignore" { } elif h == "replace" {
             out.append(63);
         } elif h == "backslashreplace" {
             esc = _repr_unicode_escape(cp);
             j = 0;
-            while j < len(esc) { out.append(ord(esc[j])); j = j + 1; }
+            while j < len(esc) {
+                out.append(ord(esc[j]));
+                j = j + 1;
+            }
         } else {
             ref = "&#" + str(cp) + ";";
             j = 0;
-            while j < len(ref) { out.append(ord(ref[j])); j = j + 1; }
+            while j < len(ref) {
+                out.append(ord(ref[j]));
+                j = j + 1;
+            }
         }
         i = i + 1;
     }
@@ -11713,41 +11912,79 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
 }
 
 # The full str method surface. `s` is the receiver's raw value.
-def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+def str_method_call(
+    s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj]
+) -> PyObj {
     # ---- no-arg transforms ----
-    if n == "upper" or n == "lower" or n == "capitalize" or n == "casefold"
-        or n == "swapcase" or n == "title" {
+    if n == "upper"
+        or n == "lower"
+        or n == "capitalize"
+        or n == "casefold"
+        or n == "swapcase"
+        or n == "title" {
         e = _sm_noargs(n, args, kwargs);
-        if is_error(e) { return e; }
+        if is_error(e) {
+            return e;
+        }
         r = s;
-        if n == "upper" { r = s.upper(); }
-        elif n == "lower" { r = s.lower(); }
-        elif n == "capitalize" { r = s.capitalize(); }
-        elif n == "casefold" { r = s.casefold(); }
-        elif n == "swapcase" { r = s.swapcase(); }
-        else { r = s.title(); }
+        if n == "upper" {
+            r = s.upper();
+        } elif n == "lower" {
+            r = s.lower();
+        } elif n == "capitalize" {
+            r = s.capitalize();
+        } elif n == "casefold" {
+            r = s.casefold();
+        } elif n == "swapcase" {
+            r = s.swapcase();
+        } else {
+            r = s.title();
+        }
         return PyStr(t="str", val=r);
     }
     # ---- no-arg predicates ----
-    if n == "isalpha" or n == "isalnum" or n == "isascii" or n == "isdecimal"
-        or n == "isdigit" or n == "isidentifier" or n == "islower"
-        or n == "isnumeric" or n == "isprintable" or n == "isspace"
-        or n == "istitle" or n == "isupper" {
+    if n == "isalpha"
+        or n == "isalnum"
+        or n == "isascii"
+        or n == "isdecimal"
+        or n == "isdigit"
+        or n == "isidentifier"
+        or n == "islower"
+        or n == "isnumeric"
+        or n == "isprintable"
+        or n == "isspace"
+        or n == "istitle"
+        or n == "isupper" {
         e = _sm_noargs(n, args, kwargs);
-        if is_error(e) { return e; }
+        if is_error(e) {
+            return e;
+        }
         b = False;
-        if n == "isalpha" { b = s.isalpha(); }
-        elif n == "isalnum" { b = s.isalnum(); }
-        elif n == "isascii" { b = s.isascii(); }
-        elif n == "isdecimal" { b = s.isdecimal(); }
-        elif n == "isdigit" { b = s.isdigit(); }
-        elif n == "isidentifier" { b = s.isidentifier(); }
-        elif n == "islower" { b = s.islower(); }
-        elif n == "isnumeric" { b = s.isnumeric(); }
-        elif n == "isprintable" { b = s.isprintable(); }
-        elif n == "isspace" { b = s.isspace(); }
-        elif n == "istitle" { b = s.istitle(); }
-        else { b = s.isupper(); }
+        if n == "isalpha" {
+            b = s.isalpha();
+        } elif n == "isalnum" {
+            b = s.isalnum();
+        } elif n == "isascii" {
+            b = s.isascii();
+        } elif n == "isdecimal" {
+            b = s.isdecimal();
+        } elif n == "isdigit" {
+            b = s.isdigit();
+        } elif n == "isidentifier" {
+            b = s.isidentifier();
+        } elif n == "islower" {
+            b = s.islower();
+        } elif n == "isnumeric" {
+            b = s.isnumeric();
+        } elif n == "isprintable" {
+            b = s.isprintable();
+        } elif n == "isspace" {
+            b = s.isspace();
+        } elif n == "istitle" {
+            b = s.istitle();
+        } else {
+            b = s.isupper();
+        }
         return PyBool(t="bool", val=b);
     }
     # ---- padding / alignment ----
@@ -11757,40 +11994,63 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
             return py_error("TypeError", n + " expected at least 1 argument, got 0");
         }
         w = _sm_int(wobj);
-        if is_error(w) { return w; }
+        if is_error(w) {
+            return w;
+        }
         fill = " ";
         fobj = _sm_arg(args, kwargs, 1, "fillchar");
         if not _sm_absent(fobj) {
             if not isinstance(fobj, PyStr) {
-                return py_error("TypeError", "The fill character must be a unicode character, not " + fobj.tp_type_name());
+                return py_error(
+                    "TypeError",
+                    "The fill character must be a unicode character, not "
+                        + fobj.tp_type_name()
+                );
             }
             fill = (fobj as PyStr).val;
             if len(fill) != 1 {
-                return py_error("TypeError", "The fill character must be exactly one character long");
+                return py_error(
+                    "TypeError", "The fill character must be exactly one character long"
+                );
             }
         }
         r = "";
-        if n == "center" { r = s.center((w as PyInt).val, fill); }
-        elif n == "ljust" { r = s.ljust((w as PyInt).val, fill); }
-        else { r = s.rjust((w as PyInt).val, fill); }
+        if n == "center" {
+            r = s.center((w as PyInt).val, fill);
+        } elif n == "ljust" {
+            r = s.ljust((w as PyInt).val, fill);
+        } else {
+            r = s.rjust((w as PyInt).val, fill);
+        }
         return PyStr(t="str", val=r);
     }
     if n == "zfill" {
         a = _sm_one_arg(n, args, kwargs);
-        if is_error(a) { return a; }
+        if is_error(a) {
+            return a;
+        }
         w = _sm_int(a);
-        if is_error(w) { return w; }
+        if is_error(w) {
+            return w;
+        }
         return PyStr(t="str", val=s.zfill((w as PyInt).val));
     }
     if n == "expandtabs" {
         if len(args) + len(kwargs) > 1 {
-            return py_error("TypeError", "expandtabs() takes at most 1 argument (" + str(len(args) + len(kwargs)) + " given)");
+            return py_error(
+                "TypeError",
+                "expandtabs() takes at most 1 argument ("
+                    + str(len(args) + len(kwargs))
+                    + " given)"
+            );
         }
         tsize = 8;
         tobj = _sm_arg(args, kwargs, 0, "tabsize");
         if not _sm_absent(tobj) {
             ti = _sm_int(tobj);
-            if is_error(ti) { return ti; }
+            if is_error(ti) {
+                return ti;
+            }
             tsize = (ti as PyInt).val;
         }
         return PyStr(t="str", val=s.expandtabs(tsize));
@@ -11803,17 +12063,27 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
             if not (isinstance(cobj, PyStr) or isinstance(cobj, PyNoneType)) {
                 return py_error("TypeError", n + " arg must be None or str");
             }
-            if isinstance(cobj, PyStr) { chars = (cobj as PyStr).val; }
+            if isinstance(cobj, PyStr) {
+                chars = (cobj as PyStr).val;
+            }
         }
         r = "";
         if chars is None {
-            if n == "strip" { r = s.strip(); }
-            elif n == "lstrip" { r = s.lstrip(); }
-            else { r = s.rstrip(); }
+            if n == "strip" {
+                r = s.strip();
+            } elif n == "lstrip" {
+                r = s.lstrip();
+            } else {
+                r = s.rstrip();
+            }
         } else {
-            if n == "strip" { r = s.strip(chars); }
-            elif n == "lstrip" { r = s.lstrip(chars); }
-            else { r = s.rstrip(chars); }
+            if n == "strip" {
+                r = s.strip(chars);
+            } elif n == "lstrip" {
+                r = s.lstrip(chars);
+            } else {
+                r = s.rstrip(chars);
+            }
         }
         return PyStr(t="str", val=r);
     }
@@ -11824,7 +12094,9 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
         sobj = _sm_arg(args, kwargs, 0, "sep");
         if not _sm_absent(sobj) {
             if not (isinstance(sobj, PyStr) or isinstance(sobj, PyNoneType)) {
-                return py_error("TypeError", "must be str or None, not " + sobj.tp_type_name());
+                return py_error(
+                    "TypeError", "must be str or None, not " + sobj.tp_type_name()
+                );
             }
             if isinstance(sobj, PyStr) {
                 sep = (sobj as PyStr).val;
@@ -11838,19 +12110,29 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
         mobj = _sm_arg(args, kwargs, 1, "maxsplit");
         if not _sm_absent(mobj) {
             mi = _sm_int(mobj);
-            if is_error(mi) { return mi; }
+            if is_error(mi) {
+                return mi;
+            }
             ms = (mi as PyInt).val;
         }
         parts: list[str] = [];
         if not sep_given {
-            if n == "split" { parts = s.split(None, ms); }
-            else { parts = s.rsplit(None, ms); }
+            if n == "split" {
+                parts = s.split(None, ms);
+            } else {
+                parts = s.rsplit(None, ms);
+            }
         } else {
-            if n == "split" { parts = s.split(sep, ms); }
-            else { parts = s.rsplit(sep, ms); }
+            if n == "split" {
+                parts = s.split(sep, ms);
+            } else {
+                parts = s.rsplit(sep, ms);
+            }
         }
         items: list[PyObj] = [];
-        for p in parts { items.append(PyStr(t="str", val=p)); }
+        for p in parts {
+            items.append(PyStr(t="str", val=p));
+        }
         return PyList(t="list", items=items);
     }
     if n == "splitlines" {
@@ -11858,19 +12140,29 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
         kobj = _sm_arg(args, kwargs, 0, "keepends");
         if not _sm_absent(kobj) {
             kt = py_slot_truth(kobj);
-            if is_error(kt) { return kt; }
+            if is_error(kt) {
+                return kt;
+            }
             keep = (kt as PyBool).val;
         }
         parts: list[str] = [];
-        if keep { parts = s.splitlines(True); } else { parts = s.splitlines(); }
+        if keep {
+            parts = s.splitlines(True);
+        } else {
+            parts = s.splitlines();
+        }
         items: list[PyObj] = [];
-        for p in parts { items.append(PyStr(t="str", val=p)); }
+        for p in parts {
+            items.append(PyStr(t="str", val=p));
+        }
         return PyList(t="list", items=items);
     }
     # ---- partition ----
     if n == "partition" or n == "rpartition" {
         a = _sm_one_arg(n, args, kwargs);
-        if is_error(a) { return a; }
+        if is_error(a) {
+            return a;
+        }
         if not isinstance(a, PyStr) {
             return py_error("TypeError", "must be str, not " + a.tp_type_name());
         }
@@ -11879,10 +12171,15 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
             return py_error("ValueError", "empty separator");
         }
         tup: tuple[str, str, str] = ("", "", "");
-        if n == "partition" { tup = s.partition(sv); }
-        else { tup = s.rpartition(sv); }
+        if n == "partition" {
+            tup = s.partition(sv);
+        } else {
+            tup = s.rpartition(sv);
+        }
         items: list[PyObj] = [];
-        for p in tup { items.append(PyStr(t="str", val=p)); }
+        for p in tup {
+            items.append(PyStr(t="str", val=p));
+        }
         return PyTuple(t="tuple", items=items);
     }
     # ---- find family + count ----
@@ -11892,27 +12189,37 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
             return py_error("TypeError", n + " expected at least 1 argument, got 0");
         }
         if not isinstance(sub, PyStr) {
-            return py_error("TypeError", n + "() argument 1 must be str, not " + sub.tp_type_name());
+            return py_error(
+                "TypeError", n + "() argument 1 must be str, not " + sub.tp_type_name()
+            );
         }
         stv: any = None;
         env: any = None;
         sob = _sm_arg(args, kwargs, 1, "start");
         if not _sm_absent(sob) {
             si = _sm_slice_int(sob);
-            if is_error(si) { return si; }
+            if is_error(si) {
+                return si;
+            }
             stv = (si as PyInt).val;
         }
         eob = _sm_arg(args, kwargs, 2, "end");
         if not _sm_absent(eob) {
             ei = _sm_slice_int(eob);
-            if is_error(ei) { return ei; }
+            if is_error(ei) {
+                return ei;
+            }
             env = (ei as PyInt).val;
         }
         sv = (sub as PyStr).val;
         r = 0;
-        if n == "rfind" or n == "rindex" { r = s.rfind(sv, stv, env); }
-        elif n == "count" { r = s.count(sv, stv, env); }
-        else { r = s.find(sv, stv, env); }
+        if n == "rfind" or n == "rindex" {
+            r = s.rfind(sv, stv, env);
+        } elif n == "count" {
+            r = s.count(sv, stv, env);
+        } else {
+            r = s.find(sv, stv, env);
+        }
         if (n == "index" or n == "rindex") and r == -1 {
             return py_error("ValueError", "subsection not found");
         }
@@ -11931,31 +12238,49 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
             ts: list[str] = [];
             for itp in tuple_value(pfx) {
                 if not isinstance(itp, PyStr) {
-                    return py_error("TypeError", "tuple for " + n + " must only contain str, not " + itp.tp_type_name());
+                    return py_error(
+                        "TypeError",
+                        "tuple for "
+                            + n
+                            + " must only contain str, not "
+                            + itp.tp_type_name()
+                    );
                 }
                 ts.append((itp as PyStr).val);
             }
             affs = tuple(ts);
         } else {
-            return py_error("TypeError", n + " first arg must be str or a tuple of str, not " + pfx.tp_type_name());
+            return py_error(
+                "TypeError",
+                n
+                    + " first arg must be str or a tuple of str, not "
+                    + pfx.tp_type_name()
+            );
         }
         stv: any = None;
         env: any = None;
         sob = _sm_arg(args, kwargs, 1, "start");
         if not _sm_absent(sob) {
             si = _sm_slice_int(sob);
-            if is_error(si) { return si; }
+            if is_error(si) {
+                return si;
+            }
             stv = (si as PyInt).val;
         }
         eob = _sm_arg(args, kwargs, 2, "end");
         if not _sm_absent(eob) {
             ei = _sm_slice_int(eob);
-            if is_error(ei) { return ei; }
+            if is_error(ei) {
+                return ei;
+            }
             env = (ei as PyInt).val;
         }
         b = False;
-        if n == "startswith" { b = s.startswith(affs, stv, env); }
-        else { b = s.endswith(affs, stv, env); }
+        if n == "startswith" {
+            b = s.startswith(affs, stv, env);
+        } else {
+            b = s.endswith(affs, stv, env);
+        }
         return PyBool(t="bool", val=b);
     }
     # ---- replace ----
@@ -11964,38 +12289,61 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
         nobj = _sm_arg(args, kwargs, 1, "new");
         if _sm_absent(oobj) or _sm_absent(nobj) {
             given = len(args) + len(kwargs);
-            return py_error("TypeError", "replace() takes at least 2 positional arguments (" + str(given) + " given)");
+            return py_error(
+                "TypeError",
+                "replace() takes at least 2 positional arguments ("
+                    + str(given)
+                    + " given)"
+            );
         }
         if not isinstance(oobj, PyStr) {
-            return py_error("TypeError", "replace() argument 1 must be str, not " + oobj.tp_type_name());
+            return py_error(
+                "TypeError",
+                "replace() argument 1 must be str, not " + oobj.tp_type_name()
+            );
         }
         if not isinstance(nobj, PyStr) {
-            return py_error("TypeError", "replace() argument 2 must be str, not " + nobj.tp_type_name());
+            return py_error(
+                "TypeError",
+                "replace() argument 2 must be str, not " + nobj.tp_type_name()
+            );
         }
         cnt = -1;
         cobj = _sm_arg(args, kwargs, 2, "count");
         if not _sm_absent(cobj) {
             ci = _sm_int(cobj);
-            if is_error(ci) { return ci; }
+            if is_error(ci) {
+                return ci;
+            }
             cnt = (ci as PyInt).val;
         }
-        return PyStr(t="str", val=s.replace((oobj as PyStr).val, (nobj as PyStr).val, cnt));
+        return PyStr(
+            t="str", val=s.replace((oobj as PyStr).val, (nobj as PyStr).val, cnt)
+        );
     }
     # ---- removeprefix / removesuffix ----
     if n == "removeprefix" or n == "removesuffix" {
         a = _sm_one_arg(n, args, kwargs);
-        if is_error(a) { return a; }
+        if is_error(a) {
+            return a;
+        }
         if not isinstance(a, PyStr) {
-            return py_error("TypeError", n + "() argument must be str, not " + a.tp_type_name());
+            return py_error(
+                "TypeError", n + "() argument must be str, not " + a.tp_type_name()
+            );
         }
         av = (a as PyStr).val;
-        if n == "removeprefix" { return PyStr(t="str", val=s.removeprefix(av)); }
+        if n == "removeprefix" {
+            return PyStr(t="str", val=s.removeprefix(av));
+        }
         return PyStr(t="str", val=s.removesuffix(av));
     }
     # ---- join ----
     if n == "join" {
         a = _sm_one_arg(n, args, kwargs);
-        if is_error(a) { return a; }
+        if is_error(a) {
+            return a;
+        }
         elems: list[PyObj] = [];
         if not _sm_iter_elems(a, elems) {
             itres = PyObject_GetIter(a);
@@ -12003,7 +12351,9 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
                 return py_error("TypeError", "can only join an iterable");
             }
             drained = drain_to_list(itres);
-            if is_error(drained) { return drained; }
+            if is_error(drained) {
+                return drained;
+            }
             elems = (drained as PyList).items;
         }
         acc = "";
@@ -12011,9 +12361,18 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
         while i < len(elems) {
             el = elems[i];
             if not isinstance(el, PyStr) {
-                return py_error("TypeError", "sequence item " + str(i) + ": expected str instance, " + el.tp_type_name() + " found");
+                return py_error(
+                    "TypeError",
+                    "sequence item "
+                        + str(i)
+                        + ": expected str instance, "
+                        + el.tp_type_name()
+                        + " found"
+                );
             }
-            if i > 0 { acc = acc + s; }
+            if i > 0 {
+                acc = acc + s;
+            }
             acc = acc + (el as PyStr).val;
             i = i + 1;
         }
@@ -12022,7 +12381,9 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
     # ---- translate ----
     if n == "translate" {
         table = _sm_one_arg(n, args, kwargs);
-        if is_error(table) { return table; }
+        if is_error(table) {
+            return table;
+        }
         out = "";
         i = 0;
         while i < len(s) {
@@ -12031,22 +12392,28 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
                 etn = (res as PyError).exception.type_name;
                 if etn != "KeyError" {
                     if etn == "TypeError" {
-                        return py_error("TypeError", "'" + table.tp_type_name() + "' object is not subscriptable");
+                        return py_error(
+                            "TypeError",
+                            "'" + table.tp_type_name() + "' object is not subscriptable"
+                        );
                     }
                     return res;
                 }
                 out = out + s[i];
-            } elif isinstance(res, PyNoneType) {
-            } elif isinstance(res, PyStr) {
+            } elif isinstance(res, PyNoneType) { } elif isinstance(res, PyStr) {
                 out = out + (res as PyStr).val;
             } elif isinstance(res, PyInt) {
                 cp = (res as PyInt).val;
                 if cp < 0 or cp > 1114111 {
-                    return py_error("ValueError", "character mapping must be in range(0x110000)");
+                    return py_error(
+                        "ValueError", "character mapping must be in range(0x110000)"
+                    );
                 }
                 out = out + chr(cp);
             } else {
-                return py_error("TypeError", "character mapping must return integer, None or str");
+                return py_error(
+                    "TypeError", "character mapping must return integer, None or str"
+                );
             }
             i = i + 1;
         }
@@ -12058,32 +12425,51 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
             return py_error("TypeError", "str.maketrans() takes no keyword arguments");
         }
         if len(args) == 0 or len(args) > 3 {
-            return py_error("TypeError", "maketrans expected at least 1 argument, got " + str(len(args)));
+            return py_error(
+                "TypeError",
+                "maketrans expected at least 1 argument, got " + str(len(args))
+            );
         }
         x = args[0];
         d = PyDict(t="dict", items={});
         if isinstance(x, PyStr) {
             if len(args) < 2 {
-                return py_error("TypeError", "if you give only one argument to maketrans it must be a dict");
+                return py_error(
+                    "TypeError",
+                    "if you give only one argument to maketrans it must be a dict"
+                );
             }
             y = args[1];
             if not isinstance(y, PyStr) {
-                return py_error("TypeError", "maketrans() argument 2 must be str, not " + y.tp_type_name());
+                return py_error(
+                    "TypeError",
+                    "maketrans() argument 2 must be str, not " + y.tp_type_name()
+                );
             }
             xv = (x as PyStr).val;
             yv = (y as PyStr).val;
             if len(xv) != len(yv) {
-                return py_error("ValueError", "the first two maketrans arguments must have equal length");
+                return py_error(
+                    "ValueError",
+                    "the first two maketrans arguments must have equal length"
+                );
             }
             i = 0;
             while i < len(xv) {
-                se = d.dict_set(PyInt(t="int", val=ord(xv[i])), PyInt(t="int", val=ord(yv[i])));
-                if is_error(se) { return se; }
+                se = d.dict_set(
+                    PyInt(t="int", val=ord(xv[i])), PyInt(t="int", val=ord(yv[i]))
+                );
+                if is_error(se) {
+                    return se;
+                }
                 i = i + 1;
             }
         } elif isinstance(x, PyDict) {
             if len(args) > 1 {
-                return py_error("TypeError", "first maketrans argument must be a string if there is a second argument");
+                return py_error(
+                    "TypeError",
+                    "first maketrans argument must be a string if there is a second argument"
+                );
             }
             xd = x as PyDict;
             for hk in xd.items {
@@ -12093,32 +12479,50 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
                 if isinstance(ko, PyStr) {
                     kv = (ko as PyStr).val;
                     if len(kv) != 1 {
-                        return py_error("TypeError", "keys in translate table mustbe strings or integers");
+                        return py_error(
+                            "TypeError",
+                            "keys in translate table mustbe strings or integers"
+                        );
                     }
                     nk = PyInt(t="int", val=ord(kv));
                 } elif isinstance(ko, PyBool) {
                     bv = 0;
-                    if (ko as PyBool).val { bv = 1; }
+                    if (ko as PyBool).val {
+                        bv = 1;
+                    }
                     nk = PyInt(t="int", val=bv);
                 } elif not isinstance(ko, PyInt) {
-                    return py_error("TypeError", "keys in translate table mustbe strings or integers");
+                    return py_error(
+                        "TypeError",
+                        "keys in translate table mustbe strings or integers"
+                    );
                 }
                 se = d.dict_set(nk, vo);
-                if is_error(se) { return se; }
+                if is_error(se) {
+                    return se;
+                }
             }
         } else {
-            return py_error("TypeError", "first maketrans argument must be a string if there is a second argument");
+            return py_error(
+                "TypeError",
+                "first maketrans argument must be a string if there is a second argument"
+            );
         }
         if len(args) == 3 {
             z = args[2];
             if not isinstance(z, PyStr) {
-                return py_error("TypeError", "maketrans() argument 3 must be str, not " + z.tp_type_name());
+                return py_error(
+                    "TypeError",
+                    "maketrans() argument 3 must be str, not " + z.tp_type_name()
+                );
             }
             zv = (z as PyStr).val;
             i = 0;
             while i < len(zv) {
                 se = d.dict_set(PyInt(t="int", val=ord(zv[i])), py_none());
-                if is_error(se) { return se; }
+                if is_error(se) {
+                    return se;
+                }
                 i = i + 1;
             }
         }
@@ -12131,14 +12535,21 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
         eobj = _sm_arg(args, kwargs, 0, "encoding");
         if not _sm_absent(eobj) {
             if not isinstance(eobj, PyStr) {
-                return py_error("TypeError", "encode() argument 'encoding' must be str, not " + eobj.tp_type_name());
+                return py_error(
+                    "TypeError",
+                    "encode() argument 'encoding' must be str, not "
+                        + eobj.tp_type_name()
+                );
             }
             enc = (eobj as PyStr).val;
         }
         robj = _sm_arg(args, kwargs, 1, "errors");
         if not _sm_absent(robj) {
             if not isinstance(robj, PyStr) {
-                return py_error("TypeError", "encode() argument 'errors' must be str, not " + robj.tp_type_name());
+                return py_error(
+                    "TypeError",
+                    "encode() argument 'errors' must be str, not " + robj.tp_type_name()
+                );
             }
             errs = (robj as PyStr).val;
         }
@@ -12211,7 +12622,9 @@ def iter_drain(src: PyObj) -> PyObj {
 # key=/reverse= behave exactly like list.sort(). max/min follow CPython: one
 # positional iterable (with default= for emptiness) or several positionals,
 # ties keep the first candidate, key failures and comparison failures raise.
-def builtin_sorted_min_max(name: str, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+def builtin_sorted_min_max(
+    name: str, args: list[PyObj], kwargs: dict[str, PyObj]
+) -> PyObj {
     is_sorted = name == "sorted";
     key_fn = py_none();
     do_reverse = False;
@@ -12230,14 +12643,19 @@ def builtin_sorted_min_max(name: str, args: list[PyObj], kwargs: dict[str, PyObj
             has_default = True;
             default_val = kwargs[kw];
         } else {
-            return py_error("TypeError", "'" + kw + "' is an invalid keyword argument for " + name + "()");
+            return py_error(
+                "TypeError",
+                "'" + kw + "' is an invalid keyword argument for " + name + "()"
+            );
         }
     }
     if is_sorted {
         # CPython's sorted is (iterable, /): both under- and over-calls report
         # the plain "expected 1 argument" clinic wording.
         if len(args) != 1 {
-            return py_error("TypeError", name + " expected 1 argument, got " + str(len(args)));
+            return py_error(
+                "TypeError", name + " expected 1 argument, got " + str(len(args))
+            );
         }
         drained = iter_drain(args[0]);
         if is_error(drained) {
@@ -12262,7 +12680,12 @@ def builtin_sorted_min_max(name: str, args: list[PyObj], kwargs: dict[str, PyObj
         candidates = (drained as PyList).items;
     } else {
         if has_default {
-            return py_error("TypeError", "Cannot specify a default for " + name + "() with multiple positional arguments");
+            return py_error(
+                "TypeError",
+                "Cannot specify a default for "
+                    + name
+                    + "() with multiple positional arguments"
+            );
         }
         candidates = args;
     }
@@ -12346,8 +12769,8 @@ def list_sort_inplace(lst: PyList, key_fn: PyObj, do_reverse: bool) -> PyObj {
             a = i;
             b = mid;
             while a < mid and b < hi {
-                ka = ((pairs[a] as PyTuple).items[0]);
-                kb = ((pairs[b] as PyTuple).items[0]);
+                ka = (pairs[a] as PyTuple).items[0];
+                kb = (pairs[b] as PyTuple).items[0];
                 # Normal order takes b when kb < ka; reverse takes b when
                 # ka < kb. Ties always take a, which is what keeps the sort
                 # stable in both directions.
@@ -12556,7 +12979,10 @@ obj PyListMethod(PyObj) {
                     }
                     do_reverse = (truth as PyBool).val;
                 } else {
-                    return py_error("TypeError", "'" + kw + "' is an invalid keyword argument for sort()");
+                    return py_error(
+                        "TypeError",
+                        "'" + kw + "' is an invalid keyword argument for sort()"
+                    );
                 }
             }
             return list_sort_inplace(lst, key_fn, do_reverse);
@@ -12623,21 +13049,30 @@ obj PyDictMethod(PyObj) {
             }
         }
         if n == "__setitem__" and len(args) != 2 {
-            return py_error("TypeError", "__setitem__ expected 2 arguments, got " + str(len(args)));
+            return py_error(
+                "TypeError", "__setitem__ expected 2 arguments, got " + str(len(args))
+            );
         }
         if n == "__delitem__" and len(args) != 1 {
             return py_error("TypeError", "expected 1 argument, got " + str(len(args)));
         }
         if n == "get" or n == "setdefault" or n == "pop" {
             if len(args) < 1 {
-                return py_error("TypeError", n + " expected at least 1 argument, got 0");
+                return py_error(
+                    "TypeError", n + " expected at least 1 argument, got 0"
+                );
             }
             if len(args) > 2 {
-                return py_error("TypeError", n + " expected at most 2 arguments, got " + str(len(args)));
+                return py_error(
+                    "TypeError",
+                    n + " expected at most 2 arguments, got " + str(len(args))
+                );
             }
         }
         if n == "update" and len(args) > 1 {
-            return py_error("TypeError", "update expected at most 1 argument, got " + str(len(args)));
+            return py_error(
+                "TypeError", "update expected at most 1 argument, got " + str(len(args))
+            );
         }
         if n == "get" {
             if d.dict_contains(args[0]) {
@@ -13170,8 +13605,11 @@ obj PyGenerator(PyObj) {
     # as CPython's PyAsyncGenObject lacks send/throw/close/__next__.
     def tp_getattro(name: str) -> PyObj {
         if self.t == "async_generator" {
-            if name == "asend" or name == "athrow" or name == "aclose"
-                or name == "__anext__" or name == "__aiter__" {
+            if name == "asend"
+                or name == "athrow"
+                or name == "aclose"
+                or name == "__anext__"
+                or name == "__aiter__" {
                 return PyAsyncGenMethod(t="agen_method", gen=self, kind=name);
             }
             if name == "ag_frame" {
@@ -13263,11 +13701,15 @@ obj PyGenMethod(PyObj) {
         # bindings: "generator.send()", "coroutine.close()", ...
         label = self.gen.t;
         if len(kwargs) > 0 {
-            return py_error("TypeError", label + "." + self.kind + "() takes no keyword arguments");
+            return py_error(
+                "TypeError", label + "." + self.kind + "() takes no keyword arguments"
+            );
         }
         if self.kind == "throw" {
             if len(args) < 1 {
-                return py_error("TypeError", "throw expected at least 1 argument, got 0");
+                return py_error(
+                    "TypeError", "throw expected at least 1 argument, got 0"
+                );
             }
             if len(args) > 3 {
                 return py_error(
@@ -13298,8 +13740,10 @@ obj PyGenMethod(PyObj) {
             if len(args) != 1 {
                 return py_error(
                     "TypeError",
-                    label + ".send() takes exactly one argument ("
-                        + str(len(args)) + " given)"
+                    label
+                        + ".send() takes exactly one argument ("
+                        + str(len(args))
+                        + " given)"
                 );
             }
             return gen_send(self.gen, args[0]);
@@ -13327,7 +13771,9 @@ def normalize_throw_args(args: list[PyObj]) -> PyObj {
         val = args[1];
     }
     if len(args) == 3 and args[2].t != "none" {
-        return py_error("TypeError", "throw() third argument must be a traceback object");
+        return py_error(
+            "TypeError", "throw() third argument must be a traceback object"
+        );
     }
     if isinstance(typ, PyHostProxy) {
         # Host-proxied exception classes/instances (the non-layer3 builtin
@@ -13337,7 +13783,9 @@ def normalize_throw_args(args: list[PyObj]) -> PyObj {
         inst_info = _jac_host_exception_instance(raw);
         if inst_info[0] as bool {
             if val.t != "none" {
-                return py_error("TypeError", "instance exception may not have a separate value");
+                return py_error(
+                    "TypeError", "instance exception may not have a separate value"
+                );
             }
             return as_error(typ);
         }
@@ -13353,11 +13801,14 @@ def normalize_throw_args(args: list[PyObj]) -> PyObj {
         }
     }
     if typ.t == "exception"
-        or (isinstance(typ, PyUserObj)
-            and class_is_exception((typ as PyUserObj).cls)) {
+        or (
+            isinstance(typ, PyUserObj) and class_is_exception((typ as PyUserObj).cls)
+        ) {
         # Raising an instance: the value must be a dummy.
         if val.t != "none" {
-            return py_error("TypeError", "instance exception may not have a separate value");
+            return py_error(
+                "TypeError", "instance exception may not have a separate value"
+            );
         }
         return as_error(typ);
     }
@@ -13401,7 +13852,8 @@ def normalize_throw_args(args: list[PyObj]) -> PyObj {
 # Resume `gen` with `sent` (the value YIELD_VALUE produces on wake; None for
 # plain iteration). Returns the yielded PyObj on a yield, a PyGenStop on normal
 # return (exhaustion), or a propagating error object on a raise.
-def gen_resume(gen: PyGenerator, sent: PyObj) -> PyObj {    if gen.running {
+def gen_resume(gen: PyGenerator, sent: PyObj) -> PyObj {
+    if gen.running {
         # CPython: resuming a generator whose frame is already executing
         # (self-resume via a callback/trampoline) raises ValueError.
         return py_error("ValueError", "generator already executing");
@@ -13438,7 +13890,9 @@ def finish_gen_result(gen: PyGenerator, result: PyObj) -> PyObj {
             # generator's body means the generator tried to end its own
             # iteration -- the RuntimeError analogue of PEP 479's StopIteration
             # guard for sync generators.
-            return py_error("RuntimeError", "async generator raised StopAsyncIteration");
+            return py_error(
+                "RuntimeError", "async generator raised StopAsyncIteration"
+            );
         }
         return result;
     }
@@ -13701,22 +14155,31 @@ obj PyWeakRefFn(PyObj) {
             return py_error("TypeError", "weakref.ref expected 1 argument");
         }
         target = args[0];
-        if isinstance(target, PyHostProxy) or isinstance(target, PyInt)
-            or isinstance(target, PyFloat) or isinstance(target, PyBool)
-            or isinstance(target, PyStr) or isinstance(target, PyBytes)
-            or isinstance(target, PyTuple) or isinstance(target, PyList)
-            or isinstance(target, PyDict) or isinstance(target, PySet)
+        if isinstance(target, PyHostProxy)
+            or isinstance(target, PyInt)
+            or isinstance(target, PyFloat)
+            or isinstance(target, PyBool)
+            or isinstance(target, PyStr)
+            or isinstance(target, PyBytes)
+            or isinstance(target, PyTuple)
+            or isinstance(target, PyList)
+            or isinstance(target, PyDict)
+            or isinstance(target, PySet)
             or isinstance(target, PyNoneType) {
             tname = "object";
             tn = py_type_of(target);
             if isinstance(tn, PyClass) {
                 tname = (tn as PyClass).name;
             }
-            return py_error("TypeError", "cannot create weak reference to '" + tname + "' object");
+            return py_error(
+                "TypeError", "cannot create weak reference to '" + tname + "' object"
+            );
         }
         wr = _jac_make_weakref(target);
         if wr is None {
-            return py_error("TypeError", "cannot create weak reference to 'object' object");
+            return py_error(
+                "TypeError", "cannot create weak reference to 'object' object"
+            );
         }
         return PyWeakRef(t="weakref", wr=wr);
     }
@@ -13781,11 +14244,7 @@ def build_types_facade -> PyObj {
 
 def build_weakref_module -> PyObj {
     return PyModule(
-        t="module",
-        name="weakref",
-        attrs={
-            "ref": PyWeakRefFn(t="weakref_fn"),
-        },
+        t="module", name="weakref", attrs={"ref": PyWeakRefFn(t="weakref_fn"),},
     );
 }
 
@@ -13850,7 +14309,8 @@ def _hqsift_up(items: list[PyObj], pos: int) -> PyObj {
 def _hq_heap_arg(args: list[PyObj], n: int, fname: str) -> PyList | PyObj {
     if len(args) != n {
         return py_error(
-            "TypeError", fname + " expected " + str(n) + " arguments, got " + str(len(args))
+            "TypeError",
+            fname + " expected " + str(n) + " arguments, got " + str(len(args))
         );
     }
     h = args[0];
@@ -13956,7 +14416,9 @@ obj PyHeapqFn(PyObj) {
             }
             return item;
         }
-        return py_error("AttributeError", "module 'heapq' has no attribute '" + n + "'");
+        return py_error(
+            "AttributeError", "module 'heapq' has no attribute '" + n + "'"
+        );
     }
 }
 
@@ -13992,10 +14454,15 @@ obj PyTStrInterpolation(PyObj) {
     def tp_repr -> PyObj {
         return PyStr(
             t="str",
-            val="Interpolation(" + str(py_repr(self.value)) + ", "
-                + str(py_repr(PyStr(t="str", val=self.expression))) + ", "
-                + str(py_repr(self.conversion)) + ", "
-                + str(py_repr(self.format_spec)) + ")"
+            val="Interpolation("
+                + str(py_repr(self.value))
+                + ", "
+                + str(py_repr(PyStr(t="str", val=self.expression)))
+                + ", "
+                + str(py_repr(self.conversion))
+                + ", "
+                + str(py_repr(self.format_spec))
+                + ")"
         );
     }
 }
@@ -14047,8 +14514,11 @@ obj PyTStrTemplate(PyObj) {
     def tp_repr -> PyObj {
         return PyStr(
             t="str",
-            val="Template(strings=" + str(py_repr(self.strings)) + ", interpolations="
-                + str(py_repr(self.interpolations)) + ")"
+            val="Template(strings="
+                + str(py_repr(self.strings))
+                + ", interpolations="
+                + str(py_repr(self.interpolations))
+                + ")"
         );
     }
 }
@@ -14069,9 +14539,7 @@ def make_interpolation(value_i: PyObj, expr_s: str, conv: PyObj, fmt: PyObj) -> 
 
 def make_template(strings_t: PyTuple, parts_t: PyTuple) -> PyObj {
     return PyTStrTemplate(
-        t="template",
-        strings=strings_t,
-        interpolations=parts_t
+        t="template", strings=strings_t, interpolations=parts_t
     ) as PyObj;
 }
 
@@ -14085,6 +14553,7 @@ def build_heapq_module -> PyObj {
             "heappop": PyHeapqFn(t="heapq_fn", name="heappop"),
             "heapreplace": PyHeapqFn(t="heapq_fn", name="heapreplace"),
             "heappushpop": PyHeapqFn(t="heapq_fn", name="heappushpop"),
+
         },
     );
 }
@@ -14133,7 +14602,9 @@ def gen_close(gen: PyGenerator) -> PyObj {
 # exhaustion becomes StopAsyncIteration, errors propagate.
 def agen_asend_step(a: PyAsyncGenASend, sent: PyObj) -> PyObj {
     if a.started {
-        return py_error("RuntimeError", "cannot reuse already awaited __anext__()/asend()");
+        return py_error(
+            "RuntimeError", "cannot reuse already awaited __anext__()/asend()"
+        );
     }
     a.started = True;
     gen = a.gen;
@@ -14153,7 +14624,9 @@ def agen_asend_step(a: PyAsyncGenASend, sent: PyObj) -> PyObj {
 # aclose runs the GeneratorExit protocol and never raises on a clean exit.
 def agen_athrow_step(a: PyAsyncGenAThrow, sent: PyObj) -> PyObj {
     if a.started {
-        return py_error("RuntimeError", "cannot reuse already awaited aclose()/athrow()");
+        return py_error(
+            "RuntimeError", "cannot reuse already awaited aclose()/athrow()"
+        );
     }
     a.started = True;
     gen = a.gen;
@@ -14201,7 +14674,9 @@ def agen_translate(result: PyObj) -> PyObj {
     }
     return PyError(
         t="error",
-        exception=PyException(t="exception", type_name="StopAsyncIteration", message=""),
+        exception=PyException(
+            t="exception", type_name="StopAsyncIteration", message=""
+        ),
     );
 }
 
@@ -14444,7 +14919,9 @@ def exec_code_frame(
         if fast_index >= 0 {
             # In-place conversion of an already-bound varname slot (the runtime
             # effect of the prologue MAKE_CELLs): boundness carries over.
-            fast[fast_index] = PyCell(t="cell", val=fast[fast_index], filled=assigned[fast_index]);
+            fast[fast_index] = PyCell(
+                t="cell", val=fast[fast_index], filled=assigned[fast_index]
+            );
         } else {
             newcell = PyCell(t="cell", val=py_none());
             fast.append(newcell);
@@ -14485,7 +14962,9 @@ def exec_code_frame(
     # aclose drive it through the agen_* awaitables (genobject.c
     # PyAsyncGenObject_New with an unstarted frame).
     if (co.flags & 512) != 0 {
-        return PyGenerator(t="async_generator", frame=frame, started=False, finished=False);
+        return PyGenerator(
+            t="async_generator", frame=frame, started=False, finished=False
+        );
     }
     if (co.flags & 32) != 0 {
         return PyGenerator(t="generator", frame=frame, started=False, finished=False);
@@ -14982,7 +15461,9 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                     if item.t == "cell" {
                         function.closure.append(item as PyCell);
                     } else {
-                        function.closure.append(PyCell(t="cell", val=item, filled=True));
+                        function.closure.append(
+                            PyCell(t="cell", val=item, filled=True)
+                        );
                     }
                 }
             }
@@ -15363,7 +15844,8 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                     merge_err = py_error(
                         "TypeError",
                         "got multiple values for keyword argument '"
-                            + expect_str(mkeys[mj]) + "'",
+                            + expect_str(mkeys[mj])
+                            + "'",
                     );
                     target = recover_exception(co, merge_err, offset, stack);
                     if target >= 0 {
@@ -15391,7 +15873,10 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                     unpack_hint_err = py_error(
                         "ValueError",
                         "not enough values to unpack (expected "
-                            + str(arg) + ", got " + str(lv) + ")",
+                            + str(arg)
+                            + ", got "
+                            + str(lv)
+                            + ")",
                     );
                     target = recover_exception(co, unpack_hint_err, offset, stack);
                     if target >= 0 {
@@ -15404,7 +15889,10 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                     unpack_hint_err2 = py_error(
                         "ValueError",
                         "too many values to unpack (expected "
-                            + str(arg) + ", got " + str(lv) + ")",
+                            + str(arg)
+                            + ", got "
+                            + str(lv)
+                            + ")",
                     );
                     target = recover_exception(co, unpack_hint_err2, offset, stack);
                     if target >= 0 {
@@ -15789,8 +16277,10 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             # A StopIteration (or subclass) means the sub-iterator finished
             # handling the throw: unwind to (None, value) and loop to END_SEND.
             if exc_name == "StopIteration"
-                or ((exc as PyException).family != ""
-                and exc_name_matches((exc as PyException).family, "StopIteration")) {
+                or (
+                    (exc as PyException).family != ""
+                    and exc_name_matches((exc as PyException).family, "StopIteration")
+                ) {
                 payload = py_none();
                 if (exc as PyException).value is not None {
                     payload = (exc as PyException).value as PyObj;
@@ -16276,14 +16766,22 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                     if origin != "" {
                         result = py_error(
                             "ImportError",
-                            "cannot import name '" + co.names[arg] + "' from '"
-                                + modname + "' (" + origin + ")"
+                            "cannot import name '"
+                                + co.names[arg]
+                                + "' from '"
+                                + modname
+                                + "' ("
+                                + origin
+                                + ")"
                         );
                     } else {
                         result = py_error(
                             "ImportError",
-                            "cannot import name '" + co.names[arg] + "' from '"
-                                + modname + "'"
+                            "cannot import name '"
+                                + co.names[arg]
+                                + "' from '"
+                                + modname
+                                + "'"
                         );
                     }
                 }
@@ -16338,8 +16836,10 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             # so a bare dir() at module top level lists module globals, exactly
             # like CPython. Bound localsplus slots join dict-locals keys; a cell
             # slot counts only while filled.
-            if fn.t == "native_builtin" and (fn as PyNativeBuiltin).name == "dir"
-                and self_or_null.t == "none" and len(call_args) == 0
+            if fn.t == "native_builtin"
+                and (fn as PyNativeBuiltin).name == "dir"
+                and self_or_null.t == "none"
+                and len(call_args) == 0
                 and len(kwargs_for_call) == 0 {
                 local_names: dict[str, bool] = {};
                 for k in locals {
@@ -16820,12 +17320,14 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                         "SystemError", "CALL_INTRINSIC_1 TYPEALIAS name must be a str"
                     );
                 }
-                stack.append(PyTypeAlias(
-                    t="TypeAliasType",
-                    name=(parts[0] as PyStr).val,
-                    type_params=parts[1],
-                    value_fn=parts[2],
-                ));
+                stack.append(
+                    PyTypeAlias(
+                        t="TypeAliasType",
+                        name=(parts[0] as PyStr).val,
+                        type_params=parts[1],
+                        value_fn=parts[2],
+                    )
+                );
                 continue;
             }
             if arg == 3 {
@@ -16909,12 +17411,13 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                 # see typevar_bound_value in py_attr.
                 if not isinstance(lhs, PyStr) {
                     return py_error(
-                        "SystemError", "malformed CALL_INTRINSIC_2 TYPEVAR_WITH_BOUND operand"
+                        "SystemError",
+                        "malformed CALL_INTRINSIC_2 TYPEVAR_WITH_BOUND operand"
                     );
                 }
-                stack.append(PyTypeVar(
-                    t="TypeVar", name=(lhs as PyStr).val, evaluate_bound=rhs
-                ));
+                stack.append(
+                    PyTypeVar(t="TypeVar", name=(lhs as PyStr).val, evaluate_bound=rhs)
+                );
                 continue;
             }
             if arg == 3 {
@@ -16925,9 +17428,11 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                         "malformed CALL_INTRINSIC_2 TYPEVAR_WITH_CONSTRAINTS operand"
                     );
                 }
-                stack.append(PyTypeVar(
-                    t="TypeVar", name=(lhs as PyStr).val, evaluate_constraints=rhs
-                ));
+                stack.append(
+                    PyTypeVar(
+                        t="TypeVar", name=(lhs as PyStr).val, evaluate_constraints=rhs
+                    )
+                );
                 continue;
             }
             if arg == 4 {
@@ -16950,7 +17455,8 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                 # access -- see typevar_default_value in py_attr.
                 if not isinstance(lhs, PyTypeVar) {
                     return py_error(
-                        "SystemError", "malformed CALL_INTRINSIC_2 SET_TYPEPARAM_DEFAULT operand"
+                        "SystemError",
+                        "malformed CALL_INTRINSIC_2 SET_TYPEPARAM_DEFAULT operand"
                     );
                 }
                 tp_default = lhs as PyTypeVar;
@@ -17024,8 +17530,7 @@ def builtin_exec(
     }
     if len(args) < 1 or len(args) > 3 {
         return py_error(
-            "TypeError",
-            "exec expected at least 1 argument, got " + str(len(args))
+            "TypeError", "exec expected at least 1 argument, got " + str(len(args))
         );
     }
     # str/bytes source: compile through the same marshal transport the import
@@ -17057,6 +17562,7 @@ def builtin_exec(
     match args[0] {
         case PyCode():
             co = args[0] as PyCode;
+
         case PyHostProxy():
             # compile()/types.CodeType built on the host arrive as proxies;
             # bring the code back through the marshal transport -- the same
@@ -17070,8 +17576,10 @@ def builtin_exec(
                 return py_error("TypeError", "exec() argument 1 must be a code object");
             }
             co = converted as PyCode;
+
         case _:
             return py_error("TypeError", "exec() argument 1 must be a code object");
+
     }
     g_work: dict[str, PyObj] = frame_globals;
     g_copy = False;
@@ -17085,7 +17593,8 @@ def builtin_exec(
             return py_error(
                 "TypeError",
                 "exec() argument 2 must be a dict, not '"
-                    + _compare_type_name(args[1]) + "'"
+                    + _compare_type_name(args[1])
+                    + "'"
             );
         }
     }
@@ -17101,7 +17610,8 @@ def builtin_exec(
             return py_error(
                 "TypeError",
                 "exec() argument 3 must be a dict, not '"
-                    + _compare_type_name(args[2]) + "'"
+                    + _compare_type_name(args[2])
+                    + "'"
             );
         }
     }
@@ -17146,6 +17656,7 @@ def exec_code(co: PyObj, args: list[PyObj], globals: dict[str, PyObj]) -> PyObj 
                 tb_display_error(outcome, py_str);
             }
             return outcome;
+
     }
     return py_error("TypeError", "expected code object");
 }

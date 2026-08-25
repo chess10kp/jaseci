@@ -7,25 +7,9 @@ def c_imod(a: int, b: int) -> int {
     return a - c_idiv(a, b) * b;
 }
 
-glob Py_ssize_t = int;
-
-glob _days_in_month: list[int] = [
-         0,
-         31,
-         28,
-         31,
-         30,
-         31,
-         30,
-         31,
-         31,
-         30,
-         31,
-         30,
-         31
-     ];
-
-glob _days_before_month: list[int] = [
+glob Py_ssize_t = int,
+     _days_in_month: list[int] = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+     _days_before_month: list[int] = [
          0,
          0,
          31,
@@ -165,7 +149,7 @@ def datetime_iso_week1_monday(year: int) -> int {
 }
 
 
-def datetime_normalize_pair(hi: object, lo: object, factor: int) -> None {
+def datetime_normalize_pair(hi: object, lo: object, factor: int) {
     if ((lo < 0) or (lo >= factor)) {
         num_hi: int = datetime_divmod(lo, factor, lo);
         hi = hi + num_hi;
@@ -173,7 +157,7 @@ def datetime_normalize_pair(hi: object, lo: object, factor: int) -> None {
 }
 
 
-def datetime_normalize_d_s_us(d: object, s: object, us: object) -> None {
+def datetime_normalize_d_s_us(d: object, s: object, us: object) {
     if ((us < 0) or (us >= 1000000)) {
         datetime_normalize_pair(s, us, 1000000);
     }

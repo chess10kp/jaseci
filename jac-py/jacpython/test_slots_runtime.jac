@@ -28,9 +28,7 @@ def vm_exec_in(ns: dict[str, PyObj], src: str) {
 # exception itself.
 def vm_try(src: str) -> PyObj {
     return exec_code(
-        unmarshal(host_compile_marshal(src, "<slots_runtime>", "exec")),
-        [],
-        _fresh_ns()
+        unmarshal(host_compile_marshal(src, "<slots_runtime>", "exec")), [], _fresh_ns()
     );
 }
 
@@ -45,12 +43,7 @@ def err_msg(outcome: PyObj) -> str {
 }
 
 test "slots: out-of-slots write raises the two-clause AttributeError" {
-    outcome = vm_try(
-        "class C:\n"
-        "    __slots__ = ('x',)\n"
-        "c = C()\n"
-        "c.z = 3\n"
-    );
+    outcome = vm_try("class C:\n" "    __slots__ = ('x',)\n" "c = C()\n" "c.z = 3\n");
     assert err_type(outcome) == "AttributeError";
     assert err_msg(outcome)
         == "'C' object has no attribute 'z' and no __dict__ for setting new attributes";
@@ -87,29 +80,17 @@ test "slots: declared slot round-trips through the member descriptor" {
 }
 
 test "slots: unset-slot reads and deletes carry the host surfaces" {
-    outcome = vm_try(
-        "class C:\n"
-        "    __slots__ = ('x',)\n"
-        "C().x\n"
-    );
+    outcome = vm_try("class C:\n" "    __slots__ = ('x',)\n" "C().x\n");
     assert err_type(outcome) == "AttributeError";
     assert err_msg(outcome) == "'C' object has no attribute 'x'";
 
     # Deleting an empty slot reports the bare member name (CPython quirk).
-    outcome = vm_try(
-        "class U:\n"
-        "    __slots__ = ('u',)\n"
-        "del U().u\n"
-    );
+    outcome = vm_try("class U:\n" "    __slots__ = ('u',)\n" "del U().u\n");
     assert err_type(outcome) == "AttributeError";
     assert err_msg(outcome) == "u";
 
     # Deleting an undeclared name reuses the two-clause no-dict message.
-    outcome = vm_try(
-        "class C:\n"
-        "    __slots__ = ('x',)\n"
-        "del C().zz\n"
-    );
+    outcome = vm_try("class C:\n" "    __slots__ = ('x',)\n" "del C().zz\n");
     assert err_type(outcome) == "AttributeError";
     assert err_msg(outcome)
         == "'C' object has no attribute 'zz' and no __dict__ for setting new attributes";
@@ -138,11 +119,7 @@ test "slots: string form declares exactly one slot" {
         "assert s.q == 1\n"
         "assert S.__slots__ == 'q'\n",
     );
-    outcome = vm_try(
-        "class S:\n"
-        "    __slots__ = 'q'\n"
-        "S().p = 1\n"
-    );
+    outcome = vm_try("class S:\n" "    __slots__ = 'q'\n" "S().p = 1\n");
     assert err_type(outcome) == "AttributeError";
     assert err_msg(outcome)
         == "'S' object has no attribute 'p' and no __dict__ for setting new attributes";
@@ -219,21 +196,12 @@ test "slots: subclass slots merge with inherited ones" {
 }
 
 test "slots: builtin base with empty slots has neither attrs nor dict" {
-    outcome = vm_try(
-        "class I(int):\n"
-        "    __slots__ = ()\n"
-        "i = I(3)\n"
-        "i.k = 1\n"
-    );
+    outcome = vm_try("class I(int):\n" "    __slots__ = ()\n" "i = I(3)\n" "i.k = 1\n");
     assert err_type(outcome) == "AttributeError";
     assert err_msg(outcome)
         == "'I' object has no attribute 'k' and no __dict__ for setting new attributes";
 
-    outcome = vm_try(
-        "class I(int):\n"
-        "    __slots__ = ()\n"
-        "I(3).__dict__\n"
-    );
+    outcome = vm_try("class I(int):\n" "    __slots__ = ()\n" "I(3).__dict__\n");
     assert err_type(outcome) == "AttributeError";
     assert err_msg(outcome) == "'I' object has no attribute '__dict__'";
 
@@ -250,27 +218,17 @@ test "slots: builtin base with empty slots has neither attrs nor dict" {
 }
 
 test "slots: malformed declarations raise the host TypeErrors" {
-    outcome = vm_try(
-        "class Y:\n"
-        "    __slots__ = 5\n"
-    );
+    outcome = vm_try("class Y:\n" "    __slots__ = 5\n");
     assert err_type(outcome) == "TypeError";
     assert err_msg(outcome) == "'int' object is not iterable";
 
-    outcome = vm_try(
-        "class Z:\n"
-        "    __slots__ = (5,)\n"
-    );
+    outcome = vm_try("class Z:\n" "    __slots__ = (5,)\n");
     assert err_type(outcome) == "TypeError";
     assert err_msg(outcome) == "__slots__ items must be strings, not 'int'";
 }
 
 test "slots: slot vs class variable conflicts at creation time" {
-    outcome = vm_try(
-        "class X:\n"
-        "    __slots__ = ('v',)\n"
-        "    v = 1\n"
-    );
+    outcome = vm_try("class X:\n" "    __slots__ = ('v',)\n" "    v = 1\n");
     assert err_type(outcome) == "ValueError";
     assert err_msg(outcome) == "'v' in __slots__ conflicts with class variable";
 }

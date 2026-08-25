@@ -938,7 +938,9 @@ test "pyc-first: PyFloat nb_binop/tp_richcompare drive natively" {
     assert expect_bool(nans["self_lt"]) == False;
 
     # Division by zero raises rather than falling through to host.
-    zdiv = PyFloat(t="float", val=1.0).nb_binop(NB_TRUE_DIVIDE, PyFloat(t="float", val=0.0));
+    zdiv = PyFloat(t="float", val=1.0).nb_binop(
+        NB_TRUE_DIVIDE, PyFloat(t="float", val=0.0)
+    );
     assert is_error(zdiv);
 }
 

@@ -2,14 +2,7 @@
 # extracted from compiler_codegen.jac. Pure mechanical move; see
 # compiler_codegen.jac for the module-initialization ordering contract.
 
-import from objects {
-    PyCode,
-    PyInt,
-    PyObj,
-    PyStr,
-    PyTuple,
-    py_none,
-}
+import from objects { PyCode, PyInt, PyObj, PyStr, PyTuple, py_none, }
 import from opcode_meta {
     CO_ASYNC_GENERATOR,
     CO_COROUTINE,
@@ -108,6 +101,7 @@ import from compiler_annotations {
     emit_class_annotation_setup,
     finish_class_annotations
 }
+
 def sym_class_child(parent: sym_block, class_name: str) -> sym_block | None {
     ci = 0;
     while ci < len(parent.children) {
@@ -407,7 +401,10 @@ def visit_class_def(g: cfg_builder, cd: ClassDef) -> stmt_cont {
         di = di + 1;
     }
     u_cls = compile_class_cfg(
-        cd, g.u.filename, sym_cls, g.private,
+        cd,
+        g.u.filename,
+        sym_cls,
+        g.private,
         decorators[0].lineno if len(decorators) > 0 else None
     );
     if u_cls.diag is not None {
@@ -490,7 +487,9 @@ def compile_class_cfg(
     }
     class_qname = sym_class_qualname(cd, sym_cls, enclosing_private);
     u = unverified_cfg(
-        filename=filename, name=cd.name, qualname=class_qname,
+        filename=filename,
+        name=cd.name,
+        qualname=class_qname,
         firstlineno=body_firstlineno
     );
     if sym_cls.nested {
@@ -507,7 +506,8 @@ def compile_class_cfg(
     if sym_cls.needs_class_closure {
         u.cellvars.append("__class__");
     }
-    if class_body_has_function(cd) or ann_plan.any_annotation
+    if class_body_has_function(cd)
+        or ann_plan.any_annotation
         or class_body_has_typealias(cd) {
         u.cellvars.append("__classdict__");
         if ann_plan.any_conditional {
@@ -517,15 +517,15 @@ def compile_class_cfg(
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_cls, cd.name);
     emit_class_body_prologue(g, class_qname, body_firstlineno);
-    emit_class_annotation_setup(g, ann_plan, nloc(cd.lineno, cd.end_lineno,
-        cd.col_offset, cd.end_col_offset));
+    emit_class_annotation_setup(
+        g, ann_plan, nloc(cd.lineno, cd.end_lineno, cd.col_offset, cd.end_col_offset)
+    );
     last = loc(0, cd.lineno, 0, 0);
     bi = 0;
     while bi < len(cd.body) {
         s = cd.body[bi];
         cont = visit_stmt(
-            g, s, exec_tail_emits_code(cd.body, bi + 1), cd.body, bi + 1,
-            None, ann_plan
+            g, s, exec_tail_emits_code(cd.body, bi + 1), cd.body, bi + 1, None, ann_plan
         );
         last = cont.loc;
         if codegen_busy(g) {
@@ -563,7 +563,13 @@ def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
         decorators = [];
     }
     u_fn = compile_fn_cfg(
-        fd.name, fd.args, fd.body, fd.lineno, g.u.filename, sym_fn, g.private,
+        fd.name,
+        fd.args,
+        fd.body,
+        fd.lineno,
+        g.u.filename,
+        sym_fn,
+        g.private,
         decorators[0].lineno if len(decorators) > 0 else None
     );
     if u_fn.diag is not None {
@@ -623,7 +629,13 @@ def visit_async_function_def(g: cfg_builder, afd: AsyncFunctionDef) -> stmt_cont
         decorators = [];
     }
     u_fn = compile_fn_cfg(
-        afd.name, afd.args, afd.body, afd.lineno, g.u.filename, sym_fn, g.private,
+        afd.name,
+        afd.args,
+        afd.body,
+        afd.lineno,
+        g.u.filename,
+        sym_fn,
+        g.private,
         decorators[0].lineno if len(decorators) > 0 else None
     );
     if u_fn.diag is not None {
@@ -814,9 +826,7 @@ def typealias_value_cfg(
     }
     ci = 0;
     while ci < len(u.cellvars) {
-        g.emit_op(
-            OP_MAKE_CELL, localsplus_index_u(u, u.cellvars[ci]), noloc
-        );
+        g.emit_op(OP_MAKE_CELL, localsplus_index_u(u, u.cellvars[ci]), noloc);
         ci = ci + 1;
     }
     g.emit_op(OP_RESUME, 0, loc(ta.lineno, ta.lineno, 0, 0));
@@ -880,9 +890,7 @@ def typealias_genparams_cfg(
     }
     ci = 0;
     while ci < len(u.cellvars) {
-        g.emit_op(
-            OP_MAKE_CELL, localsplus_index_u(u, u.cellvars[ci]), noloc
-        );
+        g.emit_op(OP_MAKE_CELL, localsplus_index_u(u, u.cellvars[ci]), noloc);
         ci = ci + 1;
     }
     g.emit_op(OP_RESUME, 0, loc(ta.lineno, ta.lineno, 0, 0));
@@ -908,15 +916,11 @@ def typealias_genparams_cfg(
     pi = 0;
     while pi < np {
         tv_name = (tps[pi] as TypeVar).name;
-        g.emit_op(
-            OP_LOAD_FAST_BORROW, localsplus_index_u(u, tv_name), tloc
-        );
+        g.emit_op(OP_LOAD_FAST_BORROW, localsplus_index_u(u, tv_name), tloc);
         pi = pi + 1;
     }
     if in_class {
-        g.emit_op(
-            OP_LOAD_FAST_BORROW, localsplus_index_u(u, "__classdict__"), tloc
-        );
+        g.emit_op(OP_LOAD_FAST_BORROW, localsplus_index_u(u, "__classdict__"), tloc);
         nclosure = nclosure + 1;
     }
     g.emit_op(OP_BUILD_TUPLE, nclosure, tloc);
@@ -953,13 +957,9 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
     gp_name = "<generic parameters of " + name + ">";
     sym_v = None;
     if generic {
-        sym_gp = sym_function_child_at(
-            g.sym_top, gp_name, ta.lineno, ta.col_offset
-        );
+        sym_gp = sym_function_child_at(g.sym_top, gp_name, ta.lineno, ta.col_offset);
         if sym_gp is None {
-            codegen_fail(
-                g, "SystemError", "missing symtable for " + gp_name
-            );
+            codegen_fail(g, "SystemError", "missing symtable for " + gp_name);
             return stmt_cont(loc=tloc);
         }
         sym_params = sym_gp;
@@ -1011,8 +1011,7 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
         }
         co_v = assemble(cfg_v);
         u_gp = typealias_genparams_cfg(
-            ta, tps, name, g.u.filename, sym_params, co_v, g.private, in_class,
-            gpqname
+            ta, tps, name, g.u.filename, sym_params, co_v, g.private, in_class, gpqname
         );
         if u_gp.diag is not None {
             g.u.diag = u_gp.diag;
@@ -1074,9 +1073,7 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
     if g.sym_top is not None and g.sym_top.block_type == "function" {
         fi = fast_local_index(g, name);
         if fi < 0 {
-            codegen_fail(
-                g, "SystemError", "missing fast local for type alias " + name
-            );
+            codegen_fail(g, "SystemError", "missing fast local for type alias " + name);
             return stmt_cont(loc=tloc);
         }
         g.emit_op(OP_STORE_FAST, fi, tloc);

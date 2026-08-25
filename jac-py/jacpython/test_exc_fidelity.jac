@@ -236,12 +236,13 @@ test "exception-attribute writes enforce CPython types" {
         "    except TypeError as te:\n"
         "        msgs.append(str(te))\n"
     );
-    assert vm_str(ns, "msgs") == (
-        "['exception cause must be None or derive from BaseException', "
-        "'exception context must be None or derive from BaseException', "
-        "'__traceback__ must be a traceback or None', "
-        "'attribute value type must be bool']"
-    );
+    assert vm_str(ns, "msgs")
+        == (
+            "['exception cause must be None or derive from BaseException', "
+            "'exception context must be None or derive from BaseException', "
+            "'__traceback__ must be a traceback or None', "
+            "'attribute value type must be bool']"
+        );
 }
 
 test "setting __cause__ implies __suppress_context__" {
@@ -300,7 +301,6 @@ test "chain attribute __class__ synthesis (cause/context/traceback/None)" {
         "    names.append(e.__suppress_context__.__class__.__name__)\n"
         "    names.append(None.__class__.__name__)\n"
     );
-    assert vm_str(ns, "names") == (
-        "['ValueError', 'NoneType', 'traceback', 'tuple', 'bool', 'NoneType']"
-    );
+    assert vm_str(ns, "names")
+        == ("['ValueError', 'NoneType', 'traceback', 'tuple', 'bool', 'NoneType']");
 }

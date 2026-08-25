@@ -318,7 +318,8 @@ test "refcount_err_return.c elides refcount ops and lifts PyErr returns" {
     assert "Py_CLEAR" not in out , out;
     assert "Py_NewRef" not in out , out;
     assert "Py_XNewRef" not in out , out;
-    assert "PyErr_SetString" not in out.split("def fail_value")[1].split("def ")[0] , out;
+    assert "PyErr_SetString"
+        not in out.split("def fail_value")[1].split("def ")[0] , out;
     assert "PyErr_SetString" not in out.split("def fail_int")[1].split("def ")[0] , out;
     assert 'raise ValueError("bad arg")' in out , out;
     assert 'raise TypeError("wrong type")' in out , out;

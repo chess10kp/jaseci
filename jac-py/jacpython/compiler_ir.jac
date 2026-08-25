@@ -373,7 +373,7 @@ obj unverified_cfg {
     # in a post-visit optimizer pass, after the epilogue None), then patch all
     # negative OP_LOAD_CONST opargs to final indices. Call exactly once per
     # unverified_cfg before verification/assembly; no-op when nothing staged.
-    def flush_late_consts() {
+    def flush_late_consts {
         if self.late_flushed or len(self.late_consts) == 0 {
             return;
         }

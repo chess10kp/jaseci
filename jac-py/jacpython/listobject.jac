@@ -2,13 +2,7 @@
 #
 # c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/listobject_core.c``
 # (lift: ``jac-py/Objects/_lifted/listobject_core.jac``).
-import from objects {
-    PyObj,
-    PyList,
-    PyStr,
-    is_error,
-    expect_str,
-}
+import from objects { PyObj, PyList, PyStr, is_error, expect_str, }
 
 # Thin wrapper kept for callers that import by name (the ``compare_fn``
 # parameter is obsolete): the implementation lives on the PyList.tp_richcompare

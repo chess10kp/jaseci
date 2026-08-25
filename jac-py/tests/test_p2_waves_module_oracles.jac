@@ -35,7 +35,7 @@ def _wave_number(path: str) -> int {
 }
 
 
-def _manifest_paths() -> list {
+def _manifest_paths -> list {
     paths: list = [];
     for name in os.listdir(TESTS) {
         if name.startswith("conformance_manifest_wave") and name.endswith(".json") {
@@ -86,700 +86,776 @@ def _expected_stems(wave: int) -> list {
 def _wave_2_cases(errors: list) {
     try {
         _staged_oracle(
-        "_stat.c",
-        "#include <stdio.h>\n"
-        "unsigned long stat_S_IMODE(long omode);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", (int)stat_S_IMODE(0x81a4));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(stat_S_IMODE(0x81a4));\n" "}\n"
-    );
+            "_stat.c",
+            "#include <stdio.h>\n"
+            "unsigned long stat_S_IMODE(long omode);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", (int)stat_S_IMODE(0x81a4));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(stat_S_IMODE(0x81a4));\n" "}\n"
+        );
     } except Exception as e {
         errors.append(f"wave 2 jac-py _stat: cc vs staged jac agree on S_IMODE: {e}");
     }
 
     try {
         _staged_oracle(
-        "_stat.c",
-        "#include <stdio.h>\n"
-        "unsigned long stat_S_IFMT(long omode);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", (int)stat_S_IFMT(0x81a4));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(stat_S_IFMT(0x81a4));\n" "}\n"
-    );
+            "_stat.c",
+            "#include <stdio.h>\n"
+            "unsigned long stat_S_IFMT(long omode);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", (int)stat_S_IFMT(0x81a4));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(stat_S_IFMT(0x81a4));\n" "}\n"
+        );
     } except Exception as e {
         errors.append(f"wave 2 jac-py _stat: cc vs staged jac agree on S_IFMT: {e}");
     }
 
     try {
         _staged_oracle(
-        "_opcode.c",
-        "#include <stdio.h>\n"
-        "int opcode_is_valid(int opcode);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", opcode_is_valid(84));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(opcode_is_valid(84));\n" "}\n"
-    );
+            "_opcode.c",
+            "#include <stdio.h>\n"
+            "int opcode_is_valid(int opcode);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", opcode_is_valid(84));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(opcode_is_valid(84));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 2 jac-py _opcode: cc vs staged jac agree on is_valid(84): {e}");
+        errors.append(
+            f"wave 2 jac-py _opcode: cc vs staged jac agree on is_valid(84): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "_opcode.c",
-        "#include <stdio.h>\n"
-        "int opcode_has_arg(int opcode);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", opcode_has_arg(84));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(opcode_has_arg(84));\n" "}\n"
-    );
+            "_opcode.c",
+            "#include <stdio.h>\n"
+            "int opcode_has_arg(int opcode);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", opcode_has_arg(84));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(opcode_has_arg(84));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 2 jac-py _opcode: cc vs staged jac agree on has_arg(84): {e}");
+        errors.append(
+            f"wave 2 jac-py _opcode: cc vs staged jac agree on has_arg(84): {e}"
+        );
     }
 
     try {
         _oracle(
-        "math_gcd.c",
-        "#include <stdio.h>\n"
-        "long math_gcd_long(long a, long b);\n"
-        "int main(void) {\n"
-        "    printf(\"%ld\\n\", math_gcd_long(48, 18));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_gcd_long(48, 18));\n" "}\n"
-    );
+            "math_gcd.c",
+            "#include <stdio.h>\n"
+            "long math_gcd_long(long a, long b);\n"
+            "int main(void) {\n"
+            "    printf(\"%ld\\n\", math_gcd_long(48, 18));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_gcd_long(48, 18));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 2 jac-py math_gcd: cc vs lifted jac agree on gcd(48, 18): {e}");
+        errors.append(
+            f"wave 2 jac-py math_gcd: cc vs lifted jac agree on gcd(48, 18): {e}"
+        );
     }
 
     try {
         _oracle(
-        "pystrnicmp.c",
-        "#include <stdio.h>\n"
-        "int PyOS_mystrnicmp(const char *s1, const char *s2, long size);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", PyOS_mystrnicmp(\"AbC\", \"abd\", 3));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(PyOS_mystrnicmp(\"AbC\", \"abd\", 3));\n" "}\n"
-    );
+            "pystrnicmp.c",
+            "#include <stdio.h>\n"
+            "int PyOS_mystrnicmp(const char *s1, const char *s2, long size);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", PyOS_mystrnicmp(\"AbC\", \"abd\", 3));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(PyOS_mystrnicmp(\"AbC\", \"abd\", 3));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 2 jac-py pystrnicmp: cc vs lifted jac agree on prefix compare: {e}");
+        errors.append(
+            f"wave 2 jac-py pystrnicmp: cc vs lifted jac agree on prefix compare: {e}"
+        );
     }
-
 }
 
 
 def _wave_3_cases(errors: list) {
     try {
         _staged_oracle(
-        "math_count_bits.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_count_set_bits(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_count_set_bits(0x0f0ful));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_count_set_bits(0x0f0f));\n" "}\n"
-    );
+            "math_count_bits.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_count_set_bits(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_count_set_bits(0x0f0ful));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_count_set_bits(0x0f0f));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 3 jac-py math_count_bits: cc vs staged jac agree on popcount(0x0f0f): {e}");
+        errors.append(
+            f"wave 3 jac-py math_count_bits: cc vs staged jac agree on popcount(0x0f0f): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_lcm_long.c",
-        "#include <stdio.h>\n"
-        "long math_lcm_long(long a, long b);\n"
-        "int main(void) {\n"
-        "    printf(\"%ld\\n\", math_lcm_long(12, 18));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_lcm_long(12, 18));\n" "}\n"
-    );
+            "math_lcm_long.c",
+            "#include <stdio.h>\n"
+            "long math_lcm_long(long a, long b);\n"
+            "int main(void) {\n"
+            "    printf(\"%ld\\n\", math_lcm_long(12, 18));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_lcm_long(12, 18));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 3 jac-py math_lcm_long: cc vs staged jac agree on lcm(12, 18): {e}");
+        errors.append(
+            f"wave 3 jac-py math_lcm_long: cc vs staged jac agree on lcm(12, 18): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "strhex_byte.c",
-        "#include <stdio.h>\n"
-        "unsigned int strhex_pack_byte(unsigned char value);\n"
-        "int main(void) {\n"
-        "    printf(\"%u\\n\", strhex_pack_byte(0xab));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(strhex_pack_byte(0xab));\n" "}\n"
-    );
+            "strhex_byte.c",
+            "#include <stdio.h>\n"
+            "unsigned int strhex_pack_byte(unsigned char value);\n"
+            "int main(void) {\n"
+            "    printf(\"%u\\n\", strhex_pack_byte(0xab));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(strhex_pack_byte(0xab));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 3 jac-py strhex_byte: cc vs staged jac agree on pack(0xab): {e}");
+        errors.append(
+            f"wave 3 jac-py strhex_byte: cc vs staged jac agree on pack(0xab): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_digit.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isdigit(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isdigit(57));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isdigit(57));\n" "}\n"
-    );
+            "pyctype_digit.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isdigit(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isdigit(57));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isdigit(57));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 3 jac-py pyctype_digit: cc vs staged jac agree on isdigit(57): {e}");
+        errors.append(
+            f"wave 3 jac-py pyctype_digit: cc vs staged jac agree on isdigit(57): {e}"
+        );
     }
-
 }
 
 
 def _wave_4_cases(errors: list) {
     try {
         _staged_oracle(
-        "pystricmp.c",
-        "#include <stdio.h>\n"
-        "int PyOS_mystricmp(const char *s1, const char *s2);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", PyOS_mystricmp(\"ABC\", \"abc\"));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(PyOS_mystricmp(\"ABC\", \"abc\"));\n" "}\n"
-    );
+            "pystricmp.c",
+            "#include <stdio.h>\n"
+            "int PyOS_mystricmp(const char *s1, const char *s2);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", PyOS_mystricmp(\"ABC\", \"abc\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(PyOS_mystricmp(\"ABC\", \"abc\"));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 4 jac-py pystricmp: cc vs staged jac agree on ABC vs abc: {e}");
+        errors.append(
+            f"wave 4 jac-py pystricmp: cc vs staged jac agree on ABC vs abc: {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystricmp.c",
-        "#include <stdio.h>\n"
-        "int PyOS_mystricmp(const char *s1, const char *s2);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", PyOS_mystricmp(\"\", \"\"));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(PyOS_mystricmp(\"\", \"\"));\n" "}\n"
-    );
+            "pystricmp.c",
+            "#include <stdio.h>\n"
+            "int PyOS_mystricmp(const char *s1, const char *s2);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", PyOS_mystricmp(\"\", \"\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(PyOS_mystricmp(\"\", \"\"));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 4 jac-py pystricmp: cc vs staged jac agree on empty strings: {e}");
+        errors.append(
+            f"wave 4 jac-py pystricmp: cc vs staged jac agree on empty strings: {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystricmp.c",
-        "#include <stdio.h>\n"
-        "int PyOS_mystricmp(const char *s1, const char *s2);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", PyOS_mystricmp(\"ab\", \"abc\"));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(PyOS_mystricmp(\"ab\", \"abc\"));\n" "}\n"
-    );
+            "pystricmp.c",
+            "#include <stdio.h>\n"
+            "int PyOS_mystricmp(const char *s1, const char *s2);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", PyOS_mystricmp(\"ab\", \"abc\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(PyOS_mystricmp(\"ab\", \"abc\"));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 4 jac-py pystricmp: cc vs staged jac agree on prefix mismatch: {e}");
+        errors.append(
+            f"wave 4 jac-py pystricmp: cc vs staged jac agree on prefix mismatch: {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_space.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isspace(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isspace(32));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isspace(32));\n" "}\n"
-    );
+            "pyctype_space.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isspace(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isspace(32));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isspace(32));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 4 jac-py pyctype_space: cc vs staged jac agree on isspace(32): {e}");
+        errors.append(
+            f"wave 4 jac-py pyctype_space: cc vs staged jac agree on isspace(32): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_alpha.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isalpha(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isalpha(65));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isalpha(65));\n" "}\n"
-    );
+            "pyctype_alpha.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isalpha(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isalpha(65));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isalpha(65));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 4 jac-py pyctype_alpha: cc vs staged jac agree on isalpha(65): {e}");
+        errors.append(
+            f"wave 4 jac-py pyctype_alpha: cc vs staged jac agree on isalpha(65): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_factorial_small.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_factorial_small(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_factorial_small(5));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_factorial_small(5));\n" "}\n"
-    );
+            "math_factorial_small.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_factorial_small(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_factorial_small(5));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_factorial_small(5));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 4 jac-py math_factorial_small: cc vs staged jac agree on fact(5): {e}");
+        errors.append(
+            f"wave 4 jac-py math_factorial_small: cc vs staged jac agree on fact(5): {e}"
+        );
     }
-
 }
 
 
 def _wave_5_cases(errors: list) {
     try {
         _staged_oracle(
-        "pyctype_xdigit.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isxdigit(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isxdigit(65));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isxdigit(65));\n" "}\n"
-    );
+            "pyctype_xdigit.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isxdigit(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isxdigit(65));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isxdigit(65));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 5 jac-py pyctype_xdigit: cc vs staged jac agree on isxdigit(65): {e}");
+        errors.append(
+            f"wave 5 jac-py pyctype_xdigit: cc vs staged jac agree on isxdigit(65): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_alnum.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isalnum(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isalnum(97));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isalnum(97));\n" "}\n"
-    );
+            "pyctype_alnum.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isalnum(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isalnum(97));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isalnum(97));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 5 jac-py pyctype_alnum: cc vs staged jac agree on isalnum(97): {e}");
+        errors.append(
+            f"wave 5 jac-py pyctype_alnum: cc vs staged jac agree on isalnum(97): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_lower.c",
-        "#include <stdio.h>\n"
-        "int pyctype_islower(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_islower(97));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_islower(97));\n" "}\n"
-    );
+            "pyctype_lower.c",
+            "#include <stdio.h>\n"
+            "int pyctype_islower(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_islower(97));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_islower(97));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 5 jac-py pyctype_lower: cc vs staged jac agree on islower(97): {e}");
+        errors.append(
+            f"wave 5 jac-py pyctype_lower: cc vs staged jac agree on islower(97): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_isqrt_small.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_isqrt_small(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_isqrt_small(16));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_isqrt_small(16));\n" "}\n"
-    );
+            "math_isqrt_small.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_isqrt_small(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_isqrt_small(16));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_isqrt_small(16));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 5 jac-py math_isqrt_small: cc vs staged jac agree on isqrt(16): {e}");
+        errors.append(
+            f"wave 5 jac-py math_isqrt_small: cc vs staged jac agree on isqrt(16): {e}"
+        );
     }
-
 }
 
 
 def _wave_6_cases(errors: list) {
     try {
         _staged_oracle(
-        "pyctype_upper.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isupper(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isupper(65));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isupper(65));\n" "}\n"
-    );
+            "pyctype_upper.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isupper(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isupper(65));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isupper(65));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 6 jac-py pyctype_upper: cc vs staged jac agree on isupper(65): {e}");
+        errors.append(
+            f"wave 6 jac-py pyctype_upper: cc vs staged jac agree on isupper(65): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_print.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isprint(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isprint(65));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isprint(65));\n" "}\n"
-    );
+            "pyctype_print.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isprint(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isprint(65));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isprint(65));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 6 jac-py pyctype_print: cc vs staged jac agree on isprint(65): {e}");
+        errors.append(
+            f"wave 6 jac-py pyctype_print: cc vs staged jac agree on isprint(65): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_punct.c",
-        "#include <stdio.h>\n"
-        "int pyctype_ispunct(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_ispunct(33));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_ispunct(33));\n" "}\n"
-    );
+            "pyctype_punct.c",
+            "#include <stdio.h>\n"
+            "int pyctype_ispunct(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_ispunct(33));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_ispunct(33));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 6 jac-py pyctype_punct: cc vs staged jac agree on ispunct(33): {e}");
+        errors.append(
+            f"wave 6 jac-py pyctype_punct: cc vs staged jac agree on ispunct(33): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_pow2_check.c",
-        "#include <stdio.h>\n"
-        "int math_pow2_check(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", math_pow2_check(16));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_pow2_check(16));\n" "}\n"
-    );
+            "math_pow2_check.c",
+            "#include <stdio.h>\n"
+            "int math_pow2_check(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", math_pow2_check(16));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_pow2_check(16));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 6 jac-py math_pow2_check: cc vs staged jac agree on pow2(16): {e}");
+        errors.append(
+            f"wave 6 jac-py math_pow2_check: cc vs staged jac agree on pow2(16): {e}"
+        );
     }
-
 }
 
 
 def _wave_7_cases(errors: list) {
     try {
         _staged_oracle(
-        "pyctype_graph.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isgraph(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isgraph(65));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isgraph(65));\n" "}\n"
-    );
+            "pyctype_graph.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isgraph(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isgraph(65));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isgraph(65));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 7 jac-py pyctype_graph: cc vs staged jac agree on isgraph(65): {e}");
+        errors.append(
+            f"wave 7 jac-py pyctype_graph: cc vs staged jac agree on isgraph(65): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_cntrl.c",
-        "#include <stdio.h>\n"
-        "int pyctype_iscntrl(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_iscntrl(7));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_iscntrl(7));\n" "}\n"
-    );
+            "pyctype_cntrl.c",
+            "#include <stdio.h>\n"
+            "int pyctype_iscntrl(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_iscntrl(7));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_iscntrl(7));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 7 jac-py pyctype_cntrl: cc vs staged jac agree on iscntrl(7): {e}");
+        errors.append(
+            f"wave 7 jac-py pyctype_cntrl: cc vs staged jac agree on iscntrl(7): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pyctype_blank.c",
-        "#include <stdio.h>\n"
-        "int pyctype_isblank(unsigned char c);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pyctype_isblank(9));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pyctype_isblank(9));\n" "}\n"
-    );
+            "pyctype_blank.c",
+            "#include <stdio.h>\n"
+            "int pyctype_isblank(unsigned char c);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pyctype_isblank(9));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pyctype_isblank(9));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 7 jac-py pyctype_blank: cc vs staged jac agree on isblank(9): {e}");
+        errors.append(
+            f"wave 7 jac-py pyctype_blank: cc vs staged jac agree on isblank(9): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_ilog2_small.c",
-        "#include <stdio.h>\n"
-        "int math_ilog2_small(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", math_ilog2_small(16));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_ilog2_small(16));\n" "}\n"
-    );
+            "math_ilog2_small.c",
+            "#include <stdio.h>\n"
+            "int math_ilog2_small(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", math_ilog2_small(16));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_ilog2_small(16));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 7 jac-py math_ilog2_small: cc vs staged jac agree on ilog2(16): {e}");
+        errors.append(
+            f"wave 7 jac-py math_ilog2_small: cc vs staged jac agree on ilog2(16): {e}"
+        );
     }
-
 }
 
 
 def _wave_8_cases(errors: list) {
     try {
         _staged_oracle(
-        "math_ctz_small.c",
-        "#include <stdio.h>\n"
-        "int math_ctz_small(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", math_ctz_small(8));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_ctz_small(8));\n" "}\n"
-    );
+            "math_ctz_small.c",
+            "#include <stdio.h>\n"
+            "int math_ctz_small(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", math_ctz_small(8));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_ctz_small(8));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 8 jac-py math_ctz_small: cc vs staged jac agree on ctz(8): {e}");
+        errors.append(
+            f"wave 8 jac-py math_ctz_small: cc vs staged jac agree on ctz(8): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_clz32_small.c",
-        "#include <stdio.h>\n"
-        "int math_clz32_small(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", math_clz32_small(1));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_clz32_small(1));\n" "}\n"
-    );
+            "math_clz32_small.c",
+            "#include <stdio.h>\n"
+            "int math_clz32_small(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", math_clz32_small(1));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_clz32_small(1));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 8 jac-py math_clz32_small: cc vs staged jac agree on clz32(1): {e}");
+        errors.append(
+            f"wave 8 jac-py math_clz32_small: cc vs staged jac agree on clz32(1): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_abs_diff.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_abs_diff(unsigned long a, unsigned long b);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_abs_diff(10, 7));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_abs_diff(10, 7));\n" "}\n"
-    );
+            "math_abs_diff.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_abs_diff(unsigned long a, unsigned long b);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_abs_diff(10, 7));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_abs_diff(10, 7));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 8 jac-py math_abs_diff: cc vs staged jac agree on abs_diff(10,7): {e}");
+        errors.append(
+            f"wave 8 jac-py math_abs_diff: cc vs staged jac agree on abs_diff(10,7): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_min_u.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_min_u(unsigned long a, unsigned long b);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_min_u(3, 9));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_min_u(3, 9));\n" "}\n"
-    );
+            "math_min_u.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_min_u(unsigned long a, unsigned long b);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_min_u(3, 9));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_min_u(3, 9));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 8 jac-py math_min_u: cc vs staged jac agree on min_u(3,9): {e}");
+        errors.append(
+            f"wave 8 jac-py math_min_u: cc vs staged jac agree on min_u(3,9): {e}"
+        );
     }
-
 }
 
 
 def _wave_9_cases(errors: list) {
     try {
         _staged_oracle(
-        "math_max_u.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_max_u(unsigned long a, unsigned long b);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_max_u(3, 9));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(math_max_u(3, 9));\n" "}\n"
-    );
+            "math_max_u.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_max_u(unsigned long a, unsigned long b);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_max_u(3, 9));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_max_u(3, 9));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 9 jac-py math_max_u: cc vs staged jac agree on max_u(3,9): {e}");
+        errors.append(
+            f"wave 9 jac-py math_max_u: cc vs staged jac agree on max_u(3,9): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystr_len_c.c",
-        "#include <stdio.h>\n"
-        "unsigned long pystr_len_c(const char *s);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", pystr_len_c(\"abc\"));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pystr_len_c(\"abc\"));\n" "}\n"
-    );
+            "pystr_len_c.c",
+            "#include <stdio.h>\n"
+            "unsigned long pystr_len_c(const char *s);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", pystr_len_c(\"abc\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pystr_len_c(\"abc\"));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 9 jac-py pystr_len_c: cc vs staged jac agree on len(abc): {e}");
+        errors.append(
+            f"wave 9 jac-py pystr_len_c: cc vs staged jac agree on len(abc): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystr_find_char.c",
-        "#include <stdio.h>\n"
-        "int pystr_find_char(const char *s, int ch);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pystr_find_char(\"abc\", 'b'));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pystr_find_char(\"abc\", 98));\n" "}\n"
-    );
+            "pystr_find_char.c",
+            "#include <stdio.h>\n"
+            "int pystr_find_char(const char *s, int ch);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pystr_find_char(\"abc\", 'b'));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pystr_find_char(\"abc\", 98));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 9 jac-py pystr_find_char: cc vs staged jac agree on find(b): {e}");
+        errors.append(
+            f"wave 9 jac-py pystr_find_char: cc vs staged jac agree on find(b): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystr_count_char.c",
-        "#include <stdio.h>\n"
-        "unsigned long pystr_count_char(const char *s, int ch);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", pystr_count_char(\"abaca\", 'a'));\n"
-        "    return 0;\n"
-        "}\n",
-        "with entry {\n" "    print(pystr_count_char(\"abaca\", 97));\n" "}\n"
-    );
+            "pystr_count_char.c",
+            "#include <stdio.h>\n"
+            "unsigned long pystr_count_char(const char *s, int ch);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", pystr_count_char(\"abaca\", 'a'));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pystr_count_char(\"abaca\", 97));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 9 jac-py pystr_count_char: cc vs staged jac agree on count(a): {e}");
+        errors.append(
+            f"wave 9 jac-py pystr_count_char: cc vs staged jac agree on count(a): {e}"
+        );
     }
-
 }
 
 
 def _wave_10_cases(errors: list) {
     try {
         _staged_oracle(
-        "math_gcd_iter.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_gcd_iter(unsigned long a, unsigned long b);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_gcd_iter(12, 18));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(math_gcd_iter(12, 18));\n" "}\n"
-    );
+            "math_gcd_iter.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_gcd_iter(unsigned long a, unsigned long b);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_gcd_iter(12, 18));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_gcd_iter(12, 18));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 10 jac-py math_gcd_iter: cc vs staged jac agree on gcd(12,18): {e}");
+        errors.append(
+            f"wave 10 jac-py math_gcd_iter: cc vs staged jac agree on gcd(12,18): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_lcm_u.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_lcm_u(unsigned long a, unsigned long b);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_lcm_u(4, 6));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(math_lcm_u(4, 6));\n" "}\n"
-    );
+            "math_lcm_u.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_lcm_u(unsigned long a, unsigned long b);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_lcm_u(4, 6));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_lcm_u(4, 6));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 10 jac-py math_lcm_u: cc vs staged jac agree on lcm(4,6): {e}");
+        errors.append(
+            f"wave 10 jac-py math_lcm_u: cc vs staged jac agree on lcm(4,6): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystr_startswith_c.c",
-        "#include <stdio.h>\n"
-        "int pystr_startswith_c(const char *s, const char *prefix);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pystr_startswith_c(\"abcdef\", \"abc\"));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(pystr_startswith_c(\"abcdef\", \"abc\"));\n" "}\n"
-    );
+            "pystr_startswith_c.c",
+            "#include <stdio.h>\n"
+            "int pystr_startswith_c(const char *s, const char *prefix);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pystr_startswith_c(\"abcdef\", \"abc\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n"
+            "    print(pystr_startswith_c(\"abcdef\", \"abc\"));\n"
+            "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 10 jac-py pystr_startswith_c: cc vs staged jac agree on startswith abc: {e}");
+        errors.append(
+            f"wave 10 jac-py pystr_startswith_c: cc vs staged jac agree on startswith abc: {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystr_endswith_c.c",
-        "#include <stdio.h>\n"
-        "int pystr_endswith_c(const char *s, const char *suffix);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pystr_endswith_c(\"abcdef\", \"def\"));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(pystr_endswith_c(\"abcdef\", \"def\"));\n" "}\n"
-    );
+            "pystr_endswith_c.c",
+            "#include <stdio.h>\n"
+            "int pystr_endswith_c(const char *s, const char *suffix);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pystr_endswith_c(\"abcdef\", \"def\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pystr_endswith_c(\"abcdef\", \"def\"));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 10 jac-py pystr_endswith_c: cc vs staged jac agree on endswith def: {e}");
+        errors.append(
+            f"wave 10 jac-py pystr_endswith_c: cc vs staged jac agree on endswith def: {e}"
+        );
     }
-
 }
 
 
 def _wave_11_cases(errors: list) {
     try {
         _staged_oracle(
-        "math_pow_mod.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_pow_mod(unsigned long base, unsigned long exp, unsigned long mod);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_pow_mod(2, 10, 1000));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(math_pow_mod(2, 10, 1000));\n" "}\n"
-    );
+            "math_pow_mod.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_pow_mod(unsigned long base, unsigned long exp, unsigned long mod);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_pow_mod(2, 10, 1000));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_pow_mod(2, 10, 1000));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 11 jac-py math_pow_mod: cc vs staged jac agree on powmod(2,10,1000): {e}");
+        errors.append(
+            f"wave 11 jac-py math_pow_mod: cc vs staged jac agree on powmod(2,10,1000): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "math_popcount_u.c",
-        "#include <stdio.h>\n"
-        "unsigned long math_popcount_u(unsigned long n);\n"
-        "int main(void) {\n"
-        "    printf(\"%lu\\n\", math_popcount_u(15));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(math_popcount_u(15));\n" "}\n"
-    );
+            "math_popcount_u.c",
+            "#include <stdio.h>\n"
+            "unsigned long math_popcount_u(unsigned long n);\n"
+            "int main(void) {\n"
+            "    printf(\"%lu\\n\", math_popcount_u(15));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(math_popcount_u(15));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 11 jac-py math_popcount_u: cc vs staged jac agree on popcount(15): {e}");
+        errors.append(
+            f"wave 11 jac-py math_popcount_u: cc vs staged jac agree on popcount(15): {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystr_contains_c.c",
-        "#include <stdio.h>\n"
-        "int pystr_contains_c(const char *hay, const char *needle);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pystr_contains_c(\"abcdef\", \"cd\"));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(pystr_contains_c(\"abcdef\", \"cd\"));\n" "}\n"
-    );
+            "pystr_contains_c.c",
+            "#include <stdio.h>\n"
+            "int pystr_contains_c(const char *hay, const char *needle);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pystr_contains_c(\"abcdef\", \"cd\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pystr_contains_c(\"abcdef\", \"cd\"));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 11 jac-py pystr_contains_c: cc vs staged jac agree on contains cd: {e}");
+        errors.append(
+            f"wave 11 jac-py pystr_contains_c: cc vs staged jac agree on contains cd: {e}"
+        );
     }
 
     try {
         _staged_oracle(
-        "pystr_cmp_c.c",
-        "#include <stdio.h>\n"
-        "int pystr_cmp_c(const char *a, const char *b);\n"
-        "int main(void) {\n"
-        "    printf(\"%d\\n\", pystr_cmp_c(\"abc\", \"abd\"));\n"
-        "    return 0;\n"
-"}\n",
-        "with entry {\n" "    print(pystr_cmp_c(\"abc\", \"abd\"));\n" "}\n"
-    );
+            "pystr_cmp_c.c",
+            "#include <stdio.h>\n"
+            "int pystr_cmp_c(const char *a, const char *b);\n"
+            "int main(void) {\n"
+            "    printf(\"%d\\n\", pystr_cmp_c(\"abc\", \"abd\"));\n"
+            "    return 0;\n"
+            "}\n",
+            "with entry {\n" "    print(pystr_cmp_c(\"abc\", \"abd\"));\n" "}\n"
+        );
     } except Exception as e {
-        errors.append(f"wave 11 jac-py pystr_cmp_c: cc vs staged jac agree on cmp abc abd: {e}");
+        errors.append(
+            f"wave 11 jac-py pystr_cmp_c: cc vs staged jac agree on cmp abc abd: {e}"
+        );
     }
-
 }
 
 
@@ -855,7 +931,7 @@ def _run_wave_cases(wave: int) -> list {
 test "P2 waves 2-11 module oracles" {
     failures: list = [];
     paths = _manifest_paths();
-    assert len(paths) > 0, "no conformance wave manifests found";
+    assert len(paths) > 0 , "no conformance wave manifests found";
     for path in paths {
         wave = _wave_number(path);
         manifest = _load_json(path);
@@ -880,5 +956,5 @@ test "P2 waves 2-11 module oracles" {
             print(f"wave {wave}: PASS ({len(expected)} modules)");
         }
     }
-    assert not failures, "\n".join(failures);
+    assert not failures , "\n".join(failures);
 }

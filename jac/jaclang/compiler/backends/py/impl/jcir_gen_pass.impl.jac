@@ -4730,9 +4730,6 @@ impl JcirGenPass.exit_float(nd: Float) -> None {
 }
 
 impl JcirGenPass.exit_complex(nd: Complex) -> None {
-    # JCIR v1 constants have no complex domain entry, so lower the literal to a
-    # host builtin call: complex(0.0, imag) with the same float spelling rules.
-    # 'complex' is a host builtin, so a plain name load needs no import preamble.
     self.set_out(
         nd,
         [

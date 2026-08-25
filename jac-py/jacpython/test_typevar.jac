@@ -85,10 +85,7 @@ test "multiple alias parameters build distinct named TypeVars" {
 }
 
 test "unparameterized alias has empty type params" {
-    ns = vm_exec(
-        "type B = int\n"
-        "count = len(B.__type_params__)\n"
-    );
+    ns = vm_exec("type B = int\n" "count = len(B.__type_params__)\n");
     assert to_host(ns["count"]) == 0;
 }
 
@@ -105,8 +102,7 @@ test "TypeVar flows through the alias value into annotations-shaped use" {
 
 test "unknown attribute raises CPython's exact AttributeError text" {
     msg = vm_raise_message(
-        "type A[T] = list[T]\n"
-        "A.__type_params__[0].nonexistent\n"
+        "type A[T] = list[T]\n" "A.__type_params__[0].nonexistent\n"
     );
     assert msg == "'typing.TypeVar' object has no attribute 'nonexistent'";
 }
@@ -140,22 +136,17 @@ test "bounded alias parameter keeps __bound__ lazy and exact" {
 }
 
 test "forward-ref bound does not raise at creation" {
-    msg = vm_raise_message(
-        "type D[F: undefined_fwd] = list[F]\n"
-        "ok = 1\n"
-    );
+    msg = vm_raise_message("type D[F: undefined_fwd] = list[F]\n" "ok = 1\n");
     assert msg == "";
 }
 
 test "evaluating an unresolvable forward-ref bound raises NameError uncached" {
     msg = vm_raise_message(
-        "type D[F: undefined_fwd] = list[F]\n"
-        "D.__type_params__[0].__bound__\n"
+        "type D[F: undefined_fwd] = list[F]\n" "D.__type_params__[0].__bound__\n"
     );
     assert msg == "name 'undefined_fwd' is not defined";
     msg2 = vm_raise_message(
-        "type D[F: undefined_fwd] = list[F]\n"
-        "D.__type_params__[0].evaluate_bound()\n"
+        "type D[F: undefined_fwd] = list[F]\n" "D.__type_params__[0].evaluate_bound()\n"
     );
     assert msg2 == "name 'undefined_fwd' is not defined";
 }
@@ -206,13 +197,11 @@ test "has_default is False without default and True with one" {
 
 test "has_default rejects arguments with CPython's exact TypeError text" {
     msg = vm_raise_message(
-        "type A[T] = list[T]\n"
-        "A.__type_params__[0].has_default(1)\n"
+        "type A[T] = list[T]\n" "A.__type_params__[0].has_default(1)\n"
     );
     assert msg == "TypeVar.has_default() takes no arguments (1 given)";
     msg2 = vm_raise_message(
-        "type A[T] = list[T]\n"
-        "A.__type_params__[0].has_default(x=1)\n"
+        "type A[T] = list[T]\n" "A.__type_params__[0].has_default(x=1)\n"
     );
     assert msg2 == "TypeVar.has_default() takes no keyword arguments";
 }

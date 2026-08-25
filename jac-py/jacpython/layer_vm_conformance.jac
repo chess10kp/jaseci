@@ -59,7 +59,6 @@ def _vm_host_raises(setup_src: str, body_src: str) -> tuple | None {
 }
 
 
-
 def host_result_key(setup: str, body: str, mode: str, key: str) -> any {
     ns = _vm_host_exec(setup, body, mode) as dict;
     return ns[key];

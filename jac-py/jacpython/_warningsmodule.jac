@@ -38,35 +38,39 @@ import from exceptions_core { exc_name_matches, _obj_to_str }
 import sys as _host_sys;
 
 glob _WARN_ACTIONS: list[str] = [
-    "error",
-    "ignore",
-    "always",
-    "once",
-    "default",
-    "module",
-];
+         "error",
+         "ignore",
+         "always",
+         "once",
+         "default",
+         "module",
+
+     ],
+     _warn_filters: list = [],
+     _warn_registries: dict = {},
+     _warn_once_registry: dict = {},
+     _warn_filters_version: int = 1,
+     _warn_record_target: any = None,
+     _warn_display_sink: any = None,
+     _warn_position_provider: any = None;
 
 # Filter entries are (action, category-name | None, module-prefix | None).
 # First match wins; None matches everything (CPython's regex-free subset --
 # simplefilter/filterwarnings never install message or lineno constraints).
-glob _warn_filters: list = [];
+
 # Per-module location registries: module -> {(text, category, lineno): 1}.
 # Versioned like CPython's __warningregistry__ so a filters change (which
 # bumps the version) invalidates every remembered location.
-glob _warn_registries: dict = {};
-glob _warn_once_registry: dict = {};
-glob _warn_filters_version: int = 1;
+
 # While inside catch_warnings(record=True): the guest-visible record list that
 # receives one PyWarnMessageRecord per shown warning.
-glob _warn_record_target: any = None;
+
 # Display sink override: fn(formatted_text: str). None writes to real stderr,
 # exactly like CPython's sys.stderr write.
-glob _warn_display_sink: any = None;
+
 # Caller-position provider: fn(stacklevel: int) -> (filename, lineno, module)
 # or None when no frame information is available at that depth.
-glob _warn_position_provider: any = None;
-
-def _p2_warn_default_filters() -> list {
+def _p2_warn_default_filters -> list {
     # CPython _setup_defaults order (first match wins, so the module-scoped
     # __main__ default must precede the global ignores).
     return [
@@ -75,6 +79,7 @@ def _p2_warn_default_filters() -> list {
         ("ignore", "PendingDeprecationWarning", None),
         ("ignore", "ImportWarning", None),
         ("ignore", "ResourceWarning", None),
+
     ];
 }
 
@@ -145,7 +150,9 @@ def _p2_warn_registry_for(module: str) -> dict {
 
 # CPython warn_explicit decision core over names. Returns "error", "suppress"
 # or "show"; the emit step lives in _p2_warn_emit.
-def _p2_warn_decide(text: str, category: str, filename: str, lineno: int, module: str) -> str {
+def _p2_warn_decide(
+    text: str, category: str, filename: str, lineno: int, module: str
+) -> str {
     reg = _p2_warn_registry_for(module);
     key = (text, category, lineno);
     if reg.get(key) {
@@ -198,15 +205,26 @@ def _p2_warn_decide(text: str, category: str, filename: str, lineno: int, module
 
 # Byte-exact CPython _formatwarnmsg_impl for the no-source case (msg.line is
 # only appended when truthy -- an empty line contributes nothing).
-def _p2_formatwarning(message_text: str, category_name: str, filename: str, lineno: int, line: str | None) -> str {
-    s = filename + ":" + str(lineno) + ": " + category_name + ": " + message_text + "\n";
+def _p2_formatwarning(
+    message_text: str, category_name: str, filename: str, lineno: int, line: str | None
+) -> str {
+    s = filename
+        + ":"
+        + str(lineno)
+        + ": "
+        + category_name
+        + ": "
+        + message_text
+        + "\n";
     if line is not None and line != "" {
         s = s + "  " + line.strip() + "\n";
     }
     return s;
 }
 
-def _p2_warn_emit(text: str, category: str, filename: str, lineno: int, instance: PyObj | None) {
+def _p2_warn_emit(
+    text: str, category: str, filename: str, lineno: int, instance: PyObj | None
+) {
     if _warn_record_target is not None {
         rec_message = instance;
         if rec_message is None {
@@ -214,10 +232,7 @@ def _p2_warn_emit(text: str, category: str, filename: str, lineno: int, instance
             # recording; args carries the text so repr() reads Name('text').
             rec_args: list[PyObj] = [PyStr(t="str", val=text)];
             rec_message = PyException(
-                t="exception",
-                type_name=category,
-                message=text,
-                args=rec_args,
+                t="exception", type_name=category, message=text, args=rec_args,
             );
         }
         (_warn_record_target as PyList).items.append(
@@ -300,8 +315,7 @@ def _p2_warn_normalize(msg_obj: PyObj, cat_obj: PyObj) -> PyObj {
             if is_error(name_res) {
                 return py_error(
                     "TypeError",
-                    "category must be a Warning subclass, not '" + cat_obj.t
-                        + "'"
+                    "category must be a Warning subclass, not '" + cat_obj.t + "'"
                 );
             }
             category_name = expect_str(name_res);
@@ -367,8 +381,9 @@ obj PyWarningsWarnFn(PyObj) {
         }
         if sl_obj is not None {
             if not isinstance(sl_obj, PyInt) {
-                return py_error("TypeError", "integer argument expected, got "
-                    + sl_obj.t);
+                return py_error(
+                    "TypeError", "integer argument expected, got " + sl_obj.t
+                );
             }
             sl = (sl_obj as PyInt).val;
             # stacklevel <= 0 has no guest frames to skip (CPython would read
@@ -427,7 +442,7 @@ obj PyWarningsWarnExplicitFn(PyObj) {
             # CPython: module defaults to filename minus a trailing ".py".
             module = filename;
             if module.endswith(".py") {
-                module = module[: len(module) - 3];
+                module = module[:len(module) - 3];
             }
             if module == "" {
                 module = "<unknown>";
@@ -459,9 +474,7 @@ obj PyWarningsSimpleFilterFn(PyObj) {
         }
         category_name = _p2_optional_category(args, kwargs);
         if category_name is None {
-            return py_error(
-                "TypeError", "category must be a Warning subclass"
-            );
+            return py_error("TypeError", "category must be a Warning subclass");
         }
         _p2_simplefilter(action, category_name);
         return py_none();
@@ -479,9 +492,7 @@ obj PyWarningsFilterwarningsFn(PyObj) {
         }
         category_name = _p2_optional_category(args, kwargs);
         if category_name is None {
-            return py_error(
-                "TypeError", "category must be a Warning subclass"
-            );
+            return py_error("TypeError", "category must be a Warning subclass");
         }
         _p2_filterwarnings(action, category_name);
         return py_none();
@@ -603,11 +614,17 @@ obj PyWarnMessageStrFn(PyObj) {
         line_repr = "None";
         return PyStr(
             t="str",
-            val="<WarningMessage {message : " + msg_repr
-                + ", category : '" + self.parent.category
-                + "', filename : " + repr(self.parent.filename)
-                + ", lineno : " + str(self.parent.lineno)
-                + ", line : " + line_repr + "}>",
+            val="<WarningMessage {message : "
+                + msg_repr
+                + ", category : '"
+                + self.parent.category
+                + "', filename : "
+                + repr(self.parent.filename)
+                + ", lineno : "
+                + str(self.parent.lineno)
+                + ", line : "
+                + line_repr
+                + "}>",
         );
     }
 }
@@ -688,7 +705,7 @@ obj PyWarningsCatchFn(PyObj) {
 }
 
 # Shim-module attribute table consumed by layer_p2_libtest registration.
-def warnings_module_attrs() -> dict[str, PyObj] {
+def warnings_module_attrs -> dict[str, PyObj] {
     attrs: dict[str, PyObj] = {
         "warn": PyWarningsWarnFn(t="function"),
         "warn_explicit": PyWarningsWarnExplicitFn(t="function"),
@@ -697,6 +714,7 @@ def warnings_module_attrs() -> dict[str, PyObj] {
         "resetwarnings": PyWarningsResetwarningsFn(t="function"),
         "formatwarning": PyWarningsFormatwarningFn(t="function"),
         "catch_warnings": PyWarningsCatchFn(t="function"),
+
     };
     for cls in [
         "Warning",
@@ -711,6 +729,7 @@ def warnings_module_attrs() -> dict[str, PyObj] {
         "BytesWarning",
         "ResourceWarning",
         "EncodingWarning",
+
     ] {
         attrs[cls] = py_exception_type(cls);
     }

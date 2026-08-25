@@ -170,9 +170,7 @@ obj Reader {
 
     def r_byte -> int {
         if self.pos >= len(self.data) {
-            self.fail(
-                "truncated stream: byte read past end at pos " + str(self.pos)
-            );
+            self.fail("truncated stream: byte read past end at pos " + str(self.pos));
             return 0;
         }
         b = self.data[self.pos];
@@ -285,10 +283,7 @@ obj Reader {
             return self.read_set(True);
         } else {
             self.fail(
-                "unknown type code "
-                    + str(type)
-                    + " at pos "
-                    + str(self.pos - 1)
+                "unknown type code " + str(type) + " at pos " + str(self.pos - 1)
             );
             return py_none();
         }

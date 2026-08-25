@@ -7,9 +7,7 @@
 # argument is evaluated cross-engine and diffed. Async-generator internals are
 # excluded (owned by the async-gen lane).
 
-import from layer0_replay_harness {
-    layer1_replay_source
-}
+import from layer0_replay_harness { layer1_replay_source }
 
 # ---------------- iter/next protocol (test_iter) ----------------
 

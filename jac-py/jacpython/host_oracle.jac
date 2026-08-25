@@ -19,7 +19,7 @@ import sys;
 import from pathlib { Path }
 
 
-def _runner_python() -> str {
+def _runner_python -> str {
     for name in ("python3.14", "python3", "python") {
         found = shutil.which(name);
         if found {
@@ -30,7 +30,7 @@ def _runner_python() -> str {
 }
 
 
-def _bridge_path() -> str {
+def _bridge_path -> str {
     roots = [Path.cwd()];
     walk = Path.cwd();
     for _ in range(6) {
@@ -55,7 +55,9 @@ def _bridge_path() -> str {
 glob _BRIDGE = _bridge_path();
 
 
-def _host_compile_marshal_py(source: any, filename: str, mode: str, optimize: int = 0) -> bytes {
+def _host_compile_marshal_py(
+    source: any, filename: str, mode: str, optimize: int = 0
+) -> bytes {
     payload = source;
     if isinstance(source, str) {
         payload = source.encode("utf-8");
@@ -73,7 +75,7 @@ def _host_compile_marshal_py(source: any, filename: str, mode: str, optimize: in
 def _host_c_tokenize_py(source: str) -> list {
     import _tokenize;
     lines = [source + "\n", ""];
-    def readline() -> str {
+    def readline -> str {
         if lines {
             return lines.pop(0);
         }
@@ -94,12 +96,12 @@ def _host_c_tokenize_py(source: str) -> list {
                 "col_offset": start[1],
                 "end_lineno": end[0],
                 "end_col_offset": end[1],
+
             }
         );
     }
     return out;
 }
-
 
 
 def host_compile_marshal(

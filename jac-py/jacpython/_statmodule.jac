@@ -12,7 +12,6 @@ glob S_IFMT: int = 0o170000,
      S_IFIFO: int = 0o010000,
      S_IFLNK: int = 0o120000,
      S_IFSOCK: int = 0o140000,
-
      S_ISUID: int = 0o4000,
      S_ISGID: int = 0o2000,
      S_ENFMT: int = 0o2000,
@@ -32,7 +31,6 @@ glob S_IFMT: int = 0o170000,
      S_IROTH: int = 0o4,
      S_IWOTH: int = 0o2,
      S_IXOTH: int = 0o1,
-
      ST_MODE: int = 0,
      ST_INO: int = 1,
      ST_DEV: int = 2,
@@ -112,28 +110,64 @@ def _p2_filemode(mode: int) -> str {
         ftype: str = "?";
     }
     perm: str = "";
-    if mode & S_IRUSR { perm += "r"; } else { perm += "-"; }
-    if mode & S_IWUSR { perm += "w"; } else { perm += "-"; }
+    if mode & S_IRUSR {
+        perm += "r";
+    } else {
+        perm += "-";
+    }
+    if mode & S_IWUSR {
+        perm += "w";
+    } else {
+        perm += "-";
+    }
     if mode & S_ISUID {
-        if mode & S_IXUSR { perm += "s"; } else { perm += "S"; }
+        if mode & S_IXUSR {
+            perm += "s";
+        } else {
+            perm += "S";
+        }
     } elif mode & S_IXUSR {
         perm += "x";
     } else {
         perm += "-";
     }
-    if mode & S_IRGRP { perm += "r"; } else { perm += "-"; }
-    if mode & S_IWGRP { perm += "w"; } else { perm += "-"; }
+    if mode & S_IRGRP {
+        perm += "r";
+    } else {
+        perm += "-";
+    }
+    if mode & S_IWGRP {
+        perm += "w";
+    } else {
+        perm += "-";
+    }
     if mode & S_ISGID {
-        if mode & S_IXGRP { perm += "s"; } else { perm += "S"; }
+        if mode & S_IXGRP {
+            perm += "s";
+        } else {
+            perm += "S";
+        }
     } elif mode & S_IXGRP {
         perm += "x";
     } else {
         perm += "-";
     }
-    if mode & S_IROTH { perm += "r"; } else { perm += "-"; }
-    if mode & S_IWOTH { perm += "w"; } else { perm += "-"; }
+    if mode & S_IROTH {
+        perm += "r";
+    } else {
+        perm += "-";
+    }
+    if mode & S_IWOTH {
+        perm += "w";
+    } else {
+        perm += "-";
+    }
     if mode & S_ISVTX {
-        if mode & S_IXOTH { perm += "t"; } else { perm += "T"; }
+        if mode & S_IXOTH {
+            perm += "t";
+        } else {
+            perm += "T";
+        }
     } elif mode & S_IXOTH {
         perm += "x";
     } else {

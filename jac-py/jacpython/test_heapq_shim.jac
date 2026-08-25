@@ -3,10 +3,7 @@
 # silently no-op'd on the guest's heap. The native shim runs the Lib/heapq.py
 # algorithms over live PyList storage; these pins hold the mutation-visibility
 # and ordering contracts.
-import from layer0_replay_harness {
-    ReplayResult,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer1_replay_source, }
 
 test "heapq shim: mutations land in the guest list" {
     src = "class TestHeapqMutate(unittest.TestCase):\n"

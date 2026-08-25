@@ -37,7 +37,7 @@ def err_msg(outcome: PyObj) -> str {
 
 def vm_ok(src: str) {
     outcome = vm_try(src);
-    assert not is_error(outcome), err_type(outcome) + ": " + err_msg(outcome);
+    assert not is_error(outcome) , err_type(outcome) + ": " + err_msg(outcome);
 }
 
 # --- Fix 1: unset OSError members default to None -------------------------
@@ -86,7 +86,7 @@ test "oserror: unset-member reads on caught subclass raise nothing" {
 test "oserror: characters_written stays AttributeError until set" {
     outcome = vm_try("OSError('x').characters_written\n");
     assert isinstance(outcome, PyError);
-    assert err_type(outcome) == "AttributeError", err_type(outcome);
+    assert err_type(outcome) == "AttributeError" , err_type(outcome);
 }
 
 # --- Fix 2: _IncompleteInputError under SyntaxError -----------------------

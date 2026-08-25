@@ -1,8 +1,6 @@
-glob Py_ssize_t = int;
-
-glob array_itemsize_table: list[int] = [1, 1, 4, 4, 2, 2, 4, 4, 8, 8, 8, 8, 4, 8];
-
-glob array_typecode_table: list[int] = [
+glob Py_ssize_t = int,
+     array_itemsize_table: list[int] = [1, 1, 4, 4, 2, 2, 4, 4, 8, 8, 8, 8, 4, 8],
+     array_typecode_table: list[int] = [
          98,
          66,
          117,
@@ -17,9 +15,8 @@ glob array_typecode_table: list[int] = [
          81,
          102,
          100
-     ];
-
-glob array_signed_table: list[int] = [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0];
+     ],
+     array_signed_table: list[int] = [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0];
 
 def array_typecode_index(c: int) -> int {
     i: int = 0;

@@ -94,8 +94,7 @@ test "wave13 calcsize covers std and native tables" {
     assert calcsize("@?") == 1 and calcsize("@f") == 4 and calcsize("@d") == 8;
     # n/N/P are native-only; standard tables reject them.
     for f in ["<n", "<N", ">P", "=N"] {
-        _expect_compile_error("native-only " + f, f,
-                              "bad char in struct format");
+        _expect_compile_error("native-only " + f, f, "bad char in struct format");
     }
     # Alignment: @ pads to natural boundaries, standard modes do not.
     assert calcsize("@h i") == 8 , "h then aligned i";
@@ -124,28 +123,29 @@ test "wave13 integer round trips all widths" {
         (">H", [4660, 65535]),
         ("=i", [-123456789, 123456789]),
         ("!q", [-250010590250959011]),
+
     ];
     for (f, vals) in cases {
         width = calcsize(f);
         for v in vals {
             data = pack(f, v);
             assert len(data) == width , (f, v);
-            assert unpack(f, data) == (v,) , (f, v, data);
+            assert unpack(f, data) == (v, ) , (f, v, data);
         }
     }
     # Native long is 8 bytes here; its range matches q/Q exactly.
-    assert unpack("@l", pack("@l", -1)) == (-1,) , "native long -1";
-    assert unpack("@L", pack("@L", 18446744073709551615)) == (
-        18446744073709551615,) , "native ulong max";
+    assert unpack("@l", pack("@l", -1)) == (-1, ) , "native long -1";
+    assert unpack("@L", pack("@L", 18446744073709551615)) == (18446744073709551615, ) , "native ulong max";
     # Repeat counts fan one value per code slot.
     assert unpack("<2i", pack("<2i", 258, -258)) == (258, -258) , "repeat";
     assert unpack("@2l", pack("@2l", -1, -2)) == (-1, -2) , "native repeat";
     # bool packs by truthiness, unpacks to bool.
     assert pack("<??", [], 7) == b"\x00\x01" , "bool truthiness";
-    assert unpack("3?", b"\x01\x00\xff") == (True, False, True), "bool unpack";
+    assert unpack("3?", b"\x01\x00\xff") == (True, False, True) , "bool unpack";
     # __index__-less / non-int arguments are rejected with the exact message.
-    _expect_pack_error("float into i", "<i", 1.5,
-                       "required argument is not an integer");
+    _expect_pack_error(
+        "float into i", "<i", 1.5, "required argument is not an integer"
+    );
 }
 
 
@@ -159,15 +159,24 @@ test "wave13 range errors match the oracle messages" {
         ("<i", 2147483648, "'i' format requires -2147483648 <= number <= 2147483647"),
         ("<I", -1, "'I' format requires 0 <= number <= 4294967295"),
         ("<l", 2147483648, "'l' format requires -2147483648 <= number <= 2147483647"),
-        ("<q", 9223372036854775808,
-         "'q' format requires -9223372036854775808 <= number <= 9223372036854775807"),
+        (
+            "<q",
+            9223372036854775808,
+            "'q' format requires -9223372036854775808 <= number <= 9223372036854775807"
+        ),
         ("<Q", -1, "'Q' format requires 0 <= number <= 18446744073709551615"),
-        ("@l", 9223372036854775808,
-         "'l' format requires -9223372036854775808 <= number <= 9223372036854775807"),
-        ("@n", 9223372036854775808,
-         "'n' format requires -9223372036854775808 <= number <= 9223372036854775807"),
-        ("@N", -1,
-         "'N' format requires 0 <= number <= 18446744073709551615"),
+        (
+            "@l",
+            9223372036854775808,
+            "'l' format requires -9223372036854775808 <= number <= 9223372036854775807"
+        ),
+        (
+            "@n",
+            9223372036854775808,
+            "'n' format requires -9223372036854775808 <= number <= 9223372036854775807"
+        ),
+        ("@N", -1, "'N' format requires 0 <= number <= 18446744073709551615"),
+
     ];
     for (f, v, msg) in cases {
         lbl: str = "range " + str(f) + ":" + str(v);
@@ -180,8 +189,7 @@ test "wave13 float packing is bit-exact" {
     assert pack("<d", 1.0) == b"\x00\x00\x00\x00\x00\x00\xf0\x3f" , "1.0 LE";
     assert pack(">d", 1.0) == b"\x3f\xf0\x00\x00\x00\x00\x00\x00" , "1.0 BE";
     assert pack("<f", 3.5) == b"\x00\x00\x60\x40" , "3.5f";
-    assert pack("<d", float("inf")) == (
-        b"\x00\x00\x00\x00\x00\x00\xf0\x7f") , "+inf d";
+    assert pack("<d", float("inf")) == (b"\x00\x00\x00\x00\x00\x00\xf0\x7f") , "+inf d";
     assert pack(">d", float("-inf")) == b"\xff\xf0" + bytes(6) , "-inf d BE";
     z = 0.0;
     nz = -z;
@@ -189,26 +197,27 @@ test "wave13 float packing is bit-exact" {
     assert pack("<f", nz) == b"\x00\x00\x00\x80" , "-0.0f";
     # Round-to-nearest-even double -> float32 boundary cases (host-checked).
     assert pack("<f", 8388609.0) == b"\x01\x00\x00\x4b" , "odd tie rounds up";
-    assert unpack("<f", b"\x00\x00\x80\x3f") == (1.0,) , "read back 1.0f";
+    assert unpack("<f", b"\x00\x00\x80\x3f") == (1.0, ) , "read back 1.0f";
     # Half floats: max finite half, subnormal half, exact halves.
     assert pack("<e", 65504.0) == b"\xff\x7b" , "half max";
-    assert unpack("<e", b"\x00\x3c") == (1.0,) , "half 1.0";
-    assert unpack("<e", b"\x01\x00") == (5.960464477539063e-08,), "half subnorm";
+    assert unpack("<e", b"\x00\x3c") == (1.0, ) , "half 1.0";
+    assert unpack("<e", b"\x01\x00") == (5.960464477539063e-08, ) , "half subnorm";
     # int widens to double like PyFloat_AsDouble.
-    assert unpack("<d", pack("<d", 3)) == (3.0,) , "int into d";
+    assert unpack("<d", pack("<d", 3)) == (3.0, ) , "int into d";
     # Overflow raises OverflowError with the CPython message.
-    _expect_pack_error("f overflow", "<f", 1e300,
-                       "float too large to pack with f format");
-    _expect_pack_error("e overflow", "<e", 70000.0,
-                       "float too large to pack with e format");
+    _expect_pack_error(
+        "f overflow", "<f", 1e300, "float too large to pack with f format"
+    );
+    _expect_pack_error(
+        "e overflow", "<e", 70000.0, "float too large to pack with e format"
+    );
     # Non-floatable arguments fail with struct.error text.
-    _expect_pack_error("str into d", "<d", "x",
-                       "required argument is not a float");
+    _expect_pack_error("str into d", "<d", "x", "required argument is not a float");
     # Complex codes F/D: two floats/doubles, real first (host-checked).
     assert calcsize("<F") == 8 and calcsize("<D") == 16 , "complex sizes";
     assert calcsize("@F") == 8 and calcsize("@D") == 16 , "native complex";
     got_f = unpack("<F", pack("<F", complex(1.5, 2.0)));
-    assert str(got_f) == str((complex(1.5, 2.0),)) , got_f;
+    assert str(got_f) == str((complex(1.5, 2.0), )) , got_f;
     got_d = unpack(">D", pack(">D", complex(-0.5, 3.25)));
     assert str(got_d) == "((-0.5+3.25j),)" , got_d;
 }
@@ -217,21 +226,24 @@ test "wave13 float packing is bit-exact" {
 test "wave13 s/p/c fill rules" {
     assert pack("5s", b"ab") == b"ab\x00\x00\x00" , "s zero-pads right";
     assert pack("3s", b"abcdef") == b"abc" , "s truncates";
-    assert unpack("4s", b"ab\x00\x00") == (b"ab\x00\x00",) , "s raw unpack";
+    assert unpack("4s", b"ab\x00\x00") == (b"ab\x00\x00", ) , "s raw unpack";
     assert pack("3p", b"abc") == b"\x02ab" , "p count caps at size-1";
     assert pack("5p", b"abcd") == b"\x04abcd" , "p fills size-1";
-    assert unpack("3p", b"\xffxy") == (b"xy",) , "p span clamps to size-1";
-    assert unpack("5p", b"\x02abc\x00") == (b"ab",) , "p honors count byte";
+    assert unpack("3p", b"\xffxy") == (b"xy", ) , "p span clamps to size-1";
+    assert unpack("5p", b"\x02abc\x00") == (b"ab", ) , "p honors count byte";
     assert pack("<p", b"").hex() == "00" , "empty pascal string";
     assert pack("2c", b"a", b"b") == b"ab" , "two chars";
     assert unpack("<2c", b"ab") == (b"a", b"b") , "char round trip";
     assert pack("4s", bytearray(b"abc")) == b"abc\x00" , "bytearray ok for s";
-    _expect_pack_error("str into s", "4s", "abc",
-                       "argument for 's' must be a bytes object");
-    _expect_pack_error("long c", "c", b"ab",
-                       "char format requires a bytes object of length 1");
-    _expect_pack_error("int c", "c", 65,
-                       "char format requires a bytes object of length 1");
+    _expect_pack_error(
+        "str into s", "4s", "abc", "argument for 's' must be a bytes object"
+    );
+    _expect_pack_error(
+        "long c", "c", b"ab", "char format requires a bytes object of length 1"
+    );
+    _expect_pack_error(
+        "int c", "c", 65, "char format requires a bytes object of length 1"
+    );
 }
 
 
@@ -247,20 +259,28 @@ test "wave13 composite formats, offsets, iteration" {
     buf = bytearray(10);
     pack_into("<h", buf, 8, 258);
     assert bytes(buf) == bytes(8) + b"\x02\x01" , "pack_into placement";
-    assert unpack_from("<h", buf, 8) == (258,) , "unpack_from offset";
-    assert unpack_from("<h", b"\xff\xff\x02\x01", -2) == (258,), "negative offset";
+    assert unpack_from("<h", buf, 8) == (258, ) , "unpack_from offset";
+    assert unpack_from("<h", b"\xff\xff\x02\x01", -2) == (258, ) , "negative offset";
     tail = bytearray(b"\xee" * 6);
     pack_into("<i", tail, -4, 5);
     assert bytes(tail) == b"\xee\xee\x05\x00\x00\x00" , "negative offset write";
 
     records = _collect(iter_unpack("<h", b"\x01\x00\x02\x00\x03\x00"));
-    assert records == [(1,), (2,), (3,)] , records;
+    assert records == [(1, ), (2, ), (3, )] , records;
     assert _collect(iter_unpack("2x", b"\x00\x00")) == [()] , "pad-only record";
     assert _collect(iter_unpack("x", b"")) == [] , "no full record";
-    _expect_iter_error("iter empty struct", "", b"",
-                       "cannot iteratively unpack with a struct of length 0");
-    _expect_iter_error("iter non multiple", "<h", b"\x01",
-                       "iterative unpacking requires a buffer of a multiple of 2 bytes");
+    _expect_iter_error(
+        "iter empty struct",
+        "",
+        b"",
+        "cannot iteratively unpack with a struct of length 0"
+    );
+    _expect_iter_error(
+        "iter non multiple",
+        "<h",
+        b"\x01",
+        "iterative unpacking requires a buffer of a multiple of 2 bytes"
+    );
 
     # pack/unpack arity and bounds errors carry oracle wording.
     raised = False;
@@ -284,9 +304,11 @@ test "wave13 composite formats, offsets, iteration" {
         unpack_from("<h", b"\x01");
     } except Exception as e {
         raised = True;
-        assert str(e) == (
-            "unpack_from requires a buffer of at least 2 bytes for "
-            "unpacking 2 bytes at offset 0 (actual buffer size is 1)") , str(e);
+        assert str(e)
+            == (
+                "unpack_from requires a buffer of at least 2 bytes for "
+                "unpacking 2 bytes at offset 0 (actual buffer size is 1)"
+            ) , str(e);
     }
     assert raised , "unpack_from underflow must raise";
     raised = False;
@@ -302,9 +324,11 @@ test "wave13 composite formats, offsets, iteration" {
         pack_into("<q", bytearray(4), 0, 1);
     } except Exception as e {
         raised = True;
-        assert str(e) == (
-            "pack_into requires a buffer of at least 8 bytes for "
-            "packing 8 bytes at offset 0 (actual buffer size is 4)") , str(e);
+        assert str(e)
+            == (
+                "pack_into requires a buffer of at least 8 bytes for "
+                "packing 8 bytes at offset 0 (actual buffer size is 4)"
+            ) , str(e);
     }
     assert raised , "pack_into overflow must raise";
     raised = False;
@@ -319,20 +343,20 @@ test "wave13 composite formats, offsets, iteration" {
 
 
 test "wave13 malformed formats raise oracle messages" {
-    _expect_compile_error("repeat without code", "3",
-                          "repeat count given without format specifier");
+    _expect_compile_error(
+        "repeat without code", "3", "repeat count given without format specifier"
+    );
     _expect_compile_error("bad char", "q!", "bad char in struct format");
-    _expect_compile_error("trailing digits after ws", "i 3",
-                          "repeat count given without format specifier");
-    _expect_compile_error("embedded null byte", b"i\x00",
-                          "embedded null character");
+    _expect_compile_error(
+        "trailing digits after ws", "i 3", "repeat count given without format specifier"
+    );
+    _expect_compile_error("embedded null byte", b"i\x00", "embedded null character");
     raised = False;
     try {
         compile(42);
     } except Exception as e {
         raised = True;
-        assert "Struct() argument 1 must be a str or bytes object" in str(e), (
-            str(e));
+        assert "Struct() argument 1 must be a str or bytes object" in str(e) , (str(e));
     }
     assert raised , "non-format input must raise TypeError";
     # Zero repeats drop items entirely but still parse.

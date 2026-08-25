@@ -6,7 +6,18 @@
 # differential stays separate; this path exercises ``import platform`` (etc.)
 # through register_shim_module + exec_code.
 
-import from objects { PyObj, PyStr, PyError, PyList, PyInt, PyBool, PyDict, is_error, py_none, py_error, }
+import from objects {
+    PyObj,
+    PyStr,
+    PyError,
+    PyList,
+    PyInt,
+    PyBool,
+    PyDict,
+    is_error,
+    py_none,
+    py_error,
+}
 import from getplatform { Py_GetPlatform }
 import from _bisectmodule {
     _p2_bisect_right,
@@ -16,20 +27,20 @@ import from _bisectmodule {
 }
 import from _heapqmodule { _p2_heappush, _p2_heappop, _p2_heapify, }
 import from _jsonmodule { dumps, loads }
-import from _warningsmodule {
-    warnings_module_attrs,
-    _p2_warn_state_reset,
+import from _warningsmodule { warnings_module_attrs, _p2_warn_state_reset, }
+import from ceval {
+    _sys3_forget,
+    set_layer3_active,
+    to_host,
+    _jac_host_import,
+    _jac_host_getattr,
+    _jac_host_call,
+    py_repr,
+    py_compare,
+    py_slot_truth,
 }
-import from ceval { _sys3_forget, set_layer3_active, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
-import from _collectionsmodule {
-    _p2_deque,
-    _p2_defaultdict,
-}
-import from _collections_pylib {
-    _p2_counter,
-    _p2_namedtuple,
-    _p2_ordereddict,
-}
+import from _collectionsmodule { _p2_deque, _p2_defaultdict, }
+import from _collections_pylib { _p2_counter, _p2_namedtuple, _p2_ordereddict, }
 import from _statmodule {
     _p2_S_ISDIR,
     _p2_S_ISCHR,
@@ -80,7 +91,17 @@ import from pyc_first {
     from_host,
 }
 import from objects { PyDict, PyTuple }
-import from ceval { py_attr, py_set_attr, members_of, builtin_sorted_min_max, is_error, py_error, PyList, PyInt, PyBool }
+import from ceval {
+    py_attr,
+    py_set_attr,
+    members_of,
+    builtin_sorted_min_max,
+    is_error,
+    py_error,
+    PyList,
+    PyInt,
+    PyBool
+}
 import from _functoolsmodule {
     P2_MISSING,
     P2_WRAPPER_ASSIGNMENTS,
@@ -105,14 +126,13 @@ def _p2_wrap_snippet(source: str) -> str {
 # seed shims from host CPython so libtest sees real strings on any OS.
 import platform as _host_platform;
 
-def _p2_libtest_host_system() -> str {
+def _p2_libtest_host_system -> str {
     return _host_platform.system();
 }
 
-def _p2_libtest_host_machine() -> str {
+def _p2_libtest_host_machine -> str {
     return _host_platform.machine();
 }
-
 
 
 # ---------------- test.support.os_helper ------------------------------------
@@ -126,9 +146,13 @@ obj P2OsHelperUnlinkFn(PyObj) {
     # os_helper.unlink: remove a file, suppressing FileNotFoundError.
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) != 1 {
-            return py_error("TypeError", "unlink expected 1 argument, got " + str(len(args)));
+            return py_error(
+                "TypeError", "unlink expected 1 argument, got " + str(len(args))
+            );
         }
-        os_mod_res = _jac_host_import("os", PyList(t="list", items=[PyStr(t="str", val="*")]));
+        os_mod_res = _jac_host_import(
+            "os", PyList(t="list", items=[PyStr(t="str", val="*")])
+        );
         if not ((os_mod_res[0] as bool)) {
             return py_error(str(os_mod_res[1]), str(os_mod_res[2]));
         }
@@ -151,9 +175,13 @@ obj P2OsHelperRmdirFn(PyObj) {
     # os_helper.rmdir: remove an empty directory, suppressing FileNotFoundError.
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) != 1 {
-            return py_error("TypeError", "rmdir expected 1 argument, got " + str(len(args)));
+            return py_error(
+                "TypeError", "rmdir expected 1 argument, got " + str(len(args))
+            );
         }
-        os_mod_res = _jac_host_import("os", PyList(t="list", items=[PyStr(t="str", val="*")]));
+        os_mod_res = _jac_host_import(
+            "os", PyList(t="list", items=[PyStr(t="str", val="*")])
+        );
         if not ((os_mod_res[0] as bool)) {
             return py_error(str(os_mod_res[1]), str(os_mod_res[2]));
         }
@@ -179,7 +207,9 @@ obj P2OsHelperFakePathFn(PyObj) {
     # output-oracle gate rather than passing silently.
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) != 1 {
-            return py_error("TypeError", "FakePath expected 1 argument, got " + str(len(args)));
+            return py_error(
+                "TypeError", "FakePath expected 1 argument, got " + str(len(args))
+            );
         }
         return args[0];
     }
@@ -204,7 +234,7 @@ obj P2LibtestMachineFn(PyObj) {
     }
 }
 
-def _p2_sync_pylist_from_host(py_list: PyList, host_list: any) -> None {
+def _p2_sync_pylist_from_host(py_list: PyList, host_list: any) {
     new_items: list[PyObj] = [];
     for item in host_list {
         new_items.append(from_host(item));
@@ -257,7 +287,9 @@ obj P2SupportSortdictFn(PyObj) {
     # mixes raise TypeError like CPython), formats each pair %r: %r.
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 1 {
-            return py_error("TypeError", "sortdict expected at least 1 argument, got 0");
+            return py_error(
+                "TypeError", "sortdict expected at least 1 argument, got 0"
+            );
         }
         d = args[0];
         if not isinstance(d, PyDict) {
@@ -481,9 +513,7 @@ def _p2_lib_native_update_wrapper(wrapper: PyObj, wrapped: PyObj) -> PyObj {
             `entry = srcd.items[hk];
             kobj: PyObj = `entry.key;
             if isinstance(kobj, PyStr) {
-                errk: PyObj = py_set_attr(
-                    wrapper, (kobj as PyStr).val, `entry.value
-                );
+                errk: PyObj = py_set_attr(wrapper, (kobj as PyStr).val, `entry.value);
                 if is_error(errk) {
                     return errk;
                 }
@@ -511,7 +541,9 @@ obj P2LibWrapsDecorator(PyObj) {
 
 def _p2_opcode_pred_result(fn: any, args: list[PyObj]) -> PyObj {
     arg: PyObj = _p2_single_int_arg(args);
-    if is_error(arg) { return arg; }
+    if is_error(arg) {
+        return arg;
+    }
     got: bool = fn((arg as PyInt).val);
     return PyBool(t="bool", val=got);
 }
@@ -653,6 +685,7 @@ def p2_libtest_reset {
         "insort_left": insort_left_fn,
         "bisect": bisect_right_fn,
         "insort_right": insort_fn,
+
     };
     register_shim_module(
         "bisect", PyModule(t="module", name="bisect", attrs=bisect_attrs)
@@ -670,6 +703,7 @@ def p2_libtest_reset {
         "is_apple": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
+
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
     os_helper_attrs: dict[str, PyObj] = {
@@ -679,8 +713,11 @@ def p2_libtest_reset {
         "TESTFN": PyStr(t="str", val="@test"),
         # CPython os_helper.is_wasi: platform gate; our targets are never WASI.
         "is_wasi": PyBool(t="bool", val=False),
+
     };
-    os_helper_mod = PyModule(t="module", name="test.support.os_helper", attrs=os_helper_attrs);
+    os_helper_mod = PyModule(
+        t="module", name="test.support.os_helper", attrs=os_helper_attrs
+    );
     register_shim_module("test.support.os_helper", os_helper_mod);
     support_attrs["os_helper"] = os_helper_mod;
     register_shim_module("test.support", support_mod);
@@ -710,6 +747,7 @@ def p2_libtest_reset {
         PyStr(t="str", val=".1_4j"),
         PyStr(t="str", val="(1_2.5+3_3j)"),
         PyStr(t="str", val="(.5_6j)"),
+
     ];
     numbers_invalid: list[PyObj] = [
         PyStr(t="str", val="0_"),
@@ -752,12 +790,16 @@ def p2_libtest_reset {
         PyStr(t="str", val="1.4e_1j"),
         PyStr(t="str", val="(1+1.5_j_)"),
         PyStr(t="str", val="(1+1.5_j)"),
+
     ];
     numbers_attrs: dict[str, PyObj] = {
         "VALID_UNDERSCORE_LITERALS": PyList(t="list", items=numbers_valid),
         "INVALID_UNDERSCORE_LITERALS": PyList(t="list", items=numbers_invalid),
+
     };
-    numbers_mod = PyModule(t="module", name="test.support.numbers", attrs=numbers_attrs);
+    numbers_mod = PyModule(
+        t="module", name="test.support.numbers", attrs=numbers_attrs
+    );
     register_shim_module("test.support.numbers", numbers_mod);
     support_attrs["numbers"] = numbers_mod;
 
@@ -781,14 +823,14 @@ def p2_libtest_reset {
         "JUMP_FORWARD": PyInt(t="int", val=OP_JUMP_FORWARD),
         "FOR_ITER": PyInt(t="int", val=OP_FOR_ITER),
         "SETUP_FINALLY": PyInt(t="int", val=OP_SETUP_FINALLY),
+
     };
     register_shim_module(
         "_opcode", PyModule(t="module", name="_opcode", attrs=opcode_attrs)
     );
     _p2_warn_state_reset();
     register_shim_module(
-        "warnings",
-        PyModule(t="module", name="warnings", attrs=warnings_module_attrs())
+        "warnings", PyModule(t="module", name="warnings", attrs=warnings_module_attrs())
     );
 }
 

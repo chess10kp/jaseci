@@ -24,10 +24,9 @@ def vm_exec(src: str) -> dict[str, PyObj] {
 
 def vm_str(expr: str) -> str {
     ns = vm_exec(
-        "try:\n"
-        "    r = " + expr + "\n"
-        "except TypeError as e:\n"
-        "    r = 'TypeError: ' + str(e)\n"
+        "try:\n" "    r = "
+            + expr
+            + "\n" "except TypeError as e:\n" "    r = 'TypeError: ' + str(e)\n"
     );
     return to_host(ns["r"]) as str;
 }

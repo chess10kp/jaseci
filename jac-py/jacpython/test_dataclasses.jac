@@ -42,9 +42,7 @@ def dc_exec(body: str) -> dict[str, PyObj] {
 def vm_try(src: str) -> PyObj {
     register_dataclasses_module();
     return exec_code(
-        unmarshal(host_compile_marshal(src, "<dataclasses>", "exec")),
-        [],
-        _fresh_ns()
+        unmarshal(host_compile_marshal(src, "<dataclasses>", "exec")), [], _fresh_ns()
     );
 }
 
@@ -145,12 +143,7 @@ test "dataclass: repr=False hides a field from repr but not from the instance" {
 }
 
 test "dataclass: decorator works bare and with empty parens" {
-    ns = dc_exec(
-        "@dataclass()\n"
-        "class B:\n"
-        "    v: int = 0\n"
-        "out = repr(B())\n"
-    );
+    ns = dc_exec("@dataclass()\n" "class B:\n" "    v: int = 0\n" "out = repr(B())\n");
     assert vm_str(ns, "out") == "B(v=0)";
 }
 
@@ -515,8 +508,7 @@ test "dataclass: non-default InitVar after a default raises at decoration" {
     );
     assert err_type(outcome) == "TypeError";
     assert (
-        err_msg(outcome)
-            == "non-default argument 'scale' follows default argument 'a'"
+        err_msg(outcome) == "non-default argument 'scale' follows default argument 'a'"
     );
 }
 
@@ -567,9 +559,7 @@ test "dataclass: asdict/astuple exclude InitVars; _field_type marks them" {
         "fmap['k'] = T.__dataclass_fields__['k']._field_type\n"
     );
     assert vm_str(ns, "d") == "{'a': 3}";
-    assert (
-        vm_str(ns, "fmap") == "{'a': '_FIELD', 'k': '_FIELD_INITVAR'}"
-    );
+    assert (vm_str(ns, "fmap") == "{'a': '_FIELD', 'k': '_FIELD_INITVAR'}");
 }
 
 test "dataclass: make_dataclass builds an equivalent class" {

@@ -13,13 +13,7 @@
 #   - exec(code, g, l) binds into l; module-level LOAD_GLOBAL still reads g
 #   - bare exec(code) at module top level binds into the module globals
 
-import from objects {
-    PyObj,
-    PyCode,
-    PyError,
-    PyStr,
-    is_error,
-}
+import from objects { PyObj, PyCode, PyError, PyStr, is_error, }
 import from product_compile { compile_source }
 import from pyc_first { exec_code }
 
@@ -32,7 +26,9 @@ def product_exec(source: str, filename: str = "<execns>") -> PyObj {
 # None-shaped success sentinel.
 def run_module(source: str) -> PyObj {
     comp = product_exec(source);
-    assert not is_error(comp), f"compile failed: {(comp as PyError).exception.message}";
+    assert not is_error(comp) , f"compile failed: {(
+        comp as PyError
+    ).exception.message}";
     return exec_code(comp as PyCode, [], {"__name__": PyStr(t="str", val="__main__")});
 }
 
@@ -50,7 +46,7 @@ test "execns: exec def binds function into fresh dict" {
         "assert ns['unpack_400']() == 400, 'exec-defined fn broken'\n"
         "result = 'ok'\n"
     );
-    assert not is_error(outcome), fail_msg(outcome);
+    assert not is_error(outcome) , fail_msg(outcome);
 }
 
 test "execns: exec class and assignment bind into fresh dict" {
@@ -62,7 +58,7 @@ test "execns: exec class and assignment bind into fresh dict" {
         "assert ns['Spam'].x == 1 and ns['Y'] == [2] and ns['Z'] == 3\n"
         "result = 'ok'\n"
     );
-    assert not is_error(outcome), fail_msg(outcome);
+    assert not is_error(outcome) , fail_msg(outcome);
 }
 
 test "execns: exec overwrite collides last-wins" {
@@ -72,7 +68,7 @@ test "execns: exec overwrite collides last-wins" {
         "assert ns['v'] == 'new', 'collision did not overwrite'\n"
         "result = 'ok'\n"
     );
-    assert not is_error(outcome), fail_msg(outcome);
+    assert not is_error(outcome) , fail_msg(outcome);
 }
 
 test "execns: exec with separate locals binds there not globals" {
@@ -85,7 +81,7 @@ test "execns: exec with separate locals binds there not globals" {
         "assert len(leak) == 0, 'w leaked into globals'\n"
         "result = 'ok'\n"
     );
-    assert not is_error(outcome), fail_msg(outcome);
+    assert not is_error(outcome) , fail_msg(outcome);
 }
 
 test "execns: bare exec at module level binds into module globals" {
@@ -95,7 +91,7 @@ test "execns: bare exec at module level binds into module globals" {
         "assert made_by_exec() == 7, 'bare exec did not bind module global'\n"
         "result = 'ok'\n"
     );
-    assert not is_error(outcome), fail_msg(outcome);
+    assert not is_error(outcome) , fail_msg(outcome);
 }
 
 test "execns: exec raises through and ns stays partially live" {
@@ -115,5 +111,5 @@ test "execns: exec raises through and ns stays partially live" {
         "assert len(late) == 0, 'binding after raise landed'\n"
         "result = 'ok'\n"
     );
-    assert not is_error(outcome), fail_msg(outcome);
+    assert not is_error(outcome) , fail_msg(outcome);
 }

@@ -666,9 +666,8 @@ test "nested if elif else golden output" {
     formatted: str = prog.mod.main.gen.jac or "";
     # Already-canonical source must round-trip byte-for-byte.
     assert formatted == source , (
-        "nested if/elif/else not formatted to canonical golden output:\n" + "\n".join(
-            unified_diff(source.splitlines(), formatted.splitlines())
-        )
+        "nested if/elif/else not formatted to canonical golden output:\n"
+        + "\n".join(unified_diff(source.splitlines(), formatted.splitlines()))
     );
 
     # Idempotency: formatting the output again must not change it.

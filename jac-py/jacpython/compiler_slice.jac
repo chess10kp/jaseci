@@ -2193,13 +2193,13 @@ def _parity(src: str) {
 test "compiler_slice: band6 two handlers finally caught by first parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    raise ValueError('x')\n"
-        + "except ValueError:\n"
-        + "    result = 1\n"
-        + "except KeyError:\n"
-        + "    result = 2\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "    raise ValueError('x')\n"
+            + "except ValueError:\n"
+            + "    result = 1\n"
+            + "except KeyError:\n"
+            + "    result = 2\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -2225,13 +2225,13 @@ test "compiler_slice: band6 two handlers finally caught by first executes in cev
 test "compiler_slice: band6 two handlers finally caught by second parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    raise KeyError('k')\n"
-        + "except ValueError:\n"
-        + "    result = 1\n"
-        + "except KeyError:\n"
-        + "    result = 2\n"
-        + "finally:\n"
-        + "    result = 3\n"
+            + "    raise KeyError('k')\n"
+            + "except ValueError:\n"
+            + "    result = 1\n"
+            + "except KeyError:\n"
+            + "    result = 2\n"
+            + "finally:\n"
+            + "    result = 3\n"
     );
 }
 
@@ -2256,13 +2256,13 @@ test "compiler_slice: band6 two handlers finally caught by second executes in ce
 test "compiler_slice: band6 two handlers finally uncaught parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    raise TypeError('t')\n"
-        + "except ValueError:\n"
-        + "    result = 1\n"
-        + "except KeyError:\n"
-        + "    result = 2\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "    raise TypeError('t')\n"
+            + "except ValueError:\n"
+            + "    result = 1\n"
+            + "except KeyError:\n"
+            + "    result = 2\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -2289,17 +2289,17 @@ test "compiler_slice: band6 two handlers finally uncaught propagates but runs fi
 test "compiler_slice: band6 three handlers else finally no-exception parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    result = 1\n"
-        + "except ValueError:\n"
-        + "    result = 2\n"
-        + "except KeyError:\n"
-        + "    result = 3\n"
-        + "except TypeError:\n"
-        + "    result = 4\n"
-        + "else:\n"
-        + "    result = 5\n"
-        + "finally:\n"
-        + "    result = 6\n"
+            + "    result = 1\n"
+            + "except ValueError:\n"
+            + "    result = 2\n"
+            + "except KeyError:\n"
+            + "    result = 3\n"
+            + "except TypeError:\n"
+            + "    result = 4\n"
+            + "else:\n"
+            + "    result = 5\n"
+            + "finally:\n"
+            + "    result = 6\n"
     );
 }
 
@@ -2328,17 +2328,17 @@ test "compiler_slice: band6 three handlers else finally no-exception runs else t
 test "compiler_slice: band6 three handlers else finally exception skips else parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    raise KeyError('k')\n"
-        + "except ValueError:\n"
-        + "    result = 2\n"
-        + "except KeyError:\n"
-        + "    result = 3\n"
-        + "except TypeError:\n"
-        + "    result = 4\n"
-        + "else:\n"
-        + "    result = 5\n"
-        + "finally:\n"
-        + "    result = 6\n"
+            + "    raise KeyError('k')\n"
+            + "except ValueError:\n"
+            + "    result = 2\n"
+            + "except KeyError:\n"
+            + "    result = 3\n"
+            + "except TypeError:\n"
+            + "    result = 4\n"
+            + "else:\n"
+            + "    result = 5\n"
+            + "finally:\n"
+            + "    result = 6\n"
     );
 }
 
@@ -2367,13 +2367,13 @@ test "compiler_slice: band6 three handlers else finally exception skips else in 
 test "compiler_slice: band6 typed bare chain finally parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    raise KeyError('k')\n"
-        + "except ValueError:\n"
-        + "    result = 1\n"
-        + "except:\n"
-        + "    result = 2\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "    raise KeyError('k')\n"
+            + "except ValueError:\n"
+            + "    result = 1\n"
+            + "except:\n"
+            + "    result = 2\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -2399,13 +2399,13 @@ test "compiler_slice: band6 typed bare chain finally executes in ceval" {
 test "compiler_slice: band6 handler raise reaches finally then propagates parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    raise ValueError('x')\n"
-        + "except ValueError:\n"
-        + "    raise KeyError('k')\n"
-        + "except TypeError:\n"
-        + "    result = 4\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "    raise ValueError('x')\n"
+            + "except ValueError:\n"
+            + "    raise KeyError('k')\n"
+            + "except TypeError:\n"
+            + "    result = 4\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -2432,16 +2432,16 @@ test "compiler_slice: band6 handler raise reaches finally then propagates in cev
 test "compiler_slice: band6 nested try inside handler parsed matches oracle co_code" {
     _parity(
         "try:\n"
-        + "    raise ValueError('x')\n"
-        + "except ValueError:\n"
-        + "    try:\n"
-        + "        1 // 0\n"
-        + "    except ZeroDivisionError:\n"
-        + "        result = 7\n"
-        + "except TypeError:\n"
-        + "    result = 8\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "    raise ValueError('x')\n"
+            + "except ValueError:\n"
+            + "    try:\n"
+            + "        1 // 0\n"
+            + "    except ZeroDivisionError:\n"
+            + "        result = 7\n"
+            + "except TypeError:\n"
+            + "    result = 8\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -2470,17 +2470,17 @@ test "compiler_slice: band6 nested try inside handler executes in ceval" {
 test "compiler_slice: band6 first handler re-raises second catches parsed matches oracle co_code" {
     _parity(
         "err = ValueError('v')\n"
-        + "try:\n"
-        + "    try:\n"
-        + "        raise err\n"
-        + "    except ValueError:\n"
-        + "        raise\n"
-        + "except KeyError:\n"
-        + "    result = 1\n"
-        + "except ValueError:\n"
-        + "    result = 2\n"
-        + "finally:\n"
-        + "    marker = 9\n"
+            + "try:\n"
+            + "    try:\n"
+            + "        raise err\n"
+            + "    except ValueError:\n"
+            + "        raise\n"
+            + "except KeyError:\n"
+            + "    result = 1\n"
+            + "except ValueError:\n"
+            + "    result = 2\n"
+            + "finally:\n"
+            + "    marker = 9\n"
     );
 }
 
@@ -3615,6 +3615,7 @@ test "compiler_slice: band-11 module AnnAssign matches oracle bytes" {
         "# c\nx: int = 5\n",
         'x: "int" = 5\n',
         "x: int = 5\nx: str = 'a'\n",
+
     ] {
         actual = compile_parsed_exec(src);
         expected = oracle_exec(src, "<f>");
@@ -3648,6 +3649,7 @@ test "compiler_slice: band-11 module attr/subscript AnnAssign matches oracle" {
         "d['k']: int = 1\n",
         "o.k: int\n",
         "if p:\n    x: int = 5\n",
+
     ] {
         actual = compile_parsed_exec(src);
         expected = oracle_exec(src, "<f>");
@@ -3675,6 +3677,7 @@ test "compiler_slice: band-11 class AnnAssign matches oracle bytes" {
         "class C:\n    y: str = 'a'\n",
         "class C:\n    z: dict\n",
         "class C:\n    x: int = 1\n    y: list[int]\n    z: 'MyStr'\n    w: mod.Attr[int]\n",
+
     ] {
         actual = compile_parsed_exec(src);
         expected = oracle_exec(src, "<f>");
@@ -3777,7 +3780,7 @@ test "compiler_slice: value-context not keeps UNARY_NOT" {
 
 # Recursive byte-parity over a code object tree: co_code/exceptiontable/
 # stacksize/name tables/var pools/flags/argcounts plus every nested const code.
-def assert_typealias_parity(actual: PyCode, expected: PyCode) -> None {
+def assert_typealias_parity(actual: PyCode, expected: PyCode) {
     assert actual.co_code == expected.co_code;
     assert actual.exceptiontable == expected.exceptiontable;
     assert actual.stacksize == expected.stacksize;
@@ -3823,6 +3826,7 @@ test "compiler_slice: band-11 type alias statements match oracle bytes" {
         "def f():\n    type P[T] = list[T]\n    return P\n",
         "type A = int\ntype B = list[A]\n",
         "type R = int\ntype R = str\nx = 1\n",
+
     ] {
         actual = compile_parsed_exec(src);
         expected = oracle_exec(src, "<f>");
@@ -3855,6 +3859,7 @@ test "compiler_slice: band-11 call-site star unpacking matches oracle bytes" {
         "def f(*a, **k):\n    pass\nk1 = {'m': 1}\nk2 = {'n': 2}\nr = f(**k1, y=2, **k2)\n",
         "def f(*a, **k):\n    pass\np = 1\na2 = 'ef'\nr = f(p, *a2)\n",
         "def f(*a, **k):\n    pass\np = 1\nr = f(p, 2, y=3, **kw0)\n",
+
     ] {
         actual = compile_parsed_exec(src);
         expected = oracle_exec(src, "<f>");
@@ -3883,12 +3888,7 @@ test "compiler_slice: band-11 call-site star unpacking matches oracle bytes" {
 #    order; reuse existing names in else bodies until that ordering moves.
 
 test "compiler_slice: band11 except* bare handler matches oracle PyCode" {
-    src = (
-        "try:\n"
-        + "    pass\n"
-        + "except* ValueError:\n"
-        + "    pass\n"
-    );
+    src = "try:\n" + "    pass\n" + "except* ValueError:\n" + "    pass\n";
     actual = compile_parsed_exec(src);
     expected = oracle_exec(src, "<f>");
     assert isinstance(expected, PyCode);
@@ -3900,12 +3900,7 @@ test "compiler_slice: band11 except* bare handler matches oracle PyCode" {
 }
 
 test "compiler_slice: band11 except* as-binding matches oracle PyCode" {
-    src = (
-        "try:\n"
-        + "    x = 1\n"
-        + "except* ValueError as e:\n"
-        + "    y = e\n"
-    );
+    src = "try:\n" + "    x = 1\n" + "except* ValueError as e:\n" + "    y = e\n";
     actual = compile_parsed_exec(src);
     expected = oracle_exec(src, "<f>");
     assert isinstance(expected, PyCode);
@@ -4030,64 +4025,81 @@ test "compiler_slice: f-string single interpolation omits BUILD_STRING 1" {
 
 test "compiler_slice: f-string text + interpolation joins BUILD_STRING 2" {
     assert_matches_oracle(
-        fs_js([fs_text("plain ", 2, 8), fs_fmt(fs_name("n", 9, 10), -1, None, 8, 11)], 0, 12),
+        fs_js(
+            [fs_text("plain ", 2, 8), fs_fmt(fs_name("n", 9, 10), -1, None, 8, 11)],
+            0,
+            12
+        ),
         "f'plain {n}'"
     );
 }
 
 test "compiler_slice: f-string conversions !r !s !a emit CONVERT_VALUE" {
     assert_matches_oracle(
-        fs_js([
-            fs_text("a", 2, 3),
-            fs_fmt(fs_name("x", 4, 5), 114, None, 3, 8),
-            fs_text("b", 8, 9),
-            fs_fmt(fs_name("y", 10, 11), 115, None, 9, 14),
-            fs_fmt(fs_name("z", 15, 16), 97, None, 14, 19)
-        ], 0, 20),
+        fs_js(
+            [
+                fs_text("a", 2, 3),
+                fs_fmt(fs_name("x", 4, 5), 114, None, 3, 8),
+                fs_text("b", 8, 9),
+                fs_fmt(fs_name("y", 10, 11), 115, None, 9, 14),
+                fs_fmt(fs_name("z", 15, 16), 97, None, 14, 19)
+            ],
+            0,
+            20
+        ),
         "f'a{x!r}b{y!s}{z!a}'"
     );
 }
 
 test "compiler_slice: f-string constant format spec emits FORMAT_WITH_SPEC" {
     assert_matches_oracle(
-        fs_js([
-            fs_fmt(fs_name("x", 3, 4), -1, fs_js([fs_text(">8", 5, 7)], 4, 7), 2, 8)
-        ], 0, 9),
+        fs_js(
+            [fs_fmt(fs_name("x", 3, 4), -1, fs_js([fs_text(">8", 5, 7)], 4, 7), 2, 8)],
+            0,
+            9
+        ),
         "f'{x:>8}'"
     );
 }
 
 test "compiler_slice: f-string dynamic format spec formats the spec expression" {
     assert_matches_oracle(
-        fs_js([
-            fs_fmt(
-                fs_name("x", 3, 4),
-                -1,
-                fs_js([fs_fmt(fs_name("w", 6, 7), -1, None, 5, 8)], 4, 8),
-                2,
-                9
-            )
-        ], 0, 10),
+        fs_js(
+            [
+                fs_fmt(
+                    fs_name("x", 3, 4),
+                    -1,
+                    fs_js([fs_fmt(fs_name("w", 6, 7), -1, None, 5, 8)], 4, 8),
+                    2,
+                    9
+                )
+            ],
+            0,
+            10
+        ),
         "f'{x:{w}}'"
     );
 }
 
 test "compiler_slice: f-string debug form keeps <expr>= text and repr conversion" {
     assert_matches_oracle(
-        fs_js([
-            fs_text("x=", 3, 5),
-            fs_fmt(fs_name("x", 3, 4), 114, None, 2, 6),
-            fs_text(" tail y=", 6, 15),
-            fs_fmt(fs_name("y", 13, 14), 114, None, 12, 16)
-        ], 0, 17),
+        fs_js(
+            [
+                fs_text("x=", 3, 5),
+                fs_fmt(fs_name("x", 3, 4), 114, None, 2, 6),
+                fs_text(" tail y=", 6, 15),
+                fs_fmt(fs_name("y", 13, 14), 114, None, 12, 16)
+            ],
+            0,
+            17
+        ),
         "f'{x=} tail {y=}'"
     );
 }
 
 test "compiler_slice: f-string nested string literal part is formatted" {
     assert_matches_oracle(
-        fs_js([fs_fmt(fs_text("b", 3, 6), -1, None, 2, 7)], 0, 8),
-        "f'{\"b\"}'"
+        fs_js([fs_fmt(fs_text("b", 3, 6), -1, None, 2, 7)], 0, 8), "f'{\"b\"}'"
     );
 }
 
@@ -4151,7 +4163,7 @@ def assert_parsed_matches_oracle(src: str) {
     expected = oracle_exec(src, "<f>");
     assert isinstance(expected, PyCode);
     msg = pycode_diff_message(expected as PyCode, actual);
-    assert msg == "", msg;
+    assert msg == "" , msg;
 }
 
 # GAP 3b: def defaults / *args / **kw const interning order must match the
@@ -4177,6 +4189,7 @@ test "compiler_slice: def defaults/*args/**kw shapes match oracle bytes" {
         "def f():\n    return 1\n",
         "def f(x):\n    return x\n",
         "def f():\n    raise ValueError()\n",
+
     ] {
         assert_parsed_matches_oracle(src);
     }
@@ -4198,6 +4211,7 @@ test "compiler_slice: comprehension filters match oracle bytes" {
         "def f(z):\n    return {y for y in z if y % 3}\n",
         "def f(z):\n    return {y: 1 for y in z if y % 3}\n",
         "def f(z):\n    return [w for w in z if w]\n",
+
     ] {
         assert_parsed_matches_oracle(src);
     }

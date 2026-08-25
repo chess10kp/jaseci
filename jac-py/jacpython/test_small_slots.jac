@@ -57,8 +57,12 @@ def vm_try_in(ns: dict[str, PyObj], src: str, mode: str) -> PyObj {
 test "slice equality compares bounds by value" {
     assert to_host(vm_eval("slice(1, 2) == slice(1, 2)")) as bool;
     assert not (to_host(vm_eval("slice(1, 2) == slice(1, 3)")) as bool);
-    assert to_host(vm_eval("slice(None, None, None) == slice(None, None, None)")) as bool;
-    assert to_host(vm_eval("slice(2 ** 70, 2 ** 80) == slice(2 ** 70, 2 ** 80)")) as bool;
+    assert to_host(
+        vm_eval("slice(None, None, None) == slice(None, None, None)")
+    ) as bool;
+    assert to_host(
+        vm_eval("slice(2 ** 70, 2 ** 80) == slice(2 ** 70, 2 ** 80)")
+    ) as bool;
     # step participates: slice(1, 2, 3) != slice(1, 2, None)
     assert to_host(vm_eval("slice(1, 2, 3) != slice(1, 2, None)")) as bool;
 }
@@ -85,8 +89,7 @@ test "slice ordering is NotImplemented" {
     assert isinstance(outcome, PyError);
     exc = (outcome as PyError).exception;
     assert exc.type_name == "TypeError";
-    assert exc.message
-        == "'<' not supported between instances of 'slice' and 'slice'";
+    assert exc.message == "'<' not supported between instances of 'slice' and 'slice'";
 }
 
 # ---- item 76: terminal object in __mro__, plus the mro() method ------------
@@ -122,7 +125,7 @@ test "isinstance/issubclass agree with the displayed MRO" {
 
 # ---- item 44: old-style iteration over a __getitem__-only class ------------
 
-def seq_cls_ns() -> dict[str, PyObj] {
+def seq_cls_ns -> dict[str, PyObj] {
     return class_ns(
         "class Seq:\n"
         "    def __init__(self, n):\n"
@@ -142,8 +145,7 @@ test "__getitem__-only class drives for-in, comprehensions, next()" {
     assert to_host(vm_eval_in(ns, "next(iter(Seq(4)))")) == 0;
     # sorted/max/min drain natively through the same iterator (iter_drain).
     assert to_host(vm_eval_in(ns, "max(Seq(4))")) == 9;
-    assert to_host(vm_eval_in(ns, "sorted(Seq(4), reverse=True)"))
-        == [9, 4, 1, 0];
+    assert to_host(vm_eval_in(ns, "sorted(Seq(4), reverse=True)")) == [9, 4, 1, 0];
 }
 
 test "sequence iterator supports early break" {
@@ -161,19 +163,14 @@ test "sequence iterator supports early break" {
 
 test "sequence iterator reports the plain iterator type" {
     ns = class_ns(
-        "class Seq:\n"
-        "    def __getitem__(self, i):\n"
-        "        raise IndexError\n"
+        "class Seq:\n" "    def __getitem__(self, i):\n" "        raise IndexError\n"
     );
-    assert (to_host(vm_eval_in(ns, "type(iter(Seq())).__name__")) as str)
-        == "iterator";
+    assert (to_host(vm_eval_in(ns, "type(iter(Seq())).__name__")) as str) == "iterator";
 }
 
 test "non-IndexError from __getitem__ propagates" {
     ns = class_ns(
-        "class Bad:\n"
-        "    def __getitem__(self, i):\n"
-        "        raise KeyError('k')\n"
+        "class Bad:\n" "    def __getitem__(self, i):\n" "        raise KeyError('k')\n"
     );
     outcome = vm_try_in(ns, "for _ in Bad():\n    pass\n", "exec");
     assert isinstance(outcome, PyError);

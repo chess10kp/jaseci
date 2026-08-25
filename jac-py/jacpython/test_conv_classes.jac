@@ -25,10 +25,7 @@
 # __get__/__delete__ descriptors are not dispatched during instance attribute
 # load/delete on the jacpython engine (raw descriptor leaks instead), so the
 # test_descriptors.py DescWithDel/non-data-shadow conversions cannot replay yet.
-import from layer0_replay_harness {
-    ReplayResult,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer1_replay_source, }
 
 def replay(src: str, want_passed: int) {
     # Every converted method must actually replay (no silent scaffolding skips).

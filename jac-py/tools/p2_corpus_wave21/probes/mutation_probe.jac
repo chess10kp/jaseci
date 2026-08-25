@@ -54,9 +54,7 @@ test "wave21 islice sees post-creation list mutations" {
     native = _drain(_p2_islice_full(lst2, 1, None, None));
     lst2.append(50);
     lst2[1] = -20;
-    assert _drain(_p2_islice_full(lst2, 1, None, None)) == [
-        -20, 30, 40, 50
-    ] , "recreated islice over mutated list";
+    assert _drain(_p2_islice_full(lst2, 1, None, None)) == [-20, 30, 40, 50] , "recreated islice over mutated list";
 
     lst3: list = [10, 20, 30, 40];
     h = host_it.islice(lst3, 1, None);

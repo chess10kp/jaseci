@@ -18,7 +18,7 @@ import from objects { PyCode, PyStr, PyError, is_error }
 import from ceval { to_host }
 import from product_compile { compile_source as product_exec }
 
-def setup() -> dict[str, PyObj] {
+def setup -> dict[str, PyObj] {
     src = (
         "import itertools\n"
         "class W:\n"
@@ -50,10 +50,10 @@ def setup() -> dict[str, PyObj] {
         "v_class = W\n"
     );
     comp = compile_source(src, "<p>", "exec", 0);
-    assert not is_error(comp), "compile failed";
+    assert not is_error(comp) , "compile failed";
     ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
     out = exec_code(comp as PyCode, [], ns);
-    assert not is_error(out), "exec failed";
+    assert not is_error(out) , "exec failed";
     return ns;
 }
 
@@ -117,10 +117,14 @@ test "crossed trampoline actually invokes guest code" {
         "        return -x\n"
         "a = A()\n"
         "r = sorted([3, 1, 2], key=a.k)\n",
-        "<bp>", "exec", 0
+        "<bp>",
+        "exec",
+        0
     );
     assert not is_error(comp);
     nss: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
     outcome = exec_code(comp as PyCode, [], nss);
-    assert not is_error(outcome), f"round-trip failed: {(outcome as PyError).exception.message}";
+    assert not is_error(outcome) , f"round-trip failed: {(
+        outcome as PyError
+    ).exception.message}";
 }

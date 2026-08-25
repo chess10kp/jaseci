@@ -8,10 +8,7 @@ Expected values and error messages were verified against the host stdlib
 """
 
 import _collections as host_coll;
-import from _collectionsmodule {
-    _p2_defaultdict,
-    _p2_deque,
-}
+import from _collectionsmodule { _p2_defaultdict, _p2_deque, }
 
 
 def _drain(it: any) -> list {
@@ -27,7 +24,7 @@ def _drain(it: any) -> list {
 }
 
 
-def _expect_pop_empty() {
+def _expect_pop_empty {
     g = _p2_deque();
     raised = False;
     got_type = "";
@@ -51,12 +48,14 @@ def _expect_pop_empty() {
         got_type = type(e).__name__;
         got = str(e);
     }
-    assert raised and got_type == "IndexError"
-        and got == "pop from an empty deque" , (got_type, got);
+    assert raised and got_type == "IndexError" and got == "pop from an empty deque" , (
+        got_type,
+        got
+    );
 }
 
 
-def _expect_maxlen_negative() {
+def _expect_maxlen_negative {
     raised = False;
     got_type = "";
     got = "";
@@ -67,7 +66,8 @@ def _expect_maxlen_negative() {
         got_type = type(e).__name__;
         got = str(e);
     }
-    assert raised and got_type == "ValueError"
+    assert raised
+        and got_type == "ValueError"
         and got == "maxlen must be non-negative" , (got_type, got);
 }
 
@@ -116,12 +116,13 @@ def _expect_slice_reject(op: str) {
     }
     # Deques expose only sq_item/sq_ass_item; every slice raises the host's
     # sequence-index message (verified against host 3.14).
-    assert raised and got_type == "TypeError"
+    assert raised
+        and got_type == "TypeError"
         and got == "sequence index must be integer, not 'slice'" , (op, got_type, got);
 }
 
 
-def _expect_index_non_int() {
+def _expect_index_non_int {
     d = _p2_deque([10, 20]);
     raised = False;
     got = "";
@@ -135,7 +136,7 @@ def _expect_index_non_int() {
 }
 
 
-def _expect_concat_error() {
+def _expect_concat_error {
     a = _p2_deque([1, 2]);
     raised = False;
     got = "";
@@ -145,12 +146,11 @@ def _expect_concat_error() {
         raised = True;
         got = str(e);
     }
-    assert raised
-        and got == 'can only concatenate deque (not "list") to deque' , got;
+    assert raised and got == 'can only concatenate deque (not "list") to deque' , got;
 }
 
 
-def _expect_repeat_error() {
+def _expect_repeat_error {
     a = _p2_deque([1, 2]);
     raised = False;
     got = "";
@@ -160,12 +160,11 @@ def _expect_repeat_error() {
         raised = True;
         got = str(e);
     }
-    assert raised
-        and got == "can't multiply sequence by non-int of type 'float'" , got;
+    assert raised and got == "can't multiply sequence by non-int of type 'float'" , got;
 }
 
 
-def _expect_order_vs_list() {
+def _expect_order_vs_list {
     a = _p2_deque([1, 2]);
     raised = False;
     got = "";
@@ -176,12 +175,13 @@ def _expect_order_vs_list() {
         got = str(e);
     }
     assert raised
-        and got == "'<' not supported between instances of 'collections.deque'"
-                   " and 'list'" , got;
+        and got
+            == "'<' not supported between instances of 'collections.deque'"
+            " and 'list'" , got;
 }
 
 
-def _expect_iter_poisoned() {
+def _expect_iter_poisoned {
     d = _p2_deque([1, 2, 3]);
     it = iter(d);
     _ = next(it);
@@ -207,7 +207,7 @@ def _expect_iter_poisoned() {
 }
 
 
-def _expect_reviter_poisoned() {
+def _expect_reviter_poisoned {
     d = _p2_deque([1, 2, 3]);
     r = reversed(d);
     _ = next(r);
@@ -224,7 +224,7 @@ def _expect_reviter_poisoned() {
 }
 
 
-def _expect_factory_not_callable() {
+def _expect_factory_not_callable {
     raised = False;
     got_type = "";
     got = "";
@@ -235,12 +235,13 @@ def _expect_factory_not_callable() {
         got_type = type(e).__name__;
         got = str(e);
     }
-    assert raised and got_type == "TypeError"
+    assert raised
+        and got_type == "TypeError"
         and got == "first argument must be callable or None" , (got_type, got);
 }
 
 
-def _expect_none_factory_keyerror() {
+def _expect_none_factory_keyerror {
     dd = _p2_defaultdict();
     raised = False;
     got_type = "";
@@ -256,7 +257,7 @@ def _expect_none_factory_keyerror() {
 }
 
 
-def _expect_del_missing_key() {
+def _expect_del_missing_key {
     dd = _p2_defaultdict();
     raised = False;
     got_type = "";
@@ -469,7 +470,7 @@ test "wave19 deque reduce/repr shapes are pickle-compat" {
 
     capped = _p2_deque([1], maxlen=2);
     redc = capped.__reduce__();
-    assert redc[1] == (2,) , redc[1];
+    assert redc[1] == (2, ) , redc[1];
 
     assert repr(_p2_deque([1, 2], maxlen=9)) == "deque([1, 2], maxlen=9)";
 }
@@ -509,7 +510,7 @@ test "wave19 defaultdict matches host semantics" {
     assert list(iter(d2)) == [2, 9];
 
     calls: list = [];
-    def factory() -> str {
+    def factory -> str {
         calls.append(1);
         return "v";
     }
@@ -519,7 +520,7 @@ test "wave19 defaultdict matches host semantics" {
 
     red = d2.__reduce__();
     assert len(red) == 5 , red;
-    assert red[1] == (list,) and red[2] is None and red[3] is None;
+    assert red[1] == (list, ) and red[2] is None and red[3] is None;
 }
 
 

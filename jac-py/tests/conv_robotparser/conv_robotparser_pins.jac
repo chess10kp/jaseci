@@ -8,19 +8,25 @@ import from layer_p2_libtest { p2_libtest_run_snippet }
 # Source: test_robotparser.py
 
 test "ConstructedStringFormattingTest.test_empty" {
-    (ok, detail) = p2_libtest_run_snippet("import urllib.robotparser\n\ndef _t():\n    parser = urllib.robotparser.RobotFileParser()\n    assert str(parser) == '', ('assertEqual', str(parser), '')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    (ok, detail) = p2_libtest_run_snippet(
+        "import urllib.robotparser\n\ndef _t():\n    parser = urllib.robotparser.RobotFileParser()\n    assert str(parser) == '', ('assertEqual', str(parser), '')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }
 
 test "ConstructedStringFormattingTest.test_group_without_rules" {
-    (ok, detail) = p2_libtest_run_snippet("import urllib.robotparser\n\ndef _t():\n    parser = urllib.robotparser.RobotFileParser()\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['spambot']\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['hambot']\n    entry.rulelines = [urllib.robotparser.RuleLine('/ham', False)]\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['eggsbot']\n    parser._add_entry(entry)\n    assert str(parser) == 'User-agent: spambot\\nAllow:\\n\\nUser-agent: hambot\\nDisallow: /ham\\n\\nUser-agent: eggsbot\\nAllow:', ('assertEqual', str(parser), 'User-agent: spambot\\nAllow:\\n\\nUser-agent: hambot\\nDisallow: /ham\\n\\nUser-agent: eggsbot\\nAllow:')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    (ok, detail) = p2_libtest_run_snippet(
+        "import urllib.robotparser\n\ndef _t():\n    parser = urllib.robotparser.RobotFileParser()\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['spambot']\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['hambot']\n    entry.rulelines = [urllib.robotparser.RuleLine('/ham', False)]\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['eggsbot']\n    parser._add_entry(entry)\n    assert str(parser) == 'User-agent: spambot\\nAllow:\\n\\nUser-agent: hambot\\nDisallow: /ham\\n\\nUser-agent: eggsbot\\nAllow:', ('assertEqual', str(parser), 'User-agent: spambot\\nAllow:\\n\\nUser-agent: hambot\\nDisallow: /ham\\n\\nUser-agent: eggsbot\\nAllow:')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }
 
 test "ConstructedStringFormattingTest.test_group_without_user_agent" {
-    (ok, detail) = p2_libtest_run_snippet("import urllib.robotparser\n\ndef _t():\n    parser = urllib.robotparser.RobotFileParser()\n    entry = urllib.robotparser.Entry()\n    entry.rulelines = [urllib.robotparser.RuleLine('/ham', False)]\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['spambot']\n    entry.rulelines = [urllib.robotparser.RuleLine('/spam', False)]\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.rulelines = [urllib.robotparser.RuleLine('/eggs', False)]\n    parser._add_entry(entry)\n    assert str(parser) == 'User-agent: spambot\\nDisallow: /spam', ('assertEqual', str(parser), 'User-agent: spambot\\nDisallow: /spam')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    (ok, detail) = p2_libtest_run_snippet(
+        "import urllib.robotparser\n\ndef _t():\n    parser = urllib.robotparser.RobotFileParser()\n    entry = urllib.robotparser.Entry()\n    entry.rulelines = [urllib.robotparser.RuleLine('/ham', False)]\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.useragents = ['spambot']\n    entry.rulelines = [urllib.robotparser.RuleLine('/spam', False)]\n    parser._add_entry(entry)\n    entry = urllib.robotparser.Entry()\n    entry.rulelines = [urllib.robotparser.RuleLine('/eggs', False)]\n    parser._add_entry(entry)\n    assert str(parser) == 'User-agent: spambot\\nDisallow: /spam', ('assertEqual', str(parser), 'User-agent: spambot\\nDisallow: /spam')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }

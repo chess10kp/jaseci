@@ -56,8 +56,25 @@ def _scalar_case(
     fn: str = c_expr.split("(")[0];
     return (
         name,
-        "#include <stdio.h>\n" + "int " + fn + "();\n" + c_helpers + "int main(void) {\n" + c_prelude + "    printf(\"%d\\n\", " + c_expr + ");\n" + "    return 0;\n" + "}\n",
-        jac_helpers + "with entry {\n" + jac_prelude + "    print(" + jac_expr + ");\n" + "}\n",
+        "#include <stdio.h>\n"
+            + "int "
+            + fn
+            + "();\n"
+            + c_helpers
+            + "int main(void) {\n"
+            + c_prelude
+            + "    printf(\"%d\\n\", "
+            + c_expr
+            + ");\n"
+            + "    return 0;\n"
+            + "}\n",
+        jac_helpers
+            + "with entry {\n"
+            + jac_prelude
+            + "    print("
+            + jac_expr
+            + ");\n"
+            + "}\n",
         fn
     );
 }

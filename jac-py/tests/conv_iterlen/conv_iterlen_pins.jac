@@ -8,13 +8,17 @@ import from layer_p2_libtest { p2_libtest_run_snippet }
 # Source: test_iterlen.py
 
 test "TestList.test_mutation" {
-    (ok, detail) = p2_libtest_run_snippet("from operator import length_hint\nn = 10\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.it = iter(range(n))\n    d = list(range(n))\n    it = iter(d)\n    next(it)\n    next(it)\n    assert length_hint(it) == n - 2, ('assertEqual', length_hint(it), n - 2)\n    d.append(n)\n    assert length_hint(it) == n - 1, ('assertEqual', length_hint(it), n - 1)\n    d[1:] = []\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\n    assert list(it) == [], ('assertEqual', list(it), [])\n    d.extend(range(20))\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    (ok, detail) = p2_libtest_run_snippet(
+        "from operator import length_hint\nn = 10\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.it = iter(range(n))\n    d = list(range(n))\n    it = iter(d)\n    next(it)\n    next(it)\n    assert length_hint(it) == n - 2, ('assertEqual', length_hint(it), n - 2)\n    d.append(n)\n    assert length_hint(it) == n - 1, ('assertEqual', length_hint(it), n - 1)\n    d[1:] = []\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\n    assert list(it) == [], ('assertEqual', list(it), [])\n    d.extend(range(20))\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }
 
 test "TestListReversed.test_mutation" {
-    (ok, detail) = p2_libtest_run_snippet("from operator import length_hint\nn = 10\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.it = reversed(range(n))\n    d = list(range(n))\n    it = reversed(d)\n    next(it)\n    next(it)\n    assert length_hint(it) == n - 2, ('assertEqual', length_hint(it), n - 2)\n    d.append(n)\n    assert length_hint(it) == n - 2, ('assertEqual', length_hint(it), n - 2)\n    d[1:] = []\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\n    assert list(it) == [], ('assertEqual', list(it), [])\n    d.extend(range(20))\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    (ok, detail) = p2_libtest_run_snippet(
+        "from operator import length_hint\nn = 10\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.it = reversed(range(n))\n    d = list(range(n))\n    it = reversed(d)\n    next(it)\n    next(it)\n    assert length_hint(it) == n - 2, ('assertEqual', length_hint(it), n - 2)\n    d.append(n)\n    assert length_hint(it) == n - 2, ('assertEqual', length_hint(it), n - 2)\n    d[1:] = []\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\n    assert list(it) == [], ('assertEqual', list(it), [])\n    d.extend(range(20))\n    assert length_hint(it) == 0, ('assertEqual', length_hint(it), 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    );
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }

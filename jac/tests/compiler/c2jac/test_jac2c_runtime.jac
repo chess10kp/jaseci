@@ -63,8 +63,10 @@ test "jac2c type_ids are name-stable across defining and importing TUs" {
     assert shape_tid >= 2 and sq_tid >= 2 and shape_tid != sq_tid;
     base_src = unit_src("xmod_main.jac", "xmod_base.jac");
     main_src = unit_src("xmod_main.jac", "xmod_main.jac");
-    assert f"jac_rc_alloc(sizeof(struct xmod_base__Shape), {shape_tid}," in base_src , base_src;
-    assert f"jac_rc_alloc(sizeof(struct xmod_main__Sq), {sq_tid}," in main_src , main_src;
+    assert f"jac_rc_alloc(sizeof(struct xmod_base__Shape), {shape_tid},"
+        in base_src , base_src;
+    assert f"jac_rc_alloc(sizeof(struct xmod_main__Sq), {sq_tid},"
+        in main_src , main_src;
     # Importer sees the same Shape id as the defining TU would compute.
     assert shape_tid == stable_type_id("xmod_base__Shape");
 }
@@ -207,7 +209,8 @@ test "jac2c throws a constructed exception object and binds it typed" {
     assert "exc_typed__AppError__new(7, 5)" in c_src , f"raise must construct the object:\n{c_src}";
     # except binds a real typed struct pointer, so field access compiles.
     read = _fn_body(c_src, "int run_read_field(void)");
-    assert "struct exc_typed__AppError * e = (struct exc_typed__AppError *)jac_exc_take_payload();" in read , f"handler must bind a typed exception object:\n{read}";
+    assert "struct exc_typed__AppError * e = (struct exc_typed__AppError *)jac_exc_take_payload();"
+        in read , f"handler must bind a typed exception object:\n{read}";
     assert "e->code" in read , f"typed payload must allow field access:\n{read}";
     # the taken payload is released on the handler exit path (rc-balanced).
     assert "jac_rc_release(e)" in read , f"handler must release the owned payload:\n{read}";

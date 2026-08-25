@@ -23,7 +23,9 @@ test "stdlib_delegate: re_named_group_backref matches python3 oracle" {
         "out.append(str(m.span())); out.append(str(m.start()) + ',' + str(m.end()))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="ab|12|ab=12ab|('ab', '12')|(0, 7)|0,7");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="ab|12|ab=12ab|('ab', '12')|(0, 7)|0,7"
+    );
     assert ok , detail;
 }
 
@@ -52,7 +54,10 @@ test "stdlib_delegate: re_search_findall_split matches python3 oracle" {
         "out.append(str(re.findall(r'(\\w)(\\d)', 'x1 y2')))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="(1, 4)|['1', '22', '333']|['a', 'b', 'c', 'd']|[('x', '1'), ('y', '2')]");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet,
+        expect_stdout="(1, 4)|['1', '22', '333']|['a', 'b', 'c', 'd']|[('x', '1'), ('y', '2')]"
+    );
     assert ok , detail;
 }
 
@@ -65,7 +70,9 @@ test "stdlib_delegate: re_sub_backrefs matches python3 oracle" {
         "out.append(re.subn(r'o', '0', 'foo boo')[0].__str__())\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="34-12 6-5|xxz xzy|f00 b00");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="34-12 6-5|xxz xzy|f00 b00"
+    );
     assert ok , detail;
 }
 
@@ -80,7 +87,9 @@ test "stdlib_delegate: re_fullmatch_multiline_dotall matches python3 oracle" {
         "out.append(str(bool(re.match(r'(a)(b)?', 'a').group(2) is None)))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="True|['one', 'three']|['a\\nb']|None|True");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="True|['one', 'three']|['a\\nb']|None|True"
+    );
     assert ok , detail;
 }
 
@@ -94,7 +103,9 @@ test "stdlib_delegate: re_word_boundary_classes matches python3 oracle" {
         "out.append(str(bool(re.fullmatch(r'(?:ab)+', 'ababab'))))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="['cat', 'cat']|True|True|True");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="['cat', 'cat']|True|True|True"
+    );
     assert ok , detail;
 }
 
@@ -109,7 +120,9 @@ test "stdlib_delegate: re_error_text matches python3 oracle" {
         "except Exception as e:\n"
         "    print('wrong:' + type(e).__name__)\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="nothing to repeat at position 0");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="nothing to repeat at position 0"
+    );
     assert ok , detail;
 }
 
@@ -129,7 +142,10 @@ test "stdlib_delegate: datetime_date_arithmetic_isoformat matches python3 oracle
         "out.append(str(date.fromisoformat('2024-02-15') == d))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="2024-02-15|15/02/2024|3|2023-12-28|49|2025-02-15|True|True");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet,
+        expect_stdout="2024-02-15|15/02/2024|3|2023-12-28|49|2025-02-15|True|True"
+    );
     assert ok , detail;
 }
 
@@ -149,7 +165,10 @@ test "stdlib_delegate: datetime_datetime_timedelta matches python3 oracle" {
         "out.append(str(datetime(2024, 2, 29, 12, 30, 46) > dt))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="2024-02-29T12:30:45|2024-03-01 02:01:45|20240301T020145|48660.0|13:31:00|2024,2,45|True");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet,
+        expect_stdout="2024-02-29T12:30:45|2024-03-01 02:01:45|20240301T020145|48660.0|13:31:00|2024,2,45|True"
+    );
     assert ok , detail;
 }
 
@@ -167,7 +186,10 @@ test "stdlib_delegate: hashlib_digests_update_pbkdf2 matches python3 oracle" {
         "out.append(hashlib.sha224(b'abc').hexdigest()[:16])\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad|900150983cd24fb0d6963f7d28e17f72|a9993e364706816aba3e|ba7816bf8f01cfea|061df616343cb988|23097d223405d822");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet,
+        expect_stdout="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad|900150983cd24fb0d6963f7d28e17f72|a9993e364706816aba3e|ba7816bf8f01cfea|061df616343cb988|23097d223405d822"
+    );
     assert ok , detail;
 }
 
@@ -184,7 +206,10 @@ test "stdlib_delegate: base64_variants_roundtrip matches python3 oracle" {
         "out.append(base64.decodebytes(b'aGVsbG8=').decode())\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="aGVsbG8gd29ybGQ=|hello world|aft-P28_|ONSWG4TFOQ======|4257|YW55IGNhcm5hbCBwbGVhc3VyZS4=|hello");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet,
+        expect_stdout="aGVsbG8gd29ybGQ=|hello world|aft-P28_|ONSWG4TFOQ======|4257|YW55IGNhcm5hbCBwbGVhc3VyZS4=|hello"
+    );
     assert ok , detail;
 }
 
@@ -203,7 +228,9 @@ test "stdlib_delegate: binascii_hexlify_base64_error matches python3 oracle" {
         "    out.append(str(e))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="41426364|hi|Hello|12739|Only base64 data is allowed");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="41426364|hi|Hello|12739|Only base64 data is allowed"
+    );
     assert ok , detail;
 }
 
@@ -225,7 +252,9 @@ test "stdlib_delegate: zlib_roundtrip_crc_adler matches python3 oracle" {
         "out.append(str(len(packed) < len(blob)))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="True|608211498|2394136507|True|True|True|True");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="True|608211498|2394136507|True|True|True|True"
+    );
     assert ok , detail;
 }
 
@@ -238,7 +267,10 @@ test "stdlib_delegate: zlib_error_text matches python3 oracle" {
         "except zlib.error as e:\n"
         "    print(str(e))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="Error -3 while decompressing data: incorrect header check");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet,
+        expect_stdout="Error -3 while decompressing data: incorrect header check"
+    );
     assert ok , detail;
 }
 
@@ -258,7 +290,9 @@ test "stdlib_delegate: binascii_error_except_lane matches python3 oracle" {
         "    out.append(str(e))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="Non-hexadecimal digit found");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet, expect_stdout="Non-hexadecimal digit found"
+    );
     assert ok , detail;
 }
 
@@ -279,6 +313,9 @@ test "stdlib_delegate: uuid_deterministic_api matches python3 oracle" {
         "out.append(str(uuid.uuid5(uuid.NAMESPACE_URL, 'http://x') == uuid.uuid5(uuid.NAMESPACE_URL, 'http://x')))\n"
         "print('|'.join(out))\n"
     );
-    (ok, detail) = p2_libtest_expect_ok(snippet, expect_stdout="cfbff0d1-9375-5685-968c-48ce8b15ae17|9073926b-929f-31c2-abc9-fad77ae3e8eb|12345678123456781234567812345678|305419896|True|0|5,3|True");
+    (ok, detail) = p2_libtest_expect_ok(
+        snippet,
+        expect_stdout="cfbff0d1-9375-5685-968c-48ce8b15ae17|9073926b-929f-31c2-abc9-fad77ae3e8eb|12345678123456781234567812345678|305419896|True|0|5,3|True"
+    );
     assert ok , detail;
 }

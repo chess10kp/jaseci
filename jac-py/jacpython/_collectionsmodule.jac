@@ -21,7 +21,6 @@
 # ``RuntimeError("deque mutated during iteration")`` on the next and every
 # subsequent ``__next__``, matching dequeiter_next_lock_held.
 
-
 # Generic element ordering for richcompare. Mirrors _heapqmodule's
 # locally-annotated `any` comparison pattern.
 def _deque_items_lt(a: any, b: any) -> bool {
@@ -73,7 +72,6 @@ obj _P2DequeIter {
         counter: int = 0,
         rev: bool = False;
 
-
     def __iter__ -> any {
         return self;
     }
@@ -112,7 +110,6 @@ obj _P2Deque {
     has items: list = [],
         maxlen: any = None,
         state: int = 0;
-
 
     def _trim_right -> any {
         # NEEDS_TRIM after a right append pops from the left (and vice versa).
@@ -221,8 +218,9 @@ obj _P2Deque {
             try {
                 src_iter = iter(iterable);
             } except Exception {
-                raise TypeError("'" + _p2_deque_type_name(iterable)
-                                + "' object is not iterable");
+                raise TypeError(
+                    "'" + _p2_deque_type_name(iterable) + "' object is not iterable"
+                );
             }
             src = [];
             while True {
@@ -249,8 +247,9 @@ obj _P2Deque {
             try {
                 src_iter = iter(iterable);
             } except Exception {
-                raise TypeError("'" + _p2_deque_type_name(iterable)
-                                + "' object is not iterable");
+                raise TypeError(
+                    "'" + _p2_deque_type_name(iterable) + "' object is not iterable"
+                );
             }
             src = [];
             while True {
@@ -266,7 +265,7 @@ obj _P2Deque {
         }
     }
 
-    def clear() {
+    def clear {
         if len(self.items) == 0 {
             return;
         }
@@ -306,14 +305,16 @@ obj _P2Deque {
         if start is not None {
             if not isinstance(start, int) {
                 raise TypeError(
-                    "slice indices must be integers or have an __index__ method");
+                    "slice indices must be integers or have an __index__ method"
+                );
             }
             s = start;
         }
         if stop is not None {
             if not isinstance(stop, int) {
                 raise TypeError(
-                    "slice indices must be integers or have an __index__ method");
+                    "slice indices must be integers or have an __index__ method"
+                );
             }
             e = stop;
         }
@@ -430,7 +431,7 @@ obj _P2Deque {
         }
     }
 
-    def reverse() {
+    def reverse {
         self.items.reverse();
         self.state = self.state + 1;
     }
@@ -440,8 +441,11 @@ obj _P2Deque {
             raise TypeError("sequence index must be integer, not 'slice'");
         }
         if not isinstance(item, int) {
-            raise TypeError("sequence index must be integer, not '"
-                            + _p2_deque_type_name(item) + "'");
+            raise TypeError(
+                "sequence index must be integer, not '"
+                    + _p2_deque_type_name(item)
+                    + "'"
+            );
         }
         i = item;
         if i < 0 {
@@ -458,8 +462,11 @@ obj _P2Deque {
             raise TypeError("sequence index must be integer, not 'slice'");
         }
         if not isinstance(item, int) {
-            raise TypeError("sequence index must be integer, not '"
-                            + _p2_deque_type_name(item) + "'");
+            raise TypeError(
+                "sequence index must be integer, not '"
+                    + _p2_deque_type_name(item)
+                    + "'"
+            );
         }
         i = item;
         if i < 0 {
@@ -476,8 +483,11 @@ obj _P2Deque {
             raise TypeError("sequence index must be integer, not 'slice'");
         }
         if not isinstance(item, int) {
-            raise TypeError("sequence index must be integer, not '"
-                            + _p2_deque_type_name(item) + "'");
+            raise TypeError(
+                "sequence index must be integer, not '"
+                    + _p2_deque_type_name(item)
+                    + "'"
+            );
         }
         i = item;
         if i < 0 {
@@ -492,8 +502,11 @@ obj _P2Deque {
 
     def __add__(other: any) -> any {
         if not isinstance(other, _P2Deque) {
-            raise TypeError("can only concatenate deque (not \""
-                            + _p2_deque_type_name(other) + "\") to deque");
+            raise TypeError(
+                "can only concatenate deque (not \""
+                    + _p2_deque_type_name(other)
+                    + "\") to deque"
+            );
         }
         out = self.copy();
         out.extend(other);
@@ -502,8 +515,11 @@ obj _P2Deque {
 
     def __iadd__(other: any) -> any {
         if not isinstance(other, _P2Deque) {
-            raise TypeError("can only concatenate deque (not \""
-                            + _p2_deque_type_name(other) + "\") to deque");
+            raise TypeError(
+                "can only concatenate deque (not \""
+                    + _p2_deque_type_name(other)
+                    + "\") to deque"
+            );
         }
         self.extend(other);
         return self;
@@ -530,7 +546,7 @@ obj _P2Deque {
         if a is b {
             return True;
         }
-        eq = (a == b);
+        eq = a == b;
         if not isinstance(eq, bool) {
             return False;
         }
@@ -574,9 +590,13 @@ obj _P2Deque {
     # otherwise length decides (LT/GE favor shorter/longer respectively).
     def _rich_order(other: any, op: str) -> any {
         if not isinstance(other, _P2Deque) {
-            raise TypeError("'" + op
-                            + "' not supported between instances of 'collections.deque' and '"
-                            + _p2_deque_type_name(other) + "'");
+            raise TypeError(
+                "'"
+                    + op
+                    + "' not supported between instances of 'collections.deque' and '"
+                    + _p2_deque_type_name(other)
+                    + "'"
+            );
         }
         oa: _P2Deque = other;
         i: int = 0;
@@ -621,7 +641,7 @@ obj _P2Deque {
 
     def __reduce__ -> any {
         if self.maxlen is not None {
-            args = (self.maxlen,);
+            args = (self.maxlen, );
         } else {
             args = ();
         }
@@ -630,11 +650,13 @@ obj _P2Deque {
 }
 
 
-
 def _require_repeat_count(n: any) -> int {
     if not isinstance(n, int) {
-        raise TypeError("can't multiply sequence by non-int of type '"
-                        + _p2_deque_type_name(n) + "'");
+        raise TypeError(
+            "can't multiply sequence by non-int of type '"
+                + _p2_deque_type_name(n)
+                + "'"
+        );
     }
     return n;
 }
@@ -653,8 +675,9 @@ def _p2_deque(iterable: any = None, maxlen: any = None) -> _P2Deque {
         try {
             src_iter = iter(iterable);
         } except Exception {
-            raise TypeError("'" + _p2_deque_type_name(iterable)
-                            + "' object is not iterable");
+            raise TypeError(
+                "'" + _p2_deque_type_name(iterable) + "' object is not iterable"
+            );
         }
         while True {
             try {
@@ -679,12 +702,10 @@ def _p2_deque(iterable: any = None, maxlen: any = None) -> _P2Deque {
 # ceval; the Python-level observable surface is complete here.
 # ---------------------------------------------------------------------------
 
-
 obj _P2DefaultDict {
     has default_factory: any = None,
         keylist: list = [],
         vallist: list = [];
-
 
     def _pos_of(key: any) -> int {
         i: int = 0;
@@ -703,7 +724,7 @@ obj _P2DefaultDict {
         if x is y {
             return True;
         }
-        ev = (x == y);
+        ev = x == y;
         return isinstance(ev, bool) and ev;
     }
 
@@ -812,7 +833,7 @@ obj _P2DefaultDict {
         }
     }
 
-    def clear() {
+    def clear {
         self.keylist = [];
         self.vallist = [];
     }
@@ -830,8 +851,11 @@ obj _P2DefaultDict {
 
     def __or__(other: any) -> any {
         if not _p2_defaultdict_is_map(other) {
-            raise TypeError("unsupported operand type(s) for |: 'defaultdict'"
-                            " and '" + _p2_deque_type_name(other) + "'");
+            raise TypeError(
+                "unsupported operand type(s) for |: 'defaultdict'" " and '"
+                    + _p2_deque_type_name(other)
+                    + "'"
+            );
         }
         out = self.copy();
         out.update(other);
@@ -880,7 +904,7 @@ obj _P2DefaultDict {
         # defdict_reduce 5-tuple: (type, (factory,), None, None, items_iter).
         args: tuple = ();
         if self.default_factory is not None {
-            args = (self.default_factory,);
+            args = (self.default_factory, );
         }
         return (type(self), args, None, None, iter(self.items()));
     }
@@ -902,7 +926,9 @@ def _p2_defaultdict_is_map(v: any) -> bool {
 }
 
 
-def _p2_defaultdict(default_factory: any = None, initial: any = None) -> _P2DefaultDict {
+def _p2_defaultdict(
+    default_factory: any = None, initial: any = None
+) -> _P2DefaultDict {
     # defdict_init: first positional arg must be callable or None.
     if default_factory is not None {
         factory: any = default_factory;

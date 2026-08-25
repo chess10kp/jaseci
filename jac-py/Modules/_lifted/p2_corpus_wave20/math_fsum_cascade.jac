@@ -1,8 +1,8 @@
-glob Py_ssize_t = int;
-glob uint64_t_ = int;
+glob Py_ssize_t = int,
+     uint64_t_ = int;
 
 
-def dl_fast_sum(a: float, b: float, out: list) -> None {
+def dl_fast_sum(a: float, b: float, out: list) {
     x: float = a + b;
     y: float = (a - x) + b;
     out[0] = x;
@@ -10,7 +10,7 @@ def dl_fast_sum(a: float, b: float, out: list) -> None {
 }
 
 
-def dl_sum(a: float, b: float, out: list) -> None {
+def dl_sum(a: float, b: float, out: list) {
     x: float = a + b;
     z: float = x - a;
     y: float = (a - (x - z)) + (b - z);

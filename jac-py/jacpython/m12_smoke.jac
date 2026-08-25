@@ -43,11 +43,11 @@ print("SMOKE done")
 '''
 ::py::
 
+
+
 with entry {
     ns: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
-    outcome = exec_code(
-        unmarshal(host_compile_marshal(SRC)), [], ns
-    );
+    outcome = exec_code(unmarshal(host_compile_marshal(SRC)), [], ns);
     if is_error(outcome) {
         exc = (outcome as PyError).exception;
         print("WRAPPER-ERROR:", exc.type_name, exc.message);

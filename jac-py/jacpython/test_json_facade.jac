@@ -26,15 +26,15 @@ import from layer_p2_libtest { p2_libtest_expect_ok }
 
 test "json_facade: dumps basic containers matches oracle" {
     got = dumps({"a": [1, 2.5, None, True, False], "s": "x"});
-    assert got == '{"a": [1, 2.5, null, true, false], "s": "x"}', got;
+    assert got == '{"a": [1, 2.5, null, true, false], "s": "x"}' , got;
     assert dumps((1, "t")) == '[1, "t"]';
-    assert dumps(10**30) == "1000000000000000000000000000000";
+    assert dumps(10 ** 30) == "1000000000000000000000000000000";
 }
 
 test "json_facade: dumps key coercion str/int/float/bool/None" {
     # bool key collides with 1 in the dict (last value wins), matching the host.
     got = dumps({1: "i", 2.5: "f", True: "b", None: "n"});
-    assert got == '{"1": "b", "2.5": "f", "null": "n"}', got;
+    assert got == '{"1": "b", "2.5": "f", "null": "n"}' , got;
 }
 
 test "json_facade: dumps NaN Infinity both directions" {
@@ -50,15 +50,15 @@ test "json_facade: dumps NaN Infinity both directions" {
 test "json_facade: dumps separators and sort_keys" {
     assert dumps([1, 2], separators=(",", ":")) == "[1,2]";
     got = dumps({"b": 1, "a": 2}, sort_keys=True, separators=(",", ":"));
-    assert got == '{"a":2,"b":1}', got;
+    assert got == '{"a":2,"b":1}' , got;
 }
 
 test "json_facade: dumps indent int expands to spaces" {
     got = dumps({"k": [1, {"in": 2}]}, indent=2);
     want = '{\n  "k": [\n    1,\n    {\n      "in": 2\n    }\n  ]\n}';
-    assert got == want, got;
+    assert got == want , got;
     got_t = dumps({"k": [1]}, indent="\t");
-    assert got_t == '{\n\t"k": [\n\t\t1\n\t]\n}', got_t;
+    assert got_t == '{\n\t"k": [\n\t\t1\n\t]\n}' , got_t;
 }
 
 test "json_facade: dumps default hook serializes unknown types" {
@@ -72,7 +72,7 @@ test "json_facade: dumps without default raises oracle TypeError" {
     try {
         dumps(set());
     } except TypeError as e {
-        assert str(e) == "Object of type set is not JSON serializable", str(e);
+        assert str(e) == "Object of type set is not JSON serializable" , str(e);
     } else {
         raise AssertionError("no TypeError for unserializable object");
     }
@@ -80,12 +80,13 @@ test "json_facade: dumps without default raises oracle TypeError" {
 
 test "json_facade: dumps skipkeys drops non-scalar keys" {
     got = dumps({object(): 1, "ok": 2}, skipkeys=True);
-    assert got == '{"ok": 2}', got;
+    assert got == '{"ok": 2}' , got;
     try {
         dumps({object(): 1});
     } except TypeError as e {
-        assert str(e)
-            == "keys must be str, int, float, bool or None, not object", str(e);
+        assert str(e) == "keys must be str, int, float, bool or None, not object" , str(
+            e
+        );
     } else {
         raise AssertionError("no TypeError for non-scalar key");
     }
@@ -95,8 +96,9 @@ test "json_facade: dumps allow_nan=False raises oracle ValueError" {
     try {
         dumps(float("nan"), allow_nan=False);
     } except ValueError as e {
-        assert str(e)
-            == "Out of range float values are not JSON compliant: nan", str(e);
+        assert str(e) == "Out of range float values are not JSON compliant: nan" , str(
+            e
+        );
     } else {
         raise AssertionError("no ValueError for allow_nan=False");
     }
@@ -108,7 +110,7 @@ test "json_facade: dumps circular reference detection" {
     try {
         dumps(l);
     } except ValueError as e {
-        assert str(e) == "Circular reference detected", str(e);
+        assert str(e) == "Circular reference detected" , str(e);
     } else {
         raise AssertionError("no ValueError for circular reference");
     }
@@ -140,7 +142,7 @@ test "json_facade: loads round-trips scalars and containers" {
         == {"a": [1, 2.5, None, True, False]};
     assert loads('"\\u0000"') == "\u0000";
     assert loads('"\\ud83d\\ude00"') == "\U0001f600";
-    assert loads("1000000000000000000000000000000") == 10**30;
+    assert loads("1000000000000000000000000000000") == 10 ** 30;
     assert loads('{"dup": 1, "dup": 2}') == {"dup": 2};
     assert loads(" \t\r\n[1] \r\n\t ") == [1];
 }
@@ -150,8 +152,9 @@ test "json_facade: loads accepts bytes input" {
     try {
         loads(42);
     } except TypeError as e {
-        assert str(e)
-            == "the JSON object must be str, bytes or bytearray, not int", str(e);
+        assert str(e) == "the JSON object must be str, bytes or bytearray, not int" , str(
+            e
+        );
     } else {
         raise AssertionError("no TypeError for int input");
     }
@@ -180,7 +183,7 @@ test "json_facade: object_hook applies bottom-up at every level" {
         return sorted(dval.items());
     }
     got = loads('{"b": 1, "a": 2}', object_hook=oph);
-    assert got == [("a", 2), ("b", 1)], got;
+    assert got == [("a", 2), ("b", 1)] , got;
 
     def keys(dval: any) -> any {
         return sorted(dval.keys());
@@ -203,7 +206,7 @@ def _expect_decode_error(doc: str, want: str) {
     try {
         loads(doc);
     } except ValueError as e {
-        assert str(e) == want, str(e);
+        assert str(e) == want , str(e);
     } else {
         raise AssertionError("no decode error for " + repr(doc));
     }
@@ -215,8 +218,7 @@ test "json_facade: Expecting value positions match oracle" {
     _expect_decode_error("-", "Expecting value: line 1 column 1 (char 0)");
     _expect_decode_error("nan", "Expecting value: line 1 column 1 (char 0)");
     _expect_decode_error("[1,", "Expecting value: line 1 column 4 (char 3)");
-    _expect_decode_error('{\n  "a": x\n}',
-                         "Expecting value: line 2 column 8 (char 9)");
+    _expect_decode_error('{\n  "a": x\n}', "Expecting value: line 2 column 8 (char 9)");
 }
 
 test "json_facade: Extra data positions match oracle" {
@@ -225,32 +227,39 @@ test "json_facade: Extra data positions match oracle" {
 }
 
 test "json_facade: string scan errors match oracle" {
-    _expect_decode_error('"abc',
-                         "Unterminated string starting at:"
-                         + " line 1 column 1 (char 0)");
-    _expect_decode_error('"a\x01b"',
-                         "Invalid control character at: line 1 column 3 (char 2)");
+    _expect_decode_error(
+        '"abc', "Unterminated string starting at:" + " line 1 column 1 (char 0)"
+    );
+    _expect_decode_error(
+        '"a\x01b"', "Invalid control character at: line 1 column 3 (char 2)"
+    );
     _expect_decode_error('"a\\qb"', "Invalid \\escape: line 1 column 3 (char 2)");
-    _expect_decode_error('"a\\u12"',
-                         "Invalid \\uXXXX escape: line 1 column 4 (char 3)");
-    _expect_decode_error('"\\uZZZZ"',
-                         "Invalid \\uXXXX escape: line 1 column 3 (char 2)");
+    _expect_decode_error(
+        '"a\\u12"', "Invalid \\uXXXX escape: line 1 column 4 (char 3)"
+    );
+    _expect_decode_error(
+        '"\\uZZZZ"', "Invalid \\uXXXX escape: line 1 column 3 (char 2)"
+    );
 }
 
 test "json_facade: delimiter errors match oracle" {
-    _expect_decode_error("[1,]",
-                         "Illegal trailing comma before end of array:"
-                         + " line 1 column 3 (char 2)");
-    _expect_decode_error('{"a":1,}',
-                         "Illegal trailing comma before end of object:"
-                         + " line 1 column 7 (char 6)");
-    _expect_decode_error('{"a" 1}',
-                         "Expecting ':' delimiter: line 1 column 6 (char 5)");
-    _expect_decode_error("{1:2}",
-                         "Expecting property name enclosed in double quotes:"
-                         + " line 1 column 2 (char 1)");
-    _expect_decode_error("[1 2]",
-                         "Expecting ',' delimiter: line 1 column 4 (char 3)");
+    _expect_decode_error(
+        "[1,]",
+        "Illegal trailing comma before end of array:" + " line 1 column 3 (char 2)"
+    );
+    _expect_decode_error(
+        '{"a":1,}',
+        "Illegal trailing comma before end of object:" + " line 1 column 7 (char 6)"
+    );
+    _expect_decode_error(
+        '{"a" 1}', "Expecting ':' delimiter: line 1 column 6 (char 5)"
+    );
+    _expect_decode_error(
+        "{1:2}",
+        "Expecting property name enclosed in double quotes:"
+            + " line 1 column 2 (char 1)"
+    );
+    _expect_decode_error("[1 2]", "Expecting ',' delimiter: line 1 column 4 (char 3)");
 }
 
 # --------------------------- libtest shim leg -------------------------------

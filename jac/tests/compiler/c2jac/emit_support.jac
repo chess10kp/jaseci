@@ -122,7 +122,14 @@ def _write_driver(work: str, calls: list, rc_live: bool = False) -> str {
     drv = os.path.join(work, "driver.c");
     with open(drv, "w") as f {
         f.write(
-            headers + externs + "int main(void) {\n    printf(\"" + fmt + "\\n\", " + argv + ");\n" + "    return 0;\n}\n"
+            headers
+                + externs
+                + "int main(void) {\n    printf(\""
+                + fmt
+                + "\\n\", "
+                + argv
+                + ");\n"
+                + "    return 0;\n}\n"
         );
     }
     return drv;

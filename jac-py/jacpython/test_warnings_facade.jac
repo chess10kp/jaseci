@@ -38,8 +38,8 @@ import from _warningsmodule {
     PyWarningsCatchFn,
 }
 
-glob _probe_lines: list[str] = [];
-glob _provider_stacklevels: list[int] = [];
+glob _probe_lines: list[str] = [],
+     _provider_stacklevels: list[int] = [];
 
 def _capture_sink(text: str) {
     _probe_lines.append(text);
@@ -60,7 +60,9 @@ def _facade_fresh_capture {
     _p2_warn_set_position_provider(None);
 }
 
-def _warn_explicit_bridge(text: str, category: str, filename: str, lineno: int) -> PyObj {
+def _warn_explicit_bridge(
+    text: str, category: str, filename: str, lineno: int
+) -> PyObj {
     fn = PyWarningsWarnExplicitFn(t="function");
     return fn.tp_call(
         [
@@ -68,6 +70,7 @@ def _warn_explicit_bridge(text: str, category: str, filename: str, lineno: int) 
             py_exception_type(category),
             PyStr(t="str", val=filename),
             PyInt(t="int", val=lineno),
+
         ],
         {}
     );
@@ -141,6 +144,7 @@ test "warnings facade: default filter table pins CPython 3.14 defaults" {
         ("ignore", "PendingDeprecationWarning", None),
         ("ignore", "ImportWarning", None),
         ("ignore", "ResourceWarning", None),
+
     ];
     assert _p2_warn_default_filters() == expected , _p2_warn_default_filters();
 }
@@ -150,6 +154,7 @@ test "warnings facade: formatwarning byte-matches host on linecache misses" {
         ("hello", "UserWarning", "nofile.py", 7, None),
         ("m", "DeprecationWarning", "x.py", 3, "  do_thing(1)  "),
         ("gone", "ResourceWarning", "/abs/path.py", 100, ""),
+
     ];
     for (text, cat, fname, lineno, line) in cases {
         host_out = host_warnings.formatwarning(
@@ -161,18 +166,12 @@ test "warnings facade: formatwarning byte-matches host on linecache misses" {
 }
 
 test "warnings facade: action matrix agrees with host" {
-    actions: list[str] = [
-        "error",
-        "ignore",
-        "always",
-        "once",
-        "default",
-        "module",
-    ];
+    actions: list[str] = ["error", "ignore", "always", "once", "default", "module", ];
     same_location: list[tuple[str, str, int]] = [
         ("w1", "UserWarning", 10),
         ("w1", "UserWarning", 10),
         ("w1", "UserWarning", 10),
+
     ];
     for action in actions {
         (host_shown, host_raised) = _host_run(action, same_location);
@@ -181,6 +180,7 @@ test "warnings facade: action matrix agrees with host" {
             action,
             (f_shown, f_raised),
             (host_shown, host_raised),
+
         );
     }
 }
@@ -191,11 +191,13 @@ test "warnings facade: once dedups across linenos but not categories" {
         ("same", "UserWarning", 2),
         ("same", "DeprecationWarning", 3),
         ("same", "UserWarning", 4),
+
     ];
     (host_shown, host_raised) = _host_run("once", calls);
     (f_shown, f_raised) = _facade_run("once", calls);
     assert f_shown == host_shown and f_shown == 2 and f_raised == 0 , (
         ((f_shown, f_raised), (host_shown, host_raised)),
+
     );
 }
 
@@ -204,14 +206,15 @@ test "warnings facade: default dedups per location, module dedups per module" {
         ("d", "UserWarning", 1),
         ("d", "UserWarning", 2),
         ("d", "UserWarning", 1),
+
     ];
     (host_shown, _) = _host_run("default", spread);
     (f_shown, _) = _facade_run("default", spread);
-    assert f_shown == host_shown == 2 , ((f_shown, host_shown),);
+    assert f_shown == host_shown == 2 , ((f_shown, host_shown), );
 
     (host_mod, _) = _host_run("module", spread);
     (f_mod, _) = _facade_run("module", spread);
-    assert f_mod == host_mod == 1 , ((f_mod, host_mod),);
+    assert f_mod == host_mod == 1 , ((f_mod, host_mod), );
 }
 
 test "warnings facade: filter category matching follows the warning hierarchy" {
@@ -219,6 +222,7 @@ test "warnings facade: filter category matching follows the warning hierarchy" {
         ("a", "DeprecationWarning", 1),
         ("b", "PendingDeprecationWarning", 2),
         ("c", "UserWarning", 3),
+
     ];
     _facade_fresh_capture();
     # Drop the default ignores (Pending/Import/Resource) so the hierarchy
@@ -289,14 +293,13 @@ test "warnings facade: warn maps str and instance messages with provider positio
     assert _probe_lines[1] == "/tmp/probe.py:42: UserWarning: deep\n" , (
         _probe_lines[1]
     );
-    assert _probe_lines[2]
-        == "/tmp/probe.py:42: DeprecationWarning: inst-msg\n" , _probe_lines[2];
+    assert _probe_lines[2] == "/tmp/probe.py:42: DeprecationWarning: inst-msg\n" , _probe_lines[
+        2
+    ];
 
     # Non-str non-Warning message stringifies (CPython: "UserWarning: 42").
     fn.tp_call([PyInt(t="int", val=42)], {});
-    assert _probe_lines[3] == "/tmp/probe.py:42: UserWarning: 42\n" , (
-        _probe_lines[3]
-    );
+    assert _probe_lines[3] == "/tmp/probe.py:42: UserWarning: 42\n" , (_probe_lines[3]);
 }
 
 test "warnings facade: unwired positions fall back to CPython <sys> result" {
@@ -323,12 +326,10 @@ test "warnings facade: bad action and non-warning category are rejected" {
     bad = sf.tp_call([PyStr(t="str", val="bogus")], {});
     assert is_error(bad);
     assert (bad as PyError).exception.type_name == "_OptionError" , bad;
-    assert not _p2_action_is_valid("bogus") ;
+    assert not _p2_action_is_valid("bogus");
 
     fn = PyWarningsWarnFn(t="function");
-    res = fn.tp_call(
-        [PyStr(t="str", val="x"), py_exception_type("ValueError")], {}
-    );
+    res = fn.tp_call([PyStr(t="str", val="x"), py_exception_type("ValueError")], {});
     assert is_error(res);
     assert (res as PyError).exception.type_name == "TypeError" , res;
 }
@@ -366,7 +367,7 @@ test "warnings facade: catch_warnings record mode mirrors CPython shapes" {
     s = (str_fn.tp_call([], {}) as PyStr).val;
     assert s
         == "<WarningMessage {message : UserWarning('r1'), category : 'UserWarning',"
-        + " filename : '/tmp/probe.py', lineno : 42, line : None}>" , s;
+            + " filename : '/tmp/probe.py', lineno : 42, line : None}>" , s;
 
     exit_fn = ctx.tp_getattro("__exit__");
     suppress = exit_fn.tp_call([ctx, py_none(), py_none(), py_none()], {});

@@ -11,7 +11,16 @@
 #
 # Test harness only: host_oracle is used solely to produce the expected PyCode.
 
-import from objects { PyObj, PyCode, PyInt, PyBool, expect_int, is_error, hashkey_equal, PyError }
+import from objects {
+    PyObj,
+    PyCode,
+    PyInt,
+    PyBool,
+    expect_int,
+    is_error,
+    hashkey_equal,
+    PyError
+}
 import from product_compile { compile_source }
 import from host_oracle { host_compile_marshal }
 import from pyc_first { unmarshal, exec_code }

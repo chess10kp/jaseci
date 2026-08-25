@@ -4,10 +4,7 @@
 # reach later calls; explicit assignments override the MAKE_FUNCTION tables;
 # f.__dict__ is the live attribute map (functools.wraps WRAPPER_UPDATES
 # depends on update() persisting) with the fixed surface names absent.
-import from layer0_replay_harness {
-    ReplayResult,
-    layer1_replay_source,
-}
+import from layer0_replay_harness { ReplayResult, layer1_replay_source, }
 
 # ---------------- __kwdefaults__ ----------------
 test "func surface: __kwdefaults__ read/mutate/rebind" {

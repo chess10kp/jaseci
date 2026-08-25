@@ -44,26 +44,27 @@ def const_leaf_equal(a: PyObj, b: PyObj) -> bool {
 # Deep byte-exact comparison of a PyCode tree: co_code plus every nested code
 # object reachable through consts (function bodies, lambdas, comprehensions).
 def assert_code_tree_matches(actual: PyCode, expected: PyCode, label: str) {
-    assert actual.co_code == expected.co_code, (
-        label + ": co_code mismatch"
-    );
-    assert len(actual.consts) == len(expected.consts), (
-        label + ": const table size " + str(len(actual.consts))
-        + " vs " + str(len(expected.consts))
+    assert actual.co_code == expected.co_code , (label + ": co_code mismatch");
+    assert len(actual.consts) == len(expected.consts) , (
+        label
+        + ": const table size "
+        + str(len(actual.consts))
+        + " vs "
+        + str(len(expected.consts))
     );
     ai = 0;
     while ai < len(actual.consts) {
         av = actual.consts[ai];
         ev = expected.consts[ai];
         if isinstance(av, PyCode) {
-            assert isinstance(ev, PyCode), (
+            assert isinstance(ev, PyCode) , (
                 label + ": const " + str(ai) + " code-vs-noncode"
             );
             assert_code_tree_matches(
                 av as PyCode, ev as PyCode, label + "/const" + str(ai)
             );
         } else {
-            assert const_leaf_equal(av, ev), (
+            assert const_leaf_equal(av, ev) , (
                 label + ": const " + str(ai) + " value mismatch"
             );
         }
@@ -105,8 +106,7 @@ test "literal frontier: bool and None match oracle" {
 
 test "literal frontier: int literals in function body match oracle recursively" {
     assert_literal_parity(
-        "def f():\n    a = 7\n    b = 900\n    return a + b\n",
-        "fn-int-literals"
+        "def f():\n    a = 7\n    b = 900\n    return a + b\n", "fn-int-literals"
     );
 }
 
@@ -317,8 +317,7 @@ test "negative int fold: call argument matches oracle" {
 
 test "negative int fold: function body matches oracle recursively" {
     assert_literal_parity(
-        "def f():\n    a = -7\n    b = -900\n    return a + b\n",
-        "fn-neg-int"
+        "def f():\n    a = -7\n    b = -900\n    return a + b\n", "fn-neg-int"
     );
 }
 
