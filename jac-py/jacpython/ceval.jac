@@ -8234,6 +8234,31 @@ def eg_target_family(target: PyObj) -> str {
     return "";
 }
 
+# check_except_type_valid: every plain `except` target must be an exception
+# class (tuple members included) -- CPython raises TypeError before any match
+# attempt otherwise (Lib/test/test_baseexception.py catch_fails contract).
+# Returns py_none() when valid, the error otherwise. Reuses eg_target_family's
+# exception-class detection (builtin PyExceptionType, host exception class,
+# or guest class with a builtin-exception ancestor).
+def exc_validate_match_target(target: PyObj) -> PyObj {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            invalid = exc_validate_match_target(item);
+            if is_error(invalid) {
+                return invalid;
+            }
+        }
+        return py_none();
+    }
+    if eg_target_family(target) == "" {
+        return py_error(
+            "TypeError",
+            "catching classes that do not inherit from BaseException is not allowed"
+        );
+    }
+    return py_none();
+}
+
 # _PyEval_CheckExceptStarTypeValid: every except* target must be an exception
 # class (tuple members included), and none may be an ExceptionGroup subclass
 # (CPython's CANNOT_EXCEPT_STAR_EG TypeError). Returns py_none() when valid.
@@ -16491,10 +16516,19 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
             exception = stack[len(stack) - 1];
-            stack.append(
-                PyBool(t="bool", val=exception_matches(exception, match_type))
-            );
-            continue;
+            invalid_match = exc_validate_match_target(match_type);
+            if not is_error(invalid_match) {
+                stack.append(
+                    PyBool(t="bool", val=exception_matches(exception, match_type))
+                );
+                continue;
+            }
+            target = recover_exception(co, invalid_match, offset, stack);
+            if target >= 0 {
+                ip = target;
+                continue;
+            }
+            return invalid_match;
         }
         if op == OP_POP_EXCEPT {
             if len(stack) > 0 {
