@@ -71,44 +71,6 @@ def _append_path(base: str, part: str) -> str {
     return base + "." + part;
 }
 
-def const_repr(c: PyObj) -> str {
-    if isinstance(c, PyInt) {
-        return "int(" + str((c as PyInt).val) + ")";
-    }
-    if isinstance(c, PyStr) {
-        return "str(...)";
-    }
-    if isinstance(c, PyFloat) {
-        return "float(" + str((c as PyFloat).val) + ")";
-    }
-    if isinstance(c, PyBool) {
-        if (c as PyBool).val {
-            return "True";
-        }
-        return "False";
-    }
-    if isinstance(c, PyNoneType) {
-        return "None";
-    }
-    if isinstance(c, PyCode) {
-        return "<code " + (c as PyCode).name + ">";
-    }
-    if isinstance(c, PyTuple) {
-        return "tuple(len=" + str(len((c as PyTuple).items)) + ")";
-    }
-    if isinstance(c, PyList) {
-        return "list(len=" + str(len((c as PyList).items)) + ")";
-    }
-    if isinstance(c, PyBytes) {
-        return "bytes(len=" + str(len(bytes_value(c))) + ")";
-    }
-    if isinstance(c, PyComplex) {
-        co = c as PyComplex;
-        return "complex(" + str(co.real) + "," + str(co.imag) + ")";
-    }
-    return "<" + c.t + ">";
-}
-
 def compare_const(a: PyObj, b: PyObj, path: str) -> PyCodeDiff {
     if isinstance(a, PyCode) and isinstance(b, PyCode) {
         return pycode_diff(a as PyCode, b as PyCode, path);
@@ -495,14 +457,6 @@ def pycode_contract_check(co: PyCode, path: str) -> PyCodeDiff {
         i = i + 1;
     }
     return diff_ok();
-}
-
-def pycode_contract_message(co: PyCode) -> str {
-    d = pycode_contract_check(co, "code");
-    if d.ok {
-        return "";
-    }
-    return d.path + ": " + d.message;
 }
 
 def pycode_diff(expected: PyCode, actual: PyCode, path: str) -> PyCodeDiff {

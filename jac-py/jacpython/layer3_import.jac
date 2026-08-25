@@ -39,21 +39,6 @@ def layer3_reset {
     set_layer3_active(True);
 }
 
-# Import a module and return "" on success or "Type: message" on the first error
-# encountered anywhere in its closure. Used to burn down the unittest closure.
-def layer3_probe(name: str) -> str {
-    layer3_reset();
-    mod = import_native(name);
-    if is_error(mod) {
-        exc = (mod as PyError).exception;
-        return exc.type_name + ": " + exc.message;
-    }
-    if not isinstance(mod, PyModule) {
-        return "not-native: got a proxy for " + name;
-    }
-    return "";
-}
-
 # ---------------- tests ----------------
 
 test "layer3: a caught builtin exception has real str/repr/type/args" {

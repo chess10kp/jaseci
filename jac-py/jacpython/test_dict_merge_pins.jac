@@ -71,12 +71,6 @@ def run_src_err(source: str) -> tuple[str, str] {
     return (exc.type_name, exc.message);
 }
 
-def code_stream(src: str) -> list[int] {
-    comp = product_exec(src);
-    assert not is_error(comp);
-    return (comp as PyCode).co_code;
-}
-
 def has_op(words: list[int], op: int) -> bool {
     i = 0;
     while i + 1 < len(words) {

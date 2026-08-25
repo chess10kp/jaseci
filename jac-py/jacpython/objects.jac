@@ -2530,34 +2530,6 @@ def exc_is_subclass_of(name: str, base: str) -> bool {
     return False;
 }
 
-def _exc_field_int(fields: dict[str, PyObj], key: str) -> int {
-    # -1 encodes "absent / not an int" so callers can distinguish a stored 0.
-    if key in fields {
-        v = fields[key];
-        if isinstance(v, PyInt) {
-            return (v as PyInt).val;
-        }
-    }
-    return -1;
-}
-
-def _exc_field_str(fields: dict[str, PyObj], key: str) -> str {
-    if key in fields {
-        v = fields[key];
-        if isinstance(v, PyStr) {
-            return (v as PyStr).val;
-        }
-        if isinstance(v, PyInt) {
-            return str((v as PyInt).val);
-        }
-    }
-    return "";
-}
-
-def _exc_has_value(fields: dict[str, PyObj], key: str) -> bool {
-    return key in fields and not isinstance(fields[key], PyNoneType);
-}
-
 # CPython ``oserror_init`` (posix branch): parse every argument arity into
 # errno/strerror/filename/filename2, trimming the stored args tuple to
 # ``(errno, strerror)`` -- filename data lives on attributes only.

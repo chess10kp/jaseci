@@ -69,11 +69,6 @@ def _tc_is_char(tc: str) -> bool {
     return tc == "u" or tc == "w";
 }
 
-def _tc_is_float(tc: str) -> bool {
-    return tc == "f" or tc == "d";
-}
-
-
 # ---------------------------------------------------------------------------
 # IEEE-754 bit conversion (needed for byte-faithful 'f'/'d' storage).
 # Double path parses float.hex() (exact, handles denormals/inf/nan);

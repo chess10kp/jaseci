@@ -30,28 +30,6 @@ import from compiler_slice {
     ast_cmp_chain,
 }
 
-def expr_lineno(e: expr) -> int {
-    if isinstance(e, BinOp) {
-        return (e as BinOp).lineno;
-    }
-    if isinstance(e, Constant) {
-        return (e as Constant).lineno;
-    }
-    if isinstance(e, Name) {
-        return (e as Name).lineno;
-    }
-    if isinstance(e, UnaryOp) {
-        return (e as UnaryOp).lineno;
-    }
-    if isinstance(e, Call) {
-        return (e as Call).lineno;
-    }
-    if isinstance(e, Compare) {
-        return (e as Compare).lineno;
-    }
-    return -1;
-}
-
 def same_constant(a: Constant, b: Constant) -> bool {
     if a.lineno != b.lineno or a.col_offset != b.col_offset {
         return False;

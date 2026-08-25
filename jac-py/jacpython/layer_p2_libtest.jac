@@ -219,30 +219,6 @@ def _p2_optional_int_arg(args: list[PyObj], idx: int, `default: int) -> int {
     return `default;
 }
 
-# json shim plumbing: keyword defaults are all "absent == default" safe
-# because every dumps()/loads() kwarg maps None (and absence) to the same
-# Lib/json default.
-def _p2_json_kwarg(kwargs: dict[str, PyObj], name: str) -> PyObj {
-    if name in kwargs {
-        return kwargs[name];
-    }
-    return py_none();
-}
-
-def _p2_json_kwbool(kwargs: dict[str, PyObj], name: str, dflt: bool) -> bool {
-    if name not in kwargs {
-        return dflt;
-    }
-    val = kwargs[name];
-    if isinstance(val, PyBool) {
-        return val.val;
-    }
-    if isinstance(val, PyInt) {
-        return val.val != 0;
-    }
-    return dflt;
-}
-
 # Native raises do not cross the tp_call boundary as guest-catchable
 # exceptions; the established shim contract is returning py_error objects
 # (ceval turns those into raised guest exceptions), so catch and convert.

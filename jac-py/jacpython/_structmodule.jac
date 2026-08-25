@@ -376,14 +376,6 @@ obj _StructObj {
         raise TypeError("iter() returned non-iterator of type '_StructObj'");
     }
 
-    def _entry_size(c: str) -> int {
-        ent = _find_entry(_table_for(self.endian), c);
-        if ent is None {
-            _struct_error("bad char in struct format");
-        }
-        return (ent as _FmtDef).size;
-    }
-
     # ---- packing guts -------------------------------------------------
     def _pack_into_list(args: list, buf: list, base: int) {
         i = 0;
@@ -911,10 +903,6 @@ def unpack_from(fmt: any, buffer: any, offset: int = 0) -> tuple {
 
 def iter_unpack(fmt: any, buffer: any) -> any {
     return (_cached(fmt) as _StructObj).iter_unpack(buffer);
-}
-
-def _clearcache() {
-    _cache.clear();
 }
 
 import from exceptions_core { register_module_exception }

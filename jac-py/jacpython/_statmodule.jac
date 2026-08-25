@@ -81,17 +81,7 @@ def _p2_S_ISSOCK(mode: int) -> bool {
 }
 
 # Non-standard types absent on POSIX builds: C module falls back to literal 0.
-def _p2_S_ISDOOR(mode: int) -> bool {
-    return False;
-}
-
-def _p2_S_ISPORT(mode: int) -> bool {
-    return False;
-}
-
-def _p2_S_ISWHT(mode: int) -> bool {
-    return False;
-}
+# (S_ISDOOR/S_ISPORT/S_ISWHT stubs removed: unreferenced by the libtest shim.)
 
 def _p2_filemode(mode: int) -> str {
     if _p2_S_ISREG(mode) {
