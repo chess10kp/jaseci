@@ -76,6 +76,7 @@ import from codegen_util {
 }
 import from compiler_annotations { ann_scope_plan }
 import from compiler_codegen { emit_module_return, emit_name_delete, emit_name_store, visit_return_stmt, visit_stmt_tail, visit_stmts, visit_store_target_tos }
+import from compiler_dispatch { stmt_handlers }
 # Suspendable functions: PEP 479 StopIteration handler at end of co_code.
 def emit_generator_except_handler(g: cfg_builder, protect_start: int) {
     if protect_start < 0 {
@@ -2561,3 +2562,18 @@ def visit_async_with(
     }
     return stmt_cont(loc=wloc, terminated=True);
 }
+
+# Wire statement-dispatch handlers into the leaf registry (see
+# compiler_dispatch.jac). Runs at module load via `with entry`; entry
+# drivers (product_compile, compiler_slice) import this module so the
+# registration always precedes the first compile. Dict item assignment
+# mutates the holder in place (scalar-glob rebinding would be local).
+with entry {
+    stmt_handlers["visit_raise_stmt"] = visit_raise_stmt;
+    stmt_handlers["visit_try"] = visit_try;
+    stmt_handlers["visit_try_star"] = visit_try_star;
+    stmt_handlers["visit_with"] = visit_with;
+    stmt_handlers["visit_async_with"] = visit_async_with;
+    stmt_handlers["deferred_comp_handlers"] = emit_deferred_comp_handlers;
+}
+
