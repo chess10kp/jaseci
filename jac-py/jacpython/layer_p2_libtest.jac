@@ -20,6 +20,10 @@ import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
 }
+import from _atexitmodule {
+    atexit_module_attrs,
+    _p2_atexit_state_reset,
+}
 import from ceval { _sys3_forget, set_layer3_active, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
 import from _collectionsmodule {
     _p2_deque,
@@ -789,6 +793,10 @@ def p2_libtest_reset {
     register_shim_module(
         "warnings",
         PyModule(t="module", name="warnings", attrs=warnings_module_attrs())
+    );
+    _p2_atexit_state_reset();
+    register_shim_module(
+        "atexit", PyModule(t="module", name="atexit", attrs=atexit_module_attrs())
     );
 }
 

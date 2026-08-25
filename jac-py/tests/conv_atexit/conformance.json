@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "57c6217764cde5609e313ab94a79f92a0da3f0fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_atexit/conv_atexit_pins.jac"
+  ],
+  "generated_at": "2026-08-25T13:57:43",
+  "hashes": {
+    "pins_jac": "546cb8150eec160a9c72d68f21c0e8007692470d89d762f2fdfee1b0c90bb7d1",
+    "conversion_json": "13e50466507cb88e466e14c7eb23f3117071fc2369ae5d8b47c3d1a0d6a587df",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "atexit",
+  "counts": {
+    "converted": 8,
+    "runnable": 2,
+    "green": 0,
+    "quarantined": 6
+  },
+  "pins": [
+    {
+      "id": "GeneralTest.test_general",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: script _test_atexit.py failed"
+    },
+    {
+      "id": "FunctionalTest.test_shutdown",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'SuppressCrashReport' from '<unknown>'\">"
+    },
+    {
+      "id": "FunctionalTest.test_atexit_instances",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'SuppressCrashReport' from '<unknown>'\">"
+    },
+    {
+      "id": "FunctionalTest.test_atexit_thread_safety",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "SubinterpreterTest.test_callbacks_leak",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SubinterpreterTest.test_callbacks_leak_refcycle",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SubinterpreterTest.test_callback_on_subinterpreter_teardown",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SubinterpreterTest.test_atexit_with_low_memory",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    }
+  ]
+}
