@@ -746,6 +746,9 @@ jobs:
       - name: T-string runtime arm pins
         run: jac test jac-py/jacpython/test_tstring_arms.jac
 
+      - name: Unary/pow precedence pins
+        run: jac test jac-py/jacpython/test_unary_pow_precedence.jac
+
   # Compiler suite, one chunk per runner. Chunking is load-bearing: the
   # materializer crossing leaks its native parse tree per compile, so one long
   # run OOMs; fresh runners bound the accumulation and parallelize the suite.

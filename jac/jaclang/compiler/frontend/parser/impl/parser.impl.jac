@@ -936,7 +936,7 @@ impl Parser.parse_arithmetic -> Expr {
 }
 
 impl Parser.parse_term -> Expr {
-    left = self.parse_power();
+    left = self.parse_factor();
     while self.check_any(
         TokenKind.STAR_MUL,
         TokenKind.DIV,
@@ -952,17 +952,17 @@ impl Parser.parse_term -> Expr {
             TokenKind.DECOR_OP
         );
         op = self.make_uni_token(tok);
-        right = self.parse_power();
+        right = self.parse_factor();
         left = BinaryExpr(left=left, op=op, right=right, kid=[left, op, right]);
     }
     return left;
 }
 
 impl Parser.parse_power -> Expr {
-    left = self.parse_factor();
+    left = self.parse_connect();
     if self.match_tok(TokenKind.STAR_POW) {
         op = self.make_uni_token(self.previous());
-        right = self.parse_power();
+        right = self.parse_factor();
         left = BinaryExpr(left=left, op=op, right=right, kid=[left, op, right]);
     }
     return left;
@@ -975,7 +975,7 @@ impl Parser.parse_factor -> Expr {
         operand = self.parse_factor();
         return UnaryExpr(operand=operand, op=op, kid=[op, operand]);
     }
-    return self.parse_connect();
+    return self.parse_power();
 }
 
 impl Parser.parse_connect -> Expr {
