@@ -44,6 +44,7 @@ import copy
 import doctest
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -102,6 +103,75 @@ HOST_TIMEOUT = 60  # seconds, hard limit per oracle capture
 
 _ORACLE_OK = "ok"
 _ORACLE_EXC = "ORACLE_EXC "
+
+_HOST_PY_CACHE: dict[Path, str] = {}
+
+
+def pinned_lib_version(cpython_lib: Path) -> tuple[int, int] | None:
+    """(major, minor) of the CPython checkout owning ``cpython_lib``.
+
+    Reads ``Include/patchlevel.h`` from the reference tree; returns None when
+    the layout is unexpected (then version matching is skipped).
+    """
+    header = cpython_lib.parent / "Include" / "patchlevel.h"
+    try:
+        text = header.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    vals: dict[str, int] = {}
+    for name in ("PY_MAJOR_VERSION", "PY_MINOR_VERSION"):
+        for line in text.splitlines():
+            parts = line.split()
+            if len(parts) == 3 and parts[0] == "#define" and parts[1] == name:
+                vals[name] = int(parts[2])
+                break
+    if len(vals) != 2:
+        return None
+    return vals["PY_MAJOR_VERSION"], vals["PY_MINOR_VERSION"]
+
+
+def host_python(cpython_lib: Path) -> str:
+    """Host interpreter whose stdlib matches the pinned CPython Lib.
+
+    Snippets run with ``PYTHONPATH=<cpython_lib>``, so a version mismatch
+    between the running interpreter and the pinned Lib makes pure-Python
+    stdlib packages (e.g. ``re`` asserting ``_sre.MAGIC``) fail at import —
+    every oracle then reports ``harness-error`` and nothing pins. Prefer an
+    interpreter whose ``(major, minor)`` equals the pinned Lib's; fall back to
+    ``sys.executable`` when no match exists.
+    """
+    cached = _HOST_PY_CACHE.get(cpython_lib)
+    if cached:
+        return cached
+    target = pinned_lib_version(cpython_lib)
+    candidates = [sys.executable]
+    if target is not None:
+        candidates += [
+            p
+            for minor in range(8, 20)
+            if (p := shutil.which(f"python{target[0]}.{minor}"))
+        ]
+    for cand in candidates:
+        if target is None:
+            break
+        try:
+            proc = subprocess.run(
+                [cand, "-c", "import sys; print(sys.version_info[:2])"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        try:
+            found = ast.literal_eval(proc.stdout.strip())
+        except (ValueError, SyntaxError):
+            continue
+        if tuple(found) == target:
+            _HOST_PY_CACHE[cpython_lib] = cand
+            return cand
+    _HOST_PY_CACHE[cpython_lib] = sys.executable
+    return sys.executable
 
 @dataclass
 class Quarantined:
@@ -1692,7 +1762,7 @@ def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
         }
         try:
             proc = subprocess.run(
-                [sys.executable, str(script)],
+                [host_python(cpython_lib), str(script)],
                 cwd=str(tdp),
                 env=env,
                 capture_output=True,
