@@ -30,7 +30,7 @@
 | StructTest.test_struct_cleans_up_at_runtime_shutdown | GUEST-WRONG-OUTPUT | RUN<"ModuleNotFoundError: No module named 'test.support.script_helper'"> |
 | StructTest.test__struct_reference_cycle_cleaned_up | GUEST-WRONG-OUTPUT | RUN<"ImportError: cannot import name 'import_helper' from '<unknown>'"> |
 | StructTest.test_issue35714 | PASS | |
-| StructTest.test_struct_subclass_instantiation | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC TypeError 'object.**init**() takes exactly one argument (the instance to initialize)'"> |
+| StructTest.test_struct_subclass_instantiation | GUEST-WRONG-OUTPUT | `GOT<"ORACLE_EXC TypeError 'object.__init__() takes exactly one argument (the instance to initialize)'">` |
 | StructTest.test_repr | PASS | |
 | StructTest.test_operations_on_half_initialized_Struct | PASS | |
 | StructTest.test_float_round_trip | PASS | |
@@ -75,7 +75,7 @@
 ### StructTest.test_struct_subclass_instantiation (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<"ORACLE_EXC TypeError 'object.**init**() takes exactly one argument (the instance to initialize)'">
+- got: `GOT<"ORACLE_EXC TypeError 'object.__init__() takes exactly one argument (the instance to initialize)'">`
 
 ### StructTest.test_unpack_from (GUEST-WRONG-OUTPUT)
 

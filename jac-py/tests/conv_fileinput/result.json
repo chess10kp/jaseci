@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "b0e07bc64aac7f7377144c7214eec5b5bf33a18b",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,10 +10,10 @@
     "diff_runner.py",
     "jac-py/tests/conv_fileinput/conv_fileinput_pins.jac"
   ],
-  "generated_at": "2026-08-24T21:51:07",
+  "generated_at": "2026-08-25T00:41:59",
   "hashes": {
-    "pins_jac": "ca4f9581d45ef10226b756e198c414890d46cf602962e67732d10ae2beac9d36",
-    "conversion_json": "e6c9c379cf4060f5cd2b00e869f16fdb5ded0cde81178ab577928c821d4239fc",
+    "pins_jac": "e7439c4d4b365187da079cb03953c1ad44b1030602ea0d4dc07de63727206685",
+    "conversion_json": "a96f462aaa04a9cce92e7ed079c6adb71b28db6625a11786cae732c65fd1cc64",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "fileinput",
@@ -21,10 +21,10 @@
   "timed_out": false,
   "counts": {
     "converted": 57,
-    "runnable": 14,
-    "green": 5,
-    "quarantined": 43,
-    "failed": 9,
+    "runnable": 18,
+    "green": 7,
+    "quarantined": 39,
+    "failed": 11,
     "infra_failed": 0
   },
   "failures": [
@@ -32,7 +32,13 @@
       "id": "FileInputTests.test_stdin_binary_mode",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<\"AttributeError: 'super' object has no attribute '__init_subclass__'\">"
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "FileInputTests.test_detached_stdin_binary_mode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', [b\\'spam, bacon, sausage, and spam\\'], [b\\'spam, bacon, sausage, and spam\\'])\"'>"
     },
     {
       "id": "Test_fileinput_close.test_state_is_not_None",
@@ -81,6 +87,12 @@
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
       "detail": "GOT<\"ORACLE_EXC TypeError 'object does not support item assignment'\">"
+    },
+    {
+      "id": "Test_hook_encoded.test",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'InvocationRecorder\\' object is not callable\"'>"
     }
   ]
 }

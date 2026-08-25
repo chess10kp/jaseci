@@ -1,8 +1,8 @@
 # Triage report: `conv_codecs_pins.jac`
 
 - source: /home/jac/repos/jac-python/reference/cpython/Lib/test/test_codecs.py
-- guest leg: 0/200 marks
-- pins: **83 passed** / 200 run (+79 quarantined of 279 extracted)
+- guest leg: 0/205 marks
+- pins: **88 passed** / 205 run (+74 quarantined of 279 extracted)
 
 | pin | result | got |
 |---|---|---|
@@ -146,6 +146,11 @@
 | CodecsModuleTest.test_copy | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', None, \'utf-8\')"'> |
 | CodecsModuleTest.test_deepcopy | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', None, \'utf-8\')"'> |
 | CodecsModuleTest.test_pickle | PASS | |
+| StreamReaderTest.test_readlines | PASS | |
+| StreamReaderTest.test_copy | PASS | |
+| StreamReaderTest.test_pickle | PASS | |
+| StreamWriterTest.test_copy | PASS | |
+| StreamWriterTest.test_pickle | PASS | |
 | StreamReaderWriterTest.test_copy | PASS | |
 | StreamReaderWriterTest.test_pickle | PASS | |
 | EncodedFileTest.test_basic | PASS | |
@@ -158,8 +163,8 @@
 | CharmapTest.test_decode_with_string_map | PASS | |
 | CharmapTest.test_decode_with_int2str_map | PASS | |
 | CharmapTest.test_decode_with_int2int_map | PASS | |
-| WithStmtTest.test_encodedfile | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC TypeError 'StreamRecoder.**enter**() takes 1 positional argument but 2 were given'"> |
-| WithStmtTest.test_streamreaderwriter | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC TypeError 'StreamReaderWriter.**enter**() takes 1 positional argument but 2 were given'"> |
+| WithStmtTest.test_encodedfile | GUEST-WRONG-OUTPUT | `GOT<"ORACLE_EXC TypeError 'StreamRecoder.__enter__() takes 1 positional argument but 2 were given'">` |
+| WithStmtTest.test_streamreaderwriter | GUEST-WRONG-OUTPUT | `GOT<"ORACLE_EXC TypeError 'StreamReaderWriter.__enter__() takes 1 positional argument but 2 were given'">` |
 | TypesTest.test_decode_unicode | PASS | |
 | TypesTest.test_unicode_escape | PASS | |
 | UnicodeEscapeTest.test_empty | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'> |
@@ -245,11 +250,6 @@
 | IDNACodecTest.test_incremental_decode_invalid | unresolved-name:cm |
 | IDNACodecTest.test_incremental_encode_invalid | unresolved-name:cm |
 | CodecsModuleTest.test_open | self.addCleanup |
-| StreamReaderTest.test_readlines | uses-self.reader |
-| StreamReaderTest.test_copy | uses-self.reader |
-| StreamReaderTest.test_pickle | uses-self.reader |
-| StreamWriterTest.test_copy | uses-self.writer |
-| StreamWriterTest.test_pickle | uses-self.writer |
 | UnicodeEscapeTest.test_decode_warnings | uses-self.assertWarns |
 | BomTest.test_seek0 | self.addCleanup |
 | TransformCodecTest.test_text_to_binary_denylists_binary_transforms | unresolved-name:failure |
@@ -871,9 +871,9 @@
 ### WithStmtTest.test_encodedfile (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<"ORACLE_EXC TypeError 'StreamRecoder.**enter**() takes 1 positional argument but 2 were given'">
+- got: `GOT<"ORACLE_EXC TypeError 'StreamRecoder.__enter__() takes 1 positional argument but 2 were given'">`
 
 ### WithStmtTest.test_streamreaderwriter (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<"ORACLE_EXC TypeError 'StreamReaderWriter.**enter**() takes 1 positional argument but 2 were given'">
+- got: `GOT<"ORACLE_EXC TypeError 'StreamReaderWriter.__enter__() takes 1 positional argument but 2 were given'">`

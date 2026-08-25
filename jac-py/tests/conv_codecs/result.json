@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "615abfd9c3b5ccaab40667ed7c744a40cd1b6d46",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,10 +10,10 @@
     "diff_runner.py",
     "jac-py/tests/conv_codecs/conv_codecs_pins.jac"
   ],
-  "generated_at": "2026-08-24T23:00:22",
+  "generated_at": "2026-08-25T00:41:40",
   "hashes": {
-    "pins_jac": "8440b8898ff2da28cda9a6c3a18b5f75c804b7147100c3ad214440661ead0577",
-    "conversion_json": "d389236cb0bfe22b05500f0cb76fe3c2c507d9ab11dcf299dc7cf70cb7bce6f6",
+    "pins_jac": "398348fc3e92f7593eda8f7e3c97037dd2530bee856f9620faa835385dfe1bba",
+    "conversion_json": "787c78866f1967d8b1e4d2ca5be12ed40e2b56d7f41e8b0f859ab7fcaea1adc7",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "codecs",
@@ -21,9 +21,9 @@
   "timed_out": false,
   "counts": {
     "converted": 279,
-    "runnable": 200,
-    "green": 83,
-    "quarantined": 79,
+    "runnable": 205,
+    "green": 88,
+    "quarantined": 74,
     "failed": 117,
     "infra_failed": 0
   },

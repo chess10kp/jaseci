@@ -1,8 +1,8 @@
 # Triage report: `conv_types_pins.jac`
 
 - source: /home/jac/repos/jac-python/reference/cpython/Lib/test/test_types.py
-- guest leg: 0/75 marks
-- pins: **52 passed** / 75 run (+54 quarantined of 129 extracted)
+- guest leg: 0/77 marks
+- pins: **53 passed** / 77 run (+52 quarantined of 129 extracted)
 
 | pin | result | got |
 |---|---|---|
@@ -34,8 +34,10 @@
 | UnionTests.test_union_of_unhashable | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "unsupported operand type(s) for \|: \'UnhashableMeta\' and \'UnhashableMeta\'"'> |
 | UnionTests.test_unhashable_becomes_hashable | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "unsupported operand type(s) for \|: \'UnhashableMeta\' and \'UnhashableMeta\'"'> |
 | UnionTests.test_bad_instancecheck | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "unsupported operand type(s) for \|: \'host\' and \'BadMeta\'"'> |
+| UnionTests.test_bad_subclasscheck | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "unsupported operand type(s) for \|: \'host\' and \'BadMeta\'"'> |
 | UnionTests.test_or_type_operator_with_bad_module | PASS | |
 | ClassCreationTests.test_new_class_basics | PASS | |
+| ClassCreationTests.test_new_class_subclass | PASS | |
 | ClassCreationTests.test_new_class_metaclass_keywords | PASS | |
 | ClassCreationTests.test_new_class_defaults | PASS | |
 | ClassCreationTests.test_new_class_with_mro_entry | PASS | |
@@ -49,8 +51,8 @@
 | ClassCreationTests.test_metaclass_derivation | PASS | |
 | ClassCreationTests.test_metaclass_override_callable | PASS | |
 | ClassCreationTests.test_metaclass_new_error | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC AssertionError 'assertRaises: did not raise'"> |
-| ClassCreationTests.test_subclass_inherited_slot_update | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "descriptor \'**getitem**\' for \'dict\' objects doesn\'t apply to a \'NoneType\' object"'> |
-| ClassCreationTests.test_tuple_subclass_as_bases | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', <class \'tuple\'>, <class \'**main**.TupleSubclass\'>)"'> |
+| ClassCreationTests.test_subclass_inherited_slot_update | GUEST-WRONG-OUTPUT | `GOT<'ORACLE_EXC TypeError "descriptor \'__getitem__\' for \'dict\' objects doesn\'t apply to a \'NoneType\' object"'>` |
+| ClassCreationTests.test_tuple_subclass_as_bases | GUEST-WRONG-OUTPUT | `GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', <class \'tuple\'>, <class \'__main__.TupleSubclass\'>)"'>` |
 | SimpleNamespaceTests.test_constructor | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', [(\'y\', 2), (\'x\', 1)], [(\'x\', 1), (\'y\', 2)])"'> |
 | SimpleNamespaceTests.test_unbound | PASS | |
 | SimpleNamespaceTests.test_underlying_dict | PASS | |
@@ -75,10 +77,10 @@
 | CoroutineTests.test_duck_coro | PASS | |
 | CoroutineTests.test_duck_corogen | PASS | |
 | CoroutineTests.test_duck_gen | GUEST-WRONG-OUTPUT | RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'"> |
-| CoroutineTests.test_gen | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertIsInstance\', <callable_iterator object at 0x7fb4ce40ad70>, <class \'types._GeneratorWrapper\'>)"'> |
+| CoroutineTests.test_gen | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertIsInstance\', <callable_iterator object at 0x7f269505abc0>, <class \'types._GeneratorWrapper\'>)"'> |
 | CoroutineTests.test_returning_itercoro | PASS | |
-| CoroutineTests.test_genfunc | GUEST-WRONG-OUTPUT | RUN<'TypeError: expected code object'> |
-| CoroutineTests.test_wrapper_object | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertIn\', \'GeneratorWrapper\', \'<callable_iterator object at 0x7fb4ce40bcd0>\')"'> |
+| CoroutineTests.test_genfunc | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| CoroutineTests.test_wrapper_object | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertIn\', \'GeneratorWrapper\', \'<callable_iterator object at 0x7f26947e7e20>\')"'> |
 | FunctionTests.test_function_type_defaults | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "bridge-table: type \'code\' has policy BridgePolicy.FAIL but no to_host conversion arm"'> |
 | FunctionTests.test_function_type_wrong_defaults | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC AssertionError 'assertRaisesRegex: message mismatch'"> |
 
@@ -88,8 +90,6 @@
 |---|---|
 | TypesTests.test_dunder_get_signature | decorator:unittest.skipIf |
 | UnionTests.test_instancecheck_and_subclasscheck | self.assertNotIsInstance |
-| UnionTests.test_instancecheck_and_subclasscheck_order | self.assertIsSubclass |
-| UnionTests.test_bad_subclasscheck | self.assertIsSubclass |
 | UnionTests.test_or_type_operator_reference_cycle | self.skipTest |
 | MappingProxyTests.test_constructor | uses-self.mappingproxy |
 | MappingProxyTests.test_methods | uses-self.mappingproxy |
@@ -105,8 +105,6 @@
 | MappingProxyTests.test_copy | uses-self.mappingproxy |
 | MappingProxyTests.test_union | uses-self.mappingproxy |
 | MappingProxyTests.test_hash | uses-self.mappingproxy |
-| ClassCreationTests.test_new_class_subclass | self.assertIsSubclass |
-| ClassCreationTests.test_new_class_meta_with_base | self.assertIsSubclass |
 | ClassCreationTests.test_one_argument_type | unresolved-name:cm |
 | CoroutineTests.test_duck_functional_gen | uses-self.send |
 | SubinterpreterTests.test_static_types_inherited_slots | uses-self.create_channel |
@@ -115,6 +113,7 @@
 | TypesTests.test_float__format__ | harness-error:SyntaxError: invalid syntax |
 | UnionTests.test_or_types_operator | harness-error:SyntaxError: invalid syntax |
 | UnionTests.test_hash | harness-error:SyntaxError: invalid syntax |
+| UnionTests.test_instancecheck_and_subclasscheck_order | harness-error:SyntaxError: invalid syntax |
 | UnionTests.test_or_type_operator_with_TypeVar | harness-error:SyntaxError: invalid syntax |
 | UnionTests.test_union_args | harness-error:SyntaxError: invalid syntax |
 | UnionTests.test_union_parameter_chaining | harness-error:SyntaxError: invalid syntax |
@@ -136,6 +135,7 @@
 | UnionTests.test_instantiation | harness-error:SyntaxError: invalid syntax |
 | ClassCreationTests.test_new_class_meta | host-raised:AttributeError: '_SelfNS' object has no attribute 'Meta' |
 | ClassCreationTests.test_new_class_exec_body | host-raised:AttributeError: '_SelfNS' object has no attribute 'Meta' |
+| ClassCreationTests.test_new_class_meta_with_base | host-raised:AttributeError: '_SelfNS' object has no attribute 'Meta' |
 | ClassCreationTests.test_new_class_with_mro_entry_genericalias | harness-error:SyntaxError: invalid syntax |
 | ClassCreationTests.test_get_original_bases | harness-error:SyntaxError: invalid syntax |
 | ClassCreationTests.test_resolve_bases_with_mro_entry | harness-error:SyntaxError: invalid syntax |
@@ -156,12 +156,12 @@
 ### ClassCreationTests.test_subclass_inherited_slot_update (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<'ORACLE_EXC TypeError "descriptor \'**getitem**\' for \'dict\' objects doesn\'t apply to a \'NoneType\' object"'>
+- got: `GOT<'ORACLE_EXC TypeError "descriptor \'__getitem__\' for \'dict\' objects doesn\'t apply to a \'NoneType\' object"'>`
 
 ### ClassCreationTests.test_tuple_subclass_as_bases (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', <class \'tuple\'>, <class \'**main**.TupleSubclass\'>)"'>
+- got: `GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', <class \'tuple\'>, <class \'__main__.TupleSubclass\'>)"'>`
 
 ### CoroutineTests.test_async_def (GUEST-WRONG-OUTPUT)
 
@@ -176,17 +176,17 @@
 ### CoroutineTests.test_gen (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<'ORACLE_EXC AssertionError "(\'assertIsInstance\', <callable_iterator object at 0x7fb4ce40ad70>, <class \'types._GeneratorWrapper\'>)"'>
+- got: GOT<'ORACLE_EXC AssertionError "(\'assertIsInstance\', <callable_iterator object at 0x7f269505abc0>, <class \'types._GeneratorWrapper\'>)"'>
 
 ### CoroutineTests.test_genfunc (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<'TypeError: expected code object'>
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### CoroutineTests.test_wrapper_object (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<'ORACLE_EXC AssertionError "(\'assertIn\', \'GeneratorWrapper\', \'<callable_iterator object at 0x7fb4ce40bcd0>\')"'>
+- got: GOT<'ORACLE_EXC AssertionError "(\'assertIn\', \'GeneratorWrapper\', \'<callable_iterator object at 0x7f26947e7e20>\')"'>
 
 ### CoroutineTests.test_wrong_args (GUEST-WRONG-OUTPUT)
 
@@ -244,6 +244,11 @@
 - got: GOT<"ORACLE_EXC AssertionError ''">
 
 ### UnionTests.test_bad_instancecheck (GUEST-WRONG-OUTPUT)
+
+- expected: host oracle = `ok`
+- got: GOT<'ORACLE_EXC TypeError "unsupported operand type(s) for |: \'host\' and \'BadMeta\'"'>
+
+### UnionTests.test_bad_subclasscheck (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC TypeError "unsupported operand type(s) for |: \'host\' and \'BadMeta\'"'>

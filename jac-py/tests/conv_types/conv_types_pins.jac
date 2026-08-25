@@ -175,6 +175,12 @@ test "UnionTests.test_bad_instancecheck" {
     assert detail == "ok" , "GOT<" + detail + ">";
 }
 
+test "UnionTests.test_bad_subclasscheck" {
+    (ok, detail) = p2_libtest_run_snippet("def _t():\n\n    class BadMeta(type):\n\n        def __subclasscheck__(cls, sub):\n            1 / 0\n    x = int | BadMeta('A', (), {})\n    assert issubclass(int, x), ('assertIsSubclass', int, x)\n    try:\n        issubclass(*(list, x))\n    except ZeroDivisionError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
 test "UnionTests.test_or_type_operator_with_bad_module" {
     (ok, detail) = p2_libtest_run_snippet("def _t():\n\n    class BadMeta(type):\n        __qualname__ = 'TypeVar'\n\n        @property\n        def __module__(self):\n            1 / 0\n    TypeVar = BadMeta('TypeVar', (), {})\n    _SpecialForm = BadMeta('_SpecialForm', (), {})\n    try:\n        str | TypeVar()\n    except (TypeError, ZeroDivisionError) as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        str | _SpecialForm()\n    except (TypeError, ZeroDivisionError) as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
     assert ok , "RUN<" + detail + ">";
@@ -183,6 +189,12 @@ test "UnionTests.test_or_type_operator_with_bad_module" {
 
 test "ClassCreationTests.test_new_class_basics" {
     (ok, detail) = p2_libtest_run_snippet("import types\n\ndef _t():\n    C = types.new_class('C')\n    assert C.__name__ == 'C', ('assertEqual', C.__name__, 'C')\n    assert C.__bases__ == (object,), ('assertEqual', C.__bases__, (object,))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "ClassCreationTests.test_new_class_subclass" {
+    (ok, detail) = p2_libtest_run_snippet("import types\n\ndef _t():\n    C = types.new_class('C', (int,))\n    assert issubclass(C, int), ('assertIsSubclass', C, int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }

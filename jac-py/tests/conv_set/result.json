@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "b1bed97912c863821e93b83c77fd57351337db79",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,29 +10,275 @@
     "diff_runner.py",
     "jac-py/tests/conv_set/conv_set_pins.jac"
   ],
-  "generated_at": "2026-08-24T22:51:20",
+  "generated_at": "2026-08-25T00:32:17",
   "hashes": {
-    "pins_jac": "edfa38a48076b823d68fb530f27606b51efd0283a1d9bbb66e0cc7fc3133242b",
-    "conversion_json": "0341aa02f4c5993287d71dc67ba3a7710be5dde7d93c5b19cc54214578cb0e43",
+    "pins_jac": "9ba3da8044dbf8cfd921230bf4640145cc596409baabdf448c056ddc307ac1b1",
+    "conversion_json": "f4b351788dac74771986c5514748ab973d5443c3c1d99bbf29fa29675da23afa",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "set",
   "status": "failed",
   "timed_out": false,
   "counts": {
-    "converted": 206,
-    "runnable": 68,
-    "green": 66,
-    "quarantined": 138,
-    "failed": 2,
+    "converted": 546,
+    "runnable": 300,
+    "green": 257,
+    "quarantined": 246,
+    "failed": 43,
     "infra_failed": 0
   },
   "failures": [
+    {
+      "id": "TestBasicOpsBytes.test_equivalent_equality",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_self_union",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_empty_union",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_union_empty",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_self_intersection",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_empty_difference",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
+    {
+      "id": "TestBasicOpsEmpty.test_iteration",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__length_hint__'\">"
+    },
+    {
+      "id": "TestBasicOpsSingleton.test_iteration",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__length_hint__'\">"
+    },
+    {
+      "id": "TestBasicOpsTuple.test_iteration",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__length_hint__'\">"
+    },
+    {
+      "id": "TestBasicOpsTriple.test_iteration",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__length_hint__'\">"
+    },
+    {
+      "id": "TestBasicOpsString.test_iteration",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__length_hint__'\">"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_iteration",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__length_hint__'\">"
+    },
+    {
+      "id": "TestBasicOpsBytes.test_pickling",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', {b\\'c\\', b\\'b\\', b\\'a\\'}, {b\\'c\\', b\\'b\\', b\\'a\\'})\"'>"
+    },
     {
       "id": "TestExceptionPropagation.test_changingSizeWhileIterating",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
       "detail": "GOT<\"ORACLE_EXC AssertionError 'no exception when changing size during iteration'\">"
+    },
+    {
+      "id": "TestSubsetEqualEmpty.test_issubset",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestSubsetEqualNonEmpty.test_issubset",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestSubsetEmptyNonEmpty.test_issubset",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestSubsetPartial.test_issubset",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestSubsetNonOverlap.test_issubset",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC NameError \"name \\'x\\' is not defined\"'>"
+    },
+    {
+      "id": "TestOnlySetsDict.test_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsTuple.test_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsString.test_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsGenerator.test_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsDict.test_intersection_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsTuple.test_intersection_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsString.test_intersection_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsGenerator.test_intersection_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsDict.test_sym_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsTuple.test_sym_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsString.test_sym_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsGenerator.test_sym_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsDict.test_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsTuple.test_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsString.test_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestOnlySetsGenerator.test_difference_update_operator",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'expected TypeError'\">"
+    },
+    {
+      "id": "TestCopyingEmpty.test_deep_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC Error 'un(deep)copyable object of type <object>'\">"
+    },
+    {
+      "id": "TestCopyingSingleton.test_deep_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC Error 'un(deep)copyable object of type <object>'\">"
+    },
+    {
+      "id": "TestCopyingTriple.test_deep_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC Error 'un(deep)copyable object of type <object>'\">"
+    },
+    {
+      "id": "TestCopyingTuple.test_deep_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC Error 'un(deep)copyable object of type <object>'\">"
+    },
+    {
+      "id": "TestCopyingNested.test_deep_copy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC Error 'un(deep)copyable object of type <object>'\">"
+    },
+    {
+      "id": "TestVariousIteratorArgs.test_constructor",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'G\\' object is not iterable\"'>"
     },
     {
       "id": "TestGraphs.test_cuboctahedron",

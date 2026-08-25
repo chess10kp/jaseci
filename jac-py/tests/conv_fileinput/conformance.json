@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "b0e07bc64aac7f7377144c7214eec5b5bf33a18b",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,18 +10,18 @@
     "diff_runner.py",
     "jac-py/tests/conv_fileinput/conv_fileinput_pins.jac"
   ],
-  "generated_at": "2026-08-24T21:51:07",
+  "generated_at": "2026-08-25T00:41:59",
   "hashes": {
-    "pins_jac": "ca4f9581d45ef10226b756e198c414890d46cf602962e67732d10ae2beac9d36",
-    "conversion_json": "e6c9c379cf4060f5cd2b00e869f16fdb5ded0cde81178ab577928c821d4239fc",
+    "pins_jac": "e7439c4d4b365187da079cb03953c1ad44b1030602ea0d4dc07de63727206685",
+    "conversion_json": "a96f462aaa04a9cce92e7ed079c6adb71b28db6625a11786cae732c65fd1cc64",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "fileinput",
   "counts": {
     "converted": 57,
-    "runnable": 14,
-    "green": 5,
-    "quarantined": 43
+    "runnable": 18,
+    "green": 7,
+    "quarantined": 39
   },
   "pins": [
     {
@@ -32,10 +32,24 @@
       "id": "FileInputTests.test_stdin_binary_mode",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<\"AttributeError: 'super' object has no attribute '__init_subclass__'\">"
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "FileInputTests.test_detached_stdin_binary_mode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', [b\\'spam, bacon, sausage, and spam\\'], [b\\'spam, bacon, sausage, and spam\\'])\"'>"
     },
     {
       "id": "FileInputTests.test_empty_files_list_specified_to_constructor",
+      "status": "pass"
+    },
+    {
+      "id": "FileInputTests.test_readline_buffering",
+      "status": "pass"
+    },
+    {
+      "id": "FileInputTests.test_iteration_buffering",
       "status": "pass"
     },
     {
@@ -99,6 +113,12 @@
       "detail": "GOT<\"ORACLE_EXC TypeError 'object does not support item assignment'\">"
     },
     {
+      "id": "Test_hook_encoded.test",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'InvocationRecorder\\' object is not callable\"'>"
+    },
+    {
       "id": "MiscTest.test_all",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
@@ -137,11 +157,6 @@
       "id": "FileInputTests.test_fileno",
       "status": "quarantined",
       "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_detached_stdin_binary_mode",
-      "status": "quarantined",
-      "reason": "self.assertNotHasAttr"
     },
     {
       "id": "FileInputTests.test_file_opening_hook",
@@ -202,16 +217,6 @@
       "id": "FileInputTests.test_fileno_when_ValueError_raised",
       "status": "quarantined",
       "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_readline_buffering",
-      "status": "quarantined",
-      "reason": "unresolved-name:LineReader"
-    },
-    {
-      "id": "FileInputTests.test_iteration_buffering",
-      "status": "quarantined",
-      "reason": "unresolved-name:LineReader"
     },
     {
       "id": "FileInputTests.test_pathlike_file",
@@ -297,11 +302,6 @@
       "id": "Test_hook_compressed.test_text_mode_encoding",
       "status": "quarantined",
       "reason": "helper:do_test_use_builtin_open_text(helper:replace_builtin_open(decorated-helper))"
-    },
-    {
-      "id": "Test_hook_encoded.test",
-      "status": "quarantined",
-      "reason": "unresolved-name:InvocationRecorder"
     },
     {
       "id": "Test_hook_encoded.test_errors",

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -14,15 +14,39 @@
     "--name",
     "conv_property"
   ],
-  "generated_at": "2026-08-24T14:34:50",
+  "generated_at": "2026-08-25T00:30:12",
   "hashes": {
-    "pins_jac": "8f54e4b296b8ba88e0d5060cca7b137f37ae3f8ed08da508eb036e023bb2b375"
+    "pins_jac": "e4f75086fc655ee7e4a90e086b41043cc60522ed34d15d5c9628ebf84f82647d"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_property.py",
   "generator": "jac-py/tools/convert_suite.py",
   "module_stem": "property",
   "pins_file": "conv_property_pins.jac",
   "pins": [
+    {
+      "ident": "PropertyTests.test_property_decorator_baseclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "class BaseClass(object):\n\n    def __init__(self):\n        self._spam = 5\n\n    @property\n    def spam(self):\n        \"\"\"BaseClass.getter\"\"\"\n        return self._spam\n\n    @spam.setter\n    def spam(self, value):\n        self._spam = value\n\n    @spam.deleter\n    def spam(self):\n        del self._spam\n\ndef _t():\n    base = BaseClass()\n    assert base.spam == 5, ('assertEqual', base.spam, 5)\n    assert base._spam == 5, ('assertEqual', base._spam, 5)\n    base.spam = 10\n    assert base.spam == 10, ('assertEqual', base.spam, 10)\n    assert base._spam == 10, ('assertEqual', base._spam, 10)\n    delattr(base, 'spam')\n    assert not hasattr(base, 'spam'), ('assertNotHasAttr', base, 'spam')\n    assert not hasattr(base, '_spam'), ('assertNotHasAttr', base, '_spam')\n    base.spam = 20\n    assert base.spam == 20, ('assertEqual', base.spam, 20)\n    assert base._spam == 20, ('assertEqual', base._spam, 20)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PropertyTests.test_property_decorator_subclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "class PropertyBase(Exception):\n    pass\n\nclass PropertyGet(PropertyBase):\n    pass\n\nclass PropertySet(PropertyBase):\n    pass\n\nclass PropertyDel(PropertyBase):\n    pass\n\nclass BaseClass(object):\n\n    def __init__(self):\n        self._spam = 5\n\n    @property\n    def spam(self):\n        \"\"\"BaseClass.getter\"\"\"\n        return self._spam\n\n    @spam.setter\n    def spam(self, value):\n        self._spam = value\n\n    @spam.deleter\n    def spam(self):\n        del self._spam\n\nclass SubClass(BaseClass):\n\n    @BaseClass.spam.getter\n    def spam(self):\n        \"\"\"SubClass.getter\"\"\"\n        raise PropertyGet(self._spam)\n\n    @spam.setter\n    def spam(self, value):\n        raise PropertySet(self._spam)\n\n    @spam.deleter\n    def spam(self):\n        raise PropertyDel(self._spam)\n\ndef _t():\n    sub = SubClass()\n    try:\n        getattr(*(sub, 'spam'))\n    except PropertyGet:\n        pass\n    try:\n        setattr(*(sub, 'spam', None))\n    except PropertySet:\n        pass\n    try:\n        delattr(*(sub, 'spam'))\n    except PropertyDel:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PropertyTests.test_property_decorator_doc",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "class PropertyDocBase(object):\n    _spam = 1\n\n    def _get_spam(self):\n        return self._spam\n    spam = property(_get_spam, doc='spam spam spam')\n\nclass PropertyDocSub(PropertyDocBase):\n\n    @PropertyDocBase.spam.getter\n    def spam(self):\n        \"\"\"The decorator does not use this doc string\"\"\"\n        return self._spam\n\ndef _t():\n    base = PropertyDocBase()\n    sub = PropertyDocSub()\n    assert base.__class__.spam.__doc__ == 'spam spam spam', ('assertEqual', base.__class__.spam.__doc__, 'spam spam spam')\n    assert sub.__class__.spam.__doc__ == 'spam spam spam', ('assertEqual', sub.__class__.spam.__doc__, 'spam spam spam')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
     {
       "ident": "PropertyTests.test_property___isabstractmethod__descriptor",
       "status": "pinned",
@@ -64,17 +88,25 @@
       "snippet": "def _t():\n\n    class slotted_prop(property):\n        __slots__ = ('foo',)\n    p = slotted_prop()\n    assert getattr(p, '__doc__', None) is None, ('assertIsNone', getattr(p, '__doc__', None))\n\n    def undocumented_getter():\n        return 4\n    p = slotted_prop(undocumented_getter)\n    assert getattr(p, '__doc__', None) is None, ('assertIsNone', getattr(p, '__doc__', None))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
-      "ident": "_PropertyUnreachableAttribute.test_get_property",
+      "ident": "PropertySubclassTests.test_property_no_doc_on_getter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "class PropertySub(property):\n    \"\"\"This is a subclass of property\"\"\"\n\ndef _t():\n\n    class NoDoc:\n\n        @property\n        def __doc__(self):\n            raise AttributeError\n    assert property(NoDoc()).__doc__ == None, ('assertEqual', property(NoDoc()).__doc__, None)\n    assert PropertySub(NoDoc()).__doc__ == None, ('assertEqual', PropertySub(NoDoc()).__doc__, None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PropertyUnreachableAttributeWithName.test_get_property",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
     },
     {
-      "ident": "_PropertyUnreachableAttribute.test_set_property",
+      "ident": "PropertyUnreachableAttributeWithName.test_set_property",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
     },
     {
-      "ident": "_PropertyUnreachableAttribute.test_del_property",
+      "ident": "PropertyUnreachableAttributeWithName.test_del_property",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
     }
@@ -145,25 +177,21 @@
       "reason": "decorator:unittest.skipIf"
     },
     {
-      "ident": "PropertyTests.test_property_decorator_baseclass",
-      "reason": "self.assertNotHasAttr"
+      "ident": "PropertyUnreachableAttributeNoName.test_get_property",
+      "reason": "unresolved-name:_format_exc_msg"
     },
     {
-      "ident": "PropertyTests.test_property_decorator_subclass",
-      "reason": "unresolved-name:PropertyDel"
+      "ident": "PropertyUnreachableAttributeNoName.test_set_property",
+      "reason": "unresolved-name:_format_exc_msg"
     },
     {
-      "ident": "PropertyTests.test_property_decorator_doc",
-      "reason": "unresolved-name:PropertyDocBase"
-    },
-    {
-      "ident": "PropertySubclassTests.test_property_no_doc_on_getter",
-      "reason": "unresolved-name:PropertySub"
+      "ident": "PropertyUnreachableAttributeNoName.test_del_property",
+      "reason": "unresolved-name:_format_exc_msg"
     }
   ],
   "counts": {
-    "extracted": 28,
-    "pinned": 5,
-    "quarantined": 23
+    "extracted": 31,
+    "pinned": 9,
+    "quarantined": 22
   }
 }

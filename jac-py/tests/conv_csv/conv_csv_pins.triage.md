@@ -14,17 +14,17 @@
 | Test_Csv.test_writer_kw_attrs | PASS | |
 | Test_Csv.test_reader_dialect_attrs | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', \',\', \'-\')"'> |
 | Test_Csv.test_writer_dialect_attrs | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', \',\', \'-\')"'> |
-| Test_Csv.test_write_arg_valid | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_write_bigfield | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_write_quoting | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_write_escape | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_write_lineterminator | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC TypeError 'StringIO.**enter**() takes no arguments (1 given)'"> |
-| Test_Csv.test_write_iterable | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_writerows | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_writerows_with_none | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_write_empty_fields | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_write_empty_fields_space_delimiter | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_writerows_errors | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
+| Test_Csv.test_write_arg_valid | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_write_bigfield | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_write_quoting | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_write_escape | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_write_lineterminator | GUEST-WRONG-OUTPUT | `GOT<"ORACLE_EXC TypeError 'StringIO.__enter__() takes no arguments (1 given)'">` |
+| Test_Csv.test_write_iterable | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_writerows | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_writerows_with_none | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_write_empty_fields | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_write_empty_fields_space_delimiter | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_writerows_errors | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | Test_Csv.test_read_eol | PASS | |
 | Test_Csv.test_read_nul | PASS | |
 | Test_Csv.test_read_delimiter | PASS | |
@@ -32,17 +32,17 @@
 | Test_Csv.test_read_skipinitialspace | PASS | |
 | Test_Csv.test_read_space_delimiter | PASS | |
 | Test_Csv.test_read_linenum | PASS | |
-| Test_Csv.test_roundtrip_quoteed_newlines | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| Test_Csv.test_roundtrip_escaped_unquoted_newlines | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
+| Test_Csv.test_roundtrip_quoteed_newlines | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| Test_Csv.test_roundtrip_escaped_unquoted_newlines | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | Test_Csv.test_reader_reentrant_iterator | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "\'ReentrantIter\' object is not iterable"'> |
 | TestDialectRegistry.test_registry_badargs | PASS | |
 | TestDialectRegistry.test_incomplete_dialect | PASS | |
-| TestDialectRegistry.test_space_dialect | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDialectRegistry.test_dialect_apply | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
+| TestDialectRegistry.test_space_dialect | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDialectRegistry.test_dialect_apply | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | TestDialectRegistry.test_copy | PASS | |
 | TestDialectRegistry.test_pickle | PASS | |
-| TestDictFields.test_writeheader_return_value | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_write_simple_dict | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
+| TestDictFields.test_writeheader_return_value | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_write_simple_dict | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | TestDictFields.test_write_multiple_dict_rows | PASS | |
 | TestDictFields.test_write_no_fields | PASS | |
 | TestDictFields.test_typo_in_extrasaction_raises_error | PASS | |
@@ -54,26 +54,26 @@
 | TestDictFields.test_dict_writer_fieldnames_rejects_iter | PASS | |
 | TestDictFields.test_dict_writer_fieldnames_accepts_list | PASS | |
 | TestDictFields.test_dict_reader_fieldnames_is_optional | PASS | |
-| TestDictFields.test_read_dict_fields | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_read_dict_no_fieldnames | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_read_dict_fieldnames_from_file | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_read_dict_fieldnames_chain | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_read_long | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_read_long_with_rest | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_read_long_with_rest_no_fieldnames | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestDictFields.test_read_short | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
+| TestDictFields.test_read_dict_fields | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_read_dict_no_fieldnames | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_read_dict_fieldnames_from_file | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_read_dict_fieldnames_chain | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_read_long | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_read_long_with_rest | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_read_long_with_rest_no_fieldnames | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestDictFields.test_read_short | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | TestDictFields.test_read_multi | PASS | |
 | TestDictFields.test_read_with_blanks | PASS | |
 | TestDictFields.test_read_semi_sep | PASS | |
-| TestArrayWrites.test_int_write | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestArrayWrites.test_double_write | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestArrayWrites.test_float_write | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestArrayWrites.test_char_write | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
+| TestArrayWrites.test_int_write | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestArrayWrites.test_double_write | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestArrayWrites.test_float_write | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestArrayWrites.test_char_write | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | TestDialectValidity.test_invalid_chars | PASS | |
 | TestSniffer.test_guess_quote_and_delimiter | PASS | |
-| TestUnicode.test_unicode_read | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| TestUnicode.test_unicode_write | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
-| KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer | GUEST-WRONG-OUTPUT | RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>"> |
+| TestUnicode.test_unicode_read | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| TestUnicode.test_unicode_write | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | KeyOrderingTest.test_ordered_dict_reader | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', [{\'FirstName\': \'Eric\', \'LastName\': \'Idle\'}, {\'FirstName\': \'Graham\', \'LastName\': \'Chapman\', None: [\'Over1\', \'Over2\']}, {\'FirstName\': \'Under1\', \'LastName\': None}, {\'FirstName\': \'John\', \'LastName\': \'Cleese\'}], [OrderedDict({\'FirstName\': \'Eric\', \'LastName\': \'Idle\'}), OrderedDict({\'FirstName\': \'Graham\', \'LastName\': \'Chapman\', None: [\'Over1\', \'Over2\']}), OrderedDict({\'FirstName\': \'Under1\', \'LastName\': None}), OrderedDict({\'FirstName\': \'John\', \'LastName\': \'Cleese\'})])"'> |
 | MiscTestCase.test_lazy_import | GUEST-WRONG-OUTPUT | RUN<"ModuleNotFoundError: No module named 'test.support.import_helper'"> |
 | MiscTestCase.test_subclassable | PASS | |
@@ -150,7 +150,7 @@
 ### KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### MiscTestCase.test_lazy_import (GUEST-WRONG-OUTPUT)
 
@@ -160,92 +160,92 @@
 ### TestArrayWrites.test_char_write (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestArrayWrites.test_double_write (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestArrayWrites.test_float_write (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestArrayWrites.test_int_write (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDialectRegistry.test_dialect_apply (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDialectRegistry.test_space_dialect (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_fieldnames_chain (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_fieldnames_from_file (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_fields (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_no_fieldnames (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_long (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_long_with_rest (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_long_with_rest_no_fieldnames (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_short (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_write_simple_dict (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_writeheader_return_value (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestUnicode.test_unicode_read (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestUnicode.test_unicode_write (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_reader_arg_valid (GUEST-WRONG-OUTPUT)
 
@@ -265,52 +265,52 @@
 ### Test_Csv.test_roundtrip_escaped_unquoted_newlines (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_roundtrip_quoteed_newlines (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_arg_valid (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_bigfield (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_empty_fields (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_empty_fields_space_delimiter (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_escape (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_iterable (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_lineterminator (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<"ORACLE_EXC TypeError 'StringIO.**enter**() takes no arguments (1 given)'">
+- got: `GOT<"ORACLE_EXC TypeError 'StringIO.__enter__() takes no arguments (1 given)'">`
 
 ### Test_Csv.test_write_quoting (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_writer_arg_valid (GUEST-WRONG-OUTPUT)
 
@@ -325,14 +325,14 @@
 ### Test_Csv.test_writerows (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_writerows_errors (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_writerows_with_none (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>">
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
