@@ -605,6 +605,29 @@ test "vm: CHECK_EXC_MATCH filters exception type" {
     );
 }
 
+# vm-opcode: OP_CHECK_EXC_MATCH
+# Regression: an except target that is not a BaseException subclass -- an
+# instance like BaseException(), a string, or a non-exception class -- must
+# raise TypeError instead of silently failing to match
+# (CPython _PyEval_CheckExceptTypeValid).
+test "vm: CHECK_EXC_MATCH rejects non-exception-class targets" {
+    setup = "";
+    body = (
+        "try:\n"
+        "    raise Exception\n"
+        "except BaseException():\n"
+        "    result = 'caught'\n"
+    );
+    host_exc = host_raises(setup, body);
+    assert host_exc is not None;
+    ns: dict[str, PyObj] = {};
+    out = jac_run_oracle(setup, body, "exec", ns);
+    assert is_error(out);
+    err = out as PyError;
+    assert err.exception.type_name == (host_exc[0] as str);
+    assert err.exception.message == (host_exc[1] as str);
+}
+
 # vm-opcode: OP_POP_EXCEPT
 test "vm: POP_EXCEPT exits except handler" {
     assert_vm_value_matches_host(

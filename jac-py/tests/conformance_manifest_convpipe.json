@@ -52,9 +52,9 @@
       "conversion_meta": "jac-py/tests/conv_baseexception/baseexception.conv.json",
       "jacpython_results": {
         "baseexception": {
-          "passed": 3,
+          "passed": 6,
           "total": 6,
-          "notes": "3/6 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+          "notes": "6/6 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
         }
       }
     },
