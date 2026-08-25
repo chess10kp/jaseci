@@ -141,6 +141,5 @@ jac/jaclang/compiler/native_materialize.jac
 jac-py/jacpython/_tmp_*.jac
 jac-py/jacpython/_repro*.jac
 jac-py/jacpython/_smoke_*.jac
-jac-py/jacpython/_fuzz_*.jac
 jac-py/jacpython/_t[0-9]*.jac
 jac-py/jacpython/zz_*tmp*.jac
