@@ -44,6 +44,7 @@ import copy
 import doctest
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -418,8 +419,38 @@ def _rewrite_raises(call: ast.Call, regex: bool) -> list[ast.stmt]:
             starargs = [
                 ast.Starred(value=ast.Tuple(elts=extra, ctx=ast.Load()), ctx=ast.Load())
             ]
-        invoke: ast.expr = ast.Call(func=fn, args=starargs, keywords=list(call.keywords))
-        tried: list[ast.stmt] = [ast.Expr(value=invoke)]
+        if isinstance(fn, ast.Starred):
+            # assertRaises(E, *args, **kw): callable and its arguments arrive
+            # packed in one star-iterable, so dispatch dynamically.
+            iter_name = ast.Name(id="_raises_iter", ctx=ast.Load())
+            tried = [
+                ast.Assign(
+                    targets=[ast.Name(id="_raises_iter", ctx=ast.Store())],
+                    value=ast.Call(
+                        func=ast.Name(id="iter", ctx=ast.Load()),
+                        args=[fn.value],
+                        keywords=[],
+                    ),
+                ),
+                ast.Assign(
+                    targets=[ast.Name(id="_raises_fn", ctx=ast.Store())],
+                    value=ast.Call(
+                        func=ast.Name(id="next", ctx=ast.Load()),
+                        args=[iter_name],
+                        keywords=[],
+                    ),
+                ),
+                ast.Expr(
+                    value=ast.Call(
+                        func=ast.Name(id="_raises_fn", ctx=ast.Load()),
+                        args=[ast.Starred(value=iter_name, ctx=ast.Load())],
+                        keywords=list(call.keywords),
+                    )
+                ),
+            ]
+        else:
+            invoke: ast.expr = ast.Call(func=fn, args=starargs, keywords=list(call.keywords))
+            tried = [ast.Expr(value=invoke)]
     else:
         if regex:
             raise Unsupported("assertRaisesRegex call form")
@@ -490,9 +521,63 @@ def _is_self_assert_stmt(stmt: ast.stmt) -> bool:
     )
 
 
+class _ContextVocabRewriter(ast.NodeTransformer):
+    """unittest context vocabulary whose cleanup side has no effect here.
+
+    A pin is a one-shot process: context-manager ``__exit__``/cleanup
+    callbacks registered during setUp would only run after the test result
+    is already captured. ``self.enterContext(cm)`` therefore maps to plain
+    ``cm.__enter__()`` and bare ``self.addCleanup(...)`` statements are
+    dropped. Anything else is left untouched so the usual
+    unsupported-vocabulary reasons surface downstream unchanged.
+    """
+
+    def visit_Expr(self, node: ast.Expr) -> ast.stmt | None:
+        value = node.value
+        if (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Attribute)
+            and isinstance(value.func.value, ast.Name)
+            and value.func.value.id == "self"
+            and value.func.attr == "addCleanup"
+        ):
+            return None  # teardown-only; never runs in a one-shot snippet
+        self.generic_visit(node)
+        return node
+
+    def visit_Call(self, node: ast.Call) -> ast.expr:
+        self.generic_visit(node)
+        func = node.func
+        if (
+            isinstance(func, ast.Attribute)
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "self"
+            and func.attr == "enterContext"
+            and len(node.args) == 1
+            and not node.keywords
+        ):
+            return ast.Call(
+                func=ast.Attribute(value=node.args[0], attr="__enter__", ctx=ast.Load()),
+                args=[],
+                keywords=[],
+            )
+        return node
+
+
+def _rewrite_context_vocab(block: list[ast.stmt]) -> list[ast.stmt]:
+    rewriter = _ContextVocabRewriter()
+    out: list[ast.stmt] = []
+    for stmt in block:
+        new = rewriter.visit(stmt)
+        if new is not None:
+            out.append(new)
+    return out
+
+
 def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
     """Recursively rewrite a statement list; returns (new stmts, needs_re)."""
     needs_re = False
+    stmts = _rewrite_context_vocab(stmts)
 
     def rec(block: list[ast.stmt]) -> list[ast.stmt]:
         nonlocal needs_re
@@ -1212,6 +1297,11 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
     candidates = expanded
 
     for cls_name, ident, body_stmts in candidates:
+        # Deep-copy per candidate: rewriting mutates statement nodes in place
+        # (assertion lifting, helper-call renaming) and expansion shares one
+        # body across every concrete leaf -- without a copy the first leaf's
+        # rewriting would leak into the rest.
+        body_stmts = [copy.deepcopy(s) for s in body_stmts]
         try:
             extra_prelude: list[ast.stmt] = []
             ns_block: list[ast.stmt] = []
@@ -1722,8 +1812,77 @@ def render_snippet(
 # Host oracle capture
 
 
+_ORACLE_PY_CACHE: dict[str, str] = {}
+
+
+def _pinned_lib_version(cpython_root: Path) -> str | None:
+    """"major.minor"" of the pinned CPython checkout, from its headers."""
+    header = cpython_root / "Include" / "patchlevel.h"
+    try:
+        for line in header.read_text(encoding="utf-8").splitlines():
+            if line.startswith("#define PY_VERSION"):
+                raw = line.split("\"", 1)[1].rsplit("\"", 1)[0]
+                parts = raw.split(".")
+                return f"{parts[0]}.{parts[1]}"
+    except OSError:
+        pass
+    return None
+
+
+def _oracle_interpreter(cpython_lib: Path) -> str:
+    """Host interpreter whose stdlib is consistent with ``cpython_lib``.
+
+    The pinned Lib dir sits ahead of the stdlib on sys.path during oracle
+    capture; when its version differs from ``sys.executable`` the pure-Lib
+    modules shadow their C-extension counterparts and imports die loudly
+    (``AssertionError: SRE module mismatch`` for ``re``). Probe candidates
+    with the exact capture environment and keep the first that survives;
+    fall back to ``sys.executable`` when nothing does (the failure then
+    surfaces per-snippet as before).
+    """
+    env_key = str(cpython_lib)
+    if env_key in _ORACLE_PY_CACHE:
+        return _ORACLE_PY_CACHE[env_key]
+    env = {
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "HOME": tempfile.gettempdir(),
+        "PYTHONPATH": str(cpython_lib),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    candidates = [sys.executable]
+    cpython_root = cpython_lib.parent
+    exe = cpython_root / "python"
+    if exe.is_file():
+        candidates.append(str(exe))
+    # A matching interpreter installed on PATH (version taken from the
+    # pinned checkout itself, e.g. python3.14 for a 3.14.x Lib).
+    ver = _pinned_lib_version(cpython_root)
+    if ver:
+        on_path = shutil.which(f"python{ver}")
+        if on_path:
+            candidates.append(on_path)
+    picked = sys.executable
+    for exe in candidates:
+        try:
+            proc = subprocess.run(
+                [exe, "-c", "import re"],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if proc.returncode == 0:
+            picked = exe
+            break
+    _ORACLE_PY_CACHE[env_key] = picked
+    return picked
+
+
 def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
     """Run one snippet under host CPython in a sandboxed subprocess."""
+    oracle_py = _oracle_interpreter(cpython_lib)
     with tempfile.TemporaryDirectory(prefix="conv_suite_") as td:
         tdp = Path(td)
         script = tdp / "oracle_snippet.py"
@@ -1736,7 +1895,7 @@ def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
         }
         try:
             proc = subprocess.run(
-                [sys.executable, str(script)],
+                [oracle_py, str(script)],
                 cwd=str(tdp),
                 env=env,
                 capture_output=True,
@@ -1797,7 +1956,7 @@ def emit_pin_file(pins: list[Pinned], source_file: Path) -> str:
     return "\n".join(out)
 
 
-def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) -> Path:
+def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int, name: str | None = None) -> Path:
     doc: dict = {}
     if _MANIFEST.is_file():
         doc = json.loads(_MANIFEST.read_text(encoding="utf-8"))
@@ -1817,7 +1976,7 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
         "oracle_tests": [rel_pins],
         "libtest_snippets": [],
         "notes": f"{total} output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-        "conversion_meta": str(Path(outdir.relative_to(_REPO)) / f"{stem}.conv.json")
+        "conversion_meta": str(Path(outdir.relative_to(_REPO)) / f"{name or stem}.conv.json")
         if outdir.is_relative_to(_REPO)
         else f"{stem}.conv.json",
     }
@@ -1898,10 +2057,15 @@ def run_conversion(source: Path, outdir: Path, name: str, cpython_lib: Path, wri
     meta["hashes"] = {"pins_jac": file_sha256(pins_path)}
     meta_path = outdir / "conversion.json"
     meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    # The manifest (and diff_runner's legacy fallback) advertise the sidecar
+    # as "<name>.conv.json"; emit that alias so conversion_meta stays truthful.
+    (outdir / f"{name}.conv.json").write_text(meta_path.read_text(encoding="utf-8"), encoding="utf-8")
 
     manifest_path = None
     if write_manifest:
-        manifest_path = write_manifest_entry(name.removeprefix("conv_"), outdir, meta["pins_file"], len(survivors))
+        manifest_path = write_manifest_entry(
+            name.removeprefix("conv_"), outdir, meta["pins_file"], len(survivors), name=name
+        )
 
     return {
         "pins_file": str(pins_path),
