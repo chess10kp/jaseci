@@ -535,6 +535,10 @@ def _jac_generator_type():
     import types
     return types.GeneratorType
 
+def _jac_traceback_type():
+    import types
+    return types.TracebackType
+
 def _jac_coroutine_type():
     import types
     return types.CoroutineType
@@ -5120,6 +5124,11 @@ def py_type_of(o: PyObj) -> PyObj {
         }
         return from_host(_jac_generator_type());
     }
+    if isinstance(o, PyTraceback) {
+        # CPython: type(e.__traceback__) is exactly `traceback`
+        # (types.TracebackType); the to_host fallthrough degrades to object.
+        return from_host(_jac_traceback_type());
+    }
     ho_r = to_host_coerce(o);
     ho = ho_r[1];
     if not ((ho_r[0] as bool)) {
@@ -7048,6 +7057,14 @@ def py_attr(value: PyObj, name: str) -> PyObj {
     if is_error(result) and isinstance(value, PyException) and name == "add_note" {
         return PyAddNoteMethod(t="add_note_method", target=value as PyException);
     }
+    # BaseException.with_traceback(tb): logging/trio-style re-raise helpers
+    # (`raise exc.with_traceback(exc.__traceback__)`) bind it as a native
+    # method so the traceback swap stays in-VM on the live PyException.
+    if is_error(result) and isinstance(value, PyException) and name == "with_traceback" {
+        return PyWithTracebackMethod(
+            t="with_traceback_method", target=value as PyException
+        );
+    }
     if is_error(result) and isinstance(value, PyExcGroup)
         and (name == "split" or name == "subgroup") {
         return PyExcGroupMethod(
@@ -8385,6 +8402,28 @@ obj PyAddNoteMethod(PyObj) {
         notes.append(note);
         self.target.type_fields["__notes__"] = PyList(t="list", items=notes);
         return py_none();
+    }
+}
+
+obj PyWithTracebackMethod(PyObj) {
+    has target: PyException;
+
+    # BaseException.with_traceback: accepts a traceback or None, swaps the
+    # exception's __traceback__ in place, and returns self (CPython
+    # BaseException_with_traceback + Py_RETURN_SELF).
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) != 1 {
+            return py_error(
+                "TypeError",
+                "with_traceback() takes exactly one argument ("
+                + str(len(args)) + " given)"
+            );
+        }
+        if not isinstance(args[0], PyTraceback) and args[0].t != "none" {
+            return py_error("TypeError", "__traceback__ must be a traceback or None");
+        }
+        self.target.traceback = args[0];
+        return self.target as PyObj;
     }
 }
 
