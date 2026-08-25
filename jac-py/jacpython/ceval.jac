@@ -53,23 +53,34 @@ def _jac_host_dir(value):
     except BaseException as exc:
         return _jac_host_error(exc)
 
+def _jac_resolve_kind_type(kind):
+    # One resolution table for native-base kind names -> host type. Dotted
+    # kinds are qualified C-extension types (e.g. '_random.Random') whose
+    # module must be imported; plain kinds resolve through builtins.
+    import builtins
+    import importlib
+    import types
+    if kind == "object":
+        return builtins.object
+    if kind == "type":
+        return builtins.type
+    if kind == "function":
+        return types.FunctionType
+    if kind == "method":
+        return types.MethodType
+    if "." in kind:
+        mod_name, _, attr = kind.rpartition(".")
+        try:
+            return getattr(importlib.import_module(mod_name), attr)
+        except BaseException:
+            return None
+    return getattr(builtins, kind, None)
+
 def _jac_host_type_surface(kind):
     # Unsorted __dict__ keys of a HOST type surface -- the static half of
     # CPython's dir() merge_class_dict walk (object/type/BaseException/...).
-    import builtins
-    import types
     try:
-        target = None
-        if kind == "object":
-            target = builtins.object
-        elif kind == "type":
-            target = builtins.type
-        elif kind == "function":
-            target = types.FunctionType
-        elif kind == "method":
-            target = types.MethodType
-        else:
-            target = getattr(builtins, kind, None)
+        target = _jac_resolve_kind_type(kind)
         if target is None:
             raise TypeError("unknown type surface '" + kind + "'")
         return (True, [str(n) for n in vars(target)])
@@ -83,19 +94,8 @@ def _jac_host_type_attr(kind, name):
     # _jac_host_type_surface, which enumerates this dict for dir(); this fetches
     # one entry's live value so `Cls.__repr__` returns the byte-exact host
     # wrapper object pprint-style dispatch tables key on.
-    import builtins
-    import types
     try:
-        if kind == "object":
-            target = builtins.object
-        elif kind == "type":
-            target = builtins.type
-        elif kind == "function":
-            target = types.FunctionType
-        elif kind == "method":
-            target = types.MethodType
-        else:
-            target = getattr(builtins, kind, None)
+        target = _jac_resolve_kind_type(kind)
         if target is None:
             raise TypeError("unknown type surface '" + kind + "'")
         return (True, getattr(target, name))
@@ -360,6 +360,51 @@ def _jac_builtin_base_name(host_val) -> str:
             return n
     return ""
 
+def _jac_ext_base_name(host_val) -> str:
+    # Qualified name ('_random.Random') of a C-extension type -- the
+    # super()/boxing bridge for Lib modules that subclass extension types
+    # (Lib/random.py: class Random(_random.Random), whose seed() chains to
+    # super().seed). Classes born from a PYTHON class statement are excluded:
+    # PEP 649 stamps __firstlineno__ on exactly those, while C-defined types
+    # -- static OR multi-phase heap (_random.Random is a heap type on 3.14+)
+    # -- never carry it, so the old Py_TPFLAGS_HEAPTYPE probe misclassified
+    # modern extension types as python-level. Identity verification against
+    # the imported module below keeps stale __module__/__qualname__ pairs
+    # from bridging onto the wrong type.
+    if not isinstance(host_val, type):
+        return ""
+    try:
+        if bool(_jac_is_exception_type(host_val)):
+            return ""
+        if getattr(host_val, "__name__", "") in _JAC_BUILTIN_BASES:
+            return ""
+        # Python-defined class marker (PEP 649): see docstring.
+        if getattr(host_val, "__firstlineno__", None) is not None:
+            return ""
+        mod = getattr(host_val, "__module__", None)
+        qual = getattr(host_val, "__qualname__", None)
+        if not mod or not qual:
+            return ""
+        import importlib
+        target = getattr(importlib.import_module(str(mod)), str(qual))
+        if target is not host_val:
+            return ""
+        return str(mod) + "." + str(qual)
+    except BaseException:
+        return ""
+
+def _jac_construct_ext(qualname, raw_args):
+    # Construct an instance of an imported C-extension type by qualified name
+    # (_random.Random() -> the host MT-state object boxed as the subclass
+    # instance's base value).
+    import importlib
+    mod_name, _, attr = str(qualname).rpartition(".")
+    try:
+        t = getattr(importlib.import_module(mod_name), attr)
+        return (True, t(*raw_args))
+    except BaseException as exc:
+        return _jac_host_error(exc)
+
 def _jac_construct_builtin(name, raw_args):
     import builtins
     # Unknown names (a user Exception subclass) must degrade gracefully -- the
@@ -423,22 +468,35 @@ def _jac_instantiate_registered_exception(qname, raw_args):
     except BaseException as exc:
         return _jac_host_error(exc)
 
+def _jac_resolve_new_type(name):
+    # Plain names resolve through builtins; dotted names are qualified
+    # C-extension types (_random.Random) resolved through their module --
+    # mirroring construct_native_base's split so native-new paths agree on
+    # the same kind-name grammar.
+    import builtins
+    if "." not in name:
+        return builtins.__dict__[name]
+    mod_name, _, attr = str(name).rpartition(".")
+    import importlib
+    return getattr(importlib.import_module(mod_name), attr)
+
 def _jac_builtin_new(name, host_cls, raw_args):
     # builtin.__new__(host_cls, *raw_args): the host builtin constructor over a
     # HOST class (namedtuple's dynamic tuple subclass). Keeps the host subclass
     # instance intact instead of collapsing it to a native value.
-    import builtins
-    t = getattr(builtins, name)
+    try:
+        t = _jac_resolve_new_type(name)
+    except BaseException as exc:
+        return _jac_host_error(exc)
     try:
         return (True, t.__new__(host_cls, *raw_args))
     except BaseException as exc:
         return _jac_host_error(exc)
 
 def _jac_builtin_new_slot(name):
-    import builtins
     if name == "" or name == "object":
         return object.__new__
-    return getattr(builtins, name).__new__
+    return _jac_resolve_new_type(str(name)).__new__
 
 def _jac_isinstance_of_builtin(host_val, name) -> bool:
     # True iff host_val is an instance of the named builtin type.
@@ -3197,8 +3255,9 @@ obj PyClass(PyObj) {
                 # With no user __init__ the MRO-resolved initializer is the
                 # builtin base's own -- it rejects keywords exactly as the bare
                 # constructor does (`Sub(sequence=())` must TypeError).
+                base_display = self.native_base.rpartition(".")[2];
                 return py_error(
-                    "TypeError", self.native_base + "() takes no keyword arguments"
+                    "TypeError", base_display + "() takes no keyword arguments"
                 );
             }
             box_args = args;
@@ -10046,6 +10105,17 @@ obj PyBuiltinSuperMethod(PyObj) {
                     t="dict_method", target=(b as PyDict), name="update"
                 ).tp_call(args, kwargs);
             }
+            # An extension-type base (boxed host value): super().__init__(...)
+            # runs the host type's own initializer over the live instance
+            # (_random.Random.__init__(x) seeds the MT state) instead of being
+            # dropped like an immutable-builtin's inherited object.__init__.
+            if isinstance(b, PyHostProxy) {
+                host_init = py_attr(b, "__init__");
+                if is_error(host_init) {
+                    return host_init;
+                }
+                return (host_init as PyObj).tp_call(args, kwargs);
+            }
             return py_none();
         }
         if n == "__setitem__" {
@@ -10251,7 +10321,10 @@ def construct_native_base(name: str, args: list[PyObj]) -> PyObj {
         }
         raw_args.append(ha);
     }
-    result = _jac_construct_builtin(name, raw_args);
+    # Dotted names are qualified C-extension types; plain names resolve
+    # through builtins.
+    result = _jac_construct_ext(name, raw_args) if "." in name
+        else _jac_construct_builtin(name, raw_args);
     if host_result_ok(result) {
         return from_host(result[1]);
     }
@@ -10541,6 +10614,14 @@ def compute_native_base(bases: list[PyObj]) -> str {
                 builtin_name: str = str(_jac_builtin_base_name(hostval));
                 if builtin_name != "" and builtin_name != "object" {
                     native_base = builtin_name;
+                } else {
+                    # A static C-extension type base (e.g. _random.Random)
+                    # boxes too -- CPython stores the extension value as the
+                    # instance's layout, and super() chains onto it.
+                    ext_name: str = str(_jac_ext_base_name(hostval));
+                    if ext_name != "" {
+                        native_base = ext_name;
+                    }
                 }
             }
         }
