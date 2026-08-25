@@ -599,6 +599,33 @@ obj P2OpcodeStackEffectFn(PyObj) {
     }
 }
 
+obj P2SupportGcCollectFn(PyObj) {
+    # CPython test.support.gc_collect (pinned 3.14.6): "Force as many objects
+    # as possible to be collected" -- three full gc.collect() passes so finalizers
+    # enqueued by earlier passes run to completion. Bridged to the HOST gc:
+    # guest objects are ordinary host objects, so host collection releases the
+    # refcycles these helpers exist for.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        gc_mod_res = _jac_host_import("gc", PyList(t="list", items=[PyStr(t="str", val="*")]));
+        if not ((gc_mod_res[0] as bool)) {
+            return py_error(str(gc_mod_res[1]), str(gc_mod_res[2]));
+        }
+        collect_res = _jac_host_getattr(gc_mod_res[1], "collect");
+        if not ((collect_res[0] as bool)) {
+            return py_error(str(collect_res[1]), str(collect_res[2]));
+        }
+        i = 0;
+        while i < 3 {
+            res = _jac_host_call(collect_res[1], [], {});
+            if not ((res[0] as bool)) {
+                return py_error(str(res[1]), str(res[2]));
+            }
+            i += 1;
+        }
+        return py_none();
+    }
+}
+
 obj P2SupportPassthroughFn(PyObj) {
     # Identity decorator body for requires_debug_ranges().
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
@@ -670,6 +697,7 @@ def p2_libtest_reset {
         "is_apple": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
+        "gc_collect": P2SupportGcCollectFn(t="function"),
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
     os_helper_attrs: dict[str, PyObj] = {
@@ -1137,6 +1165,27 @@ test "layer_p2_libtest: collections_namedtuple snippet prints ok on JacPython" {
         "assert R._fields == ('x', '_1')\n"
         "Q = collections.namedtuple('Q', ['x', 'y'])\n"
         "assert Q._fields == ('x', 'y')\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: support_gc_collect releases refcycle snippet prints ok on JacPython" {
+    # Mirrors the CPython Lib/test pins that call support.gc_collect() after
+    # dropping their last strong reference (ClearTest.test_clear_locals,
+    # FinalizationTest.*): the helper must exist on the shim, bridge to a
+    # real collection pass, and let the dropped object die.
+    snippet = (
+        "import weakref\n"
+        "from test import support\n"
+        "class Node:\n"
+        "    pass\n"
+        "a = Node()\n"
+        "wr = weakref.ref(a)\n"
+        "del a\n"
+        "support.gc_collect()\n"
+        "assert wr() is None, wr()\n"
         "print('ok')\n"
     );
     (ok, detail) = p2_libtest_expect_ok(snippet);
