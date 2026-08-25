@@ -2,13 +2,13 @@
 
 Staged ``jac-py/Modules/binasciimodule.{c,jac}`` stay the c2jac corpus
 pair (staging=lift); this file gates the product-path facade semantics in
-jac-py/jacpython/binasciimodule.jac against the pinned host oracle.
+jac-py/jacpython/binascii.jac against the pinned host oracle.
 Expected values and error messages were verified against the host stdlib
 ``binascii`` (the pinned CPython on this LP64 little-endian host) at
 authoring time.
 """
 
-import from binasciimodule {
+import from binascii {
     a2b_base64,
     a2b_hex,
     a2b_qp,
