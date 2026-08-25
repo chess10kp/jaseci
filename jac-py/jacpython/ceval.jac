@@ -2279,9 +2279,12 @@ obj PyHostProxy(PyObj) {
             return py_type_of(args[0]);
         }
         # 3-arg type(name, bases, ns): reject __mro_entries__ / non-class bases
-        # with CPython's messages BEFORE host routing (the host would see standin
-        # proxies and raise a different error than the guest-visible truth).
-        if len(args) == 3 and len(kwargs) == 0 and bool(_jac_is_type_type(self.val)) {
+        # with CPython's messages BEFORE building. Then construct IN-VM per
+        # CPython type_call: resolve the most-derived metaclass among 'type'
+        # and the bases' metaclasses and build through it. Host routing here
+        # minted standins and lost class identity entirely (enum's
+        # _simple_enum converts classes through exactly this shape).
+        if len(args) == 3 and bool(_jac_is_type_type(self.val)) {
             raw_bases: list[PyObj] = [];
             if isinstance(args[1], PyTuple) {
                 for tb in (args[1] as PyTuple).items {
@@ -2296,6 +2299,44 @@ obj PyHostProxy(PyObj) {
             if rejected is not None {
                 return rejected;
             }
+            winner: any = None;
+            conflict = False;
+            for tb3 in raw_bases {
+                if not isinstance(tb3, PyClass) {
+                    continue;
+                }
+                bm3 = metaclass_of(tb3 as PyClass);
+                if bm3 is None or not isinstance(bm3, PyClass) {
+                    continue;
+                }
+                if winner is None {
+                    winner = bm3;
+                } elif py_issubclass(bm3 as PyObj, winner as PyObj) {
+                    # current winner stays most-derived
+                } elif py_issubclass(winner as PyObj, bm3 as PyObj) {
+                    winner = bm3;
+                } else {
+                    conflict = True;
+                }
+            }
+            if conflict {
+                return py_error("TypeError", "metaclass conflict");
+            }
+            ns_obj = args[2];
+            if winner is not None {
+                made_t = py_invoke(
+                    winner as PyObj, [args[0], args[1], ns_obj], kwargs
+                );
+                if is_error(made_t) {
+                    return made_t;
+                }
+                return made_t;
+            }
+            built_t = type_new([self as PyObj, args[0], args[1], ns_obj], kwargs);
+            if is_error(built_t) {
+                return built_t;
+            }
+            return built_t;
         }
         # Zero-arg super() at a GENERIC call site (the proxy wraps the host
         # super TYPE): the compiler lowers every cell-backed super().attr to
@@ -2809,7 +2850,7 @@ obj PyClass(PyObj) {
             for fa in args {
                 factory_args.append(fa);
             }
-            return type_new(factory_args);
+            return type_new(factory_args, kwargs);
         }
         if has_user_new {
             new_args: list[PyObj] = [self];
@@ -9430,7 +9471,7 @@ obj PyNativeNew(PyObj) {
         # super().__new__ inside a metaclass __new__. Builds a PyClass tagged with
         # mcls as its metaclass so a subclass re-runs the same protocol.
         if self.base_name == "type" {
-            return type_new(args);
+            return type_new(args, kwargs);
         }
         # object.__new__(cls): a plain instance, no boxed builtin value. This is
         # the super().__new__(cls) / object.__new__(cls) path of a class whose
@@ -9734,9 +9775,34 @@ def super_lookup(defining_cls: PyObj, instance: PyObj, name: str) -> PyObj {
         }
         return PyNativeNew(t="native_new", base_name=base);
     }
+    # object.__init_subclass__ terminal: CPython's default accepts the class
+    # and zero keywords (returning None); keyword arguments raise TypeError.
+    # Without this terminal, user __init_subclass__ overrides that chain
+    # super().__init_subclass__() die with AttributeError.
+    if name == "__init_subclass__" {
+        return PyNoOpInitSubclass(t="noop_init_subclass");
+    }
     return py_error(
         "AttributeError", "'super' object has no attribute '" + name + "'"
     );
+}
+
+# The object.__init_subclass__ slot-wrapper view: cls positional, zero kwargs
+# succeed; any keyword raises CPython's exact refusal.
+obj PyNoOpInitSubclass(PyObj) {
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(kwargs) > 0 {
+            first = "";
+            for k in kwargs {
+                first = k;
+                break;
+            }
+            return py_error(
+                "TypeError", "__init_subclass__() got an unexpected keyword argument '" + first + "'"
+            );
+        }
+        return py_none();
+    }
 }
 
 # Box a builtin subclass instance by running the builtin constructor over the
@@ -10296,7 +10362,9 @@ def _jac_validate_type_bases(bases: list[PyObj]) -> PyObj | None {
     return None;
 }
 
-def type_new(args: list[PyObj]) -> PyObj {
+def type_new(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+    # kwargs = class-creation keywords left over by the metaclass chain
+    # (CPython type.__new__ forwards them to __init_subclass__).
     if len(args) < 4 {
         return py_error("TypeError", "type.__new__() takes name, bases, dict");
     }
@@ -10324,7 +10392,13 @@ def type_new(args: list[PyObj]) -> PyObj {
     for k in namespace {
         ordered.append(k);
     }
-    return apply_set_name_hooks(cls, ordered);
+    hooked = apply_set_name_hooks(cls, ordered);
+    if is_error(hooked) {
+        return hooked;
+    }
+    # CPython type_new_init_subclass: leftover class keywords reach the nearest
+    # base's __init_subclass__ (PEP 487). Previously dropped silently.
+    return apply_init_subclass(cls, kwargs);
 }
 
 # After a class is built, type.__new__ calls __set_name__(cls, name) on every
