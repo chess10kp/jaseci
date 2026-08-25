@@ -112,6 +112,66 @@ test "tuple rejects slice assignment with TypeError" {
 }
 
 
+# ---------------- dynamic slice objects (slice(...) ctor) ----------------
+
+# A runtime slice(1, 7, 2) value must behave exactly like its inline-syntax
+# twin l[1:7:2]: the ctor builds a native PySlice (PyHostProxy.tp_call slice
+# interception) so every subscript slot's isinstance(PySlice) gate fires.
+
+test "dynamic slice reads list, tuple, str, bytes like inline syntax" {
+    ns = vm_exec(
+        "l = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]\n"
+        "t = (0, 1, 2, 3, 4, 5, 6)\n"
+        "s_txt = 'abcdefghij'\n"
+        "b_txt = b'abcdefghij'\n"
+        "s = slice(1, 7, 2)\n"
+        "got_l = l[s]\n"
+        "same = l[s] == l[1:7:2]\n"
+        "got_t = t[s]\n"
+        "got_s = s_txt[s]\n"
+        "got_b = b_txt[s]\n"
+    );
+    assert vm_str(ns, "got_l") == "[1, 3, 5]", vm_str(ns, "got_l");
+    assert vm_str(ns, "same") == "True", vm_str(ns, "same");
+    assert vm_str(ns, "got_t") == "(1, 3, 5)", vm_str(ns, "got_t");
+    assert vm_str(ns, "got_s") == "bdf", vm_str(ns, "got_s");
+    assert vm_str(ns, "got_b") == "b'bdf'", vm_str(ns, "got_b");
+}
+
+test "dynamic slice assign resizes and steps like inline syntax" {
+    ns = vm_exec(
+        "l = [0, 0, 0, 0, 0]\n"
+        "s = slice(1, 4)\n"
+        "l[s] = [7, 8, 9]\n"
+        "after_step1 = str(l)\n"
+        "e = slice(0, 4, 2)\n"
+        "try:\n"
+        "    l[e] = [1]\n"
+        "except ValueError as exc:\n"
+        "    step_err = str(exc)\n"
+    );
+    assert vm_str(ns, "after_step1") == "[0, 7, 8, 9, 0]", vm_str(ns, "after_step1");
+    assert (
+        vm_str(ns, "step_err") == "attempt to assign sequence of size 1 to extended slice of size 2"
+    ), vm_str(ns, "step_err");
+}
+
+test "dynamic slice delete removes the range" {
+    ns = vm_exec(
+        "l = [0, 1, 2, 3, 4, 5]\n"
+        "s = slice(1, 5, 2)\n"
+        "del l[s]\n"
+    );
+    assert vm_str(ns, "l") == "[0, 2, 4, 5]", vm_str(ns, "l");
+}
+
+test "dynamic slice constructor raises CPython arity errors" {
+    assert vm_err("slice()\n") == "TypeError";
+    assert vm_err("slice(1, 2, 3, 4)\n") == "TypeError";
+    assert vm_err("slice(1, stop=2)\n") == "TypeError";
+}
+
+
 # ---------------- CHECK_EG_MATCH primitives ----------------
 
 # Leaf exception shaped exactly like a raised builtin: PyException with
