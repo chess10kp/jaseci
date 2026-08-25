@@ -3062,14 +3062,15 @@ obj PyException(PyObj) {
         # unset optional members read as None, exactly like the C structs'
         # zero-initialized slots.
         if name == "__notes__" {
-            # PEP 678 notes: reads before any add_note yield an empty list.
+            # PEP 678 notes: __notes__ is ABSENT until add_note() or explicit
+            # assignment (CPython baseexception_notes_get raises AttributeError
+            # when the notes pointer is NULL) -- never defaulted to [].
             stored = self.type_fields.get("__notes__");
             if stored is not None and isinstance(stored, PyList) {
                 items: list[PyObj] = [];
                 items.extend((stored as PyList).items);
                 return PyList(t="list", items=items);
             }
-            return PyList(t="list", items=[]);
         }
         if name in self.type_fields {
             return self.type_fields[name];
@@ -3147,6 +3148,21 @@ obj PyException(PyObj) {
                 return py_error("TypeError", "attribute value type must be bool");
             }
             self.suppress_context = value;
+            return py_none();
+        }
+        if name == "__notes__" {
+            # PEP 678: __notes__ accepts explicit assignment (CPython
+            # baseexception_notes_set converts via PySequence_List); the first
+            # write materializes the attribute -- it does not pre-exist.
+            items: list[PyObj] = [];
+            if isinstance(value, PyList) {
+                items.extend((value as PyList).items);
+            } elif isinstance(value, PyTuple) {
+                items.extend((value as PyTuple).items);
+            } else {
+                return py_error("TypeError", "'" + value.t + "' object is not iterable");
+            }
+            self.type_fields["__notes__"] = PyList(t="list", items=items);
             return py_none();
         }
         return py_error("AttributeError", name);

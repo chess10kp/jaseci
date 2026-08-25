@@ -497,6 +497,26 @@ test "p3 subgroup: nested filter rebuilds hierarchy, leaf identity holds" {
 
 # ---------------- notes threading (leaf identity consequence) ---------------
 
+test "p3 split: __notes__ absent until add_note" {
+    # Host oracle: False ## True ## ['n1']
+    # CPython BaseException_new leaves __notes__ unset; baseexception_notes_get
+    # raises AttributeError until add_note()/assignment materializes it.
+    # Anchor: Objects/exceptions.c baseexception_notes_get/set.
+    if not _kernel_ready() { return; }
+    assert _run_native(
+        "ve = ValueError('v')\n"
+        "a = hasattr(ve, '__notes__')\n"
+        "try:\n"
+        "    ve.__notes__\n"
+        "except AttributeError:\n"
+        "    b = True\n"
+        "else:\n"
+        "    b = False\n"
+        "ve.add_note('n1')\n"
+        "r = str(a) + ' ## ' + str(b) + ' ## ' + repr(ve.__notes__)\n"
+    ) == "False ## True ## ['n1']";
+}
+
 test "p3 split: __notes__ ride along via leaf identity" {
     # Host oracle: notes=['note-v'] ## True
     # Notes live on leaves, which keep identity through partitioning -- no
