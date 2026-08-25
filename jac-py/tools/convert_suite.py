@@ -1237,6 +1237,19 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
                 for binding in _prelude_bindings(item)
             }
             kept_prelude = _prune_prelude(candidate, pool, pool_names)
+            # The CPython test harness (test.support) is not part of any
+            # guest stdlib and is version-locked to the reference tree, so
+            # snippets depending on it can neither capture a host oracle nor
+            # replay on jacpython — quarantine instead of emitting dead pins.
+            for stmt in kept_prelude:
+                if isinstance(stmt, ast.Import):
+                    mods = [alias.name for alias in stmt.names]
+                elif isinstance(stmt, ast.ImportFrom) and stmt.module:
+                    mods = [stmt.module]
+                else:
+                    continue
+                if any(m == "test" or m.startswith("test.") for m in mods):
+                    raise Unsupported("unsupported-import:test.support")
             available = pool_names | _bound_names(ast.Module(body=kept_prelude, type_ignores=[]))
             _check_names(candidate, available)
         except Unsupported as exc:
@@ -1731,12 +1744,21 @@ def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
         env = {
             "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "HOME": str(tdp),
-            "PYTHONPATH": str(cpython_lib),
             "PYTHONDONTWRITEBYTECODE": "1",
         }
+        # The reference Lib dir must NOT shadow the host stdlib: a version-
+        # mismatched pure-Python ``re``/``sre`` on PYTHONPATH aborts with
+        # "SRE module mismatch". Append it instead so the host interpreter
+        # resolves its own stdlib first and the reference tree only supplies
+        # modules the host lacks.
+        driver = (
+            "import runpy, sys; "
+            f"sys.path.append({str(cpython_lib)!r}); "
+            f"runpy.run_path({str(script)!r}, run_name='__main__')"
+        )
         try:
             proc = subprocess.run(
-                [sys.executable, str(script)],
+                [sys.executable, "-c", driver],
                 cwd=str(tdp),
                 env=env,
                 capture_output=True,
@@ -1817,9 +1839,9 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
         "oracle_tests": [rel_pins],
         "libtest_snippets": [],
         "notes": f"{total} output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-        "conversion_meta": str(Path(outdir.relative_to(_REPO)) / f"{stem}.conv.json")
+        "conversion_meta": str(Path(outdir.relative_to(_REPO)) / "conversion.json")
         if outdir.is_relative_to(_REPO)
-        else f"{stem}.conv.json",
+        else "conversion.json",
     }
     for i, existing in enumerate(doc["modules"]):
         if existing.get("stem") == stem:
