@@ -1732,8 +1732,10 @@ with entry { }
 
 def sum_to(n: int) -> int {
     total: int = 0;
-    for i = 0 to i < n by i += 1 {
+    i: int = 0;
+    while i < n {
         total += i;
+        i += 1;
     }
 
     return total;
