@@ -278,3 +278,80 @@ test "user exception subclass super().__init__ stores args" {
     assert vm_str(ns, "a2") == "(7, 8)";
     assert vm_str(ns, "s2") == "(7, 8)";
 }
+
+test "chained-raise cause/context expose __class__.__name__" {
+    # pin-ok-exc-chaining core: chained exceptions read through the
+    # PyExceptionType synthesis (e.__class__) like direct raises do.
+    ns = vm_exec(
+        "res = []\n"
+        "try:\n"
+        "    raise ValueError('inner')\n"
+        "except ValueError as e:\n"
+        "    try:\n"
+        "        raise RuntimeError('outer') from e\n"
+        "    except RuntimeError as r2:\n"
+        "        res.append(r2.__cause__.__class__.__name__)\n"
+        "        res.append(r2.__context__.__class__.__name__)\n"
+    );
+    assert vm_str(ns, "res") == "['ValueError', 'ValueError']";
+}
+
+test "caught-exception attribute reads cover BaseException surface" {
+    ns = vm_exec(
+        "bad = []\n"
+        "n = 0\n"
+        "try:\n"
+        "    try:\n"
+        "        raise ValueError('v')\n"
+        "    except ValueError:\n"
+        "        raise TypeError('t')\n"
+        "except TypeError as e:\n"
+        "    for attr in ('args', '__cause__', '__context__',\n"
+        "                 '__suppress_context__', '__traceback__',\n"
+        "                 '__notes__', '__class__'):\n"
+        "        n = n + 1\n"
+        "        try:\n"
+        "            getattr(e, attr)\n"
+        "        except AttributeError as ae:\n"
+        "            bad.append(attr)\n"
+    );
+    assert vm_str(ns, "bad") == "[]";
+    assert vm_str(ns, "n") == "7";
+}
+
+test "with_traceback binds, type-checks, and returns self" {
+    ns = vm_exec(
+        "e = ValueError('v')\n"
+        "same = e.with_traceback(None)\n"
+        "ret = same is e\n"
+        "msgs = []\n"
+        "for bad in (5, 'tb'):\n"
+        "    try:\n"
+        "        e.with_traceback(bad)\n"
+        "        msgs.append('no-raise')\n"
+        "    except TypeError as te:\n"
+        "        msgs.append(str(te))\n"
+    );
+    assert vm_str(ns, "ret") == "True";
+    assert vm_str(ns, "msgs") == (
+        "['__traceback__ must be a traceback or None', "
+        "'__traceback__ must be a traceback or None']"
+    );
+}
+
+test "synthesized exception type exposes module/bases/mro" {
+    ns = vm_exec(
+        "t = type(ValueError('v'))\n"
+        "mod = t.__module__\n"
+        "base_names = [b.__name__ for b in t.__bases__]\n"
+        "mro_names = [b.__name__ for b in t.__mro__]\n"
+        "root = (type(BaseException('b')).__bases__[0].__name__,\n"
+        "        [b.__name__ for b in type(BaseException('b')).__mro__])\n"
+    );
+    assert vm_str(ns, "mod") == "builtins";
+    assert vm_str(ns, "base_names") == "['Exception']";
+    assert vm_str(ns, "mro_names") == (
+        "['ValueError', 'Exception', 'BaseException', 'object']"
+    );
+    assert vm_str(ns, "root") == "('object', ['BaseException', 'object'])";
+}

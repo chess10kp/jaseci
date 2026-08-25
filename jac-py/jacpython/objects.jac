@@ -2510,6 +2510,34 @@ def is_builtin_exception_name(name: str) -> bool {
     return name == "BaseException" or name in EXC_PARENT;
 }
 
+# Direct builtin parent of `name`, "" at the chain roots (BaseException and
+# the synthesized object terminal). Single-parent view; ExceptionGroup's
+# second base rides EXC_EXTRA_PARENTS (see exc_is_subclass_of).
+def _exc_single_parent(name: str) -> str {
+    if name in EXC_PARENT {
+        return EXC_PARENT[name];
+    }
+    return "";
+}
+
+# CPython-shaped __mro__ for a builtin exception name: the node, its
+# single-parent EXC_PARENT chain, ending at object
+# (ValueError.__mro__ == (ValueError, Exception, BaseException, object)).
+def _exc_mro_names(name: str) -> list[str] {
+    out: list[str] = [];
+    cur = name;
+    while True {
+        out.append(cur);
+        nxt = _exc_single_parent(cur);
+        if nxt == "" {
+            break;
+        }
+        cur = nxt;
+    }
+    out.append("object");
+    return out;
+}
+
 # Name-level subclass test over EXC_PARENT (inclusive of `name == base`),
 # with multiple-inheritance parents from EXC_EXTRA_PARENTS.
 def exc_is_subclass_of(name: str, base: str) -> bool {
@@ -2851,6 +2879,35 @@ obj PyExceptionType(PyObj) {
         if name2 == "__name__" or name2 == "__qualname__" {
             return PyStr(t="str", val=self.name);
         }
+        # Type-object introspection over the builtin hierarchy: __module__,
+        # __bases__, and __mro__ mirror CPython type objects so chained-
+        # exception introspection idioms (type(e.__cause__).__mro__, ...) read
+        # the synthesized class like a real one. Served for builtin names
+        # only -- user subclasses carry no base info at this leaf and keep
+        # raising AttributeError.
+        if is_builtin_exception_name(self.name) {
+            if name2 == "__module__" {
+                return PyStr(t="str", val="builtins");
+            }
+            if name2 == "__bases__" {
+                # Direct parent only (CPython ValueError.__bases__ ==
+                # (Exception,)); the object terminal covers BaseException.
+                parent = _exc_single_parent(self.name);
+                if parent == "" {
+                    parent = "object";
+                }
+                items: list[PyObj] = [];
+                items.append(py_exception_type(parent));
+                return PyTuple(t="tuple", items=items);
+            }
+            if name2 == "__mro__" {
+                items: list[PyObj] = [];
+                for mname in _exc_mro_names(self.name) {
+                    items.append(py_exception_type(mname));
+                }
+                return PyTuple(t="tuple", items=items);
+            }
+        }
         # P3 kernel entry points exist on the type for hasattr/introspection;
         # calls route through the bound instance methods.
         if name2 == "split" or name2 == "subgroup" {
@@ -2964,6 +3021,24 @@ obj ExcSetStateFn(PyObj) {
     }
 }
 
+# Bound BaseException.with_traceback(tb) (CPython BaseException_with_traceback):
+# stores the traceback and returns self so `raise e.with_traceback(tb)` chains.
+# Type enforcement reuses the __traceback__ setter arm.
+obj ExcWithTracebackFn(PyObj) {
+    has exc: PyException;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) != 1 or len(kwargs) > 0 {
+            return py_error("TypeError", "with_traceback() takes exactly 1 argument");
+        }
+        set = self.exc.tp_setattro("__traceback__", args[0]);
+        if is_error(set) {
+            return set;
+        }
+        return self.exc;
+    }
+}
+
 obj PyException(PyObj) {
     has type_name: str,
         message: str,
@@ -3014,6 +3089,11 @@ obj PyException(PyObj) {
             # BaseException.__setstate__(state): restore protocol hook used by
             # pickle/copy and callable directly (gh-97591 test exercises it).
             return ExcSetStateFn(t="exc_setstate_fn", exc=self);
+        }
+        if name == "with_traceback" {
+            # BaseException.with_traceback(tb): bound so the call stays in-VM
+            # and returns self (CPython chaining idiom).
+            return ExcWithTracebackFn(t="exc_with_traceback_fn", exc=self);
         }
         if name == "value" {
             if self.value is not None {
