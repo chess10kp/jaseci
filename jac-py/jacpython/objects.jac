@@ -372,19 +372,15 @@ obj PyStr(PyObj) {
             }
             return PyStr(t="str", val=_slice_str(self.val, index as PySlice));
         }
-        idx = index.to_index();
+        idx = _seq_to_index(index, "string");
         if is_error(idx) {
-            return py_error("TypeError", "string indices must be integers or slices");
+            return idx;
         }
-        i = (idx as PyInt).val;
-        text = self.val;
-        if i < 0 {
-            i = len(text) + i;
+        i = _seq_getindex((idx as PyInt).val, len(self.val));
+        if i == -1 {
+            return py_error("IndexError", "string index out of range");
         }
-        if i >= 0 and i < len(text) {
-            return PyStr(t="str", val=text[i]);
-        }
-        return py_error("IndexError", "string index out of range");
+        return PyStr(t="str", val=self.val[i]);
     }
 
     def tp_iter -> PyObj {
@@ -416,19 +412,15 @@ obj PyBytes(PyObj) {
             }
             return PyBytes(t="bytes", val=_slice_ints(self.val, index as PySlice));
         }
-        idx = index.to_index();
+        idx = _seq_to_index(index, "bytes");
         if is_error(idx) {
-            return py_error("TypeError", "bytes indices must be integers or slices");
+            return idx;
         }
-        i = (idx as PyInt).val;
-        vals = self.val;
-        if i < 0 {
-            i = len(vals) + i;
+        i = _seq_getindex((idx as PyInt).val, len(self.val));
+        if i == -1 {
+            return py_error("IndexError", "index out of range");
         }
-        if i >= 0 and i < len(vals) {
-            return PyInt(t="int", val=vals[i]);
-        }
-        return py_error("IndexError", "index out of range");
+        return PyInt(t="int", val=self.val[i]);
     }
 
     def tp_iter -> PyObj {
@@ -1004,9 +996,7 @@ obj PyComplex(PyObj) {
         if name == "conjugate" {
             return PyComplexMethod(t="complex_method", target=self, name=name);
         }
-        return py_error(
-            "AttributeError", "'complex' object has no attribute '" + name + "'"
-        );
+        return _attr_error("complex", name);
     }
 }
 
@@ -1098,9 +1088,7 @@ obj PySlice(PyObj) {
         if name2 == "indices" {
             return PySliceIndices(t="slice_indices", sl=self);
         }
-        return py_error(
-            "AttributeError", "'slice' object has no attribute '" + name2 + "'"
-        );
+        return _attr_error("slice", name2);
     }
 
     def tp_richcompare(kind: int, other: PyObj) -> PyObj {
@@ -1142,20 +1130,13 @@ obj PyTuple(PyObj) {
         if kind == NB_MULTIPLY {
             # tuple * n -- same reference-duplicating repeat as list
             # (CPython tuple_repeat); elements are shared, not copied.
-            idx = other.to_index();
-            if is_error(idx) {
-                return py_error(
-                    "TypeError",
-                    "can't multiply sequence by non-int of type '" + other.t + "'",
-                );
+            cnt = _seq_repeat_count(other);
+            if is_error(cnt) {
+                return cnt;
             }
-            n = (idx as PyInt).val;
-            repeated: list[PyObj] = [];
-            while n > 0 {
-                repeated.extend(self.items);
-                n = n - 1;
-            }
-            return PyTuple(t="tuple", items=repeated);
+            return PyTuple(
+                t="tuple", items=_repeat_items(self.items, (cnt as PyInt).val)
+            );
         }
         return py_error("TypeError", "unsupported operand types");
     }
@@ -1168,18 +1149,15 @@ obj PyTuple(PyObj) {
             }
             return PyTuple(t="tuple", items=_slice_objs(self.items, index as PySlice));
         }
-        idx = index.to_index();
+        idx = _seq_to_index(index, "tuple");
         if is_error(idx) {
-            return py_error("TypeError", "tuple indices must be integers or slices");
+            return idx;
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
+        i = _seq_getindex((idx as PyInt).val, len(self.items));
+        if i == -1 {
+            return py_error("IndexError", "tuple index out of range");
         }
-        if i >= 0 and i < len(self.items) {
-            return self.items[i];
-        }
-        return py_error("IndexError", "tuple index out of range");
+        return self.items[i];
     }
 
     def tp_iter -> PyObj {
@@ -1252,20 +1230,13 @@ obj PyList(PyObj) {
             # list * n -- CPython list_repeat duplicates element REFERENCES,
             # never the elements themselves ([[0]]*3 aliases one inner list).
             # n < 0 behaves as 0; bool indexes as int (True -> 1).
-            idx = other.to_index();
-            if is_error(idx) {
-                return py_error(
-                    "TypeError",
-                    "can't multiply sequence by non-int of type '" + other.t + "'",
-                );
+            cnt = _seq_repeat_count(other);
+            if is_error(cnt) {
+                return cnt;
             }
-            n = (idx as PyInt).val;
-            repeated: list[PyObj] = [];
-            while n > 0 {
-                repeated.extend(self.items);
-                n = n - 1;
-            }
-            return PyList(t="list", items=repeated);
+            return PyList(
+                t="list", items=_repeat_items(self.items, (cnt as PyInt).val)
+            );
         }
         return py_error("TypeError", "unsupported operand types");
     }
@@ -1278,18 +1249,15 @@ obj PyList(PyObj) {
             }
             return PyList(t="list", items=_slice_objs(self.items, index as PySlice));
         }
-        idx = index.to_index();
+        idx = _seq_to_index(index, "list");
         if is_error(idx) {
-            return py_error("TypeError", "list indices must be integers or slices");
+            return idx;
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
+        i = _seq_getindex((idx as PyInt).val, len(self.items));
+        if i == -1 {
+            return py_error("IndexError", "list index out of range");
         }
-        if i >= 0 and i < len(self.items) {
-            return self.items[i];
-        }
-        return py_error("IndexError", "list index out of range");
+        return self.items[i];
     }
 
     def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
@@ -1373,15 +1341,12 @@ obj PyList(PyObj) {
         if is_error(idx) {
             return py_error("TypeError", "list indices must be integers");
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
+        i = _seq_getindex((idx as PyInt).val, len(self.items));
+        if i == -1 {
+            return py_error("IndexError", "list assignment index out of range");
         }
-        if i >= 0 and i < len(self.items) {
-            self.items[i] = value;
-            return py_none();
-        }
-        return py_error("IndexError", "list assignment index out of range");
+        self.items[i] = value;
+        return py_none();
     }
 
     def mp_del_subscript(index: PyObj) -> PyObj {
@@ -1423,15 +1388,12 @@ obj PyList(PyObj) {
         if is_error(idx) {
             return py_error("TypeError", "list indices must be integers");
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
+        i = _seq_getindex((idx as PyInt).val, len(self.items));
+        if i == -1 {
+            return py_error("IndexError", "list assignment index out of range");
         }
-        if i >= 0 and i < len(self.items) {
-            del self.items[i];
-            return py_none();
-        }
-        return py_error("IndexError", "list assignment index out of range");
+        del self.items[i];
+        return py_none();
     }
 
     def tp_iter -> PyObj {
@@ -1605,7 +1567,7 @@ obj PyCode(PyObj) {
         if name == "co_code" {
             return PyBytes(t="bytes", val=self.co_code);
         }
-        return py_error("AttributeError", "'code' object has no attribute '" + name + "'");
+        return _attr_error("code", name);
     }
 }
 
@@ -1700,10 +1662,7 @@ obj PyTypeVar(PyObj) {
         }
         # has_default() is a zero-arg probe needing a callable wrapper built
         # on the ceval side of the substrate boundary -- served by py_attr.
-        return py_error(
-            "AttributeError",
-            "'typing.TypeVar' object has no attribute '" + name + "'"
-        );
+        return _attr_error("typing.TypeVar", name);
     }
 }
 
@@ -3539,6 +3498,59 @@ def is_error(value: PyObj) -> bool {
     return value.t == "error";
 }
 
+# ---------------- sequence subscript / index helpers ----------------
+# Shared by the str/bytes/tuple/list subscript slots: __index__ coercion with
+# the per-type TypeError, negative-index wrap + bounds check, the seq-repeat
+# count guard, and the AttributeError tail for hand-dispatched tp_getattro.
+
+def _seq_to_index(index: PyObj, type_name: str) -> PyObj {
+    idx = index.to_index();
+    if is_error(idx) {
+        return py_error("TypeError", type_name + " indices must be integers or slices");
+    }
+    return idx;
+}
+
+# Resolve a raw integer subscript against a sequence length: negative indices
+# wrap once; anything out of bounds resolves to -1 (never a valid position).
+def _seq_getindex(i: int, length: int) -> int {
+    if i < 0 {
+        i = i + length;
+    }
+    if i >= 0 and i < length {
+        return i;
+    }
+    return -1;
+}
+
+# can't-multiply guard shared by tuple/list NB_MULTIPLY.
+def _seq_repeat_count(other: PyObj) -> PyObj {
+    idx = other.to_index();
+    if is_error(idx) {
+        return py_error(
+            "TypeError",
+            "can't multiply sequence by non-int of type '" + other.t + "'",
+        );
+    }
+    return idx;
+}
+
+# CPython seq repeat: element REFERENCES duplicated n times (n <= 0 -> empty).
+def _repeat_items(items: list[PyObj], n: int) -> list[PyObj] {
+    repeated: list[PyObj] = [];
+    while n > 0 {
+        repeated.extend(items);
+        n = n - 1;
+    }
+    return repeated;
+}
+
+def _attr_error(type_name: str, name: str) -> PyObj {
+    return py_error(
+        "AttributeError", "'" + type_name + "' object has no attribute '" + name + "'"
+    );
+}
+
 # ---------------- slicing (CPython PySlice_AdjustIndices) ----------------
 # CPython raises ValueError("slice step cannot be zero") before any stepping
 # loop runs; without this guard a zero-step slice never terminates.
@@ -3611,62 +3623,48 @@ def slice_indices(sl: PySlice, length: int) -> list[int] {
     return [start, stop, step];
 }
 
-def _slice_objs(items: list[PyObj], sl: PySlice) -> list[PyObj] {
-    b = slice_indices(sl, len(items));
-    i = b[0];
-    stop = b[1];
-    step = b[2];
-    out: list[PyObj] = [];
-    if step > 0 {
-        while i < stop {
-            out.append(items[i]);
-            i = i + step;
-        }
-    } else {
-        while i > stop {
-            out.append(items[i]);
-            i = i + step;
-        }
-    }
-    return out;
-}
-
-def _slice_ints(vals: list[int], sl: PySlice) -> list[int] {
-    b = slice_indices(sl, len(vals));
+# Selected positions of sl over a sequence of `length` (step-aware, ascending
+# or descending): CPython's PySlice_AdjustIndices bounds plus the GETITEM walk.
+def _slice_positions(length: int, sl: PySlice) -> list[int] {
+    b = slice_indices(sl, length);
     i = b[0];
     stop = b[1];
     step = b[2];
     out: list[int] = [];
     if step > 0 {
         while i < stop {
-            out.append(vals[i]);
+            out.append(i);
             i = i + step;
         }
     } else {
         while i > stop {
-            out.append(vals[i]);
+            out.append(i);
             i = i + step;
         }
     }
     return out;
 }
 
+def _slice_objs(items: list[PyObj], sl: PySlice) -> list[PyObj] {
+    out: list[PyObj] = [];
+    for p in _slice_positions(len(items), sl) {
+        out.append(items[p]);
+    }
+    return out;
+}
+
+def _slice_ints(vals: list[int], sl: PySlice) -> list[int] {
+    out: list[int] = [];
+    for p in _slice_positions(len(vals), sl) {
+        out.append(vals[p]);
+    }
+    return out;
+}
+
 def _slice_str(s: str, sl: PySlice) -> str {
-    b = slice_indices(sl, len(s));
-    i = b[0];
-    stop = b[1];
-    step = b[2];
     out = "";
-    if step > 0 {
-        while i < stop {
-            out = out + s[i];
-            i = i + step;
-        }
-    } else {
-        while i > stop {
-            out = out + s[i];
-            i = i + step;
-        }
+    for p in _slice_positions(len(s), sl) {
+        out = out + s[p];
     }
     return out;
 }
