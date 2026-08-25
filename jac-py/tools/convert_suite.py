@@ -1003,7 +1003,9 @@ def _apply_fixture_vocab(
             continue
         for meth in info.methods.values():
             session.allowed_calls |= _self_attr_stores(meth.body)
-    session.allowed_calls |= set(_class_attr_seeds(cls_name, cmap, mod_classes))
+    session.allowed_calls |= {
+        name for name, _ in _class_attr_seeds(cls_name, cmap, mod_classes)
+    }
     prefix: list[ast.stmt] = []
     if _resolve_method(cmap, cls_name, "setUp") is not None:
         # unittest runs setUp before every test; splice its lifted body so
@@ -1172,6 +1174,12 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
     candidates = expanded
 
     for cls_name, ident, body_stmts in candidates:
+        # Private copy per candidate: sibling-class expansions share the same
+        # member body nodes, and both the helper-call rewriter and
+        # rewrite_block mutate them in place -- without this, the first leaf's
+        # rewriting leaks into every subsequent leaf (type2test-style
+        # method-vs-attr divergent siblings quarantine their whole family).
+        body_stmts = [copy.deepcopy(s) for s in body_stmts]
         try:
             extra_prelude: list[ast.stmt] = []
             ns_block: list[ast.stmt] = []

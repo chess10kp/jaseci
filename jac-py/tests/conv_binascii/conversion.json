@@ -1,0 +1,513 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "27e8be18863ab41668efd861d6ee4aa88664d781",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_binascii.py",
+    "-o",
+    "/var/tmp/worker4-600-port-binascii-3159735/jac-py/tests/conv_binascii",
+    "--name",
+    "conv_binascii"
+  ],
+  "generated_at": "2026-08-25T13:39:41",
+  "hashes": {
+    "pins_jac": "f75779b0ec1e107af6aba23b3bd5e3c36153a74fd485aba577000b820b2ffc81"
+  },
+  "source_file": "reference/cpython/Lib/test/test_binascii.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "binascii",
+  "pins_file": "conv_binascii_pins.jac",
+  "pins": [
+    {
+      "ident": "ArrayBinASCIITest.test_exceptions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    assert issubclass(binascii.Error, Exception), ('assertIsSubclass', binascii.Error, Exception)\n    assert issubclass(binascii.Incomplete, Exception), ('assertIsSubclass', binascii.Incomplete, Exception)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_exceptions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    assert issubclass(binascii.Error, Exception), ('assertIsSubclass', binascii.Error, Exception)\n    assert issubclass(binascii.Incomplete, Exception), ('assertIsSubclass', binascii.Incomplete, Exception)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_exceptions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    assert issubclass(binascii.Error, Exception), ('assertIsSubclass', binascii.Error, Exception)\n    assert issubclass(binascii.Incomplete, Exception), ('assertIsSubclass', binascii.Incomplete, Exception)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_functions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    for name in all_functions:\n        assert hasattr(getattr(binascii, name), '__call__'), ('assertHasAttr', getattr(binascii, name), '__call__')\n        try:\n            getattr(binascii, name)()\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_functions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    for name in all_functions:\n        assert hasattr(getattr(binascii, name), '__call__'), ('assertHasAttr', getattr(binascii, name), '__call__')\n        try:\n            getattr(binascii, name)()\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_functions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    for name in all_functions:\n        assert hasattr(getattr(binascii, name), '__call__'), ('assertHasAttr', getattr(binascii, name), '__call__')\n        try:\n            getattr(binascii, name)()\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_returned_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef assertConversion(original, converted, restored, **kwargs):\n    assert isinstance(original, bytes), ('assertIsInstance', original, bytes)\n    assert isinstance(converted, bytes), ('assertIsInstance', converted, bytes)\n    assert isinstance(restored, bytes), ('assertIsInstance', restored, bytes)\n    if converted:\n        assert max(converted) < 128, ('assertLess', max(converted), 128)\n    assert original == restored, ('assertEqual', original, restored, f'self.type2test={self.type2test!r} kwargs={kwargs!r}')\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    MAX_ALL = 45\n    raw = self.rawdata[:MAX_ALL]\n    for fa, fb in zip(a2b_functions, b2a_functions):\n        a2b = getattr(binascii, fa)\n        b2a = getattr(binascii, fb)\n        try:\n            a = b2a(type2test(raw))\n            res = a2b(type2test(a))\n        except Exception as err:\n            raise AssertionError('{}/{} conversion raises {!r}'.format(fb, fa, err))\n        assert res == raw, ('assertEqual', res, raw)\n        assertConversion(raw, a, res)\n    assert isinstance(binascii.crc_hqx(raw, 0), int), ('assertIsInstance', binascii.crc_hqx(raw, 0), int)\n    assert isinstance(binascii.crc32(raw), int), ('assertIsInstance', binascii.crc32(raw), int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_returned_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\n\ndef assertConversion(original, converted, restored, **kwargs):\n    assert isinstance(original, bytes), ('assertIsInstance', original, bytes)\n    assert isinstance(converted, bytes), ('assertIsInstance', converted, bytes)\n    assert isinstance(restored, bytes), ('assertIsInstance', restored, bytes)\n    if converted:\n        assert max(converted) < 128, ('assertLess', max(converted), 128)\n    assert original == restored, ('assertEqual', original, restored, f'self.type2test={self.type2test!r} kwargs={kwargs!r}')\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_ALL = 45\n    raw = self.rawdata[:MAX_ALL]\n    for fa, fb in zip(a2b_functions, b2a_functions):\n        a2b = getattr(binascii, fa)\n        b2a = getattr(binascii, fb)\n        try:\n            a = b2a(self.type2test(raw))\n            res = a2b(self.type2test(a))\n        except Exception as err:\n            raise AssertionError('{}/{} conversion raises {!r}'.format(fb, fa, err))\n        assert res == raw, ('assertEqual', res, raw)\n        assertConversion(raw, a, res)\n    assert isinstance(binascii.crc_hqx(raw, 0), int), ('assertIsInstance', binascii.crc_hqx(raw, 0), int)\n    assert isinstance(binascii.crc32(raw), int), ('assertIsInstance', binascii.crc32(raw), int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_returned_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\n\ndef assertConversion(original, converted, restored, **kwargs):\n    assert isinstance(original, bytes), ('assertIsInstance', original, bytes)\n    assert isinstance(converted, bytes), ('assertIsInstance', converted, bytes)\n    assert isinstance(restored, bytes), ('assertIsInstance', restored, bytes)\n    if converted:\n        assert max(converted) < 128, ('assertLess', max(converted), 128)\n    assert original == restored, ('assertEqual', original, restored, f'self.type2test={self.type2test!r} kwargs={kwargs!r}')\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_ALL = 45\n    raw = self.rawdata[:MAX_ALL]\n    for fa, fb in zip(a2b_functions, b2a_functions):\n        a2b = getattr(binascii, fa)\n        b2a = getattr(binascii, fb)\n        try:\n            a = b2a(self.type2test(raw))\n            res = a2b(self.type2test(a))\n        except Exception as err:\n            raise AssertionError('{}/{} conversion raises {!r}'.format(fb, fa, err))\n        assert res == raw, ('assertEqual', res, raw)\n        assertConversion(raw, a, res)\n    assert isinstance(binascii.crc_hqx(raw, 0), int), ('assertIsInstance', binascii.crc_hqx(raw, 0), int)\n    assert isinstance(binascii.crc32(raw), int), ('assertIsInstance', binascii.crc32(raw), int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_base64valid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    MAX_BASE64 = 57\n    lines = []\n    for i in range(0, len(self.rawdata), MAX_BASE64):\n        b = type2test(self.rawdata[i:i + MAX_BASE64])\n        a = binascii.b2a_base64(b)\n        lines.append(a)\n    res = bytes()\n    for line in lines:\n        a = type2test(line)\n        b = binascii.a2b_base64(a)\n        res += b\n    assert res == self.rawdata, ('assertEqual', res, self.rawdata)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_base64valid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_BASE64 = 57\n    lines = []\n    for i in range(0, len(self.rawdata), MAX_BASE64):\n        b = self.type2test(self.rawdata[i:i + MAX_BASE64])\n        a = binascii.b2a_base64(b)\n        lines.append(a)\n    res = bytes()\n    for line in lines:\n        a = self.type2test(line)\n        b = binascii.a2b_base64(a)\n        res += b\n    assert res == self.rawdata, ('assertEqual', res, self.rawdata)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_base64valid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_BASE64 = 57\n    lines = []\n    for i in range(0, len(self.rawdata), MAX_BASE64):\n        b = self.type2test(self.rawdata[i:i + MAX_BASE64])\n        a = binascii.b2a_base64(b)\n        lines.append(a)\n    res = bytes()\n    for line in lines:\n        a = self.type2test(line)\n        b = binascii.a2b_base64(a)\n        res += b\n    assert res == self.rawdata, ('assertEqual', res, self.rawdata)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_base64invalid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    MAX_BASE64 = 57\n    lines = []\n    for i in range(0, len(self.data), MAX_BASE64):\n        b = type2test(self.rawdata[i:i + MAX_BASE64])\n        a = binascii.b2a_base64(b)\n        lines.append(a)\n    fillers = bytearray()\n    valid = b'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/'\n    for i in range(256):\n        if i not in valid:\n            fillers.append(i)\n\n    def addnoise(line):\n        noise = fillers\n        ratio = len(line) // len(noise)\n        res = bytearray()\n        while line and noise:\n            if len(line) // len(noise) > ratio:\n                c, line = (line[0], line[1:])\n            else:\n                c, noise = (noise[0], noise[1:])\n            res.append(c)\n        return res + noise + line\n    res = bytearray()\n    for line in map(addnoise, lines):\n        a = type2test(line)\n        b = binascii.a2b_base64(a)\n        res += b\n    assert res == self.rawdata, ('assertEqual', res, self.rawdata)\n    assert binascii.a2b_base64(type2test(fillers)) == b'', ('assertEqual', binascii.a2b_base64(type2test(fillers)), b'')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_base64invalid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_BASE64 = 57\n    lines = []\n    for i in range(0, len(self.data), MAX_BASE64):\n        b = self.type2test(self.rawdata[i:i + MAX_BASE64])\n        a = binascii.b2a_base64(b)\n        lines.append(a)\n    fillers = bytearray()\n    valid = b'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/'\n    for i in range(256):\n        if i not in valid:\n            fillers.append(i)\n\n    def addnoise(line):\n        noise = fillers\n        ratio = len(line) // len(noise)\n        res = bytearray()\n        while line and noise:\n            if len(line) // len(noise) > ratio:\n                c, line = (line[0], line[1:])\n            else:\n                c, noise = (noise[0], noise[1:])\n            res.append(c)\n        return res + noise + line\n    res = bytearray()\n    for line in map(addnoise, lines):\n        a = self.type2test(line)\n        b = binascii.a2b_base64(a)\n        res += b\n    assert res == self.rawdata, ('assertEqual', res, self.rawdata)\n    assert binascii.a2b_base64(self.type2test(fillers)) == b'', ('assertEqual', binascii.a2b_base64(self.type2test(fillers)), b'')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_base64invalid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_BASE64 = 57\n    lines = []\n    for i in range(0, len(self.data), MAX_BASE64):\n        b = self.type2test(self.rawdata[i:i + MAX_BASE64])\n        a = binascii.b2a_base64(b)\n        lines.append(a)\n    fillers = bytearray()\n    valid = b'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/'\n    for i in range(256):\n        if i not in valid:\n            fillers.append(i)\n\n    def addnoise(line):\n        noise = fillers\n        ratio = len(line) // len(noise)\n        res = bytearray()\n        while line and noise:\n            if len(line) // len(noise) > ratio:\n                c, line = (line[0], line[1:])\n            else:\n                c, noise = (noise[0], noise[1:])\n            res.append(c)\n        return res + noise + line\n    res = bytearray()\n    for line in map(addnoise, lines):\n        a = self.type2test(line)\n        b = binascii.a2b_base64(a)\n        res += b\n    assert res == self.rawdata, ('assertEqual', res, self.rawdata)\n    assert binascii.a2b_base64(self.type2test(fillers)) == b'', ('assertEqual', binascii.a2b_base64(self.type2test(fillers)), b'')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_base64_strict_mode",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_base64_strict_mode",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_base64_strict_mode",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_base64_excess_data",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_base64_excess_data",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_base64_excess_data",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_base64errors",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_base64errors",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_base64errors",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_uu",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    MAX_UU = 45\n    for backtick in (True, False):\n        lines = []\n        for i in range(0, len(self.data), MAX_UU):\n            b = type2test(self.rawdata[i:i + MAX_UU])\n            a = binascii.b2a_uu(b, backtick=backtick)\n            lines.append(a)\n        res = bytes()\n        for line in lines:\n            a = type2test(line)\n            b = binascii.a2b_uu(a)\n            res += b\n        assert res == self.rawdata, ('assertEqual', res, self.rawdata)\n    assert binascii.a2b_uu(b'\\x7f') == b'\\x00' * 31, ('assertEqual', binascii.a2b_uu(b'\\x7f'), b'\\x00' * 31)\n    assert binascii.a2b_uu(b'\\x80') == b'\\x00' * 32, ('assertEqual', binascii.a2b_uu(b'\\x80'), b'\\x00' * 32)\n    assert binascii.a2b_uu(b'\\xff') == b'\\x00' * 31, ('assertEqual', binascii.a2b_uu(b'\\xff'), b'\\x00' * 31)\n    try:\n        binascii.a2b_uu(*(b'\\xff\\x00',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(b'!!!!',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(type2test(b''),))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(type2test(b'#86)C')[:0],))\n    except binascii.Error:\n        pass\n    try:\n        binascii.b2a_uu(*(46 * b'!',))\n    except binascii.Error:\n        pass\n    assert binascii.b2a_uu(b'x') == b'!>   \\n', ('assertEqual', binascii.b2a_uu(b'x'), b'!>   \\n')\n    assert binascii.b2a_uu(b'') == b' \\n', ('assertEqual', binascii.b2a_uu(b''), b' \\n')\n    assert binascii.b2a_uu(b'', backtick=True) == b'`\\n', ('assertEqual', binascii.b2a_uu(b'', backtick=True), b'`\\n')\n    assert binascii.a2b_uu(b' \\n') == b'', ('assertEqual', binascii.a2b_uu(b' \\n'), b'')\n    assert binascii.a2b_uu(b'`\\n') == b'', ('assertEqual', binascii.a2b_uu(b'`\\n'), b'')\n    assert binascii.b2a_uu(b'\\x00Cat') == b'$ $-A=   \\n', ('assertEqual', binascii.b2a_uu(b'\\x00Cat'), b'$ $-A=   \\n')\n    assert binascii.b2a_uu(b'\\x00Cat', backtick=True) == b'$`$-A=```\\n', ('assertEqual', binascii.b2a_uu(b'\\x00Cat', backtick=True), b'$`$-A=```\\n')\n    assert binascii.a2b_uu(b'$`$-A=```\\n') == binascii.a2b_uu(b'$ $-A=   \\n'), ('assertEqual', binascii.a2b_uu(b'$`$-A=```\\n'), binascii.a2b_uu(b'$ $-A=   \\n'))\n    try:\n        binascii.b2a_uu(b'', True)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_uu",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_UU = 45\n    for backtick in (True, False):\n        lines = []\n        for i in range(0, len(self.data), MAX_UU):\n            b = self.type2test(self.rawdata[i:i + MAX_UU])\n            a = binascii.b2a_uu(b, backtick=backtick)\n            lines.append(a)\n        res = bytes()\n        for line in lines:\n            a = self.type2test(line)\n            b = binascii.a2b_uu(a)\n            res += b\n        assert res == self.rawdata, ('assertEqual', res, self.rawdata)\n    assert binascii.a2b_uu(b'\\x7f') == b'\\x00' * 31, ('assertEqual', binascii.a2b_uu(b'\\x7f'), b'\\x00' * 31)\n    assert binascii.a2b_uu(b'\\x80') == b'\\x00' * 32, ('assertEqual', binascii.a2b_uu(b'\\x80'), b'\\x00' * 32)\n    assert binascii.a2b_uu(b'\\xff') == b'\\x00' * 31, ('assertEqual', binascii.a2b_uu(b'\\xff'), b'\\x00' * 31)\n    try:\n        binascii.a2b_uu(*(b'\\xff\\x00',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(b'!!!!',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(self.type2test(b''),))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(self.type2test(b'#86)C')[:0],))\n    except binascii.Error:\n        pass\n    try:\n        binascii.b2a_uu(*(46 * b'!',))\n    except binascii.Error:\n        pass\n    assert binascii.b2a_uu(b'x') == b'!>   \\n', ('assertEqual', binascii.b2a_uu(b'x'), b'!>   \\n')\n    assert binascii.b2a_uu(b'') == b' \\n', ('assertEqual', binascii.b2a_uu(b''), b' \\n')\n    assert binascii.b2a_uu(b'', backtick=True) == b'`\\n', ('assertEqual', binascii.b2a_uu(b'', backtick=True), b'`\\n')\n    assert binascii.a2b_uu(b' \\n') == b'', ('assertEqual', binascii.a2b_uu(b' \\n'), b'')\n    assert binascii.a2b_uu(b'`\\n') == b'', ('assertEqual', binascii.a2b_uu(b'`\\n'), b'')\n    assert binascii.b2a_uu(b'\\x00Cat') == b'$ $-A=   \\n', ('assertEqual', binascii.b2a_uu(b'\\x00Cat'), b'$ $-A=   \\n')\n    assert binascii.b2a_uu(b'\\x00Cat', backtick=True) == b'$`$-A=```\\n', ('assertEqual', binascii.b2a_uu(b'\\x00Cat', backtick=True), b'$`$-A=```\\n')\n    assert binascii.a2b_uu(b'$`$-A=```\\n') == binascii.a2b_uu(b'$ $-A=   \\n'), ('assertEqual', binascii.a2b_uu(b'$`$-A=```\\n'), binascii.a2b_uu(b'$ $-A=   \\n'))\n    try:\n        binascii.b2a_uu(b'', True)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_uu",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_UU = 45\n    for backtick in (True, False):\n        lines = []\n        for i in range(0, len(self.data), MAX_UU):\n            b = self.type2test(self.rawdata[i:i + MAX_UU])\n            a = binascii.b2a_uu(b, backtick=backtick)\n            lines.append(a)\n        res = bytes()\n        for line in lines:\n            a = self.type2test(line)\n            b = binascii.a2b_uu(a)\n            res += b\n        assert res == self.rawdata, ('assertEqual', res, self.rawdata)\n    assert binascii.a2b_uu(b'\\x7f') == b'\\x00' * 31, ('assertEqual', binascii.a2b_uu(b'\\x7f'), b'\\x00' * 31)\n    assert binascii.a2b_uu(b'\\x80') == b'\\x00' * 32, ('assertEqual', binascii.a2b_uu(b'\\x80'), b'\\x00' * 32)\n    assert binascii.a2b_uu(b'\\xff') == b'\\x00' * 31, ('assertEqual', binascii.a2b_uu(b'\\xff'), b'\\x00' * 31)\n    try:\n        binascii.a2b_uu(*(b'\\xff\\x00',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(b'!!!!',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(self.type2test(b''),))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_uu(*(self.type2test(b'#86)C')[:0],))\n    except binascii.Error:\n        pass\n    try:\n        binascii.b2a_uu(*(46 * b'!',))\n    except binascii.Error:\n        pass\n    assert binascii.b2a_uu(b'x') == b'!>   \\n', ('assertEqual', binascii.b2a_uu(b'x'), b'!>   \\n')\n    assert binascii.b2a_uu(b'') == b' \\n', ('assertEqual', binascii.b2a_uu(b''), b' \\n')\n    assert binascii.b2a_uu(b'', backtick=True) == b'`\\n', ('assertEqual', binascii.b2a_uu(b'', backtick=True), b'`\\n')\n    assert binascii.a2b_uu(b' \\n') == b'', ('assertEqual', binascii.a2b_uu(b' \\n'), b'')\n    assert binascii.a2b_uu(b'`\\n') == b'', ('assertEqual', binascii.a2b_uu(b'`\\n'), b'')\n    assert binascii.b2a_uu(b'\\x00Cat') == b'$ $-A=   \\n', ('assertEqual', binascii.b2a_uu(b'\\x00Cat'), b'$ $-A=   \\n')\n    assert binascii.b2a_uu(b'\\x00Cat', backtick=True) == b'$`$-A=```\\n', ('assertEqual', binascii.b2a_uu(b'\\x00Cat', backtick=True), b'$`$-A=```\\n')\n    assert binascii.a2b_uu(b'$`$-A=```\\n') == binascii.a2b_uu(b'$ $-A=   \\n'), ('assertEqual', binascii.a2b_uu(b'$`$-A=```\\n'), binascii.a2b_uu(b'$ $-A=   \\n'))\n    try:\n        binascii.b2a_uu(b'', True)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_crc_hqx",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    crc = binascii.crc_hqx(type2test(b'Test the CRC-32 of'), 0)\n    crc = binascii.crc_hqx(type2test(b' this string.'), crc)\n    assert crc == 14290, ('assertEqual', crc, 14290)\n    try:\n        binascii.crc_hqx()\n    except TypeError:\n        pass\n    try:\n        binascii.crc_hqx(*(type2test(b''),))\n    except TypeError:\n        pass\n    for crc in (0, 1, 4660, 74565, 305419896, -1):\n        assert binascii.crc_hqx(type2test(b''), crc) == crc & 65535, ('assertEqual', binascii.crc_hqx(type2test(b''), crc), crc & 65535)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_crc_hqx",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    crc = binascii.crc_hqx(self.type2test(b'Test the CRC-32 of'), 0)\n    crc = binascii.crc_hqx(self.type2test(b' this string.'), crc)\n    assert crc == 14290, ('assertEqual', crc, 14290)\n    try:\n        binascii.crc_hqx()\n    except TypeError:\n        pass\n    try:\n        binascii.crc_hqx(*(self.type2test(b''),))\n    except TypeError:\n        pass\n    for crc in (0, 1, 4660, 74565, 305419896, -1):\n        assert binascii.crc_hqx(self.type2test(b''), crc) == crc & 65535, ('assertEqual', binascii.crc_hqx(self.type2test(b''), crc), crc & 65535)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_crc_hqx",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    crc = binascii.crc_hqx(self.type2test(b'Test the CRC-32 of'), 0)\n    crc = binascii.crc_hqx(self.type2test(b' this string.'), crc)\n    assert crc == 14290, ('assertEqual', crc, 14290)\n    try:\n        binascii.crc_hqx()\n    except TypeError:\n        pass\n    try:\n        binascii.crc_hqx(*(self.type2test(b''),))\n    except TypeError:\n        pass\n    for crc in (0, 1, 4660, 74565, 305419896, -1):\n        assert binascii.crc_hqx(self.type2test(b''), crc) == crc & 65535, ('assertEqual', binascii.crc_hqx(self.type2test(b''), crc), crc & 65535)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_crc32",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    crc = binascii.crc32(type2test(b'Test the CRC-32 of'))\n    crc = binascii.crc32(type2test(b' this string.'), crc)\n    assert crc == 1571220330, ('assertEqual', crc, 1571220330)\n    try:\n        binascii.crc32()\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_crc32",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    crc = binascii.crc32(self.type2test(b'Test the CRC-32 of'))\n    crc = binascii.crc32(self.type2test(b' this string.'), crc)\n    assert crc == 1571220330, ('assertEqual', crc, 1571220330)\n    try:\n        binascii.crc32()\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_crc32",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    crc = binascii.crc32(self.type2test(b'Test the CRC-32 of'))\n    crc = binascii.crc32(self.type2test(b' this string.'), crc)\n    assert crc == 1571220330, ('assertEqual', crc, 1571220330)\n    try:\n        binascii.crc32()\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_hex",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    s = b'{s\\x05\\x00\\x00\\x00worldi\\x02\\x00\\x00\\x00s\\x05\\x00\\x00\\x00helloi\\x01\\x00\\x00\\x000'\n    t = binascii.b2a_hex(type2test(s))\n    u = binascii.a2b_hex(type2test(t))\n    assert s == u, ('assertEqual', s, u)\n    try:\n        binascii.a2b_hex(*(t[:-1],))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(t[:-1] + b'q',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(bytes([255, 255]),))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'0G',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'0g',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'G0',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'g0',))\n    except binascii.Error:\n        pass\n    assert binascii.hexlify(type2test(s)) == t, ('assertEqual', binascii.hexlify(type2test(s)), t)\n    assert binascii.unhexlify(type2test(t)) == u, ('assertEqual', binascii.unhexlify(type2test(t)), u)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_hex",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    s = b'{s\\x05\\x00\\x00\\x00worldi\\x02\\x00\\x00\\x00s\\x05\\x00\\x00\\x00helloi\\x01\\x00\\x00\\x000'\n    t = binascii.b2a_hex(self.type2test(s))\n    u = binascii.a2b_hex(self.type2test(t))\n    assert s == u, ('assertEqual', s, u)\n    try:\n        binascii.a2b_hex(*(t[:-1],))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(t[:-1] + b'q',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(bytes([255, 255]),))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'0G',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'0g',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'G0',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'g0',))\n    except binascii.Error:\n        pass\n    assert binascii.hexlify(self.type2test(s)) == t, ('assertEqual', binascii.hexlify(self.type2test(s)), t)\n    assert binascii.unhexlify(self.type2test(t)) == u, ('assertEqual', binascii.unhexlify(self.type2test(t)), u)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_hex",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    s = b'{s\\x05\\x00\\x00\\x00worldi\\x02\\x00\\x00\\x00s\\x05\\x00\\x00\\x00helloi\\x01\\x00\\x00\\x000'\n    t = binascii.b2a_hex(self.type2test(s))\n    u = binascii.a2b_hex(self.type2test(t))\n    assert s == u, ('assertEqual', s, u)\n    try:\n        binascii.a2b_hex(*(t[:-1],))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(t[:-1] + b'q',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(bytes([255, 255]),))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'0G',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'0g',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'G0',))\n    except binascii.Error:\n        pass\n    try:\n        binascii.a2b_hex(*(b'g0',))\n    except binascii.Error:\n        pass\n    assert binascii.hexlify(self.type2test(s)) == t, ('assertEqual', binascii.hexlify(self.type2test(s)), t)\n    assert binascii.unhexlify(self.type2test(t)) == u, ('assertEqual', binascii.unhexlify(self.type2test(t)), u)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_hex_separator",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    'Test that hexlify and b2a_hex are binary versions of bytes.hex.'\n    s = b'{s\\x05\\x00\\x00\\x00worldi\\x02\\x00\\x00\\x00s\\x05\\x00\\x00\\x00helloi\\x01\\x00\\x00\\x000'\n    assert binascii.hexlify(type2test(s)) == s.hex().encode('ascii'), ('assertEqual', binascii.hexlify(type2test(s)), s.hex().encode('ascii'))\n    expected8 = s.hex('.', 8).encode('ascii')\n    assert binascii.hexlify(type2test(s), '.', 8) == expected8, ('assertEqual', binascii.hexlify(type2test(s), '.', 8), expected8)\n    expected1 = s.hex(':').encode('ascii')\n    assert binascii.b2a_hex(type2test(s), ':') == expected1, ('assertEqual', binascii.b2a_hex(type2test(s), ':'), expected1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_hex_separator",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    'Test that hexlify and b2a_hex are binary versions of bytes.hex.'\n    s = b'{s\\x05\\x00\\x00\\x00worldi\\x02\\x00\\x00\\x00s\\x05\\x00\\x00\\x00helloi\\x01\\x00\\x00\\x000'\n    assert binascii.hexlify(self.type2test(s)) == s.hex().encode('ascii'), ('assertEqual', binascii.hexlify(self.type2test(s)), s.hex().encode('ascii'))\n    expected8 = s.hex('.', 8).encode('ascii')\n    assert binascii.hexlify(self.type2test(s), '.', 8) == expected8, ('assertEqual', binascii.hexlify(self.type2test(s), '.', 8), expected8)\n    expected1 = s.hex(':').encode('ascii')\n    assert binascii.b2a_hex(self.type2test(s), ':') == expected1, ('assertEqual', binascii.b2a_hex(self.type2test(s), ':'), expected1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_hex_separator",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    'Test that hexlify and b2a_hex are binary versions of bytes.hex.'\n    s = b'{s\\x05\\x00\\x00\\x00worldi\\x02\\x00\\x00\\x00s\\x05\\x00\\x00\\x00helloi\\x01\\x00\\x00\\x000'\n    assert binascii.hexlify(self.type2test(s)) == s.hex().encode('ascii'), ('assertEqual', binascii.hexlify(self.type2test(s)), s.hex().encode('ascii'))\n    expected8 = s.hex('.', 8).encode('ascii')\n    assert binascii.hexlify(self.type2test(s), '.', 8) == expected8, ('assertEqual', binascii.hexlify(self.type2test(s), '.', 8), expected8)\n    expected1 = s.hex(':').encode('ascii')\n    assert binascii.b2a_hex(self.type2test(s), ':') == expected1, ('assertEqual', binascii.b2a_hex(self.type2test(s), ':'), expected1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_qp",
+      "status": "quarantined",
+      "reason": "host-raised:UnboundLocalError: cannot access local variable 'type2test' where it is not associated with a value"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_qp",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    type2test = self.type2test\n    a2b_qp = binascii.a2b_qp\n    b2a_qp = binascii.b2a_qp\n    a2b_qp(data=b'', header=False)\n    try:\n        a2b_qp(b'', **{1: 1})\n    except TypeError:\n        pass\n    else:\n        raise AssertionError(\"binascii.a2b_qp(**{1:1}) didn't raise TypeError\")\n    assert a2b_qp(type2test(b'=')) == b'', ('assertEqual', a2b_qp(type2test(b'=')), b'')\n    assert a2b_qp(type2test(b'= ')) == b'= ', ('assertEqual', a2b_qp(type2test(b'= ')), b'= ')\n    assert a2b_qp(type2test(b'==')) == b'=', ('assertEqual', a2b_qp(type2test(b'==')), b'=')\n    assert a2b_qp(type2test(b'=\\nAB')) == b'AB', ('assertEqual', a2b_qp(type2test(b'=\\nAB')), b'AB')\n    assert a2b_qp(type2test(b'=\\r\\nAB')) == b'AB', ('assertEqual', a2b_qp(type2test(b'=\\r\\nAB')), b'AB')\n    assert a2b_qp(type2test(b'=\\rAB')) == b'', ('assertEqual', a2b_qp(type2test(b'=\\rAB')), b'')\n    assert a2b_qp(type2test(b'=\\rAB\\nCD')) == b'CD', ('assertEqual', a2b_qp(type2test(b'=\\rAB\\nCD')), b'CD')\n    assert a2b_qp(type2test(b'=AB')) == b'\\xab', ('assertEqual', a2b_qp(type2test(b'=AB')), b'\\xab')\n    assert a2b_qp(type2test(b'=ab')) == b'\\xab', ('assertEqual', a2b_qp(type2test(b'=ab')), b'\\xab')\n    assert a2b_qp(type2test(b'=AX')) == b'=AX', ('assertEqual', a2b_qp(type2test(b'=AX')), b'=AX')\n    assert a2b_qp(type2test(b'=XA')) == b'=XA', ('assertEqual', a2b_qp(type2test(b'=XA')), b'=XA')\n    assert a2b_qp(type2test(b'=AB')[:-1]) == b'=A', ('assertEqual', a2b_qp(type2test(b'=AB')[:-1]), b'=A')\n    assert a2b_qp(type2test(b'_')) == b'_', ('assertEqual', a2b_qp(type2test(b'_')), b'_')\n    assert a2b_qp(type2test(b'_'), header=True) == b' ', ('assertEqual', a2b_qp(type2test(b'_'), header=True), b' ')\n    try:\n        b2a_qp(foo='bar')\n    except TypeError:\n        pass\n    assert a2b_qp(type2test(b'=00\\r\\n=00')) == b'\\x00\\r\\n\\x00', ('assertEqual', a2b_qp(type2test(b'=00\\r\\n=00')), b'\\x00\\r\\n\\x00')\n    assert b2a_qp(type2test(b'\\xff\\r\\n\\xff\\n\\xff')) == b'=FF\\r\\n=FF\\r\\n=FF', ('assertEqual', b2a_qp(type2test(b'\\xff\\r\\n\\xff\\n\\xff')), b'=FF\\r\\n=FF\\r\\n=FF')\n    assert b2a_qp(type2test(b'0' * 75 + b'\\xff\\r\\n\\xff\\r\\n\\xff')) == b'0' * 75 + b'=\\r\\n=FF\\r\\n=FF\\r\\n=FF', ('assertEqual', b2a_qp(type2test(b'0' * 75 + b'\\xff\\r\\n\\xff\\r\\n\\xff')), b'0' * 75 + b'=\\r\\n=FF\\r\\n=FF\\r\\n=FF')\n    assert b2a_qp(type2test(b'\\x7f')) == b'=7F', ('assertEqual', b2a_qp(type2test(b'\\x7f')), b'=7F')\n    assert b2a_qp(type2test(b'=')) == b'=3D', ('assertEqual', b2a_qp(type2test(b'=')), b'=3D')\n    assert b2a_qp(type2test(b'_')) == b'_', ('assertEqual', b2a_qp(type2test(b'_')), b'_')\n    assert b2a_qp(type2test(b'_'), header=True) == b'=5F', ('assertEqual', b2a_qp(type2test(b'_'), header=True), b'=5F')\n    assert b2a_qp(type2test(b'x y'), header=True) == b'x_y', ('assertEqual', b2a_qp(type2test(b'x y'), header=True), b'x_y')\n    assert b2a_qp(type2test(b'x '), header=True) == b'x=20', ('assertEqual', b2a_qp(type2test(b'x '), header=True), b'x=20')\n    assert b2a_qp(type2test(b'x y'), header=True, quotetabs=True) == b'x=20y', ('assertEqual', b2a_qp(type2test(b'x y'), header=True, quotetabs=True), b'x=20y')\n    assert b2a_qp(type2test(b'x\\ty'), header=True) == b'x\\ty', ('assertEqual', b2a_qp(type2test(b'x\\ty'), header=True), b'x\\ty')\n    assert b2a_qp(type2test(b' ')) == b'=20', ('assertEqual', b2a_qp(type2test(b' ')), b'=20')\n    assert b2a_qp(type2test(b'\\t')) == b'=09', ('assertEqual', b2a_qp(type2test(b'\\t')), b'=09')\n    assert b2a_qp(type2test(b' x')) == b' x', ('assertEqual', b2a_qp(type2test(b' x')), b' x')\n    assert b2a_qp(type2test(b'\\tx')) == b'\\tx', ('assertEqual', b2a_qp(type2test(b'\\tx')), b'\\tx')\n    assert b2a_qp(type2test(b' x')[:-1]) == b'=20', ('assertEqual', b2a_qp(type2test(b' x')[:-1]), b'=20')\n    assert b2a_qp(type2test(b'\\tx')[:-1]) == b'=09', ('assertEqual', b2a_qp(type2test(b'\\tx')[:-1]), b'=09')\n    assert b2a_qp(type2test(b'\\x00')) == b'=00', ('assertEqual', b2a_qp(type2test(b'\\x00')), b'=00')\n    assert b2a_qp(type2test(b'\\x00\\n')) == b'=00\\n', ('assertEqual', b2a_qp(type2test(b'\\x00\\n')), b'=00\\n')\n    assert b2a_qp(type2test(b'\\x00\\n'), quotetabs=True) == b'=00\\n', ('assertEqual', b2a_qp(type2test(b'\\x00\\n'), quotetabs=True), b'=00\\n')\n    assert b2a_qp(type2test(b'x y\\tz')) == b'x y\\tz', ('assertEqual', b2a_qp(type2test(b'x y\\tz')), b'x y\\tz')\n    assert b2a_qp(type2test(b'x y\\tz'), quotetabs=True) == b'x=20y=09z', ('assertEqual', b2a_qp(type2test(b'x y\\tz'), quotetabs=True), b'x=20y=09z')\n    assert b2a_qp(type2test(b'x y\\tz'), istext=False) == b'x y\\tz', ('assertEqual', b2a_qp(type2test(b'x y\\tz'), istext=False), b'x y\\tz')\n    assert b2a_qp(type2test(b'x \\ny\\t\\n')) == b'x=20\\ny=09\\n', ('assertEqual', b2a_qp(type2test(b'x \\ny\\t\\n')), b'x=20\\ny=09\\n')\n    assert b2a_qp(type2test(b'x \\ny\\t\\n'), quotetabs=True) == b'x=20\\ny=09\\n', ('assertEqual', b2a_qp(type2test(b'x \\ny\\t\\n'), quotetabs=True), b'x=20\\ny=09\\n')\n    assert b2a_qp(type2test(b'x \\ny\\t\\n'), istext=False) == b'x =0Ay\\t=0A', ('assertEqual', b2a_qp(type2test(b'x \\ny\\t\\n'), istext=False), b'x =0Ay\\t=0A')\n    assert b2a_qp(type2test(b'x \\ry\\t\\r')) == b'x \\ry\\t\\r', ('assertEqual', b2a_qp(type2test(b'x \\ry\\t\\r')), b'x \\ry\\t\\r')\n    assert b2a_qp(type2test(b'x \\ry\\t\\r'), quotetabs=True) == b'x=20\\ry=09\\r', ('assertEqual', b2a_qp(type2test(b'x \\ry\\t\\r'), quotetabs=True), b'x=20\\ry=09\\r')\n    assert b2a_qp(type2test(b'x \\ry\\t\\r'), istext=False) == b'x =0Dy\\t=0D', ('assertEqual', b2a_qp(type2test(b'x \\ry\\t\\r'), istext=False), b'x =0Dy\\t=0D')\n    assert b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n')) == b'x=20\\r\\ny=09\\r\\n', ('assertEqual', b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n')), b'x=20\\r\\ny=09\\r\\n')\n    assert b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), quotetabs=True) == b'x=20\\r\\ny=09\\r\\n', ('assertEqual', b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), quotetabs=True), b'x=20\\r\\ny=09\\r\\n')\n    assert b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), istext=False) == b'x =0D=0Ay\\t=0D=0A', ('assertEqual', b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), istext=False), b'x =0D=0Ay\\t=0D=0A')\n    assert b2a_qp(type2test(b'x \\r\\n')[:-1]) == b'x \\r', ('assertEqual', b2a_qp(type2test(b'x \\r\\n')[:-1]), b'x \\r')\n    assert b2a_qp(type2test(b'x\\t\\r\\n')[:-1]) == b'x\\t\\r', ('assertEqual', b2a_qp(type2test(b'x\\t\\r\\n')[:-1]), b'x\\t\\r')\n    assert b2a_qp(type2test(b'x \\r\\n')[:-1], quotetabs=True) == b'x=20\\r', ('assertEqual', b2a_qp(type2test(b'x \\r\\n')[:-1], quotetabs=True), b'x=20\\r')\n    assert b2a_qp(type2test(b'x\\t\\r\\n')[:-1], quotetabs=True) == b'x=09\\r', ('assertEqual', b2a_qp(type2test(b'x\\t\\r\\n')[:-1], quotetabs=True), b'x=09\\r')\n    assert b2a_qp(type2test(b'x \\r\\n')[:-1], istext=False) == b'x =0D', ('assertEqual', b2a_qp(type2test(b'x \\r\\n')[:-1], istext=False), b'x =0D')\n    assert b2a_qp(type2test(b'x\\t\\r\\n')[:-1], istext=False) == b'x\\t=0D', ('assertEqual', b2a_qp(type2test(b'x\\t\\r\\n')[:-1], istext=False), b'x\\t=0D')\n    assert b2a_qp(type2test(b'.')) == b'=2E', ('assertEqual', b2a_qp(type2test(b'.')), b'=2E')\n    assert b2a_qp(type2test(b'.\\n')) == b'=2E\\n', ('assertEqual', b2a_qp(type2test(b'.\\n')), b'=2E\\n')\n    assert b2a_qp(type2test(b'.\\r')) == b'=2E\\r', ('assertEqual', b2a_qp(type2test(b'.\\r')), b'=2E\\r')\n    assert b2a_qp(type2test(b'.\\x00')) == b'=2E=00', ('assertEqual', b2a_qp(type2test(b'.\\x00')), b'=2E=00')\n    assert b2a_qp(type2test(b'a.\\n')) == b'a.\\n', ('assertEqual', b2a_qp(type2test(b'a.\\n')), b'a.\\n')\n    assert b2a_qp(type2test(b'.a')[:-1]) == b'=2E', ('assertEqual', b2a_qp(type2test(b'.a')[:-1]), b'=2E')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_qp",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    type2test = self.type2test\n    a2b_qp = binascii.a2b_qp\n    b2a_qp = binascii.b2a_qp\n    a2b_qp(data=b'', header=False)\n    try:\n        a2b_qp(b'', **{1: 1})\n    except TypeError:\n        pass\n    else:\n        raise AssertionError(\"binascii.a2b_qp(**{1:1}) didn't raise TypeError\")\n    assert a2b_qp(type2test(b'=')) == b'', ('assertEqual', a2b_qp(type2test(b'=')), b'')\n    assert a2b_qp(type2test(b'= ')) == b'= ', ('assertEqual', a2b_qp(type2test(b'= ')), b'= ')\n    assert a2b_qp(type2test(b'==')) == b'=', ('assertEqual', a2b_qp(type2test(b'==')), b'=')\n    assert a2b_qp(type2test(b'=\\nAB')) == b'AB', ('assertEqual', a2b_qp(type2test(b'=\\nAB')), b'AB')\n    assert a2b_qp(type2test(b'=\\r\\nAB')) == b'AB', ('assertEqual', a2b_qp(type2test(b'=\\r\\nAB')), b'AB')\n    assert a2b_qp(type2test(b'=\\rAB')) == b'', ('assertEqual', a2b_qp(type2test(b'=\\rAB')), b'')\n    assert a2b_qp(type2test(b'=\\rAB\\nCD')) == b'CD', ('assertEqual', a2b_qp(type2test(b'=\\rAB\\nCD')), b'CD')\n    assert a2b_qp(type2test(b'=AB')) == b'\\xab', ('assertEqual', a2b_qp(type2test(b'=AB')), b'\\xab')\n    assert a2b_qp(type2test(b'=ab')) == b'\\xab', ('assertEqual', a2b_qp(type2test(b'=ab')), b'\\xab')\n    assert a2b_qp(type2test(b'=AX')) == b'=AX', ('assertEqual', a2b_qp(type2test(b'=AX')), b'=AX')\n    assert a2b_qp(type2test(b'=XA')) == b'=XA', ('assertEqual', a2b_qp(type2test(b'=XA')), b'=XA')\n    assert a2b_qp(type2test(b'=AB')[:-1]) == b'=A', ('assertEqual', a2b_qp(type2test(b'=AB')[:-1]), b'=A')\n    assert a2b_qp(type2test(b'_')) == b'_', ('assertEqual', a2b_qp(type2test(b'_')), b'_')\n    assert a2b_qp(type2test(b'_'), header=True) == b' ', ('assertEqual', a2b_qp(type2test(b'_'), header=True), b' ')\n    try:\n        b2a_qp(foo='bar')\n    except TypeError:\n        pass\n    assert a2b_qp(type2test(b'=00\\r\\n=00')) == b'\\x00\\r\\n\\x00', ('assertEqual', a2b_qp(type2test(b'=00\\r\\n=00')), b'\\x00\\r\\n\\x00')\n    assert b2a_qp(type2test(b'\\xff\\r\\n\\xff\\n\\xff')) == b'=FF\\r\\n=FF\\r\\n=FF', ('assertEqual', b2a_qp(type2test(b'\\xff\\r\\n\\xff\\n\\xff')), b'=FF\\r\\n=FF\\r\\n=FF')\n    assert b2a_qp(type2test(b'0' * 75 + b'\\xff\\r\\n\\xff\\r\\n\\xff')) == b'0' * 75 + b'=\\r\\n=FF\\r\\n=FF\\r\\n=FF', ('assertEqual', b2a_qp(type2test(b'0' * 75 + b'\\xff\\r\\n\\xff\\r\\n\\xff')), b'0' * 75 + b'=\\r\\n=FF\\r\\n=FF\\r\\n=FF')\n    assert b2a_qp(type2test(b'\\x7f')) == b'=7F', ('assertEqual', b2a_qp(type2test(b'\\x7f')), b'=7F')\n    assert b2a_qp(type2test(b'=')) == b'=3D', ('assertEqual', b2a_qp(type2test(b'=')), b'=3D')\n    assert b2a_qp(type2test(b'_')) == b'_', ('assertEqual', b2a_qp(type2test(b'_')), b'_')\n    assert b2a_qp(type2test(b'_'), header=True) == b'=5F', ('assertEqual', b2a_qp(type2test(b'_'), header=True), b'=5F')\n    assert b2a_qp(type2test(b'x y'), header=True) == b'x_y', ('assertEqual', b2a_qp(type2test(b'x y'), header=True), b'x_y')\n    assert b2a_qp(type2test(b'x '), header=True) == b'x=20', ('assertEqual', b2a_qp(type2test(b'x '), header=True), b'x=20')\n    assert b2a_qp(type2test(b'x y'), header=True, quotetabs=True) == b'x=20y', ('assertEqual', b2a_qp(type2test(b'x y'), header=True, quotetabs=True), b'x=20y')\n    assert b2a_qp(type2test(b'x\\ty'), header=True) == b'x\\ty', ('assertEqual', b2a_qp(type2test(b'x\\ty'), header=True), b'x\\ty')\n    assert b2a_qp(type2test(b' ')) == b'=20', ('assertEqual', b2a_qp(type2test(b' ')), b'=20')\n    assert b2a_qp(type2test(b'\\t')) == b'=09', ('assertEqual', b2a_qp(type2test(b'\\t')), b'=09')\n    assert b2a_qp(type2test(b' x')) == b' x', ('assertEqual', b2a_qp(type2test(b' x')), b' x')\n    assert b2a_qp(type2test(b'\\tx')) == b'\\tx', ('assertEqual', b2a_qp(type2test(b'\\tx')), b'\\tx')\n    assert b2a_qp(type2test(b' x')[:-1]) == b'=20', ('assertEqual', b2a_qp(type2test(b' x')[:-1]), b'=20')\n    assert b2a_qp(type2test(b'\\tx')[:-1]) == b'=09', ('assertEqual', b2a_qp(type2test(b'\\tx')[:-1]), b'=09')\n    assert b2a_qp(type2test(b'\\x00')) == b'=00', ('assertEqual', b2a_qp(type2test(b'\\x00')), b'=00')\n    assert b2a_qp(type2test(b'\\x00\\n')) == b'=00\\n', ('assertEqual', b2a_qp(type2test(b'\\x00\\n')), b'=00\\n')\n    assert b2a_qp(type2test(b'\\x00\\n'), quotetabs=True) == b'=00\\n', ('assertEqual', b2a_qp(type2test(b'\\x00\\n'), quotetabs=True), b'=00\\n')\n    assert b2a_qp(type2test(b'x y\\tz')) == b'x y\\tz', ('assertEqual', b2a_qp(type2test(b'x y\\tz')), b'x y\\tz')\n    assert b2a_qp(type2test(b'x y\\tz'), quotetabs=True) == b'x=20y=09z', ('assertEqual', b2a_qp(type2test(b'x y\\tz'), quotetabs=True), b'x=20y=09z')\n    assert b2a_qp(type2test(b'x y\\tz'), istext=False) == b'x y\\tz', ('assertEqual', b2a_qp(type2test(b'x y\\tz'), istext=False), b'x y\\tz')\n    assert b2a_qp(type2test(b'x \\ny\\t\\n')) == b'x=20\\ny=09\\n', ('assertEqual', b2a_qp(type2test(b'x \\ny\\t\\n')), b'x=20\\ny=09\\n')\n    assert b2a_qp(type2test(b'x \\ny\\t\\n'), quotetabs=True) == b'x=20\\ny=09\\n', ('assertEqual', b2a_qp(type2test(b'x \\ny\\t\\n'), quotetabs=True), b'x=20\\ny=09\\n')\n    assert b2a_qp(type2test(b'x \\ny\\t\\n'), istext=False) == b'x =0Ay\\t=0A', ('assertEqual', b2a_qp(type2test(b'x \\ny\\t\\n'), istext=False), b'x =0Ay\\t=0A')\n    assert b2a_qp(type2test(b'x \\ry\\t\\r')) == b'x \\ry\\t\\r', ('assertEqual', b2a_qp(type2test(b'x \\ry\\t\\r')), b'x \\ry\\t\\r')\n    assert b2a_qp(type2test(b'x \\ry\\t\\r'), quotetabs=True) == b'x=20\\ry=09\\r', ('assertEqual', b2a_qp(type2test(b'x \\ry\\t\\r'), quotetabs=True), b'x=20\\ry=09\\r')\n    assert b2a_qp(type2test(b'x \\ry\\t\\r'), istext=False) == b'x =0Dy\\t=0D', ('assertEqual', b2a_qp(type2test(b'x \\ry\\t\\r'), istext=False), b'x =0Dy\\t=0D')\n    assert b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n')) == b'x=20\\r\\ny=09\\r\\n', ('assertEqual', b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n')), b'x=20\\r\\ny=09\\r\\n')\n    assert b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), quotetabs=True) == b'x=20\\r\\ny=09\\r\\n', ('assertEqual', b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), quotetabs=True), b'x=20\\r\\ny=09\\r\\n')\n    assert b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), istext=False) == b'x =0D=0Ay\\t=0D=0A', ('assertEqual', b2a_qp(type2test(b'x \\r\\ny\\t\\r\\n'), istext=False), b'x =0D=0Ay\\t=0D=0A')\n    assert b2a_qp(type2test(b'x \\r\\n')[:-1]) == b'x \\r', ('assertEqual', b2a_qp(type2test(b'x \\r\\n')[:-1]), b'x \\r')\n    assert b2a_qp(type2test(b'x\\t\\r\\n')[:-1]) == b'x\\t\\r', ('assertEqual', b2a_qp(type2test(b'x\\t\\r\\n')[:-1]), b'x\\t\\r')\n    assert b2a_qp(type2test(b'x \\r\\n')[:-1], quotetabs=True) == b'x=20\\r', ('assertEqual', b2a_qp(type2test(b'x \\r\\n')[:-1], quotetabs=True), b'x=20\\r')\n    assert b2a_qp(type2test(b'x\\t\\r\\n')[:-1], quotetabs=True) == b'x=09\\r', ('assertEqual', b2a_qp(type2test(b'x\\t\\r\\n')[:-1], quotetabs=True), b'x=09\\r')\n    assert b2a_qp(type2test(b'x \\r\\n')[:-1], istext=False) == b'x =0D', ('assertEqual', b2a_qp(type2test(b'x \\r\\n')[:-1], istext=False), b'x =0D')\n    assert b2a_qp(type2test(b'x\\t\\r\\n')[:-1], istext=False) == b'x\\t=0D', ('assertEqual', b2a_qp(type2test(b'x\\t\\r\\n')[:-1], istext=False), b'x\\t=0D')\n    assert b2a_qp(type2test(b'.')) == b'=2E', ('assertEqual', b2a_qp(type2test(b'.')), b'=2E')\n    assert b2a_qp(type2test(b'.\\n')) == b'=2E\\n', ('assertEqual', b2a_qp(type2test(b'.\\n')), b'=2E\\n')\n    assert b2a_qp(type2test(b'.\\r')) == b'=2E\\r', ('assertEqual', b2a_qp(type2test(b'.\\r')), b'=2E\\r')\n    assert b2a_qp(type2test(b'.\\x00')) == b'=2E=00', ('assertEqual', b2a_qp(type2test(b'.\\x00')), b'=2E=00')\n    assert b2a_qp(type2test(b'a.\\n')) == b'a.\\n', ('assertEqual', b2a_qp(type2test(b'a.\\n')), b'a.\\n')\n    assert b2a_qp(type2test(b'.a')[:-1]) == b'=2E', ('assertEqual', b2a_qp(type2test(b'.a')[:-1]), b'=2E')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_empty_string",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    empty = type2test(b'')\n    for func in all_functions:\n        if func == 'crc_hqx':\n            binascii.crc_hqx(empty, 0)\n            continue\n        f = getattr(binascii, func)\n        if func == 'a2b_uu':\n            try:\n                f(*(empty,))\n            except binascii.Error:\n                pass\n            continue\n        try:\n            f(empty)\n        except Exception as err:\n            raise AssertionError('{}({!r}) raises {!r}'.format(func, empty, err))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_empty_string",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    empty = self.type2test(b'')\n    for func in all_functions:\n        if func == 'crc_hqx':\n            binascii.crc_hqx(empty, 0)\n            continue\n        f = getattr(binascii, func)\n        if func == 'a2b_uu':\n            try:\n                f(*(empty,))\n            except binascii.Error:\n                pass\n            continue\n        try:\n            f(empty)\n        except Exception as err:\n            raise AssertionError('{}({!r}) raises {!r}'.format(func, empty, err))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_empty_string",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    empty = self.type2test(b'')\n    for func in all_functions:\n        if func == 'crc_hqx':\n            binascii.crc_hqx(empty, 0)\n            continue\n        f = getattr(binascii, func)\n        if func == 'a2b_uu':\n            try:\n                f(*(empty,))\n            except binascii.Error:\n                pass\n            continue\n        try:\n            f(empty)\n        except Exception as err:\n            raise AssertionError('{}({!r}) raises {!r}'.format(func, empty, err))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_unicode_b2a",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    for func in set(all_functions) - set(a2b_functions):\n        try:\n            try:\n                getattr(binascii, func)(*('test',))\n            except TypeError:\n                pass\n        except Exception as err:\n            raise AssertionError('{}(\"test\") raises {!r}'.format(func, err))\n    try:\n        binascii.crc_hqx(*('test', 0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_unicode_b2a",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    for func in set(all_functions) - set(a2b_functions):\n        try:\n            try:\n                getattr(binascii, func)(*('test',))\n            except TypeError:\n                pass\n        except Exception as err:\n            raise AssertionError('{}(\"test\") raises {!r}'.format(func, err))\n    try:\n        binascii.crc_hqx(*('test', 0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_unicode_b2a",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\nall_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    for func in set(all_functions) - set(a2b_functions):\n        try:\n            try:\n                getattr(binascii, func)(*('test',))\n            except TypeError:\n                pass\n        except Exception as err:\n            raise AssertionError('{}(\"test\") raises {!r}'.format(func, err))\n    try:\n        binascii.crc_hqx(*('test', 0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_unicode_a2b",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    MAX_ALL = 45\n    raw = self.rawdata[:MAX_ALL]\n    for fa, fb in zip(a2b_functions, b2a_functions):\n        a2b = getattr(binascii, fa)\n        b2a = getattr(binascii, fb)\n        try:\n            a = b2a(type2test(raw))\n            binary_res = a2b(a)\n            a = a.decode('ascii')\n            res = a2b(a)\n        except Exception as err:\n            raise AssertionError('{}/{} conversion raises {!r}'.format(fb, fa, err))\n        assert res == raw, ('assertEqual', res, raw)\n        assert res == binary_res, ('assertEqual', res, binary_res)\n        assert isinstance(res, bytes), ('assertIsInstance', res, bytes)\n        try:\n            a2b(*('\\x80',))\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_unicode_a2b",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_ALL = 45\n    raw = self.rawdata[:MAX_ALL]\n    for fa, fb in zip(a2b_functions, b2a_functions):\n        a2b = getattr(binascii, fa)\n        b2a = getattr(binascii, fb)\n        try:\n            a = b2a(self.type2test(raw))\n            binary_res = a2b(a)\n            a = a.decode('ascii')\n            res = a2b(a)\n        except Exception as err:\n            raise AssertionError('{}/{} conversion raises {!r}'.format(fb, fa, err))\n        assert res == raw, ('assertEqual', res, raw)\n        assert res == binary_res, ('assertEqual', res, binary_res)\n        assert isinstance(res, bytes), ('assertIsInstance', res, bytes)\n        try:\n            a2b(*('\\x80',))\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_unicode_a2b",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nb2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_qp', 'b2a_uu', 'hexlify']\na2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_qp', 'a2b_uu', 'unhexlify']\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    MAX_ALL = 45\n    raw = self.rawdata[:MAX_ALL]\n    for fa, fb in zip(a2b_functions, b2a_functions):\n        a2b = getattr(binascii, fa)\n        b2a = getattr(binascii, fb)\n        try:\n            a = b2a(self.type2test(raw))\n            binary_res = a2b(a)\n            a = a.decode('ascii')\n            res = a2b(a)\n        except Exception as err:\n            raise AssertionError('{}/{} conversion raises {!r}'.format(fb, fa, err))\n        assert res == raw, ('assertEqual', res, raw)\n        assert res == binary_res, ('assertEqual', res, binary_res)\n        assert isinstance(res, bytes), ('assertIsInstance', res, bytes)\n        try:\n            a2b(*('\\x80',))\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_b2a_base64_newline",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    b = type2test(b'hello')\n    assert binascii.b2a_base64(b) == b'aGVsbG8=\\n', ('assertEqual', binascii.b2a_base64(b), b'aGVsbG8=\\n')\n    assert binascii.b2a_base64(b, newline=True) == b'aGVsbG8=\\n', ('assertEqual', binascii.b2a_base64(b, newline=True), b'aGVsbG8=\\n')\n    assert binascii.b2a_base64(b, newline=False) == b'aGVsbG8=', ('assertEqual', binascii.b2a_base64(b, newline=False), b'aGVsbG8=')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_b2a_base64_newline",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    b = self.type2test(b'hello')\n    assert binascii.b2a_base64(b) == b'aGVsbG8=\\n', ('assertEqual', binascii.b2a_base64(b), b'aGVsbG8=\\n')\n    assert binascii.b2a_base64(b, newline=True) == b'aGVsbG8=\\n', ('assertEqual', binascii.b2a_base64(b, newline=True), b'aGVsbG8=\\n')\n    assert binascii.b2a_base64(b, newline=False) == b'aGVsbG8=', ('assertEqual', binascii.b2a_base64(b, newline=False), b'aGVsbG8=')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_b2a_base64_newline",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    b = self.type2test(b'hello')\n    assert binascii.b2a_base64(b) == b'aGVsbG8=\\n', ('assertEqual', binascii.b2a_base64(b), b'aGVsbG8=\\n')\n    assert binascii.b2a_base64(b, newline=True) == b'aGVsbG8=\\n', ('assertEqual', binascii.b2a_base64(b, newline=True), b'aGVsbG8=\\n')\n    assert binascii.b2a_base64(b, newline=False) == b'aGVsbG8=', ('assertEqual', binascii.b2a_base64(b, newline=False), b'aGVsbG8=')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_c_contiguity",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\nimport array\n\ndef type2test(s):\n    return array.array('B', list(s))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.data = type2test(self.rawdata)\n    m = memoryview(bytearray(b'noncontig'))\n    noncontig_writable = m[::-2]\n    try:\n        binascii.b2a_hex(noncontig_writable)\n    except BufferError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_c_contiguity",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    m = memoryview(bytearray(b'noncontig'))\n    noncontig_writable = m[::-2]\n    try:\n        binascii.b2a_hex(noncontig_writable)\n    except BufferError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_c_contiguity",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import binascii\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rawdata = b'The quick brown fox jumps over the lazy dog.\\r\\n'\n    self.type2test = bytes\n    self.data = self.type2test(self.rawdata)\n    m = memoryview(bytearray(b'noncontig'))\n    noncontig_writable = m[::-2]\n    try:\n        binascii.b2a_hex(noncontig_writable)\n    except BufferError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ChecksumBigBufferTestCase.test_big_buffer",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "ArrayBinASCIITest.test_b2a_roundtrip",
+      "reason": "unresolved-name:backtick"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_b2a_roundtrip",
+      "reason": "unresolved-name:backtick"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_b2a_roundtrip",
+      "reason": "unresolved-name:backtick"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_hex_roundtrip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_hex_roundtrip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_hex_roundtrip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_b2a_qp_a2b_qp_round_trip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_b2a_qp_a2b_qp_round_trip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_b2a_qp_a2b_qp_round_trip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "ArrayBinASCIITest.test_base64_roundtrip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "BytearrayBinASCIITest.test_base64_roundtrip",
+      "reason": "unresolved-name:binary"
+    },
+    {
+      "ident": "MemoryviewBinASCIITest.test_base64_roundtrip",
+      "reason": "unresolved-name:binary"
+    }
+  ],
+  "counts": {
+    "extracted": 70,
+    "pinned": 47,
+    "quarantined": 23
+  }
+}
