@@ -1142,3 +1142,26 @@ test "layer_p2_libtest: collections_namedtuple snippet prints ok on JacPython" {
     (ok, detail) = p2_libtest_expect_ok(snippet);
     assert ok , detail;
 }
+
+test "layer_p2_libtest: multibyte codec nullcoding roundtrip on JacPython" {
+    # CPython Lib/test/test_multibytecodec.py Test_MultibyteCodec.test_nullcoding:
+    # str.encode/bytes.decode must reach every host-registered codec, not just
+    # the utf-8/ascii/latin-1 fast trio (gap fp-v1:7622e4c19267).
+    snippet = (
+        "b = b'hello'\n"
+        "s = 'hello'\n"
+        "assert b.decode('gb2312') == s\n"
+        "assert bytes(b, 'gb2312') == s\n"
+        "assert s.encode('gb2312') == b\n"
+        "assert str(b, 'gb2312') == s\n"
+        "try:\n"
+        "    'x'.encode('not-a-codec')\n"
+        "except LookupError as e:\n"
+        "    assert str(e) == \"unknown encoding: not-a-codec\", str(e)\n"
+        "else:\n"
+        "    raise AssertionError('expected LookupError')\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}

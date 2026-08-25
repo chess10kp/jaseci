@@ -44,6 +44,16 @@ def _jac_host_call(fn, args, kwargs):
     except BaseException as exc:
         return _jac_host_error(exc)
 
+def _jac_str_encode(s, encoding, errors):
+    # str.encode through the HOST codec registry: any registered codec (CJK
+    # multibyte, encodings/ aliases, ...) encodes here, and failures carry the
+    # original exception object so guest except arms see CPython's exact
+    # LookupError/UnicodeEncodeError surface (see host_result_error).
+    try:
+        return (True, list(s.encode(encoding, errors)))
+    except BaseException as exc:
+        return _jac_host_error(exc)
+
 def _jac_host_dir(value):
     # Exact host dir() for values with a faithful host representation (host
     # proxies, native scalars/containers): CPython's own enumeration, so the
@@ -11619,6 +11629,17 @@ def _sm_iter_elems(src: PyObj, elems: list[PyObj]) -> bool {
     return False;
 }
 
+# General arm for str.encode: every codec in the host's registry works (the
+# fast trio above is only a pre-scan optimization); failures lift through the
+# host bridge with byte-exact type/message/attribute state.
+def _sm_encode_generic(s: str, encoding: str, errors: str) -> PyObj {
+    r = _jac_str_encode(s, encoding, errors);
+    if r[0] as bool {
+        return PyBytes(t="bytes", val=r[1] as list[int]);
+    }
+    return host_result_error(r);
+}
+
 # str.encode with byte-exact UnicodeEncodeError construction. Codecs are
 # matched against their alias tables, then every codepoint is pre-scanned so
 # the host intrinsic only ever sees fully encodable input (its exceptions would
@@ -11639,7 +11660,7 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
         limit = 255;
         canon = "latin-1";
     } else {
-        return py_error("LookupError", "unknown encoding: " + encoding);
+        return _sm_encode_generic(s, encoding, errors);
     }
     # Pre-scan for the first unencodable codepoint.
     bad_pos = -1;
