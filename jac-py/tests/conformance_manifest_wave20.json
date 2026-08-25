@@ -1,33 +1,28 @@
 {
   "version": 1,
   "wave": "p2_wave20",
-  "description": "P2 wave-20 conformance manifest (functoolsmodule facade port + itertools accumulate(initial=), host-oracle parity)",
+  "description": "P2 wave-20 conformance manifest (math + array kernel extracts: fsum partial-compaction cascade, isclose tolerance ladder, perm/comb small-step loops, array overflow ladders; host-oracle parity)",
   "module_count": 2,
   "modules": [
     {
-      "stem": "_functoolsmodule",
+      "stem": "math_fsum_cascade",
       "gate_type": "oracle",
       "status": "gated",
       "oracle_tests": [
-        "test_functools_parity.jac"
-      ],
-      "libtest_snippets": [
-        "functools_reduce",
-        "functools_partial_lru",
-        "functools_cmp_to_key",
-        "functools_wraps_update_wrapper"
-      ],
-      "notes": "reduce/partial/lru_cache/cmp_to_key/wraps/update_wrapper facades mirroring pinned CPython 3.14 semantics; reduce/partial/lru_cache/cmp_to_key also registered as the libtest functools shim; total_ordering is parity-gated only (needs VM-side receiver-binding synthetic callables for derived dunders)"
-    },
-    {
-      "stem": "itertoolsmodule",
-      "gate_type": "oracle",
-      "status": "gated",
-      "oracle_tests": [
-        "test_itertools_facade_parity.jac"
+        "test_wave20_parity.jac"
       ],
       "libtest_snippets": [],
-      "notes": "wave-20 extension: accumulate gains keyword-only initial with CPython seed-first, source-untouched laziness; lazy iterator facades stay out of the libtest shim (GET_ITER drains host-side eagerly)"
+      "notes": "dl_fast_sum/dl_sum error-free transforms, math.fsum partial-compaction hi/lo cascade, isclose tolerance ladder, perm_comb_small sequential fast loops gated vs host-verified IEEE/int oracles"
+    },
+    {
+      "stem": "array_repeat_guard",
+      "gate_type": "oracle",
+      "status": "gated",
+      "oracle_tests": [
+        "test_wave20_parity.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "PY_SSIZE_T_MAX overflow ladders for array_concat/array_repeat/array_do_extend/array_inplace_repeat plus negative-repeat clamps and C truncating div/mod helpers gated vs host-verified int oracles"
     }
   ]
 }
