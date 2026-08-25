@@ -3126,6 +3126,15 @@ def default_user_getattro(u: PyUserObj, name: str) -> PyObj {
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._get(u);
     }
+    # A user-defined data descriptor (its type's MRO defines __set__ or
+    # __delete__) outranks the instance dict too: reads route through its
+    # __get__ via descriptor_get below. CPython precedence order: data
+    # descriptor > instance dict > non-data descriptor > class attr.
+    if isinstance(classattr, PyUserObj)
+        and (user_has_dunder(classattr as PyUserObj, "__set__")
+            or user_has_dunder(classattr as PyUserObj, "__delete__")) {
+        return descriptor_get(classattr, u, u.cls);
+    }
     if name in u.attrs {
         return bind_attribute(u.attrs[name], u);
     }
@@ -3181,6 +3190,13 @@ def default_user_setattro(u: PyUserObj, name: str, value: PyObj) -> PyObj {
     # A slot member descriptor takes the write (data-descriptor priority).
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._set(u, value);
+    }
+    # A user-defined data descriptor takes the write through its __set__
+    # instead of landing raw in the instance dict (host: type's tp_descr_set);
+    # subsequent reads then flow back through its __get__.
+    if isinstance(classattr, PyUserObj)
+        and user_has_dunder(classattr as PyUserObj, "__set__") {
+        return call_user_dunder(classattr as PyUserObj, "__set__", [u as PyObj, value]);
     }
     # __slots__ enforcement: a declared-slot class with no instance dict only
     # accepts its member names -- anything else is the host's two-clause error
@@ -3936,6 +3952,19 @@ def descriptor_get(value: PyObj, instance: PyObj, owner: PyObj) -> PyObj {
     }
     if value.t == "function" and not isinstance(instance, PyNoneType) {
         return PyBoundMethod(t="bound_method", function=value, receiver=instance);
+    }
+    # User-defined descriptor protocol (host: any type whose MRO defines
+    # __get__ carries a non-NULL tp_descr_get): a class-dict object of such a
+    # type binds through it -- `C().attr` runs descr.__get__(obj, owner)
+    # instead of leaking the raw descriptor object. A None instance on
+    # class-level access still invokes __get__(None, owner), matching
+    # slot_tp_descr_get's Py_None substitution -- the descriptor itself
+    # decides. Probed via direct MRO dict walks (user_has_dunder), never the
+    # attribute dispatch, so probing the protocol names cannot re-enter this
+    # code.
+    if isinstance(value, PyUserObj)
+        and user_has_dunder(value as PyUserObj, "__get__") {
+        return call_user_dunder(value as PyUserObj, "__get__", [instance, owner]);
     }
     return value;
 }
