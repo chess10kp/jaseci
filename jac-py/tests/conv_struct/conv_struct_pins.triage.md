@@ -1,8 +1,8 @@
 # Triage report: `conv_struct_pins.jac`
 
 - source: /home/jac/repos/jac-python/reference/cpython/Lib/test/test_struct.py
-- guest leg: 0/34 marks
-- pins: **29 passed** / 34 run (+9 quarantined of 43 extracted)
+- guest leg: 0/35 marks
+- pins: **29 passed** / 35 run (+8 quarantined of 43 extracted)
 
 | pin | result | got |
 |---|---|---|
@@ -30,7 +30,7 @@
 | StructTest.test_struct_cleans_up_at_runtime_shutdown | GUEST-WRONG-OUTPUT | RUN<"ModuleNotFoundError: No module named 'test.support.script_helper'"> |
 | StructTest.test__struct_reference_cycle_cleaned_up | GUEST-WRONG-OUTPUT | RUN<"ImportError: cannot import name 'import_helper' from '<unknown>'"> |
 | StructTest.test_issue35714 | PASS | |
-| StructTest.test_struct_subclass_instantiation | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC TypeError 'object.**init**() takes exactly one argument (the instance to initialize)'"> |
+| StructTest.test_struct_subclass_instantiation | GUEST-WRONG-OUTPUT | `GOT<"ORACLE_EXC TypeError 'object.__init__() takes exactly one argument (the instance to initialize)'">` |
 | StructTest.test_repr | PASS | |
 | StructTest.test_operations_on_half_initialized_Struct | PASS | |
 | StructTest.test_float_round_trip | PASS | |
@@ -40,6 +40,7 @@
 | UnpackIteratorTest.test_arbitrary_buffer | PASS | |
 | UnpackIteratorTest.test_length_hint | PASS | |
 | UnpackIteratorTest.test_module_func | PASS | |
+| UnpackIteratorTest.test_half_float | GUEST-WRONG-OUTPUT | RUN<"ImportError: cannot import name 'import_helper' from '<unknown>'"> |
 
 ## Quarantined at conversion
 
@@ -53,7 +54,6 @@
 | StructTest.test_integers | uses-self.assertEqual |
 | StructTest.test_nN_code | unresolved-name:cm |
 | StructTest.test_c_complex_round_trip | self.assertComplexesAreIdentical |
-| UnpackIteratorTest.test_half_float | host-raised:SkipTest: No module named '_testcapi' |
 
 ## Expected vs got
 
@@ -75,9 +75,14 @@
 ### StructTest.test_struct_subclass_instantiation (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: GOT<"ORACLE_EXC TypeError 'object.**init**() takes exactly one argument (the instance to initialize)'">
+- got: `GOT<"ORACLE_EXC TypeError 'object.__init__() takes exactly one argument (the instance to initialize)'">`
 
 ### StructTest.test_unpack_from (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'abcd\',), (b\'abcd\',))"'>
+
+### UnpackIteratorTest.test_half_float (GUEST-WRONG-OUTPUT)
+
+- expected: host oracle = `ok`
+- got: RUN<"ImportError: cannot import name 'import_helper' from '<unknown>'">

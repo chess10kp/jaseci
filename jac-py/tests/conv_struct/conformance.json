@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "jac_sha": "8481147fa9db9a6fdc7554e57f96dcd31064b3eb",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,18 +10,18 @@
     "diff_runner.py",
     "jac-py/tests/conv_struct/conv_struct_pins.jac"
   ],
-  "generated_at": "2026-08-24T23:15:38",
+  "generated_at": "2026-08-25T17:32:57",
   "hashes": {
-    "pins_jac": "0f20d62577e90c6ec9e12e5af7cc91bef02b34a146983e7d18156c8fbbb86747",
-    "conversion_json": "ae937e5c22168133489c3770dfcf623ae0a3e72e636fb6221fe2bfe3c0dab66d",
+    "pins_jac": "40165768ba56ba08f0c9068eee4f7f97c6004e473d7430a5ab2761ea8e6111e9",
+    "conversion_json": "57dc0dabd7bbd6bce7257282d2c96c86063a07588a5c24bec3eda7df2bfa776b",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "struct",
   "counts": {
     "converted": 43,
-    "runnable": 34,
+    "runnable": 35,
     "green": 29,
-    "quarantined": 9
+    "quarantined": 8
   },
   "pins": [
     {
@@ -172,8 +172,9 @@
     },
     {
       "id": "UnpackIteratorTest.test_half_float",
-      "status": "quarantined",
-      "reason": "host-raised:SkipTest: No module named '_testcapi'"
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'import_helper' from '<unknown>'\">"
     },
     {
       "id": "StructTest.test__sizeof__",
