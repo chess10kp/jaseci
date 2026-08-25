@@ -3126,8 +3126,14 @@ def default_user_getattro(u: PyUserObj, name: str) -> PyObj {
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._get(u);
     }
+    # Instance-dict values stay RAW: CPython applies function-descriptor
+    # binding only to class/MRO entries, never to per-instance attributes (a
+    # stored function read as o.f is invoked unbound). Implicitly binding here
+    # wrapped a guest descriptor's OWN stored callables -- enum.property reads
+    # self.fget off its instance dict -- into methods bound to the descriptor,
+    # so the getter then received the descriptor as an extra leading argument.
     if name in u.attrs {
-        return bind_attribute(u.attrs[name], u);
+        return u.attrs[name];
     }
     found = classattr;
     if not is_error(found) {
@@ -3936,6 +3942,16 @@ def descriptor_get(value: PyObj, instance: PyObj, owner: PyObj) -> PyObj {
     }
     if value.t == "function" and not isinstance(instance, PyNoneType) {
         return PyBoundMethod(t="bound_method", function=value, receiver=instance);
+    }
+    # Generalized guest descriptors: any object whose CLASS defines __get__
+    # routes through the descriptor protocol exactly like a CPython type-dict
+    # entry carrying tp_descr_get (enum.property, DynamicClassAttribute, user
+    # descriptors). The MRO-resolved __get__ is invoked with (instance,
+    # owner); instance None on class-level access matches CPython's
+    # NULL-instance slot_tp_descr_get call, so the descriptor itself decides.
+    if isinstance(value, PyUserObj)
+        and user_has_dunder(value as PyUserObj, "__get__") {
+        return call_user_dunder(value as PyUserObj, "__get__", [instance, owner]);
     }
     return value;
 }
