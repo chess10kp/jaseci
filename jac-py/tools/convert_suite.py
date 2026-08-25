@@ -57,8 +57,25 @@ _DEFAULT_LIB = _REPO / "reference" / "cpython" / "Lib"
 _TESTS_DIR = _REPO / "jac-py" / "tests"
 _MANIFEST = _TESTS_DIR / "conformance_manifest_convpipe.json"
 
-TOOL_VERSION = "conv_suite-0.4.0"
+TOOL_VERSION = "conv_suite-0.5.0"
 CPYTHON_VERSION = "3.14.6"
+
+
+def resolve_oracle_python() -> str:
+    """Pick the host interpreter used to capture oracles.
+
+    The reference Lib tracks CPython ``CPYTHON_VERSION``; running it under an
+    older host (e.g. a 3.12 venv) breaks at import time (t-strings,
+    SRE module mismatch), so prefer a matching interpreter and fall back to
+    the current one.
+    """
+    import shutil
+    minor = CPYTHON_VERSION.rpartition(".")[0]  # e.g. "3.14"
+    for candidate in (f"python{minor}", f"python{CPYTHON_VERSION}"):
+        found = shutil.which(candidate)
+        if found:
+            return found
+    return sys.executable
 
 
 def attempt_header(command: list[str]) -> dict:
@@ -1736,7 +1753,7 @@ def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
         }
         try:
             proc = subprocess.run(
-                [sys.executable, str(script)],
+                [resolve_oracle_python(), str(script)],
                 cwd=str(tdp),
                 env=env,
                 capture_output=True,
