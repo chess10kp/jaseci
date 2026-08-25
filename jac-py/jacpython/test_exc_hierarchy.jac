@@ -356,3 +356,57 @@ test "oserror: mapping applies ONLY to multi-arg int-errno form" {
         "assert type(e).__name__ == 'PermissionError', type(e).__name__\n"
     );
 }
+
+test "chaining attrs: __class__ synthesis on every exc attribute value" {
+    # Set cause/context: the chained instance answers __class__ like the
+    # caught one does (same PyExceptionType synthesis).
+    vm_ok(
+        "try:\n"
+        "    try:\n"
+        "        raise ValueError('inner')\n"
+        "    except ValueError as ie:\n"
+        "        raise RuntimeError('outer') from ie\n"
+        "except RuntimeError as e:\n"
+        "    assert e.__cause__.__class__.__name__ == 'ValueError', \\\n"
+        "        e.__cause__.__class__.__name__\n"
+        "    assert type(e.__cause__).__name__ == 'ValueError'\n"
+    );
+    # Implicit context: same synthesis.
+    vm_ok(
+        "try:\n"
+        "    try:\n"
+        "        raise ValueError('inner')\n"
+        "    except ValueError:\n"
+        "        raise RuntimeError('outer')\n"
+        "except RuntimeError as e:\n"
+        "    assert e.__context__.__class__.__name__ == 'ValueError', \\\n"
+        "        e.__context__.__class__.__name__\n"
+    );
+    # UNSET cause reads as None, and None is not host-backed -- the identity
+    # dunder must synthesize (host oracle: None.__class__.__name__ ==
+    # 'NoneType'). This was the AttributeError before the fix.
+    vm_ok(
+        "e = ValueError('x')\n"
+        "assert e.__cause__ is None\n"
+        "assert e.__cause__.__class__.__name__ == 'NoneType', \\\n"
+        "    e.__cause__.__class__.__name__\n"
+    );
+    # __suppress_context__ (bool) and __notes__ (list) route through the
+    # host-backed fallback already; pinned so the audit surface stays green.
+    vm_ok(
+        "e = ValueError('x')\n"
+        "assert e.__suppress_context__.__class__.__name__ == 'bool', \\\n"
+        "    e.__suppress_context__.__class__.__name__\n"
+        "assert e.args.__class__.__name__ == 'tuple'\n"
+        "assert e.__notes__.__class__.__name__ == 'list'\n"
+    );
+    # __traceback__ is a native PyTraceback (never host-backed): its class
+    # surrogate names CPython's lowercase 'traceback' type.
+    vm_ok(
+        "try:\n"
+        "    raise ValueError('x')\n"
+        "except ValueError as e:\n"
+        "    assert e.__traceback__.__class__.__name__ == 'traceback', \\\n"
+        "        e.__traceback__.__class__.__name__\n"
+    );
+}

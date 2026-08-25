@@ -712,6 +712,19 @@ obj PyNoneType(PyObj) {
         # could ever match (item 41).
         return PyStr(t="str", val="n:4238894112");
     }
+
+    def tp_getattro(name: str) -> PyObj {
+        # Identity dunder: None.__class__ answers a type-identity surrogate
+        # whose __name__ is "NoneType". None is not host-backed (unlike
+        # int/str/tuple, whose __class__ falls through to host_getattr), so
+        # without this every `x.__class__.__name__` idiom on an unset
+        # exception chain attr (e.__cause__/e.__context__ default to None)
+        # raised AttributeError.
+        if name == "__class__" {
+            return py_exception_type("NoneType");
+        }
+        return py_error("AttributeError", name);
+    }
 }
 
 # Complex-tower arithmetic kernels (pure doubles, na-clean): shared by
@@ -2360,6 +2373,11 @@ obj PyTraceback(PyObj) {
             return PyTracebackFrame(
                 t="frame", frame_code=self.code, frame_lineno=self.tb_lineno
             );
+        }
+        # Identity dunder: type(e.__traceback__).__name__ == 'traceback'
+        # (CPython parity; e.__traceback__ is never host-backed).
+        if name2 == "__class__" {
+            return py_exception_type("traceback");
         }
         return py_error("AttributeError", name2);
     }
