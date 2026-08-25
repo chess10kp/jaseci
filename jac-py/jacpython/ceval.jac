@@ -8263,6 +8263,37 @@ def eg_validate_star_target(target: PyObj) -> PyObj {
     return py_none();
 }
 
+# _PyEval_CheckExceptTypeValid: every plain-except target must be an exception
+# class (tuple members included) -- builtin type, host BaseException subclass,
+# or a guest user class whose MRO reaches one. Unlike except*, anything else
+# (including BaseException instances on 3.14) raises CPython's
+# "catching classes..." TypeError before any matching happens.
+def except_validate_target(target: PyObj) -> PyObj {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            invalid = except_validate_target(item);
+            if is_error(invalid) {
+                return invalid;
+            }
+        }
+        return py_none();
+    }
+    if target.t == "exception_type" {
+        return py_none();
+    }
+    if isinstance(target, PyHostProxy)
+        and bool(_jac_is_exception_type((target as PyHostProxy).val)) {
+        return py_none();
+    }
+    if isinstance(target, PyClass) and eg_target_family(target) != "" {
+        return py_none();
+    }
+    return py_error(
+        "TypeError",
+        "catching classes that do not inherit from BaseException is not allowed"
+    );
+}
+
 # True iff a raised instance is an ExceptionGroup (BaseExceptionGroup family).
 # User subclasses carry their builtin ancestor in `family` -- type_name alone
 # would hide class MyGrp(ExceptionGroup) from the check.
@@ -16490,6 +16521,19 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         }
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
+            # _PyEval_CheckExceptTypeValid fires before any match attempt: a
+            # non-exception-class target raises TypeError here, not a False
+            # match result.
+            invalid_target = except_validate_target(match_type);
+            if is_error(invalid_target) {
+                stack.pop();
+                target = recover_exception(co, invalid_target, offset, stack);
+                if target >= 0 {
+                    ip = target;
+                    continue;
+                }
+                return invalid_target;
+            }
             exception = stack[len(stack) - 1];
             stack.append(
                 PyBool(t="bool", val=exception_matches(exception, match_type))
