@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "467e25ed366d1f74480276f47f1ac0ad2c254269",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_symtable.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_symtable",
+    "--name",
+    "conv_symtable"
+  ],
+  "generated_at": "2026-08-25T10:54:10",
+  "hashes": {
+    "pins_jac": "4c6821ec7fa0a1246ac6f892970be933e947dea69c158937b0d8ab3ee6e61b75"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_symtable.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "symtable",
+  "pins_file": "conv_symtable_pins.jac",
+  "pins": [
+    {
+      "ident": "SymtableTest.test_annotated",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\n\ndef _t():\n    st1 = symtable.symtable('def f():\\n    x: int\\n', 'test', 'exec')\n    st2 = st1.get_children()[1]\n    assert st2.get_type() == 'function', ('assertEqual', st2.get_type(), 'function')\n    assert st2.lookup('x').is_local(), ('assertTrue', st2.lookup('x').is_local())\n    assert st2.lookup('x').is_annotated(), ('assertTrue', st2.lookup('x').is_annotated())\n    assert not st2.lookup('x').is_global(), ('assertFalse', st2.lookup('x').is_global())\n    st3 = symtable.symtable('def f():\\n    x = 1\\n', 'test', 'exec')\n    st4 = st3.get_children()[1]\n    assert st4.get_type() == 'function', ('assertEqual', st4.get_type(), 'function')\n    assert st4.lookup('x').is_local(), ('assertTrue', st4.lookup('x').is_local())\n    assert not st4.lookup('x').is_annotated(), ('assertFalse', st4.lookup('x').is_annotated())\n    st5 = symtable.symtable('global x\\nx: int', 'test', 'exec')\n    assert st5.lookup('x').is_global(), ('assertTrue', st5.lookup('x').is_global())\n    st6 = symtable.symtable('def g():\\n    x = 2\\n    def f():\\n        nonlocal x\\n    x: int', 'test', 'exec')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SymtableTest.test_filename_correct",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\n\ndef _t():\n\n    def checkfilename(brokencode, offset):\n        try:\n            symtable.symtable(brokencode, 'spam', 'exec')\n        except SyntaxError as e:\n            assert e.filename == 'spam', ('assertEqual', e.filename, 'spam')\n            assert e.lineno == 1, ('assertEqual', e.lineno, 1)\n            assert e.offset == offset, ('assertEqual', e.offset, offset)\n        else:\n            raise AssertionError('no SyntaxError for %r' % (brokencode,))\n    checkfilename('def f(x): foo)(', 14)\n    checkfilename('def f(x): global x', 11)\n    symtable.symtable('pass', b'spam', 'exec')\n    try:\n        symtable.symtable('pass', bytearray(b'spam'), 'exec')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        symtable.symtable('pass', memoryview(b'spam'), 'exec')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        symtable.symtable('pass', list(b'spam'), 'exec')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SymtableTest.test_eval",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\n\ndef _t():\n    symbols = symtable.symtable('42', '?', 'eval')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SymtableTest.test_single",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\n\ndef _t():\n    symbols = symtable.symtable('42', '?', 'single')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SymtableTest.test_exec",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\n\ndef _t():\n    symbols = symtable.symtable('def f(x): return x', '?', 'exec')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SymtableTest.test_bytes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\nTEST_CODE = '\\nimport sys\\n\\nglob = 42\\nsome_var = 12\\nsome_non_assigned_global_var: int\\nsome_assigned_global_var = 11\\n\\nclass Mine:\\n    instance_var = 24\\n    def a_method(p1, p2):\\n        pass\\n\\ndef spam(a, b, *var, **kw):\\n    global bar\\n    global some_assigned_global_var\\n    some_assigned_global_var = 12\\n    bar = 47\\n    some_var = 10\\n    x = 23\\n    glob\\n    def internal():\\n        return x\\n    def other_internal():\\n        nonlocal some_var\\n        some_var = 3\\n        return some_var\\n    return internal\\n\\ndef foo():\\n    pass\\n\\ndef namespace_test(): pass\\ndef namespace_test(): pass\\n\\ntype Alias = int\\ntype GenericAlias[T] = list[T]\\n\\ndef generic_spam[T](a):\\n    pass\\n\\nclass GenericMine[T: int, U: (int, str) = int]:\\n    pass\\n'\n\ndef find_block(block, name):\n    for ch in block.get_children():\n        if ch.get_name() == name:\n            return ch\n\ndef _t():\n    top = symtable.symtable(TEST_CODE.encode('utf8'), '?', 'exec')\n    assert find_block(top, 'Mine') is not None, ('assertIsNotNone', find_block(top, 'Mine'))\n    code = b'# -*- coding: iso8859-15 -*-\\nclass \\xb4: pass\\n'\n    top = symtable.symtable(code, '?', 'exec')\n    assert find_block(top, '\u017d') is not None, ('assertIsNotNone', find_block(top, '\u017d'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SymtableTest.test__symtable_refleak",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\n\ndef _t():\n    mortal_str = 'this is a mortal string'\n    try:\n        symtable.symtable(*('', mortal_str, 1))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "CommandLineTest.test_stdin",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import symtable\nfrom test import support\nTEST_CODE = '\\nimport sys\\n\\nglob = 42\\nsome_var = 12\\nsome_non_assigned_global_var: int\\nsome_assigned_global_var = 11\\n\\nclass Mine:\\n    instance_var = 24\\n    def a_method(p1, p2):\\n        pass\\n\\ndef spam(a, b, *var, **kw):\\n    global bar\\n    global some_assigned_global_var\\n    some_assigned_global_var = 12\\n    bar = 47\\n    some_var = 10\\n    x = 23\\n    glob\\n    def internal():\\n        return x\\n    def other_internal():\\n        nonlocal some_var\\n        some_var = 3\\n        return some_var\\n    return internal\\n\\ndef foo():\\n    pass\\n\\ndef namespace_test(): pass\\ndef namespace_test(): pass\\n\\ntype Alias = int\\ntype GenericAlias[T] = list[T]\\n\\ndef generic_spam[T](a):\\n    pass\\n\\nclass GenericMine[T: int, U: (int, str) = int]:\\n    pass\\n'\n\ndef _t():\n    with support.captured_stdin() as stdin:\n        stdin.write(TEST_CODE)\n        stdin.seek(0)\n        with support.captured_stdout() as stdout:\n            symtable.main([])\n        out = stdout.getvalue()\n        stdin.seek(0)\n        with support.captured_stdout() as stdout:\n            symtable.main(['-'])\n        assert stdout.getvalue() == out, ('assertEqual', stdout.getvalue(), out)\n    lines = out.splitlines()\n    assert \"symbol table for module from file '<stdin>':\" in lines, ('assertIn', \"symbol table for module from file '<stdin>':\", lines)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "SymtableTest.test_type",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_id",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_optimized",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_nested",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_children",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_lineno",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_function_info",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_globals",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_nonlocal",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_local",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_free",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_referenced",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_parameters",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_symbol_lookup",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_namespaces",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_assigned",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_imported",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_name",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_class_get_methods",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "SymtableTest.test_symtable_repr",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_symbol_repr",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "SymtableTest.test_symtable_entry_repr",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "ident": "ComprehensionTests.test_loopvar_in_only_one_scope",
+      "reason": "helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(deepcopy-recursion))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))"
+    },
+    {
+      "ident": "CommandLineTest.test_file",
+      "reason": "self.addCleanup"
+    }
+  ],
+  "counts": {
+    "extracted": 32,
+    "pinned": 8,
+    "quarantined": 24
+  }
+}

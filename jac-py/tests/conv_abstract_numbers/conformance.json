@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "e28b96712cf2972a6bd4dbe85ee2429b7e3837a1",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_abstract_numbers/conv_abstract_numbers_pins.jac"
+  ],
+  "generated_at": "2026-08-25T11:03:29",
+  "hashes": {
+    "pins_jac": "008d7f48de0df9dce969fc4196cb2031855957a23367e0e9147544d8db4c05cb",
+    "conversion_json": "a8111994b73fa047a36a6b62091b6e2c3d3d295ea58efab67c933bac89c3e6d5",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "abstract_numbers",
+  "counts": {
+    "converted": 7,
+    "runnable": 7,
+    "green": 1,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "TestNumbers.test_int",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsSubclass\\', <class \\'int\\'>, <class \\'numbers.Integral\\'>)\"'>"
+    },
+    {
+      "id": "TestNumbers.test_float",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsSubclass\\', <class \\'float\\'>, <class \\'numbers.Real\\'>)\"'>"
+    },
+    {
+      "id": "TestNumbers.test_complex",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsSubclass\\', <class \\'complex\\'>, <class \\'numbers.Complex\\'>)\"'>"
+    },
+    {
+      "id": "TestNumbersDefaultMethods.test_complex",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertFalse\\', True)\"'>"
+    },
+    {
+      "id": "TestNumbersDefaultMethods.test_real",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"unsupported operand type(s) for divmod(): \\'MyReal\\' and \\'int\\'\"'>"
+    },
+    {
+      "id": "TestNumbersDefaultMethods.test_rational",
+      "status": "pass"
+    },
+    {
+      "id": "TestNumbersDefaultMethods.test_integral",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'MyIntegral\\' object cannot be interpreted as an integer\"'>"
+    }
+  ]
+}
