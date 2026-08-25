@@ -1,0 +1,494 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "27e8be18863ab41668efd861d6ee4aa88664d781",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_sys/conv_sys_pins.jac"
+  ],
+  "generated_at": "2026-08-25T13:23:17",
+  "hashes": {
+    "pins_jac": "ed46df98b69b36f8c587db5786398bbd212e04b705e5da2478bacdab562374d6",
+    "conversion_json": "b2592c7d3c36f3b76695b24d1c2f1d78039f202f7eeaff6a8aced50612037947",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "sys",
+  "counts": {
+    "converted": 97,
+    "runnable": 19,
+    "green": 19,
+    "quarantined": 78
+  },
+  "pins": [
+    {
+      "id": "DisplayHookTest.test_original_displayhook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "DisplayHookTest.test_lost_displayhook",
+      "status": "pass"
+    },
+    {
+      "id": "DisplayHookTest.test_custom_displayhook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "DisplayHookTest.test_gh130163",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "ActiveExceptionTests.test_exc_info_no_exception",
+      "status": "pass"
+    },
+    {
+      "id": "ActiveExceptionTests.test_sys_exception_no_exception",
+      "status": "pass"
+    },
+    {
+      "id": "ActiveExceptionTests.test_exc_info_with_exception_instance",
+      "status": "pass"
+    },
+    {
+      "id": "ActiveExceptionTests.test_exc_info_with_exception_type",
+      "status": "pass"
+    },
+    {
+      "id": "ActiveExceptionTests.test_sys_exception_with_exception_instance",
+      "status": "pass"
+    },
+    {
+      "id": "ActiveExceptionTests.test_sys_exception_with_exception_type",
+      "status": "pass"
+    },
+    {
+      "id": "ExceptHookTest.test_excepthook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_getdefaultencoding",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_switchinterval",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_getrecursionlimit",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_setrecursionlimit",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_getwindowsversion",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_call_tracing",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_refcount",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_getframemodulename",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 'unittest.case', '__main__')"
+    },
+    {
+      "id": "SysModuleTest.test_attributes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: module '_thread' has no attribute 'start_joinable_thread'"
+    },
+    {
+      "id": "SysModuleTest.test_thread_info",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_43581",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_intern",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_sys_flags",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_sys_flags_no_instantiation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_sys_version_info_no_instantiation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_sys_getwindowsversion_no_instantiation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_getfilesystemencoding",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_implementation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_debugmallocstats",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: module '_thread' has no attribute 'start_joinable_thread'"
+    },
+    {
+      "id": "SysModuleTest.test_is_gil_enabled",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_is_finalizing",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_issue20602",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_sys_ignores_cleaning_up_user_data",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_no_duplicates_in_meta_path",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_module_names",
+      "status": "pass"
+    },
+    {
+      "id": "SysModuleTest.test_stdlib_dir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "UnraisableHookTest.test_original_unraisablehook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "UnraisableHookTest.test_original_unraisablehook_exception_qualname",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "UnraisableHookTest.test_original_unraisablehook_wrong_type",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "UnraisableHookTest.test_custom_unraisablehook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "UnraisableHookTest.test_custom_unraisablehook_fail",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_gc_head_size",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_errors",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_default",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_objecttypes",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_slots",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_pythontypes",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_asyncgen_hooks",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SizeofTest.test_changing_sys_stderr_and_removing_reference",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_invalid_pid",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'sys' has no attribute 'remote_exec'"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_invalid_script",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'sys' has no attribute 'remote_exec'"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_invalid_script_path",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'sys' has no attribute 'remote_exec'"
+    },
+    {
+      "id": "TestSysJIT.test_jit_is_available",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestSysJIT.test_jit_is_enabled",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestSysJIT.test_jit_is_active",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "SysModuleTest.test_exit_codes_under_repl",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "id": "SysModuleTest.test_dlopenflags",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_current_frames",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "SysModuleTest.test_current_exceptions",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "SysModuleTest.test_emscripten_info",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_subinterp_intern_dynamically_allocated",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SysModuleTest.test_subinterp_intern_statically_allocated",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SysModuleTest.test_subinterp_intern_singleton",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SysModuleTest.test_ioencoding",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "id": "SysModuleTest.test_ioencoding_nonascii",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_executable",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "SysModuleTest.test_c_locale_surrogateescape",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "id": "SysModuleTest.test_posix_locale_surrogateescape",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "id": "SysModuleTest.test_getallocatedblocks",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_getandroidapilevel",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_sys_tracebacklimit",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "id": "SysModuleTest.test__enablelegacywindowsfsencoding",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_orig_argv",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "id": "SysModuleTest.test_getobjects",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_pystats",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SysModuleTest.test_disable_gil_abi",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_undecodable",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "ExceptHookTest.test_original_excepthook",
+      "status": "quarantined",
+      "reason": "self.assertEndsWith"
+    },
+    {
+      "id": "ExceptHookTest.test_excepthook_bytes_filename",
+      "status": "quarantined",
+      "reason": "self.assertEndsWith"
+    },
+    {
+      "id": "SysModuleTest.test_exit",
+      "status": "quarantined",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "id": "SysModuleTest.test_recursionlimit_recovery",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "SysModuleTest.test_setrecursionlimit_to_depth",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "SysModuleTest.test_clear_type_cache",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "id": "UnraisableHookTest.test_original_unraisablehook_err",
+      "status": "quarantined",
+      "reason": "self.assertEndsWith"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_bytes",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_with_self_process",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_raises_audit_event",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_with_exception",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_new_namespace_for_each_remote_exec",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_disabled_by_env",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_disabled_by_xoption",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_syntax_error",
+      "status": "quarantined",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_in_process_without_debug_fails_envvar",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "TestRemoteExec.test_remote_exec_in_process_without_debug_fails_xoption",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    },
+    {
+      "id": "SysModuleTest.test_getframe",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    }
+  ]
+}

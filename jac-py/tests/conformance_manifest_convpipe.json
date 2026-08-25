@@ -2,7 +2,7 @@
   "version": 1,
   "wave": "conv_pipeline",
   "description": "D2 mechanical test-conversion pipeline (convert_suite/diff_runner)",
-  "module_count": 133,
+  "module_count": 135,
   "modules": [
     {
       "stem": "array",
@@ -2302,6 +2302,42 @@
       "libtest_snippets": [],
       "notes": "12 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "linecache.conv.json"
+    },
+    {
+      "stem": "sys",
+      "gate_type": "oracle",
+      "status": "partial",
+      "oracle_tests": [
+        "jac-py/tests/conv_sys/conv_sys_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "19 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "jac-py/tests/conv_sys/sys.conv.json",
+      "jacpython_results": {
+        "sys": {
+          "passed": 19,
+          "total": 19,
+          "notes": "19/19 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
+    },
+    {
+      "stem": "sourceencoding",
+      "gate_type": "oracle",
+      "status": "partial",
+      "oracle_tests": [
+        "jac-py/tests/conv_sourceencoding/conv_sourceencoding_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "jac-py/tests/conv_sourceencoding/sourceencoding.conv.json",
+      "jacpython_results": {
+        "sourceencoding": {
+          "passed": 6,
+          "total": 8,
+          "notes": "6/8 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     }
   ]
 }

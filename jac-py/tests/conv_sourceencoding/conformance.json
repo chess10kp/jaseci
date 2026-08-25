@@ -1,0 +1,479 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "27e8be18863ab41668efd861d6ee4aa88664d781",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_sourceencoding/conv_sourceencoding_pins.jac"
+  ],
+  "generated_at": "2026-08-25T13:23:18",
+  "hashes": {
+    "pins_jac": "d398a6f067b25ffb1a2fbbe8c3cd5b73d4fe2f1be5c5841378a6150deb8c68d2",
+    "conversion_json": "ede9d6f90398a4c4b227352b322c479e4aab0882b5344c0eaf5a82208b2d7bbc",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "sourceencoding",
+  "counts": {
+    "converted": 91,
+    "runnable": 8,
+    "green": 6,
+    "quarantined": 83
+  },
+  "pins": [
+    {
+      "id": "MiscSourceEncodingTest.test_import_encoded_module",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC ModuleNotFoundError \"No module named \\'test.encoded_modules\\'\"'>"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_compilestring",
+      "status": "pass"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_issue2301",
+      "status": "pass"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_issue4626",
+      "status": "pass"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_issue3297",
+      "status": "pass"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_issue7820",
+      "status": "pass"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_truncated_utf8_at_eof",
+      "status": "pass"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_error_message",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_exec_valid_coding",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'\u00aa\u00a7\\', \\'\u3047\\')\"'>"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_file_parse",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_file_parse_error_multiline",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_tokenizer_fstring_warning_in_first_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_default_coding",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_second_coding_line_empty_first_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_third_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_double_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_double_coding_same_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_double_coding_utf8",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_long_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_long_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_long_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_long_coding_name",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_long_first_utf8_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_long_second_utf8_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_first_non_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_second_non_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_first_utf8_coding_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_second_utf8_coding_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_bom",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_bom_utf8_comments",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_bom_and_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_bom_and_non_utf8_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_bom_and_non_utf8_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_non_utf8_shebang",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_shebang_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_non_utf8_shebang_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_non_utf8_second_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_bom_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf_8_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_crlf",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_crcrlf",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_crcrcrlf",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_crcrcrlf2",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_nul_in_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_nul_in_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_20731",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "id": "UTF8ValidatorTest.test_invalid_utf8",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_bad_coding",
+      "status": "quarantined",
+      "reason": "helper:verify_bad_module(unresolved-name:__file__)"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_bad_coding2",
+      "status": "quarantined",
+      "reason": "helper:verify_bad_module(unresolved-name:__file__)"
+    },
+    {
+      "id": "MiscSourceEncodingTest.test_error_from_string",
+      "status": "quarantined",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_default_coding",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_first_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_second_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_second_coding_line_empty_first_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_third_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_double_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_double_coding_same_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_double_coding_utf8",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_long_first_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_long_second_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_long_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_long_coding_name",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_long_first_utf8_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_long_second_utf8_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_first_non_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_second_non_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_first_utf8_coding_line_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_second_utf8_coding_line_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_bom",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_bom_utf8_comments",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_utf8_bom_and_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_bom_and_non_utf8_first_coding_line",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_bom_and_non_utf8_second_coding_line",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_non_utf8_shebang",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_shebang_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_non_utf8_shebang_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_non_utf8_second_line_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_bom_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf_8_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_utf8_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_crlf",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_crcrlf",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_crcrcrlf",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "FileSourceEncodingTest.test_crcrcrlf2",
+      "status": "quarantined",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_nul_in_first_coding_line",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "id": "BytesSourceEncodingTest.test_nul_in_second_coding_line",
+      "status": "quarantined",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    }
+  ]
+}

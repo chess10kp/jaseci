@@ -1,0 +1,535 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "27e8be18863ab41668efd861d6ee4aa88664d781",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_sys.py",
+    "-o",
+    "/var/tmp/worker6-310-3056247/jac-py/tests/conv_sys",
+    "--name",
+    "conv_sys"
+  ],
+  "generated_at": "2026-08-25T13:22:52",
+  "hashes": {
+    "pins_jac": "ed46df98b69b36f8c587db5786398bbd212e04b705e5da2478bacdab562374d6"
+  },
+  "source_file": "reference/cpython/Lib/test/test_sys.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "sys",
+  "pins_file": "conv_sys_pins.jac",
+  "pins": [
+    {
+      "ident": "DisplayHookTest.test_original_displayhook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "DisplayHookTest.test_lost_displayhook",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    displayhook = sys.displayhook\n    try:\n        del sys.displayhook\n        code = compile('42', '<string>', 'single')\n        try:\n            eval(*(code,))\n        except RuntimeError:\n            pass\n    finally:\n        sys.displayhook = displayhook\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "DisplayHookTest.test_custom_displayhook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "DisplayHookTest.test_gh130163",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "ActiveExceptionTests.test_exc_info_no_exception",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    assert sys.exc_info() == (None, None, None), ('assertEqual', sys.exc_info(), (None, None, None))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ActiveExceptionTests.test_sys_exception_no_exception",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    assert sys.exception() == None, ('assertEqual', sys.exception(), None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ActiveExceptionTests.test_exc_info_with_exception_instance",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    def f():\n        raise ValueError(42)\n    try:\n        f()\n    except Exception as e_:\n        e = e_\n        exc_info = sys.exc_info()\n    assert isinstance(e, ValueError), ('assertIsInstance', e, ValueError)\n    assert exc_info[0] is ValueError, ('assertIs', exc_info[0], ValueError)\n    assert exc_info[1] is e, ('assertIs', exc_info[1], e)\n    assert exc_info[2] is e.__traceback__, ('assertIs', exc_info[2], e.__traceback__)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ActiveExceptionTests.test_exc_info_with_exception_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    def f():\n        raise ValueError\n    try:\n        f()\n    except Exception as e_:\n        e = e_\n        exc_info = sys.exc_info()\n    assert isinstance(e, ValueError), ('assertIsInstance', e, ValueError)\n    assert exc_info[0] is ValueError, ('assertIs', exc_info[0], ValueError)\n    assert exc_info[1] is e, ('assertIs', exc_info[1], e)\n    assert exc_info[2] is e.__traceback__, ('assertIs', exc_info[2], e.__traceback__)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ActiveExceptionTests.test_sys_exception_with_exception_instance",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    def f():\n        raise ValueError(42)\n    try:\n        f()\n    except Exception as e_:\n        e = e_\n        exc = sys.exception()\n    assert isinstance(e, ValueError), ('assertIsInstance', e, ValueError)\n    assert exc is e, ('assertIs', exc, e)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ActiveExceptionTests.test_sys_exception_with_exception_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    def f():\n        raise ValueError\n    try:\n        f()\n    except Exception as e_:\n        e = e_\n        exc = sys.exception()\n    assert isinstance(e, ValueError), ('assertIsInstance', e, ValueError)\n    assert exc is e, ('assertIs', exc, e)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ExceptHookTest.test_excepthook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_getdefaultencoding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    try:\n        sys.getdefaultencoding(*(42,))\n    except TypeError:\n        pass\n    assert isinstance(sys.getdefaultencoding(), str), ('assertIsInstance', sys.getdefaultencoding(), str)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_switchinterval",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    try:\n        sys.setswitchinterval()\n    except TypeError:\n        pass\n    try:\n        sys.setswitchinterval(*('a',))\n    except TypeError:\n        pass\n    try:\n        sys.setswitchinterval(*(-1.0,))\n    except ValueError:\n        pass\n    try:\n        sys.setswitchinterval(*(0.0,))\n    except ValueError:\n        pass\n    orig = sys.getswitchinterval()\n    assert orig < 0.5, ('assertTrue', orig < 0.5)\n    try:\n        for n in (1e-05, 0.05, 3.0, orig):\n            sys.setswitchinterval(n)\n            assert round(sys.getswitchinterval() - n, 7) == 0, ('assertAlmostEqual', sys.getswitchinterval(), n)\n    finally:\n        sys.setswitchinterval(orig)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_getrecursionlimit",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    limit = sys.getrecursionlimit()\n    assert isinstance(limit, int), ('assertIsInstance', limit, int)\n    assert limit > 1, ('assertGreater', limit, 1)\n    try:\n        sys.getrecursionlimit(*(42,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_setrecursionlimit",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    old_limit = sys.getrecursionlimit()\n    try:\n        sys.setrecursionlimit(10005)\n        assert sys.getrecursionlimit() == 10005, ('assertEqual', sys.getrecursionlimit(), 10005)\n        try:\n            sys.setrecursionlimit()\n        except TypeError:\n            pass\n        try:\n            sys.setrecursionlimit(*(-42,))\n        except ValueError:\n            pass\n    finally:\n        sys.setrecursionlimit(old_limit)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_getwindowsversion",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_call_tracing",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    try:\n        sys.call_tracing(*(type, 2))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_refcount",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    global n\n    try:\n        sys.getrefcount()\n    except TypeError:\n        pass\n    c = sys.getrefcount(None)\n    n = None\n    assert sys.getrefcount(None) == c, ('assertEqual', sys.getrefcount(None), c)\n    del n\n    assert sys.getrefcount(None) == c, ('assertEqual', sys.getrefcount(None), c)\n    if hasattr(sys, 'gettotalrefcount'):\n        assert isinstance(sys.gettotalrefcount(), int), ('assertIsInstance', sys.gettotalrefcount(), int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_getframemodulename",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 'unittest.case', '__main__')"
+    },
+    {
+      "ident": "SysModuleTest.test_attributes",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: module '_thread' has no attribute 'start_joinable_thread'"
+    },
+    {
+      "ident": "SysModuleTest.test_thread_info",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    info = sys.thread_info\n    assert len(info) == 3, ('assertEqual', len(info), 3)\n    assert info.name in ('nt', 'pthread', 'pthread-stubs', 'solaris', None), ('assertIn', info.name, ('nt', 'pthread', 'pthread-stubs', 'solaris', None))\n    assert info.lock in ('semaphore', 'mutex+cond', None), ('assertIn', info.lock, ('semaphore', 'mutex+cond', None))\n    if sys.platform.startswith(('linux', 'android', 'freebsd')):\n        assert info.name == 'pthread', ('assertEqual', info.name, 'pthread')\n    elif sys.platform == 'win32':\n        assert info.name == 'nt', ('assertEqual', info.name, 'nt')\n    elif sys.platform == 'emscripten':\n        assert info.name in {'pthread', 'pthread-stubs'}, ('assertIn', info.name, {'pthread', 'pthread-stubs'})\n    elif sys.platform == 'wasi':\n        assert info.name == 'pthread-stubs', ('assertEqual', info.name, 'pthread-stubs')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_43581",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    assert sys.__stdout__.encoding == sys.__stderr__.encoding, ('assertEqual', sys.__stdout__.encoding, sys.__stderr__.encoding)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_intern",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_sys_flags",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    assert sys.flags, ('assertTrue', sys.flags)\n    attrs = ('debug', 'inspect', 'interactive', 'optimize', 'dont_write_bytecode', 'no_user_site', 'no_site', 'ignore_environment', 'verbose', 'bytes_warning', 'quiet', 'hash_randomization', 'isolated', 'dev_mode', 'utf8_mode', 'warn_default_encoding', 'safe_path', 'int_max_str_digits')\n    for attr in attrs:\n        assert hasattr(sys.flags, attr), ('assertHasAttr', sys.flags, attr)\n        attr_type = bool if attr in ('dev_mode', 'safe_path') else int\n        assert type(getattr(sys.flags, attr)) == attr_type, ('assertEqual', type(getattr(sys.flags, attr)), attr_type)\n    assert repr(sys.flags), ('assertTrue', repr(sys.flags))\n    assert len(sys.flags) == len(attrs), ('assertEqual', len(sys.flags), len(attrs))\n    assert sys.flags.utf8_mode in {0, 1, 2}, ('assertIn', sys.flags.utf8_mode, {0, 1, 2})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_sys_flags_no_instantiation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_sys_version_info_no_instantiation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_sys_getwindowsversion_no_instantiation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_getfilesystemencoding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import codecs\nimport sys\n\ndef check_fsencoding(fs_encoding, expected=None):\n    assert fs_encoding is not None, ('assertIsNotNone', fs_encoding)\n    codecs.lookup(fs_encoding)\n    if expected:\n        assert fs_encoding == expected, ('assertEqual', fs_encoding, expected)\n\ndef _t():\n    fs_encoding = sys.getfilesystemencoding()\n    if sys.platform == 'darwin':\n        expected = 'utf-8'\n    else:\n        expected = None\n    check_fsencoding(fs_encoding, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_implementation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_debugmallocstats",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: module '_thread' has no attribute 'start_joinable_thread'"
+    },
+    {
+      "ident": "SysModuleTest.test_is_gil_enabled",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_is_finalizing",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_issue20602",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_sys_ignores_cleaning_up_user_data",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SysModuleTest.test_no_duplicates_in_meta_path",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    assert len(sys.meta_path) == len(set(sys.meta_path)), ('assertEqual', len(sys.meta_path), len(set(sys.meta_path)))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_module_names",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    assert isinstance(sys.stdlib_module_names, frozenset), ('assertIsInstance', sys.stdlib_module_names, frozenset)\n    for name in sys.stdlib_module_names:\n        assert isinstance(name, str), ('assertIsInstance', name, str)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SysModuleTest.test_stdlib_dir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "UnraisableHookTest.test_original_unraisablehook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "UnraisableHookTest.test_original_unraisablehook_exception_qualname",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "UnraisableHookTest.test_original_unraisablehook_wrong_type",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "UnraisableHookTest.test_custom_unraisablehook",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "UnraisableHookTest.test_custom_unraisablehook_fail",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_gc_head_size",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_errors",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_default",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_objecttypes",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_slots",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_pythontypes",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_asyncgen_hooks",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "SizeofTest.test_changing_sys_stderr_and_removing_reference",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_invalid_pid",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'sys' has no attribute 'remote_exec'"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_invalid_script",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'sys' has no attribute 'remote_exec'"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_invalid_script_path",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'sys' has no attribute 'remote_exec'"
+    },
+    {
+      "ident": "TestSysJIT.test_jit_is_available",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestSysJIT.test_jit_is_enabled",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestSysJIT.test_jit_is_active",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "SysModuleTest.test_exit_codes_under_repl",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "ident": "SysModuleTest.test_dlopenflags",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_current_frames",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "SysModuleTest.test_current_exceptions",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "SysModuleTest.test_emscripten_info",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_subinterp_intern_dynamically_allocated",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SysModuleTest.test_subinterp_intern_statically_allocated",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SysModuleTest.test_subinterp_intern_singleton",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SysModuleTest.test_ioencoding",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "ident": "SysModuleTest.test_ioencoding_nonascii",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_executable",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "SysModuleTest.test_c_locale_surrogateescape",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "ident": "SysModuleTest.test_posix_locale_surrogateescape",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "ident": "SysModuleTest.test_getallocatedblocks",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_getandroidapilevel",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_sys_tracebacklimit",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "ident": "SysModuleTest.test__enablelegacywindowsfsencoding",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_orig_argv",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "ident": "SysModuleTest.test_getobjects",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_pystats",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SysModuleTest.test_disable_gil_abi",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_undecodable",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "ExceptHookTest.test_original_excepthook",
+      "reason": "self.assertEndsWith"
+    },
+    {
+      "ident": "ExceptHookTest.test_excepthook_bytes_filename",
+      "reason": "self.assertEndsWith"
+    },
+    {
+      "ident": "SysModuleTest.test_exit",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "ident": "SysModuleTest.test_recursionlimit_recovery",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "SysModuleTest.test_setrecursionlimit_to_depth",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "SysModuleTest.test_clear_type_cache",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "UnraisableHookTest.test_original_unraisablehook_err",
+      "reason": "self.assertEndsWith"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_bytes",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_with_self_process",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_raises_audit_event",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_with_exception",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_new_namespace_for_each_remote_exec",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_disabled_by_env",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_disabled_by_xoption",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_syntax_error",
+      "reason": "helper:_run_remote_exec_test(self.addCleanup)"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_in_process_without_debug_fails_envvar",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "TestRemoteExec.test_remote_exec_in_process_without_debug_fails_xoption",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "SysModuleTest.test_getframe",
+      "reason": "self.skipTest"
+    }
+  ],
+  "counts": {
+    "extracted": 97,
+    "pinned": 19,
+    "quarantined": 78
+  }
+}
