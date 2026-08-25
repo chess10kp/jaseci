@@ -280,6 +280,10 @@ obj PyStr(PyObj) {
 
     def mp_subscript(index: PyObj) -> PyObj {
         if isinstance(index, PySlice) {
+            zerr = slice_step_zero_err(index as PySlice);
+            if is_error(zerr) {
+                return zerr;
+            }
             return PyStr(t="str", val=_slice_str(self.val, index as PySlice));
         }
         if index.t != "int" {
@@ -319,6 +323,10 @@ obj PyBytes(PyObj) {
 
     def mp_subscript(index: PyObj) -> PyObj {
         if isinstance(index, PySlice) {
+            zerr = slice_step_zero_err(index as PySlice);
+            if is_error(zerr) {
+                return zerr;
+            }
             return PyBytes(t="bytes", val=_slice_ints(self.val, index as PySlice));
         }
         if index.t != "int" {
@@ -583,6 +591,10 @@ obj PyTuple(PyObj) {
 
     def mp_subscript(index: PyObj) -> PyObj {
         if isinstance(index, PySlice) {
+            zerr = slice_step_zero_err(index as PySlice);
+            if is_error(zerr) {
+                return zerr;
+            }
             return PyTuple(t="tuple", items=_slice_objs(self.items, index as PySlice));
         }
         if index.t != "int" {
@@ -634,6 +646,10 @@ obj PyList(PyObj) {
 
     def mp_subscript(index: PyObj) -> PyObj {
         if isinstance(index, PySlice) {
+            zerr = slice_step_zero_err(index as PySlice);
+            if is_error(zerr) {
+                return zerr;
+            }
             return PyList(t="list", items=_slice_objs(self.items, index as PySlice));
         }
         idx = index.to_index();
@@ -670,6 +686,10 @@ obj PyList(PyObj) {
         if isinstance(index, PySlice) {
             # del lst[a:b:c] -- rebuild the list without the sliced positions
             # (re._constants does `del OPCODES[-2:]`).
+            zerr = slice_step_zero_err(index as PySlice);
+            if is_error(zerr) {
+                return zerr;
+            }
             b = slice_indices(index as PySlice, len(self.items));
             si = b[0];
             stop = b[1];
@@ -1586,6 +1606,18 @@ def _adjust_index(i: int, length: int, neg: bool) -> int {
     return i;
 }
 
+# CPython's PySlice_AdjustIndices rejects a zero step before any index math
+# ("ValueError: slice step cannot be zero"); without this gate a zero step
+# spins every slicing loop below forever (l[5:1:0] hung the VM). Callers that
+# return PyObj check this before invoking slice_indices, which itself stays a
+# pure list[int] helper.
+def slice_step_zero_err(sl: PySlice) -> PyObj {
+    if not isinstance(sl.step, PyNoneType) and expect_int(sl.step) == 0 {
+        return py_error("ValueError", "slice step cannot be zero");
+    }
+    return py_none();
+}
+
 # Resolve a PySlice against a sequence of `length` into concrete
 # [start, stop, step], applying CPython's negative-index and clamping rules.
 def slice_indices(sl: PySlice, length: int) -> list[int] {
@@ -1979,4 +2011,40 @@ def str_mod_format(fmt: str, args: PyObj) -> PyObj {
         );
     }
     return PyStr(t="str", val=out);
+}
+
+# ---------------- tests ----------------
+
+# Oracle: CPython raises ValueError("slice step cannot be zero") for any
+# sequence sliced with step 0; the native runtime must do the same instead of
+# spinning the slice loops forever (l[5:1:0] used to hang the VM).
+test "objects: slicing with zero step raises ValueError, no hang" {
+    zero = PyInt(t="int", val=0);
+    step0 = PySlice(t="slice", start=py_none(), stop=py_none(), step=zero);
+
+    lst = PyList(t="list", items=[PyInt(t="int", val=1), PyInt(t="int", val=2)]);
+    r = lst.mp_subscript(step0);
+    assert is_error(r);
+    assert (r as PyError).exception.type_name == "ValueError";
+    assert (r as PyError).exception.message == "slice step cannot be zero";
+
+    # del l[::0] takes the separate del-subscript path and must raise too.
+    d = lst.mp_del_subscript(step0);
+    assert is_error(d);
+    assert (d as PyError).exception.type_name == "ValueError";
+
+    # str / bytes / tuple share the same guard.
+    s = PyStr(t="str", val="abc").mp_subscript(step0);
+    assert is_error(s);
+    b = PyBytes(t="bytes", val=[1, 2]).mp_subscript(step0);
+    assert is_error(b);
+    t = PyTuple(t="tuple", items=[PyInt(t="int", val=1)]).mp_subscript(step0);
+    assert is_error(t);
+
+    # Non-zero steps still slice normally.
+    ok = lst.mp_subscript(
+        PySlice(t="slice", start=py_none(), stop=py_none(), step=PyInt(t="int", val=-1))
+    );
+    assert not is_error(ok);
+    assert len((ok as PyList).items) == 2;
 }
