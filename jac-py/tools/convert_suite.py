@@ -1165,7 +1165,13 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
         if cls_name is not None and children.get(cls_name):
             for leaf in _leaves(cls_name):
                 expanded.append(
-                    (leaf, f"{leaf}.{ident.split('.', 1)[1]}", body_stmts)
+                    (leaf, f"{leaf}.{ident.split('.', 1)[1]}",
+                     # Deep-copy per variant: body nodes are shared across
+                     # leaves, and _HelperCallRewriter mutates node.func in
+                     # place -- the first leaf's rewrite would poison every
+                     # subsequent leaf (helpers resolve only on candidate #1;
+                     # siblings quarantine as unresolved-name).
+                     [copy.deepcopy(s) for s in body_stmts])
                 )
         else:
             expanded.append((cls_name, ident, body_stmts))
