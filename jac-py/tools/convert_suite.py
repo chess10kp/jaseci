@@ -975,6 +975,11 @@ def _apply_fixture_vocab(
     Returns (rewritten body, extra prelude statements, namespace seed
     assignments, needs_re).
     """
+    # Deep-copy the candidate body: leaf-class expansion shares one AST per
+    # base-class test across subclasses, and the rewriter/rewrite_block
+    # mutate nodes in place -- without a copy, the first leaf's rewriting
+    # leaks into its siblings.
+    body = [copy.deepcopy(s) for s in body]
     session = _FixtureVocab(cls_name, cmap, available_names)
     # self.<attr> callables: class-attr seeds plus anything any method of the
     # class chain (ancestors and descendants) stores onto self (setUp and
@@ -1003,7 +1008,11 @@ def _apply_fixture_vocab(
             continue
         for meth in info.methods.values():
             session.allowed_calls |= _self_attr_stores(meth.body)
-    session.allowed_calls |= set(_class_attr_seeds(cls_name, cmap, mod_classes))
+    # Seed NAMES (not (name, value) tuples): the membership checks in
+    # _lift/_apply_fixture_vocab test ``attr in allowed_calls``.
+    session.allowed_calls |= {
+        name for name, _ in _class_attr_seeds(cls_name, cmap, mod_classes)
+    }
     prefix: list[ast.stmt] = []
     if _resolve_method(cmap, cls_name, "setUp") is not None:
         # unittest runs setUp before every test; splice its lifted body so
