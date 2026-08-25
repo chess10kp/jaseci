@@ -3107,6 +3107,18 @@ obj PyUserObj(PyObj) {
     }
 }
 
+# User-defined descriptors: an instance of a GUEST class stored as a class
+# attribute whose class resolves __get__ (optionally __set__/__delete__) is a
+# descriptor under CPython's protocol -- stdlib enum's enum.property (a guest
+# DynamicClassAttribute subclass) lands exactly here, and returning it raw made
+# member .name/.value hand back the descriptor object instead of running it.
+def user_descriptor_has(value: PyObj, name: str) -> bool {
+    if not isinstance(value, PyUserObj) {
+        return False;
+    }
+    return not is_error(class_lookup_attr((value as PyUserObj).cls, name));
+}
+
 # The DEFAULT attribute protocol for a generic instance -- what
 # object.__getattribute__/__setattr__/__delattr__ do in CPython. Factored out of
 # PyUserObj so the slot dispatch AND the exposed object.__*attr__ slot wrappers
@@ -3125,6 +3137,14 @@ def default_user_getattro(u: PyUserObj, name: str) -> PyObj {
     # it (host-exact unset-slot error) rather than a raw instance-dict peek.
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._get(u);
+    }
+    # A user-defined DATA descriptor (defines __set__ or __delete__) outranks
+    # the instance dict, exactly as property and the slot member descriptor do.
+    if user_descriptor_has(classattr, "__set__")
+        or user_descriptor_has(classattr, "__delete__") {
+        return call_user_dunder(
+            classattr as PyUserObj, "__get__", [u as PyObj, u.cls]
+        );
     }
     if name in u.attrs {
         return bind_attribute(u.attrs[name], u);
@@ -3182,6 +3202,17 @@ def default_user_setattro(u: PyUserObj, name: str, value: PyObj) -> PyObj {
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._set(u, value);
     }
+    # A user-defined data descriptor routes writes through its __set__
+    # (which may reject them -- enum.property raises AttributeError there).
+    if user_descriptor_has(classattr, "__set__") {
+        res = call_user_dunder(
+            classattr as PyUserObj, "__set__", [u as PyObj, value]
+        );
+        if is_error(res) {
+            return res;
+        }
+        return py_none();
+    }
     # __slots__ enforcement: a declared-slot class with no instance dict only
     # accepts its member names -- anything else is the host's two-clause error
     # (the same text delattr produces; CPython shares the no-dict path).
@@ -3223,6 +3254,14 @@ def default_user_delattro(u: PyUserObj, name: str) -> PyObj {
     # member name via _del).
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._del(u);
+    }
+    # A user-defined data descriptor routes deletes through its __delete__.
+    if user_descriptor_has(classattr, "__delete__") {
+        res = call_user_dunder(classattr as PyUserObj, "__delete__", [u as PyObj]);
+        if is_error(res) {
+            return res;
+        }
+        return py_none();
     }
     # Same no-dict gate as writes: deleting an undeclared name on a slotted,
     # dict-less instance raises the host's two-clause AttributeError.
@@ -3936,6 +3975,16 @@ def descriptor_get(value: PyObj, instance: PyObj, owner: PyObj) -> PyObj {
     }
     if value.t == "function" and not isinstance(instance, PyNoneType) {
         return PyBoundMethod(t="bound_method", function=value, receiver=instance);
+    }
+    # User-defined non-data descriptors: route instance access through their
+    # __get__ (class-level access answers the descriptor itself). This is the
+    # generic tail of the protocol -- everything above is a native shorthand.
+    if isinstance(instance, PyNoneType)
+        and user_descriptor_has(value, "__get__") {
+        return value;
+    }
+    if user_descriptor_has(value, "__get__") {
+        return call_user_dunder(value as PyUserObj, "__get__", [instance, owner]);
     }
     return value;
 }
