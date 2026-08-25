@@ -63,14 +63,30 @@
         "status": "ok"
       },
       "snippet": "def f(): pass\nassert hasattr(f, '__get__')\nprint('ok')"
+    },
+    {
+      "ident": "HarnessCanary.test_intflag_inheritance",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import enum\nclass X(enum.IntFlag):\n    A=1\nassert X.A.value==1\nprint('ok')"
+    },
+    {
+      "ident": "HarnessCanary.test_super_seed_bridge",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nclass R(random.Random):\n    def __init__(self, x):\n        super().seed(x)\nr=R(42)\nprint('ok')"
     }
   ],
   "quarantined": [],
   "counts": {
-    "converted": 6,
-    "runnable": 6,
+    "converted": 8,
+    "runnable": 8,
     "green": 0,
     "quarantined": 0,
-    "extracted": 6
+    "extracted": 8
   }
 }

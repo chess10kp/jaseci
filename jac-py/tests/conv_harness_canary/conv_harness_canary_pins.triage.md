@@ -1,35 +1,33 @@
 # Triage report: `conv_harness_canary_pins.jac`
 
 - source: (none - hand-written harness canary)
-- guest leg: 0/5 marks
-- pins: **1 passed** / 5 run (+0 quarantined of 5 extracted)
+- guest leg: 0/8 marks
+- pins: **5 passed** / 8 run (+0 quarantined of 8 extracted)
 
 | pin | result | got |
 |---|---|---|
-| HarnessCanary.test_pprint_import | GUEST-WRONG-OUTPUT | RUN<'AttributeError: **repr**'> |
-| HarnessCanary.test_ordereddict_repr_surface | GUEST-WRONG-OUTPUT | RUN<'AttributeError: **repr**'> |
+| HarnessCanary.test_pprint_import | PASS | |
+| HarnessCanary.test_ordereddict_repr_surface | PASS | |
 | HarnessCanary.test_guest_class_dunder_fallback | PASS | |
-| HarnessCanary.test_functools_cache_present | GUEST-WRONG-OUTPUT | RUN<'AssertionError: '> |
-| HarnessCanary.test_typing_import | GUEST-WRONG-OUTPUT | RUN<'AttributeError: cache'> |
+| HarnessCanary.test_functools_cache_present | PASS | |
+| HarnessCanary.test_typing_import | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| HarnessCanary.test_function_descriptor_protocol | PASS | |
+| HarnessCanary.test_intflag_inheritance | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
+| HarnessCanary.test_super_seed_bridge | GUEST-WRONG-OUTPUT | RUN<"AttributeError: 'super' object has no attribute 'seed'"> |
 
 ## Expected vs got
 
-### HarnessCanary.test_functools_cache_present (GUEST-WRONG-OUTPUT)
+### HarnessCanary.test_intflag_inheritance (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<'AssertionError: '>
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
-### HarnessCanary.test_ordereddict_repr_surface (GUEST-WRONG-OUTPUT)
-
-- expected: host oracle = `ok`
-- got: RUN<'AttributeError: **repr**'>
-
-### HarnessCanary.test_pprint_import (GUEST-WRONG-OUTPUT)
+### HarnessCanary.test_super_seed_bridge (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<'AttributeError: **repr**'>
+- got: RUN<"AttributeError: 'super' object has no attribute 'seed'">
 
 ### HarnessCanary.test_typing_import (GUEST-WRONG-OUTPUT)
 
 - expected: host oracle = `ok`
-- got: RUN<'AttributeError: cache'>
+- got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`

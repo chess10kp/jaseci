@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "tool_version": "diff_runner-0.2.0",
-  "jac_sha": "988747f7ca203c98af215df7c6392c0d3e846a9a",
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "27e8be18863ab41668efd861d6ee4aa88664d781",
   "cpython": {
     "version": "3.14.6",
     "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
@@ -10,31 +10,27 @@
     "diff_runner.py",
     "jac-py/tests/conv_harness_canary/conv_harness_canary_pins.jac"
   ],
-  "generated_at": "2026-08-24T14:51:46",
+  "generated_at": "2026-08-25T00:43:51",
   "hashes": {
-    "pins_jac": "a2ef47b0d287454cf16f551c8f6e491d17b2bcbb7ca27d3fa48bd6974a9dd8c3",
-    "conversion_json": "ebf8f712f1507d4f79662b2304598badda4ca719aee07960578ade0f08fa6117",
+    "pins_jac": "a3a8bc8257e025e32c75e7bba4e29df3734fa4167dedbb49b919049053a5ef1b",
+    "conversion_json": "7d62c5c19ea339325da3501fe8a3daf2175c75f650c127e3b60ccad202facec6",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "harness_canary",
   "counts": {
-    "converted": 5,
-    "runnable": 5,
-    "green": 1,
+    "converted": 8,
+    "runnable": 8,
+    "green": 5,
     "quarantined": 0
   },
   "pins": [
     {
       "id": "HarnessCanary.test_pprint_import",
-      "status": "fail",
-      "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<'AttributeError: __repr__'>"
+      "status": "pass"
     },
     {
       "id": "HarnessCanary.test_ordereddict_repr_surface",
-      "status": "fail",
-      "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<'AttributeError: __repr__'>"
+      "status": "pass"
     },
     {
       "id": "HarnessCanary.test_guest_class_dunder_fallback",
@@ -42,15 +38,29 @@
     },
     {
       "id": "HarnessCanary.test_functools_cache_present",
-      "status": "fail",
-      "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<'AssertionError: '>"
+      "status": "pass"
     },
     {
       "id": "HarnessCanary.test_typing_import",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<'AttributeError: cache'>"
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "HarnessCanary.test_function_descriptor_protocol",
+      "status": "pass"
+    },
+    {
+      "id": "HarnessCanary.test_intflag_inheritance",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "HarnessCanary.test_super_seed_bridge",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
     }
   ]
 }
