@@ -4,7 +4,8 @@
 # class dict's ``__annotate_func__(1)`` (stored there by class-body AnnAssign
 # lowering), merges inherited ``__dataclass_fields__`` base-first, and attaches
 # synthesized dunders to the class. Synthesis follows CPython's own strategy:
-# textual function templates compiled through host_compile_marshal + exec into
+# textual function templates compiled through the native product pipeline
+# (product_compile.compile_source) + exec into a scratch namespace, so every
 # a scratch namespace, so every generated dunder is a REAL PyFunction and binds
 # through the normal descriptor path. Dunder bodies stay one-line delegations
 # to the native ops below (DCReprOp/DCEqOp/... parameterized by the per-class
@@ -53,8 +54,8 @@ import from ceval {
     py_str,
     register_shim_module,
 }
-import from pyc_first { unmarshal, exec_code }
-import from host_oracle { host_compile_marshal }
+import from pyc_first { exec_code }
+import from product_compile { compile_source }
 
 # ---------------- singletons and metadata objects ----------------
 
@@ -1039,9 +1040,11 @@ def dc_collect_fields(cls: PyClass, anns: PyObj, params: DCParams) -> PyObj {
 # ---------------- decoration ----------------
 
 def dc_make_fn(ns: dict[str, PyObj], src: str, fname: str) -> PyObj {
-    outcome = exec_code(
-        unmarshal(host_compile_marshal(src, "<dataclasses>", "exec")), [], ns
-    );
+    co = compile_source(src, "<dataclasses>", "exec", 0);
+    if is_error(co) {
+        return co;
+    }
+    outcome = exec_code(co, [], ns);
     if is_error(outcome) {
         return outcome;
     }
@@ -1449,9 +1452,11 @@ obj DCMakeDataclassFn(PyObj) {
             body = "    pass\n";
         }
         src += body;
-        outcome = exec_code(
-            unmarshal(host_compile_marshal(src, "<dataclasses>", "exec")), [], ns
-        );
+        co = compile_source(src, "<dataclasses>", "exec", 0);
+        if is_error(co) {
+            return co;
+        }
+        outcome = exec_code(co, [], ns);
         if is_error(outcome) {
             return outcome;
         }
