@@ -9,16 +9,16 @@
       "gate_type": "oracle",
       "status": "partial",
       "oracle_tests": [
-        "jac-py/tests/conv_array/conv_array_pins.jac"
+        "conv_array_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "5 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_array/array.conv.json",
+      "notes": "511 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "array.conv.json",
       "jacpython_results": {
         "array": {
-          "passed": 2,
-          "total": 5,
-          "notes": "2/5 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+          "passed": 90,
+          "total": 511,
+          "notes": "90/511 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
         }
       }
     },
