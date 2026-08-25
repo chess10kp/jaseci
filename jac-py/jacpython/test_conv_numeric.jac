@@ -468,6 +468,13 @@ test "conv/range: equality/hash semantics and order-comparison refusal" {
         ["", "repr(range(0, 2) == range(0, 3, 2))"],
         ["", "repr(range(0, 2**100 - 1, 2) == range(0, 2**100, 2))"],
         ["", "repr(hash(range(0, 2**100 - 1, 2)) == hash(range(0, 2**100, 2)))"],
+        # Byte-parity ratchet for hash(range) itself (19-P2 residual): small
+        # ints and huge ints must match the host digest, not just each other.
+        ["", "hash(range(0))"],
+        ["", "hash(range(5, 6, 2))"],
+        ["", "hash(range(10))"],
+        ["", "hash(range(0, 2**100 - 1, 2))"],
+        ["", "hash(range(2**200, 2**201 - 2**99, 2**100))"],
         ["", "repr(range(2**200, 2**201 - 2**99, 2**100) == range(2**200, 2**201, 2**100))"],
         ["", "repr(range(0) == ())"],
         ["", "repr(() == range(0))"],
