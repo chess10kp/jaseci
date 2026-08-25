@@ -114,19 +114,25 @@ def build_harness(pins: list[dict]) -> str:
 def run_pins_chunked(
     pins: list[dict],
 ) -> tuple[list[tuple[str, str, str]], bool, str]:
-    """Run pins, splitting into smaller jac processes on batch TIMEOUT.
+    """Run pins, splitting into smaller jac processes on batch TIMEOUT or CRASH.
 
     A single 60s cap over one process means one slow pin (or plain batch
-    slowness near the cap) wipes classification for every pin after it.
-    On timeout this binary-splits and re-runs each half in its own process
-    (each getting a fresh cap), recursing down to single pins; marks from
-    completed leaves are merged so only genuinely slow/crashing pins stay
-    unclassified. Deterministic ordering is preserved by concatenation.
+    slowness near the cap) wipes classification for every pin after it; a
+    VM crash mid-batch does the same for everything after the crash point.
+    On either outcome this binary-splits and re-runs each half in its own
+    process (each getting a fresh cap), recursing down to single pins;
+    marks from completed leaves are merged so only genuinely slow/crashing
+    pins stay unclassified. Deterministic ordering is preserved by
+    concatenation.
     """
     if len(pins) <= 1:
         return run_pins(pins)
     marks, timed_out, stderr = run_pins(pins)
-    if not timed_out:
+    crashed = (
+        not timed_out
+        and any(status == "CRASH" for status, _, _ in marks)
+    )
+    if not timed_out and not crashed:
         return marks, False, stderr
     mid = len(pins) // 2
     m1, t1, e1 = run_pins_chunked(pins[:mid])

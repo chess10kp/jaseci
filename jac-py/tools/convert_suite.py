@@ -357,6 +357,28 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_regex_assert(call, negate=False)]
     if fname == "assertNotRegex":
         return [_regex_assert(call, negate=True)]
+    if fname == "enterContext":
+        # unittest enterContext(cm): enter now, exit at test end (TestCase
+        # cleanup). Single-shot snippets never observe the deferred cleanup,
+        # so holding the manager and calling __enter__ explicitly is
+        # oracle-faithful; warnings.catch_warnings() is the dominant use.
+        _need_args(call, 1)
+        return [
+            ast.Assign(
+                targets=[ast.Name(id="_enterctx_cm", ctx=ast.Store())],
+                value=call.args[0],
+            ),
+            ast.Expr(
+                ast.Call(
+                    func=ast.Attribute(
+                        value=ast.Name(id="_enterctx_cm", ctx=ast.Load()),
+                        attr="__enter__",
+                    ),
+                    args=[],
+                    keywords=[],
+                )
+            ),
+        ]
     raise Unsupported(f"self.{fname}")
 
 
