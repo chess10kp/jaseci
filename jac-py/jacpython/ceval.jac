@@ -102,6 +102,18 @@ def _jac_host_type_attr(kind, name):
     except BaseException as exc:
         return _jac_host_error(exc)
 
+def _jac_host_descr_probe(value):
+    # Descriptor-protocol probe on a crossing value's TYPE: (has __get__,
+    # has __set__ [the CPython data-descriptor test], __get__ itself for
+    # unbound invocation). Guest class dicts can hold HOST descriptors
+    # (`from enum import property` puts enum.property/DynamicClassAttribute
+    # objects in a class body; cached_property and host property subclasses
+    # cross the same way) -- resolution must run their real protocol instead
+    # of returning the raw descriptor object.
+    g = getattr(type(value), "__get__", None)
+    s = getattr(type(value), "__set__", None)
+    return (g is not None, s is not None, g)
+
 def _jac_host_is_callable(value):
     return callable(value)
 
@@ -3126,6 +3138,12 @@ def default_user_getattro(u: PyUserObj, name: str) -> PyObj {
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._get(u);
     }
+    # A HOST data descriptor (enum.property et al.) wins over the instance
+    # dict exactly like a guest property -- see descriptor_get's host arm.
+    if isinstance(classattr, PyHostProxy)
+        and (_jac_host_descr_probe((classattr as PyHostProxy).val)[1] as bool) {
+        return descriptor_get(classattr, u, u.cls);
+    }
     if name in u.attrs {
         return bind_attribute(u.attrs[name], u);
     }
@@ -3936,6 +3954,28 @@ def descriptor_get(value: PyObj, instance: PyObj, owner: PyObj) -> PyObj {
     }
     if value.t == "function" and not isinstance(instance, PyNoneType) {
         return PyBoundMethod(t="bound_method", function=value, receiver=instance);
+    }
+    # A HOST descriptor crossing the substrate boundary (enum.property via
+    # `from enum import property`, cached_property, a host property subclass):
+    # invoke its real type-level __get__ instead of returning the raw object.
+    # Class access keeps the descriptor itself -- CPython behavior for
+    # DynamicClassAttribute and plain properties alike. Args cross through the
+    # standard to_host conversions (a user instance rides its name-faithful
+    # stand-in, so the guest fget sees it back as a live object).
+    if isinstance(value, PyHostProxy) {
+        probe = _jac_host_descr_probe((value as PyHostProxy).val);
+        if (probe[0] as bool) and not isinstance(instance, PyNoneType) {
+            res = _jac_host_call(
+                probe[2],
+                [(value as PyHostProxy).val, to_host(instance), to_host(owner)],
+                {},
+            );
+            if host_result_ok(res) {
+                return from_host(res[1]);
+            }
+            return host_result_error(res);
+        }
+        return value;
     }
     return value;
 }
