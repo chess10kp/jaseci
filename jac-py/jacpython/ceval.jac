@@ -9875,6 +9875,34 @@ def py_isinstance(ob: PyObj, typ: PyObj) -> bool {
         }
         return False;
     }
+    # A NATIVE user-exception instance tested against a native exception-type
+    # marker (isinstance(MyErr('x'), Exception)): walk the instance class MRO's
+    # RAW bases for exception markers/host proxies and match through the shared
+    # name hierarchy. Without this arm every native user-exception instance
+    # answered False against marker builtins -- the marker never survives to
+    # isinstance dispatch through the PyClass arms because builtin exception
+    # bases are PyExceptionType objects, not PyClass nodes.
+    if isinstance(ob, PyUserObj) and typ.t == "exception_type" {
+        for klass in class_mro((ob as PyUserObj).cls) {
+            for base in (klass as PyClass).bases {
+                if isinstance(base, PyExceptionType)
+                    and exc_name_matches(
+                        (base as PyExceptionType).name,
+                        (typ as PyExceptionType).name
+                    ) {
+                    return True;
+                }
+                if isinstance(base, PyHostProxy)
+                    and bool(_jac_is_exception_type((base as PyHostProxy).val)) {
+                    tn2 = _jac_host_class_name((base as PyHostProxy).val) as str;
+                    if exc_name_matches(tn2, (typ as PyExceptionType).name) {
+                        return True;
+                    }
+                }
+            }
+        }
+        return False;
+    }
     return False;
 }
 
@@ -10243,6 +10271,14 @@ def make_pyclass_from_map(
 def _jac_validate_type_bases(bases: list[PyObj]) -> PyObj | None {
     for tb in bases {
         if isinstance(tb, PyClass) {
+            continue;
+        }
+        if isinstance(tb, PyExceptionType) {
+            # Builtin exception markers (Exception, ValueError, ...) ARE the
+            # guest's classes for the exception tree: user subclasses build
+            # against them on the default path, and a metaclass factory call
+            # (`class Unh(Exception, metaclass=Meta)`) reaches type_new with
+            # them after py_build_class already resolved/validated the bases.
             continue;
         }
         if isinstance(tb, PyHostProxy) and _jac_host_val_is_type((tb as PyHostProxy).val) {
