@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -14,15 +14,223 @@
     "--name",
     "conv_zipimport"
   ],
-  "generated_at": "2026-08-24T23:52:37",
+  "generated_at": "2026-08-25T12:09:13",
   "hashes": {
-    "pins_jac": "ef2f2455f5a3905d79f8bca2d9c6ae3ac63178efb1c12c3480e653f5cf0da1b9"
+    "pins_jac": "3c53a89f2d7721d3ab2c3310255979a41b6e6dd09a29eb3ebf015f5ef5f96368"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_zipimport.py",
   "generator": "jac-py/tools/convert_suite.py",
   "module_stem": "zipimport",
   "pins_file": "conv_zipimport_pins.jac",
   "pins": [
+    {
+      "ident": "CompressedZipImportTestCase.testPy",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPyc",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBoth",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testUncheckedHashBasedPyc",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.test_checked_hash_based_change_pyc",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testEmptyPy",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBadMagic",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBadMagic2",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBadMTime",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.test2038MTime",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testSubPackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testSubNamespacePackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPackageExplicitDirectories",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nimport os\nimport importlib\nimport importlib.util\nimport unittest\nimport unittest.mock\nfrom test.support import import_helper\nfrom test.support import os_helper\nfrom zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED\nimport zipimport\nimport linecache\ntest_src = 'def get_name():\\n    return __name__\\ndef get_file():\\n    return __file__\\n'\nTEMP_ZIP = os.path.abspath('junk95142.zip')\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _testPackage(initfile):\n    zi = zipimport.zipimporter(os.path.join(TEMP_ZIP, 'a'))\n    if initfile is None:\n        try:\n            zi.is_package(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_source(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_code(*('b',))\n        except zipimport.ZipImportError:\n            pass\n    else:\n        assert zi.is_package('b'), ('assertTrue', zi.is_package('b'))\n        assert zi.get_source('b') == test_src, ('assertEqual', zi.get_source('b'), test_src)\n        assert zi.get_code('b').co_filename == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', zi.get_code('b').co_filename, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    sys.path.insert(0, TEMP_ZIP)\n    assert 'a' not in sys.modules, ('assertNotIn', 'a', sys.modules)\n    mod = importlib.import_module(f'a.b')\n    assert 'a' in sys.modules, ('assertIn', 'a', sys.modules)\n    assert sys.modules['a.b'] is mod, ('assertIs', sys.modules['a.b'], mod)\n    if initfile is None:\n        assert mod.__file__ is None, ('assertIsNone', mod.__file__)\n    else:\n        assert mod.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', mod.__file__, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    assert len(mod.__path__) == 1, ('assertEqual', len(mod.__path__), 1)\n    assert mod.__path__[0] == os.path.join(TEMP_ZIP, 'a', 'b'), ('assertEqual', mod.__path__[0], os.path.join(TEMP_ZIP, 'a', 'b'))\n    mod2 = importlib.import_module(f'a.b.c.d')\n    assert 'a.b.c' in sys.modules, ('assertIn', 'a.b.c', sys.modules)\n    assert 'a.b.c.d' in sys.modules, ('assertIn', 'a.b.c.d', sys.modules)\n    assert sys.modules['a.b.c.d'] is mod2, ('assertIs', sys.modules['a.b.c.d'], mod2)\n    assert mod.c.d is mod2, ('assertIs', mod.c.d, mod2)\n    assert mod2.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'), ('assertEqual', mod2.__file__, os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'))\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.compression = ZIP_STORED\n    linecache.clearcache()\n    zipimport._zip_directory_cache.clear()\n    ImportHooksBaseTestCase.setUp(self)\n    _cleanup_stack.append((os_helper.unlink, (TEMP_ZIP,), {}))\n    with ZipFile(TEMP_ZIP, 'w', compression=self.compression) as z:\n        z.mkdir('a')\n        z.writestr('a/__init__.py', test_src)\n        z.mkdir('a/b')\n        z.writestr('a/b/__init__.py', test_src)\n        z.mkdir('a/b/c')\n        z.writestr('a/b/c/__init__.py', test_src)\n        z.writestr('a/b/c/d.py', test_src)\n    _testPackage(initfile='__init__.py')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testPackageImplicitDirectories",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nimport os\nimport importlib\nimport importlib.util\nimport unittest\nimport unittest.mock\nfrom test.support import import_helper\nfrom test.support import os_helper\nfrom zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED\nimport zipimport\nimport linecache\ntest_src = 'def get_name():\\n    return __name__\\ndef get_file():\\n    return __file__\\n'\nTEMP_ZIP = os.path.abspath('junk95142.zip')\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _testPackage(initfile):\n    zi = zipimport.zipimporter(os.path.join(TEMP_ZIP, 'a'))\n    if initfile is None:\n        try:\n            zi.is_package(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_source(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_code(*('b',))\n        except zipimport.ZipImportError:\n            pass\n    else:\n        assert zi.is_package('b'), ('assertTrue', zi.is_package('b'))\n        assert zi.get_source('b') == test_src, ('assertEqual', zi.get_source('b'), test_src)\n        assert zi.get_code('b').co_filename == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', zi.get_code('b').co_filename, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    sys.path.insert(0, TEMP_ZIP)\n    assert 'a' not in sys.modules, ('assertNotIn', 'a', sys.modules)\n    mod = importlib.import_module(f'a.b')\n    assert 'a' in sys.modules, ('assertIn', 'a', sys.modules)\n    assert sys.modules['a.b'] is mod, ('assertIs', sys.modules['a.b'], mod)\n    if initfile is None:\n        assert mod.__file__ is None, ('assertIsNone', mod.__file__)\n    else:\n        assert mod.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', mod.__file__, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    assert len(mod.__path__) == 1, ('assertEqual', len(mod.__path__), 1)\n    assert mod.__path__[0] == os.path.join(TEMP_ZIP, 'a', 'b'), ('assertEqual', mod.__path__[0], os.path.join(TEMP_ZIP, 'a', 'b'))\n    mod2 = importlib.import_module(f'a.b.c.d')\n    assert 'a.b.c' in sys.modules, ('assertIn', 'a.b.c', sys.modules)\n    assert 'a.b.c.d' in sys.modules, ('assertIn', 'a.b.c.d', sys.modules)\n    assert sys.modules['a.b.c.d'] is mod2, ('assertIs', sys.modules['a.b.c.d'], mod2)\n    assert mod.c.d is mod2, ('assertIs', mod.c.d, mod2)\n    assert mod2.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'), ('assertEqual', mod2.__file__, os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'))\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.compression = ZIP_STORED\n    linecache.clearcache()\n    zipimport._zip_directory_cache.clear()\n    ImportHooksBaseTestCase.setUp(self)\n    _cleanup_stack.append((os_helper.unlink, (TEMP_ZIP,), {}))\n    with ZipFile(TEMP_ZIP, 'w', compression=self.compression) as z:\n        z.writestr('a/__init__.py', test_src)\n        z.writestr('a/b/__init__.py', test_src)\n        z.writestr('a/b/c/__init__.py', test_src)\n        z.writestr('a/b/c/d.py', test_src)\n    _testPackage(initfile='__init__.py')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testNamespacePackageExplicitDirectories",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nimport os\nimport importlib\nimport importlib.util\nimport unittest\nimport unittest.mock\nfrom test.support import import_helper\nfrom test.support import os_helper\nfrom zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED\nimport zipimport\nimport linecache\ntest_src = 'def get_name():\\n    return __name__\\ndef get_file():\\n    return __file__\\n'\nTEMP_ZIP = os.path.abspath('junk95142.zip')\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _testPackage(initfile):\n    zi = zipimport.zipimporter(os.path.join(TEMP_ZIP, 'a'))\n    if initfile is None:\n        try:\n            zi.is_package(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_source(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_code(*('b',))\n        except zipimport.ZipImportError:\n            pass\n    else:\n        assert zi.is_package('b'), ('assertTrue', zi.is_package('b'))\n        assert zi.get_source('b') == test_src, ('assertEqual', zi.get_source('b'), test_src)\n        assert zi.get_code('b').co_filename == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', zi.get_code('b').co_filename, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    sys.path.insert(0, TEMP_ZIP)\n    assert 'a' not in sys.modules, ('assertNotIn', 'a', sys.modules)\n    mod = importlib.import_module(f'a.b')\n    assert 'a' in sys.modules, ('assertIn', 'a', sys.modules)\n    assert sys.modules['a.b'] is mod, ('assertIs', sys.modules['a.b'], mod)\n    if initfile is None:\n        assert mod.__file__ is None, ('assertIsNone', mod.__file__)\n    else:\n        assert mod.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', mod.__file__, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    assert len(mod.__path__) == 1, ('assertEqual', len(mod.__path__), 1)\n    assert mod.__path__[0] == os.path.join(TEMP_ZIP, 'a', 'b'), ('assertEqual', mod.__path__[0], os.path.join(TEMP_ZIP, 'a', 'b'))\n    mod2 = importlib.import_module(f'a.b.c.d')\n    assert 'a.b.c' in sys.modules, ('assertIn', 'a.b.c', sys.modules)\n    assert 'a.b.c.d' in sys.modules, ('assertIn', 'a.b.c.d', sys.modules)\n    assert sys.modules['a.b.c.d'] is mod2, ('assertIs', sys.modules['a.b.c.d'], mod2)\n    assert mod.c.d is mod2, ('assertIs', mod.c.d, mod2)\n    assert mod2.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'), ('assertEqual', mod2.__file__, os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'))\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.compression = ZIP_STORED\n    linecache.clearcache()\n    zipimport._zip_directory_cache.clear()\n    ImportHooksBaseTestCase.setUp(self)\n    _cleanup_stack.append((os_helper.unlink, (TEMP_ZIP,), {}))\n    with ZipFile(TEMP_ZIP, 'w', compression=self.compression) as z:\n        z.mkdir('a')\n        z.mkdir('a/b')\n        z.mkdir('a/b/c')\n        z.writestr('a/b/c/d.py', test_src)\n    _testPackage(initfile=None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testNamespacePackageImplicitDirectories",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nimport os\nimport importlib\nimport importlib.util\nimport unittest\nimport unittest.mock\nfrom test.support import import_helper\nfrom test.support import os_helper\nfrom zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED\nimport zipimport\nimport linecache\ntest_src = 'def get_name():\\n    return __name__\\ndef get_file():\\n    return __file__\\n'\nTEMP_ZIP = os.path.abspath('junk95142.zip')\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _testPackage(initfile):\n    zi = zipimport.zipimporter(os.path.join(TEMP_ZIP, 'a'))\n    if initfile is None:\n        try:\n            zi.is_package(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_source(*('b',))\n        except zipimport.ZipImportError:\n            pass\n        try:\n            zi.get_code(*('b',))\n        except zipimport.ZipImportError:\n            pass\n    else:\n        assert zi.is_package('b'), ('assertTrue', zi.is_package('b'))\n        assert zi.get_source('b') == test_src, ('assertEqual', zi.get_source('b'), test_src)\n        assert zi.get_code('b').co_filename == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', zi.get_code('b').co_filename, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    sys.path.insert(0, TEMP_ZIP)\n    assert 'a' not in sys.modules, ('assertNotIn', 'a', sys.modules)\n    mod = importlib.import_module(f'a.b')\n    assert 'a' in sys.modules, ('assertIn', 'a', sys.modules)\n    assert sys.modules['a.b'] is mod, ('assertIs', sys.modules['a.b'], mod)\n    if initfile is None:\n        assert mod.__file__ is None, ('assertIsNone', mod.__file__)\n    else:\n        assert mod.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', initfile), ('assertEqual', mod.__file__, os.path.join(TEMP_ZIP, 'a', 'b', initfile))\n    assert len(mod.__path__) == 1, ('assertEqual', len(mod.__path__), 1)\n    assert mod.__path__[0] == os.path.join(TEMP_ZIP, 'a', 'b'), ('assertEqual', mod.__path__[0], os.path.join(TEMP_ZIP, 'a', 'b'))\n    mod2 = importlib.import_module(f'a.b.c.d')\n    assert 'a.b.c' in sys.modules, ('assertIn', 'a.b.c', sys.modules)\n    assert 'a.b.c.d' in sys.modules, ('assertIn', 'a.b.c.d', sys.modules)\n    assert sys.modules['a.b.c.d'] is mod2, ('assertIs', sys.modules['a.b.c.d'], mod2)\n    assert mod.c.d is mod2, ('assertIs', mod.c.d, mod2)\n    assert mod2.__file__ == os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'), ('assertEqual', mod2.__file__, os.path.join(TEMP_ZIP, 'a', 'b', 'c', 'd.py'))\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.compression = ZIP_STORED\n    linecache.clearcache()\n    zipimport._zip_directory_cache.clear()\n    ImportHooksBaseTestCase.setUp(self)\n    _cleanup_stack.append((os_helper.unlink, (TEMP_ZIP,), {}))\n    with ZipFile(TEMP_ZIP, 'w', compression=self.compression) as z:\n        z.writestr('a/b/c/d.py', test_src)\n    _testPackage(initfile=None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testMixedNamespacePackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testNamespacePackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testZipImporterMethods",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testInvalidateCaches",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testInvalidateCachesWithMultipleZipimports",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testZipImporterMethodsInSubDirectory",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetDataExplicitDirectories",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nimport os\nimport marshal\nimport importlib\nimport importlib.util\nimport struct\nimport unittest\nimport unittest.mock\nfrom test.support import import_helper\nfrom test.support import os_helper\nfrom zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED\nimport zipimport\nimport linecache\n\ndef make_pyc(co, mtime, size):\n    data = marshal.dumps(co)\n    pyc = importlib.util.MAGIC_NUMBER + struct.pack('<iLL', 0, int(mtime) & 4294967295, size & 4294967295) + data\n    return pyc\nTEMP_ZIP = os.path.abspath('junk95142.zip')\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _testGetData():\n    zi = zipimport.zipimporter(os.path.join(TEMP_ZIP, 'ignored'))\n    pathname = os.path.join('a', 'b', 'c', 'testdata.dat')\n    data = bytes(range(256))\n    assert zi.get_data(pathname) == data, ('assertEqual', zi.get_data(pathname), data)\n    assert zi.get_data(os.path.join(TEMP_ZIP, pathname)) == data, ('assertEqual', zi.get_data(os.path.join(TEMP_ZIP, pathname)), data)\n    assert zi.get_data(os.path.join('a', 'b', '')) == b'', ('assertEqual', zi.get_data(os.path.join('a', 'b', '')), b'')\n    assert zi.get_data(os.path.join(TEMP_ZIP, 'a', 'b', '')) == b'', ('assertEqual', zi.get_data(os.path.join(TEMP_ZIP, 'a', 'b', '')), b'')\n    try:\n        zi.get_data(*(os.path.join('a', 'b'),))\n    except OSError:\n        pass\n    try:\n        zi.get_data(*(os.path.join(TEMP_ZIP, 'a', 'b'),))\n    except OSError:\n        pass\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.compression = ZIP_STORED\n    linecache.clearcache()\n    zipimport._zip_directory_cache.clear()\n    ImportHooksBaseTestCase.setUp(self)\n    _cleanup_stack.append((os_helper.unlink, (TEMP_ZIP,), {}))\n    with ZipFile(TEMP_ZIP, 'w', compression=self.compression) as z:\n        z.mkdir('a')\n        z.mkdir('a/b')\n        z.mkdir('a/b/c')\n        data = bytes(range(256))\n        z.writestr('a/b/c/testdata.dat', data)\n    _testGetData()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetDataImplicitDirectories",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nimport os\nimport marshal\nimport importlib\nimport importlib.util\nimport struct\nimport unittest\nimport unittest.mock\nfrom test.support import import_helper\nfrom test.support import os_helper\nfrom zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED\nimport zipimport\nimport linecache\n\ndef make_pyc(co, mtime, size):\n    data = marshal.dumps(co)\n    pyc = importlib.util.MAGIC_NUMBER + struct.pack('<iLL', 0, int(mtime) & 4294967295, size & 4294967295) + data\n    return pyc\nTEMP_ZIP = os.path.abspath('junk95142.zip')\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _testGetData():\n    zi = zipimport.zipimporter(os.path.join(TEMP_ZIP, 'ignored'))\n    pathname = os.path.join('a', 'b', 'c', 'testdata.dat')\n    data = bytes(range(256))\n    assert zi.get_data(pathname) == data, ('assertEqual', zi.get_data(pathname), data)\n    assert zi.get_data(os.path.join(TEMP_ZIP, pathname)) == data, ('assertEqual', zi.get_data(os.path.join(TEMP_ZIP, pathname)), data)\n    assert zi.get_data(os.path.join('a', 'b', '')) == b'', ('assertEqual', zi.get_data(os.path.join('a', 'b', '')), b'')\n    assert zi.get_data(os.path.join(TEMP_ZIP, 'a', 'b', '')) == b'', ('assertEqual', zi.get_data(os.path.join(TEMP_ZIP, 'a', 'b', '')), b'')\n    try:\n        zi.get_data(*(os.path.join('a', 'b'),))\n    except OSError:\n        pass\n    try:\n        zi.get_data(*(os.path.join(TEMP_ZIP, 'a', 'b'),))\n    except OSError:\n        pass\n\nclass ImportHooksBaseTestCase(unittest.TestCase):\n\n    def setUp(self):\n        self.path = sys.path[:]\n        self.meta_path = sys.meta_path[:]\n        self.path_hooks = sys.path_hooks[:]\n        sys.path_importer_cache.clear()\n        self.modules_before = import_helper.modules_setup()\n\n    def tearDown(self):\n        sys.path[:] = self.path\n        sys.meta_path[:] = self.meta_path\n        sys.path_hooks[:] = self.path_hooks\n        sys.path_importer_cache.clear()\n        import_helper.modules_cleanup(*self.modules_before)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.compression = ZIP_STORED\n    linecache.clearcache()\n    zipimport._zip_directory_cache.clear()\n    ImportHooksBaseTestCase.setUp(self)\n    _cleanup_stack.append((os_helper.unlink, (TEMP_ZIP,), {}))\n    with ZipFile(TEMP_ZIP, 'w', compression=self.compression) as z:\n        data = bytes(range(256))\n        z.writestr('a/b/c/testdata.dat', data)\n    _testGetData()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testImporterAttr",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testDefaultOptimizationLevel",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testImport_WithStuff",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetSource",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertModuleSource'"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testGetCompiledSource",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertModuleSource'"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testDoctestFile",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'doDoctestFile'"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testDoctestSuite",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'doDoctestSuite'"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testTraceback",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'doTraceback'"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBytesPath",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testComment",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testBeginningCruftAndComment",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testLargestPossibleComment",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "CompressedZipImportTestCase.testZip64LargeFile",
+      "status": "quarantined",
+      "reason": "host-raised:OSError: [Errno 28] No space left on device"
+    },
     {
       "ident": "BadFileZipImportTestCase.testNoFile",
       "status": "pinned",
@@ -91,164 +299,12 @@
     },
     {
       "ident": "CompressedZipImportTestCase.testAFakeZlib",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testPy",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testPyc",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testBoth",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testUncheckedHashBasedPyc",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.test_checked_hash_based_change_pyc",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testEmptyPy",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testBadMagic",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testBadMagic2",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testBadMTime",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.test2038MTime",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testPackage",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testSubPackage",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testSubNamespacePackage",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testPackageExplicitDirectories",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testPackageImplicitDirectories",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testNamespacePackageExplicitDirectories",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testNamespacePackageImplicitDirectories",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testMixedNamespacePackage",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testNamespacePackage",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testZipImporterMethods",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testInvalidateCaches",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testInvalidateCachesWithMultipleZipimports",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testZipImporterMethodsInSubDirectory",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testGetDataExplicitDirectories",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testGetDataImplicitDirectories",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testImporterAttr",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testDefaultOptimizationLevel",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testImport_WithStuff",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testGetSource",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testGetCompiledSource",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testDoctestFile",
-      "reason": "helper:runDoctest(helper:doTest(helper:makeZip(self.addCleanup)))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testDoctestSuite",
-      "reason": "helper:runDoctest(helper:doTest(helper:makeZip(self.addCleanup)))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testTraceback",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testBytesPath",
-      "reason": "helper:makeZip(self.addCleanup)"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testComment",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testBeginningCruftAndComment",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testLargestPossibleComment",
-      "reason": "helper:doTest(helper:makeZip(self.addCleanup))"
-    },
-    {
-      "ident": "CompressedZipImportTestCase.testZip64LargeFile",
-      "reason": "self.addCleanup"
+      "reason": "self.skipTest"
     }
   ],
   "counts": {
     "extracted": 49,
-    "pinned": 6,
-    "quarantined": 43
+    "pinned": 12,
+    "quarantined": 37
   }
 }

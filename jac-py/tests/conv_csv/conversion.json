@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -14,9 +14,9 @@
     "--name",
     "conv_csv"
   ],
-  "generated_at": "2026-08-25T00:30:19",
+  "generated_at": "2026-08-25T12:08:09",
   "hashes": {
-    "pins_jac": "9d95da637c32d22435d0d6b999424cde1f7d7d76e585a2416207492d07584a3b"
+    "pins_jac": "bf20ae6abfbced16b8a33b960c17e155da9bb455ca33c0796adc630dc2f3f240"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_csv.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -262,6 +262,30 @@
         "status": "ok"
       },
       "snippet": "import csv\n\ndef _t():\n    try:\n        csv.list_dialects(*(None,))\n    except TypeError:\n        pass\n    try:\n        csv.get_dialect()\n    except TypeError:\n        pass\n    try:\n        csv.get_dialect(*(None,))\n    except csv.Error:\n        pass\n    try:\n        csv.get_dialect(*('nonesuch',))\n    except csv.Error:\n        pass\n    try:\n        csv.unregister_dialect()\n    except TypeError:\n        pass\n    try:\n        csv.unregister_dialect(*(None,))\n    except csv.Error:\n        pass\n    try:\n        csv.unregister_dialect(*('nonesuch',))\n    except csv.Error:\n        pass\n    try:\n        csv.register_dialect(*(None,))\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*(None, None))\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*('nonesuch', 0, 0))\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*('nonesuch',), badargument=None)\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*('nonesuch',), quoting=None)\n    except TypeError:\n        pass\n    try:\n        csv.register_dialect(*([],))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDialectRegistry.test_registry",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport csv\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    class myexceltsv(csv.excel):\n        delimiter = '\\t'\n    name = 'myexceltsv'\n    expected_dialects = csv.list_dialects() + [name]\n    expected_dialects.sort()\n    csv.register_dialect(name, myexceltsv)\n    _cleanup_stack.append((csv.unregister_dialect, (name,), {}))\n    assert csv.get_dialect(name).delimiter == '\\t', ('assertEqual', csv.get_dialect(name).delimiter, '\\t')\n    got_dialects = sorted(csv.list_dialects())\n    assert expected_dialects == got_dialects, ('assertEqual', expected_dialects, got_dialects)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "TestDialectRegistry.test_register_kwargs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport csv\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    name = 'fedcba'\n    csv.register_dialect(name, delimiter=';')\n    _cleanup_stack.append((csv.unregister_dialect, (name,), {}))\n    assert csv.get_dialect(name).delimiter == ';', ('assertEqual', csv.get_dialect(name).delimiter, ';')\n    assert [['X', 'Y', 'Z']] == list(csv.reader(['X;Y;Z'], name)), ('assertEqual', [['X', 'Y', 'Z']], list(csv.reader(['X;Y;Z'], name)))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "TestDialectRegistry.test_register_kwargs_override",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport csv\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    class mydialect(csv.Dialect):\n        delimiter = '\\t'\n        quotechar = '\"'\n        doublequote = True\n        skipinitialspace = False\n        lineterminator = '\\r\\n'\n        quoting = csv.QUOTE_MINIMAL\n    name = 'test_dialect'\n    csv.register_dialect(name, mydialect, delimiter=';', quotechar=\"'\", doublequote=False, skipinitialspace=True, lineterminator='\\n', quoting=csv.QUOTE_ALL)\n    _cleanup_stack.append((csv.unregister_dialect, (name,), {}))\n    dialect = csv.get_dialect(name)\n    assert dialect.delimiter == ';', ('assertEqual', dialect.delimiter, ';')\n    assert dialect.quotechar == \"'\", ('assertEqual', dialect.quotechar, \"'\")\n    assert dialect.doublequote == False, ('assertEqual', dialect.doublequote, False)\n    assert dialect.skipinitialspace == True, ('assertEqual', dialect.skipinitialspace, True)\n    assert dialect.lineterminator == '\\n', ('assertEqual', dialect.lineterminator, '\\n')\n    assert dialect.quoting == csv.QUOTE_ALL, ('assertEqual', dialect.quoting, csv.QUOTE_ALL)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
     },
     {
       "ident": "TestDialectRegistry.test_incomplete_dialect",
@@ -790,18 +814,6 @@
       "reason": "uses-self._read_test"
     },
     {
-      "ident": "TestDialectRegistry.test_registry",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "TestDialectRegistry.test_register_kwargs",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "TestDialectRegistry.test_register_kwargs_override",
-      "reason": "self.addCleanup"
-    },
-    {
       "ident": "TestDictFields.test_write_fields_not_in_fieldnames",
       "reason": "unresolved-name:cx"
     },
@@ -856,7 +868,7 @@
   ],
   "counts": {
     "extracted": 128,
-    "pinned": 71,
-    "quarantined": 57
+    "pinned": 74,
+    "quarantined": 54
   }
 }

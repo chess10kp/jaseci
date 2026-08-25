@@ -21,7 +21,7 @@
 | BoolTest.test_issubclass | PASS | |
 | BoolTest.test_contains | PASS | |
 | BoolTest.test_string | PASS | |
-| BoolTest.test_fileclosed | GUEST-WRONG-OUTPUT | GOT<"ORACLE_EXC TypeError 'TextIOWrapper.**enter**() takes no arguments (1 given)'"> |
+| BoolTest.test_fileclosed | GUEST-WRONG-OUTPUT | `GOT<"ORACLE_EXC TypeError 'TextIOWrapper.__enter__() takes no arguments (1 given)'">` |
 | BoolTest.test_types | PASS | |
 | BoolTest.test_operator | PASS | |
 | BoolTest.test_marshal | PASS | |
@@ -39,18 +39,16 @@
 
 | test | reason |
 |---|---|
-| BoolTest.test_math | uses-self.assertWarns |
+| BoolTest.test_math | uses-self.assertEqual |
 | BoolTest.test_boolean | self.assertNotIsInstance |
 | BoolTest.test_convert_to_bool | uses-self.assertRaises |
 
 ## Expected vs got
 
 ### BoolTest.test_fileclosed (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
-- got: GOT<"ORACLE_EXC TypeError 'TextIOWrapper.**enter**() takes no arguments (1 given)'">
+- got: `GOT<"ORACLE_EXC TypeError 'TextIOWrapper.__enter__() takes no arguments (1 given)'">`
 
 ### BoolTest.test_subclass (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AssertionError 'bool should not be subclassable'">

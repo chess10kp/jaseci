@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,18 +10,18 @@
     "diff_runner.py",
     "jac-py/tests/conv_codecs/conv_codecs_pins.jac"
   ],
-  "generated_at": "2026-08-25T00:41:40",
+  "generated_at": "2026-08-25T12:08:09",
   "hashes": {
-    "pins_jac": "398348fc3e92f7593eda8f7e3c97037dd2530bee856f9620faa835385dfe1bba",
-    "conversion_json": "787c78866f1967d8b1e4d2ca5be12ed40e2b56d7f41e8b0f859ab7fcaea1adc7",
+    "pins_jac": "a1f339ce27110ef6e844d4a5b2c416802cc396ee595e24cf05514b8eecb2dc3f",
+    "conversion_json": "8b0665d450e640b3ca15db7a06e5dbc8a463f988ee04fbe476c886bc992b864c",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "codecs",
   "counts": {
     "converted": 279,
-    "runnable": 205,
-    "green": 88,
-    "quarantined": 74
+    "runnable": 209,
+    "green": 89,
+    "quarantined": 70
   },
   "pins": [
     {
@@ -585,6 +585,12 @@
       "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
     },
     {
+      "id": "UTF16Test.test_bug691291",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
       "id": "UTF16LETest.test_partial",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
@@ -1043,6 +1049,12 @@
       "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
     },
     {
+      "id": "BomTest.test_seek0",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'StreamReaderWriter.__enter__() takes 1 positional argument but 2 were given'\">"
+    },
+    {
       "id": "TransformCodecTest.test_basics",
       "status": "pass"
     },
@@ -1084,6 +1096,15 @@
     {
       "id": "TransformCodecTest.test_uu_invalid",
       "status": "pass"
+    },
+    {
+      "id": "ExceptionNotesTest.test_codec_lookup_failure",
+      "status": "pass"
+    },
+    {
+      "id": "ExceptionNotesTest.test_unflagged_non_text_codec_handling",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
     },
     {
       "id": "ASCIITest.test_encode",
@@ -1186,12 +1207,18 @@
       "status": "pass"
     },
     {
+      "id": "CodecNameNormalizationTest.test_codecs_lookup",
+      "status": "pass"
+    },
+    {
       "id": "CodecNameNormalizationTest.test_encodings_normalize_encoding",
       "status": "pass"
     },
     {
       "id": "CodecCacheTest.test_cache_bounded",
-      "status": "pass"
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'NoneType\\' object is not callable\"'>"
     },
     {
       "id": "CodecsModuleTest.test_lookup_issue1813",
@@ -1314,11 +1341,6 @@
       "reason": "decorator:unittest.skipIf"
     },
     {
-      "id": "UTF16Test.test_bug691291",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
-    },
-    {
       "id": "UTF16Test.test_invalid_modes",
       "status": "quarantined",
       "reason": "unresolved-name:cm"
@@ -1331,7 +1353,7 @@
     {
       "id": "EscapeDecodeTest.test_warnings",
       "status": "quarantined",
-      "reason": "uses-self.assertWarns"
+      "reason": "assertWarns as-variant"
     },
     {
       "id": "PunycodeTest.test_decode_invalid",
@@ -1361,17 +1383,12 @@
     {
       "id": "CodecsModuleTest.test_open",
       "status": "quarantined",
-      "reason": "self.addCleanup"
+      "reason": "uses-self.assertWarns"
     },
     {
       "id": "UnicodeEscapeTest.test_decode_warnings",
       "status": "quarantined",
-      "reason": "uses-self.assertWarns"
-    },
-    {
-      "id": "BomTest.test_seek0",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
+      "reason": "assertWarns as-variant"
     },
     {
       "id": "TransformCodecTest.test_text_to_binary_denylists_binary_transforms",
@@ -1391,62 +1408,47 @@
     {
       "id": "ExceptionNotesTest.test_raise_by_type",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_raise_by_value",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_raise_grandchild_subclass_exact_size",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_raise_subclass_with_weakref_support",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_init_override",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_new_override",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_instance_attribute",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_non_str_arg",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "id": "ExceptionNotesTest.test_multiple_args",
       "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "ExceptionNotesTest.test_codec_lookup_failure",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "ExceptionNotesTest.test_unflagged_non_text_codec_handling",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "CodecNameNormalizationTest.test_codecs_lookup",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     }
   ]
 }

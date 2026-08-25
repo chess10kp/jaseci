@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -14,9 +14,9 @@
     "--name",
     "conv_codecs"
   ],
-  "generated_at": "2026-08-25T00:30:02",
+  "generated_at": "2026-08-25T12:07:51",
   "hashes": {
-    "pins_jac": "398348fc3e92f7593eda8f7e3c97037dd2530bee856f9620faa835385dfe1bba"
+    "pins_jac": "a1f339ce27110ef6e844d4a5b2c416802cc396ee595e24cf05514b8eecb2dc3f"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_codecs.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -802,6 +802,14 @@
       "snippet": "import codecs\n\ndef coding_checker(self, coder):\n\n    def check(input, expect):\n        self.assertEqual(coder(input), (expect, len(input)))\n    return check\n\ndef check_state_handling_decode(encoding, u, s):\n    for i in range(len(s) + 1):\n        d = codecs.getincrementaldecoder(encoding)()\n        part1 = d.decode(s[:i])\n        state = d.getstate()\n        assert isinstance(state[1], int), ('assertIsInstance', state[1], int)\n        if not state[1]:\n            d.setstate((state[0][:0], 0))\n            assert not d.decode(state[0]), ('assertTrue', not d.decode(state[0]))\n            assert state == d.getstate(), ('assertEqual', state, d.getstate())\n        d = codecs.getincrementaldecoder(encoding)()\n        d.setstate(state)\n        part2 = d.decode(s[i:], True)\n        assert u == part1 + part2, ('assertEqual', u, part1 + part2)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.encoding = 'utf-16'\n    self.ill_formed_sequence_replace = '\ufffd'\n    self.spambe = b'\\xfe\\xff\\x00s\\x00p\\x00a\\x00m\\x00s\\x00p\\x00a\\x00m'\n    self.spamle = b'\\xff\\xfes\\x00p\\x00a\\x00m\\x00s\\x00p\\x00a\\x00m\\x00'\n    check_state_handling_decode(self.encoding, 'spamspam', self.spamle)\n    check_state_handling_decode(self.encoding, 'spamspam', self.spambe)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
+      "ident": "UTF16Test.test_bug691291",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import warnings\n_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport codecs\nimport warnings\nfrom test.support import os_helper\n\ndef codecs_open_no_warn(*args, **kwargs):\n    \"\"\"Call codecs.open(*args, **kwargs) ignoring DeprecationWarning.\"\"\"\n    with warnings.catch_warnings():\n        warnings.simplefilter('ignore')\n        return codecs.open(*args, **kwargs)\n\ndef coding_checker(self, coder):\n\n    def check(input, expect):\n        self.assertEqual(coder(input), (expect, len(input)))\n    return check\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.encoding = 'utf-16'\n    self.ill_formed_sequence_replace = '\ufffd'\n    self.spambe = b'\\xfe\\xff\\x00s\\x00p\\x00a\\x00m\\x00s\\x00p\\x00a\\x00m'\n    self.spamle = b'\\xff\\xfes\\x00p\\x00a\\x00m\\x00s\\x00p\\x00a\\x00m\\x00'\n    s1 = 'Hello\\r\\nworld\\r\\n'\n    s = s1.encode(self.encoding)\n    _cleanup_stack.append((os_helper.unlink, (os_helper.TESTFN,), {}))\n    with open(os_helper.TESTFN, 'wb') as fp:\n        fp.write(s)\n    with codecs_open_no_warn(os_helper.TESTFN, 'r', encoding=self.encoding) as reader:\n        assert reader.read() == s1, ('assertEqual', reader.read(), s1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
       "ident": "UTF16LETest.test_partial",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
@@ -1197,7 +1205,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import codecs\nfrom unittest import mock\nimport warnings\nfrom test.support import os_helper\n\ndef codecs_open_no_warn(*args, **kwargs):\n    \"\"\"Call codecs.open(*args, **kwargs) ignoring DeprecationWarning.\"\"\"\n    with warnings.catch_warnings():\n        warnings.simplefilter('ignore')\n        return codecs.open(*args, **kwargs)\n\ndef _t():\n    mock_open = mock.mock_open()\n    with mock.patch('builtins.open', mock_open) as file:\n        try:\n            codecs_open_no_warn(os_helper.TESTFN, 'wt', 'invalid-encoding')\n        except LookupError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        file().close.assert_called()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import warnings\nimport codecs\nfrom unittest import mock\nimport warnings\nfrom test.support import os_helper\n\ndef codecs_open_no_warn(*args, **kwargs):\n    \"\"\"Call codecs.open(*args, **kwargs) ignoring DeprecationWarning.\"\"\"\n    with warnings.catch_warnings():\n        warnings.simplefilter('ignore')\n        return codecs.open(*args, **kwargs)\n\ndef _t():\n    mock_open = mock.mock_open()\n    with mock.patch('builtins.open', mock_open) as file:\n        try:\n            codecs_open_no_warn(os_helper.TESTFN, 'wt', 'invalid-encoding')\n        except LookupError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        file().close.assert_called()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
       "ident": "CodecsModuleTest.test_copy",
@@ -1526,6 +1534,14 @@
       "snippet": "def _t():\n    assert '\\udce4\\udceb\\udcef\\udcf6\\udcfc'.encode('latin-1', 'surrogateescape') == b'\\xe4\\xeb\\xef\\xf6\\xfc', ('assertEqual', '\\udce4\\udceb\\udcef\\udcf6\\udcfc'.encode('latin-1', 'surrogateescape'), b'\\xe4\\xeb\\xef\\xf6\\xfc')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
+      "ident": "BomTest.test_seek0",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import warnings\n_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport codecs\nimport warnings\nfrom test.support import os_helper\n\ndef codecs_open_no_warn(*args, **kwargs):\n    \"\"\"Call codecs.open(*args, **kwargs) ignoring DeprecationWarning.\"\"\"\n    with warnings.catch_warnings():\n        warnings.simplefilter('ignore')\n        return codecs.open(*args, **kwargs)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    data = '1234567890'\n    tests = ('utf-16', 'utf-16-le', 'utf-16-be', 'utf-32', 'utf-32-le', 'utf-32-be')\n    _cleanup_stack.append((os_helper.unlink, (os_helper.TESTFN,), {}))\n    for encoding in tests:\n        with codecs_open_no_warn(os_helper.TESTFN, 'w+', encoding=encoding) as f:\n            f.write(data)\n            f.write(data)\n            f.seek(0)\n            assert f.read() == data * 2, ('assertEqual', f.read(), data * 2)\n            f.seek(0)\n            assert f.read() == data * 2, ('assertEqual', f.read(), data * 2)\n        with codecs_open_no_warn(os_helper.TESTFN, 'w+', encoding=encoding) as f:\n            f.write(data[0])\n            assert f.tell() != 0, ('assertNotEqual', f.tell(), 0)\n            f.seek(0)\n            f.write(data)\n            f.seek(0)\n            assert f.read() == data, ('assertEqual', f.read(), data)\n        with codecs_open_no_warn(os_helper.TESTFN, 'w+', encoding=encoding) as f:\n            f.writer.write(data[0])\n            assert f.writer.tell() != 0, ('assertNotEqual', f.writer.tell(), 0)\n            f.writer.seek(0)\n            f.writer.write(data)\n            f.seek(0)\n            assert f.read() == data, ('assertEqual', f.read(), data)\n        with codecs_open_no_warn(os_helper.TESTFN, 'w+', encoding=encoding) as f:\n            f.write(data)\n            f.seek(f.tell())\n            f.write(data)\n            f.seek(0)\n            assert f.read() == data * 2, ('assertEqual', f.read(), data * 2)\n        with codecs_open_no_warn(os_helper.TESTFN, 'w+', encoding=encoding) as f:\n            f.writer.write(data)\n            f.writer.seek(f.writer.tell())\n            f.writer.write(data)\n            f.seek(0)\n            assert f.read() == data * 2, ('assertEqual', f.read(), data * 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
       "ident": "TransformCodecTest.test_basics",
       "status": "pinned",
       "oracle": {
@@ -1601,6 +1617,19 @@
         "status": "ok"
       },
       "snippet": "import codecs\n\ndef _t():\n    try:\n        codecs.decode(*(b'', 'uu-codec'))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ExceptionNotesTest.test_codec_lookup_failure",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport codecs\n\ndef coding_checker(self, coder):\n\n    def check(input, expect):\n        self.assertEqual(coder(input), (expect, len(input)))\n    return check\n_TEST_CODECS = {}\n\ndef _get_test_codec(codec_name):\n    return _TEST_CODECS.get(codec_name)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.codec_name = 'exception_notes_test'\n    codecs.register(_get_test_codec)\n    _cleanup_stack.append((codecs.unregister, (_get_test_codec,), {}))\n    self.obj_to_raise = RuntimeError\n    msg = '^unknown encoding: {}$'.format(self.codec_name)\n    try:\n        'str input'.encode(self.codec_name)\n    except LookupError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        codecs.encode('str input', self.codec_name)\n    except LookupError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        b'bytes input'.decode(self.codec_name)\n    except LookupError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        codecs.decode(b'bytes input', self.codec_name)\n    except LookupError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "ExceptionNotesTest.test_unflagged_non_text_codec_handling",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
     },
     {
       "ident": "ASCIITest.test_encode",
@@ -1763,6 +1792,14 @@
       "snippet": "import io\n\ndef _t():\n    from encodings.rot_13 import rot13\n    infile = io.StringIO('Gb or, be abg gb or, gung vf gur dhrfgvba')\n    outfile = io.StringIO()\n    rot13(infile, outfile)\n    outfile.seek(0)\n    plain_text = outfile.read()\n    assert plain_text == 'To be, or not to be, that is the question', ('assertEqual', plain_text, 'To be, or not to be, that is the question')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
+      "ident": "CodecNameNormalizationTest.test_codecs_lookup",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport codecs\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    FOUND = (1, 2, 3, 4)\n    NOT_FOUND = (None, None, None, None)\n\n    def search_function(encoding):\n        if encoding == 'aaa_8':\n            return FOUND\n        else:\n            return NOT_FOUND\n    codecs.register(search_function)\n    _cleanup_stack.append((codecs.unregister, (search_function,), {}))\n    assert FOUND == codecs.lookup('aaa_8'), ('assertEqual', FOUND, codecs.lookup('aaa_8'))\n    assert FOUND == codecs.lookup('AAA-8'), ('assertEqual', FOUND, codecs.lookup('AAA-8'))\n    assert FOUND == codecs.lookup('AAA---8'), ('assertEqual', FOUND, codecs.lookup('AAA---8'))\n    assert FOUND == codecs.lookup('AAA   8'), ('assertEqual', FOUND, codecs.lookup('AAA   8'))\n    assert FOUND == codecs.lookup('aaa\u00e9\u20ac-8'), ('assertEqual', FOUND, codecs.lookup('aaa\u00e9\u20ac-8'))\n    assert NOT_FOUND == codecs.lookup('AAA.8'), ('assertEqual', NOT_FOUND, codecs.lookup('AAA.8'))\n    assert NOT_FOUND == codecs.lookup('AAA...8'), ('assertEqual', NOT_FOUND, codecs.lookup('AAA...8'))\n    assert NOT_FOUND == codecs.lookup('BBB-8'), ('assertEqual', NOT_FOUND, codecs.lookup('BBB-8'))\n    assert NOT_FOUND == codecs.lookup('BBB.8'), ('assertEqual', NOT_FOUND, codecs.lookup('BBB.8'))\n    assert NOT_FOUND == codecs.lookup('a\u00e9\u20ac-8'), ('assertEqual', NOT_FOUND, codecs.lookup('a\u00e9\u20ac-8'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
       "ident": "CodecNameNormalizationTest.test_encodings_normalize_encoding",
       "status": "pinned",
       "oracle": {
@@ -1877,10 +1914,6 @@
       "reason": "decorator:unittest.skipIf"
     },
     {
-      "ident": "UTF16Test.test_bug691291",
-      "reason": "self.addCleanup"
-    },
-    {
       "ident": "UTF16Test.test_invalid_modes",
       "reason": "unresolved-name:cm"
     },
@@ -1890,7 +1923,7 @@
     },
     {
       "ident": "EscapeDecodeTest.test_warnings",
-      "reason": "uses-self.assertWarns"
+      "reason": "assertWarns as-variant"
     },
     {
       "ident": "PunycodeTest.test_decode_invalid",
@@ -1914,15 +1947,11 @@
     },
     {
       "ident": "CodecsModuleTest.test_open",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "UnicodeEscapeTest.test_decode_warnings",
       "reason": "uses-self.assertWarns"
     },
     {
-      "ident": "BomTest.test_seek0",
-      "reason": "self.addCleanup"
+      "ident": "UnicodeEscapeTest.test_decode_warnings",
+      "reason": "assertWarns as-variant"
     },
     {
       "ident": "TransformCodecTest.test_text_to_binary_denylists_binary_transforms",
@@ -1938,56 +1967,44 @@
     },
     {
       "ident": "ExceptionNotesTest.test_raise_by_type",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_raise_by_value",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_raise_grandchild_subclass_exact_size",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_raise_subclass_with_weakref_support",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_init_override",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_new_override",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_instance_attribute",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_non_str_arg",
-      "reason": "helper:setUp(self.addCleanup)"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     },
     {
       "ident": "ExceptionNotesTest.test_multiple_args",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "ExceptionNotesTest.test_codec_lookup_failure",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "ExceptionNotesTest.test_unflagged_non_text_codec_handling",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "CodecNameNormalizationTest.test_codecs_lookup",
-      "reason": "self.addCleanup"
+      "reason": "helper:check_note(helper:assertNoted(decorated-helper))"
     }
   ],
   "counts": {
     "extracted": 279,
-    "pinned": 205,
-    "quarantined": 74
+    "pinned": 209,
+    "quarantined": 70
   }
 }

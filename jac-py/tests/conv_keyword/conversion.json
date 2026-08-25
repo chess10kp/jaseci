@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -14,9 +14,9 @@
     "--name",
     "conv_keyword"
   ],
-  "generated_at": "2026-08-24T14:33:46",
+  "generated_at": "2026-08-25T12:09:39",
   "hashes": {
-    "pins_jac": "1faa66b4c4cf1a319a690f87c1b12152b4950a1f9083a93f8090ce6a7b7fe152"
+    "pins_jac": "38602bf3715627e2104982d5c575539bb98792384ef896931c954552bff2d63a"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_keyword.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -46,6 +46,22 @@
         "status": "ok"
       },
       "snippet": "import keyword\n\ndef _t():\n    assert not keyword.iskeyword(None), ('assertFalse', keyword.iskeyword(None))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test_iskeyword.test_changing_the_kwlist_does_not_affect_iskeyword",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport keyword\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    oldlist = keyword.kwlist\n    _cleanup_stack.append((setattr, (keyword, 'kwlist', oldlist), {}))\n    keyword.kwlist = ['its', 'all', 'eggs', 'beans', 'and', 'a', 'slice']\n    assert not keyword.iskeyword('eggs'), ('assertFalse', keyword.iskeyword('eggs'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "Test_iskeyword.test_changing_the_softkwlist_does_not_affect_issoftkeyword",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport keyword\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    oldlist = keyword.softkwlist\n    _cleanup_stack.append((setattr, (keyword, 'softkwlist', oldlist), {}))\n    keyword.softkwlist = ['foo', 'bar', 'spam', 'egs', 'case']\n    assert not keyword.issoftkeyword('spam'), ('assertFalse', keyword.issoftkeyword('spam'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
     },
     {
       "ident": "Test_iskeyword.test_all_keywords_fail_to_be_used_as_names",
@@ -96,19 +112,10 @@
       "snippet": "import keyword\n\ndef _t():\n    assert sorted(keyword.softkwlist) == keyword.softkwlist, ('assertListEqual', sorted(keyword.softkwlist), keyword.softkwlist)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     }
   ],
-  "quarantined": [
-    {
-      "ident": "Test_iskeyword.test_changing_the_kwlist_does_not_affect_iskeyword",
-      "reason": "self.addCleanup"
-    },
-    {
-      "ident": "Test_iskeyword.test_changing_the_softkwlist_does_not_affect_issoftkeyword",
-      "reason": "self.addCleanup"
-    }
-  ],
+  "quarantined": [],
   "counts": {
     "extracted": 11,
-    "pinned": 9,
-    "quarantined": 2
+    "pinned": 11,
+    "quarantined": 0
   }
 }

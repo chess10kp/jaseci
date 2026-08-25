@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -14,9 +14,9 @@
     "--name",
     "conv_builtin"
   ],
-  "generated_at": "2026-08-24T23:12:00",
+  "generated_at": "2026-08-25T12:09:41",
   "hashes": {
-    "pins_jac": "cb1a53c6854b55648278d7294c66f4dbd6db74e643c49f3d75da8216be61e413"
+    "pins_jac": "cf884f9efaa1592d17c44d25edbf6132192817406fe17f35a84e30adf8706ecb"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_builtin.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -202,7 +202,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import warnings\nfrom test.support.warnings_helper import check_warnings\n\ndef _t():\n    g = {}\n    exec('z = 1', g)\n    if '__builtins__' in g:\n        del g['__builtins__']\n    assert g == {'z': 1}, ('assertEqual', g, {'z': 1})\n    exec('z = 1+1', g)\n    if '__builtins__' in g:\n        del g['__builtins__']\n    assert g == {'z': 2}, ('assertEqual', g, {'z': 2})\n    g = {}\n    l = {}\n    with check_warnings():\n        warnings.filterwarnings('ignore', 'global statement', module='<string>')\n        exec('global a; a = 1; b = 2', g, l)\n    if '__builtins__' in g:\n        del g['__builtins__']\n    if '__builtins__' in l:\n        del l['__builtins__']\n    assert (g, l) == ({'a': 1}, {'b': 2}), ('assertEqual', (g, l), ({'a': 1}, {'b': 2}))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import warnings\nimport warnings\nfrom test.support.warnings_helper import check_warnings\n\ndef _t():\n    g = {}\n    exec('z = 1', g)\n    if '__builtins__' in g:\n        del g['__builtins__']\n    assert g == {'z': 1}, ('assertEqual', g, {'z': 1})\n    exec('z = 1+1', g)\n    if '__builtins__' in g:\n        del g['__builtins__']\n    assert g == {'z': 2}, ('assertEqual', g, {'z': 2})\n    g = {}\n    l = {}\n    with check_warnings():\n        warnings.filterwarnings('ignore', 'global statement', module='<string>')\n        exec('global a; a = 1; b = 2', g, l)\n    if '__builtins__' in g:\n        del g['__builtins__']\n    if '__builtins__' in l:\n        del l['__builtins__']\n    assert (g, l) == ({'a': 1}, {'b': 2}), ('assertEqual', (g, l), ({'a': 1}, {'b': 2}))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
       "ident": "BuiltinTest.test_exec_kwargs",
@@ -469,6 +469,14 @@
       "snippet": "def _t():\n    assert oct(100) == '0o144', ('assertEqual', oct(100), '0o144')\n    assert oct(-100) == '-0o144', ('assertEqual', oct(-100), '-0o144')\n    try:\n        oct(*((),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
+      "ident": "BuiltinTest.test_open",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport platform\nfrom test.support.os_helper import EnvironmentVarGuard, TESTFN, unlink\n\ndef write_testfile():\n    fp = open(TESTFN, 'w', encoding='utf-8')\n    _cleanup_stack.append((unlink, (TESTFN,), {}))\n    with fp:\n        fp.write('1+1\\n')\n        fp.write('The quick brown fox jumps over the lazy dog')\n        fp.write('.\\n')\n        fp.write('Dear John\\n')\n        fp.write('XXX' * 100)\n        fp.write('YYY' * 100)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.linux_alpha = platform.system().startswith('Linux') and platform.machine().startswith('alpha')\n    self.system_round_bug = round(5000000000000000.0 + 1) != 5000000000000000.0 + 1\n    write_testfile()\n    fp = open(TESTFN, encoding='utf-8')\n    with fp:\n        assert fp.readline(4) == '1+1\\n', ('assertEqual', fp.readline(4), '1+1\\n')\n        assert fp.readline() == 'The quick brown fox jumps over the lazy dog.\\n', ('assertEqual', fp.readline(), 'The quick brown fox jumps over the lazy dog.\\n')\n        assert fp.readline(4) == 'Dear', ('assertEqual', fp.readline(4), 'Dear')\n        assert fp.readline(100) == ' John\\n', ('assertEqual', fp.readline(100), ' John\\n')\n        assert fp.read(300) == 'XXX' * 100, ('assertEqual', fp.read(300), 'XXX' * 100)\n        assert fp.read(1000) == 'YYY' * 100, ('assertEqual', fp.read(1000), 'YYY' * 100)\n    try:\n        open(*('a\\x00b',))\n    except ValueError:\n        pass\n    try:\n        open(*(b'a\\x00b',))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
       "ident": "BuiltinTest.test_ord",
       "status": "pinned",
       "oracle": {
@@ -480,6 +488,14 @@
       "ident": "BuiltinTest.test_pow",
       "status": "quarantined",
       "reason": "host-raised:TypeError: type complex doesn't define __round__ method"
+    },
+    {
+      "ident": "BuiltinTest.test_input",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport io\nimport platform\nimport sys\nfrom test.support.os_helper import EnvironmentVarGuard, TESTFN, unlink\n\nclass BitBucket:\n\n    def write(self, line):\n        pass\n\ndef write_testfile():\n    fp = open(TESTFN, 'w', encoding='utf-8')\n    _cleanup_stack.append((unlink, (TESTFN,), {}))\n    with fp:\n        fp.write('1+1\\n')\n        fp.write('The quick brown fox jumps over the lazy dog')\n        fp.write('.\\n')\n        fp.write('Dear John\\n')\n        fp.write('XXX' * 100)\n        fp.write('YYY' * 100)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.linux_alpha = platform.system().startswith('Linux') and platform.machine().startswith('alpha')\n    self.system_round_bug = round(5000000000000000.0 + 1) != 5000000000000000.0 + 1\n    write_testfile()\n    fp = open(TESTFN, encoding='utf-8')\n    savestdin = sys.stdin\n    savestdout = sys.stdout\n    try:\n        sys.stdin = fp\n        sys.stdout = BitBucket()\n        assert input() == '1+1', ('assertEqual', input(), '1+1')\n        assert input() == 'The quick brown fox jumps over the lazy dog.', ('assertEqual', input(), 'The quick brown fox jumps over the lazy dog.')\n        assert input('testing\\n') == 'Dear John', ('assertEqual', input('testing\\n'), 'Dear John')\n        sys.stdout = savestdout\n        sys.stdin.close()\n        try:\n            input()\n        except ValueError:\n            pass\n        sys.stdout = BitBucket()\n        sys.stdin = io.StringIO('NULL\\x00')\n        try:\n            input(*(42, 42))\n        except TypeError:\n            pass\n        sys.stdin = io.StringIO(\"    'whitespace'\")\n        assert input() == \"    'whitespace'\", ('assertEqual', input(), \"    'whitespace'\")\n        sys.stdin = io.StringIO()\n        try:\n            input()\n        except EOFError:\n            pass\n        del sys.stdout\n        try:\n            input(*('prompt',))\n        except RuntimeError:\n            pass\n        del sys.stdin\n        try:\n            input(*('prompt',))\n        except RuntimeError:\n            pass\n    finally:\n        sys.stdin = savestdin\n        sys.stdout = savestdout\n        fp.close()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
     },
     {
       "ident": "BuiltinTest.test_input_gh130163",
@@ -664,6 +680,61 @@
         "status": "ok"
       },
       "snippet": "def _t():\n    for singleton in (NotImplemented, Ellipsis):\n        assert type(singleton) is singleton.__class__, ('assertIs', type(singleton), singleton.__class__)\n        assert type(singleton).__class__ is type, ('assertIs', type(singleton).__class__, type)\n        try:\n            singleton.prop = 1\n        except AttributeError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            singleton.prop\n        except AttributeError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            type(singleton).prop = 1\n        except TypeError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            type(singleton).prop\n        except AttributeError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestBreakpoint.test_breakpoint",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (typing.py, line 1991)"
+    },
+    {
+      "ident": "TestBreakpoint.test_breakpoint_with_breakpointhook_set",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nfrom contextlib import ExitStack\nfrom test.support import cpython_only, swap_attr\nfrom test.support.os_helper import EnvironmentVarGuard, TESTFN, unlink\nfrom unittest.mock import MagicMock, patch\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.resources = ExitStack()\n    _cleanup_stack.append((self.resources.close, (), {}))\n    self.env = self.resources.enter_context(EnvironmentVarGuard())\n    del self.env['PYTHONBREAKPOINT']\n    self.resources.enter_context(swap_attr(sys, 'breakpointhook', sys.__breakpointhook__))\n    my_breakpointhook = MagicMock()\n    sys.breakpointhook = my_breakpointhook\n    breakpoint()\n    my_breakpointhook.assert_called_once_with()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "TestBreakpoint.test_breakpoint_with_breakpointhook_reset",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (typing.py, line 1991)"
+    },
+    {
+      "ident": "TestBreakpoint.test_breakpoint_with_args_and_keywords",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nfrom contextlib import ExitStack\nfrom test.support import cpython_only, swap_attr\nfrom test.support.os_helper import EnvironmentVarGuard, TESTFN, unlink\nfrom unittest.mock import MagicMock, patch\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.resources = ExitStack()\n    _cleanup_stack.append((self.resources.close, (), {}))\n    self.env = self.resources.enter_context(EnvironmentVarGuard())\n    del self.env['PYTHONBREAKPOINT']\n    self.resources.enter_context(swap_attr(sys, 'breakpointhook', sys.__breakpointhook__))\n    my_breakpointhook = MagicMock()\n    sys.breakpointhook = my_breakpointhook\n    breakpoint(1, 2, 3, four=4, five=5)\n    my_breakpointhook.assert_called_once_with(1, 2, 3, four=4, five=5)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "TestBreakpoint.test_breakpoint_with_passthru_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nfrom contextlib import ExitStack\nfrom test.support import cpython_only, swap_attr\nfrom test.support.os_helper import EnvironmentVarGuard, TESTFN, unlink\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.resources = ExitStack()\n    _cleanup_stack.append((self.resources.close, (), {}))\n    self.env = self.resources.enter_context(EnvironmentVarGuard())\n    del self.env['PYTHONBREAKPOINT']\n    self.resources.enter_context(swap_attr(sys, 'breakpointhook', sys.__breakpointhook__))\n\n    def my_breakpointhook():\n        pass\n    sys.breakpointhook = my_breakpointhook\n    try:\n        breakpoint(*(1, 2, 3), four=4, five=5)\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "TestBreakpoint.test_envar_good_path_empty_string",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (typing.py, line 1991)"
+    },
+    {
+      "ident": "TestBreakpoint.test_envar_ignored_when_hook_is_set",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nfrom contextlib import ExitStack\nfrom test.support import cpython_only, swap_attr\nfrom test.support.os_helper import EnvironmentVarGuard, TESTFN, unlink\nfrom unittest.mock import MagicMock, patch\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.resources = ExitStack()\n    _cleanup_stack.append((self.resources.close, (), {}))\n    self.env = self.resources.enter_context(EnvironmentVarGuard())\n    del self.env['PYTHONBREAKPOINT']\n    self.resources.enter_context(swap_attr(sys, 'breakpointhook', sys.__breakpointhook__))\n    self.env['PYTHONBREAKPOINT'] = 'sys.exit'\n    with patch('sys.exit') as mock:\n        sys.breakpointhook = int\n        breakpoint()\n        mock.assert_not_called()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
+    },
+    {
+      "ident": "TestBreakpoint.test_runtime_error_when_hook_is_lost",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport sys\nfrom contextlib import ExitStack\nfrom test.support import cpython_only, swap_attr\nfrom test.support.os_helper import EnvironmentVarGuard, TESTFN, unlink\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.resources = ExitStack()\n    _cleanup_stack.append((self.resources.close, (), {}))\n    self.env = self.resources.enter_context(EnvironmentVarGuard())\n    del self.env['PYTHONBREAKPOINT']\n    self.resources.enter_context(swap_attr(sys, 'breakpointhook', sys.__breakpointhook__))\n    del sys.breakpointhook\n    try:\n        breakpoint()\n    except RuntimeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n"
     },
     {
       "ident": "TestSorted.test_basic",
@@ -869,7 +940,7 @@
     },
     {
       "ident": "BuiltinTest.test_import",
-      "reason": "uses-self.assertWarns"
+      "reason": "uses-self.assertRaises"
     },
     {
       "ident": "BuiltinTest.test_callable",
@@ -878,14 +949,6 @@
     {
       "ident": "BuiltinTest.test_exec_globals_frozen",
       "reason": "unresolved-name:__builtins__"
-    },
-    {
-      "ident": "BuiltinTest.test_open",
-      "reason": "helper:write_testfile(self.addCleanup)"
-    },
-    {
-      "ident": "BuiltinTest.test_input",
-      "reason": "helper:write_testfile(self.addCleanup)"
     },
     {
       "ident": "BuiltinTest.test_sum",
@@ -902,43 +965,11 @@
     {
       "ident": "BuiltinTest.test_format",
       "reason": "self.assertStartsWith"
-    },
-    {
-      "ident": "TestBreakpoint.test_breakpoint",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "TestBreakpoint.test_breakpoint_with_breakpointhook_set",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "TestBreakpoint.test_breakpoint_with_breakpointhook_reset",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "TestBreakpoint.test_breakpoint_with_args_and_keywords",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "TestBreakpoint.test_breakpoint_with_passthru_error",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "TestBreakpoint.test_envar_good_path_empty_string",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "TestBreakpoint.test_envar_ignored_when_hook_is_set",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "ident": "TestBreakpoint.test_runtime_error_when_hook_is_lost",
-      "reason": "helper:setUp(self.addCleanup)"
     }
   ],
   "counts": {
     "extracted": 133,
-    "pinned": 93,
-    "quarantined": 40
+    "pinned": 100,
+    "quarantined": 33
   }
 }

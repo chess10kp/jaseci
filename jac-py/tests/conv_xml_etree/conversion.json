@@ -1,0 +1,1124 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "467e25ed366d1f74480276f47f1ac0ad2c254269",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_xml_etree.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_xml_etree",
+    "--name",
+    "conv_xml_etree"
+  ],
+  "generated_at": "2026-08-25T10:56:49",
+  "hashes": {
+    "pins_jac": "61ed1dcd87be84b371ea1e772eeae8a80ab7139198b76342aa399029ff488d29"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_xml_etree.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "xml_etree",
+  "pins_file": "conv_xml_etree_pins.jac",
+  "pins": [
+    {
+      "ident": "ModuleTest.test_sanity",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    from xml.etree import ElementTree\n    from xml.etree import ElementInclude\n    from xml.etree import ElementPath\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ModuleTest.test_all",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "ElementTreeTest.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ElementTree'"
+    },
+    {
+      "ident": "ElementTreeTest.test_setroot",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ElementTree'"
+    },
+    {
+      "ident": "ElementTreeTest.test_interface",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_set_attribute",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_simpleops",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_cdata",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_file_init",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ElementTree'"
+    },
+    {
+      "ident": "ElementTreeTest.test_path_cache",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_copy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_attrib",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_makeelement",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_parsefile",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'parse'"
+    },
+    {
+      "ident": "ElementTreeTest.test_parseliteral",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_writefile",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_initialize_parser_without_target",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "ElementTreeTest.test_children",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'parse'"
+    },
+    {
+      "ident": "ElementTreeTest.test_writestring",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_indent",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_indent_space",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_indent_space_caching",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_indent_level",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostring_default_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostring_default_namespace_different_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostring_default_namespace_original_no_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostring_no_xml_declaration",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostring_xml_declaration",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostring_xml_declaration_unicode_encoding",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostring_xml_declaration_cases",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostringlist_default_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tostringlist_xml_declaration",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_encoding",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_methods",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_issue18347",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_qname",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_doctype_public",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_xpath_tokenizer",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import unittest\nfrom test.support.import_helper import import_fresh_module\npyET = None\nET = None\n\ndef setUpModule(module=None):\n    global pyET\n    pyET = import_fresh_module('xml.etree.ElementTree', blocked=['_elementtree'])\n    if module is None:\n        module = pyET\n    global ET\n    ET = module\n\n    def cleanup():\n        global ET, pyET\n        ET = pyET = None\n    unittest.addModuleCleanup(cleanup)\n    from xml.etree import ElementPath\n    nsmap = ET.register_namespace._namespace_map\n    nsmap_copy = nsmap.copy()\n    unittest.addModuleCleanup(nsmap.update, nsmap_copy)\n    unittest.addModuleCleanup(nsmap.clear)\n    path_cache = ElementPath._cache\n    unittest.addModuleCleanup(setattr, ElementPath, '_cache', path_cache)\n    ElementPath._cache = path_cache.copy()\n    if hasattr(ET, '_set_factories'):\n        old_factories = ET._set_factories(ET.Comment, ET.PI)\n        unittest.addModuleCleanup(ET._set_factories, *old_factories)\n\ndef _t():\n    from xml.etree import ElementPath\n\n    def check(p, expected, namespaces=None):\n        assert [op or tag for op, tag in ElementPath.xpath_tokenizer(p, namespaces)] == expected, ('assertEqual', [op or tag for op, tag in ElementPath.xpath_tokenizer(p, namespaces)], expected)\n    check('*', ['*'])\n    check('text()', ['text', '()'])\n    check('@name', ['@', 'name'])\n    check('@*', ['@', '*'])\n    check('para[1]', ['para', '[', '1', ']'])\n    check('para[last()]', ['para', '[', 'last', '()', ']'])\n    check('*/para', ['*', '/', 'para'])\n    check('/doc/chapter[5]/section[2]', ['/', 'doc', '/', 'chapter', '[', '5', ']', '/', 'section', '[', '2', ']'])\n    check('chapter//para', ['chapter', '//', 'para'])\n    check('//para', ['//', 'para'])\n    check('//olist/item', ['//', 'olist', '/', 'item'])\n    check('.', ['.'])\n    check('.//para', ['.', '//', 'para'])\n    check('..', ['..'])\n    check('../@lang', ['..', '/', '@', 'lang'])\n    check('chapter[title]', ['chapter', '[', 'title', ']'])\n    check('employee[@secretary and @assistant]', ['employee', '[', '@', 'secretary', '', 'and', '', '@', 'assistant', ']'])\n    check('@{ns}attr', ['@', '{ns}attr'])\n    check('{http://spam}egg', ['{http://spam}egg'])\n    check('./spam.egg', ['.', '/', 'spam.egg'])\n    check('.//{http://spam}egg', ['.', '//', '{http://spam}egg'])\n    check('{ns}*', ['{ns}*'])\n    check('{}*', ['{}*'])\n    check('{*}tag', ['{*}tag'])\n    check('{*}*', ['{*}*'])\n    check('.//{*}tag', ['.', '//', '{*}tag'])\n    check('./xsd:type', ['.', '/', '{http://www.w3.org/2001/XMLSchema}type'], {'xsd': 'http://www.w3.org/2001/XMLSchema'})\n    check('type', ['{http://www.w3.org/2001/XMLSchema}type'], {'': 'http://www.w3.org/2001/XMLSchema'})\n    check('@xsd:type', ['@', '{http://www.w3.org/2001/XMLSchema}type'], {'xsd': 'http://www.w3.org/2001/XMLSchema'})\n    check('@type', ['@', 'type'], {'': 'http://www.w3.org/2001/XMLSchema'})\n    check('@{*}type', ['@', '{*}type'], {'': 'http://www.w3.org/2001/XMLSchema'})\n    check('@{ns}attr', ['@', '{ns}attr'], {'': 'http://www.w3.org/2001/XMLSchema', 'ns': 'http://www.w3.org/2001/XMLSchema'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ElementTreeTest.test_comment_serialization",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Comment'"
+    },
+    {
+      "ident": "ElementTreeTest.test_processinginstruction_serialization",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'tostring'"
+    },
+    {
+      "ident": "ElementTreeTest.test_html_empty_elems_serialization",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementTreeTest.test_html_plaintext_serialization",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_dump_attribute_order",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_tree_write_attribute_order",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTest.test_attlist_default",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'fromstring'"
+    },
+    {
+      "ident": "IterparseTest.test_basic",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_external_file",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_events",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_namespace_events",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_unknown_events",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_non_utf8",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_nonexistent_file",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_resource_warnings_not_exhausted",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_resource_warnings_exhausted",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_close_not_exhausted",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "IterparseTest.test_close_exhausted",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'iterparse'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_simple_xml",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_feed_while_iterating",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_simple_xml_with_ns",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_ns_events",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_ns_events_start",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_ns_events_start_end",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_events",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_events_comment",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_events_pi",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_events_sequence",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XMLPullParserTest.test_unknown_event",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLPullParser'"
+    },
+    {
+      "ident": "XIncludeTest.test_xinclude_default",
+      "status": "quarantined",
+      "reason": "host-raised:OSError: resource not found"
+    },
+    {
+      "ident": "XIncludeTest.test_xinclude_repeated",
+      "status": "quarantined",
+      "reason": "host-raised:OSError: resource not found"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit25",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit28",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkitX1",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit39",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit54",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit60",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'parse'"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit62",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "BugsTest.test_bug_200708_newline",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BugsTest.test_bug_200708_close",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "BugsTest.test_bug_200709_register_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BugsTest.test_bug_200709_element_comment",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BugsTest.test_bug_200709_element_insert",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BugsTest.test_bug_200709_iter_comment",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BugsTest.test_bug_1534630",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "BugsTest.test_issue6233",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_issue6565",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_issue10777",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'register_namespace'"
+    },
+    {
+      "ident": "BugsTest.test_lost_text",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BugsTest.test_lost_tail",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BugsTest.test_expat224_utf8_bug",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "BugsTest.test_expat224_utf8_bug_file",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'fromstring'"
+    },
+    {
+      "ident": "BugsTest.test_39495_treebuilder_start",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "BugsTest.test_issue123213_correct_extend_exception",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test___init__",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test___copy__",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test___deepcopy__",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test_augmentation_type_errors",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test_cyclic_gc",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test_weakref",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test_get_keyword_args",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BasicElementTest.test_pickle_issue18997",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'modules'"
+    },
+    {
+      "ident": "BadElementTest.test_extend_mutable_list",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementTest.test_extend_mutable_list2",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementTest.test_element_get_text",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "BadElementTest.test_element_get_tail",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "BadElementTest.test_subscr_with_clear",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementTest.test_subscr_with_delete",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementTest.test_ass_subscr_with_mutating_slice",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementTest.test_ass_subscr_with_mutating_iterable_value",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementTest.test_treebuilder_start",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "BadElementTest.test_treebuilder_end",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "BadElementTest.test_deepcopy_clear",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementTest.test_deepcopy_grow",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "BadElementPathTest.test_find_with_mutating",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_find_with_error",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_findtext_with_mutating",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_findtext_with_mutating_non_none_text",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_findtext_with_error",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_findtext_with_falsey_text_attribute",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_findtext_with_none_text_attribute",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_findall_with_mutating",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "BadElementPathTest.test_findall_with_error",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "ElementTreeTypeTest.test_istype",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ParseError'"
+    },
+    {
+      "ident": "ElementTreeTypeTest.test_Element_subclass_trivial",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTypeTest.test_Element_subclass_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTypeTest.test_Element_subclass_new_method",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementTreeTypeTest.test_Element_subclass_find",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementFindTest.test_find_simple",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementFindTest.test_find_xpath",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementFindTest.test_findall",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementFindTest.test_test_find_with_ns",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementFindTest.test_findall_different_nsmaps",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementFindTest.test_findall_wildcard",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementFindTest.test_bad_find",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementIterTest.test_basic",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementIterTest.test_comment",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementIterTest.test_processinginstruction",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementIterTest.test_corners",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementIterTest.test_iter_by_tag",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "ElementIterTest.test_copy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementIterTest.test_pickle",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_dummy_builder",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_treebuilder_comment",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_treebuilder_pi",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_late_tail",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_late_tail_mix_pi_comments",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_treebuilder_elementfactory_none",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_subclass_comment_pi",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_element_factory",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'TreeBuilder'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_element_factory_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_element_factory_pure_python_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute '_Element_Py'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_doctype",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "TreeBuilderTest.test_builder_lookup_errors",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "XMLParserTest.test_constructor_args",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "XMLParserTest.test_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "XMLParserTest.test_doctype_warning",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "XMLParserTest.test_inherited_doctype",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "XMLParserTest.test_parse_string",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XMLParser'"
+    },
+    {
+      "ident": "NamespaceParseTest.test_find_with_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'fromstring'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_getslice_single_index",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_getslice_range",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_getslice_steps",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_getslice_negative_steps",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_delslice",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_setslice_single_index",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_setslice_range",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_setslice_steps",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_setslice_negative_steps",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "ElementSlicingTest.test_issue123213_setslice_exception",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "IOTest.test_encoding",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "IOTest.test_read_from_stringio",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ElementTree'"
+    },
+    {
+      "ident": "IOTest.test_write_to_stringio",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ElementTree'"
+    },
+    {
+      "ident": "IOTest.test_read_from_bytesio",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ElementTree'"
+    },
+    {
+      "ident": "IOTest.test_write_to_bytesio",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ElementTree'"
+    },
+    {
+      "ident": "IOTest.test_tostringlist_invariant",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'fromstring'"
+    },
+    {
+      "ident": "IOTest.test_short_empty_elements",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'fromstring'"
+    },
+    {
+      "ident": "ParseErrorTest.test_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ParseError'"
+    },
+    {
+      "ident": "ParseErrorTest.test_error_position",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ParseError'"
+    },
+    {
+      "ident": "ParseErrorTest.test_error_code",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'ParseError'"
+    },
+    {
+      "ident": "KeywordArgsTest.test_issue14818",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'XML'"
+    },
+    {
+      "ident": "NoAcceleratorTest.test_correct_import_pyET",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'Element'"
+    },
+    {
+      "ident": "C14NTest.test_simple_roundtrip",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'canonicalize'"
+    },
+    {
+      "ident": "C14NTest.test_c14n_exclusion",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'canonicalize'"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "ElementTreeTest.test_html_cdata_elems_serialization",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "ident": "XMLPullParserTest.test_flush_reparse_deferral_enabled",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit63",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "BadElementTest.test_recursive_repr",
+      "reason": "decorator:support.infinite_recursion"
+    },
+    {
+      "ident": "BadElementTest.test_deeply_nested_deepcopy",
+      "reason": "decorator:support.skip_if_unlimited_stack_size"
+    },
+    {
+      "ident": "ElementTreeTest.test_custom_builder",
+      "reason": "uses-self.append"
+    },
+    {
+      "ident": "ElementTreeTest.test_custom_builder_only_end_ns",
+      "reason": "uses-self.append"
+    },
+    {
+      "ident": "ElementTreeTest.test_entity",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "IterparseTest.test_parsing_error",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "IterparseTest.test_resource_warnings_failed_iteration",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "XMLPullParserTest.test_simple_xml_chunk_1",
+      "reason": "self.test_simple_xml"
+    },
+    {
+      "ident": "XMLPullParserTest.test_simple_xml_chunk_5",
+      "reason": "self.test_simple_xml"
+    },
+    {
+      "ident": "XMLPullParserTest.test_simple_xml_chunk_22",
+      "reason": "self.test_simple_xml"
+    },
+    {
+      "ident": "XMLPullParserTest.test_flush_reparse_deferral_disabled",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "XIncludeTest.test_xinclude",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "XIncludeTest.test_xinclude_failures",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit21",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "BugsTest.test_bug_xmltoolkit55",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "BugsTest.test_bug_200709_default_namespace",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "BugsTest.test_lost_elem",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "BasicElementTest.test_pickle",
+      "reason": "helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(helper:assertEqualElements(deepcopy-recursion))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))"
+    },
+    {
+      "ident": "BadElementTest.test_remove_with_clear_assume_missing",
+      "reason": "helper:do_test_remove_with_clear(self.enterContext)"
+    },
+    {
+      "ident": "BadElementTest.test_remove_with_clear_assume_existing",
+      "reason": "helper:do_test_remove_with_clear(self.enterContext)"
+    },
+    {
+      "ident": "BadElementTest.test_remove_with_mutate_root_assume_missing",
+      "reason": "helper:do_test_remove_with_mutate_root(uses-self.assertRaises)"
+    },
+    {
+      "ident": "BadElementTest.test_remove_with_mutate_root_assume_existing",
+      "reason": "helper:do_test_remove_with_mutate_root(uses-self.assertRaises)"
+    },
+    {
+      "ident": "ElementFindTest.test_find_through_ElementTree",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "XMLParserTest.test_subclass_doctype",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "IOTest.test_write_to_filename",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "IOTest.test_write_to_filename_with_encoding",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "IOTest.test_write_to_filename_as_unicode",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "IOTest.test_write_to_text_file",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "IOTest.test_write_to_binary_file",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "IOTest.test_write_to_binary_file_with_encoding",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "IOTest.test_write_to_binary_file_with_bom",
+      "reason": "self.addCleanup"
+    },
+    {
+      "ident": "IOTest.test_read_from_user_text_reader",
+      "reason": "uses-self.dummy"
+    },
+    {
+      "ident": "IOTest.test_write_to_user_text_writer",
+      "reason": "uses-self.dummy"
+    },
+    {
+      "ident": "IOTest.test_read_from_user_binary_reader",
+      "reason": "uses-self.dummy"
+    },
+    {
+      "ident": "IOTest.test_write_to_user_binary_writer",
+      "reason": "uses-self.dummy"
+    },
+    {
+      "ident": "IOTest.test_write_to_user_binary_writer_with_bom",
+      "reason": "uses-self.dummy"
+    },
+    {
+      "ident": "BoolTest.test_warning",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "C14NTest.test_xml_c14n2",
+      "reason": "self.skipTest"
+    }
+  ],
+  "counts": {
+    "extracted": 225,
+    "pinned": 2,
+    "quarantined": 223
+  }
+}

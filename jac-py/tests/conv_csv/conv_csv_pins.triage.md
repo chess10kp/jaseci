@@ -1,8 +1,8 @@
 # Triage report: `conv_csv_pins.jac`
 
 - source: /home/jac/repos/jac-python/reference/cpython/Lib/test/test_csv.py
-- guest leg: 0/71 marks
-- pins: **32 passed** / 71 run (+57 quarantined of 128 extracted)
+- guest leg: 0/74 marks
+- pins: **34 passed** / 74 run (+54 quarantined of 128 extracted)
 
 | pin | result | got |
 |---|---|---|
@@ -36,6 +36,9 @@
 | Test_Csv.test_roundtrip_escaped_unquoted_newlines | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | Test_Csv.test_reader_reentrant_iterator | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC TypeError "\'ReentrantIter\' object is not iterable"'> |
 | TestDialectRegistry.test_registry_badargs | PASS | |
+| TestDialectRegistry.test_registry | GUEST-WRONG-OUTPUT | GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', \',\', \'\\\\t\')"'> |
+| TestDialectRegistry.test_register_kwargs | PASS | |
+| TestDialectRegistry.test_register_kwargs_override | PASS | |
 | TestDialectRegistry.test_incomplete_dialect | PASS | |
 | TestDialectRegistry.test_space_dialect | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
 | TestDialectRegistry.test_dialect_apply | GUEST-WRONG-OUTPUT | `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>` |
@@ -91,9 +94,6 @@
 | Test_Csv.test_read_eof | uses-self._read_test |
 | Test_Csv.test_read_quoting | uses-self._read_test |
 | Test_Csv.test_read_bigfield | uses-self._read_test |
-| TestDialectRegistry.test_registry | self.addCleanup |
-| TestDialectRegistry.test_register_kwargs | self.addCleanup |
-| TestDialectRegistry.test_register_kwargs_override | self.addCleanup |
 | TestDictFields.test_write_fields_not_in_fieldnames | unresolved-name:cx |
 | TestDialectValidity.test_quoting | unresolved-name:cm |
 | TestDialectValidity.test_delimiter | unresolved-name:cm |
@@ -143,196 +143,161 @@
 ## Expected vs got
 
 ### KeyOrderingTest.test_ordered_dict_reader (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', [{\'FirstName\': \'Eric\', \'LastName\': \'Idle\'}, {\'FirstName\': \'Graham\', \'LastName\': \'Chapman\', None: [\'Over1\', \'Over2\']}, {\'FirstName\': \'Under1\', \'LastName\': None}, {\'FirstName\': \'John\', \'LastName\': \'Cleese\'}], [OrderedDict({\'FirstName\': \'Eric\', \'LastName\': \'Idle\'}), OrderedDict({\'FirstName\': \'Graham\', \'LastName\': \'Chapman\', None: [\'Over1\', \'Over2\']}), OrderedDict({\'FirstName\': \'Under1\', \'LastName\': None}), OrderedDict({\'FirstName\': \'John\', \'LastName\': \'Cleese\'})])"'>
 
 ### KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### MiscTestCase.test_lazy_import (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: RUN<"ModuleNotFoundError: No module named 'test.support.import_helper'">
 
 ### TestArrayWrites.test_char_write (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestArrayWrites.test_double_write (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestArrayWrites.test_float_write (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestArrayWrites.test_int_write (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDialectRegistry.test_dialect_apply (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
-### TestDialectRegistry.test_space_dialect (GUEST-WRONG-OUTPUT)
+### TestDialectRegistry.test_registry (GUEST-WRONG-OUTPUT)
+- expected: host oracle = `ok`
+- got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', \',\', \'\\\\t\')"'>
 
+### TestDialectRegistry.test_space_dialect (GUEST-WRONG-OUTPUT)
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_fieldnames_chain (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_fieldnames_from_file (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_fields (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_dict_no_fieldnames (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_long (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_long_with_rest (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_long_with_rest_no_fieldnames (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_read_short (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_write_simple_dict (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestDictFields.test_writeheader_return_value (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestUnicode.test_unicode_read (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### TestUnicode.test_unicode_write (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_reader_arg_valid (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC TypeError "\'BadIterable\' object is not iterable"'>
 
 ### Test_Csv.test_reader_dialect_attrs (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', \',\', \'-\')"'>
 
 ### Test_Csv.test_reader_reentrant_iterator (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC TypeError "\'ReentrantIter\' object is not iterable"'>
 
 ### Test_Csv.test_roundtrip_escaped_unquoted_newlines (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_roundtrip_quoteed_newlines (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_arg_valid (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_bigfield (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_empty_fields (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_empty_fields_space_delimiter (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_escape (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_iterable (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_write_lineterminator (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `GOT<"ORACLE_EXC TypeError 'StringIO.__enter__() takes no arguments (1 given)'">`
 
 ### Test_Csv.test_write_quoting (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_writer_arg_valid (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC TypeError \'argument 1 must have a "write" method\''>
 
 ### Test_Csv.test_writer_dialect_attrs (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', \',\', \'-\')"'>
 
 ### Test_Csv.test_writerows (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_writerows_errors (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`
 
 ### Test_Csv.test_writerows_with_none (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: `RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>`

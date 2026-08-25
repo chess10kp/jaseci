@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,18 +10,18 @@
     "diff_runner.py",
     "jac-py/tests/conv_csv/conv_csv_pins.jac"
   ],
-  "generated_at": "2026-08-25T00:41:53",
+  "generated_at": "2026-08-25T12:08:59",
   "hashes": {
-    "pins_jac": "9d95da637c32d22435d0d6b999424cde1f7d7d76e585a2416207492d07584a3b",
-    "conversion_json": "712c4484495256d7252fc48f574a2571c8a1c587f7d54f5df41a741da6f220b0",
+    "pins_jac": "bf20ae6abfbced16b8a33b960c17e155da9bb455ca33c0796adc630dc2f3f240",
+    "conversion_json": "18b2e0516d5a4c4519eb61d32b18ec66826ee5201bfee4d91a171645e4866e6a",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "csv",
   "counts": {
     "converted": 128,
-    "runnable": 71,
-    "green": 32,
-    "quarantined": 57
+    "runnable": 74,
+    "green": 34,
+    "quarantined": 54
   },
   "pins": [
     {
@@ -178,6 +178,20 @@
     },
     {
       "id": "TestDialectRegistry.test_registry_badargs",
+      "status": "pass"
+    },
+    {
+      "id": "TestDialectRegistry.test_registry",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\',\\', \\'\\\\\\\\t\\')\"'>"
+    },
+    {
+      "id": "TestDialectRegistry.test_register_kwargs",
+      "status": "pass"
+    },
+    {
+      "id": "TestDialectRegistry.test_register_kwargs_override",
       "status": "pass"
     },
     {
@@ -590,21 +604,6 @@
       "id": "Test_Csv.test_read_bigfield",
       "status": "quarantined",
       "reason": "uses-self._read_test"
-    },
-    {
-      "id": "TestDialectRegistry.test_registry",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
-    },
-    {
-      "id": "TestDialectRegistry.test_register_kwargs",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
-    },
-    {
-      "id": "TestDialectRegistry.test_register_kwargs_override",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
     },
     {
       "id": "TestDictFields.test_write_fields_not_in_fieldnames",

@@ -21,13 +21,12 @@
 
 | test | reason |
 |---|---|
-| MiscTestCase.test_read_deprecations | uses-self.assertWarns |
-| MiscTestCase.test_write_deprecations | uses-self.assertWarns |
+| MiscTestCase.test_read_deprecations | uses-self.assertIsNone |
+| MiscTestCase.test_write_deprecations | uses-self.assertIsNone |
 | MiscTestCase.test__all__ | host-raised:NameError: name 'self' is not defined |
 
 ## Expected vs got
 
 ### WaveLowLevelTest.test_open_in_write_raises (GUEST-WRONG-OUTPUT)
-
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AttributeError 'catch_unraisable_exception'">

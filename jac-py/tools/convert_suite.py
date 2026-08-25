@@ -101,6 +101,21 @@ def file_sha256(path: Path) -> str:
 HOST_TIMEOUT = 60  # seconds, hard limit per oracle capture
 
 _ORACLE_OK = "ok"
+
+# Seed block for addCleanup lowering: a registration stack plus an LIFO
+# drainer. Cleanup failures surface as ORACLE_EXC lines (last line wins in
+# the runner) so they fail the pin exactly like CPython records cleanup
+# errors, without masking the test body's own result.
+_CLEANUP_SEED_SRC = (
+    "_cleanup_stack = []\n"
+    "def _drain_cleanups():\n"
+    "    while _cleanup_stack:\n"
+    "        _fn, _a, _k = _cleanup_stack.pop()\n"
+    "        try:\n"
+    "            _fn(*_a, **_k)\n"
+    "        except BaseException as _ce:\n"
+    "            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\n"
+)
 _ORACLE_EXC = "ORACLE_EXC "
 
 @dataclass
@@ -371,6 +386,19 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_regex_assert(call, negate=False)]
     if fname == "assertNotRegex":
         return [_regex_assert(call, negate=True)]
+    if fname == "addCleanup":
+        # Eager-arg registration: _cleanup_stack.append((FN, (A...), {kw}))
+        fn = call.args[0] if call.args else ast.Constant(value=None)
+        args_t = ast.Tuple(elts=list(call.args[1:]), ctx=ast.Load())
+        kw_d = ast.Dict(
+            keys=[ast.Constant(value=k.arg) for k in call.keywords],
+            values=[k.value for k in call.keywords],
+        )
+        return [ast.Expr(value=ast.Call(
+            func=ast.Attribute(value=ast.Name(id="_cleanup_stack", ctx=ast.Load()), attr="append", ctx=ast.Load()),
+            args=[ast.Tuple(elts=[fn, args_t, kw_d], ctx=ast.Load())],
+            keywords=[],
+        ))]
     raise Unsupported(f"self.{fname}")
 
 
@@ -445,6 +473,73 @@ def _rewrite_raises(call: ast.Call, regex: bool) -> list[ast.stmt]:
             orelse=[],
             finalbody=[],
         )
+    ]
+
+
+def rewrite_warns_with(item: ast.withitem, body: list[ast.stmt]) -> list[ast.stmt]:
+    """``with self.assertWarns(W):`` / ``with self.assertWarnsRegex(W, p):``
+    -> catch_warnings(record=True) block + match assert. The ``as cm``
+    variant stays quarantined for now (single known site).
+    """
+    call = item.context_expr
+    fname = _call_name(call.func) if isinstance(call, ast.Call) else None
+    if fname not in ("assertWarns", "assertWarnsRegex") or not isinstance(call, ast.Call):
+        raise Unsupported("non-assertWarns with-block")
+    _need_args(call, 1)
+    if item.optional_vars:
+        raise Unsupported("assertWarns as-variant")
+    exc = call.args[0]
+    pattern = call.args[1] if (fname == "assertWarnsRegex" and len(call.args) > 1) else None
+    match_test: ast.expr = ast.Call(
+        func=ast.Name(id="issubclass", ctx=ast.Load()),
+        args=[
+            ast.Attribute(value=ast.Name(id="_wi", ctx=ast.Load()), attr="category", ctx=ast.Load()),
+            exc,
+        ],
+        keywords=[],
+    )
+    if pattern is not None:
+        match_test = ast.BoolOp(
+            op=ast.And(),
+            values=[
+                match_test,
+                ast.Call(
+                    func=ast.Attribute(value=ast.Name(id="_re", ctx=ast.Load()), attr="search", ctx=ast.Load()),
+                    args=[pattern, ast.Call(func=ast.Name(id="str", ctx=ast.Load()), args=[ast.Attribute(value=ast.Name(id="_wi", ctx=ast.Load()), attr="message", ctx=ast.Load())], keywords=[])],
+                    keywords=[],
+                ),
+            ],
+        )
+    recorded = ast.Call(
+        func=ast.Name(id="any", ctx=ast.Load()),
+        args=[
+            ast.GeneratorExp(
+                elt=match_test,
+                generators=[ast.comprehension(target=ast.Name(id="_wi", ctx=ast.Store()), iter=ast.Name(id="_w", ctx=ast.Load()), ifs=[], is_async=0)],
+            )
+        ],
+        keywords=[],
+    )
+    label = "assertWarnsRegex" if pattern is not None else "assertWarns"
+    inner = ast.With(
+        items=[ast.withitem(
+            context_expr=ast.Call(
+                func=ast.Attribute(value=ast.Name(id="warnings", ctx=ast.Load()), attr="catch_warnings", ctx=ast.Load()),
+                args=[],
+                keywords=[ast.keyword(arg="record", value=ast.Constant(value=True))],
+            ),
+            optional_vars=ast.Name(id="_w", ctx=ast.Store()),
+        )],
+        body=[ast.Expr(value=ast.Call(
+            func=ast.Attribute(value=ast.Name(id="warnings", ctx=ast.Load()), attr="simplefilter", ctx=ast.Load()),
+            args=[ast.Constant(value="always")],
+            keywords=[],
+        ))] + [copy.deepcopy(s) for s in body],
+        type_comment=None,
+    )
+    return [
+        inner,
+        ast.Assert(test=recorded, msg=ast.Constant(value=f"{label}: warning not raised")),
     ]
 
 
@@ -535,6 +630,12 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                         needs_re = needs_re or _with_needs_re(stmt.items[0])
                         new.append(out_stmt)
                         handled = True
+                    elif isinstance(call, ast.Call) and _call_name(call.func) in ("assertWarns", "assertWarnsRegex"):
+                        # catch_warnings(record=True)+simplefilter('always')
+                        # block + any(issubclass(...)) match assert; the _re
+                        # search variant rides the existing AST scan.
+                        new.extend(rewrite_warns_with(stmt.items[0], stmt.body))
+                        handled = True
                     elif isinstance(call, ast.Call) and _call_name(call.func) == "subTest":
                         # unittest subTest scopes failure labels without stopping
                         # the test; any failing subtest makes the host oracle
@@ -580,6 +681,10 @@ _BUILTIN_NAMES: set[str] = set(dir(builtins))
 _EXTRA_ALLOWED = {
     "True", "False", "None", "__name__", "__class__", "self",
     "_re", "_exc", "AssertionError", "Exception", "BaseException",
+    # Synthetic render-time globals: the cleanup stack (addCleanup
+    # lowering) and the warnings module (assertWarns lowering) are seeded
+    # by render_snippet, not by user prelude.
+    "_cleanup_stack", "warnings",
 }
 
 
@@ -794,6 +899,26 @@ class _HelperCallRewriter(ast.NodeTransformer):
     def visit_Call(self, node: ast.Call) -> ast.AST:
         self.generic_visit(node)
         func = node.func
+        if (
+            isinstance(func, ast.Attribute)
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "self"
+            and func.attr == "addCleanup"
+        ):
+            # Registration form inside lifted helpers/setUp bodies: rewrite
+            # to the cleanup stack append; args stay eagerly evaluated.
+            self.session.needs_ns = True
+            fn = node.args[0] if node.args else ast.Constant(value=None)
+            args_t = ast.Tuple(elts=list(node.args[1:]), ctx=ast.Load())
+            kw_d = ast.Dict(
+                keys=[ast.Constant(value=k.arg) for k in node.keywords],
+                values=[k.value for k in node.keywords],
+            )
+            node.func = ast.Attribute(
+                value=ast.Name(id="_cleanup_stack", ctx=ast.Load()), attr="append", ctx=ast.Load()
+            )
+            node.args = [ast.Tuple(elts=[fn, args_t, kw_d], ctx=ast.Load())]
+            return node
         if (
             isinstance(func, ast.Attribute)
             and isinstance(func.value, ast.Name)
@@ -1627,8 +1752,27 @@ def render_snippet(
 ) -> str:
     module = ast.Module(body=[], type_ignores=[])
     stmts: list[ast.stmt] = []
+    # Detect cleanup/warnings needs from the assembled statements themselves
+    # (same final-AST-scan philosophy as rewrite_block's _re derivation).
+    probe = ast.Module(body=list(body) + list(prelude), type_ignores=[])
+    needs_cleanups = False
+    needs_warnings = False
+    for node in ast.walk(probe):
+        names = []
+        if isinstance(node, ast.Name):
+            names.append(node.id)
+        elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+            names.append(node.value.id)
+        if "_cleanup_stack" in names:
+            needs_cleanups = True
+        if "warnings" in names:
+            needs_warnings = True
     if needs_re:
         stmts.append(ast.Import(names=[ast.alias(name="re as _re", asname=None)]))
+    if needs_warnings:
+        stmts.append(ast.Import(names=[ast.alias(name="warnings", asname=None)]))
+    if needs_cleanups:
+        stmts.extend(ast.parse(_CLEANUP_SEED_SRC).body)
     stmts.extend(prelude)
     if not wrap:
         # Doctest pins run at module level: classes/examples must get
@@ -1698,7 +1842,10 @@ def render_snippet(
                 )
             ],
             orelse=[ast.Expr(value=ast.Call(func=ast.Name(id="print", ctx=ast.Load()), args=[ast.Constant(value=_ORACLE_OK)], keywords=[]))],
-            finalbody=[],
+            # addCleanup drain: LIFO after the body/else, failures surfaced
+            # as ORACLE_EXC lines so a cleanup error fails the pin like
+            # CPython records it.
+            finalbody=([ast.Expr(value=ast.Call(func=ast.Name(id="_drain_cleanups", ctx=ast.Load()), args=[], keywords=[]))] if needs_cleanups else []),
         )
     )
     module.body = stmts
