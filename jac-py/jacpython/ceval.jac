@@ -8195,6 +8195,33 @@ def class_is_exception(cls: PyClass) -> bool {
     return False;
 }
 
+# CHECK_EXC_MATCH target validation (CPython _PyErr_ExceptionMatches): every
+# except target must be an exception class, or a (possibly empty) tuple of
+# exception classes; anything else raises the TypeError below. Builtin names
+# arrive as PyExceptionType, user classes as PyClass over an exception-derived
+# MRO, and delegated host classes as PyHostProxy marked as an exception type.
+def exc_match_target_valid(target: PyObj) -> bool {
+    if target.t == "tuple" {
+        # An empty tuple is valid and simply matches nothing.
+        for item in (target as PyTuple).items {
+            if not exc_match_target_valid(item) {
+                return False;
+            }
+        }
+        return True;
+    }
+    if isinstance(target, PyExceptionType) {
+        return True;
+    }
+    if isinstance(target, PyClass) {
+        return class_is_exception(target as PyClass);
+    }
+    if isinstance(target, PyHostProxy) {
+        return bool(_jac_is_exception_type((target as PyHostProxy).val));
+    }
+    return False;
+}
+
 # ---------------- except* primitives (CHECK_EG_MATCH) ----------------
 
 # True iff a builtin exception-family name sits under BaseExceptionGroup.
@@ -16491,6 +16518,23 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
             exception = stack[len(stack) - 1];
+            if not exc_match_target_valid(match_type) {
+                # CPython's CHECK_EXC_MATCH -> _PyErr_ExceptionMatches raises
+                # this TypeError when the target is not an exception class
+                # (an instance, a plain class, or a string); it unwinds out of
+                # the whole try statement, so route it through the standard
+                # error recovery at the matching instruction's offset.
+                result = py_error(
+                    "TypeError",
+                    "catching classes that do not inherit from BaseException is not allowed"
+                );
+                target = recover_exception(co, result, offset, stack);
+                if target >= 0 {
+                    ip = target;
+                    continue;
+                }
+                return result;
+            }
             stack.append(
                 PyBool(t="bool", val=exception_matches(exception, match_type))
             );
