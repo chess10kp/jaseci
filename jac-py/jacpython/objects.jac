@@ -3062,14 +3062,19 @@ obj PyException(PyObj) {
         # unset optional members read as None, exactly like the C structs'
         # zero-initialized slots.
         if name == "__notes__" {
-            # PEP 678 notes: reads before any add_note yield an empty list.
+            # PEP 678 notes: CPython stores them in the instance dict, so the
+            # attribute is ABSENT until add_note() creates it -- reads before
+            # that raise AttributeError like any missing attribute.
             stored = self.type_fields.get("__notes__");
             if stored is not None and isinstance(stored, PyList) {
                 items: list[PyObj] = [];
                 items.extend((stored as PyList).items);
                 return PyList(t="list", items=items);
             }
-            return PyList(t="list", items=[]);
+            return py_error(
+                "AttributeError",
+                "'" + self.type_name + "' object has no attribute '__notes__'",
+            );
         }
         if name in self.type_fields {
             return self.type_fields[name];

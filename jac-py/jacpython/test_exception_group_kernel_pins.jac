@@ -513,3 +513,17 @@ test "p3 split: __notes__ ride along via leaf identity" {
         "r = 'notes=' + repr(rest_ve.__notes__) + ' ## ' + str(rest_ve is ve)\n"
     ) == "notes=['note-v'] ## True";
 }
+
+
+test "p3 notes: __notes__ absent until add_note (PEP 678 lazy storage)" {
+    # Host oracle: AttributeError: 'ValueError' object has no attribute '__notes__'
+    # CPython keeps notes in the instance dict, so the attribute does not
+    # pre-exist as an empty list -- hasattr is False until add_note runs.
+    # Anchor: Objects/exceptions.c BaseException notes storage;
+    # Lib/test/test_exception_group.py TestSplit.test_notes_preserved setup.
+    if not _kernel_ready() { return; }
+    assert _run_native(
+        "ve = ValueError('v')\n"
+        "r = str(ve.__notes__)\n"
+    ) == "AttributeError: 'ValueError' object has no attribute '__notes__'";
+}
