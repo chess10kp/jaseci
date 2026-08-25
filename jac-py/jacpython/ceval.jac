@@ -8076,6 +8076,31 @@ def dispatch_exception(
     return handler.target;
 }
 
+# CPython _PyEval_CheckExceptTypeValid (CHECK_EXC_MATCH): every except-target
+# must be an exception CLASS or a tuple of them -- anything else TypeErrors at
+# handler-selection time (`except <object>` and `except <instance>` both raise).
+# Returns py_none() when the target chain is valid, else the TypeError error.
+def check_except_target_valid(target: PyObj) -> PyObj {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            invalid = check_except_target_valid(item);
+            if is_error(invalid) {
+                return invalid;
+            }
+        }
+        return py_none();
+    }
+    # Family walk covers builtin exception types, host exception proxies and
+    # user classes whose MRO reaches BaseException; everything else fails.
+    if eg_target_family(target) != "" {
+        return py_none();
+    }
+    return py_error(
+        "TypeError",
+        "catching classes that do not inherit from BaseException is not allowed"
+    );
+}
+
 def exception_matches(value: PyObj, target: PyObj) -> bool {
     if value.t != "exception" {
         return False;
@@ -16491,6 +16516,18 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
             exception = stack[len(stack) - 1];
+            # CPython CHECK_EXC_MATCH validates the target before matching:
+            # `except <non-exception>` raises TypeError at handler-selection
+            # time (catchable by an enclosing handler), it never matches.
+            invalid = check_except_target_valid(match_type);
+            if is_error(invalid) {
+                target = recover_exception(co, invalid, offset, stack);
+                if target >= 0 {
+                    ip = target;
+                    continue;
+                }
+                return invalid;
+            }
             stack.append(
                 PyBool(t="bool", val=exception_matches(exception, match_type))
             );
