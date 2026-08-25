@@ -8076,6 +8076,32 @@ def dispatch_exception(
     return handler.target;
 }
 
+# CPython validates every plain-except target at CHECK_EXC_MATCH time
+# (_PyEval_CheckExceptTypeValid): only BaseException subclasses -- or tuples
+# of them -- may appear in `except`; anything else (a BaseException INSTANCE
+# such as `except BaseException()`, a string, or a non-exception class)
+# raises TypeError instead of matching. Returns py_none() when valid.
+# Unlike eg_validate_star_target there is no ExceptionGroup restriction:
+# plain `except` may catch ExceptionGroup subclasses.
+def validate_except_target(target: PyObj) -> PyObj {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            invalid = validate_except_target(item);
+            if is_error(invalid) {
+                return invalid;
+            }
+        }
+        return py_none();
+    }
+    if eg_target_family(target) == "" {
+        return py_error(
+            "TypeError",
+            "catching classes that do not inherit from BaseException is not allowed"
+        );
+    }
+    return py_none();
+}
+
 def exception_matches(value: PyObj, target: PyObj) -> bool {
     if value.t != "exception" {
         return False;
@@ -16491,6 +16517,17 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
             exception = stack[len(stack) - 1];
+            # CPython raises TypeError for non-exception-class targets (incl.
+            # instances like `except BaseException()`) before any matching.
+            invalid = validate_except_target(match_type);
+            if is_error(invalid) {
+                target = recover_exception(co, invalid, offset, stack);
+                if target >= 0 {
+                    ip = target;
+                    continue;
+                }
+                return invalid;
+            }
             stack.append(
                 PyBool(t="bool", val=exception_matches(exception, match_type))
             );
