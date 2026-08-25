@@ -1,0 +1,21 @@
+{
+  "description": "Minimal repro pins handed off to the objects lane by worker3/130-pin-descr-mro-triage. Root cause: user-defined descriptor protocol is unimplemented in the attribute dispatch -- descriptor_get() (ceval.jac) only special-cases PyClassMethod/PyStaticMethod/PyProperty/plain functions, default_user_setattro() ignores user __set__, and default_user_getattro() checks the instance dict without a data-descriptor precedence test. Replayable via the _fuzz_smoke.jac Layer-1 driver (FUZZ_CASES_FILE=this file, JACPYTHON_CPYTHON=python3 .venv/bin/jac run jac-py/jacpython/_fuzz_smoke.jac). Sources mirror fuzz_corpus_pinned.json pins pin-item1-* verbatim so verdicts map 1:1.",
+  "cases": [
+    {
+      "name": "repro-user-nondata-descr-get",
+      "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class Ten():\n            def __get__(me, obj, owner): return 10\n        class C():\n            attr = Ten()\n        self.assertEqual(C().attr, 10)\n"
+    },
+    {
+      "name": "repro-user-data-descr-set",
+      "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class D():\n            def __get__(me, obj, owner): return obj._v\n            def __set__(me, obj, v): obj._v = v * 2\n        class C(): x = D()\n        c = C()\n        c.x = 21\n        self.assertEqual(c.x, 42)\n"
+    },
+    {
+      "name": "repro-data-descr-precedence-over-inst-dict",
+      "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class D():\n            def __get__(me, obj, owner): return 'from-descr'\n            def __set__(me, obj, v): pass\n        class C(): pass\n        c = C()\n        C.x = D()\n        c.__dict__['x'] = 'from-instance'\n        self.assertEqual(c.x, 'from-descr')\n"
+    },
+    {
+      "name": "repro-mro-c3-diamond",
+      "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class A(): pass\n        class B(A): pass\n        class C2(A): pass\n        class D(B, C2): pass\n        self.assertEqual([k.__name__ for k in D.__mro__], ['D', 'B', 'C2', 'A', 'object'])\n"
+    }
+  ]
+}
