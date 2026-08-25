@@ -2794,6 +2794,23 @@ obj PyClass(PyObj) {
                 has_user_new = True;
             }
         }
+        if not has_user_new and self.native_base == "type"
+            and len(args) == 3
+            and isinstance(args[0], PyStr)
+            and isinstance(args[1], PyTuple)
+            and isinstance(args[2], PyDict) {
+            # CPython type_call falls back to the inherited type.__new__ slot
+            # when neither this metaclass nor its ancestors define one. The
+            # factory-shaped call (name, bases, ns) must BUILD THE CLASS tagged
+            # with metaclass=self -- degrading to a blank instance of the
+            # metaclass loses the class identity entirely ('C.__class__ is M'
+            # False, instances unconstructible).
+            factory_args: list[PyObj] = [self as PyObj];
+            for fa in args {
+                factory_args.append(fa);
+            }
+            return type_new(factory_args);
+        }
         if has_user_new {
             new_args: list[PyObj] = [self];
             for a in args {
