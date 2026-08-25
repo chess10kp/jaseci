@@ -57,7 +57,7 @@ _DEFAULT_LIB = _REPO / "reference" / "cpython" / "Lib"
 _TESTS_DIR = _REPO / "jac-py" / "tests"
 _MANIFEST = _TESTS_DIR / "conformance_manifest_convpipe.json"
 
-TOOL_VERSION = "conv_suite-0.4.0"
+TOOL_VERSION = "conv_suite-0.5.0"
 CPYTHON_VERSION = "3.14.6"
 
 
@@ -313,6 +313,11 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [
             ast.Raise(exc=ast.Call(func=ast.Name(id="AssertionError", ctx=ast.Load()), args=[msg], keywords=[]), cause=None)
         ]
+    if fname == "subTest":
+        # subTest only scopes failure labels; it never affects assertions.
+        # Dropping the bare statement form is oracle-safe (the With form is
+        # inlined by rewrite_block with the same reasoning).
+        return []
     if fname in ("assertWarns", "assertWarnsRegex", "assertLogs", "assertNoLogs"):
         raise Unsupported(fname)
     if fname in ("assertRaises", "assertRaisesRegex"):
@@ -413,6 +418,46 @@ def _rewrite_raises(call: ast.Call, regex: bool) -> list[ast.stmt]:
         offset = 2 if regex else 1
         fn = call.args[offset]
         extra = list(call.args[offset + 1 :])
+        if isinstance(fn, ast.Starred):
+            # Forwarded form ``assertRaises(E, *args[, **kw])``: the callable
+            # travels inside the spread. Unpack it dynamically.
+            invoke = ast.Call(
+                func=ast.Name(id="_p2_fwd_fn", ctx=ast.Load()),
+                args=[
+                    ast.Starred(
+                        value=ast.Name(id="_p2_fwd_rest", ctx=ast.Load()),
+                        ctx=ast.Load(),
+                    )
+                ],
+                keywords=list(call.keywords),
+            )
+            unpack = ast.Assign(
+                targets=[
+                    ast.Tuple(
+                        elts=[
+                            ast.Name(id="_p2_fwd_fn", ctx=ast.Store()),
+                            ast.Starred(
+                                value=ast.Name(id="_p2_fwd_rest", ctx=ast.Store()),
+                                ctx=ast.Store(),
+                            ),
+                        ],
+                        ctx=ast.Store(),
+                    )
+                ],
+                value=ast.Call(
+                    func=ast.Name(id="list", ctx=ast.Load()),
+                    args=[fn.value],
+                    keywords=[],
+                ),
+            )
+            return [
+                ast.Try(
+                    body=[unpack, ast.Expr(value=invoke)],
+                    handlers=[handler],
+                    orelse=else_stmt,
+                    finalbody=[],
+                )
+            ]
         starargs: list[ast.expr] = []
         if extra:
             starargs = [
@@ -435,7 +480,12 @@ def _rewrite_raises(call: ast.Call, regex: bool) -> list[ast.stmt]:
 
 
 def rewrite_raises_with(item: ast.withitem, body: list[ast.stmt]) -> ast.Try:
-    """``with self.assertRaises(E[, regex]): <body>`` -> try/except/else."""
+    """``with self.assertRaises(E[, regex]) [as name]: <body>`` -> try/except.
+
+    With ``as name`` the caught exception binds directly to ``name``; the
+    unittest context wrapper is not reproduced, so later ``name.exception``
+    loads are rewritten to plain ``name`` loads by rewrite_block's post-pass.
+    """
     call = item.context_expr
     fname = _call_name(call.func) if isinstance(call, ast.Call) else None
     if fname not in ("assertRaises", "assertRaisesRegex") or not isinstance(call, ast.Call):
@@ -447,6 +497,10 @@ def rewrite_raises_with(item: ast.withitem, body: list[ast.stmt]) -> ast.Try:
         _need_args(call, 2)
         regex = call.args[1]
     handler_body: list[ast.stmt] = []
+    bound = item.optional_vars
+    if bound is not None and not isinstance(bound, ast.Name):
+        raise Unsupported("assertRaises as-non-name")
+    exc_name = bound.id if bound is not None else "_exc"
     if regex is not None:
         handler_body.append(
             ast.Assert(
@@ -455,13 +509,26 @@ def rewrite_raises_with(item: ast.withitem, body: list[ast.stmt]) -> ast.Try:
                         value=ast.Name(id="_re", ctx=ast.Load()),
                         attr="search", ctx=ast.Load(),
                     ),
-                    args=[regex, ast.Call(func=ast.Name(id="str", ctx=ast.Load()), args=[ast.Name(id="_exc", ctx=ast.Load())], keywords=[])],
+                    args=[regex, ast.Call(func=ast.Name(id="str", ctx=ast.Load()), args=[ast.Name(id=exc_name if bound is not None else "_exc", ctx=ast.Load())], keywords=[])],
                     keywords=[],
                 ),
                 msg=ast.Constant(value="assertRaisesRegex: message mismatch"),
             )
         )
-    handler = ast.ExceptHandler(type=exc, name="_exc", body=handler_body or [ast.Pass()])
+    # Bind through an explicit assignment: ``except E as name`` implicitly
+    # deletes ``name`` when the handler exits, so a test's later
+    # ``name.exception`` loads would hit UnboundLocalError.
+    handler_stmts: list[ast.stmt] = []
+    if bound is not None:
+        handler_stmts.append(
+            ast.Assign(
+                targets=[ast.Name(id=exc_name, ctx=ast.Store())],
+                value=ast.Name(id="_exc", ctx=ast.Load()),
+            )
+        )
+    handler = ast.ExceptHandler(
+        type=exc, name="_exc", body=handler_stmts + (handler_body or [ast.Pass()])
+    )
     return ast.Try(
         body=list(body),
         handlers=[handler],
@@ -490,9 +557,202 @@ def _is_self_assert_stmt(stmt: ast.stmt) -> bool:
     )
 
 
+def _explode_multi_with(stmt: ast.With) -> ast.With:
+    """``with (a, b, c):`` -> nested singles so per-item rules apply."""
+    if len(stmt.items) <= 1:
+        return stmt
+    inner = ast.With(
+        items=stmt.items[1:], body=stmt.body,
+        type_comment=None,
+    )
+    ast.copy_location(inner, stmt)
+    stmt.items = [stmt.items[0]]
+    stmt.body = [inner]
+    return stmt
+
+
+def _rewrite_assert_raises_loads(block: list[ast.stmt]) -> None:
+    """``self.assertRaises`` in value position -> ``_p2_assert_raises``.
+
+    Call-position uses are assertion vocabulary and handled elsewhere; only
+    bare loads (``raises = self.assertRaises``) need the callable form.
+    Mutates the block in place.
+    """
+    tree = ast.Module(body=block, type_ignores=[])
+    func_ids = {
+        id(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)
+    }
+
+    class _T(ast.NodeTransformer):
+        def visit_Attribute(self, node):
+            self.generic_visit(node)
+            if (
+                id(node) not in func_ids
+                and node.attr == "assertRaises"
+                and isinstance(node.value, ast.Name)
+                and node.value.id == "self"
+            ):
+                return ast.copy_location(
+                    ast.Name(id="_p2_assert_raises", ctx=node.ctx), node
+                )
+            return node
+
+    new = _T().visit(tree).body
+    block[:] = new
+
+
+_ASSERT_RAISES_HELPER_SRC = '''\
+def _p2_assert_raises(exc, fn, *args, **kwargs):
+    try:
+        fn(*args, **kwargs)
+    except exc:
+        pass
+    else:
+        raise AssertionError("assertRaises: did not raise")
+'''
+_ASSERT_RAISES_HELPER_DEF: list[ast.stmt] = ast.parse(_ASSERT_RAISES_HELPER_SRC).body
+
+
+def _loads_name(nodes: list[ast.stmt], name: str) -> bool:
+    tree = ast.Module(body=nodes, type_ignores=[])
+    return any(
+        isinstance(n, ast.Name) and n.id == name and isinstance(n.ctx, ast.Load)
+        for n in ast.walk(tree)
+    )
+
+
+class _CollapseExceptionLoads(ast.NodeTransformer):
+    """``name.exception`` -> ``name`` for assertRaises-With bound names."""
+
+    def __init__(self, names: set[str]) -> None:
+        self.names = names
+
+    def visit_Attribute(self, node: ast.Attribute) -> ast.expr:
+        self.generic_visit(node)
+        if (node.attr == "exception" and isinstance(node.value, ast.Name)
+                and node.value.id in self.names):
+            return ast.copy_location(node.value, node)
+        return node
+
+
+class _UnittestFixtureRewriter(ast.NodeTransformer):
+    """One-shot-snippet mappings for unittest fixture vocabulary.
+
+    ``self.enterContext(cm)`` becomes ``cm.__enter__()`` and standalone
+    ``self.addCleanup(...)`` statements are dropped. Pins execute each
+    snippet once under ``p2_libtest_run_snippet`` with VM state reset in
+    between, so context-manager exit and post-test cleanup are unobservable;
+    ``__enter__`` side effects (env guards, swap_attr) must still run.
+    addCleanup outside statement position is left in place so the usual
+    uses-self quarantine reports it precisely.
+    """
+
+    def visit_Call(self, node: ast.Call) -> ast.expr:
+        self.generic_visit(node)
+        func = node.func
+        if (
+            isinstance(func, ast.Attribute)
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "self"
+            and func.attr == "enterContext"
+            and len(node.args) == 1
+            and not node.keywords
+        ):
+            cm = node.args[0]
+            return ast.Call(
+                func=ast.Attribute(value=cm, attr="__enter__", ctx=ast.Load()),
+                args=[], keywords=[],
+            )
+        return node
+
+    def visit_Expr(self, node: ast.stmt) -> ast.stmt | None:
+        self.generic_visit(node)
+        value = node.value
+        if (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Attribute)
+            and isinstance(value.func.value, ast.Name)
+            and value.func.value.id == "self"
+            and value.func.attr == "addCleanup"
+        ):
+            return None
+        return node
+
+
+def _apply_fixture_rewriter(stmts: list[ast.stmt]) -> list[ast.stmt]:
+    rw = _UnittestFixtureRewriter()
+    return [out for out in (rw.visit(s) for s in stmts) if out is not None]
+
+
+def _is_super_call(stmt: ast.stmt, method: str) -> bool:
+    """Expr statement invoking ``super(...).<method>(...)``."""
+    return (
+        isinstance(stmt, ast.Expr)
+        and isinstance(stmt.value, ast.Call)
+        and isinstance(stmt.value.func, ast.Attribute)
+        and stmt.value.func.attr == method
+        and isinstance(stmt.value.func.value, ast.Call)
+        and isinstance(stmt.value.func.value.func, ast.Name)
+        and stmt.value.func.value.func.id == "super"
+    )
+
+
+def _synthesize_setUp(cmap: dict[str, _ClassInfo], cls_name: str | None) -> ast.FunctionDef | None:
+    """Cooperatively chain the in-module setUp defs along the MRO.
+
+    unittest runs a setUp chain only while each link explicitly calls
+    ``super().setUp()``; the emulation here follows exactly that discipline:
+    walk the resolution order (nearest first), splice each body minus its
+    leading super call, and stop at the first body that does not continue
+    the chain (a trailing super into unittest.TestCase itself is a no-op and
+    safely dropped). A super call anywhere but the leading position has no
+    mechanical ordering guarantee and quarantines via Unsupported.
+    """
+    order: list[ast.FunctionDef] = []
+    seen: set[str] = set()
+    queue = [cls_name] if cls_name else []
+    while queue:
+        name = queue.pop(0)
+        if name in seen:
+            continue
+        seen.add(name)
+        info = cmap.get(name)
+        if info is None:
+            continue
+        fn = info.methods.get("setUp")
+        if fn is not None:
+            order.append(fn)
+        queue.extend(info.bases)
+    if not order:
+        return None
+    body: list[ast.stmt] = []
+    for fn in order:
+        stmts = list(fn.body)
+        rest: list[ast.stmt] | None = None
+        if stmts and _is_super_call(stmts[0], "setUp"):
+            rest = stmts[1:]
+            if any(_is_super_call(s, "setUp") for s in rest):
+                raise Unsupported("helper:setUp(super-mid-body)")
+            body.extend(copy.deepcopy(rest))
+        else:
+            if any(_is_super_call(s, "setUp") for s in stmts):
+                raise Unsupported("helper:setUp(super-mid-body)")
+            body.extend(copy.deepcopy(stmts))
+            break  # chain stops here; further links never execute
+    args = copy.deepcopy(order[0].args)
+    return ast.FunctionDef(
+        name="setUp", args=args, body=body,
+        decorator_list=[], returns=None, type_params=[],
+    )
+
+
 def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
     """Recursively rewrite a statement list; returns (new stmts, needs_re)."""
     needs_re = False
+    # Names bound by ``with self.assertRaises(...) as name:`` rewrites; after
+    # the walk, ``<name>.exception`` loads collapse onto the exception object
+    # itself (the handler binds it directly).
+    exc_bound_names: set[str] = set()
 
     def rec(block: list[ast.stmt]) -> list[ast.stmt]:
         nonlocal needs_re
@@ -510,6 +770,7 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                     handler.body = rec(handler.body)
                 new.append(stmt)
             elif isinstance(stmt, ast.With):
+                stmt = _explode_multi_with(stmt)
                 handled = False
                 if len(stmt.items) == 1:
                     call = stmt.items[0].context_expr
@@ -517,9 +778,12 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                         isinstance(call, ast.Call)
                         and _call_name(call.func) in ("assertRaises", "assertRaisesRegex")
                     ):
-                        out_stmt = rewrite_raises_with(stmt.items[0], stmt.body)
+                        out_stmt = rewrite_raises_with(stmt.items[0], rec(stmt.body))
                         needs_re = needs_re or _with_needs_re(stmt.items[0])
                         new.append(out_stmt)
+                        bound = stmt.items[0].optional_vars
+                        if isinstance(bound, ast.Name):
+                            exc_bound_names.add(bound.id)
                         handled = True
                     elif isinstance(call, ast.Call) and _call_name(call.func) == "subTest":
                         # unittest subTest scopes failure labels without stopping
@@ -543,6 +807,13 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
         return new
 
     new_block = rec(stmts)
+    # ``<name>.exception`` -> ``<name>``: the assertRaises With rewrite binds
+    # the exception object directly, so wrapper attribute loads must collapse.
+    if exc_bound_names:
+        new_block = _CollapseExceptionLoads(exc_bound_names).visit(
+            ast.Module(body=new_block, type_ignores=[])
+        ).body
+    _rewrite_assert_raises_loads(new_block)
     # Any emitted statement loading _re requires the module import. Scanning
     # the final AST (not per-rewrite flags) keeps every vocabulary addition
     # that may emit _re.search honest without plumbing a flag through each.
@@ -741,6 +1012,58 @@ def _resolve_method(
     return None
 
 
+def _resolution_order(
+    cmap: dict[str, _ClassInfo], cls_name: str | None
+) -> list[str]:
+    """Class names in the tool's BFS resolution order, nearest first."""
+    order: list[str] = []
+    seen: set[str] = set()
+    queue = [cls_name] if cls_name else []
+    while queue:
+        name = queue.pop(0)
+        if name in seen:
+            continue
+        seen.add(name)
+        order.append(name)
+        info = cmap.get(name)
+        if info is not None:
+            queue.extend(info.bases)
+    return order
+
+
+def _resolve_method_owner(
+    cmap: dict[str, _ClassInfo], cls_name: str | None, attr: str
+) -> str | None:
+    """Name of the first class in resolution order defining ``attr``."""
+    for name in _resolution_order(cmap, cls_name):
+        info = cmap.get(name)
+        if info is not None and attr in info.methods \
+                and not attr.startswith("test"):
+            return name
+    return None
+
+
+def _resolve_method_after(
+    cmap: dict[str, _ClassInfo], cls_name: str | None,
+    base_name: str, attr: str,
+) -> str | None:
+    """Owner of the first ``attr`` def strictly after ``base_name`` in the
+    resolution order -- the target a ``super(base_name, self).attr()`` call
+    binds to for an instance of ``cls_name``.
+    """
+    order = _resolution_order(cmap, cls_name)
+    try:
+        idx = order.index(base_name)
+    except ValueError:
+        return None
+    for name in order[idx + 1 :]:
+        info = cmap.get(name)
+        if info is not None and attr in info.methods \
+                and not attr.startswith("test"):
+            return name
+    return None
+
+
 def _drop_self_arg(fn: ast.FunctionDef) -> ast.arguments:
     """Copy fn.args minus the leading ``self`` parameter."""
     a = fn.args
@@ -790,6 +1113,30 @@ class _HelperCallRewriter(ast.NodeTransformer):
         ):
             self.session.ensure(func.attr)
             node.func = ast.Name(id=func.attr, ctx=ast.Load())
+            return node
+        # ``super(Base, self).m(...)``: with a namespace ``self`` the runtime
+        # super protocol cannot run, but the target is static -- the first
+        # def of ``m`` strictly after ``Base`` in the candidate's resolution
+        # order. Lift that link under a collision-free name.
+        if (
+            isinstance(func, ast.Attribute)
+            and isinstance(func.value, ast.Call)
+            and isinstance(func.value.func, ast.Name)
+            and func.value.func.id == "super"
+            and len(func.value.args) == 2
+            and isinstance(func.value.args[0], ast.Name)
+            and isinstance(func.value.args[1], ast.Name)
+            and func.value.args[1].id == "self"
+        ):
+            base = func.value.args[0].id
+            owner = _resolve_method_after(
+                self.session.cmap, self.session.cls_name, base, func.attr
+            )
+            if owner is not None:
+                lifted_name = self.session.ensure_named(owner, func.attr)
+                node.func = ast.Name(id=lifted_name, ctx=ast.Load())
+            else:
+                raise Unsupported(f"helper-super:{func.attr}")
         return node
 
 
@@ -810,6 +1157,8 @@ class _FixtureVocab:
         self.allowed_calls: set[str] = set()
         self._ok: dict[str, ast.FunctionDef] = {}
         self._failed: dict[str, Unsupported] = {}
+        self._named_ok: set[str] = set()
+        self._named_failed: dict[str, Unsupported] = {}
 
     def ensure(self, attr: str) -> ast.FunctionDef:
         if attr in self._ok:
@@ -830,6 +1179,29 @@ class _FixtureVocab:
         self.needs_re = self.needs_re or needs_re
         return lifted
 
+    def ensure_named(self, owner: str, attr: str) -> str:
+        """Lift ``owner.attr`` under the collision-free name ``attr__owner``."""
+        key = f"{attr}__{owner}"
+        if key in self._named_ok:
+            return key
+        if key in self._named_failed:
+            raise self._named_failed[key]
+        info = self.cmap.get(owner)
+        fn = info.methods.get(attr) if info is not None else None
+        try:
+            if fn is None:
+                raise Unsupported("not-in-class-hierarchy")
+            lifted, needs_re = self._lift(fn)
+            lifted.name = key
+        except Unsupported as exc:
+            wrapped = Unsupported(f"helper:{key}({exc})")
+            self._named_failed[key] = wrapped
+            raise wrapped from None
+        self._named_ok.add(key)
+        self.lifted.append(lifted)
+        self.needs_re = self.needs_re or needs_re
+        return key
+
     def _lift(self, fn: ast.FunctionDef) -> tuple[ast.FunctionDef, bool]:
         # Deep-copy before transforming: helper methods are tree nodes shared
         # by every test candidate; in-place substitution would leak one
@@ -839,7 +1211,7 @@ class _FixtureVocab:
             raise Unsupported("decorated-helper")
         args = _drop_self_arg(fn)
         rewriter = _HelperCallRewriter(self)
-        body = [rewriter.visit(stmt) for stmt in fn.body]
+        body = [rewriter.visit(stmt) for stmt in _apply_fixture_rewriter(fn.body)]
         body, needs_re = rewrite_block(body)
         ns_attrs, call_attrs = _scan_self_usage(body)
         bad = {a for a in call_attrs if a not in self.allowed_calls}
@@ -850,7 +1222,7 @@ class _FixtureVocab:
         try:
             siblings = {f.name for f in self.lifted} | {
                 f.name for f in self._ok.values()
-            }
+            } | self._named_ok
             params = {
                 a.arg
                 for group in (
@@ -964,9 +1336,10 @@ def _class_attr_seeds(
         if cd is None:
             continue
         for stmt in _guarded_class_stmts(cd.body):
-            if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 \
-                    and isinstance(stmt.targets[0], ast.Name):
-                seeds[stmt.targets[0].id] = stmt.value
+            if isinstance(stmt, ast.Assign) \
+                    and all(isinstance(t, ast.Name) for t in stmt.targets):
+                for t in stmt.targets:
+                    seeds[t.id] = stmt.value
             elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) \
                     and stmt.value is not None:
                 seeds[stmt.target.id] = stmt.value
@@ -1028,14 +1401,15 @@ def _apply_fixture_vocab(
             session.allowed_calls |= _self_attr_stores(meth.body)
     session.allowed_calls |= set(_class_attr_seeds(cls_name, cmap, mod_classes))
     prefix: list[ast.stmt] = []
-    if _resolve_method(cmap, cls_name, "setUp") is not None:
-        # unittest runs setUp before every test; splice its lifted body so
-        # locals it binds become locals of the test. A setUp that cannot be
-        # lifted cleanly fails the whole test via ensure()'s reason.
-        prefix = list(session.ensure("setUp").body)
-        prefix = [copy.deepcopy(s) for s in prefix]
+    syn_setUp = _synthesize_setUp(cmap, cls_name)
+    if syn_setUp is not None:
+        # unittest runs the chained setUp before every test; splice its lifted
+        # body so locals it binds become locals of the test.
+        cmap.setdefault(cls_name, _ClassInfo(methods={}, bases=[]))  # type: ignore[arg-type]
+        cmap[cls_name].methods["setUp"] = syn_setUp
+        prefix = [copy.deepcopy(s) for s in session.ensure("setUp").body]
     rewriter = _HelperCallRewriter(session)
-    stmts = [rewriter.visit(s) for s in prefix + list(body)]
+    stmts = [rewriter.visit(s) for s in _apply_fixture_rewriter(prefix + list(body))]
     rewritten, needs_re = rewrite_block(stmts)
     # Scan lifted helper bodies together with the test body: a helper's
     # ``self.<attr>`` load/store has the same runtime fate as one written
@@ -1139,6 +1513,40 @@ def _prune_prelude(
     return [kept[i] for i in sorted(kept)]
 
 
+def _seed_param_defaults(fn: ast.FunctionDef) -> list[ast.stmt]:
+    """Bind defaulted test-method parameters at snippet start.
+
+    Snippets are unwrapped bodies; ``def test_x(self, flag=False)`` relies
+    on unittest calling it argument-free, so each default becomes a leading
+    assignment (kwonly params without defaults stay unsupported via the
+    NameError the host oracle then reports).
+    """
+    a = fn.args
+    out: list[ast.stmt] = []
+    pos = list(a.posonlyargs) + list(a.args)
+    if a.defaults:
+        first_default = len(pos) - len(a.defaults)
+        for p, d in zip(pos[first_default:], a.defaults):
+            if p.arg == "self":
+                continue
+            assign = ast.Assign(
+                targets=[ast.Name(id=p.arg, ctx=ast.Store())],
+                value=copy.deepcopy(d),
+            )
+            ast.fix_missing_locations(assign)
+            out.append(assign)
+    for p, d in zip(a.kwonlyargs, a.kw_defaults):
+        if d is None:
+            continue
+        assign = ast.Assign(
+            targets=[ast.Name(id=p.arg, ctx=ast.Store())],
+            value=copy.deepcopy(d),
+        )
+        ast.fix_missing_locations(assign)
+        out.append(assign)
+    return out
+
+
 def extract_tests(tree: ast.Module, source: str) -> Extraction:
     result = Extraction()
     prelude, prelude_names = collect_prelude(tree, source, include_classes=True)
@@ -1171,7 +1579,10 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
                 if reason is not None:
                     result.quarantined.append(Quarantined(ident, reason))
                     continue
-                candidates.append((node.name, ident, list(member.body)))
+                candidates.append(
+                    (node.name, ident,
+                     _seed_param_defaults(member) + list(member.body))
+                )
         elif isinstance(node, ast.FunctionDef) and node.name.startswith("test"):
             for deco in node.decorator_list:
                 reason = _decorator_reason(deco)
@@ -1179,7 +1590,10 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
                     result.quarantined.append(Quarantined(node.name, reason))
                     break
             else:
-                candidates.append((None, node.name, list(node.body)))
+                candidates.append(
+                    (None, node.name,
+                     _seed_param_defaults(node) + list(node.body))
+                )
 
     # Concrete-subclass variant expansion: a test-bearing base class whose
     # subclasses carry distinct class attributes (``module = py_operator`` vs
@@ -1205,10 +1619,10 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
         if cls_name is not None and children.get(cls_name):
             for leaf in _leaves(cls_name):
                 expanded.append(
-                    (leaf, f"{leaf}.{ident.split('.', 1)[1]}", body_stmts)
+                    (leaf, f"{leaf}.{ident.split('.', 1)[1]}", copy.deepcopy(body_stmts))
                 )
         else:
-            expanded.append((cls_name, ident, body_stmts))
+            expanded.append((cls_name, ident, copy.deepcopy(body_stmts)))
     candidates = expanded
 
     for cls_name, ident, body_stmts in candidates:
@@ -1227,6 +1641,10 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
                 _check_self_usage(rewritten)
             if ns_block:
                 rewritten = ns_block + rewritten
+            if _loads_name(rewritten, "_p2_assert_raises"):
+                rewritten = [
+                    copy.deepcopy(_ASSERT_RAISES_HELPER_DEF[0])
+                ] + rewritten
             # Lifted helpers nest inside the wrapped body so their ``self``
             # references resolve through the namespace closure.
             candidate = [*helper_defs, *rewritten]
