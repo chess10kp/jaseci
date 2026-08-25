@@ -213,6 +213,18 @@ def _issubclass_assert(call: ast.Call) -> ast.Assert:
     )
 
 
+def _notissubclass_assert(call: ast.Call) -> ast.Assert:
+    _need_args(call, 2)
+    a, b = call.args[0], call.args[1]
+    return ast.Assert(
+        test=ast.UnaryOp(
+            op=ast.Not(),
+            operand=ast.Call(func=ast.Name(id="issubclass", ctx=ast.Load()), args=[a, b], keywords=[]),
+        ),
+        msg=_msg_of(call, "assertNotIsSubclass", [a, b]),
+    )
+
+
 def _hasattr_assert(call: ast.Call, negate: bool) -> ast.Assert:
     _need_args(call, 2)
     obj, attr = call.args[0], call.args[1]
@@ -349,6 +361,8 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_count_equal_assert(call)]
     if fname == "assertIsSubclass":
         return [_issubclass_assert(call)]
+    if fname == "assertNotIsSubclass":
+        return [_notissubclass_assert(call)]
     if fname == "assertHasAttr":
         return [_hasattr_assert(call, negate=False)]
     if fname == "assertNotHasAttr":
@@ -824,6 +838,14 @@ class _FixtureVocab:
             wrapped = Unsupported(f"helper:{attr}({exc})")
             self._failed[attr] = wrapped
             raise wrapped from None
+        except RecursionError:
+            # Deep-copying / rewriting a pathological helper (mutually
+            # recursive lift chains, extremely deep ASTs) can exhaust the
+            # interpreter stack; cache and surface as a quarantine reason
+            # instead of killing the whole conversion.
+            wrapped = Unsupported("deepcopy-recursion")
+            self._failed[attr] = wrapped
+            raise wrapped from None
         self._ok[attr] = lifted
         self.lifted.append(lifted)
         self.needs_re = self.needs_re or needs_re
@@ -1203,6 +1225,11 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
             _check_names(rewritten, available)
         except Unsupported as exc:
             result.quarantined.append(Quarantined(ident, str(exc)))
+            continue
+        except RecursionError:
+            # Stack exhaustion outside the helper-cached path (e.g. deep
+            # setUp/seed copies): quarantine this candidate only.
+            result.quarantined.append(Quarantined(ident, "deepcopy-recursion"))
             continue
         snippet = render_snippet(rewritten, kept_prelude, needs_re)
         result.pinned.append(Pinned(ident, snippet, oracle={}))
