@@ -2273,7 +2273,7 @@ obj PyHostProxy(PyObj) {
         # 3-arg type(name, bases, ns): reject __mro_entries__ / non-class bases
         # with CPython's messages BEFORE host routing (the host would see standin
         # proxies and raise a different error than the guest-visible truth).
-        if len(args) == 3 and len(kwargs) == 0 and bool(_jac_is_type_type(self.val)) {
+        if len(args) == 3 and bool(_jac_is_type_type(self.val)) {
             raw_bases: list[PyObj] = [];
             if isinstance(args[1], PyTuple) {
                 for tb in (args[1] as PyTuple).items {
@@ -2287,6 +2287,31 @@ obj PyHostProxy(PyObj) {
             rejected = _jac_validate_type_bases(raw_bases);
             if rejected is not None {
                 return rejected;
+            }
+            # CPython type_new_impl: when the bases carry a more-derived
+            # metatype whose tp_new is not type_new, the WHOLE call -- name,
+            # bases, namespace AND keywords -- goes to that winner. stdlib enum
+            # relies on this (IntFlag/Flag are created via
+            # `type(cls_name, (etype,), body, boundary=..., ...)` inside
+            # EnumType.__new__); host-routing the call instead leaked the class
+            # keywords into __init_subclass__ and bypassed guest
+            # EnumType.__new__, so such classes got no members. A guest
+            # metaclass winner therefore takes over the call exactly like the
+            # __build_class__ protocol does; anything else stays host-routed.
+            winner = resolve_metaclass(kwargs, raw_bases);
+            if isinstance(winner, PyClass) {
+                call_kwds: dict[str, PyObj] = {};
+                for k in kwargs {
+                    if k != "metaclass" {
+                        call_kwds[k] = kwargs[k];
+                    }
+                }
+                call_args: list[PyObj] = [
+                    args[0],
+                    PyTuple(t="tuple", items=raw_bases),
+                    args[2]
+                ];
+                return py_invoke(winner as PyObj, call_args, call_kwds);
             }
         }
         # Zero-arg super() at a GENERIC call site (the proxy wraps the host
