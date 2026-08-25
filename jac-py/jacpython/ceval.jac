@@ -8237,6 +8237,29 @@ def eg_target_family(target: PyObj) -> str {
 # _PyEval_CheckExceptStarTypeValid: every except* target must be an exception
 # class (tuple members included), and none may be an ExceptionGroup subclass
 # (CPython's CANNOT_EXCEPT_STAR_EG TypeError). Returns py_none() when valid.
+# Plain `except <expr>` target validation: the expr must be a BaseException
+# subclass or a tuple of them. Same first check as except* -- but WITHOUT the
+# ExceptionGroup-subclass rejection, which is except*-specific (plain except
+# accepts any BaseException subclass). Returns py_none() when valid.
+def eg_validate_plain_target(target: PyObj) -> PyObj {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            invalid = eg_validate_plain_target(item);
+            if is_error(invalid) {
+                return invalid;
+            }
+        }
+        return py_none();
+    }
+    if target.t == "none" or eg_target_family(target) == "" {
+        return py_error(
+            "TypeError",
+            "catching classes that do not inherit from BaseException is not allowed"
+        );
+    }
+    return py_none();
+}
+
 def eg_validate_star_target(target: PyObj) -> PyObj {
     if target.t == "tuple" {
         for item in (target as PyTuple).items {
@@ -16490,6 +16513,15 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         }
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
+            invalid = eg_validate_plain_target(match_type);
+            if is_error(invalid) {
+                target = recover_exception(co, invalid, offset, stack);
+                if target >= 0 {
+                    ip = target;
+                    continue;
+                }
+                return invalid;
+            }
             exception = stack[len(stack) - 1];
             stack.append(
                 PyBool(t="bool", val=exception_matches(exception, match_type))
