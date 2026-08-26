@@ -361,7 +361,10 @@ def _type_name(v: any) -> str {
 obj _StructObj {
     # fmt is the normalized format string as given (byte-order prefix kept,
     # interior whitespace preserved); endian carries the selected prefix.
+    # ``format`` mirrors CPython's Struct.format getset -- the exact string
+    # passed to the constructor, exposed under its public spelling.
     has fmt: str = "",
+        format: str = "",
         endian: str = "@",
         codes: list = [],
         size: int = 0,
@@ -852,7 +855,8 @@ def compile(fmt_arg: any) -> _StructObj {
         }
     }
     return _StructObj(
-        fmt=fmt, endian=endian, codes=codes, size=size, count=count);
+        fmt=fmt, format=fmt, endian=endian, codes=codes, size=size,
+        count=count);
 }
 
 # ---------------------------------------------------------------------------
