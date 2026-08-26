@@ -8,16 +8,15 @@
 
 name: jac-py gates
 
+# Full sealed-binary readiness is deliberate: the fast merge gate covers every
+# jac-python push, while this expensive lane runs only at integration checkpoints.
 on:
   workflow_dispatch:
-  push:
-    branches: [jac-python]
 
 concurrency:
   group: jacpy-gates-${{ github.ref }}
-  # Supersede stale push-triggered runs, but never kill an explicit
-  # workflow_dispatch run mid-flight (expressions are supported here).
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  # A deliberate readiness run must survive later branch activity.
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -56,6 +55,10 @@ jobs:
 
       - name: Set up jac (build the binary)
         uses: ./.github/actions/setup-jac
+        with:
+          # jac-python is a trusted, long-lived campaign branch. Let completed
+          # dispatches seed content-keyed build caches for the next checkpoint.
+          write-caches: "true"
 
       - name: Layer 4 oracle contract tests
         run: jac test jac-py/jacpython/layer4_compile.jac
