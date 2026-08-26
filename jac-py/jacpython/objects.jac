@@ -323,16 +323,7 @@ obj PyInt(PyObj) {
     }
     # int is its own real part / numerator; imag is 0, denominator is 1.
     def tp_getattro(name: str) -> PyObj {
-        if name == "real" or name == "numerator" {
-            return PyInt(t="int", val=self.val);
-        }
-        if name == "imag" {
-            return PyInt(t="int", val=0);
-        }
-        if name == "denominator" {
-            return PyInt(t="int", val=1);
-        }
-        return py_error("AttributeError", name);
+        return _number_getattro(name, self.val);
     }
 }
 
@@ -372,19 +363,16 @@ obj PyStr(PyObj) {
             }
             return PyStr(t="str", val=_slice_str(self.val, index as PySlice));
         }
-        idx = index.to_index();
-        if is_error(idx) {
-            return py_error("TypeError", "string indices must be integers or slices");
+        pos = _seq_index(
+            index,
+            len(self.val),
+            "string indices must be integers or slices",
+            "string index out of range",
+        );
+        if is_error(pos) {
+            return pos;
         }
-        i = (idx as PyInt).val;
-        text = self.val;
-        if i < 0 {
-            i = len(text) + i;
-        }
-        if i >= 0 and i < len(text) {
-            return PyStr(t="str", val=text[i]);
-        }
-        return py_error("IndexError", "string index out of range");
+        return PyStr(t="str", val=self.val[(pos as PyInt).val]);
     }
 
     def tp_iter -> PyObj {
@@ -416,19 +404,16 @@ obj PyBytes(PyObj) {
             }
             return PyBytes(t="bytes", val=_slice_ints(self.val, index as PySlice));
         }
-        idx = index.to_index();
-        if is_error(idx) {
-            return py_error("TypeError", "bytes indices must be integers or slices");
+        pos = _seq_index(
+            index,
+            len(self.val),
+            "bytes indices must be integers or slices",
+            "index out of range",
+        );
+        if is_error(pos) {
+            return pos;
         }
-        i = (idx as PyInt).val;
-        vals = self.val;
-        if i < 0 {
-            i = len(vals) + i;
-        }
-        if i >= 0 and i < len(vals) {
-            return PyInt(t="int", val=vals[i]);
-        }
-        return py_error("IndexError", "index out of range");
+        return PyInt(t="int", val=self.val[(pos as PyInt).val]);
     }
 
     def tp_iter -> PyObj {
@@ -452,6 +437,22 @@ obj PyBytes(PyObj) {
         }
         return PyStr(t="str", val=key);
     }
+}
+
+# CPython int/bool getattr surface (Objects/longobject.c long_getattr):
+# real/numerator read back the value, imag is 0, denominator is 1 -- anything
+# else raises AttributeError. Shared by PyInt.tp_getattro and PyBool.tp_getattro.
+def _number_getattro(name: str, real: int) -> PyObj {
+    if name == "real" or name == "numerator" {
+        return PyInt(t="int", val=real);
+    }
+    if name == "imag" {
+        return PyInt(t="int", val=0);
+    }
+    if name == "denominator" {
+        return PyInt(t="int", val=1);
+    }
+    return py_error("AttributeError", name);
 }
 
 obj PyFloat(PyObj) {
@@ -671,16 +672,7 @@ obj PyBool(PyObj) {
         if self.val {
             v = 1;
         }
-        if name == "real" or name == "numerator" {
-            return PyInt(t="int", val=v);
-        }
-        if name == "imag" {
-            return PyInt(t="int", val=0);
-        }
-        if name == "denominator" {
-            return PyInt(t="int", val=1);
-        }
-        return py_error("AttributeError", name);
+        return _number_getattro(name, v);
     }
 }
 
@@ -1168,18 +1160,16 @@ obj PyTuple(PyObj) {
             }
             return PyTuple(t="tuple", items=_slice_objs(self.items, index as PySlice));
         }
-        idx = index.to_index();
-        if is_error(idx) {
-            return py_error("TypeError", "tuple indices must be integers or slices");
+        pos = _seq_index(
+            index,
+            len(self.items),
+            "tuple indices must be integers or slices",
+            "tuple index out of range",
+        );
+        if is_error(pos) {
+            return pos;
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
-        }
-        if i >= 0 and i < len(self.items) {
-            return self.items[i];
-        }
-        return py_error("IndexError", "tuple index out of range");
+        return self.items[(pos as PyInt).val];
     }
 
     def tp_iter -> PyObj {
@@ -1278,18 +1268,16 @@ obj PyList(PyObj) {
             }
             return PyList(t="list", items=_slice_objs(self.items, index as PySlice));
         }
-        idx = index.to_index();
-        if is_error(idx) {
-            return py_error("TypeError", "list indices must be integers or slices");
+        pos = _seq_index(
+            index,
+            len(self.items),
+            "list indices must be integers or slices",
+            "list index out of range",
+        );
+        if is_error(pos) {
+            return pos;
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
-        }
-        if i >= 0 and i < len(self.items) {
-            return self.items[i];
-        }
-        return py_error("IndexError", "list index out of range");
+        return self.items[(pos as PyInt).val];
     }
 
     def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
@@ -1369,19 +1357,17 @@ obj PyList(PyObj) {
             self.items = new_items;
             return py_none();
         }
-        idx = index.to_index();
-        if is_error(idx) {
-            return py_error("TypeError", "list indices must be integers");
+        npos = _seq_index(
+            index,
+            len(self.items),
+            "list indices must be integers",
+            "list assignment index out of range",
+        );
+        if is_error(npos) {
+            return npos;
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
-        }
-        if i >= 0 and i < len(self.items) {
-            self.items[i] = value;
-            return py_none();
-        }
-        return py_error("IndexError", "list assignment index out of range");
+        self.items[(npos as PyInt).val] = value;
+        return py_none();
     }
 
     def mp_del_subscript(index: PyObj) -> PyObj {
@@ -1419,19 +1405,17 @@ obj PyList(PyObj) {
             self.items = kept;
             return py_none();
         }
-        idx = index.to_index();
-        if is_error(idx) {
-            return py_error("TypeError", "list indices must be integers");
+        pos = _seq_index(
+            index,
+            len(self.items),
+            "list indices must be integers",
+            "list assignment index out of range",
+        );
+        if is_error(pos) {
+            return pos;
         }
-        i = (idx as PyInt).val;
-        if i < 0 {
-            i = len(self.items) + i;
-        }
-        if i >= 0 and i < len(self.items) {
-            del self.items[i];
-            return py_none();
-        }
-        return py_error("IndexError", "list assignment index out of range");
+        del self.items[(pos as PyInt).val];
+        return py_none();
     }
 
     def tp_iter -> PyObj {
@@ -3580,6 +3564,25 @@ def _adjust_index(i: int, length: int, neg: bool) -> int {
     return i;
 }
 
+# Resolve a non-slice sequence subscript against a sequence of `length`
+# (CPython PySequence_GetItem index path): __index__ coercion, negative wrap,
+# bounds check. Returns the normalized PyInt position, or an error PyObj with
+# the caller's type-specific TypeError / IndexError wording.
+def _seq_index(index: PyObj, length: int, type_err: str, index_err: str) -> PyObj {
+    idx = index.to_index();
+    if is_error(idx) {
+        return py_error("TypeError", type_err);
+    }
+    i = (idx as PyInt).val;
+    if i < 0 {
+        i = length + i;
+    }
+    if i >= 0 and i < length {
+        return PyInt(t="int", val=i);
+    }
+    return py_error("IndexError", index_err);
+}
+
 # Resolve a PySlice against a sequence of `length` into concrete
 # [start, stop, step], applying CPython's negative-index and clamping rules.
 def slice_indices(sl: PySlice, length: int) -> list[int] {
@@ -3611,62 +3614,46 @@ def slice_indices(sl: PySlice, length: int) -> list[int] {
     return [start, stop, step];
 }
 
-def _slice_objs(items: list[PyObj], sl: PySlice) -> list[PyObj] {
-    b = slice_indices(sl, len(items));
-    i = b[0];
-    stop = b[1];
-    step = b[2];
-    out: list[PyObj] = [];
-    if step > 0 {
-        while i < stop {
-            out.append(items[i]);
-            i = i + step;
-        }
-    } else {
-        while i > stop {
-            out.append(items[i]);
-            i = i + step;
-        }
-    }
-    return out;
-}
-
-def _slice_ints(vals: list[int], sl: PySlice) -> list[int] {
-    b = slice_indices(sl, len(vals));
+def _slice_positions(length: int, sl: PySlice) -> list[int] {
+    b = slice_indices(sl, length);
     i = b[0];
     stop = b[1];
     step = b[2];
     out: list[int] = [];
     if step > 0 {
         while i < stop {
-            out.append(vals[i]);
+            out.append(i);
             i = i + step;
         }
     } else {
         while i > stop {
-            out.append(vals[i]);
+            out.append(i);
             i = i + step;
         }
     }
     return out;
 }
 
+def _slice_objs(items: list[PyObj], sl: PySlice) -> list[PyObj] {
+    out: list[PyObj] = [];
+    for i in _slice_positions(len(items), sl) {
+        out.append(items[i]);
+    }
+    return out;
+}
+
+def _slice_ints(vals: list[int], sl: PySlice) -> list[int] {
+    out: list[int] = [];
+    for i in _slice_positions(len(vals), sl) {
+        out.append(vals[i]);
+    }
+    return out;
+}
+
 def _slice_str(s: str, sl: PySlice) -> str {
-    b = slice_indices(sl, len(s));
-    i = b[0];
-    stop = b[1];
-    step = b[2];
     out = "";
-    if step > 0 {
-        while i < stop {
-            out = out + s[i];
-            i = i + step;
-        }
-    } else {
-        while i > stop {
-            out = out + s[i];
-            i = i + step;
-        }
+    for i in _slice_positions(len(s), sl) {
+        out = out + s[i];
     }
     return out;
 }
