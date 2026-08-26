@@ -360,6 +360,19 @@ def oserror_smart_str(fields: dict[str, PyObj], repr_fn: any) -> str {
     return prefix + ": " + fname;
 }
 
+# CPython ``ImportError_str``: the ``msg`` member wins only when it holds an
+# exact str; every other state falls back to the generic args formatting.
+# ``msg`` is set iff the constructor saw exactly one positional arg and is a
+# writable member, so a restored/mutated instance can diverge from ``args``
+# (type_fields carries it via the attribute surface). "" means no override.
+def import_error_str(exc: PyException) -> str {
+    msg_v = exc.type_fields.get("msg");
+    if isinstance(msg_v, PyStr) {
+        return (msg_v as PyStr).val;
+    }
+    return "";
+}
+
 def syntax_error_str(exc: PyException) -> str {
     fields = exc.type_fields;
     msg_v = fields.get("msg");
@@ -415,6 +428,12 @@ def typed_exc_str(exc: PyException, repr_fn: any) -> str {
     }
     if exc_is_subclass_of(tname, "OSError") {
         s = oserror_smart_str(exc.type_fields, repr_fn);
+        if s != "" {
+            return s;
+        }
+    }
+    if exc_is_subclass_of(tname, "ImportError") {
+        s = import_error_str(exc);
         if s != "" {
             return s;
         }
