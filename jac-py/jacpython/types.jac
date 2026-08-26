@@ -37,9 +37,13 @@ def _types_static_type(name):
     # the HOST types module (every export name is also a types.py attribute).
     # Returns (True, typeobj) / (False, None) instead of raising so one
     # unavailable host name degrades to an absent key, never a broken module.
+    # The host module is fetched by string name through importlib (the same
+    # convention as ceval's _jac_host_import): a literal ``import types`` here
+    # would resolve to THIS facade module and form an import cycle.
     try:
-        import types as _host_types
-        return (True, getattr(_host_types, name))
+        import importlib
+        host_types = importlib.import_module("types")
+        return (True, getattr(host_types, name))
     except Exception:
         return (False, None)
 ::py::
