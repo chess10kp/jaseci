@@ -2492,6 +2492,17 @@
       "libtest_snippets": [],
       "notes": "115 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_codecencodings_jp/conversion.json"
+    },
+    {
+      "stem": "mmap",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_mmap_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "40 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
     }
   ]
 }
