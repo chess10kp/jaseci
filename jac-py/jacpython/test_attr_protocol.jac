@@ -291,3 +291,50 @@ test "attr protocol: property object surface" {
     assert result.failed == 0;
     assert result.errored == 0;
 }
+
+# ---------------- user-defined descriptor protocol ----------------
+# A class-dict object whose type defines __get__/__set__ is a descriptor in
+# its own right: instance reads run __get__(obj, owner) instead of leaking the
+# raw descriptor, writes route through __set__ instead of landing raw in the
+# instance dict, and a data descriptor (has __set__) outranks the instance
+# dict on reads. Regression pins for fuzz_known_reds items pin-item1-descr-get
+# / pin-item1-data-descr / pin-item1-precedence-data-vs-inst.
+test "attr protocol: user descriptors dispatch and data-descriptor precedence" {
+    src = "class TestUserDescriptors(unittest.TestCase):\n"
+    "    def test_nondata_get_invoked(self):\n"
+    "        class Ten:\n"
+    "            def __get__(me, obj, owner):\n"
+    "                return 10\n"
+    "        class C:\n"
+    "            attr = Ten()\n"
+    "        self.assertEqual(C().attr, 10)\n"
+    "        self.assertIsInstance(C.attr, Ten)\n"
+    "    def test_data_descriptor_set_get_roundtrip(self):\n"
+    "        class D:\n"
+    "            def __get__(me, obj, owner):\n"
+    "                return obj._v\n"
+    "            def __set__(me, obj, v):\n"
+    "                obj._v = v * 2\n"
+    "        class C:\n"
+    "            x = D()\n"
+    "        c = C()\n"
+    "        c.x = 21\n"
+    "        self.assertEqual(c.x, 42)\n"
+    "    def test_data_descriptor_beats_instance_dict(self):\n"
+    "        class D:\n"
+    "            def __get__(me, obj, owner):\n"
+    "                return 'from-descr'\n"
+    "            def __set__(me, obj, v):\n"
+    "                pass\n"
+    "        class C:\n"
+    "            pass\n"
+    "        c = C()\n"
+    "        C.x = D()\n"
+    "        c.__dict__['x'] = 'from-instance'\n"
+    "        self.assertEqual(c.x, 'from-descr')\n";
+    result = layer1_replay_source(src);
+    assert result.passed == 3;
+    assert result.skipped == 0;
+    assert result.failed == 0;
+    assert result.errored == 0;
+}
