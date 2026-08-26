@@ -12,6 +12,8 @@ description: >
   a miss). Exact-key match only (no restore-keys), so a stale binary can never
   be served -- which is why this is safe even though zig's own incremental cache
   stays disabled (it doesn't reliably invalidate on a jaclang/dist/payload change).
+  Main seeds caches by default; the trusted long-lived jac-python campaign branch
+  can opt in explicitly for push or workflow_dispatch runs.
 inputs:
   skip-precompile:
     description: >
@@ -21,21 +23,47 @@ inputs:
       the shared jac-bin cache.
     required: false
     default: "false"
+  write-caches:
+    description: >
+      Permit cache saves from the trusted jac-python campaign branch for push
+      and workflow_dispatch events. Ignored for every other non-main ref and
+      event; normal callers should keep the default.
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
+    - name: Resolve cache write policy
+      id: cache-writer
+      shell: bash
+      env:
+        WRITE_CACHES: ${{ inputs.write-caches }}
+      run: |
+        enabled=false
+        if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+          enabled=true
+        elif [[ "$WRITE_CACHES" == "true" &&
+                "$GITHUB_REF" == "refs/heads/jac-python" &&
+                ( "$GITHUB_EVENT_NAME" == "push" ||
+                  "$GITHUB_EVENT_NAME" == "workflow_dispatch" ) ]]; then
+          enabled=true
+        fi
+        echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+        echo "cache writes enabled: $enabled"
     # typeshed stdlib stubs are vendored as plain files now (no submodule);
     # third-party stubs are installed per-project by `jac install` (PEP 561 types-*).
     #
-    # Restore/save split with the SAVE GATED TO MAIN, same as the read-mostly
-    # caches below. The binary key changes on every jaclang/launcher edit, so a
+    # Restore/save split with saves gated to trusted refs, the same as the
+    # read-mostly caches below. Main is always trusted; the long-lived
+    # jac-python campaign branch must explicitly opt in through write-caches.
+    # The binary key changes on every jaclang/launcher edit, so a
     # per-PR save has almost no reuse value (only a follow-up push touching
     # neither jaclang nor the launcher would hit it) yet a high pool cost
     # (~0.1-0.2 GB each). Left unbounded it dominated the 10 GB pool -- dozens of
     # per-branch binaries -- and its LRU churn evicted the Linux read-mostly
     # caches (pbs/bun) this action relies on. PR jobs still build their own
     # binary on a miss (and ci.yml publishes it as an artifact for the same-run
-    # test jobs); only main seeds the shared copy. Exact-key match only (no
+    # test jobs); only trusted refs seed the shared copy. Exact-key match only (no
     # restore-keys), so a stale binary can never be served.
     - name: Restore cached jac binary
       id: cache
@@ -59,12 +87,12 @@ runs:
 
     # The four caches below (pbs, shim, LLVM, bun) are big (0.2-0.6 GB each) and
     # read-mostly: their keys only change on a pin bump, not on ordinary code
-    # pushes. They use restore/save split with SAVES GATED TO MAIN: PR branches
-    # read main's entries (cross-branch restore from the default branch), and a
-    # per-PR save would only duplicate ~1.2 GB per ref into the repo's 10 GB
+    # pushes. They use restore/save split with SAVES GATED TO TRUSTED REFS: PR
+    # branches read main's entries (cross-branch restore from the default
+    # branch), and a per-PR save would only duplicate ~1.2 GB per ref into the repo's 10 GB
     # cache pool -- which is exactly what pushed it into daily LRU eviction and
-    # made every "stable" entry a recurring miss. Main runs (every merge) seed
-    # and refresh the shared copies.
+    # made every "stable" entry a recurring miss. Main runs and explicitly
+    # trusted jac-python campaign runs seed and refresh the shared copies.
 
     # Avoid re-downloading + re-decoding the ~600 MB python-build-standalone tree
     # on every binary-cache miss (the std zstd decode of the 122 MB archive is
@@ -344,12 +372,12 @@ runs:
         done
         exit 1
 
-    # Seed the shared binary cache from main only (see the note by the restore
-    # step). Saved after the build so both the binary and the materialized
+    # Seed the shared binary cache from trusted refs only (see the note by the
+    # restore step). Saved after the build so both the binary and the materialized
     # typeshed stdlib stubs (part of this cache's path) exist.
-    - name: Save jac binary cache (main only)
+    - name: Save jac binary cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         inputs.skip-precompile != 'true'
       uses: actions/cache/save@v4
@@ -359,12 +387,12 @@ runs:
           jac/jaclang/vendor/typeshed/stdlib
         key: jac-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/jaclang/**', 'jac/build.zig', 'jac/launcher/**', 'jac/bootstrap/**') }}
 
-    # Seed the shared read-mostly caches -- from main only (see the note above
-    # the restore steps). Every merge to main runs this action, so a pin bump
-    # is seeded within one merge; PR runs never duplicate these entries.
-    - name: Save pbs cache (main only)
+    # Seed the shared read-mostly caches from trusted refs only (see the note
+    # above the restore steps). Main and explicitly trusted campaign runs seed
+    # pin bumps; PR runs never duplicate these entries.
+    - name: Save pbs cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         steps.pbs-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
@@ -372,9 +400,9 @@ runs:
         path: jac/.pbs-build
         key: pbs-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/bootstrap/pins.json') }}
 
-    - name: Save LLVMPY shim cache (main only)
+    - name: Save LLVMPY shim cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         steps.shim-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
@@ -382,9 +410,9 @@ runs:
         path: jac/jaclang/compiler/backends/native/llvm/libjacllvm.*
         key: jac-shim-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/native/**', 'jac/build.zig', 'jac/bootstrap/pins.json') }}
 
-    - name: Save LLVM cache (main only)
+    - name: Save LLVM cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         steps.shim-cache.outputs.cache-hit != 'true' &&
         steps.llvm-cache.outputs.cache-hit != 'true'
@@ -393,9 +421,9 @@ runs:
         path: jac/.llvm-build
         key: llvm-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/bootstrap/pins.json') }}
 
-    - name: Save bun cache (main only)
+    - name: Save bun cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         steps.bun-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
@@ -404,11 +432,11 @@ runs:
         key: bun-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/jaclang/client/bun_installer.jac') }}
 
     # cache-hit is only 'true' on an exact-key match, so a restore-keys prefix
-    # hit still saves here -- that is what keeps main's entry tracking HEAD
-    # (each merge re-saves the refreshed tree under the new jaclang/** hash).
-    - name: Save JIR precompile cache (main only)
+    # hit still saves here -- that is what keeps a trusted ref's entry tracking
+    # HEAD (each run re-saves the refreshed tree under the new jaclang/** hash).
+    - name: Save JIR precompile cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         steps.precompiled-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
@@ -417,9 +445,9 @@ runs:
         key: jac-precompiled-${{ runner.os }}-${{ runner.arch }}-c${{ steps.compiler-fp.outputs.fp }}-${{ hashFiles('jac/jaclang/**') }}
 
     # Same prefix-hit re-save logic as the precompile cache above.
-    - name: Save payload deps-layer cache (main only)
+    - name: Save payload deps-layer cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         steps.layers-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
@@ -427,14 +455,14 @@ runs:
         path: jac/.payload-layers
         key: payload-layers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/launcher/**', 'jac/bootstrap/**', 'jac/build.zig', 'jac/build.zig.zon', 'jac/native/**', 'jac/jaclang/client/bun_installer.jac', 'jac/jaclang/compiler/backends/native/wasm_rt/**') }}
 
-    # Seed the Zig package store from main only (see the restore note). Like the
-    # precompile cache, a restore-keys prefix hit still leaves cache-hit != true,
-    # so each merge re-saves the refreshed closure under the current
-    # build.zig.zon hash. Same key as build-binaries.yml's dev-channel entry, so
-    # the two share one ~20 MB entry per os/arch.
-    - name: Save Zig package store cache (main only)
+    # Seed the Zig package store from trusted refs only (see the restore note).
+    # Like the precompile cache, a restore-keys prefix hit still leaves cache-hit
+    # != true, so each trusted run re-saves the refreshed closure under the
+    # current build.zig.zon hash. Same key as build-binaries.yml's dev-channel
+    # entry, so the two share one ~20 MB entry per os/arch.
+    - name: Save Zig package store cache (trusted refs only)
       if: >-
-        github.ref == 'refs/heads/main' &&
+        steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
         steps.zig-pkgs-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
