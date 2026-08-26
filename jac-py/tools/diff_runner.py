@@ -43,7 +43,7 @@ JAC_TIMEOUT = 60  # seconds, hard limit; one jac process at a time
 
 from convert_suite import attempt_header, file_sha256  # shared fingerprint block
 
-TOOL_VERSION = "diff_runner-0.2.1"
+TOOL_VERSION = "diff_runner-0.2.2"
 
 _DASH_CHARS = "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"
 _QUOTE_MAP = {
@@ -279,6 +279,23 @@ def write_conformance_and_result(
     return conformance_path, result_path
 
 
+def _shared_signatures(
+    classifications: dict[str, dict],
+) -> dict[tuple[str, str], list[str]]:
+    """Group failed pins whose (classification, detail) pair is identical.
+
+    One shared root cause (typically an import-time error in the guest
+    module) commonly fails every pin with byte-identical detail. Surfacing
+    the group once keeps the report readable and points lanes at the single
+    cause instead of N identical symptoms.
+    """
+    groups: dict[tuple[str, str], list[str]] = {}
+    for ident in sorted(classifications):
+        cls = classifications[ident]
+        groups.setdefault((cls["classification"], cls["detail"]), []).append(ident)
+    return {key: idents for key, idents in groups.items() if len(idents) > 1}
+
+
 def _md_cell(text: str) -> str:
     """Escape a payload for a markdown table cell.
 
@@ -330,6 +347,27 @@ def build_report(
             lines.append(f"| {ident} | {cls['classification']} | {_md_cell(cls['detail'])} |")
     lines.append("")
 
+    shared = _shared_signatures(classifications)
+    if shared:
+        shared_ids = {ident for idents in shared.values() for ident in idents}
+        lines.append("## Shared failure signatures")
+        lines.append("")
+        lines.append("These pins fail with a byte-identical detail, which usually means")
+        lines.append("one shared root cause (for example an import-time error in the")
+        lines.append("guest module) instead of per-test defects.")
+        lines.append("")
+        lines.append("| count | classification | got | pins |")
+        lines.append("|---|---|---|---|")
+        ranked = sorted(shared.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        for (classification, detail), idents in ranked:
+            pins_cell = ", ".join(idents).replace("|", "\\|")
+            lines.append(
+                f"| {len(idents)} | {classification} | {_md_cell(detail)} | {pins_cell} |"
+            )
+        lines.append("")
+    else:
+        shared_ids = set()
+
     if quarantined:
         lines.append("## Quarantined at conversion")
         lines.append("")
@@ -340,7 +378,7 @@ def build_report(
             lines.append(f"| {q['ident']} | {reason} |")
         lines.append("")
 
-    failed = sorted(classifications)
+    failed = sorted(ident for ident in classifications if ident not in shared_ids)
     if failed:
         lines.append("## Expected vs got")
         lines.append("")
