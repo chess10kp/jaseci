@@ -6,7 +6,8 @@
 # exception-subclass args/str surface, post-catch control flow, traceback
 # objects, and exception-attribute write enforcement.
 
-import from objects { PyObj, PyStr, is_error }
+import from objects { PyObj, PyStr, PyInt, PyException, is_error }
+import from exceptions_core { import_error_str }
 import from host_oracle { host_compile_marshal }
 import from pyc_first { unmarshal, exec_code, to_host }
 
@@ -303,4 +304,46 @@ test "chain attribute __class__ synthesis (cause/context/traceback/None)" {
     assert vm_str(ns, "names") == (
         "['ValueError', 'NoneType', 'traceback', 'tuple', 'bool', 'NoneType']"
     );
+}
+
+# ---------------- ImportError __str__ slot (CPython ImportError_str) --------
+#
+# Ground truth from host python3.14: ImportError_str returns the ``msg``
+# member only when it holds an exact str, else BaseException_str. ``msg`` is
+# set iff the constructor saw exactly one positional arg, and is a writable
+# member -- so a restored/mutated instance can diverge from ``args``.
+
+test "ImportError str slot: constructor shapes match CPython" {
+    ns = vm_exec(
+        "a = str(ImportError('boom'))\n"
+        "b = str(ImportError('x', 'y'))\n"
+        "c = str(ImportError())\n"
+        "d = str(ModuleNotFoundError('no mod'))\n"
+        "e = str(ModuleNotFoundError('m', name='z'))\n"
+    );
+    assert vm_str(ns, "a") == "boom";
+    assert vm_str(ns, "b") == "('x', 'y')";
+    assert vm_str(ns, "c") == "";
+    assert vm_str(ns, "d") == "no mod";
+    assert vm_str(ns, "e") == "m";
+}
+
+test "ImportError str slot: msg field diverges from args after restore" {
+    # Direct construction of the state ExcSetStateFn produces when an
+    # ImportError round-trips through pickle: msg lands in type_fields while
+    # args stays whatever the state carried. CPython's slot prints the exact
+    # str member; a non-str msg falls back to the generic args formatting.
+    exc = PyException(
+        t="exception", type_name="ImportError", message="",
+        args=[PyStr(t="str", val="stale")] as list[PyObj],
+        type_fields={"msg": PyStr(t="str", val="fresh")}
+    );
+    s = import_error_str(exc);
+    assert s == "fresh";
+    nonstr = PyException(
+        t="exception", type_name="ImportError", message="",
+        args=[PyStr(t="str", val="42")] as list[PyObj],
+        type_fields={"msg": PyInt(t="int", val=42)}
+    );
+    assert import_error_str(nonstr) == "";
 }
