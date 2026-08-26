@@ -1792,6 +1792,22 @@ glob delegate_modules: dict[str, str] = {
 # across repeated imports in guest code.
 glob delegate_cache: dict[str, PyObj] = {};
 
+# Attribute overrides shared by EVERY guest-sys construction site: exception
+# state and frame introspection must read GUEST state -- host sys cannot see
+# guest frames. _getframe/currentframe serve live guest PyFrames via the
+# jac_frame_chain_slot published by run_frame.
+def install_sys_guest_overrides(mod: PyObj) {
+    m = mod as PyModule;
+    m.attrs["exc_info"] = PyNativeBuiltin(t="native_builtin", name="exc_info");
+    m.attrs["exception"] = PyNativeBuiltin(t="native_builtin", name="exception");
+    m.attrs["intern"] = PyNativeBuiltin(t="native_builtin", name="intern");
+    m.attrs["_getframe"] = PyNativeBuiltin(t="native_builtin", name="sys_getframe");
+    m.attrs["currentframe"] = PyNativeBuiltin(
+        t="native_builtin", name="sys_currentframe"
+    );
+    m.attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+}
+
 def register_delegate_module(name: str, policy: str) {
     if policy != "full" {
         raise ValueError("unknown delegation policy: " + policy);
@@ -1958,16 +1974,7 @@ def import_native(absname: str) -> PyObj {
         # falls through to plain delegation (no worse than before).
         sysmod = delegated_module("sys");
         if not is_error(sysmod) {
-            (sysmod as PyModule).attrs["exc_info"] = PyNativeBuiltin(
-                t="native_builtin", name="exc_info"
-            );
-            (sysmod as PyModule).attrs["exception"] = PyNativeBuiltin(
-                t="native_builtin", name="exception"
-            );
-            (sysmod as PyModule).attrs["intern"] = PyNativeBuiltin(
-                t="native_builtin", name="intern"
-            );
-            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+            install_sys_guest_overrides(sysmod);
             shim_modules["sys"] = sysmod;
         }
     }
@@ -5084,16 +5091,7 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # GUEST state.
         sysmod = delegated_module("sys");
         if not is_error(sysmod) {
-            (sysmod as PyModule).attrs["exc_info"] = PyNativeBuiltin(
-                t="native_builtin", name="exc_info"
-            );
-            (sysmod as PyModule).attrs["exception"] = PyNativeBuiltin(
-                t="native_builtin", name="exception"
-            );
-            (sysmod as PyModule).attrs["intern"] = PyNativeBuiltin(
-                t="native_builtin", name="intern"
-            );
-            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+            install_sys_guest_overrides(sysmod);
             shim_modules["sys"] = sysmod;
         }
     }
@@ -6018,6 +6016,11 @@ def py_compare(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
     if isinstance(lhs, PyDictView) or isinstance(rhs, PyDictView) {
         return dictview_richcompare(kind, lhs, rhs);
     }
+    # PEP 667 frame-locals proxies compare dict-like against dicts and by
+    # identity against each other (Objects/frameobject.c).
+    if isinstance(lhs, PyFrameLocalsProxy) or isinstance(rhs, PyFrameLocalsProxy) {
+        return framelocals_richcompare(kind, lhs, rhs);
+    }
     if isinstance(lhs, PyMappingProxy) {
         lhs = (lhs as PyMappingProxy).target;
     }
@@ -6716,6 +6719,11 @@ def py_contains(container: PyObj, member: PyObj) -> PyObj {
     }
     if isinstance(container, PyDict) {
         return PyBool(t="bool", val=(container as PyDict).dict_contains(member));
+    }
+    # PEP 667: FrameLocalsProxy answers sq_contains through its slot/extra
+    # lookup, not iteration (Objects/frameobject.c frame_localsproxy_contains).
+    if isinstance(container, PyFrameLocalsProxy) {
+        return (container as PyFrameLocalsProxy).contains_key(member);
     }
     # Native tuple/list membership compares elements with a real == in-VM. Routing
     # through the host collapses every native class/instance to None (to_host), so
@@ -7556,6 +7564,9 @@ def py_len(value: PyObj) -> PyObj {
     }
     if isinstance(value, PyMappingProxy) {
         return py_len((value as PyMappingProxy).target as PyObj);
+    }
+    if isinstance(value, PyFrameLocalsProxy) {
+        return PyInt(t="int", val=framelocals_len(value as PyFrameLocalsProxy));
     }
     if isinstance(value, PyUserObj) {
         u = value as PyUserObj;
@@ -10785,7 +10796,38 @@ obj PyFrame(PyObj) {
         # restored when the generator resumes, so a bare `raise` inside an
         # except block that spans a yield re-raises the right exception
         # (CPython keeps this state in the frame's exc_info across suspends).
-        exc_state: list[PyObj] | None = None;
+        exc_state: list[PyObj] | None = None,
+        # PEP 667 "extra locals" -- keys written through f_locals that are not
+        # localsplus slots (CPython frame->f_extra_locals). Keyed by hashkey so
+        # non-string keys work exactly like CPython's extras dict.
+        extra_locals: dict[str, DictEntry] = {};
+
+    def tp_getattro(name2: str) -> PyObj {
+        if name2 == "f_locals" {
+            return PyFrameLocalsProxy(t="frame_locals_proxy", frame=self) as PyObj;
+        }
+        if name2 == "f_globals" {
+            return PyGlobalsProxy(t="globals", ns=self.globals);
+        }
+        if name2 == "f_code" {
+            return self.co as PyObj;
+        }
+        if name2 == "f_back" {
+            # The live guest chain published by run_frame (innermost last).
+            i = len(jac_frame_chain_slot) - 1;
+            while i >= 0 {
+                if jac_frame_chain_slot[i] is self {
+                    if i > 0 {
+                        return jac_frame_chain_slot[i - 1] as PyObj;
+                    }
+                    break;
+                }
+                i = i - 1;
+            }
+            return py_none();
+        }
+        return py_error("AttributeError", name2);
+    }
 }
 
 obj PyYield(PyObj) {
@@ -10851,6 +10893,34 @@ obj PyNativeBuiltin(PyObj) {
             }
             vals: list[PyObj] = [etype, e, tbv];
             return PyTuple(t="tuple", items=vals);
+        }
+        if self.name == "sys_getframe" {
+            # sys._getframe(depth=0) over GUEST frames (host sys cannot see
+            # them): walk the live chain published by run_frame, innermost
+            # last. Errors byte-match CPython's sysmodule.c.
+            depth = 0;
+            if len(args) > 0 {
+                if not isinstance(args[0], PyInt) {
+                    return py_error("TypeError", "an integer is required");
+                }
+                depth = (args[0] as PyInt).val;
+                if depth < 0 {
+                    return py_error("ValueError", "depth must be non-negative");
+                }
+            }
+            i = len(jac_frame_chain_slot) - 1 - depth;
+            if i < 0 {
+                return py_error("ValueError", "call stack is not deep enough");
+            }
+            return jac_frame_chain_slot[i] as PyObj;
+        }
+        if self.name == "sys_currentframe" {
+            # sys.currentframe(): None where _getframe would raise -- only
+            # possible in guest when no frame is executing at all.
+            if len(jac_frame_chain_slot) == 0 {
+                return py_none();
+            }
+            return jac_frame_chain_slot[len(jac_frame_chain_slot) - 1] as PyObj;
         }
         if self.name == "anext" {
             # anext(aiter[, default]): must stay NATIVE -- routed through the
@@ -11300,6 +11370,456 @@ obj PyNsMethod(PyObj) {
         }
         return py_error("TypeError", "unsupported namespace op");
     }
+}
+
+# ---------------- FrameLocalsProxy (PEP 667) ---------------------------------
+# Live view over a guest frame's locals, mirroring CPython's FrameLocalsProxy
+# (Objects/frameobject.c). Read resolution order: bound localsplus slot -> the
+# namespace dict (frame.locals -- the class/module namespace for non-optimized
+# frames; empty for function frames) -> extra locals. Writes through cell slots
+# propagate to the owning scope, so `f_locals['x'] = v` on a closure variable
+# is observed by the defining scope -- TestFrameLocals.test_closure's contract.
+# sys._getframe() serves these frames natively via the "sys_getframe"
+# native-builtin arm in PyNativeBuiltin.tp_call.
+glob jac_frame_chain_slot: list[PyFrame] = [];
+
+def jac_current_frame -> PyFrame | None {
+    if len(jac_frame_chain_slot) == 0 {
+        return None;
+    }
+    return jac_frame_chain_slot[len(jac_frame_chain_slot) - 1];
+}
+
+# Total merged localsplus size: [varnames][cellvars not shadowing a varname]
+# [freevars] -- same layout localsplus_name resolves against.
+def framelocals_nslots(co: PyCode) -> int {
+    n = len(co.varnames);
+    ci = 0;
+    while ci < len(co.cellvars) {
+        if find_name(co.varnames, co.cellvars[ci]) < 0 {
+            n = n + 1;
+        }
+        ci = ci + 1;
+    }
+    return n + len(co.freevars);
+}
+
+def framelocals_keyerror(key: PyObj) -> PyObj {
+    r = py_repr(key);
+    if is_error(r) {
+        return r;
+    }
+    # CPython formats KeyError with repr(key): for 'zz' the message carries
+    # doubled quotes -- byte-exact with host FrameLocalsProxy.__getitem__.
+    return py_error("KeyError", "local variable '" + (r as PyStr).val + "' is not defined");
+}
+
+obj PyFrameLocalsProxy(PyObj) {
+    has frame: PyFrame;
+
+    def slot_index(key: str) -> int {
+        co = self.frame.co;
+        i = 0;
+        while i < framelocals_nslots(co) {
+            if localsplus_name(co, i) == key {
+                return i;
+            }
+            i = i + 1;
+        }
+        return -1;
+    }
+
+    def slot_bound(i: int) -> bool {
+        slot = self.frame.fast[i];
+        if isinstance(slot, PyCell) {
+            return (slot as PyCell).filled;
+        }
+        if i < len(self.frame.assigned) {
+            return self.frame.assigned[i];
+        }
+        return False;
+    }
+
+    def slot_get(i: int) -> PyObj {
+        slot = self.frame.fast[i];
+        if isinstance(slot, PyCell) {
+            return (slot as PyCell).val;
+        }
+        return slot;
+    }
+
+    # (bound?, value) for a string key already known to sit in the slots.
+    def ns_has(key: str) -> bool {
+        return key in self.frame.locals;
+    }
+
+    # All visible pairs in CPython order: bound slots, then extras, then the
+    # namespace dict (empty for function frames).
+    def entry_pairs -> list[PyObj] {
+        out: list[PyObj] = [];
+        co = self.frame.co;
+        i = 0;
+        while i < framelocals_nslots(co) {
+            if self.slot_bound(i) {
+                pair: list[PyObj] = [
+                    PyStr(t="str", val=localsplus_name(co, i)),
+                    self.slot_get(i),
+                ];
+                out.append(PyTuple(t="tuple", items=pair));
+            }
+            i = i + 1;
+        }
+        for hk in self.frame.extra_locals {
+            e = self.frame.extra_locals[hk];
+            pair2: list[PyObj] = [e.key, e.value];
+            out.append(PyTuple(t="tuple", items=pair2));
+        }
+        for k in self.frame.locals {
+            pair3: list[PyObj] = [PyStr(t="str", val=k), self.frame.locals[k]];
+            out.append(PyTuple(t="tuple", items=pair3));
+        }
+        return out;
+    }
+
+    def keys_list -> list[PyObj] {
+        out: list[PyObj] = [];
+        for p in self.entry_pairs {
+            out.append(((p as PyTuple).items[0]));
+        }
+        return out;
+    }
+
+    def as_dict -> PyDict {
+        d = PyDict(t="dict", items={});
+        for p in self.entry_pairs {
+            _ = d.dict_set((p as PyTuple).items[0], (p as PyTuple).items[1]);
+        }
+        return d;
+    }
+
+    # Core lookup behind mp_subscript/get/contains: found? value.
+    def lookup(index: PyObj) -> tuple[bool, PyObj] {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return (False, _unhashable_error("a dict key", index));
+        }
+        hk = hashkey_str(hkr);
+        if isinstance(index, PyStr) {
+            k = (index as PyStr).val;
+            i = self.slot_index(k);
+            if i >= 0 {
+                if self.slot_bound(i) {
+                    return (True, self.slot_get(i));
+                }
+                # An unbound slot falls through like CPython (getval NULL).
+                return (False, py_none());
+            }
+            if self.ns_has(k) {
+                return (True, self.frame.locals[k]);
+            }
+        }
+        if hk in self.frame.extra_locals {
+            return (True, self.frame.extra_locals[hk].value);
+        }
+        return (False, py_none());
+    }
+
+    def contains_key(index: PyObj) -> PyObj {
+        (found, val) = self.lookup(index);
+        if is_error(val) {
+            return val;
+        }
+        return PyBool(t="bool", val=found);
+    }
+
+    def mp_subscript(index: PyObj) -> PyObj {
+        (found, val) = self.lookup(index);
+        if is_error(val) {
+            return val;
+        }
+        if found {
+            return val;
+        }
+        return framelocals_keyerror(index);
+    }
+
+    def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
+        if isinstance(index, PyStr) {
+            k = (index as PyStr).val;
+            i = self.slot_index(k);
+            if i >= 0 {
+                slot = self.frame.fast[i];
+                if isinstance(slot, PyCell) {
+                    c = slot as PyCell;
+                    c.val = value;
+                    c.filled = True;
+                } else {
+                    self.frame.fast[i] = value;
+                    while len(self.frame.assigned) <= i {
+                        self.frame.assigned.append(False);
+                    }
+                    self.frame.assigned[i] = True;
+                }
+                return py_none();
+            }
+            if self.ns_has(k) {
+                self.frame.locals[k] = value;
+                return py_none();
+            }
+        }
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        self.frame.extra_locals[hashkey_str(hkr)] = DictEntry(key=index, value=value);
+        return py_none();
+    }
+
+    def mp_del_subscript(index: PyObj) -> PyObj {
+        if isinstance(index, PyStr) {
+            if self.slot_index((index as PyStr).val) >= 0 {
+                return py_error(
+                    "ValueError",
+                    "cannot remove local variables from FrameLocalsProxy",
+                );
+            }
+            k = (index as PyStr).val;
+            if self.ns_has(k) {
+                del self.frame.locals[k];
+                return py_none();
+            }
+        }
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        hk = hashkey_str(hkr);
+        if hk in self.frame.extra_locals {
+            del self.frame.extra_locals[hk];
+            return py_none();
+        }
+        return py_error("KeyError", dict_key_repr(index));
+    }
+
+    # Pairs of a merge source (dict | proxy); error otherwise.
+    def merge_pairs(other: PyObj) -> PyObj {
+        if isinstance(other, PyFrameLocalsProxy) {
+            return PyList(t="list", items=(other as PyFrameLocalsProxy).entry_pairs);
+        }
+        if isinstance(other, PyDict) {
+            src = other as PyDict;
+            pairs: list[PyObj] = [];
+            for hk in src.items {
+                pair: list[PyObj] = [src.items[hk].key, src.items[hk].value];
+                pairs.append(PyTuple(t="tuple", items=pair));
+            }
+            return PyList(t="list", items=pairs);
+        }
+        return py_error(
+            "TypeError",
+            "'" + other.t + "' object cannot be merged into FrameLocalsProxy",
+        );
+    }
+
+    def nb_binop(kind: int, other: PyObj) -> PyObj {
+        if kind != NB_OR and kind != NB_INPLACE_OR {
+            return PY_NOT_IMPLEMENTED;
+        }
+        pairs_r = self.merge_pairs(other);
+        if is_error(pairs_r) {
+            if kind == NB_INPLACE_OR {
+                return pairs_r;
+            }
+            return PY_NOT_IMPLEMENTED;
+        }
+        if kind == NB_INPLACE_OR {
+            for p in (pairs_r as PyList).items {
+                err = self.mp_ass_subscript((p as PyTuple).items[0], (p as PyTuple).items[1]);
+                if is_error(err) {
+                    return err;
+                }
+            }
+            return self as PyObj;
+        }
+        result = self.as_dict();
+        for p in (pairs_r as PyList).items {
+            _ = result.dict_set((p as PyTuple).items[0], (p as PyTuple).items[1]);
+        }
+        return result;
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind != Py_EQ and kind != Py_NE {
+            return PY_NOT_IMPLEMENTED;
+        }
+        if isinstance(other, PyFrameLocalsProxy) {
+            eq = self.frame is (other as PyFrameLocalsProxy).frame;
+            return PyBool(t="bool", val=eq if kind == Py_EQ else not eq);
+        }
+        if isinstance(other, PyDict) {
+            return dict_richcompare(kind, self.as_dict(), other as PyDict, py_compare);
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
+
+    def tp_iter -> PyObj {
+        return PyIter(t="iter", items=self.keys_list(), index=0);
+    }
+
+    def tp_getattro(name2: str) -> PyObj {
+        if name2 == "keys" or name2 == "values" or name2 == "items"
+            or name2 == "get" or name2 == "setdefault" or name2 == "update"
+            or name2 == "copy" or name2 == "pop" or name2 == "__getitem__"
+            or name2 == "__setitem__" or name2 == "__len__"
+            or name2 == "__contains__" {
+            return PyFrameLocalsMethod(t="framelocals_method", proxy=self, op=name2);
+        }
+        return py_error("AttributeError", name2);
+    }
+}
+
+# Bound method surface of PyFrameLocalsProxy (dict-shaped mapping API; .clear()
+# is deliberately absent so it raises AttributeError like CPython's).
+def framelocals_len(p: PyFrameLocalsProxy) -> int {
+    return len(p.entry_pairs);
+}
+
+obj PyFrameLocalsMethod(PyObj) {
+    has proxy: PyFrameLocalsProxy,
+        op: str;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        p = self.proxy;
+        if self.op == "keys" {
+            return PyList(t="list", items=p.keys_list());
+        }
+        if self.op == "values" {
+            out: list[PyObj] = [];
+            for pr in p.entry_pairs {
+                out.append((pr as PyTuple).items[1]);
+            }
+            return PyList(t="list", items=out);
+        }
+        if self.op == "items" {
+            return PyList(t="list", items=p.entry_pairs);
+        }
+        if self.op == "copy" {
+            return p.as_dict();
+        }
+        if self.op == "__len__" {
+            return PyInt(t="int", val=len(p.entry_pairs));
+        }
+        if self.op == "__contains__" {
+            if len(args) < 1 {
+                return py_error("TypeError", "__contains__ expected 1 argument");
+            }
+            return p.contains_key(args[0]);
+        }
+        if self.op == "__getitem__" {
+            if len(args) < 1 {
+                return py_error("TypeError", "__getitem__ expected 1 argument");
+            }
+            return p.mp_subscript(args[0]);
+        }
+        if self.op == "__setitem__" {
+            if len(args) < 2 {
+                return py_error("TypeError", "__setitem__ expected 2 arguments");
+            }
+            return p.mp_ass_subscript(args[0], args[1]);
+        }
+        if self.op == "get" {
+            if len(args) < 1 {
+                return py_error("TypeError", "get expected at least 1 argument");
+            }
+            (found, val) = p.lookup(args[0]);
+            if is_error(val) {
+                return val;
+            }
+            if found {
+                return val;
+            }
+            if len(args) > 1 {
+                return args[1];
+            }
+            return py_none();
+        }
+        if self.op == "setdefault" {
+            if len(args) < 1 {
+                return py_error("TypeError", "setdefault expected at least 1 argument");
+            }
+            (found2, val2) = p.lookup(args[0]);
+            if is_error(val2) {
+                return val2;
+            }
+            if found2 {
+                return val2;
+            }
+            fallback = py_none();
+            if len(args) > 1 {
+                fallback = args[1];
+            }
+            err = p.mp_ass_subscript(args[0], fallback);
+            if is_error(err) {
+                return err;
+            }
+            return fallback;
+        }
+        if self.op == "update" {
+            if len(args) < 1 {
+                return py_error("TypeError", "update expected at least 1 argument");
+            }
+            pairs_r = p.merge_pairs(args[0]);
+            if is_error(pairs_r) {
+                return pairs_r;
+            }
+            for pr in (pairs_r as PyList).items {
+                err2 = p.mp_ass_subscript((pr as PyTuple).items[0], (pr as PyTuple).items[1]);
+                if is_error(err2) {
+                    return err2;
+                }
+            }
+            return py_none();
+        }
+        if self.op == "pop" {
+            if len(args) < 1 {
+                return py_error("TypeError", "pop expected at least 1 argument");
+            }
+            index = args[0];
+            if isinstance(index, PyStr) and p.slot_index((index as PyStr).val) >= 0 {
+                return py_error(
+                    "ValueError",
+                    "cannot remove local variables from FrameLocalsProxy",
+                );
+            }
+            (found3, val3) = p.lookup(index);
+            if is_error(val3) {
+                return val3;
+            }
+            if found3 {
+                del_err = p.mp_del_subscript(index);
+                if is_error(del_err) {
+                    return del_err;
+                }
+                return val3;
+            }
+            if len(args) > 1 {
+                return args[1];
+            }
+            return py_error("KeyError", dict_key_repr(index));
+        }
+        return py_error("TypeError", "unsupported FrameLocalsProxy op");
+    }
+}
+
+def framelocals_richcompare(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
+    if isinstance(lhs, PyFrameLocalsProxy) {
+        return (lhs as PyFrameLocalsProxy).tp_richcompare(kind, rhs);
+    }
+    # Reflected: proxy on the right, plain dict on the left.
+    if isinstance(rhs, PyFrameLocalsProxy) and isinstance(lhs, PyDict) {
+        return (rhs as PyFrameLocalsProxy).tp_richcompare(kind, lhs);
+    }
+    return PY_NOT_IMPLEMENTED;
 }
 
 # ---- native set methods (.pop/.difference/.union/... ) --------------------
@@ -14606,9 +15126,14 @@ def run_frame(frame: PyFrame) -> PyObj {
     # save/restore keeps recursion and generator resumes correct.
     outer_globals = jac_frame_globals_slot[0];
     jac_frame_globals_slot[0] = frame.globals;
+    # Publish the live frame chain (innermost last) for sys._getframe and
+    # f_back; suspended generator frames are off the chain while suspended,
+    # matching CPython.
+    jac_frame_chain_slot.append(frame);
     try {
         return run_frame_inner(frame);
     } finally {
+        jac_frame_chain_slot.pop();
         jac_frame_globals_slot[0] = outer_globals;
     }
 }
