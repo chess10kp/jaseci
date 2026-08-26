@@ -1817,10 +1817,6 @@ def visit_try_star(
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
     tloc = stmt_loc(t);
-    if t.finalbody is not None and len(t.finalbody) > 0 {
-        codegen_fail(g, "NotImplementedError", "except* with finally");
-        return stmt_cont(loc=tloc);
-    }
     if t.handlers is None or len(t.handlers) == 0 {
         codegen_fail(g, "NotImplementedError", "try* without except*");
         return stmt_cont(loc=tloc);
@@ -1833,7 +1829,7 @@ def visit_try_star(
         codegen_fail(g, "NotImplementedError", "except* inside except handler");
         return stmt_cont(loc=tloc);
     }
-    return visit_try_star_except(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+    return visit_try_star_except(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx, t.finalbody);
 }
 
 
@@ -1850,6 +1846,12 @@ def visit_try_star(
 #   reraise, unwind (COPY 3 / POP_EXCEPT / RERAISE 1)
 # The last handler's ewe epilogue (LIST_APPEND 1) folds into x/ce/nm tails;
 # non-last ones jump straight to the next handler's match block.
+#
+# With a finally clause (CPython compiler_try_star_finally): the inline
+# finally occupies the normal-path continuation slot right after the body,
+# the walk's all-matched exit jumps back into it, and the exceptional exits
+# rerun the finally under PUSH_EXC_INFO (fin_except) + COPY/POP_EXCEPT/RERAISE
+# (fin_unwind) regions placed after unwind.
 def visit_try_star_except(
     g: cfg_builder,
     t: TryStar,
@@ -1857,12 +1859,14 @@ def visit_try_star_except(
     tail: list[stmt] | None = None,
     tail_idx: int = 0,
     tail_join: basicblock | None = None,
-    ann_ctx: ann_scope_plan | None = None
+    ann_ctx: ann_scope_plan | None = None,
+    finalbody: list[stmt] | None = None
 ) -> stmt_cont {
     tloc = trystar_stmt_loc(t);
     nh = len(t.handlers);
     noloc = no_loc();
     nest = g.handler_nest_depth;
+    has_fin = finalbody is not None and len(finalbody) > 0;
 
     nop_blk = g.new_block();
     g.u.nested_try_except_end = -1;
@@ -1898,7 +1902,37 @@ def visit_try_star_except(
         }
     }
     join_blk: basicblock | None = None;
-    if try_follows {
+    if has_fin {
+        # Host composition: the inline finally takes the normal-path
+        # continuation slot directly after the body; the walk's all-matched
+        # exit (rr_pe below) jumps back into it.
+        join_blk = g.new_block();
+        g.use(join_blk);
+        fb = finalbody as list[stmt];
+        fin_cont = visit_stmts(g, fb, 0, False, None, 0, None, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=tloc);
+        }
+        fin_follows = more_code_follows;
+        if not fin_follows and tail is not None and tail_idx < len(tail) {
+            fin_follows = True;
+        }
+        if fin_follows {
+            tail_more = False;
+            if tail is not None and tail_idx + 1 < len(tail) {
+                tail_more = exec_tail_emits_code(tail, tail_idx + 1);
+            }
+            tail_cont = visit_stmt_tail(g, tail as list[stmt], tail_idx, tail_more, ann_ctx);
+            if codegen_busy(g) {
+                return stmt_cont(loc=tloc);
+            }
+            if not tail_cont.terminated and not normal_terminated {
+                emit_module_return(g, tail_cont.loc);
+            }
+        } elif not normal_terminated {
+            emit_module_return(g, fin_cont.loc);
+        }
+    } elif try_follows {
         # Own block so the nothing-to-reraise path can jump back to it.
         join_blk = g.new_block();
         g.use(join_blk);
@@ -1948,6 +1982,12 @@ def visit_try_star_except(
     rr_pe = g.new_deferred_block();
     reraise_blk = g.new_deferred_block();
     unwind_blk = g.new_deferred_block();
+    fin_except_blk: basicblock | None = None;
+    fin_unwind_blk: basicblock | None = None;
+    if has_fin {
+        fin_except_blk = g.new_deferred_block();
+        fin_unwind_blk = g.new_deferred_block();
+    }
 
     hi = 0;
     while hi < nh {
@@ -2084,6 +2124,26 @@ def visit_try_star_except(
     g.emit_op(OP_COPY, 3, noloc);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
     g.emit_op(OP_RERAISE, 1, noloc);
+    if has_fin {
+        # Exceptional exits of the walk rerun the finally, then propagate:
+        # RERAISE 0 (reraise needed) and the unwind path land here via the
+        # depth-0 region appended below; a raising finally body lands in
+        # fin_unwind via the lasti region.
+        fin_e = fin_except_blk as basicblock;
+        fin_u = fin_unwind_blk as basicblock;
+        fbx = finalbody as list[stmt];
+        g.use(fin_e);
+        g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
+        fin_exc_cont = visit_stmts(g, fbx, 0, False, None, 0, None, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=tloc);
+        }
+        g.emit_op(OP_RERAISE, 0, fin_exc_cont.loc);
+        g.use(fin_u);
+        g.emit_op(OP_COPY, 3, noloc);
+        g.emit_op(OP_POP_EXCEPT, 0, noloc);
+        g.emit_op(OP_RERAISE, 1, noloc);
+    }
 
     # Exception-table spans, in host entry order; merge_except_spans coalesces
     # the empty-body case where the he span and the mid run become adjacent.
@@ -2141,6 +2201,27 @@ def visit_try_star_except(
             preserve_lasti=True
         )
     );
+    if has_fin {
+        # Covers the walk's exit epilogue and its reraise/unwind blocks:
+        # anything escaping them reruns the finally before propagating.
+        spans.append(
+            except_region(
+                start_block=rr_pe.id,
+                end_block=(fin_except_blk as basicblock).id,
+                handler_block=(fin_except_blk as basicblock).id,
+                stack_depth=1 + nest
+            )
+        );
+        spans.append(
+            except_region(
+                start_block=(fin_except_blk as basicblock).id,
+                end_block=(fin_unwind_blk as basicblock).id,
+                handler_block=(fin_unwind_blk as basicblock).id,
+                stack_depth=3 + nest,
+                preserve_lasti=True
+            )
+        );
+    }
     merged = merge_except_spans(g, spans);
     mi = 0;
     while mi < len(merged) {
