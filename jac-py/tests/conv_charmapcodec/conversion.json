@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_charmapcodec.py",
+    "-o",
+    "jac-py/tests/conv_charmapcodec",
+    "--name",
+    "conv_charmapcodec"
+  ],
+  "generated_at": "2026-08-25T19:54:03",
+  "hashes": {
+    "pins_jac": "28536de2b58197f102db2ae6ffbddbedc29f9cb9fa1da160416edebdefed40c1"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_charmapcodec.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "charmapcodec",
+  "pins_file": "conv_charmapcodec_pins.jac",
+  "pins": [
+    {
+      "ident": "CharmapCodecTest.test_constructorx",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport codecs\n\ndef codec_search_function(encoding):\n    if encoding == 'testcodec':\n        from test import testcodec\n        return tuple(testcodec.getregentry())\n    return None\ncodecname = 'testcodec'\n\ndef _t():\n\n    def setUp():\n        codecs.register(codec_search_function)\n        _add_cleanup(codecs.unregister, *(codec_search_function,))\n    codecs.register(codec_search_function)\n    _add_cleanup(codecs.unregister, *(codec_search_function,))\n    assert str(b'abc', codecname) == 'abc', ('assertEqual', str(b'abc', codecname), 'abc')\n    assert str(b'xdef', codecname) == 'abcdef', ('assertEqual', str(b'xdef', codecname), 'abcdef')\n    assert str(b'defx', codecname) == 'defabc', ('assertEqual', str(b'defx', codecname), 'defabc')\n    assert str(b'dxf', codecname) == 'dabcf', ('assertEqual', str(b'dxf', codecname), 'dabcf')\n    assert str(b'dxfx', codecname) == 'dabcfabc', ('assertEqual', str(b'dxfx', codecname), 'dabcfabc')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CharmapCodecTest.test_encodex",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport codecs\n\ndef codec_search_function(encoding):\n    if encoding == 'testcodec':\n        from test import testcodec\n        return tuple(testcodec.getregentry())\n    return None\ncodecname = 'testcodec'\n\ndef _t():\n\n    def setUp():\n        codecs.register(codec_search_function)\n        _add_cleanup(codecs.unregister, *(codec_search_function,))\n    codecs.register(codec_search_function)\n    _add_cleanup(codecs.unregister, *(codec_search_function,))\n    assert 'abc'.encode(codecname) == b'abc', ('assertEqual', 'abc'.encode(codecname), b'abc')\n    assert 'xdef'.encode(codecname) == b'abcdef', ('assertEqual', 'xdef'.encode(codecname), b'abcdef')\n    assert 'defx'.encode(codecname) == b'defabc', ('assertEqual', 'defx'.encode(codecname), b'defabc')\n    assert 'dxf'.encode(codecname) == b'dabcf', ('assertEqual', 'dxf'.encode(codecname), b'dabcf')\n    assert 'dxfx'.encode(codecname) == b'dabcfabc', ('assertEqual', 'dxfx'.encode(codecname), b'dabcfabc')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CharmapCodecTest.test_constructory",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport codecs\n\ndef codec_search_function(encoding):\n    if encoding == 'testcodec':\n        from test import testcodec\n        return tuple(testcodec.getregentry())\n    return None\ncodecname = 'testcodec'\n\ndef _t():\n\n    def setUp():\n        codecs.register(codec_search_function)\n        _add_cleanup(codecs.unregister, *(codec_search_function,))\n    codecs.register(codec_search_function)\n    _add_cleanup(codecs.unregister, *(codec_search_function,))\n    assert str(b'ydef', codecname) == 'def', ('assertEqual', str(b'ydef', codecname), 'def')\n    assert str(b'defy', codecname) == 'def', ('assertEqual', str(b'defy', codecname), 'def')\n    assert str(b'dyf', codecname) == 'df', ('assertEqual', str(b'dyf', codecname), 'df')\n    assert str(b'dyfy', codecname) == 'df', ('assertEqual', str(b'dyfy', codecname), 'df')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CharmapCodecTest.test_maptoundefined",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport codecs\n\ndef codec_search_function(encoding):\n    if encoding == 'testcodec':\n        from test import testcodec\n        return tuple(testcodec.getregentry())\n    return None\ncodecname = 'testcodec'\n\ndef _t():\n\n    def setUp():\n        codecs.register(codec_search_function)\n        _add_cleanup(codecs.unregister, *(codec_search_function,))\n    codecs.register(codec_search_function)\n    _add_cleanup(codecs.unregister, *(codec_search_function,))\n    try:\n        str(*(b'abc\\x01', codecname))\n    except UnicodeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 4,
+    "pinned": 4,
+    "quarantined": 0
+  }
+}

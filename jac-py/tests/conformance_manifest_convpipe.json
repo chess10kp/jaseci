@@ -2426,6 +2426,17 @@
       "libtest_snippets": [],
       "notes": "14 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_cmath/cmath.conv.json"
+    },
+    {
+      "stem": "charmapcodec",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "jac-py/tests/conv_charmapcodec/conv_charmapcodec_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "jac-py/tests/conv_charmapcodec/conversion.json"
     }
   ]
 }

@@ -191,6 +191,63 @@ class RewriteBehaviorTests(unittest.TestCase):
         self.assertIn("AssertionError", failed)
         self.assertIn("nope", failed)
 
+    def test_add_cleanup_runs_lifo_after_pass(self):
+        stmts = ast.parse(textwrap.dedent(
+            """
+            self.addCleanup(order.append, 2)
+            self.addCleanup(order.append, 1)
+            order.append(0)
+            """
+        )).body
+        rewritten, needs_re = cs.rewrite_block(stmts)
+        prelude = ast.parse("order = []").body
+        snippet = cs.render_snippet(rewritten, prelude, needs_re, needs_cleanup=True)
+        captured: list = []
+        env = {"print": lambda *a, **k: captured.append(a)}
+        exec(snippet, env)  # noqa: S102 - fixture
+        self.assertEqual(env["order"], [0, 1, 2])  # LIFO: cleanup '1' registered last, runs first
+        self.assertEqual(captured[-1], ("ok",))
+
+    def test_add_cleanup_runs_on_failure(self):
+        stmts = ast.parse(
+            "self.addCleanup(ran.append, 'c')\nraise AssertionError('boom')"
+        ).body
+        rewritten, _ = cs.rewrite_block(stmts)
+        prelude = ast.parse("ran = []").body
+        snippet = cs.render_snippet(rewritten, prelude, False, needs_cleanup=True)
+        captured: list = []
+        env = {"print": lambda *a, **k: captured.append(a)}
+        exec(snippet, env)  # noqa: S102 - fixture
+        self.assertEqual(env["ran"], ["c"])
+        self.assertIn("ORACLE_EXC", str(captured[-1]))
+
+
+class CleanupExtractionTests(unittest.TestCase):
+    def test_setUp_addCleanup_pins(self):
+        src = textwrap.dedent(
+            """\
+            import unittest
+
+            reg = []
+
+            def _reset():
+                reg.clear()
+
+            class T(unittest.TestCase):
+                def setUp(self):
+                    reg.append(1)
+                    self.addCleanup(_reset)
+
+                def test_x(self):
+                    self.assertEqual(reg[-1], 1)
+            """
+        )
+        ex = cs.extract_tests(ast.parse(src), src)
+        self.assertEqual([p.ident for p in ex.pinned], ["T.test_x"])
+        self.assertEqual(ex.quarantined, [])
+        compile(ex.pinned[0].snippet, "T.test_x", "exec")
+        self.assertIn("_run_cleanups", ex.pinned[0].snippet)
+
 
 class OracleParseTests(unittest.TestCase):
     def test_ok_marker(self):

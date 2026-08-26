@@ -57,7 +57,7 @@ _DEFAULT_LIB = _REPO / "reference" / "cpython" / "Lib"
 _TESTS_DIR = _REPO / "jac-py" / "tests"
 _MANIFEST = _TESTS_DIR / "conformance_manifest_convpipe.json"
 
-TOOL_VERSION = "conv_suite-0.4.0"
+TOOL_VERSION = "conv_suite-0.5.0"
 CPYTHON_VERSION = "3.14.6"
 
 
@@ -357,7 +357,31 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_regex_assert(call, negate=False)]
     if fname == "assertNotRegex":
         return [_regex_assert(call, negate=True)]
+    if fname == "addCleanup":
+        return [_add_cleanup_stmt(call)]
     raise Unsupported(f"self.{fname}")
+
+
+def _add_cleanup_stmt(call: ast.Call) -> ast.Expr:
+    """self.addCleanup(f, *a, **k) -> _add_cleanup(f, *a, **k).
+
+    The harness helper registers the callable; render_snippet runs the
+    registered cleanups LIFO in the wrapper's finalbody (unittest order),
+    so a cleanup failure still surfaces to the host oracle.
+    """
+    _need_args(call, 1)
+    fn = call.args[0]
+    extra = list(call.args[1:])
+    starargs: list[ast.expr] = []
+    if extra:
+        starargs = [ast.Starred(value=ast.Tuple(elts=extra, ctx=ast.Load()), ctx=ast.Load())]
+    return ast.Expr(
+        value=ast.Call(
+            func=ast.Name(id="_add_cleanup", ctx=ast.Load()),
+            args=[fn, *starargs],
+            keywords=list(call.keywords),
+        )
+    )
 
 
 def _is_none_assert(call: ast.Call, negate: bool) -> ast.Assert:
@@ -559,6 +583,35 @@ def _with_needs_re(item: ast.withitem) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Cleanup harness (self.addCleanup lowering)
+
+
+_CLEANUP_HELPERS = '''\
+_cleanups = []
+def _add_cleanup(f, *args, **kwargs):
+    _cleanups.append((f, args, kwargs))
+def _run_cleanups():
+    while _cleanups:
+        f, args, kwargs = _cleanups.pop()
+        f(*args, **kwargs)
+'''
+
+
+def _uses_cleanup_helpers(stmts: list[ast.stmt]) -> bool:
+    tree = ast.Module(body=stmts, type_ignores=[])
+    return any(
+        isinstance(node, ast.Name)
+        and node.id in ("_add_cleanup", "_run_cleanups")
+        and isinstance(node.ctx, ast.Load)
+        for node in ast.walk(tree)
+    )
+
+
+def _parse_helpers(src: str) -> list[ast.stmt]:
+    return ast.parse(src).body
+
+
+# ---------------------------------------------------------------------------
 # Name resolution checks
 
 
@@ -566,6 +619,7 @@ _BUILTIN_NAMES: set[str] = set(dir(builtins))
 _EXTRA_ALLOWED = {
     "True", "False", "None", "__name__", "__class__", "self",
     "_re", "_exc", "AssertionError", "Exception", "BaseException",
+    "_add_cleanup", "_run_cleanups",
 }
 
 
@@ -1262,7 +1316,12 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
         except Unsupported as exc:
             result.quarantined.append(Quarantined(ident, str(exc)))
             continue
-        snippet = render_snippet(candidate, kept_prelude, needs_re)
+        snippet = render_snippet(
+            candidate,
+            kept_prelude,
+            needs_re,
+            needs_cleanup=_uses_cleanup_helpers([*candidate, *extra_prelude]),
+        )
         result.pinned.append(Pinned(ident, snippet, oracle={}))
 
     # self.skipTest anywhere in candidate bodies -> quarantine (checked after
@@ -1654,12 +1713,18 @@ def _concat_expr(parts: list[ast.expr]) -> ast.expr:
 
 
 def render_snippet(
-    body: list[ast.stmt], prelude: list[ast.stmt], needs_re: bool, wrap: bool = True
+    body: list[ast.stmt],
+    prelude: list[ast.stmt],
+    needs_re: bool,
+    wrap: bool = True,
+    needs_cleanup: bool = False,
 ) -> str:
     module = ast.Module(body=[], type_ignores=[])
     stmts: list[ast.stmt] = []
     if needs_re:
         stmts.append(ast.Import(names=[ast.alias(name="re as _re", asname=None)]))
+    if needs_cleanup and wrap:
+        stmts.extend(_parse_helpers(_CLEANUP_HELPERS))
     stmts.extend(prelude)
     if not wrap:
         # Doctest pins run at module level: classes/examples must get
@@ -1729,7 +1794,11 @@ def render_snippet(
                 )
             ],
             orelse=[ast.Expr(value=ast.Call(func=ast.Name(id="print", ctx=ast.Load()), args=[ast.Constant(value=_ORACLE_OK)], keywords=[]))],
-            finalbody=[],
+            finalbody=(
+                [ast.Expr(value=ast.Call(func=ast.Name(id="_run_cleanups", ctx=ast.Load()), args=[], keywords=[]))]
+                if needs_cleanup
+                else []
+            ),
         )
     )
     module.body = stmts
