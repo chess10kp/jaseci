@@ -402,8 +402,6 @@ jac/jaclang/lsp/types.jac
 jac/jaclang/jac0core/passes/uni_pass.jac
 jac/jaclang/jac0core/impl/unitree.impl.jac
 jac/jaclang/jac0core/unitree.jac
-jac/jaclang/compiler/passes/tool/impl/unparse_pass.impl.jac
-jac/jaclang/compiler/passes/tool/unparse_pass.jac
 jac/jaclang/scale/admin/ui/hooks/useStorage.jac
 jac/jaclang/scale/identity/impl/user_manager.impl.jac
 jac/jaclang/scale/identity/user_manager.jac
