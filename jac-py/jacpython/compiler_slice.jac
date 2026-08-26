@@ -3979,6 +3979,26 @@ test "compiler_slice: band11 except* with else reusing names matches oracle PyCo
     assert actual.linetable == exp.linetable;
 }
 
+test "compiler_slice: band11 except* nested in except handler matches oracle PyCode" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except ValueError:\n"
+        + "    try:\n"
+        + "        y = 2\n"
+        + "    except* TypeError as e:\n"
+        + "        z = e\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.linetable == exp.linetable;
+    assert actual.names == exp.names;
+}
+
 # ---------------- band 12: f-string lowering (JoinedStr/FormattedValue) ----------------
 #
 # The tokenizer still emits f-strings as plain STRING tokens and the fstring
