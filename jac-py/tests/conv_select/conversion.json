@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_select.py",
+    "-o",
+    "/var/tmp/worker7-select-3108157/jac-py/tests/conv_select",
+    "--name",
+    "conv_select"
+  ],
+  "generated_at": "2026-08-26T01:13:03",
+  "hashes": {
+    "pins_jac": "a544ee3dbafc4745a08291f29f72b25c9f08d6ee2b808dc0241eb13ba0767231"
+  },
+  "source_file": "reference/cpython/Lib/test/test_select.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "select",
+  "pins_file": "conv_select_pins.jac",
+  "pins": [
+    {
+      "ident": "SelectTestCase.test_error_conditions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import select\n\nclass Nope:\n    pass\n\nclass Almost:\n\n    def fileno(self):\n        return 'fileno'\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.Almost = Almost\n    _SelfNS.Almost = Almost\n    self.Nope = Nope\n    _SelfNS.Nope = Nope\n    try:\n        select.select(*(1, 2, 3))\n    except TypeError:\n        pass\n    try:\n        select.select(*([self.Nope()], [], []))\n    except TypeError:\n        pass\n    try:\n        select.select(*([self.Almost()], [], []))\n    except TypeError:\n        pass\n    try:\n        select.select(*([], [], [], 'not a number'))\n    except TypeError:\n        pass\n    try:\n        select.select(*([], [], [], -1))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SelectTestCase.test_returned_list_identity",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import select\n\ndef _t():\n    r, w, x = select.select([], [], [], 1)\n    assert r is not w, ('assertIsNot', r, w)\n    assert r is not x, ('assertIsNot', r, x)\n    assert w is not x, ('assertIsNot', w, x)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "SelectTestCase.test_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "SelectTestCase.test_select",
+      "reason": "decorator:support.requires_fork"
+    },
+    {
+      "ident": "SelectTestCase.test_select_mutated",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "SelectTestCase.test_errno",
+      "reason": "unresolved-name:__file__"
+    }
+  ],
+  "counts": {
+    "extracted": 6,
+    "pinned": 2,
+    "quarantined": 4
+  }
+}
