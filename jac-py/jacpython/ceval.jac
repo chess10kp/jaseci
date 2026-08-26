@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from stat { stat_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2102,6 +2103,14 @@ def import_native(absname: str) -> PyObj {
         # errorcode round-trip; the native facade keeps them guest-native.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if absname == "stat" and not ("stat" in shim_modules) {
+        # _stat.c lift: mode-word computation (S_IS*/S_IMODE/S_IFMT/filemode)
+        # plus the platform constant table; the native facade keeps results
+        # guest-native instead of leaking host int/str/bool proxies.
+        shim_modules["stat"] = PyModule(
+            t="module", name="stat", attrs=stat_module_attrs()
         );
     }
     if absname == "sys" and not ("sys" in shim_modules) {
@@ -5249,6 +5258,14 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # native facade serves it without a host round-trip.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if name == "stat" and not ("stat" in shim_modules) {
+        # Mirror of the import_native site: _stat.c is pure mode-word
+        # computation, so the native facade serves it without a host
+        # round-trip.
+        shim_modules["stat"] = PyModule(
+            t="module", name="stat", attrs=stat_module_attrs()
         );
     }
     if name == "weakref" and not ("weakref" in shim_modules) {
