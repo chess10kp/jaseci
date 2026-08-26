@@ -767,21 +767,35 @@ def _host_skip_env(tree: ast.Module) -> dict:
     # Fallback seeds for names from the harness package when it cannot load
     # on this interpreter: stable support constants plus no-op helpers.
     env.setdefault("import_module", _import_module)
+    import types as _types
+    env.setdefault(
+        "import_helper",
+        _types.SimpleNamespace(import_module=_import_module),
+    )
     env.setdefault("_1G", 2**30)
     env.setdefault("_2G", 2**31)
     env.setdefault("_4G", 2**32)
-    for node in tree.body:
-        try:
-            if isinstance(node, ast.Import | ast.ImportFrom):
-                if node.col_offset != 0:
-                    continue
-                code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
-                exec(code, env)
-            elif isinstance(node, ast.Assign | ast.AnnAssign) and node.col_offset == 0:
-                code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
-                exec(code, env)
-        except Exception:
-            continue
+    # Suites whose top level routes through ``test.support`` helpers
+    # (import_helper.import_module('pwd'), ...) resolve ``test.*`` against
+    # the PINNED reference tree while the env builds; a stock venv
+    # interpreter has no ``test`` package at all. Same exposure policy as
+    # seed evaluation: only ``test.*`` imports resolve into the tree, and a
+    # tree that cannot load here falls back to the seeded plain-stdlib
+    # helpers above.
+    import contextlib
+    with contextlib.suppress(Exception), _host_test_package(_DEFAULT_LIB / "test"):
+        for node in tree.body:
+            try:
+                if isinstance(node, ast.Import | ast.ImportFrom):
+                    if node.col_offset != 0:
+                        continue
+                    code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
+                    exec(code, env)
+                elif isinstance(node, ast.Assign | ast.AnnAssign) and node.col_offset == 0:
+                    code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
+                    exec(code, env)
+            except Exception:
+                continue
     return env
 
 
