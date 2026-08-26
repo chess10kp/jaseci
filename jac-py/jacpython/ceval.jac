@@ -7532,6 +7532,12 @@ def py_del_attr(value: PyObj, name: str) -> PyObj {
         }
         return py_error("AttributeError", name);
     }
+    # Native facade objects may define their own deleter (base slot reports the
+    # generic AttributeError, so untouched objects fall through unchanged).
+    dres = value.tp_del_attr(name);
+    if not is_error(dres) {
+        return dres;
+    }
     hv_r = to_host_coerce(value);
     hv = hv_r[1];
     if not ((hv_r[0] as bool)) {
