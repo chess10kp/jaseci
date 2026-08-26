@@ -136,6 +136,17 @@ def _jac_is_type_type(value):
     # build a class object (type.__new__), not a plain instance.
     return value is type
 
+def _jac_static_type_name(value):
+    # CPython type.__setattr__ policy probe (Objects/typeobject.c
+    # type_setattro): attribute writes land only on HEAP types; a static
+    # builtin/extension type rejects EVERY write with the canonical TypeError,
+    # before the assigned value is examined. Returns the tp_name for a static
+    # type (the error message quotes it), "" for heap types and non-types.
+    import builtins
+    if isinstance(value, type) and not (value.__flags__ & (1 << 9)):
+        return getattr(value, "__name__", "")  # Py_TPFLAGS_HEAPTYPE = 1 << 9
+    return ""
+
 def _jac_is_super_type(value):
     # True iff value is exactly the builtin `super` type. Zero-arg super() at a
     # generic call site must raise CPython's frame-without-cell error instead of
@@ -2431,6 +2442,19 @@ obj PyHostProxy(PyObj) {
     }
 
     def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # CPython type___setattr__ policy, allow-on-subclass-only: a static
+        # builtin/extension type (int, str, tuple, ...) rejects every attribute
+        # write with the canonical TypeError -- enforced natively so the answer
+        # never depends on the assigned value surviving the host-boundary
+        # coercion. Heap types (Python classes, guest standin classes) keep
+        # delegating to the host, where writes stick.
+        tname: str = _jac_static_type_name(self.val);
+        if tname != "" {
+            return py_error(
+                "TypeError",
+                "can't set attributes of built-in/extension type '" + tname + "'"
+            );
+        }
         return host_setattr(self, name, value);
     }
 
