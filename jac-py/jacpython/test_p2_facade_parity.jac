@@ -11,7 +11,18 @@ import from _bisectmodule {
     _p2_insort,
     _p2_insort_left,
 }
-import from _heapqmodule { _p2_heappush, _p2_heappop, _p2_heapify }
+import from _heapqmodule {
+    _p2_heappush,
+    _p2_heappop,
+    _p2_heapify,
+    _p2_heapreplace,
+    _p2_heappushpop,
+    _p2_heappush_max,
+    _p2_heappop_max,
+    _p2_heapify_max,
+    _p2_heapreplace_max,
+    _p2_heappushpop_max,
+}
 
 
 test "P2 bisect facade agrees with host bisect on representative cases" {
@@ -72,4 +83,53 @@ test "P2 heapq facade agrees with host heapq on representative cases" {
     }
     assert out_a == out_b , (out_a, out_b);
     assert out_a == sorted([3, 1, 4, 1, 5, 9, 2, 6]);
+}
+
+test "P2 heapq facade replace/pushpop agrees with host heapq" {
+    a = [1, 3, 2];
+    b = [1, 3, 2];
+    assert _p2_heapreplace(a, 5) == host_heapq.heapreplace(b, 5);
+    assert a == b , (a, b);
+    assert _p2_heapreplace(a, 0) == host_heapq.heapreplace(b, 0);
+    assert a == b , (a, b);
+    assert _p2_heappushpop(a, 4) == host_heapq.heappushpop(b, 4);
+    assert a == b , (a, b);
+    assert _p2_heappushpop(a, -1) == host_heapq.heappushpop(b, -1);
+    assert a == b , (a, b);
+    e1: list = [];
+    e2: list = [];
+    assert _p2_heappushpop(e1, 7) == host_heapq.heappushpop(e2, 7) == 7;
+    assert len(e1) == 0 and len(e2) == 0;
+}
+
+test "P2 heapq max-heap facade agrees with host heapq" {
+    src = [5, 1, 9, 3, 7, 2, 8, 4, 6, 0];
+    a = list(src);
+    b = list(src);
+    _p2_heapify_max(a);
+    host_heapq.heapify_max(b);
+    assert a == b , (a, b);
+    for x in [3, 11, 4] {
+        _p2_heappush_max(a, x);
+        host_heapq.heappush_max(b, x);
+        assert a == b , (a, b);
+    }
+    assert _p2_heapreplace_max(a, 12) == host_heapq.heapreplace_max(b, 12);
+    assert a == b , (a, b);
+    assert _p2_heappushpop_max(a, 10) == host_heapq.heappushpop_max(b, 10);
+    assert a == b , (a, b);
+    assert _p2_heappushpop_max(a, -1) == host_heapq.heappushpop_max(b, -1);
+    assert a == b , (a, b);
+    out_a: list = [];
+    out_b: list = [];
+    while a {
+        out_a.append(_p2_heappop_max(a));
+        out_b.append(host_heapq.heappop_max(b));
+    }
+    assert out_a == out_b , (out_a, out_b);
+    assert out_a == sorted(src, reverse=True);
+    e1: list = [];
+    e2: list = [];
+    assert _p2_heappushpop_max(e1, 7) == host_heapq.heappushpop_max(e2, 7) == 7;
+    assert len(e1) == 0 and len(e2) == 0;
 }
