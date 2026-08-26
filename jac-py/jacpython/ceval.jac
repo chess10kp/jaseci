@@ -1624,6 +1624,7 @@ import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
+import from sysconfig { sysconfig_module_attrs }
 import from errno { errno_module_attrs }
 import from objects {
     _zero_step_error,
@@ -2102,6 +2103,14 @@ def import_native(absname: str) -> PyObj {
         # errorcode round-trip; the native facade keeps them guest-native.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if absname == "_sysconfig" and not ("_sysconfig" in shim_modules) {
+        # _sysconfig.c lift: pure-data accelerator for sysconfig (config_vars).
+        # The host proxy would answer about the HOST build flags; the facade
+        # pins the guest's own build surface instead.
+        shim_modules["_sysconfig"] = PyModule(
+            t="module", name="_sysconfig", attrs=sysconfig_module_attrs()
         );
     }
     if absname == "sys" and not ("sys" in shim_modules) {
@@ -5274,6 +5283,13 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # semantics implemented natively. The layer3 boot path instead runs
         # the real types.py in-VM and overrides just the coroutine attribute.
         shim_modules["types"] = build_types_facade();
+    }
+    if name == "_sysconfig" and not ("_sysconfig" in shim_modules) {
+        # Mirror of the import_native site: the host _sysconfig describes the
+        # HOST build, never ours.
+        shim_modules["_sysconfig"] = PyModule(
+            t="module", name="_sysconfig", attrs=sysconfig_module_attrs()
+        );
     }
     if name == "sys" and not ("sys" in shim_modules) {
         # Mirror of the import_native site: exception-state attrs must read
