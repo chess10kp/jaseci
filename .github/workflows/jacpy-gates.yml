@@ -22,8 +22,14 @@ permissions:
   contents: read
 
 # Test the SHIPPED binary, never a checkout reroute (same convention as ci.yml).
+# JAC_TEST_NATIVE routes `jac test` through the native runner instead of
+# pytest: pytest collection runs module_is_client() per collected .jac file,
+# and each call performs a full compile -- across jac-py/jacpython/'s 187
+# modules that is hours of silent classification before the first test runs
+# (diagnosed 2026-08-26; see ~/notes/jac-test-hang-diagnosis.md).
 env:
   JAC_NO_DEV_SOURCE: "1"
+  JAC_TEST_NATIVE: "1"
 
 jobs:
   jac-py-gates:
