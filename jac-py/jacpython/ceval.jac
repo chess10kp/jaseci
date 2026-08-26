@@ -936,20 +936,6 @@ def _jac_make_host_trampoline(native_fn):
         pass
     return _trampoline
 
-def _jac_make_weakref(target):
-    # Host weakref over the RAW jacpython object. PyUserObj/PyClass/native
-    # wrappers are ordinary CPython objects, so the host weakref tracks their
-    # exact refcount lifetime: when the last strong reference dies, ref()
-    # returns None with no extra bookkeeping. Returns None on TypeError.
-    import weakref
-    try:
-        return weakref.ref(target)
-    except TypeError:
-        return None
-
-def _jac_weakref_deref(wr):
-    return wr()
-
 def _jac_dbg_dead_check_simple(r):
     # Minimal: alive or dead, no walking.
     import sys
@@ -1625,6 +1611,8 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from _weakrefmodule { build_weakref_module_attrs }
+import from objects { ShimTypeMarker }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2080,9 +2068,14 @@ def _resolve_relative(current_package: str, name: str, level: int) -> str {
 # parent, per CPython). Pure-Python source runs in-VM; anything else is proxied.
 def import_native(absname: str) -> PyObj {
     if absname == "weakref" and not ("weakref" in shim_modules) {
-        # Register before the module-info lookup: weakref.py is pure-Python
-        # stdlib and would otherwise be executed in-VM against C internals.
-        shim_modules["weakref"] = build_weakref_module();
+        # _weakref.c lift (see _weakrefmodule.jac): the full native surface --
+        # ref/proxy types with isinstance markers, getweakrefcount/getweakrefs
+        # and _remove_dead_weakref. Registered before the module-info lookup:
+        # weakref.py is pure-Python stdlib and would otherwise be executed
+        # in-VM against C internals.
+        shim_modules["weakref"] = PyModule(
+            t="module", name="weakref", attrs=build_weakref_module_attrs()
+        );
     }
     if absname == "heapq" and not ("heapq" in shim_modules) {
         # heapq.py is pure Python but served from the host it mutates a COPY
@@ -5252,9 +5245,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         );
     }
     if name == "weakref" and not ("weakref" in shim_modules) {
-        # The host module's ref() sees to_host conversions (plain objects ->
-        # None), so serve our identity-faithful shim instead.
-        shim_modules["weakref"] = build_weakref_module();
+        # Mirror of the import_native site: host weakref cannot see guest
+        # identity, so serve the native _weakref.c facade instead.
+        shim_modules["weakref"] = PyModule(
+            t="module", name="weakref", attrs=build_weakref_module_attrs()
+        );
     }
     if name == "heapq" and not ("heapq" in shim_modules) {
         # Same copy-mutation hazard as import_native: host heapq mutates a
@@ -11107,27 +11102,6 @@ obj PyYield(PyObj) {
 
 # next()/iter() as native callables (host_builtin routes these here) so they
 # drive a native generator/iterator in-VM rather than draining it to a host list.
-# Native shim "type" marker (isinstance-matchable shim classes): wraps a
-# constructor callable and carries the PyObj.t tag its instances carry.
-# py_isinstance answers marker matches with a single value.t comparison --
-# no getattr probes, no host bridge. Registered by module shims that expose
-# real class-shaped surfaces (traceback.FrameSummary, TracebackException).
-obj ShimTypeMarker(PyObj) {
-    has tag: str,
-        ctor: PyObj;
-
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        return (self.ctor as PyObj).tp_call(args, kwargs);
-    }
-
-    def tp_getattro(name2: str) -> PyObj {
-        if name2 == "__jac_shim_tag__" {
-            return PyStr(t="str", val=self.tag);
-        }
-        return (self.ctor as PyObj).tp_getattro(name2);
-    }
-}
-
 obj PyNativeBuiltin(PyObj) {
     has name: str;
 
@@ -14565,59 +14539,9 @@ obj PyCopyFn(PyObj) {
 
 # The native `copy` module, seeded into a Layer-1 namespace so a test that does
 # copy.copy(gen) sees CPython's TypeError natively (the host proxy would drain).
-# Native weakref module surface (shimmed over host weakref). CPython-faithful
-# for objects whose RAW Python identity is the object itself (PyUserObj,
-# PyClass, functions, generators): deref hands back the identical object, and
-# death follows refcounting exactly. Boxed value types (int/str/list/...) are
-# rejected up front because CPython makes them un-weakreferenceable, and host
-# proxies are rejected because deref would mint a fresh proxy and break
-# `r() is o` identity.
-obj PyWeakRefFn(PyObj) {
-    # Identity hash (CPython: builtin-style callables hash by id); copy.py's
-    # module init stores these wrappers in hash-keyed dispatch structures.
-    def tp_hashkey -> PyObj {
-        return PyStr(t="str", val="obj:" + str(id(self)));
-    }
-
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        if len(args) != 1 {
-            # callback= / weakref.ref(cls) forms unsupported by this surface.
-            return py_error("TypeError", "weakref.ref expected 1 argument");
-        }
-        target = args[0];
-        if isinstance(target, PyHostProxy) or isinstance(target, PyInt)
-            or isinstance(target, PyFloat) or isinstance(target, PyBool)
-            or isinstance(target, PyStr) or isinstance(target, PyBytes)
-            or isinstance(target, PyTuple) or isinstance(target, PyList)
-            or isinstance(target, PyDict) or isinstance(target, PySet)
-            or isinstance(target, PyNoneType) {
-            tname = "object";
-            tn = py_type_of(target);
-            if isinstance(tn, PyClass) {
-                tname = (tn as PyClass).name;
-            }
-            return py_error("TypeError", "cannot create weak reference to '" + tname + "' object");
-        }
-        wr = _jac_make_weakref(target);
-        if wr is None {
-            return py_error("TypeError", "cannot create weak reference to 'object' object");
-        }
-        return PyWeakRef(t="weakref", wr=wr);
-    }
-}
-
-obj PyWeakRef(PyObj) {
-    has wr: any;
-
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        raw = _jac_weakref_deref(self.wr);
-        if raw is None {
-            return py_none();
-        }
-        # The raw value IS the original PyObj: identity (`r() is o`) holds.
-        return raw as PyObj;
-    }
-}
+# (The native weakref module surface moved to _weakrefmodule.jac -- the full
+# _weakref.c lift: ref/proxy types, registry-backed getweakrefcount/getweakrefs,
+# and the eager death-callback path.)
 
 # Native types.coroutine fast path: mark a generator function's code object
 # CO_ITERABLE_COROUTINE (0x100) in place, exactly like CPython mutates
@@ -14661,16 +14585,6 @@ def build_types_facade -> PyObj {
     }
     attrs["coroutine"] = PyTypesCoroutine(t="types_coroutine");
     return PyModule(t="module", name="types", attrs=attrs);
-}
-
-def build_weakref_module -> PyObj {
-    return PyModule(
-        t="module",
-        name="weakref",
-        attrs={
-            "ref": PyWeakRefFn(t="weakref_fn"),
-        },
-    );
 }
 
 # ---- heapq product-path shim ----------------------------------------------
