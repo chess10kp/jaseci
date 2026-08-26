@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "6f25d06d56cbf0391a02f1de25d1b3972527eb25",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_pwd.py",
+    "-o",
+    "jac-py/tests/conv_pwd",
+    "--name",
+    "conv_pwd"
+  ],
+  "generated_at": "2026-08-25T22:43:06",
+  "hashes": {
+    "pins_jac": "1b9237a5fc0fce6af1b0b57792a7dba14afba2e624d9d4c5722a51a086428fc7"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_pwd.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "pwd",
+  "pins_file": "conv_pwd_pins.jac",
+  "pins": [],
+  "quarantined": [
+    {
+      "ident": "PwdTest.test_values",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PwdTest.test_values_extended",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PwdTest.test_errors",
+      "reason": "decorator:unittest.skipUnless"
+    }
+  ],
+  "counts": {
+    "extracted": 3,
+    "pinned": 0,
+    "quarantined": 3
+  }
+}
