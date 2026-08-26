@@ -15037,6 +15037,52 @@ def _hqsift_up(items: list[PyObj], pos: int) -> PyObj {
     return _hqsift_down(items, startpos, pos);
 }
 
+# Max-heap variants of the sift helpers (heapq.py's _siftdown_max/_siftup_max,
+# backed in CPython by the private _heapqmodule.c functions).
+
+def _hqsift_down_max(items: list[PyObj], startpos: int, pos: int) -> PyObj {
+    newitem: PyObj = items[pos];
+    while pos > startpos {
+        parentpos = (pos - 1) >> 1;
+        parent: PyObj = items[parentpos];
+        c = _hq_lt(parent, newitem);
+        if is_error(c) {
+            return c;
+        }
+        if not ((c as PyBool).val) {
+            break;
+        }
+        items[pos] = parent;
+        pos = parentpos;
+    }
+    items[pos] = newitem;
+    return py_none();
+}
+
+def _hqsift_up_max(items: list[PyObj], pos: int) -> PyObj {
+    endpos = len(items);
+    startpos = pos;
+    newitem: PyObj = items[pos];
+    childpos = 2 * pos + 1;
+    while childpos < endpos {
+        rightpos = childpos + 1;
+        if rightpos < endpos {
+            c = _hq_lt(items[rightpos], items[childpos]);
+            if is_error(c) {
+                return c;
+            }
+            if (c as PyBool).val {
+                childpos = rightpos;
+            }
+        }
+        items[pos] = items[childpos];
+        pos = childpos;
+        childpos = 2 * pos + 1;
+    }
+    items[pos] = newitem;
+    return _hqsift_down_max(items, startpos, pos);
+}
+
 # Shared arity/heap-type gate for all entry points.
 def _hq_heap_arg(args: list[PyObj], n: int, fname: str) -> PyList | PyObj {
     if len(args) != n {
@@ -15146,6 +15192,126 @@ obj PyHeapqFn(PyObj) {
                 return oldtop;
             }
             return item;
+        }
+        if n == "heappush_max" {
+            h_r = _hq_heap_arg(args, 2, "heappush_max");
+            if not isinstance(h_r, PyList) {
+                return h_r as PyObj;
+            }
+            items6: list[PyObj] = (h_r as PyList).items;
+            items6.append(args[1]);
+            return _hqsift_down_max(items6, 0, len(items6) - 1);
+        }
+        if n == "heappop_max" {
+            h_r = _hq_heap_arg(args, 1, "heappop_max");
+            if not isinstance(h_r, PyList) {
+                return h_r as PyObj;
+            }
+            items7: list[PyObj] = (h_r as PyList).items;
+            lastelt2: PyObj = items7[len(items7) - 1];
+            items7.pop();
+            if len(items7) > 0 {
+                returnitem3: PyObj = items7[0];
+                items7[0] = lastelt2;
+                r4 = _hqsift_up_max(items7, 0);
+                if is_error(r4) {
+                    return r4;
+                }
+                return returnitem3;
+            }
+            return lastelt2;
+        }
+        if n == "heapify_max" {
+            h_r = _hq_heap_arg(args, 1, "heapify_max");
+            if not isinstance(h_r, PyList) {
+                return h_r as PyObj;
+            }
+            items8: list[PyObj] = (h_r as PyList).items;
+            i = len(items8) // 2;
+            while i > 0 {
+                i = i - 1;
+                r5 = _hqsift_up_max(items8, i);
+                if is_error(r5) {
+                    return r5;
+                }
+            }
+            return py_none();
+        }
+        if n == "heapreplace_max" {
+            h_r = _hq_heap_arg(args, 2, "heapreplace_max");
+            if not isinstance(h_r, PyList) {
+                return h_r as PyObj;
+            }
+            items9: list[PyObj] = (h_r as PyList).items;
+            if len(items9) == 0 {
+                return py_error("IndexError", "index out of range");
+            }
+            returnitem4: PyObj = items9[0];
+            items9[0] = args[1];
+            r6 = _hqsift_up_max(items9, 0);
+            if is_error(r6) {
+                return r6;
+            }
+            return returnitem4;
+        }
+        if n == "heappushpop_max" {
+            h_r = _hq_heap_arg(args, 2, "heappushpop_max");
+            if not isinstance(h_r, PyList) {
+                return h_r as PyObj;
+            }
+            items10: list[PyObj] = (h_r as PyList).items;
+            item2: PyObj = args[1];
+            if len(items10) == 0 {
+                return item2;
+            }
+            c2 = _hq_lt(item2, items10[0]);
+            if is_error(c2) {
+                return c2;
+            }
+            if (c2 as PyBool).val {
+                oldtop2: PyObj = items10[0];
+                items10[0] = item2;
+                r7 = _hqsift_up_max(items10, 0);
+                if is_error(r7) {
+                    return r7;
+                }
+                return oldtop2;
+            }
+            return item2;
+        }
+        if n == "nlargest" or n == "nsmallest" {
+            # Documented semantics: sorted(iterable, key=key, reverse=... )[:n].
+            if len(args) < 2 or len(args) > 3 {
+                return py_error(
+                    "TypeError", n + " expected 2 or 3 arguments, got " + str(len(args))
+                );
+            }
+            if not isinstance(args[0], PyInt) {
+                return py_error("TypeError", "an integer is required");
+            }
+            cnt = (args[0] as PyInt).val;
+            sort_kwargs: dict[str, PyObj] = {};
+            for kw in kwargs {
+                sort_kwargs[kw] = kwargs[kw];
+            }
+            if len(args) == 3 and "key" not in sort_kwargs {
+                sort_kwargs["key"] = args[2];
+            }
+            if n == "nlargest" {
+                sort_kwargs["reverse"] = PyBool(t="bool", val=True);
+            }
+            ordered = builtin_sorted_min_max("sorted", [args[1]], sort_kwargs);
+            if is_error(ordered) {
+                return ordered;
+            }
+            all_items = (ordered as PyList).items;
+            if cnt <= 0 {
+                return PyList(t="list", items=[]);
+            }
+            if cnt >= len(all_items) {
+                return ordered;
+            }
+            return PyList(t="list", items=all_items[:cnt]);
         }
         return py_error("AttributeError", "module 'heapq' has no attribute '" + n + "'");
     }
@@ -15276,6 +15442,13 @@ def build_heapq_module -> PyObj {
             "heappop": PyHeapqFn(t="heapq_fn", name="heappop"),
             "heapreplace": PyHeapqFn(t="heapq_fn", name="heapreplace"),
             "heappushpop": PyHeapqFn(t="heapq_fn", name="heappushpop"),
+            "heappush_max": PyHeapqFn(t="heapq_fn", name="heappush_max"),
+            "heappop_max": PyHeapqFn(t="heapq_fn", name="heappop_max"),
+            "heapify_max": PyHeapqFn(t="heapq_fn", name="heapify_max"),
+            "heapreplace_max": PyHeapqFn(t="heapq_fn", name="heapreplace_max"),
+            "heappushpop_max": PyHeapqFn(t="heapq_fn", name="heappushpop_max"),
+            "nlargest": PyHeapqFn(t="heapq_fn", name="nlargest"),
+            "nsmallest": PyHeapqFn(t="heapq_fn", name="nsmallest"),
         },
     );
 }
