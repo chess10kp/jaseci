@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from statistics { build_statistics_module }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2103,6 +2104,13 @@ def import_native(absname: str) -> PyObj {
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
         );
+    }
+    if absname == "_statistics" and not ("_statistics" in shim_modules) {
+        # _statisticsmodule.c lift: a one-function accelerator
+        # (_normal_dist_inv_cdf, Wichura AS241). Lib/statistics.py's try-import
+        # of this name must resolve to the native facade so its computation
+        # runs on live guest doubles instead of host-bound proxies.
+        shim_modules["_statistics"] = build_statistics_module();
     }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
