@@ -1918,6 +1918,10 @@ glob delegate_modules: dict[str, str] = {
     "zlib": "full",
     "binascii": "full",
     "uuid": "full",
+    # C-extension surface (termios.c lift, jac-py/jacpython/termios.jac):
+    # snapshot keeps the constant block guest-native instead of leaking host
+    # int identity through a raw PyHostProxy module.
+    "termios": "full",
 };
 
 # sys.modules semantics: one delegated PyModule per name, identity-stable
