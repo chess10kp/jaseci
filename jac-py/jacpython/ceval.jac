@@ -1623,6 +1623,8 @@ import from exceptions_core {
 import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
+import from gc { gc_module_attrs }
+import from errno { errno_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2087,6 +2089,20 @@ def import_native(absname: str) -> PyObj {
         # of every guest list (heappush/heapify silently no-op). The native
         # shim operates on live PyList storage instead.
         shim_modules["heapq"] = build_heapq_module();
+    }
+    if absname == "gc" and not ("gc" in shim_modules) {
+        # Host gc sees only host objects: native guest containers would cross
+        # as lossy to_host copies and every query would answer about the wrong
+        # heap. Serve the native facade instead (see gc.jac).
+        shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
+    }
+    if absname == "errno" and not ("errno" in shim_modules) {
+        # errnomodule.c lift: a pure-data surface (constants + errorcode). The
+        # host proxy leaks host int/str identity through every constant and
+        # errorcode round-trip; the native facade keeps them guest-native.
+        shim_modules["errno"] = PyModule(
+            t="module", name="errno", attrs=errno_module_attrs()
+        );
     }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
@@ -5228,6 +5244,13 @@ def _mint_host_builtin(name: str) -> PyObj {
 }
 
 def host_import(name: str, fromlist: PyObj) -> PyObj {
+    if name == "errno" and not ("errno" in shim_modules) {
+        # Mirror of the import_native site: errnomodule.c is pure data, so the
+        # native facade serves it without a host round-trip.
+        shim_modules["errno"] = PyModule(
+            t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
     if name == "weakref" and not ("weakref" in shim_modules) {
         # The host module's ref() sees to_host conversions (plain objects ->
         # None), so serve our identity-faithful shim instead.
@@ -5237,6 +5260,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # Same copy-mutation hazard as import_native: host heapq mutates a
         # copy of any guest list argument.
         shim_modules["heapq"] = build_heapq_module();
+    }
+    if name == "gc" and not ("gc" in shim_modules) {
+        # Same rationale as the import_native site above: host gc cannot see
+        # native guest objects.
+        shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
     }
     if name == "types" and not ("types" in shim_modules) {
         # The host types.coroutine cannot mark VM-native functions (it mutates

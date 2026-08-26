@@ -558,6 +558,14 @@ glob CHECKER_DIRS: dict[(str, str)] = {
          ),
          ("union_never_arm", "checker", "checker_union_never_arm.jac", 0, True, []),
          (
+             "exc_chaining_universal_dunder",
+             "checker",
+             "checker_exc_chaining_universal_dunder.jac",
+             0,
+             True,
+             []
+         ),
+         (
              "union_member_access",
              "checker",
              "checker_union_member_access.jac",

@@ -531,6 +531,7 @@ obj TypeEvaluator {
     ) -> TypeBase;
 
     def _walk_compr_clauses(comprs: list[InnerCompr]) -> None;
+    def _universal_attr_member(attr: str) -> ClassMember | None;
     def _null_ok_attr_type(
         expr: AtomTrailer, base_type: (TypeBase | None) = None
     ) -> TypeBase;

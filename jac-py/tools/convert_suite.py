@@ -204,12 +204,18 @@ def _almost_assert(call: ast.Call, negate: bool) -> ast.Assert:
     return ast.Assert(test=test, msg=_msg_of(call, label, [a, b]))
 
 
-def _issubclass_assert(call: ast.Call) -> ast.Assert:
+def _issubclass_assert(call: ast.Call, negate: bool) -> ast.Assert:
     _need_args(call, 2)
     a, b = call.args[0], call.args[1]
+    test: ast.expr = ast.Call(
+        func=ast.Name(id="issubclass", ctx=ast.Load()), args=[a, b], keywords=[]
+    )
+    if negate:
+        test = ast.UnaryOp(op=ast.Not(), operand=test)
+    label = "assertNotIsSubclass" if negate else "assertIsSubclass"
     return ast.Assert(
-        test=ast.Call(func=ast.Name(id="issubclass", ctx=ast.Load()), args=[a, b], keywords=[]),
-        msg=_msg_of(call, "assertIsSubclass", [a, b]),
+        test=test,
+        msg=_msg_of(call, label, [a, b]),
     )
 
 
@@ -339,7 +345,8 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_is_none_assert(call, True)]
     if fname == "assertIsInstance":
         return [_isinstance_assert(call, negate=False)]
-    if fname == "assertIsNotInstance":
+    if fname in ("assertIsNotInstance", "assertNotIsInstance"):
+        # assertNotIsInstance is the legacy spelling of assertIsNotInstance.
         return [_isinstance_assert(call, negate=True)]
     if fname == "assertAlmostEqual":
         return [_almost_assert(call, negate=False)]
@@ -347,8 +354,8 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_almost_assert(call, negate=True)]
     if fname == "assertCountEqual":
         return [_count_equal_assert(call)]
-    if fname == "assertIsSubclass":
-        return [_issubclass_assert(call)]
+    if fname in ("assertIsSubclass", "assertNotIsSubclass"):
+        return [_issubclass_assert(call, negate=(fname == "assertNotIsSubclass"))]
     if fname == "assertHasAttr":
         return [_hasattr_assert(call, negate=False)]
     if fname == "assertNotHasAttr":
@@ -723,6 +730,18 @@ _SKIP_DECOS = {
     "skipUnlessDB", "requires",  # support.requires* caught below
 }
 
+# Harness modules with NATIVE facades in jacpython (layer_p2_libtest
+# register_shim_module): guest replays resolve these, so prelude imports of
+# them no longer force a blanket quarantine -- only harness surface with no
+# facade does.
+_SHIMMED_TEST_MODULES = {
+    "test",
+    "test.support",
+    "test.support.os_helper",
+    "test.support.import_helper",
+    "test.support.numbers",
+}
+
 # Availability-gate decorators: pure skip predicates (platform/feature
 # probes), never test logic. On the host that captures the oracle they
 # always pass, so stripping them keeps the oracle valid; drop instead of
@@ -730,7 +749,52 @@ _SKIP_DECOS = {
 _DROPPABLE_DECOS = {"cpython_only", "requires_subprocess"}
 
 
-def _decorator_reason(deco: ast.expr) -> str | None:
+def _host_skip_env(tree: ast.Module) -> dict:
+    """Namespace for constant-folding skip-decorator predicates on the host.
+
+    Built by executing the suite's own top-level imports and assignments
+    (os, sys, mmap, PAGESIZE = mmap.PAGESIZE, ...) -- exactly what the
+    predicates read. The oracle-capture interpreter IS this host, so a
+    predicate evaluated here decides faithfully whether unittest would run
+    or skip the test; anything that fails to evaluate keeps the old
+    blanket-quarantine behavior.
+    """
+    env: dict = {"__builtins__": __builtins__}
+
+    def _import_module(name: str):
+        return __import__(name)
+
+    # Fallback seeds for names from the harness package when it cannot load
+    # on this interpreter: stable support constants plus no-op helpers.
+    env.setdefault("import_module", _import_module)
+    env.setdefault("_1G", 2**30)
+    env.setdefault("_2G", 2**31)
+    env.setdefault("_4G", 2**32)
+    for node in tree.body:
+        try:
+            if isinstance(node, ast.Import | ast.ImportFrom):
+                if node.col_offset != 0:
+                    continue
+                code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
+                exec(code, env)
+            elif isinstance(node, ast.Assign | ast.AnnAssign) and node.col_offset == 0:
+                code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
+                exec(code, env)
+        except Exception:
+            continue
+    return env
+
+
+def _eval_skip_cond(cond: ast.expr, env: dict) -> bool | None:
+    """Evaluate a skipIf/skipUnless condition on the host; None on failure."""
+    try:
+        code = compile(ast.Expression(cond), "<skip-cond>", "eval")
+        return bool(eval(code, env))  # noqa: S307 - pinned reference tree input
+    except Exception:
+        return None
+
+
+def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
     name = None
     if isinstance(deco, ast.Name):
         name = deco.id
@@ -744,7 +808,25 @@ def _decorator_reason(deco: ast.expr) -> str | None:
             return f"decorator:{base}.{deco.attr}"
         return None
     elif isinstance(deco, ast.Call):
-        return _decorator_reason(deco.func)
+        func = deco.func
+        attr = base = ""
+        if isinstance(func, ast.Attribute):
+            base = func.value.id if isinstance(func.value, ast.Name) else ""
+            attr = func.attr
+        elif isinstance(func, ast.Name):
+            attr = func.id
+        if attr in ("skipIf", "skipUnless") and base in ("", "unittest") and deco.args:
+            # Constant-fold the gate on the host oracle interpreter (same
+            # policy as _DROPPABLE_DECOS): when the predicate evaluates we
+            # know whether unittest would run or skip -- strip runnable
+            # gates, quarantine skipped ones precisely. Unevaluable gates
+            # keep the blanket decorator quarantine below.
+            verdict = _eval_skip_cond(deco.args[0], env) if env is not None else None
+            if verdict is True:
+                return None if attr == "skipUnless" else "skipped-on-host"
+            if verdict is False:
+                return None if attr == "skipIf" else "skipped-on-host"
+        return _decorator_reason(func, env)
     if name and name in _DROPPABLE_DECOS:
         return None
     if name and name in _SKIP_DECOS:
@@ -1023,7 +1105,9 @@ def _class_attr_seeds(
         if info is not None:
             stack.extend(reversed(info.bases))
     seeds: dict[str, ast.expr] = {}
-    for name in chain:
+    # ``chain`` is child-first; seed in reverse so subclass attributes
+    # override inherited defaults (CPython attribute lookup semantics).
+    for name in reversed(chain):
         cd = mod_classes.get(name)
         if cd is None:
             continue
@@ -1210,10 +1294,10 @@ def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False
 
 
 def _prelude_bindings(item: ast.stmt) -> set[str]:
-    """Names a prelude item binds; classes bind exactly their own name
-    (_bound_names would also pull in method/arg names, wrongly matching
-    unrelated bodies during pruning)."""
-    if isinstance(item, ast.ClassDef):
+    """Names a prelude item binds at module scope. Classes AND functions
+    bind exactly their own name (_bound_names would also pull in nested
+    method/local names, wrongly matching unrelated bodies during pruning)."""
+    if isinstance(item, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
         return {item.name}
     return _bound_names(item)
 
@@ -1241,13 +1325,32 @@ def _prune_prelude(
     return [kept[i] for i in sorted(kept)]
 
 
-def extract_tests(tree: ast.Module, source: str) -> Extraction:
+def extract_tests(
+    tree: ast.Module, source: str,
+    ext_ctx: dict | None = None,
+) -> Extraction:
     result = Extraction()
     prelude, prelude_names = collect_prelude(tree, source, include_classes=True)
+    skip_env = _host_skip_env(tree)
     cmap = _module_class_map(tree)
     mod_classes = {
         node.name: node for node in tree.body if isinstance(node, ast.ClassDef)
     }
+    ext_prelude: list[ast.stmt] = []
+    if ext_ctx is not None:
+        # Helper-module context (multibytecodec_support-style suites): its
+        # classes join the class map so MRO lookups (setUp, helpers, attr
+        # seeds) see them; its importable top-level statements join the
+        # prunable prelude pool. _external_base_context has already folded
+        # every seed that referenced the helper module into literals.
+        for name, info in ext_ctx["cmap"].items():
+            cmap.setdefault(name, info)
+        for name, cd in ext_ctx["mod_classes"].items():
+            mod_classes.setdefault(name, cd)
+        ext_prelude = ext_ctx["prelude"]
+        prelude_names |= {
+            b for item in ext_prelude for b in _prelude_bindings(item)
+        }
     # Lifted helper bodies may reference module-level fixture classes; those
     # are materialized into the snippet pool afterwards (_helper_class_deps).
     vocab_available = prelude_names | set(mod_classes)
@@ -1257,26 +1360,52 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
         if isinstance(node, ast.ClassDef):
             class_reason = None
             for deco in node.decorator_list:
-                reason = _decorator_reason(deco)
+                reason = _decorator_reason(deco, skip_env)
                 if reason:
                     class_reason = reason
+            seen_methods: set[str] = set()
             for member in node.body:
                 if not isinstance(member, ast.FunctionDef) or not member.name.startswith("test"):
                     continue
+                seen_methods.add(member.name)
                 ident = f"{node.name}.{member.name}"
                 reason = class_reason
                 if reason is None:
                     for deco in member.decorator_list:
-                        reason = _decorator_reason(deco)
+                        reason = _decorator_reason(deco, skip_env)
                         if reason:
                             break
                 if reason is not None:
                     result.quarantined.append(Quarantined(ident, reason))
                     continue
                 candidates.append((node.name, ident, list(member.body)))
+            # Inherited test vocabulary: unittest runs every test_* method
+            # reachable through the MRO against this class's attribute seeds.
+            # Lift each ancestor method once per concrete class here (the
+            # leaf-expansion below only covers in-module base classes).
+            queue = list(cmap.get(node.name).bases) if node.name in cmap else []
+            visited: set[str] = set()
+            while queue:
+                anc = queue.pop(0)
+                if anc in visited:
+                    continue
+                visited.add(anc)
+                info = cmap.get(anc)
+                if info is None:
+                    continue
+                queue.extend(info.bases)
+                for meth_name, fn in info.methods.items():
+                    if not meth_name.startswith("test") or meth_name in seen_methods:
+                        continue
+                    seen_methods.add(meth_name)
+                    ident = f"{node.name}.{meth_name}"
+                    if class_reason is not None:
+                        result.quarantined.append(Quarantined(ident, class_reason))
+                        continue
+                    candidates.append((node.name, ident, list(fn.body)))
         elif isinstance(node, ast.FunctionDef) and node.name.startswith("test"):
             for deco in node.decorator_list:
-                reason = _decorator_reason(deco)
+                reason = _decorator_reason(deco, skip_env)
                 if reason:
                     result.quarantined.append(Quarantined(node.name, reason))
                     break
@@ -1337,17 +1466,19 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
             # Lifted helpers nest inside the wrapped body so their ``self``
             # references resolve through the namespace closure.
             candidate = [*helper_defs, *rewritten]
-            pool = prelude + extra_prelude
+            pool = [*prelude, *ext_prelude, *extra_prelude]
             pool_names = prelude_names | {
                 binding
                 for item in extra_prelude
                 for binding in _prelude_bindings(item)
             }
             kept_prelude = _prune_prelude(candidate, pool, pool_names)
-            # The CPython test harness (test.support) is not part of any
-            # guest stdlib and is version-locked to the reference tree, so
-            # snippets depending on it can neither capture a host oracle nor
-            # replay on jacpython — quarantine instead of emitting dead pins.
+            # The CPython test harness surface WITHOUT a native facade is not
+            # part of any guest stdlib and cannot replay on jacpython --
+            # quarantine precisely on that module. Shimmed harness modules
+            # (see _SHIMMED_TEST_MODULES) flow through: their host oracle is
+            # capturable (reference Lib appended to sys.path) and their guest
+            # replay resolves through the registered facades.
             for stmt in kept_prelude:
                 if isinstance(stmt, ast.Import):
                     mods = [alias.name for alias in stmt.names]
@@ -1355,8 +1486,10 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
                     mods = [stmt.module]
                 else:
                     continue
-                if any(m == "test" or m.startswith("test.") for m in mods):
-                    raise Unsupported("unsupported-import:test.support")
+                for m in mods:
+                    is_test = m == "test" or m.startswith("test.")
+                    if is_test and m not in _SHIMMED_TEST_MODULES:
+                        raise Unsupported(f"unsupported-import:{m}")
             available = pool_names | _bound_names(ast.Module(body=kept_prelude, type_ignores=[]))
             _check_names(candidate, available)
         except Unsupported as exc:
@@ -1979,12 +2112,250 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
 # ---------------------------------------------------------------------------
 
 
+def _literal_reprable(value: object) -> bool:
+    """True when value can round-trip through an ast.Constant literal."""
+    if value is None or isinstance(value, (bytes, str, bool, int, float, complex)):
+        return True
+    if isinstance(value, tuple):
+        return all(_literal_reprable(v) for v in value)
+    if isinstance(value, frozenset):
+        return all(_literal_reprable(v) for v in value)
+    return False
+
+
+def _external_base_context(tree: ast.Module, cpython_lib: Path) -> dict | None:
+    """Resolve test vocabulary inherited from a sibling helper module.
+
+    Suites like test_codecencodings_*.py define only concrete TestCase
+    classes whose entire ``test_*`` vocabulary lives on a mixin imported
+    from the test package (``from test import multibytecodec_support``).
+    Mechanically lift that context:
+
+    - parse the helper module so its classes join the class map;
+    - rewrite ``helper.TestBase`` attribute bases to plain names;
+    - constant-fold class-attribute seeds that call into the helper module
+      (``tstring = multibytecodec_support.load_teststring('gb2312')`` reads
+      data files no guest sandbox can reach) by evaluating them against the
+      helper module executed on the host at generation time.
+
+    Returns None when no external base is involved; mutates ``tree`` in
+    place when one is.
+    """
+    # alias -> helper-module file path under cpython_lib
+    aliases: dict[str, Path] = {}
+    for node in tree.body:
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.level == 0
+            and node.module
+            and (node.module == "test" or node.module.startswith("test."))
+        ):
+            parts = node.module.split(".")
+            for a in node.names:
+                if a.name == "*":
+                    continue
+                stem = cpython_lib.joinpath(*parts, a.name).with_suffix(".py")
+                pkg = cpython_lib.joinpath(*parts, a.name, "__init__.py")
+                if stem.is_file():
+                    aliases[a.asname or a.name] = stem
+                elif pkg.is_file():
+                    aliases[a.asname or a.name] = pkg
+        elif isinstance(node, ast.Import):
+            for a in node.names:
+                parts = a.name.split(".")
+                if parts[0] != "test":
+                    continue
+                stem = cpython_lib.joinpath(*parts).with_suffix(".py")
+                pkg = cpython_lib.joinpath(*parts, "__init__.py")
+                if stem.is_file():
+                    aliases[a.asname or a.name] = stem
+                elif pkg.is_file():
+                    aliases[a.asname or a.name] = pkg
+    if not aliases:
+        return None
+
+    classes = [n for n in tree.body if isinstance(n, ast.ClassDef)]
+    used_aliases: set[str] = set()
+    for cd in classes:
+        for b in cd.bases:
+            if isinstance(b, ast.Attribute) and isinstance(b.value, ast.Name):
+                used_aliases.add(b.value.id)
+        for stmt in _guarded_class_stmts(cd.body):
+            value = None
+            if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1:
+                value = stmt.value
+            elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+                value = stmt.value
+            if value is None:
+                continue
+            used_aliases |= {
+                n.id for n in ast.walk(value)
+                if isinstance(n, ast.Name) and n.id in aliases
+            }
+    used_aliases &= set(aliases)
+    if not used_aliases:
+        return None
+
+    ext_cmap: dict[str, _ClassInfo] = {}
+    ext_classes: dict[str, ast.ClassDef] = {}
+    ext_prelude: list[ast.stmt] = []
+    host_ns: dict[str, object] = {}
+    import contextlib
+    import importlib.util
+
+    with contextlib.suppress(Exception), _host_test_package(cpython_lib / "test"):
+        for alias in sorted(used_aliases):
+            path = aliases[alias]
+            text = path.read_text(encoding="utf-8")
+            ext_tree = ast.parse(text)
+            ext_cmap.update(_module_class_map(ext_tree))
+            ext_classes.update({
+                n.name: n for n in ext_tree.body if isinstance(n, ast.ClassDef)
+            })
+            ext_prelude.extend(
+                n for n in ext_tree.body if not isinstance(n, ast.ClassDef)
+            )
+            code = compile(ext_tree, str(path), "exec")
+            spec = importlib.util.spec_from_file_location(
+                f"_conv_ext_{alias}", path,
+            )
+            assert spec is not None and spec.loader is not None
+            ext_mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(ext_mod)  # generation-time host execution only
+            host_ns[alias] = ext_mod
+
+    if not host_ns:
+        return None
+
+    folded: list[str] = []
+    for cd in classes:
+        rewritten_bases = []
+        for b in cd.bases:
+            if (
+                isinstance(b, ast.Attribute)
+                and isinstance(b.value, ast.Name)
+                and b.value.id in host_ns
+                and b.attr in ext_cmap
+            ):
+                rewritten_bases.append(ast.copy_location(
+                    ast.Name(id=b.attr, ctx=ast.Load()), b))
+            else:
+                rewritten_bases.append(b)
+        cd.bases = rewritten_bases
+        for stmt in _guarded_class_stmts(cd.body):
+            value = None
+            setter = None
+            if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1:
+                value, setter = stmt.value, lambda v: setattr(stmt, "value", v)
+            elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+                value, setter = stmt.value, lambda v: setattr(stmt, "value", v)
+            if value is None:
+                continue
+            refs = {
+                n.id for n in ast.walk(value)
+                if isinstance(n, ast.Name) and n.id in host_ns
+            }
+            if not refs:
+                continue
+            try:
+                expr = compile(ast.Expression(body=value), "<seed-fold>", "eval")
+                folded_value = eval(expr, dict(host_ns))  # noqa: S307
+            except Exception:
+                continue
+            if not _literal_reprable(folded_value):
+                continue
+            setter(ast.copy_location(ast.Constant(value=folded_value), value))
+            folded.append(f"{cd.name}.{getattr(stmt.targets[0] if isinstance(stmt, ast.Assign) else stmt.target, 'id', '?')}")
+
+    return {
+        "prelude": ext_prelude,
+        "cmap": ext_cmap,
+        "mod_classes": ext_classes,
+        "folded_seeds": folded,
+    }
+
+
+class _sys_path_front:
+    """Temporarily put ``path`` at sys.path[0]."""
+
+    def __init__(self, path: str) -> None:
+        self._path = path
+
+    def __enter__(self) -> None:
+        import sys as _sys
+        self._sys = _sys
+        self._saved = _sys.path[:]
+        while self._path in _sys.path:
+            _sys.path.remove(self._path)
+        _sys.path.insert(0, self._path)
+
+    def __exit__(self, *exc: object) -> None:
+        self._sys.path[:] = self._saved
+
+
+class _host_test_package:
+    """Expose the pinned reference tree's ``test`` package to the host
+    interpreter for the duration of the block, WITHOUT putting the tree on
+    sys.path (that would shadow version-matched stdlib modules like ``re``).
+    Only ``test.*`` imports resolve into the reference tree."""
+
+    def __init__(self, pkg_dir: Path) -> None:
+        self._pkg_dir = pkg_dir
+
+    def __enter__(self) -> None:
+        import importlib.util
+        import sys
+        init = self._pkg_dir / "__init__.py"
+        if not init.is_file():
+            raise ImportError(f"no test package at {self._pkg_dir}")
+        self._saved = {
+            name: sys.modules.get(name)
+            for name in list(sys.modules)
+            if name == "test" or name.startswith("test.")
+        }
+        spec = importlib.util.spec_from_file_location(
+            "test", init,
+            submodule_search_locations=[str(self._pkg_dir)],
+        )
+        assert spec is not None and spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = mod
+        spec.loader.exec_module(mod)
+        # The pinned tree may be newer than the host interpreter; when its
+        # support module cannot load here, bind a lazy stub instead. Seed
+        # evaluation only needs data-file helpers that never touch support;
+        # anything else fails eval and stays unfolded (-> quarantine).
+        try:
+            import importlib
+            importlib.import_module("test.support")
+        except Exception:
+            import types
+            stub = types.ModuleType("test.support")
+            def _unavailable(*args: object, **kwargs: object) -> object:
+                raise RuntimeError("test.support unavailable on this host")
+            stub.__getattr__ = _unavailable  # type: ignore[method-assign]
+            sys.modules["test.support"] = stub
+
+    def __exit__(self, *exc: object) -> None:
+        import sys
+        for name in [
+            name for name in sys.modules
+            if name == "test" or name.startswith("test.")
+        ]:
+            saved = self._saved.get(name)
+            if saved is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = saved
+
+
 def run_conversion(source: Path, outdir: Path, name: str, cpython_lib: Path, write_manifest: bool) -> dict:
     command = ["convert_suite.py", str(source), "-o", str(outdir), "--name", name]
     header = attempt_header(command)
     source_text = source.read_text(encoding="utf-8")
     tree = ast.parse(source_text)
-    extraction = extract_tests(tree, source_text)
+    ext_ctx = _external_base_context(tree, cpython_lib)
+    extraction = extract_tests(tree, source_text, ext_ctx=ext_ctx)
     doctests = extract_module_doctests(tree, source_text, "__main__", name.removeprefix("conv_"))
     extraction.pinned.extend(doctests.pinned)
     extraction.quarantined.extend(doctests.quarantined)
