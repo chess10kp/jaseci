@@ -44,6 +44,7 @@ import from _collections_pylib {
     _p2_ordereddict,
 }
 import from mmap { build_mmap_module }
+import from resource { build_resource_module }
 import from _statmodule {
     _p2_S_ISDIR,
     _p2_S_ISCHR,
@@ -942,6 +943,7 @@ def p2_libtest_reset {
         "_opcode", PyModule(t="module", name="_opcode", attrs=opcode_attrs)
     );
     register_shim_module("mmap", build_mmap_module());
+    register_shim_module("resource", build_resource_module());
     _p2_warn_state_reset();
     register_shim_module(
         "warnings",

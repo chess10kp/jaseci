@@ -826,6 +826,21 @@ def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
                 return None if attr == "skipUnless" else "skipped-on-host"
             if verdict is False:
                 return None if attr == "skipIf" else "skipped-on-host"
+        if base == "support" and attr.startswith("requires") and deco.args:
+            # test.support availability gates (requires_linux_version, ...):
+            # call the real gate with its literal arguments and probe the
+            # returned wrapper the way unittest application would -- a gate
+            # that would NOT skip here keeps the pin a valid differential.
+            # Anything unevaluable keeps the blanket quarantine below.
+            try:
+                fn = eval("%s.%s" % (base, attr), env) if env is not None else None  # noqa: S307 - pinned reference tree input
+                if fn is not None:
+                    gate_args = [ast.literal_eval(a) for a in deco.args]
+                    probe = fn(*gate_args)(lambda: None)
+                    if not getattr(probe, "__unittest_skip__", False):
+                        return None
+            except Exception:
+                pass
         return _decorator_reason(func, env)
     if name and name in _DROPPABLE_DECOS:
         return None
@@ -2354,6 +2369,13 @@ def run_conversion(source: Path, outdir: Path, name: str, cpython_lib: Path, wri
     header = attempt_header(command)
     source_text = source.read_text(encoding="utf-8")
     tree = ast.parse(source_text)
+    # The skip-decorator constant folder executes the suite's own top-level
+    # imports in-process (_host_skip_env); give it the same reference-Lib
+    # access the oracle-capture subprocess already has (APPENDED, never
+    # shadowing the host stdlib), so harness-gated predicates such as
+    # hasattr(resource, 'RLIMIT_FSIZE') fold instead of quarantining.
+    if str(cpython_lib) not in sys.path:
+        sys.path.append(str(cpython_lib))
     ext_ctx = _external_base_context(tree, cpython_lib)
     extraction = extract_tests(tree, source_text, ext_ctx=ext_ctx)
     doctests = extract_module_doctests(tree, source_text, "__main__", name.removeprefix("conv_"))
