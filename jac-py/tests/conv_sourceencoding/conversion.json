@@ -1,0 +1,471 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "27e8be18863ab41668efd861d6ee4aa88664d781",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_source_encoding.py",
+    "-o",
+    "/var/tmp/worker6-310-3056247/jac-py/tests/conv_sourceencoding",
+    "--name",
+    "conv_sourceencoding"
+  ],
+  "generated_at": "2026-08-25T13:22:58",
+  "hashes": {
+    "pins_jac": "d398a6f067b25ffb1a2fbbe8c3cd5b73d4fe2f1be5c5841378a6150deb8c68d2"
+  },
+  "source_file": "reference/cpython/Lib/test/test_source_encoding.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "sourceencoding",
+  "pins_file": "conv_sourceencoding_pins.jac",
+  "pins": [
+    {
+      "ident": "MiscSourceEncodingTest.test_import_encoded_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import importlib\n\ndef _t():\n    from test.encoded_modules import test_strings\n    assert len(test_strings) >= 1, ('assertGreaterEqual', len(test_strings), 1)\n    for modname, encoding, teststr in test_strings:\n        mod = importlib.import_module('test.encoded_modules.module_' + modname)\n        assert teststr == mod.test, ('assertEqual', teststr, mod.test)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_compilestring",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    c = compile(b\"\\n# coding: utf-8\\nu = '\\xc3\\xb3'\\n\", 'dummy', 'exec')\n    d = {}\n    exec(c, d)\n    assert d['u'] == '\u00f3', ('assertEqual', d['u'], '\u00f3')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_issue2301",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    try:\n        compile(b\"# coding: cp932\\nprint '\\x94N'\", 'dummy', 'exec')\n    except SyntaxError as v:\n        assert v.text.rstrip('\\n') == \"print '\u5e74'\", ('assertEqual', v.text.rstrip('\\n'), \"print '\u5e74'\")\n    else:\n        raise AssertionError('fail()')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_issue4626",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    c = compile(\"# coding=latin-1\\n\u00c6 = '\u00c6'\", 'dummy', 'exec')\n    d = {}\n    exec(c, d)\n    assert d['\u00c6'] == '\u00c6', ('assertEqual', d['\u00c6'], '\u00c6')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_issue3297",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    c = compile(\"a, b = '\ud800\udd0f', '\\\\U0001010F'\", 'dummy', 'exec')\n    d = {}\n    exec(c, d)\n    assert d['a'] == d['b'], ('assertEqual', d['a'], d['b'])\n    assert len(d['a']) == len(d['b']), ('assertEqual', len(d['a']), len(d['b']))\n    assert ascii(d['a']) == ascii(d['b']), ('assertEqual', ascii(d['a']), ascii(d['b']))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_issue7820",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    try:\n        eval(*(b'\\xff ',))\n    except SyntaxError:\n        pass\n    try:\n        eval(*(b'\\xef ',))\n    except SyntaxError:\n        pass\n    try:\n        eval(*(b'\\xef\\xbb ',))\n    except SyntaxError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_truncated_utf8_at_eof",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    truncated = [b'\\xc2', b'\\xdf', b'\\xe0', b'\\xe0\\xa0', b'\\xf0\\x90', b'\\xf0\\x90\\x80', b'\\xf3']\n    for seq in truncated:\n        try:\n            compile(*(seq, '<test>', 'exec'))\n        except SyntaxError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_error_message",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_exec_valid_coding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    d = {}\n    exec(b'# coding: cp949\\na = \"\\xaa\\xa7\"\\n', d)\n    assert d['a'] == '\u3047', ('assertEqual', d['a'], '\u3047')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_file_parse",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_file_parse_error_multiline",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_tokenizer_fstring_warning_in_first_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_default_coding",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_second_coding_line_empty_first_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_third_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_double_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_double_coding_same_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_double_coding_utf8",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_long_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_long_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_long_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_long_coding_name",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_long_first_utf8_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_long_second_utf8_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_first_non_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_second_non_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_first_utf8_coding_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_second_utf8_coding_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_bom",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_bom_utf8_comments",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_bom_and_utf8_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_bom_and_non_utf8_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_bom_and_non_utf8_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_non_utf8_shebang",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_shebang_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_non_utf8_shebang_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_non_utf8_second_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_bom_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf_8_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_non_utf8_third_line_error",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_crlf",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_crcrlf",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_crcrcrlf",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_crcrcrlf2",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_nul_in_first_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_nul_in_second_coding_line",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "MiscSourceEncodingTest.test_20731",
+      "reason": "decorator:support.requires_subprocess"
+    },
+    {
+      "ident": "UTF8ValidatorTest.test_invalid_utf8",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_bad_coding",
+      "reason": "helper:verify_bad_module(unresolved-name:__file__)"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_bad_coding2",
+      "reason": "helper:verify_bad_module(unresolved-name:__file__)"
+    },
+    {
+      "ident": "MiscSourceEncodingTest.test_error_from_string",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_default_coding",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_first_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_second_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_second_coding_line_empty_first_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_third_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_double_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_double_coding_same_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_double_coding_utf8",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_long_first_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_long_second_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_long_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_long_coding_name",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_long_first_utf8_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_long_second_utf8_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_first_non_utf8_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_second_non_utf8_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_first_utf8_coding_line_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_second_utf8_coding_line_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_bom",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_bom_utf8_comments",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_utf8_bom_and_utf8_coding_line",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_bom_and_non_utf8_first_coding_line",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_bom_and_non_utf8_second_coding_line",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_non_utf8_shebang",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_shebang_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_non_utf8_shebang_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_non_utf8_second_line_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_non_utf8_third_line_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_bom_non_utf8_third_line_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf_8_non_utf8_third_line_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_utf8_non_utf8_third_line_error",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_crlf",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_crcrlf",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_crcrcrlf",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "FileSourceEncodingTest.test_crcrcrlf2",
+      "reason": "unresolved-name:check_script_output"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_nul_in_first_coding_line",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    },
+    {
+      "ident": "BytesSourceEncodingTest.test_nul_in_second_coding_line",
+      "reason": "helper:check_script_error(unresolved-name:cm)"
+    }
+  ],
+  "counts": {
+    "extracted": 91,
+    "pinned": 8,
+    "quarantined": 83
+  }
+}
