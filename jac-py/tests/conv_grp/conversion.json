@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_grp.py",
+    "-o",
+    "/var/tmp/worker6-600-port-grp-1686556/jac-py/tests/conv_grp",
+    "--name",
+    "conv_grp"
+  ],
+  "generated_at": "2026-08-25T21:53:55",
+  "hashes": {
+    "pins_jac": "336176ad36318430369c1b60631007cb355d748b999fe204fb601fd5222daa6f"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_grp.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "grp",
+  "pins_file": "conv_grp_pins.jac",
+  "pins": [],
+  "quarantined": [
+    {
+      "ident": "GroupDatabaseTestCase.test_values",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "GroupDatabaseTestCase.test_values_extended",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "GroupDatabaseTestCase.test_errors",
+      "reason": "unsupported-import:test.support"
+    }
+  ],
+  "counts": {
+    "extracted": 3,
+    "pinned": 0,
+    "quarantined": 3
+  }
+}
