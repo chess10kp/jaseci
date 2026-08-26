@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from socket { socket_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2102,6 +2103,17 @@ def import_native(absname: str) -> PyObj {
         # errorcode round-trip; the native facade keeps them guest-native.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if (absname == "socket" or absname == "_socket") and not ("socket" in shim_modules) {
+        # socketmodule.c lift, first slice: the pure-data surface (constants +
+        # has_ipv6; exceptions via the bridge-table registry). The host proxy
+        # would leak host int identity through every constant and the host
+        # module is forbidden-import for the socket suites anyway. Served under
+        # both names: Lib/socket.py wraps _socket and suite routing rewrites
+        # facade-module:socket->_socket.
+        shim_modules["socket"] = PyModule(
+            t="module", name="socket", attrs=socket_module_attrs()
         );
     }
     if absname == "sys" and not ("sys" in shim_modules) {
@@ -5244,6 +5256,13 @@ def _mint_host_builtin(name: str) -> PyObj {
 }
 
 def host_import(name: str, fromlist: PyObj) -> PyObj {
+    if (name == "socket" or name == "_socket") and not ("socket" in shim_modules) {
+        # Mirror of the import_native site: socketmodule.c data surface served
+        # natively under both import names (see socket.jac).
+        shim_modules["socket"] = PyModule(
+            t="module", name="socket", attrs=socket_module_attrs()
+        );
+    }
     if name == "errno" and not ("errno" in shim_modules) {
         # Mirror of the import_native site: errnomodule.c is pure data, so the
         # native facade serves it without a host round-trip.
