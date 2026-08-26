@@ -1,0 +1,386 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_curses.py",
+    "-o",
+    "/var/tmp/worker4-600-port-curses-1308869/jac-py/tests/conv_curses",
+    "--name",
+    "conv_curses"
+  ],
+  "generated_at": "2026-08-25T21:09:08",
+  "hashes": {
+    "pins_jac": "3c88b77ca6d1f7d5fc8d326beec276a1944dbaf148e48a650214d945cd3f86ee"
+  },
+  "source_file": "reference/cpython/Lib/test/test_curses.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "curses",
+  "pins_file": "conv_curses_pins.jac",
+  "pins": [
+    {
+      "ident": "MiscTests.test_update_lines_cols",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import curses\nimport curses.ascii\nimport curses.textpad\n\ndef _t():\n    curses.update_lines_cols()\n    lines, cols = (curses.LINES, curses.COLS)\n    curses.LINES = curses.COLS = 0\n    curses.update_lines_cols()\n    assert curses.LINES == lines, ('assertEqual', curses.LINES, lines)\n    assert curses.COLS == cols, ('assertEqual', curses.COLS, cols)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MiscTests.test_has_extended_color_support",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import curses\nimport curses.ascii\nimport curses.textpad\n\ndef _t():\n    r = curses.has_extended_color_support()\n    assert isinstance(r, bool), ('assertIsInstance', r, bool)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestAscii.test_ctypes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import string\nimport sys\nimport curses\nimport curses.ascii\nimport curses.textpad\n\ndef _t():\n\n    def check(func, expected):\n        assert func(i) == expected, ('assertEqual', func(i), expected)\n        assert func(c) == expected, ('assertEqual', func(c), expected)\n    for i in range(256):\n        c = chr(i)\n        b = bytes([i])\n        check(curses.ascii.isalnum, b.isalnum())\n        check(curses.ascii.isalpha, b.isalpha())\n        check(curses.ascii.isdigit, b.isdigit())\n        check(curses.ascii.islower, b.islower())\n        check(curses.ascii.isspace, b.isspace())\n        check(curses.ascii.isupper, b.isupper())\n        check(curses.ascii.isascii, i < 128)\n        check(curses.ascii.ismeta, i >= 128)\n        check(curses.ascii.isctrl, i < 32)\n        check(curses.ascii.iscntrl, i < 32 or i == 127)\n        check(curses.ascii.isblank, c in ' \\t')\n        check(curses.ascii.isgraph, 32 < i <= 126)\n        check(curses.ascii.isprint, 32 <= i <= 126)\n        check(curses.ascii.ispunct, c in string.punctuation)\n        check(curses.ascii.isxdigit, c in string.hexdigits)\n    for i in (-2, -1, 256, sys.maxunicode, sys.maxunicode + 1):\n        assert not curses.ascii.isalnum(i), ('assertFalse', curses.ascii.isalnum(i))\n        assert not curses.ascii.isalpha(i), ('assertFalse', curses.ascii.isalpha(i))\n        assert not curses.ascii.isdigit(i), ('assertFalse', curses.ascii.isdigit(i))\n        assert not curses.ascii.islower(i), ('assertFalse', curses.ascii.islower(i))\n        assert not curses.ascii.isspace(i), ('assertFalse', curses.ascii.isspace(i))\n        assert not curses.ascii.isupper(i), ('assertFalse', curses.ascii.isupper(i))\n        assert not curses.ascii.isascii(i), ('assertFalse', curses.ascii.isascii(i))\n        assert not curses.ascii.isctrl(i), ('assertFalse', curses.ascii.isctrl(i))\n        assert not curses.ascii.iscntrl(i), ('assertFalse', curses.ascii.iscntrl(i))\n        assert not curses.ascii.isblank(i), ('assertFalse', curses.ascii.isblank(i))\n        assert not curses.ascii.isgraph(i), ('assertFalse', curses.ascii.isgraph(i))\n        assert not curses.ascii.isprint(i), ('assertFalse', curses.ascii.isprint(i))\n        assert not curses.ascii.ispunct(i), ('assertFalse', curses.ascii.ispunct(i))\n        assert not curses.ascii.isxdigit(i), ('assertFalse', curses.ascii.isxdigit(i))\n    assert not curses.ascii.ismeta(-1), ('assertFalse', curses.ascii.ismeta(-1))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestAscii.test_ascii",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import curses\nimport curses.ascii\nimport curses.textpad\n\ndef _t():\n    ascii = curses.ascii.ascii\n    assert ascii('\u00c1') == 'A', ('assertEqual', ascii('\u00c1'), 'A')\n    assert ascii('A') == 'A', ('assertEqual', ascii('A'), 'A')\n    assert ascii(ord('\u00c1')) == ord('A'), ('assertEqual', ascii(ord('\u00c1')), ord('A'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestAscii.test_ctrl",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import curses\nimport curses.ascii\nimport curses.textpad\n\ndef _t():\n    ctrl = curses.ascii.ctrl\n    assert ctrl('J') == '\\n', ('assertEqual', ctrl('J'), '\\n')\n    assert ctrl('\\n') == '\\n', ('assertEqual', ctrl('\\n'), '\\n')\n    assert ctrl('@') == '\\x00', ('assertEqual', ctrl('@'), '\\x00')\n    assert ctrl(ord('J')) == ord('\\n'), ('assertEqual', ctrl(ord('J')), ord('\\n'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestAscii.test_alt",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import curses\nimport curses.ascii\nimport curses.textpad\n\ndef _t():\n    alt = curses.ascii.alt\n    assert alt('\\n') == '\\x8a', ('assertEqual', alt('\\n'), '\\x8a')\n    assert alt('A') == '\u00c1', ('assertEqual', alt('A'), '\u00c1')\n    assert alt(ord('A')) == 193, ('assertEqual', alt(ord('A')), 193)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestAscii.test_unctrl",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import curses\nimport curses.ascii\nimport curses.textpad\n\ndef _t():\n    unctrl = curses.ascii.unctrl\n    assert unctrl('a') == 'a', ('assertEqual', unctrl('a'), 'a')\n    assert unctrl('A') == 'A', ('assertEqual', unctrl('A'), 'A')\n    assert unctrl(';') == ';', ('assertEqual', unctrl(';'), ';')\n    assert unctrl(' ') == ' ', ('assertEqual', unctrl(' '), ' ')\n    assert unctrl('\\x7f') == '^?', ('assertEqual', unctrl('\\x7f'), '^?')\n    assert unctrl('\\n') == '^J', ('assertEqual', unctrl('\\n'), '^J')\n    assert unctrl('\\x00') == '^@', ('assertEqual', unctrl('\\x00'), '^@')\n    assert unctrl(ord('A')) == 'A', ('assertEqual', unctrl(ord('A')), 'A')\n    assert unctrl(ord('\\n')) == '^J', ('assertEqual', unctrl(ord('\\n')), '^J')\n    assert unctrl('\\x8a') == '!^J', ('assertEqual', unctrl('\\x8a'), '!^J')\n    assert unctrl('\u00c1') == '!A', ('assertEqual', unctrl('\u00c1'), '!A')\n    assert unctrl(ord('\\x8a')) == '!^J', ('assertEqual', unctrl(ord('\\x8a')), '!^J')\n    assert unctrl(ord('\u00c1')) == '!A', ('assertEqual', unctrl(ord('\u00c1')), '!A')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestCurses.test_filter",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_use_env",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_create_windows",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_subwindows_references",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_move_cursor",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_refresh_control",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_output_character",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_output_string",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_output_string_embedded_null_chars",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_read_from_window",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_getch",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_getstr",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_clear",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_insert_delete",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_scroll",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_attributes",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_chgat",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_background",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_overlay",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_refresh",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_resize",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_enclose",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_putwin",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_borders_and_lines",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_unctrl",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_endwin",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_terminfo",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_misc_module_funcs",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_env_queries",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_output_options",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_input_options",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_typeahead",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_prog_mode",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_beep",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_flash",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_curs_set",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_escdelay",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_tabsize",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_getsyx",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_has_colors",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_start_color",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_color_content",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_init_color",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_pair_content",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_init_pair",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_color_attrs",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_use_default_colors",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_assume_default_colors",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_keyname",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_has_key",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_getmouse",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestCurses.test_userptr_without_set",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_userptr_memory_leak",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_userptr_segfault",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_disallow_instantiation",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_is_term_resized",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_resize_term",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_resizeterm",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_ungetch",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_issue6243",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_unget_wch",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_encoding",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_issue21088",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCurses.test_issue13051",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "MiscTests.test_ncurses_version",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestAscii.test_controlnames",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_init",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_insert",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_delete",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_move_left",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_move_right",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_move_left_and_right",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_move_up",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TextboxTest.test_move_down",
+      "reason": "self.skipTest"
+    }
+  ],
+  "counts": {
+    "extracted": 81,
+    "pinned": 7,
+    "quarantined": 74
+  }
+}

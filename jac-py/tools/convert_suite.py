@@ -57,7 +57,7 @@ _DEFAULT_LIB = _REPO / "reference" / "cpython" / "Lib"
 _TESTS_DIR = _REPO / "jac-py" / "tests"
 _MANIFEST = _TESTS_DIR / "conformance_manifest_convpipe.json"
 
-TOOL_VERSION = "conv_suite-0.5.0"
+TOOL_VERSION = "conv_suite-0.6.0"
 CPYTHON_VERSION = "3.14.6"
 
 
@@ -729,13 +729,25 @@ _SKIP_DECOS = {
 # quarantine.
 _DROPPABLE_DECOS = {"cpython_only", "requires_subprocess"}
 
+# Conditional skip gates (unittest.skipIf/skipUnless): also availability
+# predicates. Stripping is oracle-safe in both directions -- when the
+# predicate is false on the host the gate never fires; when it is true the
+# host run skips and yields no success marker, so nothing pins anyway.
+# Unconditional ``skip`` and ``expectedFailure`` stay hard quarantines:
+# they change outcome semantics, not just reachability.
+_GATE_DECOS = {"skipIf", "skipUnless"}
+
 
 def _decorator_reason(deco: ast.expr) -> str | None:
     name = None
     if isinstance(deco, ast.Name):
         name = deco.id
+        if name in _GATE_DECOS:
+            return None
     elif isinstance(deco, ast.Attribute):
         base = deco.value.id if isinstance(deco.value, ast.Name) else ""
+        if deco.attr in _GATE_DECOS and base in ("", "unittest"):
+            return None
         if deco.attr in _SKIP_DECOS:
             return f"decorator:{base}.{deco.attr}" if base else f"decorator:{deco.attr}"
         if deco.attr in _DROPPABLE_DECOS and base in ("", "support"):
@@ -1187,6 +1199,50 @@ def _src(node: ast.AST, source: str) -> str:
     return seg or ast.unparse(node)
 
 
+def _rewrite_import_module(node: ast.stmt) -> ast.stmt:
+    """Lift ``import_module`` idioms to plain import statements.
+
+    test.support.import_helper.import_module is the support-harness idiom for
+    a plain import with an optional availability guard; suites converted here
+    only pin when the module imports on the host anyway, so the mechanical
+    equivalent keeps the same binding without dragging test.support into the
+    snippet prelude (which would quarantine every test in the suite).
+    Handles both binding form (``name = import_module('mod')``) and bare
+    side-effect form (``import_module('mod.sub')``, which CPython tests rely
+    on to expose ``mod.sub`` as an attribute of ``mod``).
+    """
+    call: ast.Call | None = None
+    if (
+        isinstance(node, ast.Assign)
+        and len(node.targets) == 1
+        and isinstance(node.targets[0], ast.Name)
+        and isinstance(node.value, ast.Call)
+    ):
+        call = node.value
+        target: str | None = node.targets[0].id
+    elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+        call = node.value
+        target = None
+    if (
+        call is not None
+        and isinstance(call.func, ast.Name)
+        and call.func.id == "import_module"
+        and len(call.args) == 1
+        and not call.keywords
+        and isinstance(call.args[0], ast.Constant)
+        and isinstance(call.args[0].value, str)
+    ):
+        modname: str = call.args[0].value
+        return ast.Import(
+            names=[ast.alias(
+                name=modname,
+                asname=None if (target is None or target == modname)
+                else target,
+            )]
+        )
+    return node
+
+
 def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False) -> tuple[list[ast.stmt], set[str]]:
     """Module-level imports/assigns/function defs/classes usable as prelude.
 
@@ -1198,7 +1254,8 @@ def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False
     """
     stmts: list[ast.stmt] = []
     names: set[str] = set()
-    for node in tree.body:
+    for raw in tree.body:
+        node = _rewrite_import_module(raw)
         if isinstance(node, (ast.Import, ast.ImportFrom, ast.Assign, ast.AnnAssign,
                              ast.FunctionDef)):
             stmts.append(node)
