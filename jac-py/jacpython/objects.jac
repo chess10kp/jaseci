@@ -3984,3 +3984,39 @@ def str_mod_format(
     }
     return PyStr(t="str", val=out);
 }
+
+# ---------------- tests ----------------
+
+# Oracle: CPython raises ValueError("slice step cannot be zero") for any
+# sequence sliced with step 0; the native runtime must do the same instead of
+# spinning the slice loops forever (l[5:1:0] used to hang the VM).
+test "objects: slicing with zero step raises ValueError, no hang" {
+    zero = PyInt(t="int", val=0);
+    step0 = PySlice(t="slice", start=py_none(), stop=py_none(), step=zero);
+
+    lst = PyList(t="list", items=[PyInt(t="int", val=1), PyInt(t="int", val=2)]);
+    r = lst.mp_subscript(step0);
+    assert is_error(r);
+    assert (r as PyError).exception.type_name == "ValueError";
+    assert (r as PyError).exception.message == "slice step cannot be zero";
+
+    # del l[::0] takes the separate del-subscript path and must raise too.
+    d = lst.mp_del_subscript(step0);
+    assert is_error(d);
+    assert (d as PyError).exception.type_name == "ValueError";
+
+    # str / bytes / tuple share the same guard.
+    s = PyStr(t="str", val="abc").mp_subscript(step0);
+    assert is_error(s);
+    b = PyBytes(t="bytes", val=[1, 2]).mp_subscript(step0);
+    assert is_error(b);
+    t = PyTuple(t="tuple", items=[PyInt(t="int", val=1)]).mp_subscript(step0);
+    assert is_error(t);
+
+    # Non-zero steps still slice normally.
+    ok = lst.mp_subscript(
+        PySlice(t="slice", start=py_none(), stop=py_none(), step=PyInt(t="int", val=-1))
+    );
+    assert not is_error(ok);
+    assert len((ok as PyList).items) == 2;
+}
