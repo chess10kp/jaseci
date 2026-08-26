@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from dbm { PyDbmObj, dbm_require_open, dbm_contains }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -6935,6 +6936,11 @@ def py_contains(container: PyObj, member: PyObj) -> PyObj {
         }
         return PyBool(t="bool", val=False);
     }
+    if isinstance(container, PyDbmObj) {
+        # _dbmmodule.c lift: sq_contains answers natively (closed-state guard +
+        # "s#" key conversion) instead of degrading through the host bridge.
+        return dbm_contains(container as PyDbmObj, member);
+    }
     # Implicit sq_contains slot on user classes: __contains__ wins; without it
     # CPython's default sq_contains iterates with real ==; neither available
     # is the TypeError.
@@ -7756,6 +7762,15 @@ def py_len(value: PyObj) -> PyObj {
     }
     if isinstance(value, PyFrameLocalsProxy) {
         return PyInt(t="int", val=framelocals_len(value as PyFrameLocalsProxy));
+    }
+    if isinstance(value, PyDbmObj) {
+        # _dbmmodule.c lift: the mapping answers through its open-state guard,
+        # never a bare table read (closed handles must raise like C).
+        err = dbm_require_open(value as PyDbmObj);
+        if is_error(err) {
+            return err;
+        }
+        return PyInt(t="int", val=len((value as PyDbmObj).table));
     }
     if isinstance(value, PyUserObj) {
         u = value as PyUserObj;

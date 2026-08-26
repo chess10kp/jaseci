@@ -44,6 +44,7 @@ import from _collections_pylib {
     _p2_ordereddict,
 }
 import from mmap { build_mmap_module }
+import from dbm { build_dbm_module, build_dbm_package }
 import from _statmodule {
     _p2_S_ISDIR,
     _p2_S_ISCHR,
@@ -942,6 +943,12 @@ def p2_libtest_reset {
         "_opcode", PyModule(t="module", name="_opcode", attrs=opcode_attrs)
     );
     register_shim_module("mmap", build_mmap_module());
+    # dbm family: one backend (dbm.ndbm), its legacy _dbm alias, and the
+    # package facade whose discovery vocabulary exposes exactly that set.
+    ndbm_mod = build_dbm_module("dbm.ndbm");
+    register_shim_module("dbm.ndbm", ndbm_mod);
+    register_shim_module("_dbm", build_dbm_module("_dbm"));
+    register_shim_module("dbm", build_dbm_package(ndbm_mod));
     _p2_warn_state_reset();
     register_shim_module(
         "warnings",
