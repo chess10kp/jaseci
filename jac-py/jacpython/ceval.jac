@@ -8173,6 +8173,33 @@ def dispatch_exception(
     return handler.target;
 }
 
+# _PyEval_CheckExceptTypeValid: a plain `except X` target must be a class
+# deriving BaseException -- a builtin native exception type, a guest class whose
+# MRO reaches one, or a host-proxied exception class. Tuples are validated
+# element-wise. Anything else (int, str, an instance, a non-exception class)
+# makes CHECK_EXC_MATCH raise CPython's TypeError before any matching happens.
+def except_target_valid(target: PyObj) -> bool {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            if not except_target_valid(item) {
+                return False;
+            }
+        }
+        return True;
+    }
+    if target.t == "exception_type" {
+        return True;
+    }
+    if isinstance(target, PyHostProxy)
+        and bool(_jac_is_exception_type((target as PyHostProxy).val)) {
+        return True;
+    }
+    if isinstance(target, PyClass) {
+        return class_is_exception(target as PyClass);
+    }
+    return False;
+}
+
 def exception_matches(value: PyObj, target: PyObj) -> bool {
     if value.t != "exception" {
         return False;
@@ -17102,6 +17129,20 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
             exception = stack[len(stack) - 1];
+            # CPython validates the target BEFORE matching; an invalid one is a
+            # raising TypeError, not a non-match.
+            if not except_target_valid(match_type) {
+                exc_match_err = py_error(
+                    "TypeError",
+                    "catching classes that do not inherit from BaseException is not allowed"
+                );
+                target = recover_exception(co, exc_match_err, offset, stack);
+                if target >= 0 {
+                    ip = target;
+                    continue;
+                }
+                return exc_match_err;
+            }
             stack.append(
                 PyBool(t="bool", val=exception_matches(exception, match_type))
             );
