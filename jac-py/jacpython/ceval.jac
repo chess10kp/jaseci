@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from types { types_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2103,6 +2104,13 @@ def import_native(absname: str) -> PyObj {
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
         );
+    }
+    if absname == "_types" and not ("_types" in shim_modules) {
+        # _typesmodule.c lift: pure immortal type-object exports. Serving them
+        # natively lets Lib/types.py take its real ``from _types import *``
+        # path in-VM instead of ModuleNotFoundError-ing into the introspective
+        # ImportError fallback.
+        shim_modules["_types"] = build_types_module();
     }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
@@ -5274,6 +5282,12 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # semantics implemented natively. The layer3 boot path instead runs
         # the real types.py in-VM and overrides just the coroutine attribute.
         shim_modules["types"] = build_types_facade();
+    }
+    if name == "_types" and not ("_types" in shim_modules) {
+        # Mirror of the import_native site: _typesmodule.c is pure data (type
+        # objects only), so the native facade serves it without a host
+        # round-trip through a proxied module.
+        shim_modules["_types"] = build_types_module();
     }
     if name == "sys" and not ("sys" in shim_modules) {
         # Mirror of the import_native site: exception-state attrs must read
@@ -14661,6 +14675,19 @@ def build_types_facade -> PyObj {
     }
     attrs["coroutine"] = PyTypesCoroutine(t="types_coroutine");
     return PyModule(t="module", name="types", attrs=attrs);
+}
+
+# _typesmodule.c lift: wrap each raw HOST type object fetched by types.jac in
+# a proxy at this boundary -- the same representation build_types_facade
+# serves for these names on the proxy-import path, so identity between
+# py_type answers (from_host of these same classes) and module attrs holds.
+def build_types_module -> PyObj {
+    raw = types_module_attrs();
+    attrs: dict[str, PyObj] = {};
+    for k in raw {
+        attrs[k] = PyHostProxy(t="host", val=raw[k]);
+    }
+    return PyModule(t="module", name="_types", attrs=attrs);
 }
 
 def build_weakref_module -> PyObj {
