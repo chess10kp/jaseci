@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from types { _types_export_order, _types_native_tags, TypesMarkerCtor }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2103,6 +2104,12 @@ def import_native(absname: str) -> PyObj {
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
         );
+    }
+    if absname == "_types" and not ("_types" in shim_modules) {
+        # _typesmodule.c lift: the static-type export surface Lib/types.py
+        # star-imports. Native markers replace host type proxies where the VM
+        # has the family; see types.jac for the split rationale.
+        shim_modules["_types"] = build_types_module();
     }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
@@ -5265,6 +5272,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # Same rationale as the import_native site above: host gc cannot see
         # native guest objects.
         shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
+    }
+    if name == "_types" and not ("_types" in shim_modules) {
+        # Mirror of the import_native site: _typesmodule.c lift, so the
+        # star-import inside in-VM Lib/types.py binds the native surface.
+        shim_modules["_types"] = build_types_module();
     }
     if name == "types" and not ("types" in shim_modules) {
         # The host types.coroutine cannot mark VM-native functions (it mutates
@@ -14643,6 +14655,48 @@ obj PyTypesCoroutine(PyObj) {
 # Facade over the real host `types` module for the proxy import path: every
 # public member stays the same host object that direct proxying would serve,
 # with coroutine swapped for the native implementation above.
+# Native _types module assembly (lift of Modules/_typesmodule.c, data in
+# types.jac): every export in C order; names with a faithful VM-native family
+# become ShimTypeMarker instances (py_isinstance answers by one t-tag compare),
+# the rest stay transparent host proxies of the real CPython static types --
+# the same values stdlib delegation served before this facade landed, so
+# constructor surfaces (FunctionType/ModuleType/SimpleNamespace/MappingProxyType)
+# keep working unchanged.
+def build_types_module -> PyObj {
+    attrs: dict[str, PyObj] = {};
+    tagmap = _types_native_tags();
+    host_names: list[str] = [];
+    for nmobj in _types_export_order() {
+        nm = (nmobj as PyStr).val;
+        if nm in tagmap {
+            attrs[nm] = ShimTypeMarker(
+                t="shim_type_marker",
+                tag=(tagmap[nm] as PyStr).val,
+                ctor=TypesMarkerCtor(t="types_marker_ctor", name=nm),
+            );
+        } else {
+            host_names.append(nm);
+        }
+    }
+    if len(host_names) > 0 {
+        star: list[PyObj] = [PyStr(t="str", val="*")];
+        result = _jac_host_import("_types", star);
+        if host_result_ok(result) {
+            host_mod = result[1];
+            for nm in host_names {
+                member = _jac_host_getattr(host_mod, nm);
+                if host_result_ok(member) {
+                    attrs[nm] = PyHostProxy(t="host", val=member[1]);
+                }
+            }
+        }
+        # A failed host import leaves those names simply absent -- the guest
+        # sees our AttributeError on access, mirroring a failed delegation.
+    }
+    attrs["__doc__"] = PyStr(t="str", val="Define names for built-in types.");
+    return PyModule(t="module", name="_types", attrs=attrs);
+}
+
 def build_types_facade -> PyObj {
     star: list[PyObj] = [PyStr(t="str", val="*")];
     result = _jac_host_import("types", star);
