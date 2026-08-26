@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.1",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_atexit.py",
+    "-o",
+    "jac-py/tests/conv_atexit",
+    "--name",
+    "conv_atexit"
+  ],
+  "generated_at": "2026-08-25T18:33:38",
+  "hashes": {
+    "pins_jac": "546cb8150eec160a9c72d68f21c0e8007692470d89d762f2fdfee1b0c90bb7d1"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_atexit.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "atexit",
+  "pins_file": "conv_atexit_pins.jac",
+  "pins": [
+    {
+      "ident": "GeneralTest.test_general",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: script _test_atexit.py failed"
+    },
+    {
+      "ident": "FunctionalTest.test_shutdown",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import textwrap\nfrom test.support import SuppressCrashReport, script_helper\n\ndef _t():\n    code = textwrap.dedent('\\n            import atexit\\n\\n            def f(msg):\\n                print(msg)\\n\\n            atexit.register(f, \"one\")\\n            atexit.register(f, \"two\")\\n        ')\n    res = script_helper.assert_python_ok('-c', code)\n    assert res.out.decode().splitlines() == ['two', 'one'], ('assertEqual', res.out.decode().splitlines(), ['two', 'one'])\n    assert not res.err, ('assertFalse', res.err)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FunctionalTest.test_atexit_instances",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import textwrap\nfrom test.support import SuppressCrashReport, script_helper\n\ndef _t():\n    code = textwrap.dedent('\\n            import sys\\n            import atexit as atexit1\\n            del sys.modules[\\'atexit\\']\\n            import atexit as atexit2\\n            del sys.modules[\\'atexit\\']\\n\\n            assert atexit2 is not atexit1\\n\\n            atexit1.register(print, \"atexit1\")\\n            atexit2.register(print, \"atexit2\")\\n        ')\n    res = script_helper.assert_python_ok('-c', code)\n    assert res.out.decode().splitlines() == ['atexit2', 'atexit1'], ('assertEqual', res.out.decode().splitlines(), ['atexit2', 'atexit1'])\n    assert not res.err, ('assertFalse', res.err)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "FunctionalTest.test_atexit_thread_safety",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "SubinterpreterTest.test_callbacks_leak",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SubinterpreterTest.test_callbacks_leak_refcycle",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SubinterpreterTest.test_callback_on_subinterpreter_teardown",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SubinterpreterTest.test_atexit_with_low_memory",
+      "reason": "decorator:support.cpython_only"
+    }
+  ],
+  "counts": {
+    "extracted": 8,
+    "pinned": 2,
+    "quarantined": 6
+  }
+}
