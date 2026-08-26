@@ -1829,7 +1829,7 @@ def visit_try_star(
         codegen_fail(g, "NotImplementedError", "except* inside except handler");
         return stmt_cont(loc=tloc);
     }
-    return visit_try_star_except(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+    return visit_try_star_except(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx, t.finalbody);
 }
 
 
@@ -1846,6 +1846,12 @@ def visit_try_star(
 #   reraise, unwind (COPY 3 / POP_EXCEPT / RERAISE 1)
 # The last handler's ewe epilogue (LIST_APPEND 1) folds into x/ce/nm tails;
 # non-last ones jump straight to the next handler's match block.
+#
+# With a finally clause (CPython compiler_try_star_finally): the inline
+# finally occupies the normal-path continuation slot right after the body,
+# the walk's all-matched exit jumps back into it, and the exceptional exits
+# rerun the finally under PUSH_EXC_INFO (fin_except) + COPY/POP_EXCEPT/RERAISE
+# (fin_unwind) regions placed after unwind.
 def visit_try_star_except(
     g: cfg_builder,
     t: TryStar,
@@ -1853,12 +1859,14 @@ def visit_try_star_except(
     tail: list[stmt] | None = None,
     tail_idx: int = 0,
     tail_join: basicblock | None = None,
-    ann_ctx: ann_scope_plan | None = None
+    ann_ctx: ann_scope_plan | None = None,
+    finalbody: list[stmt] | None = None
 ) -> stmt_cont {
     tloc = trystar_stmt_loc(t);
     nh = len(t.handlers);
     noloc = no_loc();
     nest = g.handler_nest_depth;
+    has_fin = finalbody is not None and len(finalbody) > 0;
 
     nop_blk = g.new_block();
     g.u.nested_try_except_end = -1;
@@ -2119,6 +2127,26 @@ def visit_try_star_except(
     g.emit_op(OP_COPY, 3, noloc);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
     g.emit_op(OP_RERAISE, 1, noloc);
+    if has_fin {
+        # Exceptional exits of the walk rerun the finally, then propagate:
+        # RERAISE 0 (reraise needed) and the unwind path land here via the
+        # depth-0 region appended below; a raising finally body lands in
+        # fin_unwind via the lasti region.
+        fin_e = fin_except_blk as basicblock;
+        fin_u = fin_unwind_blk as basicblock;
+        fbx = finalbody as list[stmt];
+        g.use(fin_e);
+        g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
+        fin_exc_cont = visit_stmts(g, fbx, 0, False, None, 0, None, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=tloc);
+        }
+        g.emit_op(OP_RERAISE, 0, fin_exc_cont.loc);
+        g.use(fin_u);
+        g.emit_op(OP_COPY, 3, noloc);
+        g.emit_op(OP_POP_EXCEPT, 0, noloc);
+        g.emit_op(OP_RERAISE, 1, noloc);
+    }
 
     if has_fin and not fin_early {
         # Late inline finally copy: only predecessor is the nothing-to-reraise
