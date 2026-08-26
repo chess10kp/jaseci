@@ -14766,6 +14766,30 @@ obj PyCopyFn(PyObj) {
 
 # The native `copy` module, seeded into a Layer-1 namespace so a test that does
 # copy.copy(gen) sees CPython's TypeError natively (the host proxy would drain).
+# Shared un-weakreferenceable gate: the boxed builtin shapes CPython rejects in
+# get_or_create_weakref, plus host proxies (deref would mint a fresh proxy and
+# break `r() is o` identity). Shared by weakref.ref and the _weakref facade
+# entry points in jacpython/weakref.jac.
+def weakref_target_rejected(target: PyObj) -> bool {
+    return isinstance(target, PyHostProxy) or isinstance(target, PyInt)
+        or isinstance(target, PyFloat) or isinstance(target, PyBool)
+        or isinstance(target, PyStr) or isinstance(target, PyBytes)
+        or isinstance(target, PyTuple) or isinstance(target, PyList)
+        or isinstance(target, PyDict) or isinstance(target, PySet)
+        or isinstance(target, PyNoneType);
+}
+
+# The canonical rejection TypeError, byte-matching CPython's
+# "cannot create weak reference to '%s' object" formatting.
+def weakref_target_error(target: PyObj) -> PyObj {
+    tname = "object";
+    tn = py_type_of(target);
+    if isinstance(tn, PyClass) {
+        tname = (tn as PyClass).name;
+    }
+    return py_error("TypeError", "cannot create weak reference to '" + tname + "' object");
+}
+
 # Native weakref module surface (shimmed over host weakref). CPython-faithful
 # for objects whose RAW Python identity is the object itself (PyUserObj,
 # PyClass, functions, generators): deref hands back the identical object, and
@@ -14786,18 +14810,8 @@ obj PyWeakRefFn(PyObj) {
             return py_error("TypeError", "weakref.ref expected 1 argument");
         }
         target = args[0];
-        if isinstance(target, PyHostProxy) or isinstance(target, PyInt)
-            or isinstance(target, PyFloat) or isinstance(target, PyBool)
-            or isinstance(target, PyStr) or isinstance(target, PyBytes)
-            or isinstance(target, PyTuple) or isinstance(target, PyList)
-            or isinstance(target, PyDict) or isinstance(target, PySet)
-            or isinstance(target, PyNoneType) {
-            tname = "object";
-            tn = py_type_of(target);
-            if isinstance(tn, PyClass) {
-                tname = (tn as PyClass).name;
-            }
-            return py_error("TypeError", "cannot create weak reference to '" + tname + "' object");
+        if weakref_target_rejected(target) {
+            return weakref_target_error(target);
         }
         wr = _jac_make_weakref(target);
         if wr is None {
