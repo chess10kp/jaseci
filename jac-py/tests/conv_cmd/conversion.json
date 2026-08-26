@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "7648424862cedd0e37a5794346041c113ea5da6f",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_cmd.py",
+    "-o",
+    "/var/tmp/worker6-conv-cmd-1118024/jac-py/tests/conv_cmd",
+    "--name",
+    "conv_cmd"
+  ],
+  "generated_at": "2026-08-25T20:20:27",
+  "hashes": {
+    "pins_jac": "2a76a95806923edfaff213efb93ce72798bc64e3b236b9f9111cb49a7074fc33"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_cmd.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "cmd",
+  "pins_file": "conv_cmd_pins.jac",
+  "pins": [
+    {
+      "ident": "LazyImportTest.test_lazy_import",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestAlternateInput.test_file_with_missing_final_nl",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import cmd\nimport io\n\nclass simplecmd(cmd.Cmd):\n\n    def do_print(self, args):\n        print(args, file=self.stdout)\n\n    def do_EOF(self, args):\n        return True\n\nclass simplecmd2(simplecmd):\n\n    def do_EOF(self, args):\n        print('*** Unknown syntax: EOF', file=self.stdout)\n        return True\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.simplecmd = simplecmd\n    _SelfNS.simplecmd = simplecmd\n    self.simplecmd2 = simplecmd2\n    _SelfNS.simplecmd2 = simplecmd2\n    input = io.StringIO('print test\\nprint test2')\n    output = io.StringIO()\n    cmd = self.simplecmd(stdin=input, stdout=output)\n    cmd.use_rawinput = False\n    cmd.cmdloop()\n    assert output.getvalue() == '(Cmd) test\\n(Cmd) test2\\n(Cmd) ', ('assertMultiLineEqual', output.getvalue(), '(Cmd) test\\n(Cmd) test2\\n(Cmd) ')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestAlternateInput.test_input_reset_at_EOF",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import cmd\nimport io\n\nclass simplecmd(cmd.Cmd):\n\n    def do_print(self, args):\n        print(args, file=self.stdout)\n\n    def do_EOF(self, args):\n        return True\n\nclass simplecmd2(simplecmd):\n\n    def do_EOF(self, args):\n        print('*** Unknown syntax: EOF', file=self.stdout)\n        return True\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.simplecmd = simplecmd\n    _SelfNS.simplecmd = simplecmd\n    self.simplecmd2 = simplecmd2\n    _SelfNS.simplecmd2 = simplecmd2\n    input = io.StringIO('print test\\nprint test2')\n    output = io.StringIO()\n    cmd = self.simplecmd2(stdin=input, stdout=output)\n    cmd.use_rawinput = False\n    cmd.cmdloop()\n    assert output.getvalue() == '(Cmd) test\\n(Cmd) test2\\n(Cmd) *** Unknown syntax: EOF\\n', ('assertMultiLineEqual', output.getvalue(), '(Cmd) test\\n(Cmd) test2\\n(Cmd) *** Unknown syntax: EOF\\n')\n    input = io.StringIO('print \\n\\n')\n    output = io.StringIO()\n    cmd.stdin = input\n    cmd.stdout = output\n    cmd.cmdloop()\n    assert output.getvalue() == '(Cmd) \\n(Cmd) \\n(Cmd) *** Unknown syntax: EOF\\n', ('assertMultiLineEqual', output.getvalue(), '(Cmd) \\n(Cmd) \\n(Cmd) *** Unknown syntax: EOF\\n')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "CmdTestReadline.test_basic_completion",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    },
+    {
+      "ident": "CmdTestReadline.test_bang_completion_without_do_shell",
+      "status": "quarantined",
+      "reason": "harness-error:AssertionError: SRE module mismatch"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 5,
+    "pinned": 2,
+    "quarantined": 3
+  }
+}
