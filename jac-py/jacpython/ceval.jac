@@ -162,6 +162,15 @@ def _jac_is_range_type(value):
     # subclass machinery that range must NOT join).
     return value is range
 
+def _jac_is_slice_type(value):
+    # True iff value is exactly the builtin `slice` type. The tp_call
+    # interception must match ONLY the exact builtin -- never a subclass -- so
+    # this mirrors _jac_is_object_type/_jac_is_range_type rather than routing
+    # through _jac_builtin_base_name (whose membership list feeds Track B
+    # subclass machinery that slice must NOT join).
+    import builtins
+    return value is builtins.slice
+
 def _jac_conversion_ctor_kind(value):
     # Which conversion constructor ("int"/"float"/"bool"/"str") value is, or "".
     # Identity against the exact host builtins -- the same mechanism-level
@@ -2632,6 +2641,34 @@ obj PyHostProxy(PyObj) {
             if not is_notimplemented(cres) {
                 return cres;
             }
+        }
+        # The slice() constructor answers in-VM as a native PySlice: every
+        # subscript slot gates on isinstance(PySlice), so a host proxy here
+        # would make xs[s] raise "list indices must be integers or slices"
+        # while inline xs[1:7:2] works (same rationale as from_host's slice
+        # branch). Bounds are stored raw exactly like BUILD_SLICE; CPython's
+        # arity/keyword errors are raised before any construction.
+        if bool(_jac_is_slice_type(self.val)) {
+            if len(kwargs) > 0 {
+                return py_error("TypeError", "slice() takes no keyword arguments");
+            }
+            if len(args) == 0 {
+                return py_error("TypeError", "slice expected at least 1 argument, got 0");
+            }
+            if len(args) > 3 {
+                return py_error(
+                    "TypeError",
+                    "slice expected at most 3 arguments, got " + str(len(args)),
+                );
+            }
+            if len(args) == 1 {
+                return PySlice(t="slice", start=py_none(), stop=args[0], step=py_none());
+            }
+            step_arg = py_none();
+            if len(args) == 3 {
+                step_arg = args[2];
+            }
+            return PySlice(t="slice", start=args[0], stop=args[1], step=step_arg);
         }
         return py_call_host(self, args, kwargs);
     }
