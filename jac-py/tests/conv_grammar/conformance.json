@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "11e0d79986da69cce759ee684e472c54415dcb57",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/var/tmp/sp5-out/grammar-r2/conv_grammar_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:05:28",
+  "hashes": {
+    "pins_jac": "4824de83f29744fabdd76ccea75493e413dce00e80f8af4f86fd74c0ef8b6885",
+    "conversion_json": "c24f138157243d5985998887e04e6f6fd1f6097da49faa676c1e9aa8d2daf785",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "grammar",
+  "counts": {
+    "converted": 75,
+    "runnable": 52,
+    "green": 44,
+    "quarantined": 23
+  },
+  "pins": [
+    {
+      "id": "TokenTests.test_backslash",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_plain_integers",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_long_integers",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_floats",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_float_exponent_tokenization",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_underscore_literals",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_string_literals",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_string_prefixes",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_bytes_prefixes",
+      "status": "pass"
+    },
+    {
+      "id": "TokenTests.test_ellipsis",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertTrue\\', False)\"'>"
+    },
+    {
+      "id": "GrammarTests.test_eval_input",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_var_annot_basics",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_var_annot_syntax_errors",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "GrammarTests.test_annotations_inheritance",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC SystemError 'unsupported opcode 36'\">"
+    },
+    {
+      "id": "GrammarTests.test_var_annot_module_semantics",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ModuleNotFoundError: No module named 'test.typinganndata'\">"
+    },
+    {
+      "id": "GrammarTests.test_var_annot_in_module",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'import_helper' from '<unknown>'\">"
+    },
+    {
+      "id": "GrammarTests.test_var_annot_simple_exec",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"TypeError: <enum 'IntFlag'> cannot extend <class 'ceval.Flag'>\">"
+    },
+    {
+      "id": "GrammarTests.test_var_annot_rhs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: cache'>"
+    },
+    {
+      "id": "GrammarTests.test_funcdef",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "GrammarTests.test_simple_stmt",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_expr_stmt",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "GrammarTests.test_del_stmt",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_pass_stmt",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_break_stmt",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_continue_stmt",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_break_continue_loop",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_return",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "GrammarTests.test_control_flow_in_finally",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "GrammarTests.test_raise",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_import",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_global",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_nonlocal",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_assert",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_assert_warning_promotes_to_syntax_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'assertRaises: did not raise'\">"
+    },
+    {
+      "id": "GrammarTests.test_if",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_while",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_try",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_try_star",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_suite",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_test",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_comparison",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_binary_mask_ops",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_shift_ops",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_additive_ops",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_multiplicative_ops",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_unary_ops",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_selectors",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_atoms",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_classdef",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError '__call__'\">"
+    },
+    {
+      "id": "GrammarTests.test_dictcomps",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_listcomps",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "GrammarTests.test_genexps",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "GrammarTests.test_comprehension_specials",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_with_statement",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_if_else_expr",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_paren_evaluation",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_async_for",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_async_with",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_complex_lambda",
+      "status": "pass"
+    },
+    {
+      "id": "GrammarTests.test_assert_failures",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TokenTests.test_bad_numerical_literals",
+      "status": "quarantined",
+      "reason": "uses-self.check_syntax_error"
+    },
+    {
+      "id": "TokenTests.test_end_of_numerical_literals",
+      "status": "quarantined",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "id": "TokenTests.test_eof_error",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TokenTests.test_max_level",
+      "status": "quarantined",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "id": "GrammarTests.test_var_annot_basic_semantics",
+      "status": "quarantined",
+      "reason": "uses-self.x"
+    },
+    {
+      "id": "GrammarTests.test_lambdef",
+      "status": "quarantined",
+      "reason": "unresolved-name:d"
+    },
+    {
+      "id": "GrammarTests.test_former_statements_refer_to_builtins",
+      "status": "quarantined",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "id": "GrammarTests.test_yield",
+      "status": "quarantined",
+      "reason": "unresolved-name:f"
+    },
+    {
+      "id": "GrammarTests.test_yield_in_comprehensions",
+      "status": "quarantined",
+      "reason": "uses-self.check_syntax_error"
+    },
+    {
+      "id": "GrammarTests.test_assert_syntax_warnings",
+      "status": "quarantined",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "id": "GrammarTests.test_for",
+      "status": "quarantined",
+      "reason": "uses-self.max"
+    },
+    {
+      "id": "GrammarTests.test_comparison_is_literal",
+      "status": "quarantined",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "id": "GrammarTests.test_warn_missed_comma",
+      "status": "quarantined",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "id": "GrammarTests.test_matrix_mul",
+      "status": "quarantined",
+      "reason": "uses-self.other"
+    },
+    {
+      "id": "GrammarTests.test_async_await",
+      "status": "quarantined",
+      "reason": "unresolved-name:someobj"
+    }
+  ]
+}

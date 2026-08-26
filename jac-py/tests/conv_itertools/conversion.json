@@ -1,0 +1,620 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "e6813d071549e9a9a03b24838596c6cc6ae9c1ba",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_itertools.py",
+    "-o",
+    "jac-py/tests/conv_itertools",
+    "--name",
+    "conv_itertools"
+  ],
+  "generated_at": "2026-08-24T15:08:34",
+  "hashes": {
+    "pins_jac": "2fbca57e182a2e03fb67fcb64e8bdfd8d0c19d50c167e5166f49b82c5ac42c39"
+  },
+  "source_file": "reference/cpython/Lib/test/test_itertools.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "itertools",
+  "pins_file": "conv_itertools_pins.jac",
+  "pins": [
+    {
+      "ident": "testR",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'r' is not defined"
+    },
+    {
+      "ident": "testR2",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'r' is not defined"
+    },
+    {
+      "ident": "TestBasicOps.test_tee_dealloc_segfault",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import threading_helper, script_helper\n\ndef _t():\n    script = 'import typing, copyreg, itertools; copyreg.buggy_tee = itertools.tee(())'\n    script_helper.assert_python_ok('-c', script)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestExamples.test_filter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import operator\nfrom functools import reduce\n\ndef onearg(x):\n    \"\"\"Test function of one argument\"\"\"\n    return 2 * x\n\ndef gen3():\n    \"\"\"Non-restartable source sequence\"\"\"\n    for i in (0, 1, 2):\n        yield i\n\ndef isEven(x):\n    \"\"\"Test predicate\"\"\"\n    return x % 2 == 0\n\ndef isOdd(x):\n    \"\"\"Test predicate\"\"\"\n    return x % 2 == 1\n\ndef irange(n):\n    for i in range(n):\n        yield i\n\ndef take(n, seq):\n    \"\"\"Convenience function for partially consuming a long of infinite iterable\"\"\"\n    return list(islice(seq, n))\n\ndef prod(iterable):\n    return reduce(operator.mul, iterable, 1)\n\ndef fact(n):\n    \"\"\"Factorial\"\"\"\n    return prod(range(1, n + 1))\n\ndef underten(x):\n    return x < 10\n\ndef R(seqn):\n    \"\"\"Regular generator\"\"\"\n    for i in seqn:\n        yield i\n\ndef L(seqn):\n    \"\"\"Test multiple tiers of iterators\"\"\"\n    return chain(map(lambda x: x, R(Ig(G(seqn)))))\n\ndef _t():\n    assert list(filter(lambda x: x % 2, range(10))) == [1, 3, 5, 7, 9], ('assertEqual', list(filter(lambda x: x % 2, range(10))), [1, 3, 5, 7, 9])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestExamples.test_map",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert list(map(pow, (2, 3, 10), (5, 2, 3))) == [32, 9, 1000], ('assertEqual', list(map(pow, (2, 3, 10), (5, 2, 3))), [32, 9, 1000])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestExamples.test_zip",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert list(zip('ABCD', 'xy')) == [('A', 'x'), ('B', 'y')], ('assertEqual', list(zip('ABCD', 'xy')), [('A', 'x'), ('B', 'y')])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGC.test_filter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def makecycle(iterator, container):\n    container.append(iterator)\n    next(iterator)\n    del container, iterator\n\ndef _t():\n    a = []\n    makecycle(filter(lambda x: True, [a] * 2), a)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGC.test_zip",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def makecycle(iterator, container):\n    container.append(iterator)\n    next(iterator)\n    del container, iterator\n\ndef _t():\n    a = []\n    makecycle(zip([a] * 2, [a] * 3), a)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestGC.test_map",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import operator\nfrom functools import reduce\n\ndef onearg(x):\n    \"\"\"Test function of one argument\"\"\"\n    return 2 * x\n\ndef gen3():\n    \"\"\"Non-restartable source sequence\"\"\"\n    for i in (0, 1, 2):\n        yield i\n\ndef isEven(x):\n    \"\"\"Test predicate\"\"\"\n    return x % 2 == 0\n\ndef isOdd(x):\n    \"\"\"Test predicate\"\"\"\n    return x % 2 == 1\n\ndef irange(n):\n    for i in range(n):\n        yield i\n\ndef take(n, seq):\n    \"\"\"Convenience function for partially consuming a long of infinite iterable\"\"\"\n    return list(islice(seq, n))\n\ndef prod(iterable):\n    return reduce(operator.mul, iterable, 1)\n\ndef fact(n):\n    \"\"\"Factorial\"\"\"\n    return prod(range(1, n + 1))\n\ndef underten(x):\n    return x < 10\n\ndef R(seqn):\n    \"\"\"Regular generator\"\"\"\n    for i in seqn:\n        yield i\n\ndef L(seqn):\n    \"\"\"Test multiple tiers of iterators\"\"\"\n    return chain(map(lambda x: x, R(Ig(G(seqn)))))\n\ndef makecycle(iterator, container):\n    container.append(iterator)\n    next(iterator)\n    del container, iterator\n\ndef _t():\n    a = []\n    makecycle(map(lambda x: x, [a] * 2), a)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "RegressionTests.test_sf_793826",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def mutatingtuple(tuple1, f, tuple2):\n\n        def g(value, first=[1]):\n            if first:\n                del first[:]\n                f(next(z))\n            return value\n        items = list(tuple2)\n        items[1:1] = list(tuple1)\n        gen = map(g, items)\n        z = zip(*[gen] * len(tuple1))\n        next(z)\n\n    def f(t):\n        global T\n        T = t\n        first[:] = list(T)\n    first = []\n    mutatingtuple((1, 2, 3), f, (4, 5, 6))\n    second = list(T)\n    assert first == second, ('assertEqual', first, second)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestBasicOps.test_combinations_overflow",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "ident": "TestBasicOps.test_combinations_tuple_reuse",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "ident": "TestBasicOps.test_combinations_with_replacement_overflow",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "ident": "TestBasicOps.test_combinations_with_replacement_tuple_reuse",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "ident": "TestBasicOps.test_permutations_overflow",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "ident": "TestBasicOps.test_permutations_tuple_reuse",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "ident": "TestBasicOps.test_count_threading",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "TestBasicOps.test_zip_tuple_reuse",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "ident": "TestBasicOps.test_zip_longest_tuple_reuse",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "ident": "TestBasicOps.test_product_overflow",
+      "reason": "decorator:support.bigaddrspacetest"
+    },
+    {
+      "ident": "TestBasicOps.test_product_tuple_reuse",
+      "reason": "decorator:support.impl_detail"
+    },
+    {
+      "ident": "TestBasicOps.test_tee_concurrent",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "TestBasicOps.test_combinations_result_gc",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestBasicOps.test_combinations_with_replacement_result_gc",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestBasicOps.test_permutations_result_gc",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestBasicOps.test_product_result_gc",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestBasicOps.test_zip_longest_result_gc",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestBasicOps.test_pairwise_result_gc",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestBasicOps.test_immutable_types",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "RegressionTests.test_long_chain_of_empty_iterables",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "SizeofTest.test_product_sizeof",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SizeofTest.test_combinations_sizeof",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SizeofTest.test_combinations_with_replacement_sizeof",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "SizeofTest.test_permutations_sizeof",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "ident": "TestBasicOps.test_accumulate",
+      "reason": "unresolved-name:accumulate"
+    },
+    {
+      "ident": "TestBasicOps.test_batched",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "ident": "TestBasicOps.test_chain",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "TestBasicOps.test_chain_from_iterable",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "TestBasicOps.test_combinations",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "ident": "TestBasicOps.test_combinations_with_replacement",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "ident": "TestBasicOps.test_permutations",
+      "reason": "unresolved-name:permutations"
+    },
+    {
+      "ident": "TestBasicOps.test_combinatorics",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "ident": "TestBasicOps.test_compress",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "TestBasicOps.test_count",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestBasicOps.test_count_with_step",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestBasicOps.test_count_with_step_threading",
+      "reason": "self.test_count_threading"
+    },
+    {
+      "ident": "TestBasicOps.test_cycle",
+      "reason": "unresolved-name:cycle"
+    },
+    {
+      "ident": "TestBasicOps.test_groupby",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "ident": "TestBasicOps.test_groupby_reentrant_eq_does_not_crash",
+      "reason": "uses-self.do_advance"
+    },
+    {
+      "ident": "TestBasicOps.test_grouper_reentrant_eq_does_not_crash",
+      "reason": "uses-self.do_advance"
+    },
+    {
+      "ident": "TestBasicOps.test_filter",
+      "reason": "helper:pickletest(unresolved-name:islice)"
+    },
+    {
+      "ident": "TestBasicOps.test_filterfalse",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestBasicOps.test_zip",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestBasicOps.test_ziplongest",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestBasicOps.test_zip_longest_bad_iterable",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "TestBasicOps.test_bug_7244",
+      "reason": "uses-self.o"
+    },
+    {
+      "ident": "TestBasicOps.test_pairwise",
+      "reason": "uses-self.assertEqual"
+    },
+    {
+      "ident": "TestBasicOps.test_pairwise_reenter",
+      "reason": "uses-self.count"
+    },
+    {
+      "ident": "TestBasicOps.test_pairwise_reenter2",
+      "reason": "uses-self.count"
+    },
+    {
+      "ident": "TestBasicOps.test_product",
+      "reason": "unresolved-name:product"
+    },
+    {
+      "ident": "TestBasicOps.test_repeat",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "ident": "TestBasicOps.test_repeat_with_negative_times",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "ident": "TestBasicOps.test_map",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestBasicOps.test_starmap",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestBasicOps.test_islice",
+      "reason": "uses-self.val"
+    },
+    {
+      "ident": "TestBasicOps.test_takewhile",
+      "reason": "unresolved-name:takewhile"
+    },
+    {
+      "ident": "TestBasicOps.test_dropwhile",
+      "reason": "unresolved-name:dropwhile"
+    },
+    {
+      "ident": "TestBasicOps.test_tee",
+      "reason": "unresolved-name:tee"
+    },
+    {
+      "ident": "TestBasicOps.test_tee_del_backward",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "ident": "TestBasicOps.test_tee_reenter",
+      "reason": "uses-self.first"
+    },
+    {
+      "ident": "TestBasicOps.test_StopIteration",
+      "reason": "unresolved-name:StopNow"
+    },
+    {
+      "ident": "TestExamples.test_accumulate",
+      "reason": "unresolved-name:accumulate"
+    },
+    {
+      "ident": "TestExamples.test_chain",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "TestExamples.test_chain_from_iterable",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "TestExamples.test_combinations",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "ident": "TestExamples.test_combinations_with_replacement",
+      "reason": "unresolved-name:combinations_with_replacement"
+    },
+    {
+      "ident": "TestExamples.test_compress",
+      "reason": "unresolved-name:compress"
+    },
+    {
+      "ident": "TestExamples.test_count",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestExamples.test_cycle",
+      "reason": "unresolved-name:cycle"
+    },
+    {
+      "ident": "TestExamples.test_dropwhile",
+      "reason": "unresolved-name:dropwhile"
+    },
+    {
+      "ident": "TestExamples.test_groupby",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "ident": "TestExamples.test_filterfalse",
+      "reason": "unresolved-name:filterfalse"
+    },
+    {
+      "ident": "TestExamples.test_islice",
+      "reason": "unresolved-name:islice"
+    },
+    {
+      "ident": "TestExamples.test_zip_longest",
+      "reason": "unresolved-name:zip_longest"
+    },
+    {
+      "ident": "TestExamples.test_permutations",
+      "reason": "unresolved-name:permutations"
+    },
+    {
+      "ident": "TestExamples.test_product",
+      "reason": "unresolved-name:product"
+    },
+    {
+      "ident": "TestExamples.test_repeat",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "ident": "TestExamples.test_stapmap",
+      "reason": "unresolved-name:starmap"
+    },
+    {
+      "ident": "TestExamples.test_takewhile",
+      "reason": "unresolved-name:takewhile"
+    },
+    {
+      "ident": "TestPurePythonRoughEquivalents.test_batched_recipe",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "ident": "TestPurePythonRoughEquivalents.test_groupby_recipe",
+      "reason": "unresolved-name:islice"
+    },
+    {
+      "ident": "TestPurePythonRoughEquivalents.test_islice_recipe",
+      "reason": "helper:islice(decorated-helper)"
+    },
+    {
+      "ident": "TestPurePythonRoughEquivalents.test_tee_recipe",
+      "reason": "uses-self.link"
+    },
+    {
+      "ident": "TestGC.test_accumulate",
+      "reason": "unresolved-name:accumulate"
+    },
+    {
+      "ident": "TestGC.test_batched",
+      "reason": "unresolved-name:batched"
+    },
+    {
+      "ident": "TestGC.test_chain",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "TestGC.test_chain_from_iterable",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "TestGC.test_combinations",
+      "reason": "unresolved-name:combinations"
+    },
+    {
+      "ident": "TestGC.test_combinations_with_replacement",
+      "reason": "unresolved-name:combinations_with_replacement"
+    },
+    {
+      "ident": "TestGC.test_compress",
+      "reason": "unresolved-name:compress"
+    },
+    {
+      "ident": "TestGC.test_count",
+      "reason": "unresolved-name:count"
+    },
+    {
+      "ident": "TestGC.test_cycle",
+      "reason": "unresolved-name:cycle"
+    },
+    {
+      "ident": "TestGC.test_dropwhile",
+      "reason": "unresolved-name:dropwhile"
+    },
+    {
+      "ident": "TestGC.test_groupby",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "ident": "TestGC.test_issue2246",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "ident": "TestGC.test_filterfalse",
+      "reason": "unresolved-name:filterfalse"
+    },
+    {
+      "ident": "TestGC.test_zip_longest",
+      "reason": "unresolved-name:zip_longest"
+    },
+    {
+      "ident": "TestGC.test_islice",
+      "reason": "unresolved-name:islice"
+    },
+    {
+      "ident": "TestGC.test_pairwise",
+      "reason": "unresolved-name:pairwise"
+    },
+    {
+      "ident": "TestGC.test_permutations",
+      "reason": "unresolved-name:permutations"
+    },
+    {
+      "ident": "TestGC.test_product",
+      "reason": "unresolved-name:product"
+    },
+    {
+      "ident": "TestGC.test_repeat",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "ident": "TestGC.test_starmap",
+      "reason": "unresolved-name:starmap"
+    },
+    {
+      "ident": "TestGC.test_takewhile",
+      "reason": "unresolved-name:takewhile"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_accumulate",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_batched",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_chain",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_compress",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_product",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_cycle",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_groupby",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_filter",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_filterfalse",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_zip",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_ziplongest",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_map",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_islice",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_pairwise",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_starmap",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_takewhile",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_dropwhile",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "TestVariousIteratorArgs.test_tee",
+      "reason": "unresolved-name:E"
+    },
+    {
+      "ident": "LengthTransparency.test_repeat",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "ident": "LengthTransparency.test_repeat_with_negative_times",
+      "reason": "unresolved-name:repeat"
+    },
+    {
+      "ident": "RegressionTests.test_sf_950057",
+      "reason": "unresolved-name:chain"
+    },
+    {
+      "ident": "RegressionTests.test_issue30347_1",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "ident": "RegressionTests.test_issue30347_2",
+      "reason": "unresolved-name:groupby"
+    },
+    {
+      "ident": "SubclassWithKwargsTest.test_keywords_in_subclass",
+      "reason": "uses-self.subTest"
+    }
+  ],
+  "counts": {
+    "extracted": 138,
+    "pinned": 8,
+    "quarantined": 130
+  }
+}

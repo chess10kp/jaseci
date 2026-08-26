@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "11e0d79986da69cce759ee684e472c54415dcb57",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/var/tmp/laneb-out/test_itertools/conv_itertools_pins.jac"
+  ],
+  "generated_at": "2026-08-24T15:03:42",
+  "hashes": {
+    "pins_jac": "0c978890274582ec3a10956e631b8bd7079ceb69663bf2e19be0f80cff44186a",
+    "conversion_json": "8743bc5c1223b8744f5acbb50c2f8c0e392858df415e6a989b1f5033caddce91",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "itertools",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 138,
+    "runnable": 5,
+    "green": 4,
+    "quarantined": 133,
+    "failed": 1,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestBasicOps.test_tee_dealloc_segfault",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'threading_helper' from '<unknown>'\">"
+    }
+  ]
+}

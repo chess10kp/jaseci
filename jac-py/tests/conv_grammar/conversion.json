@@ -1,0 +1,549 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "e6813d071549e9a9a03b24838596c6cc6ae9c1ba",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_grammar.py",
+    "-o",
+    "jac-py/tests/conv_grammar",
+    "--name",
+    "conv_grammar"
+  ],
+  "generated_at": "2026-08-24T15:08:24",
+  "hashes": {
+    "pins_jac": "4824de83f29744fabdd76ccea75493e413dce00e80f8af4f86fd74c0ef8b6885"
+  },
+  "source_file": "reference/cpython/Lib/test/test_grammar.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "grammar",
+  "pins_file": "conv_grammar_pins.jac",
+  "pins": [
+    {
+      "ident": "TokenTests.test_backslash",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 1 + 1\n    assert x == 2, ('assertEqual', x, 2)\n    x = 0\n    assert x == 0, ('assertEqual', x, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_plain_integers",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert type(0) == type(0), ('assertEqual', type(0), type(0))\n    assert 255 == 255, ('assertEqual', 255, 255)\n    assert 255 == 255, ('assertEqual', 255, 255)\n    assert 2147483647 == 2147483647, ('assertEqual', 2147483647, 2147483647)\n    assert 9 == 9, ('assertEqual', 9, 9)\n    try:\n        eval(*('0x',))\n    except SyntaxError:\n        pass\n    from sys import maxsize\n    if maxsize == 2147483647:\n        assert -2147483647 - 1 == -2147483648, ('assertEqual', -2147483647 - 1, -2147483648)\n        assert 4294967295 > 0, ('assertTrue', 4294967295 > 0)\n        assert 4294967295 > 0, ('assertTrue', 4294967295 > 0)\n        assert 2147483647 > 0, ('assertTrue', 2147483647 > 0)\n        for s in ('2147483648', '0o40000000000', '0x100000000', '0b10000000000000000000000000000000'):\n            try:\n                x = eval(s)\n            except OverflowError:\n                raise AssertionError('OverflowError on huge integer literal %r' % s)\n    elif maxsize == 9223372036854775807:\n        assert -9223372036854775807 - 1 == -9223372036854775808, ('assertEqual', -9223372036854775807 - 1, -9223372036854775808)\n        assert 18446744073709551615 > 0, ('assertTrue', 18446744073709551615 > 0)\n        assert 18446744073709551615 > 0, ('assertTrue', 18446744073709551615 > 0)\n        assert 4611686018427387903 > 0, ('assertTrue', 4611686018427387903 > 0)\n        for s in ('9223372036854775808', '0o2000000000000000000000', '0x10000000000000000', '0b100000000000000000000000000000000000000000000000000000000000000'):\n            try:\n                x = eval(s)\n            except OverflowError:\n                raise AssertionError('OverflowError on huge integer literal %r' % s)\n    else:\n        raise AssertionError('Weird maxsize value %r' % maxsize)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_long_integers",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 0\n    x = 18446744073709551615\n    x = 18446744073709551615\n    x = 2251799813685247\n    x = 2251799813685247\n    x = 123456789012345678901234567890\n    x = 295147905179352825856\n    x = 590295810358705651711\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_floats",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 3.14\n    x = 314.0\n    x = 0.314\n    x = 0.314\n    x = 0.314\n    x = 300000000000000.0\n    x = 300000000000000.0\n    x = 3e-14\n    x = 300000000000000.0\n    x = 300000000000000.0\n    x = 30000000000000.0\n    x = 31000.0\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_float_exponent_tokenization",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import warnings\n\ndef _t():\n    with warnings.catch_warnings():\n        warnings.simplefilter('ignore', SyntaxWarning)\n        assert eval('1 if 1else 0') == 1, ('assertEqual', eval('1 if 1else 0'), 1)\n        assert eval('1 if 0else 0') == 0, ('assertEqual', eval('1 if 0else 0'), 0)\n    try:\n        eval(*('0 if 1Else 0',))\n    except SyntaxError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_underscore_literals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.numbers import VALID_UNDERSCORE_LITERALS, INVALID_UNDERSCORE_LITERALS\n\ndef _t():\n    for lit in VALID_UNDERSCORE_LITERALS:\n        assert eval(lit) == eval(lit.replace('_', '')), ('assertEqual', eval(lit), eval(lit.replace('_', '')))\n    for lit in INVALID_UNDERSCORE_LITERALS:\n        try:\n            eval(*(lit,))\n        except SyntaxError:\n            pass\n    try:\n        eval(*('_0',))\n    except NameError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_string_literals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = ''\n    y = ''\n    assert len(x) == 0 and x == y, ('assertTrue', len(x) == 0 and x == y)\n    x = \"'\"\n    y = \"'\"\n    assert len(x) == 1 and x == y and (ord(x) == 39), ('assertTrue', len(x) == 1 and x == y and (ord(x) == 39))\n    x = '\"'\n    y = '\"'\n    assert len(x) == 1 and x == y and (ord(x) == 34), ('assertTrue', len(x) == 1 and x == y and (ord(x) == 34))\n    x = 'doesn\\'t \"shrink\" does it'\n    y = 'doesn\\'t \"shrink\" does it'\n    assert len(x) == 24 and x == y, ('assertTrue', len(x) == 24 and x == y)\n    x = 'does \"shrink\" doesn\\'t it'\n    y = 'does \"shrink\" doesn\\'t it'\n    assert len(x) == 24 and x == y, ('assertTrue', len(x) == 24 and x == y)\n    x = '\\nThe \"quick\"\\nbrown fox\\njumps over\\nthe \\'lazy\\' dog.\\n'\n    y = '\\nThe \"quick\"\\nbrown fox\\njumps over\\nthe \\'lazy\\' dog.\\n'\n    assert x == y, ('assertEqual', x, y)\n    y = '\\nThe \"quick\"\\nbrown fox\\njumps over\\nthe \\'lazy\\' dog.\\n'\n    assert x == y, ('assertEqual', x, y)\n    y = '\\nThe \"quick\"\\nbrown fox\\njumps over\\nthe \\'lazy\\' dog.\\n'\n    assert x == y, ('assertEqual', x, y)\n    y = '\\nThe \"quick\"\\nbrown fox\\njumps over\\nthe \\'lazy\\' dog.\\n'\n    assert x == y, ('assertEqual', x, y)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_string_prefixes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def check(s):\n        parsed = eval(s)\n        assert type(parsed) is str, ('assertIs', type(parsed), str)\n        assert len(parsed) > 0, ('assertGreater', len(parsed), 0)\n    check(\"u'abc'\")\n    check(\"r'abc\\t'\")\n    check(\"rf'abc\\x07 {1 + 1}'\")\n    check(\"fr'abc\\x07 {1 + 1}'\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_bytes_prefixes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def check(s):\n        parsed = eval(s)\n        assert type(parsed) is bytes, ('assertIs', type(parsed), bytes)\n        assert len(parsed) > 0, ('assertGreater', len(parsed), 0)\n    check(\"b'abc'\")\n    check(\"br'abc\\t'\")\n    check(\"rb'abc\\x07'\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TokenTests.test_ellipsis",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = ...\n    assert x is Ellipsis, ('assertTrue', x is Ellipsis)\n    try:\n        eval(*('.. .',))\n    except SyntaxError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_eval_input",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = eval('1, 0 or 1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_var_annot_basics",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    var1: int = 5\n    var2: [int, str]\n    my_lst = [42]\n\n    def one():\n        return 1\n    int.new_attr: int\n    [list][0]: type\n    my_lst[one() - 1]: int = 5\n    assert my_lst == [5], ('assertEqual', my_lst, [5])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_var_annot_syntax_errors",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "GrammarTests.test_annotations_inheritance",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    class A:\n        attr: int\n\n    class B(A):\n        pass\n\n    class C(A):\n        attr: str\n\n    class D:\n        attr2: int\n\n    class E(A, D):\n        pass\n\n    class F(C, A):\n        pass\n    assert A.__annotations__ == {'attr': int}, ('assertEqual', A.__annotations__, {'attr': int})\n    assert B.__annotations__ == {}, ('assertEqual', B.__annotations__, {})\n    assert C.__annotations__ == {'attr': str}, ('assertEqual', C.__annotations__, {'attr': str})\n    assert D.__annotations__ == {'attr2': int}, ('assertEqual', D.__annotations__, {'attr2': int})\n    assert E.__annotations__ == {}, ('assertEqual', E.__annotations__, {})\n    assert F.__annotations__ == {}, ('assertEqual', F.__annotations__, {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_var_annot_module_semantics",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import test.typinganndata.ann_module as ann_module\nimport typing\nfrom test.typinganndata import ann_module2\nimport test\n\ndef _t():\n    assert test.__annotations__ == {}, ('assertEqual', test.__annotations__, {})\n    assert ann_module.__annotations__ == {'x': int, 'y': str, 'f': typing.Tuple[int, int], 'u': int | float}, ('assertEqual', ann_module.__annotations__, {'x': int, 'y': str, 'f': typing.Tuple[int, int], 'u': int | float})\n    assert ann_module.M.__annotations__ == {'o': type}, ('assertEqual', ann_module.M.__annotations__, {'o': type})\n    assert ann_module2.__annotations__ == {}, ('assertEqual', ann_module2.__annotations__, {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_var_annot_in_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\n\ndef _t():\n    ann_module3 = import_helper.import_fresh_module('test.typinganndata.ann_module3')\n    try:\n        ann_module3.f_bad_ann()\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        ann_module3.g_bad_ann()\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        ann_module3.D_bad_ann(5)\n    except NameError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_var_annot_simple_exec",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import annotationlib\n\ndef _t():\n    gns = {}\n    lns = {}\n    exec(\"'docstring'\\nx: int = 5\\n\", gns, lns)\n    assert '__annotate__' not in gns, ('assertNotIn', '__annotate__', gns)\n    gns.update(lns)\n    assert lns['__annotate__'](annotationlib.Format.VALUE) == {'x': int}, ('assertEqual', lns['__annotate__'](annotationlib.Format.VALUE), {'x': int})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_var_annot_rhs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import typing\n\ndef _t():\n    ns = {}\n    exec('x: tuple = 1, 2', ns)\n    assert ns['x'] == (1, 2), ('assertEqual', ns['x'], (1, 2))\n    stmt = 'def f():\\n    x: int = yield'\n    exec(stmt, ns)\n    assert list(ns['f']()) == [None], ('assertEqual', list(ns['f']()), [None])\n    ns = {'a': 1, 'b': (2, 3, 4), 'c': 5, 'Tuple': typing.Tuple}\n    exec('x: Tuple[int, ...] = a,*b,c', ns)\n    assert ns['x'] == (1, 2, 3, 4, 5), ('assertEqual', ns['x'], (1, 2, 3, 4, 5))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_funcdef",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "GrammarTests.test_simple_stmt",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 1\n    pass\n    del x\n\n    def foo():\n        x = 1\n        pass\n        del x\n    foo()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_expr_stmt",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "GrammarTests.test_del_stmt",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    abc = [1, 2, 3]\n    x, y, z = abc\n    xyz = (x, y, z)\n    del abc\n    del x, y, (z, xyz)\n    x, y, z = 'xyz'\n    del x\n    del y\n    del z\n    del ()\n    a, b, c, d, e, f, g = 'abcdefg'\n    del a, (b, c), (d, (e, f))\n    a, b, c, d, e, f, g = 'abcdefg'\n    del a, [b, c], (d, [e, f])\n    abcd = list('abcd')\n    del abcd[1:2]\n    compile('del a, (b[0].c, (d.e, f.g[1:2])), [h.i.j], ()', '<testcase>', 'exec')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_pass_stmt",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_break_stmt",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    while 1:\n        break\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_continue_stmt",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    i = 1\n    while i:\n        i = 0\n        continue\n    msg = ''\n    while not msg:\n        msg = 'ok'\n        try:\n            continue\n            msg = 'continue failed to continue inside try'\n        except:\n            msg = 'continue inside try called except block'\n    if msg != 'ok':\n        raise AssertionError(msg)\n    msg = ''\n    while not msg:\n        msg = 'finally block not called'\n        try:\n            continue\n        finally:\n            msg = 'ok'\n    if msg != 'ok':\n        raise AssertionError(msg)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_break_continue_loop",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def test_inner(extra_burning_oil=1, count=0):\n        big_hippo = 2\n        while big_hippo:\n            count += 1\n            try:\n                if extra_burning_oil and big_hippo == 1:\n                    extra_burning_oil -= 1\n                    break\n                big_hippo -= 1\n                continue\n            except:\n                raise\n        if count > 2 or big_hippo != 1:\n            raise AssertionError('continue then break in try/except in loop broken!')\n    test_inner()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_return",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "GrammarTests.test_control_flow_in_finally",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "GrammarTests.test_raise",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    try:\n        raise RuntimeError('just testing')\n    except RuntimeError:\n        pass\n    try:\n        raise KeyboardInterrupt\n    except KeyboardInterrupt:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_import",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    import sys\n    import time, sys\n    from time import time\n    from time import time\n    from sys import path, argv\n    from sys import path, argv\n    from sys import path, argv\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_global",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    global a\n    global a, b\n    global one, two, three, four, five, six, seven, eight, nine, ten\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_nonlocal",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 0\n    y = 0\n\n    def f():\n        nonlocal x\n        nonlocal x, y\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_assert",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 1\n    assert 1, 1\n    assert lambda x: x\n    assert 1, lambda x: x + 1\n    try:\n        assert True\n    except AssertionError as e:\n        raise AssertionError(\"'assert True' should not have raised an AssertionError\")\n    try:\n        assert True, 'this should always pass'\n    except AssertionError as e:\n        raise AssertionError(\"'assert True, msg' should not have raised an AssertionError\")\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_assert_warning_promotes_to_syntax_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import warnings\n\ndef _t():\n    with warnings.catch_warnings():\n        warnings.simplefilter('error', SyntaxWarning)\n        try:\n            compile('assert x, \"msg\" ', '<testcase>', 'exec')\n        except SyntaxError:\n            raise AssertionError('SyntaxError incorrectly raised for \\'assert x, \"msg\"\\'')\n        try:\n            compile('assert(x, \"msg\")', '<testcase>', 'exec')\n        except SyntaxError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            compile('assert(False, \"msg\")', '<testcase>', 'exec')\n        except SyntaxError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            compile('assert(False,)', '<testcase>', 'exec')\n        except SyntaxError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_if",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    if 1:\n        pass\n    if 1:\n        pass\n    else:\n        pass\n    if 0:\n        pass\n    elif 0:\n        pass\n    if 0:\n        pass\n    elif 0:\n        pass\n    elif 0:\n        pass\n    elif 0:\n        pass\n    else:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_while",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    while 0:\n        pass\n    while 0:\n        pass\n    else:\n        pass\n    x = 0\n    while 0:\n        x = 1\n    else:\n        x = 2\n    assert x == 2, ('assertEqual', x, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_try",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    try:\n        1 / 0\n    except ZeroDivisionError:\n        pass\n    else:\n        pass\n    try:\n        1 / 0\n    except EOFError:\n        pass\n    except TypeError as msg:\n        pass\n    except:\n        pass\n    else:\n        pass\n    try:\n        1 / 0\n    except (EOFError, TypeError, ZeroDivisionError):\n        pass\n    try:\n        1 / 0\n    except (EOFError, TypeError, ZeroDivisionError):\n        pass\n    try:\n        1 / 0\n    except (EOFError, TypeError, ZeroDivisionError) as msg:\n        pass\n    try:\n        pass\n    finally:\n        pass\n    try:\n        compile('try:\\n    pass\\nexcept Exception as a.b:\\n    pass', '?', 'exec')\n        compile('try:\\n    pass\\nexcept Exception as a[b]:\\n    pass', '?', 'exec')\n    except SyntaxError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_try_star",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    try:\n        1 / 0\n    except* ZeroDivisionError:\n        pass\n    else:\n        pass\n    try:\n        1 / 0\n    except* EOFError:\n        pass\n    except* ZeroDivisionError as msg:\n        pass\n    else:\n        pass\n    try:\n        1 / 0\n    except* (EOFError, TypeError, ZeroDivisionError):\n        pass\n    try:\n        1 / 0\n    except* (EOFError, TypeError, ZeroDivisionError):\n        pass\n    try:\n        1 / 0\n    except* (EOFError, TypeError, ZeroDivisionError) as msg:\n        pass\n    try:\n        pass\n    finally:\n        pass\n    try:\n        compile('try:\\n    pass\\nexcept* Exception as a.b:\\n    pass', '?', 'exec')\n        compile('try:\\n    pass\\nexcept* Exception as a[b]:\\n    pass', '?', 'exec')\n        compile('try:\\n    pass\\nexcept*:\\n    pass', '?', 'exec')\n    except SyntaxError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_suite",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    if 1:\n        pass\n    if 1:\n        pass\n    if 1:\n        pass\n        pass\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_test",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    if not 1:\n        pass\n    if 1 and 1:\n        pass\n    if 1 or 1:\n        pass\n    if not not not 1:\n        pass\n    if not 1 and 1 and 1:\n        pass\n    if 1 and 1 or (1 and 1 and 1) or (not 1 and 1):\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_comparison",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    if 1:\n        pass\n    x = 1 == 1\n    if 1 == 1:\n        pass\n    if 1 != 1:\n        pass\n    if 1 < 1:\n        pass\n    if 1 > 1:\n        pass\n    if 1 <= 1:\n        pass\n    if 1 >= 1:\n        pass\n    if x is x:\n        pass\n    if x is not x:\n        pass\n    if 1 in ():\n        pass\n    if 1 not in ():\n        pass\n    if 1 < 1 > 1 == 1 >= 1 <= 1 != 1 in 1 not in x is x is not x:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_binary_mask_ops",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 1 & 1\n    x = 1 ^ 1\n    x = 1 | 1\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_shift_ops",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 1 << 1\n    x = 1 >> 1\n    x = 1 << 1 >> 1\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_additive_ops",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 1\n    x = 1 + 1\n    x = 1 - 1 - 1\n    x = 1 - 1 + 1 - 1 + 1\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_multiplicative_ops",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 1 * 1\n    x = 1 / 1\n    x = 1 % 1\n    x = 1 / 1 * 1 % 1\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_unary_ops",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = +1\n    x = -1\n    x = ~1\n    x = ~1 ^ 1 & 1 | 1 & 1 ^ -1\n    x = -1 * 1 / 1 + 1 * 1 - ---1 * 1\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_selectors",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    import sys, time\n    c = sys.path[0]\n    x = time.time()\n    x = sys.modules['time'].time()\n    a = '01234'\n    c = a[0]\n    c = a[-1]\n    s = a[0:5]\n    s = a[:5]\n    s = a[0:]\n    s = a[:]\n    s = a[-5:]\n    s = a[:-1]\n    s = a[-4:-3]\n    d = {}\n    d[1] = 1\n    d[1,] = 2\n    d[1, 2] = 3\n    d[1, 2, 3] = 4\n    L = list(d)\n    L.sort(key=lambda x: (type(x).__name__, x))\n    assert str(L) == '[1, (1,), (1, 2), (1, 2, 3)]', ('assertEqual', str(L), '[1, (1,), (1, 2), (1, 2, 3)]')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_atoms",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 1\n    x = 1 or 2 or 3\n    x = (1 or 2 or 3, 2, 3)\n    x = []\n    x = [1]\n    x = [1 or 2 or 3]\n    x = [1 or 2 or 3, 2, 3]\n    x = []\n    x = {}\n    x = {'one': 1}\n    x = {'one': 1}\n    x = {'one' or 'two': 1 or 2}\n    x = {'one': 1, 'two': 2}\n    x = {'one': 1, 'two': 2}\n    x = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6}\n    x = {'one'}\n    x = {'one', 1}\n    x = {'one', 'two', 'three'}\n    x = {2, 3, 4}\n    x = x\n    x = 'x'\n    x = 123\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_classdef",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    class B:\n        pass\n\n    class B2:\n        pass\n\n    class C1(B):\n        pass\n\n    class C2(B):\n        pass\n\n    class D(C1, C2, B):\n        pass\n\n    class C:\n\n        def meth1(self):\n            pass\n\n        def meth2(self, arg):\n            pass\n\n        def meth3(self, a1, a2):\n            pass\n\n    def class_decorator(x):\n        return x\n\n    @class_decorator\n    class G:\n        pass\n\n    @False or class_decorator\n    class H:\n        pass\n\n    @(d := class_decorator)\n    class I:\n        pass\n\n    @lambda c: class_decorator(c)\n    class J:\n        pass\n\n    @[..., class_decorator, ...][1]\n    class K:\n        pass\n\n    @class_decorator(class_decorator)(class_decorator)\n    class L:\n        pass\n\n    @[class_decorator][0].__call__.__call__\n    class M:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_dictcomps",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    nums = [1, 2, 3]\n    assert {i: i + 1 for i in nums} == {1: 2, 2: 3, 3: 4}, ('assertEqual', {i: i + 1 for i in nums}, {1: 2, 2: 3, 3: 4})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_listcomps",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "GrammarTests.test_genexps",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "GrammarTests.test_comprehension_specials",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    x = 10\n    g = (i for i in range(x))\n    x = 5\n    assert len(list(g)) == 10, ('assertEqual', len(list(g)), 10)\n    x = 10\n    t = False\n    g = ((i, j) for i in range(x) if t for j in range(x))\n    x = 5\n    t = True\n    assert [(i, j) for i in range(10) for j in range(5)] == list(g), ('assertEqual', [(i, j) for i in range(10) for j in range(5)], list(g))\n    assert [x for x in range(10) if x % 2 if x % 3] == [1, 5, 7], ('assertEqual', [x for x in range(10) if x % 2 if x % 3], [1, 5, 7])\n    assert list((x for x in range(10) if x % 2 if x % 3)) == [1, 5, 7], ('assertEqual', list((x for x in range(10) if x % 2 if x % 3)), [1, 5, 7])\n    assert [x for x, in [(4,), (5,), (6,)]] == [4, 5, 6], ('assertEqual', [x for x, in [(4,), (5,), (6,)]], [4, 5, 6])\n    assert list((x for x, in [(7,), (8,), (9,)])) == [7, 8, 9], ('assertEqual', list((x for x, in [(7,), (8,), (9,)])), [7, 8, 9])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_with_statement",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    class manager(object):\n\n        def __enter__(self):\n            return (1, 2)\n\n        def __exit__(self, *args):\n            pass\n    with manager():\n        pass\n    with manager() as x:\n        pass\n    with manager() as (x, y):\n        pass\n    with manager(), manager():\n        pass\n    with manager() as x, manager() as y:\n        pass\n    with manager() as x, manager():\n        pass\n    with manager():\n        pass\n    with manager() as x:\n        pass\n    with manager() as (x, y), manager() as z:\n        pass\n    with manager(), manager():\n        pass\n    with manager() as x, manager() as y:\n        pass\n    with manager() as x, manager():\n        pass\n    with manager() as x, manager() as y, manager() as z:\n        pass\n    with manager() as x, manager() as y, manager():\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_if_else_expr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def _checkeval(msg, ret):\n        \"\"\"helper to check that evaluation of expressions is done correctly\"\"\"\n        print(msg)\n        return ret\n    assert [x() for x in (lambda: True, lambda: False) if x()] == [True], ('assertEqual', [x() for x in (lambda: True, lambda: False) if x()], [True])\n    assert [x(False) for x in (lambda x: False if x else True, lambda x: True if x else False) if x(False)] == [True], ('assertEqual', [x(False) for x in (lambda x: False if x else True, lambda x: True if x else False) if x(False)], [True])\n    assert (5 if 1 else _checkeval('check 1', 0)) == 5, ('assertEqual', (5 if 1 else _checkeval('check 1', 0)), 5)\n    assert (_checkeval('check 2', 0) if 0 else 5) == 5, ('assertEqual', (_checkeval('check 2', 0) if 0 else 5), 5)\n    assert (5 and 6 if 0 else 1) == 1, ('assertEqual', (5 and 6 if 0 else 1), 1)\n    assert (5 and 6 if 0 else 1) == 1, ('assertEqual', (5 and 6 if 0 else 1), 1)\n    assert (5 and (6 if 1 else 1)) == 6, ('assertEqual', (5 and (6 if 1 else 1)), 6)\n    assert (0 or _checkeval('check 3', 2) if 0 else 3) == 3, ('assertEqual', (0 or _checkeval('check 3', 2) if 0 else 3), 3)\n    assert (1 or _checkeval('check 4', 2) if 1 else _checkeval('check 5', 3)) == 1, ('assertEqual', (1 or _checkeval('check 4', 2) if 1 else _checkeval('check 5', 3)), 1)\n    assert (0 or 5 if 1 else _checkeval('check 6', 3)) == 5, ('assertEqual', (0 or 5 if 1 else _checkeval('check 6', 3)), 5)\n    assert (not 5 if 1 else 1) == False, ('assertEqual', (not 5 if 1 else 1), False)\n    assert (not 5 if 0 else 1) == 1, ('assertEqual', (not 5 if 0 else 1), 1)\n    assert (6 + 1 if 1 else 2) == 7, ('assertEqual', (6 + 1 if 1 else 2), 7)\n    assert (6 - 1 if 1 else 2) == 5, ('assertEqual', (6 - 1 if 1 else 2), 5)\n    assert (6 * 2 if 1 else 4) == 12, ('assertEqual', (6 * 2 if 1 else 4), 12)\n    assert (6 / 2 if 1 else 3) == 3, ('assertEqual', (6 / 2 if 1 else 3), 3)\n    assert (6 < 4 if 0 else 2) == 2, ('assertEqual', (6 < 4 if 0 else 2), 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_paren_evaluation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    assert 16 // (4 // 2) == 8, ('assertEqual', 16 // (4 // 2), 8)\n    assert 16 // 4 // 2 == 2, ('assertEqual', 16 // 4 // 2, 2)\n    assert 16 // 4 // 2 == 2, ('assertEqual', 16 // 4 // 2, 2)\n    x = 2\n    y = 3\n    assert False is (x is y), ('assertTrue', False is (x is y))\n    assert not (False is x) is y, ('assertFalse', (False is x) is y)\n    assert not False is x is y, ('assertFalse', False is x is y)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_async_for",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    class Done(Exception):\n        pass\n\n    class AIter:\n\n        def __aiter__(self):\n            return self\n\n        async def __anext__(self):\n            raise StopAsyncIteration\n\n    async def foo():\n        async for i in AIter():\n            pass\n        async for i, j in AIter():\n            pass\n        async for i in AIter():\n            pass\n        else:\n            pass\n        raise Done\n    try:\n        foo().send(None)\n    except Done as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_async_with",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    class Done(Exception):\n        pass\n\n    class manager:\n\n        async def __aenter__(self):\n            return (1, 2)\n\n        async def __aexit__(self, *exc):\n            return False\n\n    async def foo():\n        async with manager():\n            pass\n        async with manager() as x:\n            pass\n        async with manager() as (x, y):\n            pass\n        async with manager(), manager():\n            pass\n        async with manager() as x, manager() as y:\n            pass\n        async with manager() as x, manager():\n            pass\n        raise Done\n    try:\n        foo().send(None)\n    except Done as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GrammarTests.test_complex_lambda",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def test1(foo, bar):\n        return ''\n\n    def test2():\n        return f\"{test1(foo=lambda: '\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001\u3001', bar=lambda: 'abcdefghijklmnopqrstuvwxyz 123456789 123456789')}\"\n    assert test2() == '', ('assertEqual', test2(), '')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "GrammarTests.test_assert_failures",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "TokenTests.test_bad_numerical_literals",
+      "reason": "uses-self.check_syntax_error"
+    },
+    {
+      "ident": "TokenTests.test_end_of_numerical_literals",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "ident": "TokenTests.test_eof_error",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "TokenTests.test_max_level",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "ident": "GrammarTests.test_var_annot_basic_semantics",
+      "reason": "uses-self.x"
+    },
+    {
+      "ident": "GrammarTests.test_lambdef",
+      "reason": "unresolved-name:d"
+    },
+    {
+      "ident": "GrammarTests.test_former_statements_refer_to_builtins",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "ident": "GrammarTests.test_yield",
+      "reason": "unresolved-name:f"
+    },
+    {
+      "ident": "GrammarTests.test_yield_in_comprehensions",
+      "reason": "uses-self.check_syntax_error"
+    },
+    {
+      "ident": "GrammarTests.test_assert_syntax_warnings",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "ident": "GrammarTests.test_for",
+      "reason": "uses-self.max"
+    },
+    {
+      "ident": "GrammarTests.test_comparison_is_literal",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "ident": "GrammarTests.test_warn_missed_comma",
+      "reason": "self.check_syntax_warning"
+    },
+    {
+      "ident": "GrammarTests.test_matrix_mul",
+      "reason": "uses-self.other"
+    },
+    {
+      "ident": "GrammarTests.test_async_await",
+      "reason": "unresolved-name:someobj"
+    }
+  ],
+  "counts": {
+    "extracted": 75,
+    "pinned": 52,
+    "quarantined": 23
+  }
+}
