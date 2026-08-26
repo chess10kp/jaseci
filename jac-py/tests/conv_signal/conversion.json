@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_signal.py",
+    "-o",
+    "/var/tmp/worker8-signal-wt/jac-py/tests/conv_signal",
+    "--name",
+    "conv_signal"
+  ],
+  "generated_at": "2026-08-25T22:44:32",
+  "hashes": {
+    "pins_jac": "73c1e1c0e7cb33f11570f381b337c045b2bc60cbd26080bd80e28970815680db"
+  },
+  "source_file": "reference/cpython/Lib/test/test_signal.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "signal",
+  "pins_file": "conv_signal_pins.jac",
+  "pins": [
+    {
+      "ident": "GenericTests.test_enums",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import enum\nimport signal\nimport sys\n\ndef _t():\n    for name in dir(signal):\n        sig = getattr(signal, name)\n        if name in {'SIG_DFL', 'SIG_IGN'}:\n            assert isinstance(sig, signal.Handlers), ('assertIsInstance', sig, signal.Handlers)\n        elif name in {'SIG_BLOCK', 'SIG_UNBLOCK', 'SIG_SETMASK'}:\n            assert isinstance(sig, signal.Sigmasks), ('assertIsInstance', sig, signal.Sigmasks)\n        elif name.startswith('SIG') and (not name.startswith('SIG_')):\n            assert isinstance(sig, signal.Signals), ('assertIsInstance', sig, signal.Signals)\n        elif name.startswith('CTRL_'):\n            assert isinstance(sig, signal.Signals), ('assertIsInstance', sig, signal.Signals)\n            assert sys.platform == 'win32', ('assertEqual', sys.platform, 'win32')\n    CheckedSignals = enum._old_convert_(enum.IntEnum, 'Signals', 'signal', lambda name: name.isupper() and (name.startswith('SIG') and (not name.startswith('SIG_'))) or name.startswith('CTRL_'), source=signal)\n    enum._test_simple_enum(CheckedSignals, signal.Signals)\n    CheckedHandlers = enum._old_convert_(enum.IntEnum, 'Handlers', 'signal', lambda name: name in ('SIG_DFL', 'SIG_IGN'), source=signal)\n    enum._test_simple_enum(CheckedHandlers, signal.Handlers)\n    Sigmasks = getattr(signal, 'Sigmasks', None)\n    if Sigmasks is not None:\n        CheckedSigmasks = enum._old_convert_(enum.IntEnum, 'Sigmasks', 'signal', lambda name: name in ('SIG_BLOCK', 'SIG_UNBLOCK', 'SIG_SETMASK'), source=signal)\n        enum._test_simple_enum(CheckedSigmasks, Sigmasks)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GenericTests.test_functions_module_attr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import inspect\nimport signal\n\ndef _t():\n    for name in dir(signal):\n        value = getattr(signal, name)\n        if inspect.isroutine(value) and (not inspect.isbuiltin(value)):\n            assert value.__module__ == 'signal', ('assertEqual', value.__module__, 'signal')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PosixTests.test_setting_signal_handler_to_none_raises_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    try:\n        signal.signal(*(signal.SIGUSR1, None))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PosixTests.test_strsignal",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    assert 'Interrupt' in signal.strsignal(signal.SIGINT), ('assertIn', 'Interrupt', signal.strsignal(signal.SIGINT))\n    assert 'Terminated' in signal.strsignal(signal.SIGTERM), ('assertIn', 'Terminated', signal.strsignal(signal.SIGTERM))\n    assert 'Hangup' in signal.strsignal(signal.SIGHUP), ('assertIn', 'Hangup', signal.strsignal(signal.SIGHUP))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PosixTests.test_valid_signals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    s = signal.valid_signals()\n    assert isinstance(s, set), ('assertIsInstance', s, set)\n    assert signal.Signals.SIGINT in s, ('assertIn', signal.Signals.SIGINT, s)\n    assert signal.Signals.SIGALRM in s, ('assertIn', signal.Signals.SIGALRM, s)\n    assert 0 not in s, ('assertNotIn', 0, s)\n    assert signal.NSIG not in s, ('assertNotIn', signal.NSIG, s)\n    assert len(s) < signal.NSIG, ('assertLess', len(s), signal.NSIG)\n    for name in dir(signal):\n        if not name.startswith('SIG'):\n            continue\n        if name in {'SIG_IGN', 'SIG_DFL'}:\n            continue\n        signum = getattr(signal, name)\n        assert signum >= 0, ('assertGreaterEqual', signum, 0)\n        assert signum < signal.NSIG, ('assertLess', signum, signal.NSIG)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PosixTests.test_keyboard_interrupt_exit_code",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\nimport subprocess\nimport sys\n\ndef _t():\n    \"\"\"KeyboardInterrupt triggers exit via SIGINT.\"\"\"\n    process = subprocess.run([sys.executable, '-c', 'import os, signal, time\\nos.kill(os.getpid(), signal.SIGINT)\\nfor _ in range(999): time.sleep(0.01)'], stderr=subprocess.PIPE)\n    assert b'KeyboardInterrupt' in process.stderr, ('assertIn', b'KeyboardInterrupt', process.stderr)\n    assert process.returncode == -signal.SIGINT, ('assertEqual', process.returncode, -signal.SIGINT)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WakeupFDTests.test_invalid_call",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    try:\n        signal.set_wakeup_fd(signum=signal.SIGINT)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        signal.set_wakeup_fd(signal.SIGINT, False)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WakeupFDTests.test_invalid_fd",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "WakeupFDTests.test_set_wakeup_fd_result",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport os\nimport signal\n\ndef _t():\n    r1, w1 = os.pipe()\n    _add_cleanup(os.close, *(r1,))\n    _add_cleanup(os.close, *(w1,))\n    r2, w2 = os.pipe()\n    _add_cleanup(os.close, *(r2,))\n    _add_cleanup(os.close, *(w2,))\n    if hasattr(os, 'set_blocking'):\n        os.set_blocking(w1, False)\n        os.set_blocking(w2, False)\n    signal.set_wakeup_fd(w1)\n    assert signal.set_wakeup_fd(w2) == w1, ('assertEqual', signal.set_wakeup_fd(w2), w1)\n    assert signal.set_wakeup_fd(-1) == w2, ('assertEqual', signal.set_wakeup_fd(-1), w2)\n    assert signal.set_wakeup_fd(-1) == -1, ('assertEqual', signal.set_wakeup_fd(-1), -1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigpending_empty",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    assert signal.sigpending() == set(), ('assertEqual', signal.sigpending(), set())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigtimedwait_negative_timeout",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    signum = signal.SIGALRM\n    try:\n        signal.sigtimedwait(*([signum], -1.0))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PendingSignalsTests.test_pthread_sigmask_arguments",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    try:\n        signal.pthread_sigmask()\n    except TypeError:\n        pass\n    try:\n        signal.pthread_sigmask(*(1,))\n    except TypeError:\n        pass\n    try:\n        signal.pthread_sigmask(*(1, 2, 3))\n    except TypeError:\n        pass\n    try:\n        signal.pthread_sigmask(*(1700, []))\n    except OSError:\n        pass\n    try:\n        signal.pthread_sigmask(signal.SIG_BLOCK, [signal.NSIG])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        signal.pthread_sigmask(signal.SIG_BLOCK, [0])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        signal.pthread_sigmask(signal.SIG_BLOCK, [1 << 1000])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PendingSignalsTests.test_pthread_sigmask_valid_signals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport signal\n\ndef _t():\n    s = signal.pthread_sigmask(signal.SIG_BLOCK, signal.valid_signals())\n    _add_cleanup(signal.pthread_sigmask, *(signal.SIG_SETMASK, s))\n    s = signal.pthread_sigmask(signal.SIG_UNBLOCK, signal.valid_signals())\n    assert s <= signal.valid_signals(), ('assertLessEqual', s, signal.valid_signals())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "RaiseSignalTest.test_sigint",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import signal\n\ndef _t():\n    try:\n        signal.raise_signal(signal.SIGINT)\n    except KeyboardInterrupt as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "RaiseSignalTest.test_handler",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport signal\n\ndef _t():\n    is_ok = False\n\n    def handler(a, b):\n        nonlocal is_ok\n        is_ok = True\n    old_signal = signal.signal(signal.SIGINT, handler)\n    _add_cleanup(signal.signal, *(signal.SIGINT, old_signal))\n    signal.raise_signal(signal.SIGINT)\n    assert is_ok, ('assertTrue', is_ok)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "WindowsSignalTests.test_valid_signals",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "WindowsSignalTests.test_issue9324",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "WindowsSignalTests.test_keyboard_interrupt_exit_code",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "WakeupFDTests.test_invalid_socket",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "WakeupFDTests.test_set_wakeup_fd_socket_result",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "WakeupSignalTests.test_wakeup_write_error",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "WakeupSocketSignalTests.test_socket",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "WakeupSocketSignalTests.test_send_error",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "WakeupSocketSignalTests.test_warn_on_full_buffer",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "SiginterruptTest.test_siginterrupt_off",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "ident": "ItimerTest.test_itimer_virtual",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "PendingSignalsTests.test_pthread_kill",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigwait_thread",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "PendingSignalsTests.test_pthread_sigmask",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "PendingSignalsTests.test_pthread_kill_main_thread",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "StressTest.test_stress_modifying_handlers",
+      "reason": "decorator:support.requires_gil_enabled"
+    },
+    {
+      "ident": "RaiseSignalTest.test_invalid_argument",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "PidfdSignalTest.test_pidfd_send_signal",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "PosixTests.test_out_of_range_signal_number_raises_error",
+      "reason": "uses-self.trivial_signal_handler"
+    },
+    {
+      "ident": "PosixTests.test_getsignal",
+      "reason": "uses-self.trivial_signal_handler"
+    },
+    {
+      "ident": "PosixTests.test_no_repr_is_called_on_signal_handler",
+      "reason": "uses-self.trivial_signal_handler"
+    },
+    {
+      "ident": "PosixTests.test_interprocess_signal",
+      "reason": "unsupported-import:test.support.script_helper"
+    },
+    {
+      "ident": "WakeupFDTests.test_set_wakeup_fd_blocking",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "ident": "WakeupSignalTests.test_wakeup_fd_early",
+      "reason": "helper:check_wakeup(decorated-helper)"
+    },
+    {
+      "ident": "WakeupSignalTests.test_wakeup_fd_during",
+      "reason": "helper:check_wakeup(decorated-helper)"
+    },
+    {
+      "ident": "WakeupSignalTests.test_signum",
+      "reason": "helper:check_wakeup(decorated-helper)"
+    },
+    {
+      "ident": "WakeupSignalTests.test_pending",
+      "reason": "helper:check_wakeup(decorated-helper)"
+    },
+    {
+      "ident": "SiginterruptTest.test_without_siginterrupt",
+      "reason": "unsupported-import:test.support.script_helper"
+    },
+    {
+      "ident": "SiginterruptTest.test_siginterrupt_on",
+      "reason": "unsupported-import:test.support.script_helper"
+    },
+    {
+      "ident": "ItimerTest.test_itimer_exc",
+      "reason": "uses-self.sig_alrm"
+    },
+    {
+      "ident": "ItimerTest.test_itimer_real",
+      "reason": "uses-self.sig_alrm"
+    },
+    {
+      "ident": "ItimerTest.test_itimer_prof",
+      "reason": "uses-self.sig_alrm"
+    },
+    {
+      "ident": "ItimerTest.test_setitimer_tiny",
+      "reason": "uses-self.sig_alrm"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigpending",
+      "reason": "unsupported-import:test.support.script_helper"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigwait",
+      "reason": "helper:wait_helper(decorated-helper)"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigwaitinfo",
+      "reason": "helper:wait_helper(decorated-helper)"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigtimedwait",
+      "reason": "helper:wait_helper(decorated-helper)"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigtimedwait_poll",
+      "reason": "helper:wait_helper(decorated-helper)"
+    },
+    {
+      "ident": "PendingSignalsTests.test_sigtimedwait_timeout",
+      "reason": "helper:wait_helper(decorated-helper)"
+    },
+    {
+      "ident": "StressTest.test_stress_delivery_dependent",
+      "reason": "helper:decide_itimer_count(self.skipTest)"
+    },
+    {
+      "ident": "StressTest.test_stress_delivery_simultaneous",
+      "reason": "helper:decide_itimer_count(self.skipTest)"
+    },
+    {
+      "ident": "RaiseSignalTest.test__thread_interrupt_main",
+      "reason": "unsupported-import:test.support.script_helper"
+    }
+  ],
+  "counts": {
+    "extracted": 57,
+    "pinned": 14,
+    "quarantined": 43
+  }
+}

@@ -1633,6 +1633,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from signal { signal_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2103,6 +2104,15 @@ def import_native(absname: str) -> PyObj {
         # as lossy to_host copies and every query would answer about the wrong
         # heap. Serve the native facade instead (see gc.jac).
         shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
+    }
+    if absname == "signal" and not ("signal" in shim_modules) {
+        # signalmodule.c lift: guest-native constants plus a synchronous
+        # dispatch core (signal/getsignal/raise_signal/default_int_handler)
+        # layered over the delegated host snapshot for the OS-bound surface.
+        sigmod = build_signal_facade();
+        if not is_error(sigmod) {
+            shim_modules["signal"] = sigmod;
+        }
     }
     if absname == "errno" and not ("errno" in shim_modules) {
         # errnomodule.c lift: a pure-data surface (constants + errorcode). The
@@ -5336,6 +5346,13 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # Same rationale as the import_native site above: host gc cannot see
         # native guest objects.
         shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
+    }
+    if name == "signal" and not ("signal" in shim_modules) {
+        # Mirror of the import_native site: same constant/dispatch overlay.
+        sigmod = build_signal_facade();
+        if not is_error(sigmod) {
+            shim_modules["signal"] = sigmod;
+        }
     }
     if name == "types" and not ("types" in shim_modules) {
         # The host types.coroutine cannot mark VM-native functions (it mutates
@@ -14827,6 +14844,24 @@ obj PyTypesCoroutine(PyObj) {
 # Facade over the real host `types` module for the proxy import path: every
 # public member stays the same host object that direct proxying would serve,
 # with coroutine swapped for the native implementation above.
+def build_signal_facade -> PyObj {
+    # signalmodule.c lift: start from the delegated host snapshot (OS-bound
+    # surface: alarm, itimers, pthread_sigmask, sigwait family, wakeup fd,
+    # strsignal, valid_signals, Signals/Handlers/Sigmasks enums) and overlay
+    # the guest-native constants plus the synchronous dispatch core from
+    # signal.jac. Same facade-over-host composition as build_types_facade.
+    mod = delegated_module("signal");
+    if is_error(mod) {
+        return mod;
+    }
+    m = mod as PyModule;
+    native = signal_module_attrs();
+    for k in native {
+        m.attrs[k] = native[k];
+    }
+    return mod;
+}
+
 def build_types_facade -> PyObj {
     star: list[PyObj] = [PyStr(t="str", val="*")];
     result = _jac_host_import("types", star);
