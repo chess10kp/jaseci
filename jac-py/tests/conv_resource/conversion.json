@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_resource.py",
+    "-o",
+    "/var/tmp/worker3-resource-2021195/jac-py/tests/conv_resource",
+    "--name",
+    "conv_resource"
+  ],
+  "generated_at": "2026-08-25T22:53:12",
+  "hashes": {
+    "pins_jac": "69a0f9ce0b2a8c889087c4132e63b3eeb0758a42bdb5fcc7d6c138511f866bb5"
+  },
+  "source_file": "reference/cpython/Lib/test/test_resource.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "resource",
+  "pins_file": "conv_resource_pins.jac",
+  "pins": [
+    {
+      "ident": "ResourceTest.test_args",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    try:\n        resource.getrlimit()\n    except TypeError:\n        pass\n    try:\n        resource.getrlimit(*(0, 42))\n    except TypeError:\n        pass\n    try:\n        resource.getrlimit(*(2 ** 1000,))\n    except OverflowError:\n        pass\n    try:\n        resource.getrlimit(*(-2 ** 1000,))\n    except OverflowError:\n        pass\n    try:\n        resource.getrlimit(*('0',))\n    except TypeError:\n        pass\n    try:\n        resource.setrlimit()\n    except TypeError:\n        pass\n    try:\n        resource.setrlimit(*(0,))\n    except TypeError:\n        pass\n    try:\n        resource.setrlimit(*(0, 42))\n    except TypeError:\n        pass\n    try:\n        resource.setrlimit(*(0, 42, 42))\n    except TypeError:\n        pass\n    try:\n        resource.setrlimit(*(2 ** 1000, (42, 42)))\n    except OverflowError:\n        pass\n    try:\n        resource.setrlimit(*(-2 ** 1000, (42, 42)))\n    except OverflowError:\n        pass\n    try:\n        resource.setrlimit(*(0, (42,)))\n    except ValueError:\n        pass\n    try:\n        resource.setrlimit(*(0, (42, 42, 42)))\n    except ValueError:\n        pass\n    try:\n        resource.setrlimit(*('0', (42, 42)))\n    except TypeError:\n        pass\n    try:\n        resource.setrlimit(*(0, ('42', 42)))\n    except TypeError:\n        pass\n    try:\n        resource.setrlimit(*(0, (42, '42')))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_fsize_ismax",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    cur, max = resource.getrlimit(resource.RLIMIT_FSIZE)\n    assert resource.RLIM_INFINITY == max, ('assertEqual', resource.RLIM_INFINITY, max)\n    resource.setrlimit(resource.RLIMIT_FSIZE, (cur, max))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_fsize_enforced",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nfrom test.support import os_helper\nimport time\nresource = import_helper.import_module('resource')\n\ndef _t():\n    cur, max = resource.getrlimit(resource.RLIMIT_FSIZE)\n    try:\n        try:\n            resource.setrlimit(resource.RLIMIT_FSIZE, (1024, max))\n            limit_set = True\n        except ValueError:\n            limit_set = False\n        f = open(os_helper.TESTFN, 'wb')\n        try:\n            f.write(b'X' * 1024)\n            try:\n                f.write(b'Y')\n                f.flush()\n                for i in range(5):\n                    time.sleep(0.1)\n                    f.flush()\n            except OSError:\n                if not limit_set:\n                    raise\n            if limit_set:\n                resource.setrlimit(resource.RLIMIT_FSIZE, (cur, max))\n        finally:\n            f.close()\n    finally:\n        if limit_set:\n            resource.setrlimit(resource.RLIMIT_FSIZE, (cur, max))\n        os_helper.unlink(os_helper.TESTFN)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_fsize_too_big",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    too_big = 10 ** 50\n    cur, max = resource.getrlimit(resource.RLIMIT_FSIZE)\n    try:\n        resource.setrlimit(resource.RLIMIT_FSIZE, (too_big, max))\n    except (OverflowError, ValueError):\n        pass\n    try:\n        resource.setrlimit(resource.RLIMIT_FSIZE, (max, too_big))\n    except (OverflowError, ValueError):\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_fsize_not_too_big",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    cur, max = resource.getrlimit(resource.RLIMIT_FSIZE)\n    _add_cleanup(resource.setrlimit, *(resource.RLIMIT_FSIZE, (cur, max)))\n\n    def expected(cur):\n        if resource.RLIM_INFINITY < 0:\n            return [(cur, max), (resource.RLIM_INFINITY, max)]\n        elif resource.RLIM_INFINITY < cur:\n            return [(resource.RLIM_INFINITY, max)]\n        else:\n            return [(cur, max)]\n    resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 31 - 5, max))\n    assert resource.getrlimit(resource.RLIMIT_FSIZE) == (2 ** 31 - 5, max), ('assertEqual', resource.getrlimit(resource.RLIMIT_FSIZE), (2 ** 31 - 5, max))\n    try:\n        resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 32, max))\n    except OverflowError:\n        resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 31, max))\n        assert resource.getrlimit(resource.RLIMIT_FSIZE) in expected(2 ** 31), ('assertIn', resource.getrlimit(resource.RLIMIT_FSIZE), expected(2 ** 31))\n        resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 32 - 5, max))\n        assert resource.getrlimit(resource.RLIMIT_FSIZE) in expected(2 ** 32 - 5), ('assertIn', resource.getrlimit(resource.RLIMIT_FSIZE), expected(2 ** 32 - 5))\n    else:\n        assert resource.getrlimit(resource.RLIMIT_FSIZE) in expected(2 ** 32), ('assertIn', resource.getrlimit(resource.RLIMIT_FSIZE), expected(2 ** 32))\n        resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 31, max))\n        assert resource.getrlimit(resource.RLIMIT_FSIZE) == (2 ** 31, max), ('assertEqual', resource.getrlimit(resource.RLIMIT_FSIZE), (2 ** 31, max))\n        resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 32 - 5, max))\n        assert resource.getrlimit(resource.RLIMIT_FSIZE) == (2 ** 32 - 5, max), ('assertEqual', resource.getrlimit(resource.RLIMIT_FSIZE), (2 ** 32 - 5, max))\n        resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 63 - 5, max))\n        assert resource.getrlimit(resource.RLIMIT_FSIZE) in expected(2 ** 63 - 5), ('assertIn', resource.getrlimit(resource.RLIMIT_FSIZE), expected(2 ** 63 - 5))\n        try:\n            resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 63, max))\n        except ValueError:\n            pass\n        else:\n            assert resource.getrlimit(resource.RLIMIT_FSIZE) in expected(2 ** 63), ('assertIn', resource.getrlimit(resource.RLIMIT_FSIZE), expected(2 ** 63))\n            resource.setrlimit(resource.RLIMIT_FSIZE, (2 ** 64 - 5, max))\n            assert resource.getrlimit(resource.RLIMIT_FSIZE) in expected(2 ** 64 - 5), ('assertIn', resource.getrlimit(resource.RLIMIT_FSIZE), expected(2 ** 64 - 5))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "ResourceTest.test_fsize_negative",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    cur, max = resource.getrlimit(resource.RLIMIT_FSIZE)\n    for value in (-5, -2 ** 31, -2 ** 32 - 5, -2 ** 63, -2 ** 64 - 5, -2 ** 1000):\n        assert value != resource.RLIM_INFINITY, ('assertNotEqual', value, resource.RLIM_INFINITY)\n        try:\n            resource.setrlimit(*(resource.RLIMIT_FSIZE, (value, max)))\n        except ValueError:\n            pass\n        try:\n            resource.setrlimit(*(resource.RLIMIT_FSIZE, (cur, value)))\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_getrusage",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    try:\n        resource.getrusage()\n    except TypeError:\n        pass\n    try:\n        resource.getrusage(*(42, 42))\n    except TypeError:\n        pass\n    usageself = resource.getrusage(resource.RUSAGE_SELF)\n    usagechildren = resource.getrusage(resource.RUSAGE_CHILDREN)\n    try:\n        usageboth = resource.getrusage(resource.RUSAGE_BOTH)\n    except (ValueError, AttributeError):\n        pass\n    try:\n        usage_thread = resource.getrusage(resource.RUSAGE_THREAD)\n    except (ValueError, AttributeError):\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_setrusage_refcount",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    limits = resource.getrlimit(resource.RLIMIT_CPU)\n\n    class BadSequence:\n\n        def __len__(self):\n            return 2\n\n        def __getitem__(self, key):\n            if key in (0, 1):\n                return len(tuple(range(1000000)))\n            raise IndexError\n    resource.setrlimit(resource.RLIMIT_CPU, BadSequence())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_pagesize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    pagesize = resource.getpagesize()\n    assert isinstance(pagesize, int), ('assertIsInstance', pagesize, int)\n    assert pagesize >= 0, ('assertGreaterEqual', pagesize, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_linux_constants",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import contextlib\nfrom test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    for attr in ['MSGQUEUE', 'NICE', 'RTPRIO', 'RTTIME', 'SIGPENDING']:\n        with contextlib.suppress(AttributeError):\n            assert isinstance(getattr(resource, 'RLIMIT_' + attr), int), ('assertIsInstance', getattr(resource, 'RLIMIT_' + attr), int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_freebsd_contants",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import contextlib\nfrom test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    for attr in ['SWAP', 'SBSIZE', 'NPTS']:\n        with contextlib.suppress(AttributeError):\n            assert isinstance(getattr(resource, 'RLIMIT_' + attr), int), ('assertIsInstance', getattr(resource, 'RLIMIT_' + attr), int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_prlimit",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n    try:\n        resource.prlimit()\n    except TypeError:\n        pass\n    try:\n        resource.prlimit(*(-1, resource.RLIMIT_AS))\n    except ProcessLookupError:\n        pass\n    limit = resource.getrlimit(resource.RLIMIT_AS)\n    assert resource.prlimit(0, resource.RLIMIT_AS) == limit, ('assertEqual', resource.prlimit(0, resource.RLIMIT_AS), limit)\n    assert resource.prlimit(0, resource.RLIMIT_AS, limit) == limit, ('assertEqual', resource.prlimit(0, resource.RLIMIT_AS, limit), limit)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ResourceTest.test_prlimit_refcount",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nfrom test.support import import_helper\nresource = import_helper.import_module('resource')\n\ndef _t():\n\n    class BadSeq:\n\n        def __len__(self):\n            return 2\n\n        def __getitem__(self, key):\n            lim = limits[key]\n            return lim - 1 if lim > 0 else lim + sys.maxsize * 2\n    limits = resource.getrlimit(resource.RLIMIT_AS)\n    assert resource.prlimit(0, resource.RLIMIT_AS, BadSeq()) == limits, ('assertEqual', resource.prlimit(0, resource.RLIMIT_AS, BadSeq()), limits)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 13,
+    "pinned": 13,
+    "quarantined": 0
+  }
+}
