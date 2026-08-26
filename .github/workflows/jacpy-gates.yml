@@ -29,6 +29,10 @@ jobs:
   jac-py-gates:
     name: jac-py P4 gates
     runs-on: ubuntu-latest
+    # Hard ceiling: a silent hang below must fail the lane, not eat the runner
+    # until someone cancels it by hand (run 32935764002 sat 26 outputless
+    # minutes in Layer 4 before an external cancel).
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
 
@@ -60,8 +64,21 @@ jobs:
           # dispatches seed content-keyed build caches for the next checkpoint.
           write-caches: "true"
 
+      # The suite hung with ZERO test marks across four consecutive dispatches
+      # on three branches (32922677661, 32935764002, 32935801136, 32937299321):
+      # the reporter flushes one progress mark per completed test, so silence
+      # means the very first outcome never landed (import/init or first oracle
+      # bridge call, not an assertion diff). Run it verbose + unbuffered with a
+      # step timeout so the next dispatch either shows live per-test progress
+      # or fails fast naming the stuck point instead of stalling until an
+      # external cancel. Worker RSS footprints (JAC_TEST_RSS_LOG) identify a
+      # deadlocked fork-pool child vs a slow one.
       - name: Layer 4 oracle contract tests
-        run: jac test jac-py/jacpython/layer4_compile.jac
+        timeout-minutes: 20
+        env:
+          PYTHONUNBUFFERED: "1"
+          JAC_TEST_RSS_LOG: "1"
+        run: jac test --verbose jac-py/jacpython/layer4_compile.jac
 
       - name: P0.10 compiler slice tests
         run: jac test jac-py/jacpython/compiler_slice.jac
