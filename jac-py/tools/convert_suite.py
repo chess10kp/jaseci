@@ -730,6 +730,18 @@ _SKIP_DECOS = {
     "skipUnlessDB", "requires",  # support.requires* caught below
 }
 
+# Harness modules with NATIVE facades in jacpython (layer_p2_libtest
+# register_shim_module): guest replays resolve these, so prelude imports of
+# them no longer force a blanket quarantine -- only harness surface with no
+# facade does.
+_SHIMMED_TEST_MODULES = {
+    "test",
+    "test.support",
+    "test.support.os_helper",
+    "test.support.import_helper",
+    "test.support.numbers",
+}
+
 # Availability-gate decorators: pure skip predicates (platform/feature
 # probes), never test logic. On the host that captures the oracle they
 # always pass, so stripping them keeps the oracle valid; drop instead of
@@ -737,7 +749,52 @@ _SKIP_DECOS = {
 _DROPPABLE_DECOS = {"cpython_only", "requires_subprocess"}
 
 
-def _decorator_reason(deco: ast.expr) -> str | None:
+def _host_skip_env(tree: ast.Module) -> dict:
+    """Namespace for constant-folding skip-decorator predicates on the host.
+
+    Built by executing the suite's own top-level imports and assignments
+    (os, sys, mmap, PAGESIZE = mmap.PAGESIZE, ...) -- exactly what the
+    predicates read. The oracle-capture interpreter IS this host, so a
+    predicate evaluated here decides faithfully whether unittest would run
+    or skip the test; anything that fails to evaluate keeps the old
+    blanket-quarantine behavior.
+    """
+    env: dict = {"__builtins__": __builtins__}
+
+    def _import_module(name: str):
+        return __import__(name)
+
+    # Fallback seeds for names from the harness package when it cannot load
+    # on this interpreter: stable support constants plus no-op helpers.
+    env.setdefault("import_module", _import_module)
+    env.setdefault("_1G", 2**30)
+    env.setdefault("_2G", 2**31)
+    env.setdefault("_4G", 2**32)
+    for node in tree.body:
+        try:
+            if isinstance(node, ast.Import | ast.ImportFrom):
+                if node.col_offset != 0:
+                    continue
+                code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
+                exec(code, env)
+            elif isinstance(node, ast.Assign | ast.AnnAssign) and node.col_offset == 0:
+                code = compile(ast.Module(body=[node], type_ignores=[]), "<skip-env>", "exec")
+                exec(code, env)
+        except Exception:
+            continue
+    return env
+
+
+def _eval_skip_cond(cond: ast.expr, env: dict) -> bool | None:
+    """Evaluate a skipIf/skipUnless condition on the host; None on failure."""
+    try:
+        code = compile(ast.Expression(cond), "<skip-cond>", "eval")
+        return bool(eval(code, env))  # noqa: S307 - pinned reference tree input
+    except Exception:
+        return None
+
+
+def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
     name = None
     if isinstance(deco, ast.Name):
         name = deco.id
@@ -751,7 +808,25 @@ def _decorator_reason(deco: ast.expr) -> str | None:
             return f"decorator:{base}.{deco.attr}"
         return None
     elif isinstance(deco, ast.Call):
-        return _decorator_reason(deco.func)
+        func = deco.func
+        attr = base = ""
+        if isinstance(func, ast.Attribute):
+            base = func.value.id if isinstance(func.value, ast.Name) else ""
+            attr = func.attr
+        elif isinstance(func, ast.Name):
+            attr = func.id
+        if attr in ("skipIf", "skipUnless") and base in ("", "unittest") and deco.args:
+            # Constant-fold the gate on the host oracle interpreter (same
+            # policy as _DROPPABLE_DECOS): when the predicate evaluates we
+            # know whether unittest would run or skip -- strip runnable
+            # gates, quarantine skipped ones precisely. Unevaluable gates
+            # keep the blanket decorator quarantine below.
+            verdict = _eval_skip_cond(deco.args[0], env) if env is not None else None
+            if verdict is True:
+                return None if attr == "skipUnless" else "skipped-on-host"
+            if verdict is False:
+                return None if attr == "skipIf" else "skipped-on-host"
+        return _decorator_reason(func, env)
     if name and name in _DROPPABLE_DECOS:
         return None
     if name and name in _SKIP_DECOS:
@@ -1256,6 +1331,7 @@ def extract_tests(
 ) -> Extraction:
     result = Extraction()
     prelude, prelude_names = collect_prelude(tree, source, include_classes=True)
+    skip_env = _host_skip_env(tree)
     cmap = _module_class_map(tree)
     mod_classes = {
         node.name: node for node in tree.body if isinstance(node, ast.ClassDef)
@@ -1284,7 +1360,7 @@ def extract_tests(
         if isinstance(node, ast.ClassDef):
             class_reason = None
             for deco in node.decorator_list:
-                reason = _decorator_reason(deco)
+                reason = _decorator_reason(deco, skip_env)
                 if reason:
                     class_reason = reason
             seen_methods: set[str] = set()
@@ -1296,7 +1372,7 @@ def extract_tests(
                 reason = class_reason
                 if reason is None:
                     for deco in member.decorator_list:
-                        reason = _decorator_reason(deco)
+                        reason = _decorator_reason(deco, skip_env)
                         if reason:
                             break
                 if reason is not None:
@@ -1329,7 +1405,7 @@ def extract_tests(
                     candidates.append((node.name, ident, list(fn.body)))
         elif isinstance(node, ast.FunctionDef) and node.name.startswith("test"):
             for deco in node.decorator_list:
-                reason = _decorator_reason(deco)
+                reason = _decorator_reason(deco, skip_env)
                 if reason:
                     result.quarantined.append(Quarantined(node.name, reason))
                     break
@@ -1397,10 +1473,12 @@ def extract_tests(
                 for binding in _prelude_bindings(item)
             }
             kept_prelude = _prune_prelude(candidate, pool, pool_names)
-            # The CPython test harness (test.support) is not part of any
-            # guest stdlib and is version-locked to the reference tree, so
-            # snippets depending on it can neither capture a host oracle nor
-            # replay on jacpython — quarantine instead of emitting dead pins.
+            # The CPython test harness surface WITHOUT a native facade is not
+            # part of any guest stdlib and cannot replay on jacpython --
+            # quarantine precisely on that module. Shimmed harness modules
+            # (see _SHIMMED_TEST_MODULES) flow through: their host oracle is
+            # capturable (reference Lib appended to sys.path) and their guest
+            # replay resolves through the registered facades.
             for stmt in kept_prelude:
                 if isinstance(stmt, ast.Import):
                     mods = [alias.name for alias in stmt.names]
@@ -1408,8 +1486,10 @@ def extract_tests(
                     mods = [stmt.module]
                 else:
                     continue
-                if any(m == "test" or m.startswith("test.") for m in mods):
-                    raise Unsupported("unsupported-import:test.support")
+                for m in mods:
+                    is_test = m == "test" or m.startswith("test.")
+                    if is_test and m not in _SHIMMED_TEST_MODULES:
+                        raise Unsupported(f"unsupported-import:{m}")
             available = pool_names | _bound_names(ast.Module(body=kept_prelude, type_ignores=[]))
             _check_names(candidate, available)
         except Unsupported as exc:
