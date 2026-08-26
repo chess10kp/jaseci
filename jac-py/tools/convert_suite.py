@@ -319,6 +319,27 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [
             ast.Raise(exc=ast.Call(func=ast.Name(id="AssertionError", ctx=ast.Load()), args=[msg], keywords=[]), cause=None)
         ]
+    if fname == "skipTest":
+        # unittest.TestCase.skipTest(msg) *is* ``raise unittest.SkipTest(msg)``;
+        # rewriting keeps conditional guards (``if cond: self.skipTest(...)``)
+        # faithful: the raise only fires when its guard is true, and a guard
+        # that is false at runtime leaves the test body intact. Requires
+        # ``import unittest`` in the source file (checked by _check_names).
+        msg = call.args[0] if call.args else ast.Constant(value="")
+        return [
+            ast.Raise(
+                exc=ast.Call(
+                    func=ast.Attribute(
+                        value=ast.Name(id="unittest", ctx=ast.Load()),
+                        attr="SkipTest",
+                        ctx=ast.Load(),
+                    ),
+                    args=[msg],
+                    keywords=[],
+                ),
+                cause=None,
+            )
+        ]
     if fname in ("assertWarns", "assertWarnsRegex", "assertLogs", "assertNoLogs"):
         raise Unsupported(fname)
     if fname in ("assertRaises", "assertRaisesRegex"):

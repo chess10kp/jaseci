@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_tracemalloc.py",
+    "-o",
+    "/var/tmp/worker4-600-port-tracemalloc-1663065/jac-py/tests/conv_tracemalloc",
+    "--name",
+    "conv_tracemalloc"
+  ],
+  "generated_at": "2026-08-25T22:00:14",
+  "hashes": {
+    "pins_jac": "3038d0a6ffa6d51f78de119650b4dfa9505154935a9bd69263d4bf25acf08e9e"
+  },
+  "source_file": "reference/cpython/Lib/test/test_tracemalloc.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "tracemalloc",
+  "pins_file": "conv_tracemalloc_pins.jac",
+  "pins": [
+    {
+      "ident": "TestTraceback.test_repr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef _t():\n\n    def get_repr(*args) -> str:\n        return repr(tracemalloc.Traceback(*args))\n    assert get_repr(()) == '<Traceback ()>', ('assertEqual', get_repr(()), '<Traceback ()>')\n    assert get_repr((), 0) == '<Traceback () total_nframe=0>', ('assertEqual', get_repr((), 0), '<Traceback () total_nframe=0>')\n    frames = (('f1', 1), ('f2', 2))\n    exp_repr_frames = \"(<Frame filename='f2' lineno=2>, <Frame filename='f1' lineno=1>)\"\n    assert get_repr(frames) == f'<Traceback {exp_repr_frames}>', ('assertEqual', get_repr(frames), f'<Traceback {exp_repr_frames}>')\n    assert get_repr(frames, 2) == f'<Traceback {exp_repr_frames} total_nframe=2>', ('assertEqual', get_repr(frames, 2), f'<Traceback {exp_repr_frames} total_nframe=2>')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_get_tracemalloc_memory",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport tracemalloc\nimport unittest\nEMPTY_STRING_SIZE = sys.getsizeof(b'')\n\ndef get_frames(nframe, lineno_delta):\n    frames = []\n    frame = sys._getframe(1)\n    for index in range(nframe):\n        code = frame.f_code\n        lineno = frame.f_lineno + lineno_delta\n        frames.append((code.co_filename, lineno))\n        lineno_delta = 0\n        frame = frame.f_back\n        if frame is None:\n            break\n    return tuple(frames)\n\ndef allocate_bytes(size):\n    nframe = tracemalloc.get_traceback_limit()\n    bytes_len = size - EMPTY_STRING_SIZE\n    frames = get_frames(nframe, 1)\n    data = b'x' * bytes_len\n    return (data, tracemalloc.Traceback(frames, min(len(frames), nframe)))\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n    data = [allocate_bytes(123) for count in range(1000)]\n    size = tracemalloc.get_tracemalloc_memory()\n    assert size >= 0, ('assertGreaterEqual', size, 0)\n    tracemalloc.clear_traces()\n    size2 = tracemalloc.get_tracemalloc_memory()\n    assert size2 >= 0, ('assertGreaterEqual', size2, 0)\n    assert size2 <= size, ('assertLessEqual', size2, size)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_get_object_traceback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport tracemalloc\nimport unittest\nEMPTY_STRING_SIZE = sys.getsizeof(b'')\n\ndef get_frames(nframe, lineno_delta):\n    frames = []\n    frame = sys._getframe(1)\n    for index in range(nframe):\n        code = frame.f_code\n        lineno = frame.f_lineno + lineno_delta\n        frames.append((code.co_filename, lineno))\n        lineno_delta = 0\n        frame = frame.f_back\n        if frame is None:\n            break\n    return tuple(frames)\n\ndef allocate_bytes(size):\n    nframe = tracemalloc.get_traceback_limit()\n    bytes_len = size - EMPTY_STRING_SIZE\n    frames = get_frames(nframe, 1)\n    data = b'x' * bytes_len\n    return (data, tracemalloc.Traceback(frames, min(len(frames), nframe)))\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n    tracemalloc.clear_traces()\n    obj_size = 12345\n    obj, obj_traceback = allocate_bytes(obj_size)\n    traceback = tracemalloc.get_object_traceback(obj)\n    assert traceback == obj_traceback, ('assertEqual', traceback, obj_traceback)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_set_traceback_limit",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 7, 10)"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_get_traces",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport tracemalloc\nimport unittest\nEMPTY_STRING_SIZE = sys.getsizeof(b'')\n\ndef get_frames(nframe, lineno_delta):\n    frames = []\n    frame = sys._getframe(1)\n    for index in range(nframe):\n        code = frame.f_code\n        lineno = frame.f_lineno + lineno_delta\n        frames.append((code.co_filename, lineno))\n        lineno_delta = 0\n        frame = frame.f_back\n        if frame is None:\n            break\n    return tuple(frames)\n\ndef allocate_bytes(size):\n    nframe = tracemalloc.get_traceback_limit()\n    bytes_len = size - EMPTY_STRING_SIZE\n    frames = get_frames(nframe, 1)\n    data = b'x' * bytes_len\n    return (data, tracemalloc.Traceback(frames, min(len(frames), nframe)))\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n\n    def find_trace(traces, traceback, size):\n        for trace in traces:\n            if trace[2] == traceback._frames and trace[1] == size:\n                return trace\n        raise AssertionError('trace not found')\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n    tracemalloc.clear_traces()\n    obj_size = 12345\n    obj, obj_traceback = allocate_bytes(obj_size)\n    traces = tracemalloc._get_traces()\n    trace = find_trace(traces, obj_traceback, obj_size)\n    assert isinstance(trace, tuple), ('assertIsInstance', trace, tuple)\n    domain, size, traceback, length = trace\n    assert traceback == obj_traceback._frames, ('assertEqual', traceback, obj_traceback._frames)\n    tracemalloc.stop()\n    assert tracemalloc._get_traces() == [], ('assertEqual', tracemalloc._get_traces(), [])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_get_traces_intern_traceback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport tracemalloc\nimport unittest\nEMPTY_STRING_SIZE = sys.getsizeof(b'')\n\ndef get_frames(nframe, lineno_delta):\n    frames = []\n    frame = sys._getframe(1)\n    for index in range(nframe):\n        code = frame.f_code\n        lineno = frame.f_lineno + lineno_delta\n        frames.append((code.co_filename, lineno))\n        lineno_delta = 0\n        frame = frame.f_back\n        if frame is None:\n            break\n    return tuple(frames)\n\ndef allocate_bytes(size):\n    nframe = tracemalloc.get_traceback_limit()\n    bytes_len = size - EMPTY_STRING_SIZE\n    frames = get_frames(nframe, 1)\n    data = b'x' * bytes_len\n    return (data, tracemalloc.Traceback(frames, min(len(frames), nframe)))\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n\n    def find_trace(traces, traceback, size):\n        for trace in traces:\n            if trace[2] == traceback._frames and trace[1] == size:\n                return trace\n        raise AssertionError('trace not found')\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n\n    def allocate_bytes2(size):\n        return allocate_bytes(size)\n\n    def allocate_bytes3(size):\n        return allocate_bytes2(size)\n\n    def allocate_bytes4(size):\n        return allocate_bytes3(size)\n    tracemalloc.stop()\n    tracemalloc.start(4)\n    obj1_size = 123\n    obj2_size = 125\n    obj1, obj1_traceback = allocate_bytes4(obj1_size)\n    obj2, obj2_traceback = allocate_bytes4(obj2_size)\n    traces = tracemalloc._get_traces()\n    obj1_traceback._frames = tuple(reversed(obj1_traceback._frames))\n    obj2_traceback._frames = tuple(reversed(obj2_traceback._frames))\n    trace1 = find_trace(traces, obj1_traceback, obj1_size)\n    trace2 = find_trace(traces, obj2_traceback, obj2_size)\n    domain1, size1, traceback1, length1 = trace1\n    domain2, size2, traceback2, length2 = trace2\n    assert traceback2 is traceback1, ('assertIs', traceback2, traceback1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_get_traced_memory",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport tracemalloc\nimport unittest\nEMPTY_STRING_SIZE = sys.getsizeof(b'')\n\ndef get_frames(nframe, lineno_delta):\n    frames = []\n    frame = sys._getframe(1)\n    for index in range(nframe):\n        code = frame.f_code\n        lineno = frame.f_lineno + lineno_delta\n        frames.append((code.co_filename, lineno))\n        lineno_delta = 0\n        frame = frame.f_back\n        if frame is None:\n            break\n    return tuple(frames)\n\ndef allocate_bytes(size):\n    nframe = tracemalloc.get_traceback_limit()\n    bytes_len = size - EMPTY_STRING_SIZE\n    frames = get_frames(nframe, 1)\n    data = b'x' * bytes_len\n    return (data, tracemalloc.Traceback(frames, min(len(frames), nframe)))\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n    max_error = 2048\n    obj_size = 1024 * 1024\n    tracemalloc.clear_traces()\n    obj, obj_traceback = allocate_bytes(obj_size)\n    size, peak_size = tracemalloc.get_traced_memory()\n    assert size >= obj_size, ('assertGreaterEqual', size, obj_size)\n    assert peak_size >= size, ('assertGreaterEqual', peak_size, size)\n    assert size - obj_size <= max_error, ('assertLessEqual', size - obj_size, max_error)\n    assert peak_size - size <= max_error, ('assertLessEqual', peak_size - size, max_error)\n    obj = None\n    size2, peak_size2 = tracemalloc.get_traced_memory()\n    assert size2 < size, ('assertLess', size2, size)\n    assert size - size2 >= obj_size - max_error, ('assertGreaterEqual', size - size2, obj_size - max_error)\n    assert peak_size2 >= peak_size, ('assertGreaterEqual', peak_size2, peak_size)\n    tracemalloc.clear_traces()\n    assert tracemalloc.get_traced_memory() == (0, 0), ('assertEqual', tracemalloc.get_traced_memory(), (0, 0))\n    obj, obj_traceback = allocate_bytes(obj_size)\n    size, peak_size = tracemalloc.get_traced_memory()\n    assert size >= obj_size, ('assertGreaterEqual', size, obj_size)\n    tracemalloc.stop()\n    assert tracemalloc.get_traced_memory() == (0, 0), ('assertEqual', tracemalloc.get_traced_memory(), (0, 0))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_clear_traces",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport tracemalloc\nimport unittest\nEMPTY_STRING_SIZE = sys.getsizeof(b'')\n\ndef get_frames(nframe, lineno_delta):\n    frames = []\n    frame = sys._getframe(1)\n    for index in range(nframe):\n        code = frame.f_code\n        lineno = frame.f_lineno + lineno_delta\n        frames.append((code.co_filename, lineno))\n        lineno_delta = 0\n        frame = frame.f_back\n        if frame is None:\n            break\n    return tuple(frames)\n\ndef allocate_bytes(size):\n    nframe = tracemalloc.get_traceback_limit()\n    bytes_len = size - EMPTY_STRING_SIZE\n    frames = get_frames(nframe, 1)\n    data = b'x' * bytes_len\n    return (data, tracemalloc.Traceback(frames, min(len(frames), nframe)))\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n    obj, obj_traceback = allocate_bytes(123)\n    traceback = tracemalloc.get_object_traceback(obj)\n    assert traceback is not None, ('assertIsNotNone', traceback)\n    tracemalloc.clear_traces()\n    traceback2 = tracemalloc.get_object_traceback(obj)\n    assert traceback2 is None, ('assertIsNone', traceback2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_reset_peak",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport tracemalloc\nimport unittest\nEMPTY_STRING_SIZE = sys.getsizeof(b'')\n\ndef get_frames(nframe, lineno_delta):\n    frames = []\n    frame = sys._getframe(1)\n    for index in range(nframe):\n        code = frame.f_code\n        lineno = frame.f_lineno + lineno_delta\n        frames.append((code.co_filename, lineno))\n        lineno_delta = 0\n        frame = frame.f_back\n        if frame is None:\n            break\n    return tuple(frames)\n\ndef allocate_bytes(size):\n    nframe = tracemalloc.get_traceback_limit()\n    bytes_len = size - EMPTY_STRING_SIZE\n    frames = get_frames(nframe, 1)\n    data = b'x' * bytes_len\n    return (data, tracemalloc.Traceback(frames, min(len(frames), nframe)))\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n    tracemalloc.clear_traces()\n    large_sum = sum(list(range(100000)))\n    size1, peak1 = tracemalloc.get_traced_memory()\n    tracemalloc.reset_peak()\n    size2, peak2 = tracemalloc.get_traced_memory()\n    assert peak2 >= size2, ('assertGreaterEqual', peak2, size2)\n    assert peak2 < peak1, ('assertLess', peak2, peak1)\n    obj_size = 1024 * 1024\n    obj, obj_traceback = allocate_bytes(obj_size)\n    size3, peak3 = tracemalloc.get_traced_memory()\n    assert peak3 >= size3, ('assertGreaterEqual', peak3, size3)\n    assert peak3 > peak2, ('assertGreater', peak3, peak2)\n    assert peak3 - peak2 >= obj_size, ('assertGreaterEqual', peak3 - peak2, obj_size)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_is_tracing",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\nimport unittest\n\ndef _t():\n\n    def setUp():\n        if tracemalloc.is_tracing():\n            raise unittest.SkipTest('tracemalloc must be stopped before the test')\n        tracemalloc.start(1)\n    if tracemalloc.is_tracing():\n        raise unittest.SkipTest('tracemalloc must be stopped before the test')\n    tracemalloc.start(1)\n    tracemalloc.stop()\n    assert not tracemalloc.is_tracing(), ('assertFalse', tracemalloc.is_tracing())\n    tracemalloc.start()\n    assert tracemalloc.is_tracing(), ('assertTrue', tracemalloc.is_tracing())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_no_incomplete_frames",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertIn', 'test_tracemalloc', '/tmp/conv_suite_z5lyq7zx/oracle_snippet.py')"
+    },
+    {
+      "ident": "TestSnapshot.test_create_snapshot",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import contextlib\nimport tracemalloc\nfrom unittest.mock import patch\n\ndef _t():\n    raw_traces = [(0, 5, (('a.py', 2),), 10)]\n    with contextlib.ExitStack() as stack:\n        stack.enter_context(patch.object(tracemalloc, 'is_tracing', return_value=True))\n        stack.enter_context(patch.object(tracemalloc, 'get_traceback_limit', return_value=5))\n        stack.enter_context(patch.object(tracemalloc, '_get_traces', return_value=raw_traces))\n        snapshot = tracemalloc.take_snapshot()\n        assert snapshot.traceback_limit == 5, ('assertEqual', snapshot.traceback_limit, 5)\n        assert len(snapshot.traces) == 1, ('assertEqual', len(snapshot.traces), 1)\n        trace = snapshot.traces[0]\n        assert trace.size == 5, ('assertEqual', trace.size, 5)\n        assert trace.traceback.total_nframe == 10, ('assertEqual', trace.traceback.total_nframe, 10)\n        assert len(trace.traceback) == 1, ('assertEqual', len(trace.traceback), 1)\n        assert trace.traceback[0].filename == 'a.py', ('assertEqual', trace.traceback[0].filename, 'a.py')\n        assert trace.traceback[0].lineno == 2, ('assertEqual', trace.traceback[0].lineno, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_filter_traces",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    filter1 = tracemalloc.Filter(False, 'b.py')\n    filter2 = tracemalloc.Filter(True, 'a.py', 2)\n    filter3 = tracemalloc.Filter(True, 'a.py', 5)\n    original_traces = list(snapshot.traces._traces)\n    snapshot3 = snapshot.filter_traces((filter1,))\n    assert snapshot3.traces._traces == [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (3, 7, (('<unknown>', 0),), 1)], ('assertEqual', snapshot3.traces._traces, [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (3, 7, (('<unknown>', 0),), 1)])\n    assert snapshot.traces._traces == original_traces, ('assertEqual', snapshot.traces._traces, original_traces)\n    snapshot4 = snapshot3.filter_traces((filter2, filter3))\n    assert snapshot4.traces._traces == [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3)], ('assertEqual', snapshot4.traces._traces, [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3)])\n    snapshot5 = snapshot.filter_traces(())\n    assert snapshot5 is not snapshot, ('assertIsNot', snapshot5, snapshot)\n    assert snapshot5.traces is not snapshot.traces, ('assertIsNot', snapshot5.traces, snapshot.traces)\n    assert snapshot5.traces == snapshot.traces, ('assertEqual', snapshot5.traces, snapshot.traces)\n    try:\n        snapshot.filter_traces(*(filter1,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_filter_traces_domain",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    filter1 = tracemalloc.Filter(False, 'a.py', domain=1)\n    filter2 = tracemalloc.Filter(True, 'a.py', domain=1)\n    original_traces = list(snapshot.traces._traces)\n    snapshot3 = snapshot.filter_traces((filter1,))\n    assert snapshot3.traces._traces == [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)], ('assertEqual', snapshot3.traces._traces, [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)])\n    snapshot3 = snapshot.filter_traces((filter1,))\n    assert snapshot3.traces._traces == [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)], ('assertEqual', snapshot3.traces._traces, [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_filter_traces_domain_filter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    filter1 = tracemalloc.DomainFilter(False, domain=3)\n    filter2 = tracemalloc.DomainFilter(True, domain=3)\n    snapshot3 = snapshot.filter_traces((filter1,))\n    assert snapshot3.traces._traces == [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1)], ('assertEqual', snapshot3.traces._traces, [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1)])\n    snapshot3 = snapshot.filter_traces((filter2,))\n    assert snapshot3.traces._traces == [(3, 7, (('<unknown>', 0),), 1)], ('assertEqual', snapshot3.traces._traces, [(3, 7, (('<unknown>', 0),), 1)])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_snapshot_group_by_line",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef traceback_lineno(filename, lineno):\n    return traceback((filename, lineno))\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    tb_0 = traceback_lineno('<unknown>', 0)\n    tb_a_2 = traceback_lineno('a.py', 2)\n    tb_a_5 = traceback_lineno('a.py', 5)\n    tb_b_1 = traceback_lineno('b.py', 1)\n    tb_c_578 = traceback_lineno('c.py', 578)\n    stats1 = snapshot.statistics('lineno')\n    assert stats1 == [tracemalloc.Statistic(tb_b_1, 66, 1), tracemalloc.Statistic(tb_a_2, 30, 3), tracemalloc.Statistic(tb_0, 7, 1), tracemalloc.Statistic(tb_a_5, 2, 1)], ('assertEqual', stats1, [tracemalloc.Statistic(tb_b_1, 66, 1), tracemalloc.Statistic(tb_a_2, 30, 3), tracemalloc.Statistic(tb_0, 7, 1), tracemalloc.Statistic(tb_a_5, 2, 1)])\n    stats2 = snapshot2.statistics('lineno')\n    assert stats2 == [tracemalloc.Statistic(tb_a_5, 5002, 2), tracemalloc.Statistic(tb_c_578, 400, 1), tracemalloc.Statistic(tb_a_2, 30, 3)], ('assertEqual', stats2, [tracemalloc.Statistic(tb_a_5, 5002, 2), tracemalloc.Statistic(tb_c_578, 400, 1), tracemalloc.Statistic(tb_a_2, 30, 3)])\n    statistics = snapshot2.compare_to(snapshot, 'lineno')\n    assert statistics == [tracemalloc.StatisticDiff(tb_a_5, 5002, 5000, 2, 1), tracemalloc.StatisticDiff(tb_c_578, 400, 400, 1, 1), tracemalloc.StatisticDiff(tb_b_1, 0, -66, 0, -1), tracemalloc.StatisticDiff(tb_0, 0, -7, 0, -1), tracemalloc.StatisticDiff(tb_a_2, 30, 0, 3, 0)], ('assertEqual', statistics, [tracemalloc.StatisticDiff(tb_a_5, 5002, 5000, 2, 1), tracemalloc.StatisticDiff(tb_c_578, 400, 400, 1, 1), tracemalloc.StatisticDiff(tb_b_1, 0, -66, 0, -1), tracemalloc.StatisticDiff(tb_0, 0, -7, 0, -1), tracemalloc.StatisticDiff(tb_a_2, 30, 0, 3, 0)])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_snapshot_group_by_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef traceback_lineno(filename, lineno):\n    return traceback((filename, lineno))\n\ndef traceback_filename(filename):\n    return traceback_lineno(filename, 0)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    tb_0 = traceback_filename('<unknown>')\n    tb_a = traceback_filename('a.py')\n    tb_b = traceback_filename('b.py')\n    tb_c = traceback_filename('c.py')\n    stats1 = snapshot.statistics('filename')\n    assert stats1 == [tracemalloc.Statistic(tb_b, 66, 1), tracemalloc.Statistic(tb_a, 32, 4), tracemalloc.Statistic(tb_0, 7, 1)], ('assertEqual', stats1, [tracemalloc.Statistic(tb_b, 66, 1), tracemalloc.Statistic(tb_a, 32, 4), tracemalloc.Statistic(tb_0, 7, 1)])\n    stats2 = snapshot2.statistics('filename')\n    assert stats2 == [tracemalloc.Statistic(tb_a, 5032, 5), tracemalloc.Statistic(tb_c, 400, 1)], ('assertEqual', stats2, [tracemalloc.Statistic(tb_a, 5032, 5), tracemalloc.Statistic(tb_c, 400, 1)])\n    diff = snapshot2.compare_to(snapshot, 'filename')\n    assert diff == [tracemalloc.StatisticDiff(tb_a, 5032, 5000, 5, 1), tracemalloc.StatisticDiff(tb_c, 400, 400, 1, 1), tracemalloc.StatisticDiff(tb_b, 0, -66, 0, -1), tracemalloc.StatisticDiff(tb_0, 0, -7, 0, -1)], ('assertEqual', diff, [tracemalloc.StatisticDiff(tb_a, 5032, 5000, 5, 1), tracemalloc.StatisticDiff(tb_c, 400, 400, 1, 1), tracemalloc.StatisticDiff(tb_b, 0, -66, 0, -1), tracemalloc.StatisticDiff(tb_0, 0, -7, 0, -1)])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_snapshot_group_by_traceback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    tb1 = traceback(('a.py', 2), ('b.py', 4))\n    tb2 = traceback(('a.py', 5), ('b.py', 4))\n    tb3 = traceback(('b.py', 1))\n    tb4 = traceback(('<unknown>', 0))\n    stats1 = snapshot.statistics('traceback')\n    assert stats1 == [tracemalloc.Statistic(tb3, 66, 1), tracemalloc.Statistic(tb1, 30, 3), tracemalloc.Statistic(tb4, 7, 1), tracemalloc.Statistic(tb2, 2, 1)], ('assertEqual', stats1, [tracemalloc.Statistic(tb3, 66, 1), tracemalloc.Statistic(tb1, 30, 3), tracemalloc.Statistic(tb4, 7, 1), tracemalloc.Statistic(tb2, 2, 1)])\n    tb5 = traceback(('c.py', 578))\n    stats2 = snapshot2.statistics('traceback')\n    assert stats2 == [tracemalloc.Statistic(tb2, 5002, 2), tracemalloc.Statistic(tb5, 400, 1), tracemalloc.Statistic(tb1, 30, 3)], ('assertEqual', stats2, [tracemalloc.Statistic(tb2, 5002, 2), tracemalloc.Statistic(tb5, 400, 1), tracemalloc.Statistic(tb1, 30, 3)])\n    diff = snapshot2.compare_to(snapshot, 'traceback')\n    assert diff == [tracemalloc.StatisticDiff(tb2, 5002, 5000, 2, 1), tracemalloc.StatisticDiff(tb5, 400, 400, 1, 1), tracemalloc.StatisticDiff(tb3, 0, -66, 0, -1), tracemalloc.StatisticDiff(tb4, 0, -7, 0, -1), tracemalloc.StatisticDiff(tb1, 30, 0, 3, 0)], ('assertEqual', diff, [tracemalloc.StatisticDiff(tb2, 5002, 5000, 2, 1), tracemalloc.StatisticDiff(tb5, 400, 400, 1, 1), tracemalloc.StatisticDiff(tb3, 0, -66, 0, -1), tracemalloc.StatisticDiff(tb4, 0, -7, 0, -1), tracemalloc.StatisticDiff(tb1, 30, 0, 3, 0)])\n    try:\n        snapshot.statistics(*('traceback',), cumulative=True)\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_snapshot_group_by_cumulative",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef traceback_lineno(filename, lineno):\n    return traceback((filename, lineno))\n\ndef traceback_filename(filename):\n    return traceback_lineno(filename, 0)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    tb_0 = traceback_filename('<unknown>')\n    tb_a = traceback_filename('a.py')\n    tb_b = traceback_filename('b.py')\n    tb_a_2 = traceback_lineno('a.py', 2)\n    tb_a_5 = traceback_lineno('a.py', 5)\n    tb_b_1 = traceback_lineno('b.py', 1)\n    tb_b_4 = traceback_lineno('b.py', 4)\n    stats = snapshot.statistics('filename', True)\n    assert stats == [tracemalloc.Statistic(tb_b, 98, 5), tracemalloc.Statistic(tb_a, 32, 4), tracemalloc.Statistic(tb_0, 7, 1)], ('assertEqual', stats, [tracemalloc.Statistic(tb_b, 98, 5), tracemalloc.Statistic(tb_a, 32, 4), tracemalloc.Statistic(tb_0, 7, 1)])\n    stats = snapshot.statistics('lineno', True)\n    assert stats == [tracemalloc.Statistic(tb_b_1, 66, 1), tracemalloc.Statistic(tb_b_4, 32, 4), tracemalloc.Statistic(tb_a_2, 30, 3), tracemalloc.Statistic(tb_0, 7, 1), tracemalloc.Statistic(tb_a_5, 2, 1)], ('assertEqual', stats, [tracemalloc.Statistic(tb_b_1, 66, 1), tracemalloc.Statistic(tb_b_4, 32, 4), tracemalloc.Statistic(tb_a_2, 30, 3), tracemalloc.Statistic(tb_0, 7, 1), tracemalloc.Statistic(tb_a_5, 2, 1)])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_trace_format",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef frame(filename, lineno):\n    return tracemalloc._Frame((filename, lineno))\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    trace = snapshot.traces[0]\n    assert str(trace) == 'b.py:4: 10 B', ('assertEqual', str(trace), 'b.py:4: 10 B')\n    traceback = trace.traceback\n    assert str(traceback) == 'b.py:4', ('assertEqual', str(traceback), 'b.py:4')\n    frame = traceback[0]\n    assert str(frame) == 'b.py:4', ('assertEqual', str(frame), 'b.py:4')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_statistic_format",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    stats = snapshot.statistics('lineno')\n    stat = stats[0]\n    assert str(stat) == 'b.py:1: size=66 B, count=1, average=66 B', ('assertEqual', str(stat), 'b.py:1: size=66 B, count=1, average=66 B')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_statistic_diff_format",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    stats = snapshot2.compare_to(snapshot, 'lineno')\n    stat = stats[0]\n    assert str(stat) == 'a.py:5: size=5002 B (+5000 B), count=2 (+1), average=2501 B', ('assertEqual', str(stat), 'a.py:5: size=5002 B (+5000 B), count=2 (+1), average=2501 B')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_slices",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef create_snapshots():\n    traceback_limit = 2\n    raw_traces = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (1, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 66, (('b.py', 1),), 1), (3, 7, (('<unknown>', 0),), 1)]\n    snapshot = tracemalloc.Snapshot(raw_traces, traceback_limit)\n    raw_traces2 = [(0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (0, 10, (('a.py', 2), ('b.py', 4)), 3), (2, 2, (('a.py', 5), ('b.py', 4)), 3), (2, 5000, (('a.py', 5), ('b.py', 4)), 3), (4, 400, (('c.py', 578),), 1)]\n    snapshot2 = tracemalloc.Snapshot(raw_traces2, traceback_limit)\n    return (snapshot, snapshot2)\n\ndef traceback(*frames):\n    return tracemalloc.Traceback(frames)\n\ndef _t():\n    snapshot, snapshot2 = create_snapshots()\n    assert snapshot.traces[:2] == (snapshot.traces[0], snapshot.traces[1]), ('assertEqual', snapshot.traces[:2], (snapshot.traces[0], snapshot.traces[1]))\n    traceback = snapshot.traces[0].traceback\n    assert traceback[:2] == (traceback[0], traceback[1]), ('assertEqual', traceback[:2], (traceback[0], traceback[1]))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestSnapshot.test_format_traceback",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'unittest' has no attribute 'mock'"
+    },
+    {
+      "ident": "TestFilters.test_filter_attributes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef _t():\n    f = tracemalloc.Filter(True, 'abc')\n    assert f.inclusive == True, ('assertEqual', f.inclusive, True)\n    assert f.filename_pattern == 'abc', ('assertEqual', f.filename_pattern, 'abc')\n    assert f.lineno is None, ('assertIsNone', f.lineno)\n    assert f.all_frames == False, ('assertEqual', f.all_frames, False)\n    f = tracemalloc.Filter(False, 'test.py', 123, True)\n    assert f.inclusive == False, ('assertEqual', f.inclusive, False)\n    assert f.filename_pattern == 'test.py', ('assertEqual', f.filename_pattern, 'test.py')\n    assert f.lineno == 123, ('assertEqual', f.lineno, 123)\n    assert f.all_frames == True, ('assertEqual', f.all_frames, True)\n    f = tracemalloc.Filter(inclusive=False, filename_pattern='test.py', lineno=123, all_frames=True)\n    assert f.inclusive == False, ('assertEqual', f.inclusive, False)\n    assert f.filename_pattern == 'test.py', ('assertEqual', f.filename_pattern, 'test.py')\n    assert f.lineno == 123, ('assertEqual', f.lineno, 123)\n    assert f.all_frames == True, ('assertEqual', f.all_frames, True)\n    try:\n        setattr(*(f, 'filename_pattern', 'abc'))\n    except AttributeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFilters.test_filter_match",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef _t():\n    f = tracemalloc.Filter(True, 'abc')\n    assert f._match_frame('abc', 0), ('assertTrue', f._match_frame('abc', 0))\n    assert f._match_frame('abc', 5), ('assertTrue', f._match_frame('abc', 5))\n    assert f._match_frame('abc', 10), ('assertTrue', f._match_frame('abc', 10))\n    assert not f._match_frame('12356', 0), ('assertFalse', f._match_frame('12356', 0))\n    assert not f._match_frame('12356', 5), ('assertFalse', f._match_frame('12356', 5))\n    assert not f._match_frame('12356', 10), ('assertFalse', f._match_frame('12356', 10))\n    f = tracemalloc.Filter(False, 'abc')\n    assert not f._match_frame('abc', 0), ('assertFalse', f._match_frame('abc', 0))\n    assert not f._match_frame('abc', 5), ('assertFalse', f._match_frame('abc', 5))\n    assert not f._match_frame('abc', 10), ('assertFalse', f._match_frame('abc', 10))\n    assert f._match_frame('12356', 0), ('assertTrue', f._match_frame('12356', 0))\n    assert f._match_frame('12356', 5), ('assertTrue', f._match_frame('12356', 5))\n    assert f._match_frame('12356', 10), ('assertTrue', f._match_frame('12356', 10))\n    f = tracemalloc.Filter(True, 'abc', 5)\n    assert not f._match_frame('abc', 0), ('assertFalse', f._match_frame('abc', 0))\n    assert f._match_frame('abc', 5), ('assertTrue', f._match_frame('abc', 5))\n    assert not f._match_frame('abc', 10), ('assertFalse', f._match_frame('abc', 10))\n    assert not f._match_frame('12356', 0), ('assertFalse', f._match_frame('12356', 0))\n    assert not f._match_frame('12356', 5), ('assertFalse', f._match_frame('12356', 5))\n    assert not f._match_frame('12356', 10), ('assertFalse', f._match_frame('12356', 10))\n    f = tracemalloc.Filter(False, 'abc', 5)\n    assert f._match_frame('abc', 0), ('assertTrue', f._match_frame('abc', 0))\n    assert not f._match_frame('abc', 5), ('assertFalse', f._match_frame('abc', 5))\n    assert f._match_frame('abc', 10), ('assertTrue', f._match_frame('abc', 10))\n    assert f._match_frame('12356', 0), ('assertTrue', f._match_frame('12356', 0))\n    assert f._match_frame('12356', 5), ('assertTrue', f._match_frame('12356', 5))\n    assert f._match_frame('12356', 10), ('assertTrue', f._match_frame('12356', 10))\n    f = tracemalloc.Filter(True, 'abc', 0)\n    assert f._match_frame('abc', 0), ('assertTrue', f._match_frame('abc', 0))\n    assert not f._match_frame('abc', 5), ('assertFalse', f._match_frame('abc', 5))\n    assert not f._match_frame('abc', 10), ('assertFalse', f._match_frame('abc', 10))\n    assert not f._match_frame('12356', 0), ('assertFalse', f._match_frame('12356', 0))\n    assert not f._match_frame('12356', 5), ('assertFalse', f._match_frame('12356', 5))\n    assert not f._match_frame('12356', 10), ('assertFalse', f._match_frame('12356', 10))\n    f = tracemalloc.Filter(False, 'abc', 0)\n    assert not f._match_frame('abc', 0), ('assertFalse', f._match_frame('abc', 0))\n    assert f._match_frame('abc', 5), ('assertTrue', f._match_frame('abc', 5))\n    assert f._match_frame('abc', 10), ('assertTrue', f._match_frame('abc', 10))\n    assert f._match_frame('12356', 0), ('assertTrue', f._match_frame('12356', 0))\n    assert f._match_frame('12356', 5), ('assertTrue', f._match_frame('12356', 5))\n    assert f._match_frame('12356', 10), ('assertTrue', f._match_frame('12356', 10))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFilters.test_filter_match_filename",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef _t():\n\n    def fnmatch(inclusive, filename, pattern):\n        f = tracemalloc.Filter(inclusive, pattern)\n        return f._match_frame(filename, 0)\n    assert fnmatch(True, 'abc', 'abc'), ('assertTrue', fnmatch(True, 'abc', 'abc'))\n    assert not fnmatch(True, '12356', 'abc'), ('assertFalse', fnmatch(True, '12356', 'abc'))\n    assert not fnmatch(True, '<unknown>', 'abc'), ('assertFalse', fnmatch(True, '<unknown>', 'abc'))\n    assert not fnmatch(False, 'abc', 'abc'), ('assertFalse', fnmatch(False, 'abc', 'abc'))\n    assert fnmatch(False, '12356', 'abc'), ('assertTrue', fnmatch(False, '12356', 'abc'))\n    assert fnmatch(False, '<unknown>', 'abc'), ('assertTrue', fnmatch(False, '<unknown>', 'abc'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFilters.test_filter_match_filename_joker",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os\nimport tracemalloc\n\ndef _t():\n\n    def fnmatch(filename, pattern):\n        filter = tracemalloc.Filter(True, pattern)\n        return filter._match_frame(filename, 0)\n    assert not fnmatch('abc', ''), ('assertFalse', fnmatch('abc', ''))\n    assert not fnmatch('', 'abc'), ('assertFalse', fnmatch('', 'abc'))\n    assert fnmatch('', ''), ('assertTrue', fnmatch('', ''))\n    assert fnmatch('', '*'), ('assertTrue', fnmatch('', '*'))\n    assert fnmatch('abc', 'abc'), ('assertTrue', fnmatch('abc', 'abc'))\n    assert not fnmatch('abc', 'abcd'), ('assertFalse', fnmatch('abc', 'abcd'))\n    assert not fnmatch('abc', 'def'), ('assertFalse', fnmatch('abc', 'def'))\n    assert fnmatch('abc', 'a*'), ('assertTrue', fnmatch('abc', 'a*'))\n    assert fnmatch('abc', 'abc*'), ('assertTrue', fnmatch('abc', 'abc*'))\n    assert not fnmatch('abc', 'b*'), ('assertFalse', fnmatch('abc', 'b*'))\n    assert not fnmatch('abc', 'abcd*'), ('assertFalse', fnmatch('abc', 'abcd*'))\n    assert fnmatch('abc', 'a*c'), ('assertTrue', fnmatch('abc', 'a*c'))\n    assert fnmatch('abcdcx', 'a*cx'), ('assertTrue', fnmatch('abcdcx', 'a*cx'))\n    assert not fnmatch('abb', 'a*c'), ('assertFalse', fnmatch('abb', 'a*c'))\n    assert not fnmatch('abcdce', 'a*cx'), ('assertFalse', fnmatch('abcdce', 'a*cx'))\n    assert fnmatch('abcde', 'a*c*e'), ('assertTrue', fnmatch('abcde', 'a*c*e'))\n    assert fnmatch('abcbdefeg', 'a*bd*eg'), ('assertTrue', fnmatch('abcbdefeg', 'a*bd*eg'))\n    assert not fnmatch('abcdd', 'a*c*e'), ('assertFalse', fnmatch('abcdd', 'a*c*e'))\n    assert not fnmatch('abcbdefef', 'a*bd*eg'), ('assertFalse', fnmatch('abcbdefef', 'a*bd*eg'))\n    assert fnmatch('a.pyc', 'a.py'), ('assertTrue', fnmatch('a.pyc', 'a.py'))\n    assert fnmatch('a.py', 'a.pyc'), ('assertTrue', fnmatch('a.py', 'a.pyc'))\n    if os.name == 'nt':\n        assert fnmatch('aBC', 'ABc'), ('assertTrue', fnmatch('aBC', 'ABc'))\n        assert fnmatch('aBcDe', 'Ab*dE'), ('assertTrue', fnmatch('aBcDe', 'Ab*dE'))\n        assert fnmatch('a.pyc', 'a.PY'), ('assertTrue', fnmatch('a.pyc', 'a.PY'))\n        assert fnmatch('a.py', 'a.PYC'), ('assertTrue', fnmatch('a.py', 'a.PYC'))\n    else:\n        assert not fnmatch('aBC', 'ABc'), ('assertFalse', fnmatch('aBC', 'ABc'))\n        assert not fnmatch('aBcDe', 'Ab*dE'), ('assertFalse', fnmatch('aBcDe', 'Ab*dE'))\n        assert not fnmatch('a.pyc', 'a.PY'), ('assertFalse', fnmatch('a.pyc', 'a.PY'))\n        assert not fnmatch('a.py', 'a.PYC'), ('assertFalse', fnmatch('a.py', 'a.PYC'))\n    if os.name == 'nt':\n        assert fnmatch('a/b', 'a\\\\b'), ('assertTrue', fnmatch('a/b', 'a\\\\b'))\n        assert fnmatch('a\\\\b', 'a/b'), ('assertTrue', fnmatch('a\\\\b', 'a/b'))\n        assert fnmatch('a/b\\\\c', 'a\\\\b/c'), ('assertTrue', fnmatch('a/b\\\\c', 'a\\\\b/c'))\n        assert fnmatch('a/b/c', 'a\\\\b\\\\c'), ('assertTrue', fnmatch('a/b/c', 'a\\\\b\\\\c'))\n    else:\n        assert not fnmatch('a/b', 'a\\\\b'), ('assertFalse', fnmatch('a/b', 'a\\\\b'))\n        assert not fnmatch('a\\\\b', 'a/b'), ('assertFalse', fnmatch('a\\\\b', 'a/b'))\n        assert not fnmatch('a/b\\\\c', 'a\\\\b/c'), ('assertFalse', fnmatch('a/b\\\\c', 'a\\\\b/c'))\n        assert not fnmatch('a/b/c', 'a\\\\b\\\\c'), ('assertFalse', fnmatch('a/b/c', 'a\\\\b\\\\c'))\n    assert not fnmatch('a.pyo', 'a.py'), ('assertFalse', fnmatch('a.pyo', 'a.py'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFilters.test_filter_match_trace",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tracemalloc\n\ndef _t():\n    t1 = (('a.py', 2), ('b.py', 3))\n    t2 = (('b.py', 4), ('b.py', 5))\n    t3 = (('c.py', 5), ('<unknown>', 0))\n    unknown = (('<unknown>', 0),)\n    f = tracemalloc.Filter(True, 'b.py', all_frames=True)\n    assert f._match_traceback(t1), ('assertTrue', f._match_traceback(t1))\n    assert f._match_traceback(t2), ('assertTrue', f._match_traceback(t2))\n    assert not f._match_traceback(t3), ('assertFalse', f._match_traceback(t3))\n    assert not f._match_traceback(unknown), ('assertFalse', f._match_traceback(unknown))\n    f = tracemalloc.Filter(True, 'b.py', all_frames=False)\n    assert not f._match_traceback(t1), ('assertFalse', f._match_traceback(t1))\n    assert f._match_traceback(t2), ('assertTrue', f._match_traceback(t2))\n    assert not f._match_traceback(t3), ('assertFalse', f._match_traceback(t3))\n    assert not f._match_traceback(unknown), ('assertFalse', f._match_traceback(unknown))\n    f = tracemalloc.Filter(False, 'b.py', all_frames=True)\n    assert not f._match_traceback(t1), ('assertFalse', f._match_traceback(t1))\n    assert not f._match_traceback(t2), ('assertFalse', f._match_traceback(t2))\n    assert f._match_traceback(t3), ('assertTrue', f._match_traceback(t3))\n    assert f._match_traceback(unknown), ('assertTrue', f._match_traceback(unknown))\n    f = tracemalloc.Filter(False, 'b.py', all_frames=False)\n    assert f._match_traceback(t1), ('assertTrue', f._match_traceback(t1))\n    assert not f._match_traceback(t2), ('assertFalse', f._match_traceback(t2))\n    assert f._match_traceback(t3), ('assertTrue', f._match_traceback(t3))\n    assert f._match_traceback(unknown), ('assertTrue', f._match_traceback(unknown))\n    f = tracemalloc.Filter(False, '<unknown>', all_frames=False)\n    assert f._match_traceback(t1), ('assertTrue', f._match_traceback(t1))\n    assert f._match_traceback(t2), ('assertTrue', f._match_traceback(t2))\n    assert f._match_traceback(t3), ('assertTrue', f._match_traceback(t3))\n    assert not f._match_traceback(unknown), ('assertFalse', f._match_traceback(unknown))\n    f = tracemalloc.Filter(True, '<unknown>', all_frames=True)\n    assert not f._match_traceback(t1), ('assertFalse', f._match_traceback(t1))\n    assert not f._match_traceback(t2), ('assertFalse', f._match_traceback(t2))\n    assert f._match_traceback(t3), ('assertTrue', f._match_traceback(t3))\n    assert f._match_traceback(unknown), ('assertTrue', f._match_traceback(unknown))\n    f = tracemalloc.Filter(False, '<unknown>', all_frames=True)\n    assert f._match_traceback(t1), ('assertTrue', f._match_traceback(t1))\n    assert f._match_traceback(t2), ('assertTrue', f._match_traceback(t2))\n    assert not f._match_traceback(t3), ('assertFalse', f._match_traceback(t3))\n    assert not f._match_traceback(unknown), ('assertFalse', f._match_traceback(unknown))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestTracemallocEnabled.test_fork",
+      "reason": "decorator:support.requires_fork"
+    },
+    {
+      "ident": "TestCommandLine.test_env_var_ignored_with_E",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCommandLine.test_pymem_alloc0",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_track",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_track_without_gil",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_track_already_tracked",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_untrack",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_untrack_without_gil",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_stop_track",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_stop_untrack",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_tracemalloc_track_race",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestCAPI.test_late_untrack",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_new_reference",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_snapshot",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestTracemallocEnabled.test_snapshot_save_attr",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCommandLine.test_env_var_disabled_by_default",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCommandLine.test_env_var_disabled",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCommandLine.test_env_var_enabled_at_startup",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCommandLine.test_env_limit",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCommandLine.test_env_var_invalid",
+      "reason": "helper:check_env_var_invalid(decorated-helper)"
+    },
+    {
+      "ident": "TestCommandLine.test_sys_xoptions",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestCommandLine.test_sys_xoptions_invalid",
+      "reason": "unsupported-import:test.support"
+    }
+  ],
+  "counts": {
+    "extracted": 51,
+    "pinned": 26,
+    "quarantined": 25
+  }
+}
