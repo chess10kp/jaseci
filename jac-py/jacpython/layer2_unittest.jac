@@ -239,7 +239,8 @@ def layer2_skip_wrap_class(cls: PyClass) -> PyClass {
         name=cls.name,
         attrs=wrapped_attrs,
         bases=cls.bases,
-        native_base=cls.native_base
+        native_base=cls.native_base,
+        host_base=cls.host_base
     );
 }
 

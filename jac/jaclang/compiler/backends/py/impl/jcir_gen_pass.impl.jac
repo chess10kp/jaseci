@@ -4733,6 +4733,9 @@ impl JcirGenPass.exit_complex(nd: Complex) -> None {
     # JCIR v1 constants have no complex domain entry, so lower the literal to a
     # host builtin call: complex(0.0, imag) with the same float spelling rules.
     # 'complex' is a host builtin, so a plain name load needs no import preamble.
+    # The imaginary part is parsed straight off the raw token (same spelling
+    # rules as Complex.lit_value); reading '.imag' off the host complex object
+    # does not lower natively and would demote this pass out of the seal.
     self.set_out(
         nd,
         [
@@ -4741,7 +4744,7 @@ impl JcirGenPass.exit_complex(nd: Complex) -> None {
                 ['func', 'args', 'keywords'],
                 [
                     self.name_load('complex'),
-                    [self.const_of(0.0), self.const_of(nd.lit_value.imag)],
+                    [self.const_of(0.0), self.const_of(float(nd.value[:-1]))],
                     []
                 ]
             )

@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_mmap.py",
+    "-o",
+    "jac-py/tests/conv_mmap",
+    "--name",
+    "conv_mmap"
+  ],
+  "generated_at": "2026-08-25T21:44:05",
+  "hashes": {
+    "pins_jac": "9a138fa993a3d5d2c528f2ce2aeb9ec974dd2f451e57757d8fe03f4ac348f58f"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_mmap.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "mmap",
+  "pins_file": "conv_mmap_pins.jac",
+  "pins": [
+    {
+      "ident": "MmapTests.test_basic",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport re\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    f = open(TESTFN, 'bw+')\n    try:\n        f.write(b'\\x00' * PAGESIZE)\n        f.write(b'foo')\n        f.write(b'\\x00' * (PAGESIZE - 3))\n        f.flush()\n        m = mmap.mmap(f.fileno(), 2 * PAGESIZE)\n    finally:\n        f.close()\n    tp = str(type(m))\n    assert m.find(b'foo') == PAGESIZE, ('assertEqual', m.find(b'foo'), PAGESIZE)\n    assert len(m) == 2 * PAGESIZE, ('assertEqual', len(m), 2 * PAGESIZE)\n    assert m[0] == 0, ('assertEqual', m[0], 0)\n    assert m[0:3] == b'\\x00\\x00\\x00', ('assertEqual', m[0:3], b'\\x00\\x00\\x00')\n    try:\n        m.__getitem__(*(len(m),))\n    except IndexError:\n        pass\n    try:\n        m.__setitem__(*(len(m), b'\\x00'))\n    except IndexError:\n        pass\n    m[0] = b'3'[0]\n    m[PAGESIZE + 3:PAGESIZE + 3 + 3] = b'bar'\n    assert m[0] == b'3'[0], ('assertEqual', m[0], b'3'[0])\n    assert m[0:3] == b'3\\x00\\x00', ('assertEqual', m[0:3], b'3\\x00\\x00')\n    assert m[PAGESIZE - 1:PAGESIZE + 7] == b'\\x00foobar\\x00', ('assertEqual', m[PAGESIZE - 1:PAGESIZE + 7], b'\\x00foobar\\x00')\n    m.flush()\n    match = re.search(b'[A-Za-z]+', m)\n    if match is None:\n        raise AssertionError('regex match on mmap failed!')\n    else:\n        start, end = match.span(0)\n        length = end - start\n        assert start == PAGESIZE, ('assertEqual', start, PAGESIZE)\n        assert end == PAGESIZE + 6, ('assertEqual', end, PAGESIZE + 6)\n    assert m.seekable(), ('assertTrue', m.seekable())\n    assert m.seek(0, 0) == 0, ('assertEqual', m.seek(0, 0), 0)\n    assert m.tell() == 0, ('assertEqual', m.tell(), 0)\n    assert m.seek(42, 1) == 42, ('assertEqual', m.seek(42, 1), 42)\n    assert m.tell() == 42, ('assertEqual', m.tell(), 42)\n    assert m.seek(0, 2) == len(m), ('assertEqual', m.seek(0, 2), len(m))\n    assert m.tell() == len(m), ('assertEqual', m.tell(), len(m))\n    try:\n        m.seek(*(-1,))\n    except ValueError:\n        pass\n    try:\n        m.seek(*(1, 2))\n    except ValueError:\n        pass\n    try:\n        m.seek(*(-len(m) - 1, 2))\n    except ValueError:\n        pass\n    try:\n        m.resize(512)\n    except SystemError:\n        pass\n    else:\n        assert len(m) == 512, ('assertEqual', len(m), 512)\n        try:\n            m.seek(*(513, 0))\n        except ValueError:\n            pass\n        f = open(TESTFN, 'rb')\n        try:\n            f.seek(0, 2)\n            assert f.tell() == 512, ('assertEqual', f.tell(), 512)\n        finally:\n            f.close()\n        assert m.size() == 512, ('assertEqual', m.size(), 512)\n    m.close()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_access_parameter",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    mapsize = 10\n    with open(TESTFN, 'wb') as fp:\n        fp.write(b'a' * mapsize)\n    with open(TESTFN, 'rb') as f:\n        m = mmap.mmap(f.fileno(), mapsize, access=mmap.ACCESS_READ)\n        assert m[:] == b'a' * mapsize, ('assertEqual', m[:], b'a' * mapsize)\n        try:\n            m[:] = b'b' * mapsize\n        except TypeError:\n            pass\n        else:\n            raise AssertionError('Able to write to readonly memory map')\n        try:\n            m[0] = b'b'\n        except TypeError:\n            pass\n        else:\n            raise AssertionError('Able to write to readonly memory map')\n        try:\n            m.seek(0, 0)\n            m.write(b'abc')\n        except TypeError:\n            pass\n        else:\n            raise AssertionError('Able to write to readonly memory map')\n        try:\n            m.seek(0, 0)\n            m.write_byte(b'd')\n        except TypeError:\n            pass\n        else:\n            raise AssertionError('Able to write to readonly memory map')\n        try:\n            m.resize(2 * mapsize)\n        except SystemError:\n            pass\n        except TypeError:\n            pass\n        else:\n            raise AssertionError('Able to resize readonly memory map')\n        with open(TESTFN, 'rb') as fp:\n            assert fp.read() == b'a' * mapsize, ('assertEqual', fp.read(), b'a' * mapsize)\n    with open(TESTFN, 'r+b') as f:\n        try:\n            m = mmap.mmap(f.fileno(), mapsize + 1)\n        except ValueError:\n            if sys.platform.startswith('win'):\n                raise AssertionError('Opening mmap with size+1 should work on Windows.')\n        else:\n            if not sys.platform.startswith('win'):\n                raise AssertionError('Opening mmap with size+1 should raise ValueError.')\n            m.close()\n        if sys.platform.startswith('win'):\n            with open(TESTFN, 'r+b') as f:\n                f.truncate(mapsize)\n    with open(TESTFN, 'r+b') as f:\n        m = mmap.mmap(f.fileno(), mapsize, access=mmap.ACCESS_WRITE)\n        m[:] = b'c' * mapsize\n        assert m[:] == b'c' * mapsize, ('assertEqual', m[:], b'c' * mapsize)\n        m.flush()\n        m.close()\n    with open(TESTFN, 'rb') as f:\n        stuff = f.read()\n    assert stuff == b'c' * mapsize, ('assertEqual', stuff, b'c' * mapsize)\n    with open(TESTFN, 'r+b') as f:\n        m = mmap.mmap(f.fileno(), mapsize, access=mmap.ACCESS_COPY)\n        m[:] = b'd' * mapsize\n        assert m[:] == b'd' * mapsize, ('assertEqual', m[:], b'd' * mapsize)\n        m.flush()\n        with open(TESTFN, 'rb') as fp:\n            assert fp.read() == b'c' * mapsize, ('assertEqual', fp.read(), b'c' * mapsize)\n        try:\n            m.resize(*(2 * mapsize,))\n        except TypeError:\n            pass\n        m.close()\n    with open(TESTFN, 'r+b') as f:\n        try:\n            mmap.mmap(*(f.fileno(), mapsize), access=4)\n        except ValueError:\n            pass\n    if os.name == 'posix':\n        with open(TESTFN, 'r+b') as f:\n            try:\n                mmap.mmap(*(f.fileno(), mapsize), flags=mmap.MAP_PRIVATE, prot=mmap.PROT_READ, access=mmap.ACCESS_WRITE)\n            except ValueError:\n                pass\n        prot = mmap.PROT_READ | getattr(mmap, 'PROT_EXEC', 0)\n        with open(TESTFN, 'r+b') as f:\n            try:\n                m = mmap.mmap(f.fileno(), mapsize, prot=prot)\n            except PermissionError:\n                pass\n            else:\n                try:\n                    m.write(*(b'abcdef',))\n                except TypeError:\n                    pass\n                try:\n                    m.write_byte(*(0,))\n                except TypeError:\n                    pass\n                m.close()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_trackfd_neg1",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    size = 64\n    with mmap.mmap(-1, size, trackfd=False) as m:\n        try:\n            m.size()\n        except OSError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            m.resize(size // 2)\n        except ValueError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        assert len(m) == size, ('assertEqual', len(m), size)\n        m[0] = ord('a')\n        assert m[0] == ord('a')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_bad_file_desc",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    try:\n        mmap.mmap(*(-2, 4096))\n    except OSError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_tougher_find",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb+') as f:\n        data = b'aabaac\\x00deef\\x00\\x00aa\\x00'\n        n = len(data)\n        f.write(data)\n        f.flush()\n        m = mmap.mmap(f.fileno(), n)\n    for start in range(n + 1):\n        for finish in range(start, n + 1):\n            slice = data[start:finish]\n            assert m.find(slice) == data.find(slice), ('assertEqual', m.find(slice), data.find(slice))\n            assert m.find(slice + b'x') == -1, ('assertEqual', m.find(slice + b'x'), -1)\n    m.close()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_find_end",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb+') as f:\n        data = b'one two ones'\n        n = len(data)\n        f.write(data)\n        f.flush()\n        m = mmap.mmap(f.fileno(), n)\n    assert m.find(b'one') == 0, ('assertEqual', m.find(b'one'), 0)\n    assert m.find(b'ones') == 8, ('assertEqual', m.find(b'ones'), 8)\n    assert m.find(b'one', 0, -1) == 0, ('assertEqual', m.find(b'one', 0, -1), 0)\n    assert m.find(b'one', 1) == 8, ('assertEqual', m.find(b'one', 1), 8)\n    assert m.find(b'one', 1, -1) == 8, ('assertEqual', m.find(b'one', 1, -1), 8)\n    assert m.find(b'one', 1, -2) == -1, ('assertEqual', m.find(b'one', 1, -2), -1)\n    assert m.find(bytearray(b'one')) == 0, ('assertEqual', m.find(bytearray(b'one')), 0)\n    for i in range(-n - 1, n + 1):\n        for j in range(-n - 1, n + 1):\n            for p in [b'o', b'on', b'two', b'ones', b's']:\n                expected = data.find(p, i, j)\n                assert m.find(p, i, j) == expected, ('assertEqual', m.find(p, i, j), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_find_does_not_access_beyond_buffer",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport unittest\nimport os\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    try:\n        flags = mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS\n        PAGESIZE = mmap.PAGESIZE\n        PROT_NONE = 0\n        PROT_READ = mmap.PROT_READ\n    except AttributeError as e:\n        raise unittest.SkipTest('mmap flags unavailable') from e\n    for i in range(0, 2049):\n        with mmap.mmap(-1, PAGESIZE * (i + 1), flags=flags, prot=PROT_NONE) as guard:\n            with mmap.mmap(-1, PAGESIZE * (i + 2048), flags=flags, prot=PROT_READ) as fm:\n                fm.find(b'fo', -2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_rfind",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb+') as f:\n        data = b'one two ones'\n        n = len(data)\n        f.write(data)\n        f.flush()\n        m = mmap.mmap(f.fileno(), n)\n    assert m.rfind(b'one') == 8, ('assertEqual', m.rfind(b'one'), 8)\n    assert m.rfind(b'one ') == 0, ('assertEqual', m.rfind(b'one '), 0)\n    assert m.rfind(b'one', 0, -1) == 8, ('assertEqual', m.rfind(b'one', 0, -1), 8)\n    assert m.rfind(b'one', 0, -2) == 0, ('assertEqual', m.rfind(b'one', 0, -2), 0)\n    assert m.rfind(b'one', 1, -1) == 8, ('assertEqual', m.rfind(b'one', 1, -1), 8)\n    assert m.rfind(b'one', 1, -2) == -1, ('assertEqual', m.rfind(b'one', 1, -2), -1)\n    assert m.rfind(bytearray(b'one')) == 8, ('assertEqual', m.rfind(bytearray(b'one')), 8)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_double_close",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb+') as f:\n        f.write(2 ** 16 * b'a')\n    with open(TESTFN, 'rb') as f:\n        mf = mmap.mmap(f.fileno(), 2 ** 16, access=mmap.ACCESS_READ)\n        mf.close()\n        mf.close()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_entire_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb+') as f:\n        f.write(2 ** 16 * b'm')\n    with open(TESTFN, 'rb+') as f, mmap.mmap(f.fileno(), 0) as mf:\n        assert len(mf) == 2 ** 16, ('assertEqual', len(mf), 2 ** 16)\n        assert mf.read(2 ** 16) == 2 ** 16 * b'm', ('assertEqual', mf.read(2 ** 16), 2 ** 16 * b'm')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_length_0_offset",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb') as f:\n        f.write(65536 * 2 * b'm')\n    with open(TESTFN, 'rb') as f:\n        with mmap.mmap(f.fileno(), 0, offset=65536, access=mmap.ACCESS_READ) as mf:\n            try:\n                mf.__getitem__(*(80000,))\n            except IndexError:\n                pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_length_0_large_offset",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb') as f:\n        f.write(115699 * b'm')\n    with open(TESTFN, 'w+b') as f:\n        try:\n            mmap.mmap(*(f.fileno(), 0), offset=2147418112)\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_move",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport itertools\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with open(TESTFN, 'wb+') as f:\n        f.write(b'ABCDEabcde')\n        f.flush()\n        mf = mmap.mmap(f.fileno(), 10)\n        mf.move(5, 0, 5)\n        assert mf[:] == b'ABCDEABCDE', ('assertEqual', mf[:], b'ABCDEABCDE')\n        mf.close()\n    data = b'0123456789'\n    for dest in range(len(data)):\n        for src in range(len(data)):\n            for count in range(len(data) - max(dest, src)):\n                expected = data[:dest] + data[src:src + count] + data[dest + count:]\n                m = mmap.mmap(-1, len(data))\n                m[:] = data\n                m.move(dest, src, count)\n                assert m[:] == expected, ('assertEqual', m[:], expected)\n                m.close()\n    m = mmap.mmap(-1, 100)\n    offsets = [-100, -1, 0, 1, 100]\n    for source, dest, size in itertools.product(offsets, offsets, offsets):\n        try:\n            m.move(source, dest, size)\n        except ValueError:\n            pass\n    offsets = [(-1, -1, -1), (-1, -1, 0), (-1, 0, -1), (0, -1, -1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)]\n    for source, dest, size in offsets:\n        try:\n            m.move(*(source, dest, size))\n        except ValueError:\n            pass\n    m.close()\n    m = mmap.mmap(-1, 1)\n    try:\n        m.move(*(0, 0, 2))\n    except ValueError:\n        pass\n    try:\n        m.move(*(1, 0, 1))\n    except ValueError:\n        pass\n    try:\n        m.move(*(0, 1, 1))\n    except ValueError:\n        pass\n    m.move(0, 0, 1)\n    m.move(0, 0, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_anonymous",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    m = mmap.mmap(-1, PAGESIZE)\n    for x in range(PAGESIZE):\n        assert m[x] == 0, ('assertEqual', m[x], 0)\n    for x in range(PAGESIZE):\n        b = x & 255\n        m[x] = b\n        assert m[x] == b, ('assertEqual', m[x], b)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_read_all",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    m = mmap.mmap(-1, 16)\n    _add_cleanup(m.close)\n    m.write(bytes(range(16)))\n    m.seek(0)\n    assert m.read() == bytes(range(16)), ('assertEqual', m.read(), bytes(range(16)))\n    m.seek(8)\n    assert m.read() == bytes(range(8, 16)), ('assertEqual', m.read(), bytes(range(8, 16)))\n    m.seek(16)\n    assert m.read() == b'', ('assertEqual', m.read(), b'')\n    m.seek(3)\n    assert m.read(None) == bytes(range(3, 16)), ('assertEqual', m.read(None), bytes(range(3, 16)))\n    m.seek(4)\n    assert m.read(-1) == bytes(range(4, 16)), ('assertEqual', m.read(-1), bytes(range(4, 16)))\n    m.seek(5)\n    assert m.read(-2) == bytes(range(5, 16)), ('assertEqual', m.read(-2), bytes(range(5, 16)))\n    m.seek(9)\n    assert m.read(-42) == bytes(range(9, 16)), ('assertEqual', m.read(-42), bytes(range(9, 16)))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "MmapTests.test_read_invalid_arg",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    m = mmap.mmap(-1, 16)\n    _add_cleanup(m.close)\n    try:\n        m.read(*('foo',))\n    except TypeError:\n        pass\n    try:\n        m.read(*(5.5,))\n    except TypeError:\n        pass\n    try:\n        m.read(*([1, 2, 3],))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "MmapTests.test_extended_getslice",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    s = bytes(reversed(range(256)))\n    m = mmap.mmap(-1, len(s))\n    m[:] = s\n    assert m[:] == s, ('assertEqual', m[:], s)\n    indices = (0, None, 1, 3, 19, 300, sys.maxsize, -1, -2, -31, -300)\n    for start in indices:\n        for stop in indices:\n            for step in indices[1:]:\n                assert m[start:stop:step] == s[start:stop:step], ('assertEqual', m[start:stop:step], s[start:stop:step])\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_extended_set_del_slice",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    s = bytes(reversed(range(256)))\n    m = mmap.mmap(-1, len(s))\n    indices = (0, None, 1, 3, 19, 300, sys.maxsize, -1, -2, -31, -300)\n    for start in indices:\n        for stop in indices:\n            for step in indices[1:]:\n                m[:] = s\n                assert m[:] == s, ('assertEqual', m[:], s)\n                L = list(s)\n                data = L[start:stop:step]\n                data = bytes(reversed(data))\n                L[start:stop:step] = data\n                m[start:stop:step] = data\n                assert m[:] == bytes(L), ('assertEqual', m[:], bytes(L))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_empty_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    f = open(TESTFN, 'w+b')\n    f.close()\n    with open(TESTFN, 'rb') as f:\n        try:\n            mmap.mmap(*(f.fileno(), 0), access=mmap.ACCESS_READ)\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_offset",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n\n    def make_mmap_file(f, halfsize):\n        f.write(b'\\x00' * halfsize)\n        f.write(b'foo')\n        f.write(b'\\x00' * (halfsize - 3))\n        f.flush()\n        return mmap.mmap(f.fileno(), 0)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    f = open(TESTFN, 'w+b')\n    try:\n        halfsize = mmap.ALLOCATIONGRANULARITY\n        m = make_mmap_file(f, halfsize)\n        m.close()\n        f.close()\n        mapsize = halfsize * 2\n        f = open(TESTFN, 'r+b')\n        for offset in [-2, -1, None]:\n            try:\n                m = mmap.mmap(f.fileno(), mapsize, offset=offset)\n                assert 0 == 1, ('assertEqual', 0, 1)\n            except (ValueError, TypeError, OverflowError):\n                pass\n            else:\n                assert 0 == 0, ('assertEqual', 0, 0)\n        f.close()\n        f = open(TESTFN, 'r+b')\n        m = mmap.mmap(f.fileno(), mapsize - halfsize, offset=halfsize)\n        assert m[0:3] == b'foo', ('assertEqual', m[0:3], b'foo')\n        f.close()\n        try:\n            m.resize(512)\n        except SystemError:\n            pass\n        else:\n            assert len(m) == 512, ('assertEqual', len(m), 512)\n            try:\n                m.seek(*(513, 0))\n            except ValueError:\n                pass\n            assert m[0:3] == b'foo', ('assertEqual', m[0:3], b'foo')\n            f = open(TESTFN, 'rb')\n            f.seek(0, 2)\n            assert f.tell() == halfsize + 512, ('assertEqual', f.tell(), halfsize + 512)\n            f.close()\n            assert m.size() == halfsize + 512, ('assertEqual', m.size(), halfsize + 512)\n        m.close()\n    finally:\n        f.close()\n        try:\n            os.unlink(TESTFN)\n        except OSError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_subclass",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n\n    class anon_mmap(mmap.mmap):\n\n        def __new__(klass, *args, **kwargs):\n            return mmap.mmap.__new__(klass, -1, *args, **kwargs)\n    anon_mmap(PAGESIZE)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_prot_readonly",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    mapsize = 10\n    with open(TESTFN, 'wb') as fp:\n        fp.write(b'a' * mapsize)\n    with open(TESTFN, 'rb') as f:\n        m = mmap.mmap(f.fileno(), mapsize, prot=mmap.PROT_READ)\n        try:\n            m.write(*('foo',))\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    assert mmap.error is OSError, ('assertIs', mmap.error, OSError)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_io_methods",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    data = b'0123456789'\n    with open(TESTFN, 'wb') as fp:\n        fp.write(b'x' * len(data))\n    with open(TESTFN, 'r+b') as f:\n        m = mmap.mmap(f.fileno(), len(data))\n    for i in range(len(data)):\n        assert m.tell() == i, ('assertEqual', m.tell(), i)\n        m.write_byte(data[i])\n        assert m.tell() == i + 1, ('assertEqual', m.tell(), i + 1)\n    try:\n        m.write_byte(*(b'x'[0],))\n    except ValueError:\n        pass\n    assert m[:] == data, ('assertEqual', m[:], data)\n    m.seek(0)\n    for i in range(len(data)):\n        assert m.tell() == i, ('assertEqual', m.tell(), i)\n        assert m.read_byte() == data[i], ('assertEqual', m.read_byte(), data[i])\n        assert m.tell() == i + 1, ('assertEqual', m.tell(), i + 1)\n    try:\n        m.read_byte()\n    except ValueError:\n        pass\n    m.seek(3)\n    assert m.read(3) == b'345', ('assertEqual', m.read(3), b'345')\n    assert m.tell() == 6, ('assertEqual', m.tell(), 6)\n    m.seek(3)\n    m.write(b'bar')\n    assert m.tell() == 6, ('assertEqual', m.tell(), 6)\n    assert m[:] == b'012bar6789', ('assertEqual', m[:], b'012bar6789')\n    m.write(bytearray(b'baz'))\n    assert m.tell() == 9, ('assertEqual', m.tell(), 9)\n    assert m[:] == b'012barbaz9', ('assertEqual', m[:], b'012barbaz9')\n    try:\n        m.write(*(b'ba',))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_non_ascii_byte",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    for b in (129, 200, 255):\n        m = mmap.mmap(-1, 1)\n        m.write_byte(b)\n        assert m[0] == b, ('assertEqual', m[0], b)\n        m.seek(0)\n        assert m.read_byte() == b, ('assertEqual', m.read_byte(), b)\n        m.close()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_context_manager",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    with mmap.mmap(-1, 10) as m:\n        assert not m.closed, ('assertFalse', m.closed)\n    assert m.closed, ('assertTrue', m.closed)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_weakref",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import requires, _2G, _4G, gc_collect, cpython_only, is_emscripten, is_apple, in_systemd_nspawn_sync_suppressed\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport weakref\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    mm = mmap.mmap(-1, 16)\n    wr = weakref.ref(mm)\n    assert wr() is mm, ('assertIs', wr(), mm)\n    del mm\n    gc_collect()\n    assert wr() is None, ('assertIs', wr(), None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_write_returning_the_number_of_bytes_written",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    mm = mmap.mmap(-1, 16)\n    assert mm.write(b'') == 0, ('assertEqual', mm.write(b''), 0)\n    assert mm.write(b'x') == 1, ('assertEqual', mm.write(b'x'), 1)\n    assert mm.write(b'yz') == 2, ('assertEqual', mm.write(b'yz'), 2)\n    assert mm.write(b'python') == 6, ('assertEqual', mm.write(b'python'), 6)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_concat_repeat_exception",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    m = mmap.mmap(-1, 16)\n    try:\n        m + m\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        m * 2\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_flush_return_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test.support import requires, _2G, _4G, gc_collect, cpython_only, is_emscripten, is_apple, in_systemd_nspawn_sync_suppressed\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    mm = mmap.mmap(-1, 16)\n    _add_cleanup(mm.close)\n    mm.write(b'python')\n    result = mm.flush()\n    assert result is None, ('assertIsNone', result)\n    if sys.platform.startswith(('linux', 'android')) and (not in_systemd_nspawn_sync_suppressed()):\n        try:\n            mm.flush(*(1, len(b'python')))\n        except OSError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "MmapTests.test_repr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport re\nimport itertools\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    open_mmap_repr_pat = re.compile('<mmap.mmap closed=False, access=(?P<access>\\\\S+), length=(?P<length>\\\\d+), pos=(?P<pos>\\\\d+), offset=(?P<offset>\\\\d+)>')\n    closed_mmap_repr_pat = re.compile('<mmap.mmap closed=True>')\n    mapsizes = (50, 100, 1000, 1000000, 10000000)\n    offsets = tuple((mapsize // 2 // mmap.ALLOCATIONGRANULARITY * mmap.ALLOCATIONGRANULARITY for mapsize in mapsizes))\n    for offset, mapsize in zip(offsets, mapsizes):\n        data = b'a' * mapsize\n        length = mapsize - offset\n        accesses = ('ACCESS_DEFAULT', 'ACCESS_READ', 'ACCESS_COPY', 'ACCESS_WRITE')\n        positions = (0, length // 10, length // 5, length // 4)\n        with open(TESTFN, 'wb+') as fp:\n            fp.write(data)\n            fp.flush()\n            for access, pos in itertools.product(accesses, positions):\n                accint = getattr(mmap, access)\n                with mmap.mmap(fp.fileno(), length, access=accint, offset=offset) as mm:\n                    mm.seek(pos)\n                    match = open_mmap_repr_pat.match(repr(mm))\n                    assert match is not None, ('assertIsNotNone', match)\n                    assert match.group('access') == access, ('assertEqual', match.group('access'), access)\n                    assert match.group('length') == str(length), ('assertEqual', match.group('length'), str(length))\n                    assert match.group('pos') == str(pos), ('assertEqual', match.group('pos'), str(pos))\n                    assert match.group('offset') == str(offset), ('assertEqual', match.group('offset'), str(offset))\n                match = closed_mmap_repr_pat.match(repr(mm))\n                assert match is not None, ('assertIsNotNone', match)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_madvise",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport sys\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    size = 2 * PAGESIZE\n    m = mmap.mmap(-1, size)\n\n    class Number:\n\n        def __index__(self):\n            return 2\n    try:\n        m.madvise(mmap.MADV_NORMAL, size)\n    except ValueError as _exc:\n        assert _re.search('madvise start out of bounds', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        m.madvise(mmap.MADV_NORMAL, -1)\n    except ValueError as _exc:\n        assert _re.search('madvise start out of bounds', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        m.madvise(mmap.MADV_NORMAL, 0, -1)\n    except ValueError as _exc:\n        assert _re.search('madvise length invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        m.madvise(mmap.MADV_NORMAL, PAGESIZE, sys.maxsize)\n    except OverflowError as _exc:\n        assert _re.search('madvise length too large', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        m.madvise(mmap.MADV_NORMAL, PAGESIZE, 'Not a Number')\n    except TypeError as _exc:\n        assert _re.search(\"'str' object cannot be interpreted as an integer\", str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert m.madvise(mmap.MADV_NORMAL) == None, ('assertEqual', m.madvise(mmap.MADV_NORMAL), None)\n    assert m.madvise(mmap.MADV_NORMAL, PAGESIZE) == None, ('assertEqual', m.madvise(mmap.MADV_NORMAL, PAGESIZE), None)\n    assert m.madvise(mmap.MADV_NORMAL, PAGESIZE, size) == None, ('assertEqual', m.madvise(mmap.MADV_NORMAL, PAGESIZE, size), None)\n    assert m.madvise(mmap.MADV_NORMAL, 0, 2) == None, ('assertEqual', m.madvise(mmap.MADV_NORMAL, 0, 2), None)\n    assert m.madvise(mmap.MADV_NORMAL, 0, Number()) == None, ('assertEqual', m.madvise(mmap.MADV_NORMAL, 0, Number()), None)\n    assert m.madvise(mmap.MADV_NORMAL, 0, size) == None, ('assertEqual', m.madvise(mmap.MADV_NORMAL, 0, size), None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_resize_up_anonymous_mapping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport random\nimport sys\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    'If the mmap is backed by the pagefile ensure a resize up can happen\\n        and that the original data is still in place\\n        '\n    start_size = PAGESIZE\n    new_size = 2 * start_size\n    data = random.randbytes(start_size)\n    with mmap.mmap(-1, start_size) as m:\n        m[:] = data\n        if sys.platform.startswith(('linux', 'android')):\n            try:\n                m.resize(new_size)\n            except ValueError as _exc:\n                pass\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        else:\n            try:\n                m.resize(new_size)\n            except SystemError:\n                pass\n            else:\n                assert len(m) == new_size, ('assertEqual', len(m), new_size)\n                assert m[:start_size] == data, ('assertEqual', m[:start_size], data)\n                assert m[start_size:] == b'\\x00' * (new_size - start_size), ('assertEqual', m[start_size:], b'\\x00' * (new_size - start_size))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_resize_up_private_anonymous_mapping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport random\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    start_size = PAGESIZE\n    new_size = 2 * start_size\n    data = random.randbytes(start_size)\n    with mmap.mmap(-1, start_size, flags=mmap.MAP_PRIVATE) as m:\n        m[:] = data\n        try:\n            m.resize(new_size)\n        except SystemError:\n            pass\n        else:\n            assert len(m) == new_size, ('assertEqual', len(m), new_size)\n            assert m[:start_size] == data, ('assertEqual', m[:start_size], data)\n            assert m[start_size:] == b'\\x00' * (new_size - start_size), ('assertEqual', m[start_size:], b'\\x00' * (new_size - start_size))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_resize_down_anonymous_mapping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport random\nimport sys\nmmap = import_module('mmap')\nPAGESIZE = mmap.PAGESIZE\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    'If the mmap is backed by the pagefile ensure a resize down up can happen\\n        and that a truncated form of the original data is still in place\\n        '\n    start_size = 2 * PAGESIZE\n    new_size = start_size // 2\n    data = random.randbytes(start_size)\n    with mmap.mmap(-1, start_size) as m:\n        m[:] = data\n        try:\n            m.resize(new_size)\n        except SystemError:\n            pass\n        else:\n            assert len(m) == new_size, ('assertEqual', len(m), new_size)\n            assert m[:] == data[:new_size], ('assertEqual', m[:], data[:new_size])\n            if sys.platform.startswith(('linux', 'android')):\n                try:\n                    m.resize(start_size)\n                except ValueError as _exc:\n                    pass\n                else:\n                    raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "MmapTests.test_mmap_closed_by_int_scenarios",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport os\nimport random\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        if os.path.exists(TESTFN):\n            os.unlink(TESTFN)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    if os.path.exists(TESTFN):\n        os.unlink(TESTFN)\n    '\\n        gh-103987: Test that mmap objects raise ValueError\\n                for closed mmap files\\n        '\n\n    class MmapClosedByIntContext:\n\n        def __init__(self, access) -> None:\n            self.access = access\n\n        def __enter__(self):\n            self.f = open(TESTFN, 'w+b')\n            self.f.write(random.randbytes(100))\n            self.f.flush()\n            m = mmap.mmap(self.f.fileno(), 100, access=self.access)\n\n            class X:\n\n                def __index__(self):\n                    m.close()\n                    return 10\n            return (m, X)\n\n        def __exit__(self, exc_type, exc_value, traceback):\n            self.f.close()\n    read_access_modes = [mmap.ACCESS_READ, mmap.ACCESS_WRITE, mmap.ACCESS_COPY, mmap.ACCESS_DEFAULT]\n    write_access_modes = [mmap.ACCESS_WRITE, mmap.ACCESS_COPY, mmap.ACCESS_DEFAULT]\n    for access in read_access_modes:\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m[X()]\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m[X():20]\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m[X():20:2]\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m[20:X():-2]\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m.read(X())\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m.find(b'1', 1, X())\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n    for access in write_access_modes:\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m[X():20] = b'1' * 10\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m[X():20:2] = b'1' * 5\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m[20:X():-2] = b'1' * 5\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m.move(1, 2, X())\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with MmapClosedByIntContext(access) as (m, X):\n            try:\n                m.write_byte(X())\n            except ValueError as _exc:\n                assert _re.search('mmap closed or invalid', str(_exc)), 'assertRaisesRegex: message mismatch'\n            else:\n                raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "LargeMmapTests.test_large_offset",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import requires, _2G, _4G, gc_collect, cpython_only, is_emscripten, is_apple, in_systemd_nspawn_sync_suppressed\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport unittest\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        unlink(TESTFN)\n\n    def _make_test_file(num_zeroes, tail):\n        if sys.platform[:3] == 'win' or is_apple:\n            requires('largefile', 'test requires %s bytes and a long time to run' % str(6442450944))\n        f = open(TESTFN, 'w+b')\n        try:\n            f.seek(num_zeroes)\n            f.write(tail)\n            f.flush()\n        except (OSError, OverflowError, ValueError):\n            try:\n                f.close()\n            except (OSError, OverflowError):\n                pass\n            raise unittest.SkipTest('filesystem does not have largefile support')\n        return f\n    unlink(TESTFN)\n    with _make_test_file(5637144575, b' ') as f:\n        with mmap.mmap(f.fileno(), 0, offset=5368709120, access=mmap.ACCESS_READ) as m:\n            assert m[268435455] == 32, ('assertEqual', m[268435455], 32)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "LargeMmapTests.test_large_filesize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import requires, _2G, _4G, gc_collect, cpython_only, is_emscripten, is_apple, in_systemd_nspawn_sync_suppressed\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport unittest\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        unlink(TESTFN)\n\n    def _make_test_file(num_zeroes, tail):\n        if sys.platform[:3] == 'win' or is_apple:\n            requires('largefile', 'test requires %s bytes and a long time to run' % str(6442450944))\n        f = open(TESTFN, 'w+b')\n        try:\n            f.seek(num_zeroes)\n            f.write(tail)\n            f.flush()\n        except (OSError, OverflowError, ValueError):\n            try:\n                f.close()\n            except (OSError, OverflowError):\n                pass\n            raise unittest.SkipTest('filesystem does not have largefile support')\n        return f\n    unlink(TESTFN)\n    with _make_test_file(6442450943, b' ') as f:\n        if sys.maxsize < 6442450944:\n            try:\n                mmap.mmap(f.fileno(), 6442450944, access=mmap.ACCESS_READ)\n            except OverflowError as _exc:\n                pass\n            else:\n                raise AssertionError('assertRaises: did not raise')\n            try:\n                mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)\n            except ValueError as _exc:\n                pass\n            else:\n                raise AssertionError('assertRaises: did not raise')\n        with mmap.mmap(f.fileno(), 65536, access=mmap.ACCESS_READ) as m:\n            assert m.size() == 6442450944, ('assertEqual', m.size(), 6442450944)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "LargeMmapTests.test_around_2GB",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import requires, _2G, _4G, gc_collect, cpython_only, is_emscripten, is_apple, in_systemd_nspawn_sync_suppressed\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport unittest\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        unlink(TESTFN)\n\n    def _make_test_file(num_zeroes, tail):\n        if sys.platform[:3] == 'win' or is_apple:\n            requires('largefile', 'test requires %s bytes and a long time to run' % str(6442450944))\n        f = open(TESTFN, 'w+b')\n        try:\n            f.seek(num_zeroes)\n            f.write(tail)\n            f.flush()\n        except (OSError, OverflowError, ValueError):\n            try:\n                f.close()\n            except (OSError, OverflowError):\n                pass\n            raise unittest.SkipTest('filesystem does not have largefile support')\n        return f\n\n    def _test_around_boundary(boundary):\n        tail = b'  DEARdear  '\n        start = boundary - len(tail) // 2\n        end = start + len(tail)\n        with _make_test_file(start, tail) as f:\n            with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as m:\n                assert m[start:end] == tail, ('assertEqual', m[start:end], tail)\n    unlink(TESTFN)\n    _test_around_boundary(_2G)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "LargeMmapTests.test_around_4GB",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import requires, _2G, _4G, gc_collect, cpython_only, is_emscripten, is_apple, in_systemd_nspawn_sync_suppressed\nfrom test.support.import_helper import import_module\nfrom test.support.os_helper import TESTFN, unlink\nimport unittest\nimport sys\nmmap = import_module('mmap')\n\ndef _t():\n\n    def setUp():\n        unlink(TESTFN)\n\n    def _make_test_file(num_zeroes, tail):\n        if sys.platform[:3] == 'win' or is_apple:\n            requires('largefile', 'test requires %s bytes and a long time to run' % str(6442450944))\n        f = open(TESTFN, 'w+b')\n        try:\n            f.seek(num_zeroes)\n            f.write(tail)\n            f.flush()\n        except (OSError, OverflowError, ValueError):\n            try:\n                f.close()\n            except (OSError, OverflowError):\n                pass\n            raise unittest.SkipTest('filesystem does not have largefile support')\n        return f\n\n    def _test_around_boundary(boundary):\n        tail = b'  DEARdear  '\n        start = boundary - len(tail) // 2\n        end = start + len(tail)\n        with _make_test_file(start, tail) as f:\n            with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as m:\n                assert m[start:end] == tail, ('assertEqual', m[start:end], tail)\n    unlink(TESTFN)\n    _test_around_boundary(_4G)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "MmapTests.test_no_trackfd_parameter_on_windows",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_tagname",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_sizeof",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_crasher_on_windows",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_invalid_descriptor",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_resize_fails_if_mapping_held_elsewhere",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_resize_succeeds_with_error_for_second_named_mapping",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_access_violations",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "MmapTests.test_trackfd_parameter",
+      "reason": "unresolved-name:err_cm"
+    },
+    {
+      "ident": "MmapTests.test_context_manager_exception",
+      "reason": "unresolved-name:exc"
+    },
+    {
+      "ident": "MmapTests.test_resize_past_pos",
+      "reason": "self.skipTest"
+    }
+  ],
+  "counts": {
+    "extracted": 51,
+    "pinned": 40,
+    "quarantined": 11
+  }
+}

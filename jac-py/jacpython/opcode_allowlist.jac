@@ -313,7 +313,6 @@ glob _OP_NAMES: dict[int, str] = {
     70: "OP_FOR_ITER",
     71: "OP_GET_AWAITABLE",
     72: "OP_IMPORT_FROM",
-    73: True,
     73: "OP_IMPORT_NAME",
     74: "OP_IS_OP",
     75: "OP_JUMP_BACKWARD",

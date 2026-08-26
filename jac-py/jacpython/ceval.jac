@@ -111,6 +111,12 @@ def _jac_host_getitem(value, index):
     except BaseException as exc:
         return _jac_host_error(exc)
 
+def _jac_host_str_encode(s, encoding, errors):
+    try:
+        return (True, s.encode(encoding, errors))
+    except BaseException as exc:
+        return _jac_host_error(exc)
+
 def _jac_host_len(value):
     try:
         return (True, len(value))
@@ -129,6 +135,17 @@ def _jac_is_type_type(value):
     # among its bases is a metaclass; super().__new__ inside its __new__ must
     # build a class object (type.__new__), not a plain instance.
     return value is type
+
+def _jac_static_type_name(value):
+    # CPython type.__setattr__ policy probe (Objects/typeobject.c
+    # type_setattro): attribute writes land only on HEAP types; a static
+    # builtin/extension type rejects EVERY write with the canonical TypeError,
+    # before the assigned value is examined. Returns the tp_name for a static
+    # type (the error message quotes it), "" for heap types and non-types.
+    import builtins
+    if isinstance(value, type) and not (value.__flags__ & (1 << 9)):
+        return getattr(value, "__name__", "")  # Py_TPFLAGS_HEAPTYPE = 1 << 9
+    return ""
 
 def _jac_is_super_type(value):
     # True iff value is exactly the builtin `super` type. Zero-arg super() at a
@@ -308,6 +325,16 @@ def _jac_wrap_tstr_interp(value, expression, conversion, format_spec):
 def _jac_wrap_tstr_template(strings, interpolations):
     import string.templatelib as tl
     return tl.Template(strings=strings, interpolations=interpolations)
+
+def _jac_construct_host_type(host_type, raw_args):
+    # Non-builtin host C-type bases (io.BytesIO, ...) resolve by reference,
+    # not builtins lookup -- unknown names cannot degrade gracefully here.
+    try:
+        if raw_args:
+            return (True, host_type(*raw_args))
+        return (True, host_type())
+    except BaseException as exc:
+        return _jac_host_error(exc)
 
 # Track B (builtin subclassing) host helpers.
 _JAC_BUILTIN_BASES = (
@@ -1016,6 +1043,98 @@ def _jac_standin_dunder(dunder_name, vm_fn):
     return _meth
 
 
+def _jac_standin_iter_method():
+    # Host __iter__ that recovers the guest object and serves iteration through
+    # py_iter -- the exact CPython tp_iter surface (__iter__, boxed bases,
+    # then the old-style __getitem__ sequence protocol) -- drained LAZILY via
+    # the shared _jac_make_host_iterator so guest and host observe the SAME
+    # consumption position. This is what lets host-routed consumers
+    # (tuple()/sum()/any()/all()/enumerate()/zip()/dict.fromkeys()/...) see a
+    # user object as iterable instead of a non-iterable repr/str-only standin.
+    def _meth(self):
+        u = getattr(self, "_jac_guest_", None)
+        if u is None:
+            raise RuntimeError(
+                "bridge-table: stand-in lost its guest back-reference"
+            )
+        it = py_iter(u)
+        if isinstance(it, PyError):
+            _jac_reraise_pyerror(it)
+        return _jac_make_host_iterator(it)
+    _meth.__name__ = "__iter__"
+    return _meth
+
+
+
+def _jac_standin_next_method():
+    # Host __next__ for standins of guest classes that ARE iterators: drives
+    # the recovered guest object through the shared tp_iternext helper and
+    # maps normal completion back to host StopIteration.
+    def _meth(self):
+        u = getattr(self, "_jac_guest_", None)
+        if u is None:
+            raise RuntimeError(
+                "bridge-table: stand-in lost its guest back-reference"
+            )
+        step = send_into(u, py_none())
+        if isinstance(step, PyGenStop):
+            raise StopIteration
+        if isinstance(step, PyError):
+            exc = step.exception
+            if exc_name_matches(exc.type_name, "StopIteration"):
+                raise StopIteration
+            _jac_reraise_pyerror(step)
+        return to_host(step)
+    _meth.__name__ = "__next__"
+    return _meth
+
+def _jac_standin_method(name):
+    # Host method that replays a guest-defined method through the VM on the
+    # recovered original object. Host callers (C reader loops, callbacks) then
+    # see guest OVERRIDES, not just inherited base behavior.
+    def _meth(self, *args, **kwargs):
+        u = getattr(self, "_jac_guest_", None)
+        if u is None:
+            raise RuntimeError(
+                "bridge-table: stand-in lost its guest back-reference"
+            )
+        m = py_attr(u, name)
+        if isinstance(m, PyError):
+            _jac_reraise_pyerror(m)
+        b = bind_attribute(m, u)
+        if isinstance(b, PyError):
+            _jac_reraise_pyerror(b)
+        h_args = [from_host(a) for a in args]
+        h_kwargs = {}
+        for k in kwargs:
+            h_kwargs[k] = from_host(kwargs[k])
+        res = b.tp_call(h_args, h_kwargs)
+        if isinstance(res, PyError):
+            _jac_reraise_pyerror(res)
+        return to_host(res)
+    _meth.__name__ = name
+    return _meth
+
+
+
+
+def _jac_standin_install_methods(ns, cls):
+    # Install trampolines for every guest-DEFINED plain method (own attrs;
+    # only PyFunction values install so data is never shadowed). Inherited
+    # behavior answers through the real host base; identity dunders keep host
+    # semantics.
+    try:
+        items = list(cls.attrs.items())
+    except BaseException:
+        return
+    for name, val in items:
+        if name in ns or not isinstance(val, PyFunction):
+            continue
+        if name.startswith("__"):
+            continue
+        ns[name] = _jac_standin_method(name)
+
+
 def _jac_standin_class(cls):
     # The cached name-faithful host class for a guest PyClass.
     import weakref
@@ -1024,12 +1143,25 @@ def _jac_standin_class(cls):
     if ent is not None and ent[0]() is cls:
         return ent[1]
     ns = {}
+    _jac_standin_install_methods(ns, cls)
     r = class_lookup_attr(cls, "__repr__")
     if not is_error(r):
         ns["__repr__"] = _jac_standin_dunder("__repr__", py_repr)
     s = class_lookup_attr(cls, "__str__")
     if not is_error(s):
         ns["__str__"] = _jac_standin_dunder("__str__", py_str)
+    # Iteration protocol: install only what the guest MRO actually defines
+    # (class-level lookup -- never the instance dict, so __getattr__ tails are
+    # not swallowed into spurious protocol presence). Like CPython's
+    # type_ready_set_slots, an __getitem__-without-__iter__ class still gets a
+    # working tp_iter equivalent; py_iter synthesizes the sequence iterator.
+    if (
+        not is_error(class_lookup_attr(cls, "__iter__"))
+        or not is_error(class_lookup_attr(cls, "__getitem__"))
+    ):
+        ns["__iter__"] = _jac_standin_iter_method()
+    if not is_error(class_lookup_attr(cls, "__next__")):
+        ns["__next__"] = _jac_standin_next_method()
     if class_has_abc_meta(cls):
         _jac_install_abc_trampolines()
         host_cls = _JacABCMeta(cls.name, _jac_standin_bases(cls), ns)
@@ -1054,6 +1186,41 @@ def _jac_user_standin(u):
     inst._jac_guest_ = u
     _JAC_USER_STANDINS[key] = [weakref.ref(u), inst]
     return inst
+
+
+def _jac_standin_adopt(base_obj, host_cls, guest_u):
+    # Re-class the boxed host-C-type base AS the guest class's stand-in: one
+    # object then carries BOTH the live C state (buffer, position, ...) and
+    # the guest method trampolines. False on layout mismatch -- callers
+    # degrade to presenting the bare base.
+    try:
+        base_obj.__class__ = host_cls
+    except BaseException:
+        return False
+    try:
+        base_obj._jac_guest_ = guest_u
+    except BaseException:
+        pass
+    return True
+
+
+def _jac_user_standin_typed(u):
+    # Stand-in for an instance of a guest class whose ancestor is a proxied
+    # host C TYPE outside the builtin list (io.BytesIO, ...). The boxed base
+    # instance is ADOPTED as the stand-in class instead of a fresh __new__
+    # shell: C state constructed in-VM survives the crossing AND guest
+    # overrides stay visible to host callbacks (marshal-style readers).
+    import weakref
+    key = id(u)
+    ent = _JAC_USER_STANDINS.get(key)
+    if ent is not None and ent[0]() is u:
+        return ent[1]
+    base_r = to_host(u._base_obj())
+    host_cls = _jac_standin_class(u.cls)
+    if not _jac_standin_adopt(base_r, host_cls, u):
+        return base_r
+    _JAC_USER_STANDINS[key] = [weakref.ref(u), base_r]
+    return base_r
 
 
 class _JacABCMeta(type):
@@ -1456,6 +1623,8 @@ import from exceptions_core {
 import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
+import from gc { gc_module_attrs }
+import from errno { errno_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -1674,6 +1843,12 @@ obj PyModule(PyObj) {
         if attr in self.attrs {
             return self.attrs[attr];
         }
+        # Every real module exposes __name__; synthesize it from the registry
+        # name so shims behave like CPython modules (IMPORT_FROM error messages
+        # used to degrade to "cannot import name 'x' from '<unknown>'").
+        if attr == "__name__" {
+            return PyStr(t="str", val=self.name);
+        }
         if attr == "__dict__" {
             return dict_from_str_map(self.attrs);
         }
@@ -1702,6 +1877,10 @@ def shim_module_get(name: str) -> PyObj {
         return shim_modules[name];
     }
     return py_error("ImportError", "shim module '" + name + "' is not installed");
+}
+
+def sys3_module_cached(name: str) -> bool {
+    return name in sys3_modules;
 }
 
 # ---------------- stdlib delegation registry ---------------------------------
@@ -1734,6 +1913,22 @@ glob delegate_modules: dict[str, str] = {
 # sys.modules semantics: one delegated PyModule per name, identity-stable
 # across repeated imports in guest code.
 glob delegate_cache: dict[str, PyObj] = {};
+
+# Attribute overrides shared by EVERY guest-sys construction site: exception
+# state and frame introspection must read GUEST state -- host sys cannot see
+# guest frames. _getframe/currentframe serve live guest PyFrames via the
+# jac_frame_chain_slot published by run_frame.
+def install_sys_guest_overrides(mod: PyObj) {
+    m = mod as PyModule;
+    m.attrs["exc_info"] = PyNativeBuiltin(t="native_builtin", name="exc_info");
+    m.attrs["exception"] = PyNativeBuiltin(t="native_builtin", name="exception");
+    m.attrs["intern"] = PyNativeBuiltin(t="native_builtin", name="intern");
+    m.attrs["_getframe"] = PyNativeBuiltin(t="native_builtin", name="sys_getframe");
+    m.attrs["currentframe"] = PyNativeBuiltin(
+        t="native_builtin", name="sys_currentframe"
+    );
+    m.attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+}
 
 def register_delegate_module(name: str, policy: str) {
     if policy != "full" {
@@ -1895,22 +2090,27 @@ def import_native(absname: str) -> PyObj {
         # shim operates on live PyList storage instead.
         shim_modules["heapq"] = build_heapq_module();
     }
+    if absname == "gc" and not ("gc" in shim_modules) {
+        # Host gc sees only host objects: native guest containers would cross
+        # as lossy to_host copies and every query would answer about the wrong
+        # heap. Serve the native facade instead (see gc.jac).
+        shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
+    }
+    if absname == "errno" and not ("errno" in shim_modules) {
+        # errnomodule.c lift: a pure-data surface (constants + errorcode). The
+        # host proxy leaks host int/str identity through every constant and
+        # errorcode round-trip; the native facade keeps them guest-native.
+        shim_modules["errno"] = PyModule(
+            t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
         # sees only host exception state, never guest frames. Snapshot failure
         # falls through to plain delegation (no worse than before).
         sysmod = delegated_module("sys");
         if not is_error(sysmod) {
-            (sysmod as PyModule).attrs["exc_info"] = PyNativeBuiltin(
-                t="native_builtin", name="exc_info"
-            );
-            (sysmod as PyModule).attrs["exception"] = PyNativeBuiltin(
-                t="native_builtin", name="exception"
-            );
-            (sysmod as PyModule).attrs["intern"] = PyNativeBuiltin(
-                t="native_builtin", name="intern"
-            );
-            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+            install_sys_guest_overrides(sysmod);
             shim_modules["sys"] = sysmod;
         }
     }
@@ -2258,6 +2458,19 @@ obj PyHostProxy(PyObj) {
     }
 
     def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # CPython type___setattr__ policy, allow-on-subclass-only: a static
+        # builtin/extension type (int, str, tuple, ...) rejects every attribute
+        # write with the canonical TypeError -- enforced natively so the answer
+        # never depends on the assigned value surviving the host-boundary
+        # coercion. Heap types (Python classes, guest standin classes) keep
+        # delegating to the host, where writes stick.
+        tname: str = _jac_static_type_name(self.val);
+        if tname != "" {
+            return py_error(
+                "TypeError",
+                "can't set attributes of built-in/extension type '" + tname + "'"
+            );
+        }
         return host_setattr(self, name, value);
     }
 
@@ -2589,6 +2802,11 @@ obj PyClass(PyObj) {
         attrs: dict[str, PyObj],
         bases: list[PyObj] = [],
         native_base: str = "",
+        # Non-builtin host C-type ancestor (io.BytesIO, zlib.Compress, ...)
+        # recorded by compute_host_base: the resolved host type itself. Unlike
+        # plain user classes there is live per-instance C state behind every
+        # method call, so instances must box a REAL base instance.
+        host_base: any = None,
         # The type OF this class (its metaclass). None means the default `type`.
         # A user metaclass (EnumType, ABCMeta) is recorded here by type.__new__ so
         # `class Sub(Base)` can re-derive it from a base and re-run the protocol.
@@ -2868,6 +3086,22 @@ obj PyClass(PyObj) {
                     return upd;
                 }
             }
+        } elif self.host_base is not None {
+            # A non-builtin host C-type base boxes a REAL instance of the host
+            # type (same empty-then-fill pattern as mutable builtins when a
+            # user __init__ will call super().__init__ itself).
+            if not has_user_init and len(kwargs) > 0 {
+                tname: str = str(_jac_host_type_name(self.host_base));
+                return py_error("TypeError", tname + "() takes no keyword arguments");
+            }
+            box_args2 = args;
+            if has_user_init {
+                box_args2 = [];
+            }
+            boxed = construct_host_typed_base(self.host_base, box_args2);
+            if is_error(boxed) {
+                return boxed;
+            }
         }
         instance = PyUserObj(t="instance", cls=self, attrs={}, base=boxed);
         if class_is_exception(self) {
@@ -3126,6 +3360,15 @@ def default_user_getattro(u: PyUserObj, name: str) -> PyObj {
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._get(u);
     }
+    # A user-defined data descriptor (its type's MRO defines __set__ or
+    # __delete__) outranks the instance dict too: reads route through its
+    # __get__ via descriptor_get below. CPython precedence order: data
+    # descriptor > instance dict > non-data descriptor > class attr.
+    if isinstance(classattr, PyUserObj)
+        and (user_has_dunder(classattr as PyUserObj, "__set__")
+            or user_has_dunder(classattr as PyUserObj, "__delete__")) {
+        return descriptor_get(classattr, u, u.cls);
+    }
     if name in u.attrs {
         return bind_attribute(u.attrs[name], u);
     }
@@ -3181,6 +3424,13 @@ def default_user_setattro(u: PyUserObj, name: str, value: PyObj) -> PyObj {
     # A slot member descriptor takes the write (data-descriptor priority).
     if isinstance(classattr, PyMemberDescr) {
         return (classattr as PyMemberDescr)._set(u, value);
+    }
+    # A user-defined data descriptor takes the write through its __set__
+    # instead of landing raw in the instance dict (host: type's tp_descr_set);
+    # subsequent reads then flow back through its __get__.
+    if isinstance(classattr, PyUserObj)
+        and user_has_dunder(classattr as PyUserObj, "__set__") {
+        return call_user_dunder(classattr as PyUserObj, "__set__", [u as PyObj, value]);
     }
     # __slots__ enforcement: a declared-slot class with no instance dict only
     # accepts its member names -- anything else is the host's two-clause error
@@ -3936,6 +4186,19 @@ def descriptor_get(value: PyObj, instance: PyObj, owner: PyObj) -> PyObj {
     }
     if value.t == "function" and not isinstance(instance, PyNoneType) {
         return PyBoundMethod(t="bound_method", function=value, receiver=instance);
+    }
+    # User-defined descriptor protocol (host: any type whose MRO defines
+    # __get__ carries a non-NULL tp_descr_get): a class-dict object of such a
+    # type binds through it -- `C().attr` runs descr.__get__(obj, owner)
+    # instead of leaking the raw descriptor object. A None instance on
+    # class-level access still invokes __get__(None, owner), matching
+    # slot_tp_descr_get's Py_None substitution -- the descriptor itself
+    # decides. Probed via direct MRO dict walks (user_has_dunder), never the
+    # attribute dispatch, so probing the protocol names cannot re-enter this
+    # code.
+    if isinstance(value, PyUserObj)
+        and user_has_dunder(value as PyUserObj, "__get__") {
+        return call_user_dunder(value as PyUserObj, "__get__", [instance, owner]);
     }
     return value;
 }
@@ -4766,6 +5029,13 @@ def to_host(value: PyObj) -> any {
             # other plain user object gets a NAME-FAITHFUL cached host stand-in
             # whose back-reference recovers the original on round-trip.
             if value._has_base() {
+                if (value as PyUserObj).cls.host_base is not None {
+                    # Host-C-type subclass: adopt the boxed base AS the
+                    # stand-in so live C state and guest overrides both
+                    # survive the crossing (host reader callbacks must see
+                    # the override, never a bare base).
+                    return _jac_user_standin_typed(value as PyUserObj);
+                }
                 return to_host(value._base_obj());
             }
             if class_is_exception(value.cls) {
@@ -4974,6 +5244,13 @@ def _mint_host_builtin(name: str) -> PyObj {
 }
 
 def host_import(name: str, fromlist: PyObj) -> PyObj {
+    if name == "errno" and not ("errno" in shim_modules) {
+        # Mirror of the import_native site: errnomodule.c is pure data, so the
+        # native facade serves it without a host round-trip.
+        shim_modules["errno"] = PyModule(
+            t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
     if name == "weakref" and not ("weakref" in shim_modules) {
         # The host module's ref() sees to_host conversions (plain objects ->
         # None), so serve our identity-faithful shim instead.
@@ -4983,6 +5260,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # Same copy-mutation hazard as import_native: host heapq mutates a
         # copy of any guest list argument.
         shim_modules["heapq"] = build_heapq_module();
+    }
+    if name == "gc" and not ("gc" in shim_modules) {
+        # Same rationale as the import_native site above: host gc cannot see
+        # native guest objects.
+        shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
     }
     if name == "types" and not ("types" in shim_modules) {
         # The host types.coroutine cannot mark VM-native functions (it mutates
@@ -4998,16 +5280,7 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # GUEST state.
         sysmod = delegated_module("sys");
         if not is_error(sysmod) {
-            (sysmod as PyModule).attrs["exc_info"] = PyNativeBuiltin(
-                t="native_builtin", name="exc_info"
-            );
-            (sysmod as PyModule).attrs["exception"] = PyNativeBuiltin(
-                t="native_builtin", name="exception"
-            );
-            (sysmod as PyModule).attrs["intern"] = PyNativeBuiltin(
-                t="native_builtin", name="intern"
-            );
-            (sysmod as PyModule).attrs["__jac_marker__"] = PyStr(t="str", val="installed");
+            install_sys_guest_overrides(sysmod);
             shim_modules["sys"] = sysmod;
         }
     }
@@ -5932,6 +6205,11 @@ def py_compare(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
     if isinstance(lhs, PyDictView) or isinstance(rhs, PyDictView) {
         return dictview_richcompare(kind, lhs, rhs);
     }
+    # PEP 667 frame-locals proxies compare dict-like against dicts and by
+    # identity against each other (Objects/frameobject.c).
+    if isinstance(lhs, PyFrameLocalsProxy) or isinstance(rhs, PyFrameLocalsProxy) {
+        return framelocals_richcompare(kind, lhs, rhs);
+    }
     if isinstance(lhs, PyMappingProxy) {
         lhs = (lhs as PyMappingProxy).target;
     }
@@ -6630,6 +6908,11 @@ def py_contains(container: PyObj, member: PyObj) -> PyObj {
     }
     if isinstance(container, PyDict) {
         return PyBool(t="bool", val=(container as PyDict).dict_contains(member));
+    }
+    # PEP 667: FrameLocalsProxy answers sq_contains through its slot/extra
+    # lookup, not iteration (Objects/frameobject.c frame_localsproxy_contains).
+    if isinstance(container, PyFrameLocalsProxy) {
+        return (container as PyFrameLocalsProxy).contains_key(member);
     }
     # Native tuple/list membership compares elements with a real == in-VM. Routing
     # through the host collapses every native class/instance to None (to_host), so
@@ -7471,6 +7754,9 @@ def py_len(value: PyObj) -> PyObj {
     if isinstance(value, PyMappingProxy) {
         return py_len((value as PyMappingProxy).target as PyObj);
     }
+    if isinstance(value, PyFrameLocalsProxy) {
+        return PyInt(t="int", val=framelocals_len(value as PyFrameLocalsProxy));
+    }
     if isinstance(value, PyUserObj) {
         u = value as PyUserObj;
         if user_has_dunder(u, "__len__") {
@@ -8074,6 +8360,33 @@ def dispatch_exception(
     }
     stack.append(error.exception);
     return handler.target;
+}
+
+# _PyEval_CheckExceptTypeValid: a plain `except X` target must be a class
+# deriving BaseException -- a builtin native exception type, a guest class whose
+# MRO reaches one, or a host-proxied exception class. Tuples are validated
+# element-wise. Anything else (int, str, an instance, a non-exception class)
+# makes CHECK_EXC_MATCH raise CPython's TypeError before any matching happens.
+def except_target_valid(target: PyObj) -> bool {
+    if target.t == "tuple" {
+        for item in (target as PyTuple).items {
+            if not except_target_valid(item) {
+                return False;
+            }
+        }
+        return True;
+    }
+    if target.t == "exception_type" {
+        return True;
+    }
+    if isinstance(target, PyHostProxy)
+        and bool(_jac_is_exception_type((target as PyHostProxy).val)) {
+        return True;
+    }
+    if isinstance(target, PyClass) {
+        return class_is_exception(target as PyClass);
+    }
+    return False;
 }
 
 def exception_matches(value: PyObj, target: PyObj) -> bool {
@@ -9733,6 +10046,26 @@ def construct_native_base(name: str, args: list[PyObj]) -> PyObj {
     return host_result_error(result);
 }
 
+# Same boundary contract as construct_native_base, for non-builtin host C-type
+# bases recorded on the class (compute_host_base): call the actual host type
+# so per-instance C state is real.
+def construct_host_typed_base(host_type: any, args: list[PyObj]) -> PyObj {
+    raw_args: list[any] = [];
+    for a in args {
+        ha_r = to_host_coerce(a);
+        ha = ha_r[1];
+        if not ((ha_r[0] as bool)) {
+            return ha_r[1] as PyObj;
+        }
+        raw_args.append(ha);
+    }
+    result = _jac_construct_host_type(host_type, raw_args);
+    if host_result_ok(result) {
+        return from_host(result[1]);
+    }
+    return host_result_error(result);
+}
+
 # For operator delegation: a builtin subclass on either operand acts as its
 # boxed value (MyInt(5) + MyInt(1) -> 5 + 1).
 def unwrap_base(o: PyObj) -> PyObj {
@@ -9961,6 +10294,40 @@ def compute_native_base(bases: list[PyObj]) -> str {
     return native_base;
 }
 
+# The non-builtin host C-type ancestor (if any): a proxied HOST type base the
+# _JAC_BUILTIN_BASES list does not cover (io.BytesIO, zlib.Compress, ...).
+# Recorded on the class so instances box a REAL base instance -- every method
+# call behind it touches live per-instance C state that must survive
+# boundary crossings.
+def compute_host_base(bases: list[PyObj]) -> any {
+    for base in bases {
+        if isinstance(base, PyClass) {
+            inherited = (base as PyClass).host_base;
+            if inherited is not None {
+                return inherited;
+            }
+        } elif isinstance(base, PyHostProxy) {
+            hostval = (base as PyHostProxy).val;
+            # Metaclasses ride native_base="type"; listed builtins ride
+            # native_base; exception bases ride the exception machinery.
+            if _jac_is_type_type(hostval) {
+                continue;
+            }
+            if str(_jac_builtin_base_name(hostval)) != "" {
+                continue;
+            }
+            if bool(_jac_is_exception_type(hostval)) {
+                continue;
+            }
+            cand = _jac_hostproxy_val_is_type(hostval);
+            if not isinstance(cand, str) {
+                return cand;
+            }
+        }
+    }
+    return None;
+}
+
 # Box a PyClass from a resolved name/bases/namespace. `meta` is the metaclass that
 # produced it (None = the default `type`), recorded so a later subclass can
 # re-derive and re-run the metaclass protocol.
@@ -10184,6 +10551,7 @@ def make_pyclass_from_map(
         attrs=namespace,
         bases=bases,
         native_base=compute_native_base(bases),
+        host_base=compute_host_base(bases),
         metaclass=meta,
         tp_flags=flags,
         slot_members=members,
@@ -10699,7 +11067,38 @@ obj PyFrame(PyObj) {
         # restored when the generator resumes, so a bare `raise` inside an
         # except block that spans a yield re-raises the right exception
         # (CPython keeps this state in the frame's exc_info across suspends).
-        exc_state: list[PyObj] | None = None;
+        exc_state: list[PyObj] | None = None,
+        # PEP 667 "extra locals" -- keys written through f_locals that are not
+        # localsplus slots (CPython frame->f_extra_locals). Keyed by hashkey so
+        # non-string keys work exactly like CPython's extras dict.
+        extra_locals: dict[str, DictEntry] = {};
+
+    def tp_getattro(name2: str) -> PyObj {
+        if name2 == "f_locals" {
+            return PyFrameLocalsProxy(t="frame_locals_proxy", frame=self) as PyObj;
+        }
+        if name2 == "f_globals" {
+            return PyGlobalsProxy(t="globals", ns=self.globals);
+        }
+        if name2 == "f_code" {
+            return self.co as PyObj;
+        }
+        if name2 == "f_back" {
+            # The live guest chain published by run_frame (innermost last).
+            i = len(jac_frame_chain_slot) - 1;
+            while i >= 0 {
+                if jac_frame_chain_slot[i] is self {
+                    if i > 0 {
+                        return jac_frame_chain_slot[i - 1] as PyObj;
+                    }
+                    break;
+                }
+                i = i - 1;
+            }
+            return py_none();
+        }
+        return py_error("AttributeError", name2);
+    }
 }
 
 obj PyYield(PyObj) {
@@ -10765,6 +11164,34 @@ obj PyNativeBuiltin(PyObj) {
             }
             vals: list[PyObj] = [etype, e, tbv];
             return PyTuple(t="tuple", items=vals);
+        }
+        if self.name == "sys_getframe" {
+            # sys._getframe(depth=0) over GUEST frames (host sys cannot see
+            # them): walk the live chain published by run_frame, innermost
+            # last. Errors byte-match CPython's sysmodule.c.
+            depth = 0;
+            if len(args) > 0 {
+                if not isinstance(args[0], PyInt) {
+                    return py_error("TypeError", "an integer is required");
+                }
+                depth = (args[0] as PyInt).val;
+                if depth < 0 {
+                    return py_error("ValueError", "depth must be non-negative");
+                }
+            }
+            i = len(jac_frame_chain_slot) - 1 - depth;
+            if i < 0 {
+                return py_error("ValueError", "call stack is not deep enough");
+            }
+            return jac_frame_chain_slot[i] as PyObj;
+        }
+        if self.name == "sys_currentframe" {
+            # sys.currentframe(): None where _getframe would raise -- only
+            # possible in guest when no frame is executing at all.
+            if len(jac_frame_chain_slot) == 0 {
+                return py_none();
+            }
+            return jac_frame_chain_slot[len(jac_frame_chain_slot) - 1] as PyObj;
         }
         if self.name == "anext" {
             # anext(aiter[, default]): must stay NATIVE -- routed through the
@@ -11216,6 +11643,456 @@ obj PyNsMethod(PyObj) {
     }
 }
 
+# ---------------- FrameLocalsProxy (PEP 667) ---------------------------------
+# Live view over a guest frame's locals, mirroring CPython's FrameLocalsProxy
+# (Objects/frameobject.c). Read resolution order: bound localsplus slot -> the
+# namespace dict (frame.locals -- the class/module namespace for non-optimized
+# frames; empty for function frames) -> extra locals. Writes through cell slots
+# propagate to the owning scope, so `f_locals['x'] = v` on a closure variable
+# is observed by the defining scope -- TestFrameLocals.test_closure's contract.
+# sys._getframe() serves these frames natively via the "sys_getframe"
+# native-builtin arm in PyNativeBuiltin.tp_call.
+glob jac_frame_chain_slot: list[PyFrame] = [];
+
+def jac_current_frame -> PyFrame | None {
+    if len(jac_frame_chain_slot) == 0 {
+        return None;
+    }
+    return jac_frame_chain_slot[len(jac_frame_chain_slot) - 1];
+}
+
+# Total merged localsplus size: [varnames][cellvars not shadowing a varname]
+# [freevars] -- same layout localsplus_name resolves against.
+def framelocals_nslots(co: PyCode) -> int {
+    n = len(co.varnames);
+    ci = 0;
+    while ci < len(co.cellvars) {
+        if find_name(co.varnames, co.cellvars[ci]) < 0 {
+            n = n + 1;
+        }
+        ci = ci + 1;
+    }
+    return n + len(co.freevars);
+}
+
+def framelocals_keyerror(key: PyObj) -> PyObj {
+    r = py_repr(key);
+    if is_error(r) {
+        return r;
+    }
+    # CPython formats KeyError with repr(key): for 'zz' the message carries
+    # doubled quotes -- byte-exact with host FrameLocalsProxy.__getitem__.
+    return py_error("KeyError", "local variable '" + (r as PyStr).val + "' is not defined");
+}
+
+obj PyFrameLocalsProxy(PyObj) {
+    has frame: PyFrame;
+
+    def slot_index(key: str) -> int {
+        co = self.frame.co;
+        i = 0;
+        while i < framelocals_nslots(co) {
+            if localsplus_name(co, i) == key {
+                return i;
+            }
+            i = i + 1;
+        }
+        return -1;
+    }
+
+    def slot_bound(i: int) -> bool {
+        slot = self.frame.fast[i];
+        if isinstance(slot, PyCell) {
+            return (slot as PyCell).filled;
+        }
+        if i < len(self.frame.assigned) {
+            return self.frame.assigned[i];
+        }
+        return False;
+    }
+
+    def slot_get(i: int) -> PyObj {
+        slot = self.frame.fast[i];
+        if isinstance(slot, PyCell) {
+            return (slot as PyCell).val;
+        }
+        return slot;
+    }
+
+    # (bound?, value) for a string key already known to sit in the slots.
+    def ns_has(key: str) -> bool {
+        return key in self.frame.locals;
+    }
+
+    # All visible pairs in CPython order: bound slots, then extras, then the
+    # namespace dict (empty for function frames).
+    def entry_pairs() -> list[PyObj] {
+        out: list[PyObj] = [];
+        co = self.frame.co;
+        i = 0;
+        while i < framelocals_nslots(co) {
+            if self.slot_bound(i) {
+                pair: list[PyObj] = [
+                    PyStr(t="str", val=localsplus_name(co, i)),
+                    self.slot_get(i),
+                ];
+                out.append(PyTuple(t="tuple", items=pair));
+            }
+            i = i + 1;
+        }
+        for hk in self.frame.extra_locals {
+            e = self.frame.extra_locals[hk];
+            pair2: list[PyObj] = [e.key, e.value];
+            out.append(PyTuple(t="tuple", items=pair2));
+        }
+        for k in self.frame.locals {
+            pair3: list[PyObj] = [PyStr(t="str", val=k), self.frame.locals[k]];
+            out.append(PyTuple(t="tuple", items=pair3));
+        }
+        return out;
+    }
+
+    def keys_list() -> list[PyObj] {
+        out: list[PyObj] = [];
+        for p in self.entry_pairs() {
+            out.append(((p as PyTuple).items[0]));
+        }
+        return out;
+    }
+
+    def as_dict() -> PyDict {
+        d = PyDict(t="dict", items={});
+        for p in self.entry_pairs() {
+            _ = d.dict_set((p as PyTuple).items[0], (p as PyTuple).items[1]);
+        }
+        return d;
+    }
+
+    # Core lookup behind mp_subscript/get/contains: found? value.
+    def lookup(index: PyObj) -> tuple[bool, PyObj] {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return (False, _unhashable_error("a dict key", index));
+        }
+        hk = hashkey_str(hkr);
+        if isinstance(index, PyStr) {
+            k = (index as PyStr).val;
+            i = self.slot_index(k);
+            if i >= 0 {
+                if self.slot_bound(i) {
+                    return (True, self.slot_get(i));
+                }
+                # An unbound slot falls through like CPython (getval NULL).
+                return (False, py_none());
+            }
+            if self.ns_has(k) {
+                return (True, self.frame.locals[k]);
+            }
+        }
+        if hk in self.frame.extra_locals {
+            return (True, self.frame.extra_locals[hk].value);
+        }
+        return (False, py_none());
+    }
+
+    def contains_key(index: PyObj) -> PyObj {
+        (found, val) = self.lookup(index);
+        if is_error(val) {
+            return val;
+        }
+        return PyBool(t="bool", val=found);
+    }
+
+    def mp_subscript(index: PyObj) -> PyObj {
+        (found, val) = self.lookup(index);
+        if is_error(val) {
+            return val;
+        }
+        if found {
+            return val;
+        }
+        return framelocals_keyerror(index);
+    }
+
+    def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
+        if isinstance(index, PyStr) {
+            k = (index as PyStr).val;
+            i = self.slot_index(k);
+            if i >= 0 {
+                slot = self.frame.fast[i];
+                if isinstance(slot, PyCell) {
+                    c = slot as PyCell;
+                    c.val = value;
+                    c.filled = True;
+                } else {
+                    self.frame.fast[i] = value;
+                    while len(self.frame.assigned) <= i {
+                        self.frame.assigned.append(False);
+                    }
+                    self.frame.assigned[i] = True;
+                }
+                return py_none();
+            }
+            if self.ns_has(k) {
+                self.frame.locals[k] = value;
+                return py_none();
+            }
+        }
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        self.frame.extra_locals[hashkey_str(hkr)] = DictEntry(key=index, value=value);
+        return py_none();
+    }
+
+    def mp_del_subscript(index: PyObj) -> PyObj {
+        if isinstance(index, PyStr) {
+            if self.slot_index((index as PyStr).val) >= 0 {
+                return py_error(
+                    "ValueError",
+                    "cannot remove local variables from FrameLocalsProxy",
+                );
+            }
+            k = (index as PyStr).val;
+            if self.ns_has(k) {
+                del self.frame.locals[k];
+                return py_none();
+            }
+        }
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        hk = hashkey_str(hkr);
+        if hk in self.frame.extra_locals {
+            del self.frame.extra_locals[hk];
+            return py_none();
+        }
+        return py_error("KeyError", dict_key_repr(index));
+    }
+
+    # Pairs of a merge source (dict | proxy); error otherwise.
+    def merge_pairs(other: PyObj) -> PyObj {
+        if isinstance(other, PyFrameLocalsProxy) {
+            return PyList(t="list", items=(other as PyFrameLocalsProxy).entry_pairs());
+        }
+        if isinstance(other, PyDict) {
+            src = other as PyDict;
+            pairs: list[PyObj] = [];
+            for hk in src.items {
+                pair: list[PyObj] = [src.items[hk].key, src.items[hk].value];
+                pairs.append(PyTuple(t="tuple", items=pair));
+            }
+            return PyList(t="list", items=pairs);
+        }
+        return py_error(
+            "TypeError",
+            "'" + other.t + "' object cannot be merged into FrameLocalsProxy",
+        );
+    }
+
+    def nb_binop(kind: int, other: PyObj) -> PyObj {
+        if kind != NB_OR and kind != NB_INPLACE_OR {
+            return PY_NOT_IMPLEMENTED;
+        }
+        pairs_r = self.merge_pairs(other);
+        if is_error(pairs_r) {
+            if kind == NB_INPLACE_OR {
+                return pairs_r;
+            }
+            return PY_NOT_IMPLEMENTED;
+        }
+        if kind == NB_INPLACE_OR {
+            for p in (pairs_r as PyList).items {
+                err = self.mp_ass_subscript((p as PyTuple).items[0], (p as PyTuple).items[1]);
+                if is_error(err) {
+                    return err;
+                }
+            }
+            return self as PyObj;
+        }
+        result = self.as_dict();
+        for p in (pairs_r as PyList).items {
+            _ = result.dict_set((p as PyTuple).items[0], (p as PyTuple).items[1]);
+        }
+        return result;
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind != Py_EQ and kind != Py_NE {
+            return PY_NOT_IMPLEMENTED;
+        }
+        if isinstance(other, PyFrameLocalsProxy) {
+            eq = self.frame is (other as PyFrameLocalsProxy).frame;
+            return PyBool(t="bool", val=eq if kind == Py_EQ else not eq);
+        }
+        if isinstance(other, PyDict) {
+            return dict_richcompare(kind, self.as_dict(), other as PyDict, py_compare);
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
+
+    def tp_iter -> PyObj {
+        return PyIter(t="iter", items=self.keys_list(), index=0);
+    }
+
+    def tp_getattro(name2: str) -> PyObj {
+        if name2 == "keys" or name2 == "values" or name2 == "items"
+            or name2 == "get" or name2 == "setdefault" or name2 == "update"
+            or name2 == "copy" or name2 == "pop" or name2 == "__getitem__"
+            or name2 == "__setitem__" or name2 == "__len__"
+            or name2 == "__contains__" {
+            return PyFrameLocalsMethod(t="framelocals_method", proxy=self, op=name2);
+        }
+        return py_error("AttributeError", name2);
+    }
+}
+
+# Bound method surface of PyFrameLocalsProxy (dict-shaped mapping API; .clear()
+# is deliberately absent so it raises AttributeError like CPython's).
+def framelocals_len(p: PyFrameLocalsProxy) -> int {
+    return len(p.entry_pairs());
+}
+
+obj PyFrameLocalsMethod(PyObj) {
+    has proxy: PyFrameLocalsProxy,
+        op: str;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        p = self.proxy;
+        if self.op == "keys" {
+            return PyList(t="list", items=p.keys_list());
+        }
+        if self.op == "values" {
+            out: list[PyObj] = [];
+            for pr in p.entry_pairs() {
+                out.append((pr as PyTuple).items[1]);
+            }
+            return PyList(t="list", items=out);
+        }
+        if self.op == "items" {
+            return PyList(t="list", items=p.entry_pairs());
+        }
+        if self.op == "copy" {
+            return p.as_dict();
+        }
+        if self.op == "__len__" {
+            return PyInt(t="int", val=len(p.entry_pairs()));
+        }
+        if self.op == "__contains__" {
+            if len(args) < 1 {
+                return py_error("TypeError", "__contains__ expected 1 argument");
+            }
+            return p.contains_key(args[0]);
+        }
+        if self.op == "__getitem__" {
+            if len(args) < 1 {
+                return py_error("TypeError", "__getitem__ expected 1 argument");
+            }
+            return p.mp_subscript(args[0]);
+        }
+        if self.op == "__setitem__" {
+            if len(args) < 2 {
+                return py_error("TypeError", "__setitem__ expected 2 arguments");
+            }
+            return p.mp_ass_subscript(args[0], args[1]);
+        }
+        if self.op == "get" {
+            if len(args) < 1 {
+                return py_error("TypeError", "get expected at least 1 argument");
+            }
+            (found, val) = p.lookup(args[0]);
+            if is_error(val) {
+                return val;
+            }
+            if found {
+                return val;
+            }
+            if len(args) > 1 {
+                return args[1];
+            }
+            return py_none();
+        }
+        if self.op == "setdefault" {
+            if len(args) < 1 {
+                return py_error("TypeError", "setdefault expected at least 1 argument");
+            }
+            (found2, val2) = p.lookup(args[0]);
+            if is_error(val2) {
+                return val2;
+            }
+            if found2 {
+                return val2;
+            }
+            fallback = py_none();
+            if len(args) > 1 {
+                fallback = args[1];
+            }
+            err = p.mp_ass_subscript(args[0], fallback);
+            if is_error(err) {
+                return err;
+            }
+            return fallback;
+        }
+        if self.op == "update" {
+            if len(args) < 1 {
+                return py_error("TypeError", "update expected at least 1 argument");
+            }
+            pairs_r = p.merge_pairs(args[0]);
+            if is_error(pairs_r) {
+                return pairs_r;
+            }
+            for pr in (pairs_r as PyList).items {
+                err2 = p.mp_ass_subscript((pr as PyTuple).items[0], (pr as PyTuple).items[1]);
+                if is_error(err2) {
+                    return err2;
+                }
+            }
+            return py_none();
+        }
+        if self.op == "pop" {
+            if len(args) < 1 {
+                return py_error("TypeError", "pop expected at least 1 argument");
+            }
+            index = args[0];
+            if isinstance(index, PyStr) and p.slot_index((index as PyStr).val) >= 0 {
+                return py_error(
+                    "ValueError",
+                    "cannot remove local variables from FrameLocalsProxy",
+                );
+            }
+            (found3, val3) = p.lookup(index);
+            if is_error(val3) {
+                return val3;
+            }
+            if found3 {
+                del_err = p.mp_del_subscript(index);
+                if is_error(del_err) {
+                    return del_err;
+                }
+                return val3;
+            }
+            if len(args) > 1 {
+                return args[1];
+            }
+            return py_error("KeyError", dict_key_repr(index));
+        }
+        return py_error("TypeError", "unsupported FrameLocalsProxy op");
+    }
+}
+
+def framelocals_richcompare(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
+    if isinstance(lhs, PyFrameLocalsProxy) {
+        return (lhs as PyFrameLocalsProxy).tp_richcompare(kind, rhs);
+    }
+    # Reflected: proxy on the right, plain dict on the left.
+    if isinstance(rhs, PyFrameLocalsProxy) and isinstance(lhs, PyDict) {
+        return (rhs as PyFrameLocalsProxy).tp_richcompare(kind, lhs);
+    }
+    return PY_NOT_IMPLEMENTED;
+}
+
 # ---- native set methods (.pop/.difference/.union/... ) --------------------
 # PySet is a native (na-clean leaf) container, so its methods can't route to the
 # host the way str/list/dict do -- to_host would round-trip and lose identity.
@@ -11619,12 +12496,13 @@ def _sm_iter_elems(src: PyObj, elems: list[PyObj]) -> bool {
     return False;
 }
 
-# str.encode with byte-exact UnicodeEncodeError construction. Codecs are
-# matched against their alias tables, then every codepoint is pre-scanned so
-# the host intrinsic only ever sees fully encodable input (its exceptions would
-# otherwise escape the VM unconverted). Error handlers are validated lazily,
-# matching CPython 3.14: an unknown handler raises LookupError only when an
-# actual encoding error consults it.
+# str.encode with byte-exact UnicodeEncodeError construction. Intrinsic codecs
+# (utf-8/ascii/latin-1) match their alias tables, then every codepoint is
+# pre-scanned so the host intrinsic only ever sees fully encodable input (its
+# exceptions would otherwise escape the VM unconverted). Every OTHER encoding
+# mirrors CPython's PyCodec_Encode route through the codec registry by crossing
+# to the host codec machinery, so registry-resolved C codecs (gb2312, euc-jp,
+# ...) work and failures come back with their live exception identity.
 def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
     enc = encoding.lower().replace("_", "-");
     limit = 1114111;
@@ -11639,7 +12517,13 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
         limit = 255;
         canon = "latin-1";
     } else {
-        return py_error("LookupError", "unknown encoding: " + encoding);
+        # Registry-resolved encoding: delegate to the host codec machinery
+        # (CPython str.encode semantics, including lazy handler validation).
+        res = _jac_host_str_encode(s, encoding, errors);
+        if host_result_ok(res) {
+            return from_host(res[1]);
+        }
+        return host_result_error(res);
     }
     # Pre-scan for the first unencodable codepoint.
     bad_pos = -1;
@@ -14520,9 +15404,14 @@ def run_frame(frame: PyFrame) -> PyObj {
     # save/restore keeps recursion and generator resumes correct.
     outer_globals = jac_frame_globals_slot[0];
     jac_frame_globals_slot[0] = frame.globals;
+    # Publish the live frame chain (innermost last) for sys._getframe and
+    # f_back; suspended generator frames are off the chain while suspended,
+    # matching CPython.
+    jac_frame_chain_slot.append(frame);
     try {
         return run_frame_inner(frame);
     } finally {
+        jac_frame_chain_slot.pop();
         jac_frame_globals_slot[0] = outer_globals;
     }
 }
@@ -16491,6 +17380,20 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_CHECK_EXC_MATCH {
             match_type: PyObj = stack.pop();
             exception = stack[len(stack) - 1];
+            # CPython validates the target BEFORE matching; an invalid one is a
+            # raising TypeError, not a non-match.
+            if not except_target_valid(match_type) {
+                exc_match_err = py_error(
+                    "TypeError",
+                    "catching classes that do not inherit from BaseException is not allowed"
+                );
+                target = recover_exception(co, exc_match_err, offset, stack);
+                if target >= 0 {
+                    ip = target;
+                    continue;
+                }
+                return exc_match_err;
+            }
             stack.append(
                 PyBool(t="bool", val=exception_matches(exception, match_type))
             );

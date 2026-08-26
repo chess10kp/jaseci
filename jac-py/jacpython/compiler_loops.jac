@@ -62,6 +62,7 @@ import from codegen_util {
 }
 import from compiler_annotations { ann_scope_plan }
 import from compiler_codegen { emit_module_return, emit_tail_and_finish, visit_stmt_tail, visit_stmts, visit_store_target_tos }
+import from compiler_dispatch { stmt_handlers }
 import from compiler_exc { emit_anext_send_except_regions }
 
 # ---------------- break-edge tail duplication (CPython parity) ----------------
@@ -1070,3 +1071,16 @@ def visit_async_for(
     }
     return stmt_cont(loc=floc, terminated=True);
 }
+
+# Wire statement-dispatch handlers into the leaf registry (see
+# compiler_dispatch.jac). Runs at module load via `with entry`; entry
+# drivers (product_compile, compiler_slice) import this module so the
+# registration always precedes the first compile. Dict item assignment
+# mutates the holder in place (scalar-glob rebinding would be local).
+with entry {
+    stmt_handlers["visit_if"] = visit_if;
+    stmt_handlers["visit_while"] = visit_while;
+    stmt_handlers["visit_for"] = visit_for;
+    stmt_handlers["visit_async_for"] = visit_async_for;
+}
+

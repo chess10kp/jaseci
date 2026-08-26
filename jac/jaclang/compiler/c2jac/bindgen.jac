@@ -19,7 +19,7 @@ import from jaclang.compiler.cfront.cbind_ir {
     StructDesc,
     ConstDesc
 }
-import from jaclang.compiler.passes.tool.unparse_pass { unparse_module }
+import from jaclang.compiler.tools.unparse_pass { unparse_module }
 
 glob _FFI_SCALARS: set = {
          "i8",

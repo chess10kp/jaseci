@@ -11,6 +11,13 @@ import from compiler_validate { validate_eval_expr, validate_module_body }
 import from compiler_symtable { build_module_symtable }
 import from compiler_diagnostics { compiler_diag_to_pyobj }
 import from compiler_codegen { compile_eval, compile_exec }
+# Statement-dispatch siblings: imported for their load-time registration into
+# the compiler_dispatch leaf (see compiler_dispatch.jac); without these edges
+# a compile of any compound statement would call an unwired handler slot.
+import from compiler_defs { visit_function_def }
+import from compiler_exc { visit_try }
+import from compiler_loops { visit_if }
+import from compiler_match { visit_match }
 import from flowgraph { verify_cfg }
 import from assembler { assemble }
 

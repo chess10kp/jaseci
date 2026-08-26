@@ -102,6 +102,7 @@ import from codegen_util {
     nloc,
 }
 import from compiler_codegen { emit_name_store, visit_stmt }
+import from compiler_dispatch { stmt_handlers }
 import from compiler_exc { emit_generator_except_handler, emit_deferred_comp_handlers }
 import from compiler_annotations {
     collect_ann_plan_class,
@@ -1086,3 +1087,18 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
     }
     return stmt_cont(loc=tloc);
 }
+
+# Wire statement-dispatch handlers into the leaf registry (see
+# compiler_dispatch.jac). Runs at module load via `with entry`; entry
+# drivers (product_compile, compiler_slice) import this module so the
+# registration always precedes the first compile. Dict item assignment
+# mutates the holder in place (scalar-glob rebinding would be local).
+with entry {
+    stmt_handlers["visit_import"] = visit_import;
+    stmt_handlers["visit_import_from"] = visit_import_from;
+    stmt_handlers["visit_class_def"] = visit_class_def;
+    stmt_handlers["visit_function_def"] = visit_function_def;
+    stmt_handlers["visit_async_function_def"] = visit_async_function_def;
+    stmt_handlers["visit_type_alias"] = visit_type_alias;
+}
+
