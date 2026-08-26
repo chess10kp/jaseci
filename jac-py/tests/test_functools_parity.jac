@@ -17,6 +17,7 @@ import from _functoolsmodule {
     _p2_total_ordering,
     P2_WRAPPER_ASSIGNMENTS,
     P2_WRAPPER_UPDATES,
+    P2_PLACEHOLDER,
 }
 
 
@@ -120,6 +121,96 @@ test "wave20 partial forwards positionals keywords and chains" {
     r = str(repr(p));
     assert r.startswith("functools.partial(<function") , r;
     assert r.endswith(">, 1, b=2)") , r;
+}
+
+
+test "wave20 partial Placeholder fills leading call args like host" {
+    assert str(repr(P2_PLACEHOLDER)) == str(repr(ft.Placeholder));
+    jp = _p2_partial(_add3, (P2_PLACEHOLDER, 2), {});
+    hp = ft.partial(_host_add3, ft.Placeholder, 2);
+    assert jp(1) == hp(1) == 3 , (jp(1), hp(1));
+    # extra positionals after the filled slots still append
+    assert jp(1, 5) == hp(1, 5) == 8;
+    # too few arguments raises the host-exact TypeError
+    jmsg = "";
+    try {
+        jp();
+    } except TypeError as e {
+        jmsg = str(e);
+    }
+    hmsg = "";
+    try {
+        hp();
+    } except TypeError as e {
+        hmsg = str(e);
+    }
+    assert jmsg == hmsg , (jmsg, hmsg);
+    # construction-time restrictions mirror partial_new
+    raised = "";
+    try {
+        _p2_partial(_add3, (1, P2_PLACEHOLDER), {});
+    } except TypeError as e {
+        raised = str(e);
+    }
+    assert raised == "trailing Placeholders are not allowed" , raised;
+    raised_kw = "";
+    try {
+        _p2_partial(_add3, (), {"b": P2_PLACEHOLDER});
+    } except TypeError as e {
+        raised_kw = str(e);
+    }
+    assert raised_kw == "Placeholder cannot be passed as a keyword argument" , raised_kw;
+}
+
+
+test "wave20 partial reduce setstate round trips state atomically" {
+    jp = _p2_partial(_add3, (P2_PLACEHOLDER, 2), {"c": 4});
+    pr: any = jp.__reduce__();
+    assert isinstance(pr, tuple) and len(pr) == 3;
+    # pickle protocol shape: (type, (fn,), (fn, args, kw, dict_or_None))
+    assert pr[0] is not None and isinstance(pr[1], tuple) and len(pr[1]) == 1;
+    fresh = _p2_partial(_add3, (), {});
+    fresh.__setstate__(pr[2]);
+    assert fresh(1) == jp(1) == 7;
+    # invalid states are rejected wholesale with the C error text
+    bad = _p2_partial(_add3, (), {});
+    m1 = "";
+    try {
+        bad.__setstate__((_add3, [1], {}, None));
+    } except TypeError as e {
+        m1 = str(e);
+    }
+    assert m1 == "invalid partial state" , m1;
+    m2 = "";
+    try {
+        bad.__setstate__((None, (), {}, None));
+    } except TypeError as e {
+        m2 = str(e);
+    }
+    assert m2 == "invalid partial state" , m2;
+    m3 = "";
+    try {
+        bad.__setstate__((_add3, (1, P2_PLACEHOLDER), {}, None));
+    } except TypeError as e {
+        m3 = str(e);
+    }
+    assert m3 == "trailing Placeholders are not allowed" , m3;
+    # a rejected setstate must not have mutated the target
+    assert bad() == 0;
+}
+
+
+test "wave20 lru_cache wrapper copies by identity and reduces by qualname" {
+    w = _p2_lru_cache(2)(_spy_square);
+    hw = ft.lru_cache(maxsize=2)(_host_spy_square);
+    w(3);
+    assert w.__copy__() is w;
+    assert w.__deepcopy__(None) is w;
+    assert isinstance(w.__reduce__(), str);
+    assert str(getattr(hw, "__reduce__")()) == str(getattr(hw, "__qualname__"));
+    # copied wrapper shares the live cache, like the C identity copy
+    got = w.__copy__();
+    assert got.cache_info() == w.cache_info();
 }
 
 
