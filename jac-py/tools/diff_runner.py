@@ -39,7 +39,14 @@ _JAC = _REPO / ".venv" / "bin" / "jac"
 _JACPYTHON_DIR = _REPO / "jac-py" / "jacpython"
 _MANIFEST = _REPO / "jac-py" / "tests" / "conformance_manifest_convpipe.json"
 
-JAC_TIMEOUT = 60  # seconds, hard limit; one jac process at a time
+# Wall-clock budget (seconds) per ``jac run`` batch, hard limit; one jac
+# process at a time. Guest-ceval execution of pure-Python import chains
+# (difflib -> heapq/re/collections, asyncgen -> re/types/inspect, guest
+# gc.collect cycle interop) is orders of magnitude slower than host CPython,
+# so the budget must cover a full batch plus binary-split retries. Override
+# with JAC_DIFF_TIMEOUT when triaging locally.
+DEFAULT_JAC_TIMEOUT = 300
+JAC_TIMEOUT = int(os.environ.get("JAC_DIFF_TIMEOUT", DEFAULT_JAC_TIMEOUT))
 
 from convert_suite import attempt_header, file_sha256  # shared fingerprint block
 
