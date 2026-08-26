@@ -111,6 +111,12 @@ def _jac_host_getitem(value, index):
     except BaseException as exc:
         return _jac_host_error(exc)
 
+def _jac_host_str_encode(s, encoding, errors):
+    try:
+        return (True, s.encode(encoding, errors))
+    except BaseException as exc:
+        return _jac_host_error(exc)
+
 def _jac_host_len(value):
     try:
         return (True, len(value))
@@ -12262,12 +12268,13 @@ def _sm_iter_elems(src: PyObj, elems: list[PyObj]) -> bool {
     return False;
 }
 
-# str.encode with byte-exact UnicodeEncodeError construction. Codecs are
-# matched against their alias tables, then every codepoint is pre-scanned so
-# the host intrinsic only ever sees fully encodable input (its exceptions would
-# otherwise escape the VM unconverted). Error handlers are validated lazily,
-# matching CPython 3.14: an unknown handler raises LookupError only when an
-# actual encoding error consults it.
+# str.encode with byte-exact UnicodeEncodeError construction. Intrinsic codecs
+# (utf-8/ascii/latin-1) match their alias tables, then every codepoint is
+# pre-scanned so the host intrinsic only ever sees fully encodable input (its
+# exceptions would otherwise escape the VM unconverted). Every OTHER encoding
+# mirrors CPython's PyCodec_Encode route through the codec registry by crossing
+# to the host codec machinery, so registry-resolved C codecs (gb2312, euc-jp,
+# ...) work and failures come back with their live exception identity.
 def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
     enc = encoding.lower().replace("_", "-");
     limit = 1114111;
@@ -12282,7 +12289,13 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
         limit = 255;
         canon = "latin-1";
     } else {
-        return py_error("LookupError", "unknown encoding: " + encoding);
+        # Registry-resolved encoding: delegate to the host codec machinery
+        # (CPython str.encode semantics, including lazy handler validation).
+        res = _jac_host_str_encode(s, encoding, errors);
+        if host_result_ok(res) {
+            return from_host(res[1]);
+        }
+        return host_result_error(res);
     }
     # Pre-scan for the first unencodable codepoint.
     bad_pos = -1;
