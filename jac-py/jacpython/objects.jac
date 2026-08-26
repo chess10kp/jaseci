@@ -91,6 +91,14 @@ obj PyObj {
         return py_error("AttributeError", name);
     }
 
+    # Deletion hook for NATIVE facade objects whose deleter differs from a
+    # plain attribute-map removal (e.g. xxlimited.Xxo's private-dict setattro
+    # delete arm). Default: no custom deleter -- py_del_attr falls through to
+    # generic handling when this reports an error.
+    def tp_del_attr(name: str) -> PyObj {
+        return py_error("AttributeError", name);
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         return py_error("TypeError", "object is not callable");
     }
