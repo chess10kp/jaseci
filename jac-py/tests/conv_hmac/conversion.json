@@ -1,0 +1,1215 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "b34c768c6f2ca0701be6faff2751e7acc6566e28",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_hmac.py",
+    "-o",
+    "jac-py/tests/conv_hmac",
+    "--name",
+    "conv_hmac"
+  ],
+  "generated_at": "2026-08-25T22:07:58",
+  "hashes": {
+    "pins_jac": "b7aeb3ae1826ec5f9913ae04bd5244bac5fadef5cd646852d484bd77d8ccd6e0"
+  },
+  "source_file": "reference/cpython/Lib/test/test_hmac.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "hmac",
+  "pins_file": "conv_hmac_pins.jac",
+  "pins": [
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'digest'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'digest'"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'compute_digest'"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'compute_digest'"
+    },
+    {
+      "ident": "PySanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "PythonCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_openssl_hmac'"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_builtin_hmac'"
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_openssl_hmac'"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_builtin_hmac'"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "ConstructorTestCaseMixin.test_constructor",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "ConstructorTestCaseMixin.test_digest",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PySanityTestCase.test_repr",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PySanityTestCase.test_methods",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PySanityTestCase.test_properties",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PySanityTestCase.test_copy",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_repr",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_methods",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_properties",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_copy",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_large",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_exceptions",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_attributes",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_realcopy",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_equality",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_equality_new",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_attributes",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_realcopy",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_attributes",
+      "reason": "decorator:hashlib_helper.requires_builtin_hmac"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_realcopy",
+      "reason": "decorator:hashlib_helper.requires_builtin_hmac"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_exceptions",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytearray",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_mixed_types",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string_subclass",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes_subclass",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_constructor_uses_builtin",
+      "reason": "decorator:hashlib_helper.requires_builtin_hmac"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_delegated_properties",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_legacy_block_size_warnings",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_with_fallback",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_digest_overflow_error_openssl_only",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_digest_overflow_error_builtin_only",
+      "reason": "decorator:hashlib_helper.requires_builtin_hashdigest"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_digest_no_overflow_error_in_fallback",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_with_module",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_with_module",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest_with_module",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest_with_module",
+      "reason": "unresolved-name:sha2"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_with_module",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest_with_module",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_with_module",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest_with_module",
+      "reason": "unresolved-name:sha2"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_internal_types",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_internal_types",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_digest",
+      "reason": "helper:hmac_digest(unresolved-name:_hashlib)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaises)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_internal_types",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_digest",
+      "reason": "helper:hmac_digest(unresolved-name:_hashlib)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaises)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_internal_types",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "ident": "PySanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_methods",
+      "reason": "helper:hmac_new(unresolved-name:_hashlib)"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "PySanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_properties",
+      "reason": "helper:hmac_new(unresolved-name:_hashlib)"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "PySanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_copy",
+      "reason": "helper:hmac_new(unresolved-name:_hashlib)"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_repr",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update",
+      "reason": "helper:check_update(helper:HMAC(unresolved-name:_hashlib))"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_large",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_large",
+      "reason": "helper:check_update(helper:HMAC(unresolved-name:_hashlib))"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_large",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_exceptions",
+      "reason": "helper:HMAC(unresolved-name:_hashlib)"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_large",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_large",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_exceptions",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_exceptions",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_exceptions",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytearray",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytearray",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytearray",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_mixed_types",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_mixed_types",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_mixed_types",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_compare_digest_func",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_exceptions",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytearray",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_mixed_types",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_exceptions",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytearray",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_mixed_types",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes_subclass",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "ident": "BuiltinMiscellaneousTests.test_compute_blake2b_32",
+      "reason": "uses-self.blake2b"
+    },
+    {
+      "ident": "BuiltinMiscellaneousTests.test_compute_blake2s_32",
+      "reason": "uses-self.blake2s"
+    }
+  ],
+  "counts": {
+    "extracted": 289,
+    "pinned": 0,
+    "quarantined": 289
+  }
+}
