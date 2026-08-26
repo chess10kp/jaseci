@@ -280,6 +280,64 @@ class OracleParseTests(unittest.TestCase):
         self.assertEqual(ast.literal_eval(literal), "boom\nline2")
 
 
+class BuildReportTests(unittest.TestCase):
+    """build_report collapses byte-identical failures into shared signatures."""
+
+    META = {
+        "source_file": "test_x.py",
+        "counts": {"extracted": 3},
+        "pins": [
+            {"ident": "M.test_a", "status": "pinned"},
+            {"ident": "M.test_b", "status": "pinned"},
+            {"ident": "M.test_c", "status": "pinned"},
+        ],
+        "quarantined": [],
+    }
+
+    def _report(self, classifications):
+        return dr.build_report(Path("conv_x_pins.jac"), self.META, "0/3 marks", classifications)
+
+    def test_shared_signature_grouped_and_deduped(self):
+        classifications = {
+            "M.test_a": {"classification": "GUEST-WRONG-OUTPUT", "detail": "RUN<TypeError: boom>"},
+            "M.test_b": {"classification": "GUEST-WRONG-OUTPUT", "detail": "RUN<TypeError: boom>"},
+            "M.test_c": {"classification": "GUEST-WRONG-OUTPUT", "detail": "GOT<wrong>"},
+        }
+        report = self._report(classifications)
+        self.assertIn("## Shared failure signatures", report)
+        self.assertIn(
+            "| 2 | GUEST-WRONG-OUTPUT | RUN<TypeError: boom> | M.test_a, M.test_b |",
+            report,
+        )
+        # pins covered by a shared signature are not repeated per-pin
+        self.assertNotIn("### M.test_a (GUEST-WRONG-OUTPUT)", report)
+        self.assertNotIn("### M.test_b (GUEST-WRONG-OUTPUT)", report)
+        # a solo failure keeps its per-pin section
+        self.assertIn("### M.test_c (GUEST-WRONG-OUTPUT)", report)
+
+    def test_no_shared_section_for_distinct_failures(self):
+        classifications = {
+            "M.test_a": {"classification": "GUEST-WRONG-OUTPUT", "detail": "RUN<TypeError: a>"},
+            "M.test_b": {"classification": "GUEST-WRONG-OUTPUT", "detail": "RUN<TypeError: b>"},
+        }
+        report = self._report(classifications)
+        self.assertNotIn("Shared failure signatures", report)
+        self.assertIn("### M.test_a (GUEST-WRONG-OUTPUT)", report)
+        self.assertIn("### M.test_b (GUEST-WRONG-OUTPUT)", report)
+
+    def test_shared_signatures_helper_groups_by_class_and_detail(self):
+        classifications = {
+            "M.test_a": {"classification": "TIMEOUT", "detail": "x"},
+            "M.test_b": {"classification": "GUEST-WRONG-OUTPUT", "detail": "x"},
+            "M.test_c": {"classification": "GUEST-WRONG-OUTPUT", "detail": "x"},
+        }
+        groups = dr._shared_signatures(classifications)
+        self.assertEqual(
+            groups,
+            {("GUEST-WRONG-OUTPUT", "x"): ["M.test_b", "M.test_c"]},
+        )
+
+
 class ClassifierTests(unittest.TestCase):
     PINS = [
         {"ident": "Mod.test_a", "snippet": "..."},
