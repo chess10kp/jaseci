@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_flufl.py",
+    "-o",
+    "/var/tmp/worker6-conv-gap-3445126/jac-py/tests/conv_flufl",
+    "--name",
+    "conv_flufl"
+  ],
+  "generated_at": "2026-08-26T01:41:15",
+  "hashes": {
+    "pins_jac": "5afaa966d9162b1cdfa12fe25de8b5241c364e71e0334720f86683dd2d557bfc"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_flufl.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "flufl",
+  "pins_file": "conv_flufl_pins.jac",
+  "pins": [
+    {
+      "ident": "FLUFLTests.test_barry_as_bdfl",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport __future__\n\ndef _t():\n    code = 'from __future__ import barry_as_FLUFL\\n2 {0} 3'\n    compile(code.format('<>'), '<BDFL test>', 'exec', __future__.CO_FUTURE_BARRY_AS_BDFL)\n    try:\n        compile(code.format('!='), '<FLUFL test>', 'exec', __future__.CO_FUTURE_BARRY_AS_BDFL)\n    except SyntaxError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert _re.search(\"with Barry as BDFL, use '<>' instead of '!='\", str(cm)), ('assertRegex', str(cm), \"with Barry as BDFL, use '<>' instead of '!='\")\n    assert '2 != 3' in cm.text, ('assertIn', '2 != 3', cm.text)\n    assert cm.filename == '<FLUFL test>', ('assertEqual', cm.filename, '<FLUFL test>')\n    assert cm.lineno == 2, ('assertEqual', cm.lineno, 2)\n    assert cm.offset == 3, ('assertEqual', cm.offset, 3)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FLUFLTests.test_guido_as_bdfl",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = '2 {0} 3'\n    compile(code.format('!='), '<BDFL test>', 'exec')\n    try:\n        compile(code.format('<>'), '<FLUFL test>', 'exec')\n    except SyntaxError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert _re.search('invalid syntax', str(cm)), ('assertRegex', str(cm), 'invalid syntax')\n    assert '2 <> 3' in cm.text, ('assertIn', '2 <> 3', cm.text)\n    assert cm.filename == '<FLUFL test>', ('assertEqual', cm.filename, '<FLUFL test>')\n    assert cm.lineno == 1, ('assertEqual', cm.lineno, 1)\n    assert cm.offset == 3, ('assertEqual', cm.offset, 3)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FLUFLTests.test_barry_as_bdfl_look_ma_with_no_compiler_flags",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'from __future__ import barry_as_FLUFL;2 {0} 3'\n    compile(code.format('<>'), '<BDFL test>', 'exec')\n    try:\n        compile(code.format('!='), '<FLUFL test>', 'exec')\n    except SyntaxError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert _re.search(\"with Barry as BDFL, use '<>' instead of '!='\", str(cm)), ('assertRegex', str(cm), \"with Barry as BDFL, use '<>' instead of '!='\")\n    assert '2 != 3' in cm.text, ('assertIn', '2 != 3', cm.text)\n    assert cm.filename == '<FLUFL test>', ('assertEqual', cm.filename, '<FLUFL test>')\n    assert cm.lineno == 1, ('assertEqual', cm.lineno, 1)\n    assert cm.offset == len(code) - 4, ('assertEqual', cm.offset, len(code) - 4)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FLUFLTests.test_barry_as_bdfl_relative_import",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\n\ndef _t():\n    code = 'from .__future__ import barry_as_FLUFL;2 {0} 3'\n    compile(code.format('!='), '<FLUFL test>', 'exec')\n    try:\n        compile(code.format('<>'), '<BDFL test>', 'exec')\n    except SyntaxError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert _re.search('<BDFL test>', str(cm)), ('assertRegex', str(cm), '<BDFL test>')\n    assert '2 <> 3' in cm.text, ('assertIn', '2 <> 3', cm.text)\n    assert cm.filename == '<BDFL test>', ('assertEqual', cm.filename, '<BDFL test>')\n    assert cm.lineno == 1, ('assertEqual', cm.lineno, 1)\n    assert cm.offset == len(code) - 4, ('assertEqual', cm.offset, len(code) - 4)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 4,
+    "pinned": 4,
+    "quarantined": 0
+  }
+}
