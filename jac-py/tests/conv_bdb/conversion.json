@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_bdb.py",
+    "-o",
+    "/var/tmp/worker6-conv-bdb-965785/jac-py/tests/conv_bdb",
+    "--name",
+    "conv_bdb"
+  ],
+  "generated_at": "2026-08-25T19:42:22",
+  "hashes": {
+    "pins_jac": "cf2841c5d81121dc313f6be6e257dc8498b92baa124bfec2c088618eca9a2a60"
+  },
+  "source_file": "reference/cpython/Lib/test/test_bdb.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "bdb",
+  "pins_file": "conv_bdb_pins.jac",
+  "pins": [],
+  "quarantined": [
+    {
+      "ident": "StateTestCase.test_step",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_step_next_on_last_statement",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_stepinstr",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_next",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_next_over_import",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_next_on_plain_statement",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_next_in_caller_frame",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_return",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_return_in_caller_frame",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_until",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_until_with_too_large_count",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_until_in_caller_frame",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_skip",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_skip_with_no_name_module",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_down",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "StateTestCase.test_up",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_bp_on_non_existent_module",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_bp_after_last_statement",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_temporary_bp",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_disabled_temporary_bp",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_bp_condition",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_bp_exception_on_condition_evaluation",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_bp_ignore_count",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_ignore_count_on_disabled_bp",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_clear_two_bp_on_same_line",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_clear_at_no_bp",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "BreakpointTestCase.test_load_bps_from_previous_Bdb_instance",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "RunTestCase.test_run_step",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "RunTestCase.test_runeval_step",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "IssuesTestCase.test_step_at_return_with_no_trace_in_caller",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "IssuesTestCase.test_next_until_return_in_generator",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "IssuesTestCase.test_next_command_in_generator_for_loop",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "IssuesTestCase.test_next_command_in_generator_with_subiterator",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "IssuesTestCase.test_return_command_in_generator_with_subiterator",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "IssuesTestCase.test_next_to_botframe",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "TestRegressions.test_format_stack_entry_no_lineno",
+      "reason": "unsupported-import:test.support"
+    }
+  ],
+  "counts": {
+    "extracted": 36,
+    "pinned": 0,
+    "quarantined": 36
+  }
+}
