@@ -1,0 +1,296 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_frame.py",
+    "-o",
+    "jac-py/tests/conv_frame",
+    "--name",
+    "conv_frame"
+  ],
+  "generated_at": "2026-08-25T23:12:37",
+  "hashes": {
+    "pins_jac": "067b8aed6db5e42bfd3ac167da7283996c1c43910e9fd2554bc8ab2002ccc140"
+  },
+  "source_file": "reference/cpython/Lib/test/test_frame.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "frame",
+  "pins_file": "conv_frame_pins.jac",
+  "pins": [
+    {
+      "ident": "ClearTest.test_clear_locals",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "ClearTest.test_clear_locals_after_f_locals_access",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "ClearTest.test_clear_does_not_clear_specials",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def inner(x=5, **kwargs):\n        1 / 0\n\n    def outer(**kwargs):\n        try:\n            inner(**kwargs)\n        except ZeroDivisionError as e:\n            exc = e\n        return exc\n\n    class C:\n        pass\n    c = C()\n    exc = outer(c=c)\n    del c\n    f = exc.__traceback__.tb_frame\n    f.clear()\n    assert f.f_code is not None, ('assertIsNot', f.f_code, None)\n    assert f.f_locals is not None, ('assertIsNot', f.f_locals, None)\n    assert f.f_builtins is not None, ('assertIsNot', f.f_builtins, None)\n    assert f.f_globals is not None, ('assertIsNot', f.f_globals, None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ClearTest.test_clear_generator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "ident": "ClearTest.test_clear_executing",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    try:\n        1 / 0\n    except ZeroDivisionError as e:\n        f = e.__traceback__.tb_frame\n    try:\n        f.clear()\n    except RuntimeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        f.f_back.clear()\n    except RuntimeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ClearTest.test_clear_executing_generator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "ident": "ClearTest.test_lineno_with_tracing",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    def record_line():\n        f = sys._getframe(1)\n        lines.append(f.f_lineno - f.f_code.co_firstlineno)\n\n    def test(trace):\n        record_line()\n        if trace:\n            sys._getframe(0).f_trace = True\n        record_line()\n        record_line()\n    expected_lines = [1, 4, 5]\n    lines = []\n    test(False)\n    assert lines == expected_lines, ('assertEqual', lines, expected_lines)\n    lines = []\n    test(True)\n    assert lines == expected_lines, ('assertEqual', lines, expected_lines)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "ClearTest.test_clear_refcycles",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "FrameAttrsTest.test_clear_locals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def make_frames():\n\n        def outer():\n            x = 5\n            y = 6\n\n            def inner():\n                z = x + 2\n                1 / 0\n                t = 9\n            return inner()\n        try:\n            outer()\n        except ZeroDivisionError as e:\n            tb = e.__traceback__\n            frames = []\n            while tb:\n                frames.append(tb.tb_frame)\n                tb = tb.tb_next\n        return frames\n    f, outer, inner = make_frames()\n    outer.clear()\n    inner.clear()\n    assert outer.f_locals == {}, ('assertEqual', outer.f_locals, {})\n    assert inner.f_locals == {}, ('assertEqual', inner.f_locals, {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FrameAttrsTest.test_locals_clear_locals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def make_frames():\n\n        def outer():\n            x = 5\n            y = 6\n\n            def inner():\n                z = x + 2\n                1 / 0\n                t = 9\n            return inner()\n        try:\n            outer()\n        except ZeroDivisionError as e:\n            tb = e.__traceback__\n            frames = []\n            while tb:\n                frames.append(tb.tb_frame)\n                tb = tb.tb_next\n        return frames\n    f, outer, inner = make_frames()\n    assert outer.f_locals != {}, ('assertNotEqual', outer.f_locals, {})\n    assert inner.f_locals != {}, ('assertNotEqual', inner.f_locals, {})\n    outer.clear()\n    inner.clear()\n    assert outer.f_locals == {}, ('assertEqual', outer.f_locals, {})\n    assert inner.f_locals == {}, ('assertEqual', inner.f_locals, {})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FrameAttrsTest.test_f_lineno_del_segfault",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n\n    def make_frames():\n\n        def outer():\n            x = 5\n            y = 6\n\n            def inner():\n                z = x + 2\n                1 / 0\n                t = 9\n            return inner()\n        try:\n            outer()\n        except ZeroDivisionError as e:\n            tb = e.__traceback__\n            frames = []\n            while tb:\n                frames.append(tb.tb_frame)\n                tb = tb.tb_next\n        return frames\n    f, _, _ = make_frames()\n    try:\n        del f.f_lineno\n    except AttributeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FrameAttrsTest.test_f_generator",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'frame' object has no attribute 'f_generator'"
+    },
+    {
+      "ident": "TestFrameLocals.test_scope",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 1, 2)"
+    },
+    {
+      "ident": "TestFrameLocals.test_closure",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 1, 2)"
+    },
+    {
+      "ident": "TestFrameLocals.test_closure_with_inline_comprehension",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    lambda: k\n    k = 1\n    lst = [locals() for k in [0]]\n    assert lst[0]['k'] == 0, ('assertEqual', lst[0]['k'], 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrameLocals.test_as_dict",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 2, 4)"
+    },
+    {
+      "ident": "TestFrameLocals.test_as_number",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    x = 1\n    y = 2\n    d = sys._getframe().f_locals\n    assert 'z' in d | {'z': 3}, ('assertIn', 'z', d | {'z': 3})\n    d |= {'z': 3}\n    assert d['z'] == 3, ('assertEqual', d['z'], 3)\n    d |= {'y': 3}\n    assert d['y'] == 3, ('assertEqual', d['y'], 3)\n    try:\n        d |= 3\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        _ = d | [3]\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrameLocals.test_non_string_key",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    d = sys._getframe().f_locals\n    d[1] = 2\n    assert d[1] == 2, ('assertEqual', d[1], 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrameLocals.test_write_with_hidden",
+      "status": "quarantined",
+      "reason": "host-raised:UnboundLocalError: cannot access local variable 'b' where it is not associated with a value"
+    },
+    {
+      "ident": "TestFrameLocals.test_local_objects",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', <object object at 0x7fe956d78600>, 'a.b.c')"
+    },
+    {
+      "ident": "TestFrameLocals.test_copy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    x = 0\n    d = sys._getframe().f_locals\n    d_copy = d.copy()\n    assert isinstance(d_copy, dict), ('assertIsInstance', d_copy, dict)\n    assert d_copy['x'] == 0, ('assertEqual', d_copy['x'], 0)\n    d_copy['x'] = 1\n    assert x == 0, ('assertEqual', x, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrameLocals.test_update_with_self",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    def f():\n        f_locals = sys._getframe().f_locals\n        f_locals.update(f_locals)\n        f_locals.update(f_locals)\n        f_locals.update(f_locals)\n    f()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrameLocals.test_repr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n    x = 1\n    frame = sys._getframe()\n    assert repr(frame.f_locals) == repr(dict(frame.f_locals)), ('assertEqual', repr(frame.f_locals), repr(dict(frame.f_locals)))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrameLocals.test_delete",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "ident": "TestFrameLocals.test_sizeof",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestFrameLocals.test_unsupport",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "ident": "TestFrameLocals.test_proxy_key_stringlikes_overwrite",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', dict_keys(['obj', 'x']), ['obj', 'x', 'proxy'])"
+    },
+    {
+      "ident": "TestFrameLocals.test_proxy_key_stringlikes_ftrst_write",
+      "status": "quarantined",
+      "reason": "host-raised:UnboundLocalError: cannot access local variable 'x' where it is not associated with a value"
+    },
+    {
+      "ident": "TestFrameLocals.test_proxy_key_unhashables",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    class StringSubclass(str):\n        __hash__ = None\n\n    class ObjectSubclass:\n        __hash__ = None\n    proxy = sys._getframe().f_locals\n    for obj in (StringSubclass('x'), ObjectSubclass()):\n        try:\n            proxy[obj]\n        except TypeError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        try:\n            proxy[obj] = 0\n        except TypeError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrameLocals.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 'dict', 'FrameLocalsProxy')"
+    },
+    {
+      "ident": "TestFrameLocals.test_overwrite_locals",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\n\ndef _t():\n\n    def f():\n        xs = [1, 2, 3]\n        ys = [4, 5, 6]\n        return g(xs)\n\n    def g(xs):\n        f = sys._getframe()\n        f.f_back.f_locals['xs'] = None\n        f.f_back.f_locals['ys'] = None\n        return xs[1]\n    assert f() == 2, ('assertEqual', f(), 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestIncompleteFrameAreInvisible.test_entry_frames_are_invisible_during_teardown",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_constructor",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_write",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_popitem",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_pop",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_clear",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_fromkeys",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_update",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_eq",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestIncompleteFrameAreInvisible.test_sneaky_frame_object_teardown",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "ReprTest.test_repr",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestFrameLocals.test_is_mapping",
+      "reason": "uses-self.assertEqual"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_getitem",
+      "reason": "uses-self._full_mapping"
+    },
+    {
+      "ident": "FrameLocalsProxyMappingTests.test_copy",
+      "reason": "uses-self._empty_mapping"
+    },
+    {
+      "ident": "TestFrameCApi.test_basic",
+      "reason": "unresolved-name:__builtins__"
+    },
+    {
+      "ident": "TestIncompleteFrameAreInvisible.test_issue95818",
+      "reason": "unsupported-import:test.support.script_helper"
+    }
+  ],
+  "counts": {
+    "extracted": 47,
+    "pinned": 14,
+    "quarantined": 33
+  }
+}

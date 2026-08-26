@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_tcl.py",
+    "-o",
+    "jac-py/tests/conv_tcl",
+    "--name",
+    "conv_tcl"
+  ],
+  "generated_at": "2026-08-25T23:12:42",
+  "hashes": {
+    "pins_jac": "933ffc9394e3370366b80a88e111b9633e6b9f5557198f71db3e0b9834b5608d"
+  },
+  "source_file": "reference/cpython/Lib/test/test_tcl.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "tcl",
+  "pins_file": "conv_tcl_pins.jac",
+  "pins": [
+    {
+      "ident": "TkinterTest.testFlattenLen",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TclTest.testEval",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.eval('set a 1')\n    assert tcl.eval('set a') == '1', ('assertEqual', tcl.eval('set a'), '1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_eval_null_in_result",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    assert tcl.eval('set a \"a\\\\0b\"') == 'a\\x00b', ('assertEqual', tcl.eval('set a \"a\\\\0b\"'), 'a\\x00b')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_eval_surrogates_in_result",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    assert tcl.eval('set a \"<\\\\ud83d\\\\udcbb>\"') == '<\ud83d\udcbb>', ('assertEqual', tcl.eval('set a \"<\\\\ud83d\\\\udcbb>\"'), '<\ud83d\udcbb>')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testEvalException",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.eval(*('set a',))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testEvalException2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.eval(*('this is wrong',))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_eval_returns_tcl_obj",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp.tk\n    tcl.eval('set a \"\\\\u20ac \\\\ud83d\\\\udcbb \\\\0 \\\\udcab\"; regexp -about $a')\n    a = tcl.eval('set a')\n    expected = '\u20ac \ud83d\udcbb \\x00 \\udced\\udcb2\\udcab'\n    assert a == expected, ('assertEqual', a, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testCall",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.call('set', 'a', '1')\n    assert tcl.call('set', 'a') == '1', ('assertEqual', tcl.call('set', 'a'), '1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_call_passing_null",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.call('set', 'a', 'a\\x00b')\n    assert tcl.getvar('a') == 'a\\x00b', ('assertEqual', tcl.getvar('a'), 'a\\x00b')\n    assert tcl.call('set', 'a') == 'a\\x00b', ('assertEqual', tcl.call('set', 'a'), 'a\\x00b')\n    assert tcl.eval('set a') == 'a\\x00b', ('assertEqual', tcl.eval('set a'), 'a\\x00b')\n    tcl.call('set', 'a', '\u20ac\\x00')\n    assert tcl.getvar('a') == '\u20ac\\x00', ('assertEqual', tcl.getvar('a'), '\u20ac\\x00')\n    assert tcl.call('set', 'a') == '\u20ac\\x00', ('assertEqual', tcl.call('set', 'a'), '\u20ac\\x00')\n    assert tcl.eval('set a') == '\u20ac\\x00', ('assertEqual', tcl.eval('set a'), '\u20ac\\x00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testCallException",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.call(*('set', 'a'))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testCallException2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.call(*('this', 'is', 'wrong'))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_call_returns_tcl_obj",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp.tk\n    tcl.eval('set a \"\\\\u20ac \\\\ud83d\\\\udcbb \\\\0 \\\\udcab\"; regexp -about $a')\n    a = tcl.call('set', 'a')\n    expected = '\u20ac \ud83d\udcbb \\x00 \\udced\\udcb2\\udcab'\n    if self.wantobjects:\n        assert str(a) == expected, ('assertEqual', str(a), expected)\n        assert a.string == expected, ('assertEqual', a.string, expected)\n        assert a.typename == 'regexp', ('assertEqual', a.typename, 'regexp')\n    else:\n        assert a == expected, ('assertEqual', a, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testSetVar",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.setvar('a', '1')\n    assert tcl.eval('set a') == '1', ('assertEqual', tcl.eval('set a'), '1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_setvar_passing_null",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.setvar('a', 'a\\x00b')\n    assert tcl.getvar('a') == 'a\\x00b', ('assertEqual', tcl.getvar('a'), 'a\\x00b')\n    assert tcl.call('set', 'a') == 'a\\x00b', ('assertEqual', tcl.call('set', 'a'), 'a\\x00b')\n    assert tcl.eval('set a') == 'a\\x00b', ('assertEqual', tcl.eval('set a'), 'a\\x00b')\n    tcl.setvar('a', '\u20ac\\x00')\n    assert tcl.getvar('a') == '\u20ac\\x00', ('assertEqual', tcl.getvar('a'), '\u20ac\\x00')\n    assert tcl.call('set', 'a') == '\u20ac\\x00', ('assertEqual', tcl.call('set', 'a'), '\u20ac\\x00')\n    assert tcl.eval('set a') == '\u20ac\\x00', ('assertEqual', tcl.eval('set a'), '\u20ac\\x00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testSetVarArray",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.setvar('a(1)', '1')\n    assert tcl.eval('set a(1)') == '1', ('assertEqual', tcl.eval('set a(1)'), '1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testGetVar",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.eval('set a 1')\n    assert tcl.getvar('a') == '1', ('assertEqual', tcl.getvar('a'), '1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testGetVarArray",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.eval('set a(1) 1')\n    assert tcl.getvar('a(1)') == '1', ('assertEqual', tcl.getvar('a(1)'), '1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testGetVarException",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.getvar(*('a',))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testGetVarArrayException",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.getvar(*('a(1)',))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_getvar_returns_tcl_obj",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp.tk\n    tcl.eval('set a \"\\\\u20ac \\\\ud83d\\\\udcbb \\\\0 \\\\udcab\"; regexp -about $a')\n    a = tcl.getvar('a')\n    expected = '\u20ac \ud83d\udcbb \\x00 \\udced\\udcb2\\udcab'\n    if self.wantobjects:\n        assert str(a) == expected, ('assertEqual', str(a), expected)\n        assert a.string == expected, ('assertEqual', a.string, expected)\n        assert a.typename == 'regexp', ('assertEqual', a.typename, 'regexp')\n    else:\n        assert a == expected, ('assertEqual', a, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testUnsetVar",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.setvar('a', 1)\n    assert tcl.eval('info exists a') == '1', ('assertEqual', tcl.eval('info exists a'), '1')\n    tcl.unsetvar('a')\n    assert tcl.eval('info exists a') == '0', ('assertEqual', tcl.eval('info exists a'), '0')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testUnsetVarArray",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.setvar('a(1)', 1)\n    tcl.setvar('a(2)', 2)\n    assert tcl.eval('info exists a(1)') == '1', ('assertEqual', tcl.eval('info exists a(1)'), '1')\n    assert tcl.eval('info exists a(2)') == '1', ('assertEqual', tcl.eval('info exists a(2)'), '1')\n    tcl.unsetvar('a(1)')\n    assert tcl.eval('info exists a(1)') == '0', ('assertEqual', tcl.eval('info exists a(1)'), '0')\n    assert tcl.eval('info exists a(2)') == '1', ('assertEqual', tcl.eval('info exists a(2)'), '1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testUnsetVarException",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.unsetvar(*('a',))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_getint",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TclTest.test_getdouble",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp.tk\n    assert tcl.getdouble(' 42 ') == 42.0, ('assertEqual', tcl.getdouble(' 42 '), 42.0)\n    assert tcl.getdouble(' 42.5 ') == 42.5, ('assertEqual', tcl.getdouble(' 42.5 '), 42.5)\n    assert tcl.getdouble(42.5) == 42.5, ('assertEqual', tcl.getdouble(42.5), 42.5)\n    assert tcl.getdouble(42) == 42.0, ('assertEqual', tcl.getdouble(42), 42.0)\n    try:\n        tcl.getdouble()\n    except TypeError:\n        pass\n    try:\n        tcl.getdouble(*('42.5', '10'))\n    except TypeError:\n        pass\n    try:\n        tcl.getdouble(*(b'42.5',))\n    except TypeError:\n        pass\n    try:\n        tcl.getdouble(*('a',))\n    except TclError:\n        pass\n    try:\n        tcl.getdouble(*('42.5\\x00',))\n    except (TypeError, ValueError, TclError):\n        pass\n    try:\n        tcl.getdouble(*('42.5\\ud800',))\n    except (UnicodeEncodeError, ValueError, TclError):\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_getboolean",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp.tk\n    assert tcl.getboolean('on') is True, ('assertIs', tcl.getboolean('on'), True)\n    assert tcl.getboolean('1') is True, ('assertIs', tcl.getboolean('1'), True)\n    assert tcl.getboolean(42) is True, ('assertIs', tcl.getboolean(42), True)\n    assert tcl.getboolean(0) is False, ('assertIs', tcl.getboolean(0), False)\n    try:\n        tcl.getboolean()\n    except TypeError:\n        pass\n    try:\n        tcl.getboolean(*('on', '1'))\n    except TypeError:\n        pass\n    try:\n        tcl.getboolean(*(b'on',))\n    except TypeError:\n        pass\n    try:\n        tcl.getboolean(*(1.0,))\n    except TypeError:\n        pass\n    try:\n        tcl.getboolean(*('a',))\n    except TclError:\n        pass\n    try:\n        tcl.getboolean(*('on\\x00',))\n    except (TypeError, ValueError, TclError):\n        pass\n    try:\n        tcl.getboolean(*('on\\ud800',))\n    except (UnicodeEncodeError, ValueError, TclError):\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testEvalFile",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TclTest.test_evalfile_null_in_result",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TclTest.test_evalfile_surrogates_in_result",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TclTest.testEvalFileException",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os\nfrom tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    filename = 'doesnotexists'\n    try:\n        os.remove(filename)\n    except Exception as e:\n        pass\n    try:\n        tcl.evalfile(*(filename,))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.testPackageRequireException",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    try:\n        tcl.eval(*('package require DNE',))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_exprstring",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.call('set', 'a', 3)\n    tcl.call('set', 'b', 6)\n\n    def check(expr, expected):\n        result = tcl.exprstring(expr)\n        assert result == expected, ('assertEqual', result, expected)\n        assert isinstance(result, str), ('assertIsInstance', result, str)\n    try:\n        tcl.exprstring()\n    except TypeError:\n        pass\n    try:\n        tcl.exprstring(*('8.2', '+6'))\n    except TypeError:\n        pass\n    try:\n        tcl.exprstring(*(b'8.2 + 6',))\n    except TypeError:\n        pass\n    try:\n        tcl.exprstring(*('spam',))\n    except TclError:\n        pass\n    check('', '0')\n    check('8.2 + 6', '14.2')\n    check('3.1 + $a', '6.1')\n    check('2 + \"$a.$b\"', '5.6')\n    check('4*[llength \"6 2\"]', '8')\n    check('{word one} < \"word $a\"', '0')\n    check('4*2 < 7', '0')\n    check('hypot($a, 4)', '5.0')\n    check('5 / 4', '1')\n    check('5 / 4.0', '1.25')\n    check('5 / ( [string length \"abcd\"] + 0.0 )', '1.25')\n    check('20.0/5.0', '4.0')\n    check('\"0x03\" > \"2\"', '1')\n    check('[string length \"a\u00bd\u20ac\"]', '3')\n    check('[string length \"a\\\\xbd\\\\u20ac\"]', '3')\n    check('\"abc\"', 'abc')\n    check('\"a\u00bd\u20ac\"', 'a\u00bd\u20ac')\n    check('\"a\\\\xbd\\\\u20ac\"', 'a\u00bd\u20ac')\n    check('\"a\\\\0b\"', 'a\\x00b')\n    check('2**64', str(2 ** 64))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_exprdouble",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.call('set', 'a', 3)\n    tcl.call('set', 'b', 6)\n\n    def check(expr, expected):\n        result = tcl.exprdouble(expr)\n        assert result == expected, ('assertEqual', result, expected)\n        assert isinstance(result, float), ('assertIsInstance', result, float)\n    try:\n        tcl.exprdouble()\n    except TypeError:\n        pass\n    try:\n        tcl.exprdouble(*('8.2', '+6'))\n    except TypeError:\n        pass\n    try:\n        tcl.exprdouble(*(b'8.2 + 6',))\n    except TypeError:\n        pass\n    try:\n        tcl.exprdouble(*('spam',))\n    except TclError:\n        pass\n    check('', 0.0)\n    check('8.2 + 6', 14.2)\n    check('3.1 + $a', 6.1)\n    check('2 + \"$a.$b\"', 5.6)\n    check('4*[llength \"6 2\"]', 8.0)\n    check('{word one} < \"word $a\"', 0.0)\n    check('4*2 < 7', 0.0)\n    check('hypot($a, 4)', 5.0)\n    check('5 / 4', 1.0)\n    check('5 / 4.0', 1.25)\n    check('5 / ( [string length \"abcd\"] + 0.0 )', 1.25)\n    check('20.0/5.0', 4.0)\n    check('\"0x03\" > \"2\"', 1.0)\n    check('[string length \"a\u00bd\u20ac\"]', 3.0)\n    check('[string length \"a\\\\xbd\\\\u20ac\"]', 3.0)\n    try:\n        tcl.exprdouble(*('\"abc\"',))\n    except TclError:\n        pass\n    check('2**64', float(2 ** 64))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_exprlong",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.call('set', 'a', 3)\n    tcl.call('set', 'b', 6)\n\n    def check(expr, expected):\n        result = tcl.exprlong(expr)\n        assert result == expected, ('assertEqual', result, expected)\n        assert isinstance(result, int), ('assertIsInstance', result, int)\n    try:\n        tcl.exprlong()\n    except TypeError:\n        pass\n    try:\n        tcl.exprlong(*('8.2', '+6'))\n    except TypeError:\n        pass\n    try:\n        tcl.exprlong(*(b'8.2 + 6',))\n    except TypeError:\n        pass\n    try:\n        tcl.exprlong(*('spam',))\n    except TclError:\n        pass\n    check('', 0)\n    check('8.2 + 6', 14)\n    check('3.1 + $a', 6)\n    check('2 + \"$a.$b\"', 5)\n    check('4*[llength \"6 2\"]', 8)\n    check('{word one} < \"word $a\"', 0)\n    check('4*2 < 7', 0)\n    check('hypot($a, 4)', 5)\n    check('5 / 4', 1)\n    check('5 / 4.0', 1)\n    check('5 / ( [string length \"abcd\"] + 0.0 )', 1)\n    check('20.0/5.0', 4)\n    check('\"0x03\" > \"2\"', 1)\n    check('[string length \"a\u00bd\u20ac\"]', 3)\n    check('[string length \"a\\\\xbd\\\\u20ac\"]', 3)\n    try:\n        tcl.exprlong(*('\"abc\"',))\n    except TclError:\n        pass\n    try:\n        tcl.exprlong(*('2**64',))\n    except TclError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_exprboolean",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\nfrom _tkinter import TclError\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    tcl.call('set', 'a', 3)\n    tcl.call('set', 'b', 6)\n\n    def check(expr, expected):\n        result = tcl.exprboolean(expr)\n        assert result == expected, ('assertEqual', result, expected)\n        assert isinstance(result, int), ('assertIsInstance', result, int)\n        assert not isinstance(result, bool), ('assertIsInstance', result, bool)\n    try:\n        tcl.exprboolean()\n    except TypeError:\n        pass\n    try:\n        tcl.exprboolean(*('8.2', '+6'))\n    except TypeError:\n        pass\n    try:\n        tcl.exprboolean(*(b'8.2 + 6',))\n    except TypeError:\n        pass\n    try:\n        tcl.exprboolean(*('spam',))\n    except TclError:\n        pass\n    check('', False)\n    for value in ('0', 'false', 'no', 'off'):\n        check(value, False)\n        check('\"%s\"' % value, False)\n        check('{%s}' % value, False)\n    for value in ('1', 'true', 'yes', 'on'):\n        check(value, True)\n        check('\"%s\"' % value, True)\n        check('{%s}' % value, True)\n    check('8.2 + 6', True)\n    check('3.1 + $a', True)\n    check('2 + \"$a.$b\"', True)\n    check('4*[llength \"6 2\"]', True)\n    check('{word one} < \"word $a\"', False)\n    check('4*2 < 7', False)\n    check('hypot($a, 4)', True)\n    check('5 / 4', True)\n    check('5 / 4.0', True)\n    check('5 / ( [string length \"abcd\"] + 0.0 )', True)\n    check('20.0/5.0', True)\n    check('\"0x03\" > \"2\"', True)\n    check('[string length \"a\u00bd\u20ac\"]', True)\n    check('[string length \"a\\\\xbd\\\\u20ac\"]', True)\n    try:\n        tcl.exprboolean(*('\"abc\"',))\n    except TclError:\n        pass\n    check('2**64', True)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_booleans",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n\n    def check(expr, expected):\n        result = tcl.call('expr', expr)\n        if tcl.wantobjects():\n            assert result == expected, ('assertEqual', result, expected)\n            assert isinstance(result, int), ('assertIsInstance', result, int)\n        else:\n            assert result in (expr, str(int(expected))), ('assertIn', result, (expr, str(int(expected))))\n            assert isinstance(result, str), ('assertIsInstance', result, str)\n    check('true', True)\n    check('yes', True)\n    check('on', True)\n    check('false', False)\n    check('no', False)\n    check('off', False)\n    check('1 < 2', True)\n    check('1 > 2', False)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_expr_bignum",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    def get_integers():\n        return (0, 1, -1, 2 ** 31 - 1, -2 ** 31, 2 ** 31, -2 ** 31 - 1, 2 ** 63 - 1, -2 ** 63, 2 ** 63, -2 ** 63 - 1, 2 ** 1000, -2 ** 1000)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp\n    for i in get_integers():\n        result = tcl.call('expr', str(i))\n        if self.wantobjects:\n            assert result == i, ('assertEqual', result, i)\n            assert isinstance(result, int), ('assertIsInstance', result, int)\n        else:\n            assert result == str(i), ('assertEqual', result, str(i))\n            assert isinstance(result, str), ('assertIsInstance', result, str)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_set_object_concurrent_mutation_in_sequence_conversion",
+      "status": "quarantined",
+      "reason": "harness-error:exit -11"
+    },
+    {
+      "ident": "TclTest.test_passing_tcl_obj",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    tcl = self.interp.tk\n    a = None\n\n    def testfunc(arg):\n        nonlocal a\n        a = arg\n    self.interp.createcommand('testfunc', testfunc)\n    _add_cleanup(self.interp.tk.deletecommand, *('testfunc',))\n    tcl.eval('set a \"\\\\u20ac \\\\ud83d\\\\udcbb \\\\0 \\\\udcab\"; regexp -about $a')\n    tcl.eval('testfunc $a')\n    expected = '\u20ac \ud83d\udcbb \\x00 \\udced\\udcb2\\udcab'\n    if self.wantobjects >= 2:\n        assert str(a) == expected, ('assertEqual', str(a), expected)\n        assert a.string == expected, ('assertEqual', a.string, expected)\n        assert a.typename == 'regexp', ('assertEqual', a.typename, 'regexp')\n    else:\n        assert a == expected, ('assertEqual', a, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TclTest.test_splitlist",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TclTest.test_splitdict",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tkinter\nfrom tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    splitdict = tkinter._splitdict\n    tcl = self.interp.tk\n    arg = '-a {1 2 3} -something foo status {}'\n    assert splitdict(tcl, arg, False) == {'-a': '1 2 3', '-something': 'foo', 'status': ''}, ('assertEqual', splitdict(tcl, arg, False), {'-a': '1 2 3', '-something': 'foo', 'status': ''})\n    assert splitdict(tcl, arg) == {'a': '1 2 3', 'something': 'foo', 'status': ''}, ('assertEqual', splitdict(tcl, arg), {'a': '1 2 3', 'something': 'foo', 'status': ''})\n    arg = ('-a', (1, 2, 3), '-something', 'foo', 'status', '{}')\n    assert splitdict(tcl, arg, False) == {'-a': (1, 2, 3), '-something': 'foo', 'status': '{}'}, ('assertEqual', splitdict(tcl, arg, False), {'-a': (1, 2, 3), '-something': 'foo', 'status': '{}'})\n    assert splitdict(tcl, arg) == {'a': (1, 2, 3), 'something': 'foo', 'status': '{}'}, ('assertEqual', splitdict(tcl, arg), {'a': (1, 2, 3), 'something': 'foo', 'status': '{}'})\n    try:\n        splitdict(*(tcl, '-a b -c '))\n    except RuntimeError:\n        pass\n    try:\n        splitdict(*(tcl, ('-a', 'b', '-c')))\n    except RuntimeError:\n        pass\n    arg = tcl.call('list', '-a', (1, 2, 3), '-something', 'foo', 'status', ())\n    assert splitdict(tcl, arg) == {'a': (1, 2, 3) if self.wantobjects else '1 2 3', 'something': 'foo', 'status': ''}, ('assertEqual', splitdict(tcl, arg), {'a': (1, 2, 3) if self.wantobjects else '1 2 3', 'something': 'foo', 'status': ''})\n    arg = tcl.call('dict', 'create', '-a', (1, 2, 3), '-something', 'foo', 'status', ())\n    if not self.wantobjects:\n        expected = {'a': '1 2 3', 'something': 'foo', 'status': ''}\n    else:\n        expected = {'a': (1, 2, 3), 'something': 'foo', 'status': ''}\n    assert splitdict(tcl, arg) == expected, ('assertEqual', splitdict(tcl, arg), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_join",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import tkinter\nfrom tkinter import Tcl\n\ndef _t():\n\n    def setUp():\n        self.interp = Tcl()\n        self.wantobjects = self.interp.tk.wantobjects()\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.interp = Tcl()\n    self.wantobjects = self.interp.tk.wantobjects()\n    join = tkinter._join\n    tcl = self.interp.tk\n\n    def unpack(s):\n        return tcl.call('lindex', s, 0)\n\n    def check(value):\n        assert unpack(join([value])) == value, ('assertEqual', unpack(join([value])), value)\n        assert unpack(join([value, 0])) == value, ('assertEqual', unpack(join([value, 0])), value)\n        assert unpack(unpack(join([[value]]))) == value, ('assertEqual', unpack(unpack(join([[value]]))), value)\n        assert unpack(unpack(join([[value, 0]]))) == value, ('assertEqual', unpack(unpack(join([[value, 0]]))), value)\n        assert unpack(unpack(join([[value], 0]))) == value, ('assertEqual', unpack(unpack(join([[value], 0]))), value)\n        assert unpack(unpack(join([[value, 0], 0]))) == value, ('assertEqual', unpack(unpack(join([[value, 0], 0]))), value)\n    check('')\n    check('spam')\n    check('sp am')\n    check('sp\\tam')\n    check('sp\\nam')\n    check(' \\t\\n')\n    check('{spam}')\n    check('{sp am}')\n    check('\"spam\"')\n    check('\"sp am\"')\n    check('{\"spam\"}')\n    check('\"{spam}\"')\n    check('sp\\\\am')\n    check('\"sp\\\\am\"')\n    check('\"{}\" \"{}\"')\n    check('\"\\\\')\n    check('\"{')\n    check('\"}')\n    check('\\n\\\\')\n    check('\\n{')\n    check('\\n}')\n    check('\\\\\\n')\n    check('{\\n')\n    check('}\\n')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TclTest.test_new_tcl_obj",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TclTest.testLoadWithUNC",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "BigmemTclTest.test_huge_string_call",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "BigmemTclTest.test_huge_string_builtins",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "BigmemTclTest.test_huge_string_builtins2",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "TclTest.test_passing_values",
+      "reason": "uses-self.passValue"
+    },
+    {
+      "ident": "TclTest.test_user_command",
+      "reason": "uses-self.assertEqual"
+    }
+  ],
+  "counts": {
+    "extracted": 49,
+    "pinned": 35,
+    "quarantined": 14
+  }
+}
