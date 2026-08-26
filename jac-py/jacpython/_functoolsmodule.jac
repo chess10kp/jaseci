@@ -1,7 +1,8 @@
 # Product-path facade for functools (wave 20).
 # Staged ``Lib/functools.py`` stays the semantic oracle; this module carries
-# the runtime truth for reduce / partial / lru_cache / wraps+update_wrapper /
-# cmp_to_key / total_ordering. Semantics mirror CPython 3.14
+# the runtime truth for reduce / partial (+Placeholder, pickling) /
+# lru_cache (+copy/reduce) / wraps+update_wrapper / cmp_to_key /
+# total_ordering. Semantics mirror CPython 3.14
 # ``Lib/functools.py`` + ``Modules/_functoolsmodule.c``, including host-exact
 # error texts (pinned against CPython 3.14.7 at authoring time).
 #
@@ -14,6 +15,20 @@ obj _P2Missing {
 }
 
 glob P2_MISSING: _P2Missing = _P2Missing();
+
+# Marks a slot inside a partial's stored positionals that is filled from the
+# call's own leading arguments (CPython 3.14 functools.Placeholder).
+obj _P2Placeholder {
+    def __repr__ -> str {
+        return "Placeholder";
+    }
+
+    def __reduce__ -> any {
+        return "Placeholder";
+    }
+}
+
+glob P2_PLACEHOLDER: _P2Placeholder = _P2Placeholder();
 
 def _advance(it: any) -> any {
     return it.__next__();
@@ -54,13 +69,22 @@ def _p2_reduce(function: any, iterable: any, initial: any = P2_MISSING) -> any {
 obj _P2Partial {
     has func: any = None,
         part_args: tuple = (),
-        keywords: dict = {};
+        keywords: dict = {},
+        phcount: int = 0;
 
 
     def __call__(*args: tuple, **kwargs: dict) -> any {
-        # Forward stored positionals ahead of the new ones and merge stored
-        # keywords under the new ones; collisions surface as the target's own
-        # "got multiple values for argument" TypeError, like CPython.
+        # Mirrors partial_call: Placeholder slots consume the call's leading
+        # positionals, so too few arguments is a host-exact TypeError.
+        if len(args) < self.phcount {
+            raise TypeError(
+                "missing positional arguments in 'partial' call; "
+                + "expected at least " + str(self.phcount)
+                + ", got " + str(len(args))
+            );
+        }
+        # Merge stored keywords under the new ones; collisions surface as the
+        # target's own "got multiple values for argument" TypeError.
         merged: dict = {};
         for key in self.keywords {
             merged[key] = self.keywords[key];
@@ -68,7 +92,21 @@ obj _P2Partial {
         for key in kwargs {
             merged[key] = kwargs[key];
         }
-        return self.func(*(self.part_args + args), **merged);
+        filled: list = [];
+        idx: int = 0;
+        for stored in self.part_args {
+            if stored is P2_PLACEHOLDER {
+                filled.append(args[idx]);
+                idx += 1;
+            } else {
+                filled.append(stored);
+            }
+        }
+        while idx < len(args) {
+            filled.append(args[idx]);
+            idx += 1;
+        }
+        return self.func(*filled, **merged);
     }
 
     def __repr__ -> str {
@@ -102,10 +140,87 @@ obj _P2Partial {
     def _fields -> tuple {
         return (self.func, self.part_args, self.keywords);
     }
+
+    def __reduce__ -> any {
+        # Pickle shape of partial_reduce: (type, (fn,), (fn, args, kw, dict)).
+        inst_dict: any = None;
+        d = getattr(self, "__dict__", None);
+        if isinstance(d, dict) {
+            inst_dict = d;
+        }
+        return (
+            _P2Partial,
+            (self.func,),
+            (self.func, self.part_args, self.keywords, inst_dict),
+        );
+    }
+
+    def __setstate__(state: any) {
+        # Mirrors partial_setstate: replace the whole state atomically and
+        # validate every member before mutating anything.
+        if not isinstance(state, tuple) or len(state) != 4 {
+            raise TypeError("invalid partial state");
+        }
+        fn: any = state[0];
+        fnargs: any = state[1];
+        kw: any = state[2];
+        sdict: any = state[3];
+        if (
+            not callable(fn)
+            or not isinstance(fnargs, tuple)
+            or (kw is not None and not isinstance(kw, dict))
+            or (sdict is not None and not isinstance(sdict, dict))
+        ) {
+            raise TypeError("invalid partial state");
+        }
+        if len(fnargs) > 0 and fnargs[len(fnargs) - 1] is P2_PLACEHOLDER {
+            raise TypeError("trailing Placeholders are not allowed");
+        }
+        restored: int = 0;
+        for i in range(len(fnargs) - 1) {
+            if fnargs[i] is P2_PLACEHOLDER {
+                restored += 1;
+            }
+        }
+        clean_kw: dict = {};
+        if kw is not None {
+            for key in kw {
+                clean_kw[key] = kw[key];
+            }
+        }
+        self.func = fn;
+        self.part_args = fnargs;
+        self.keywords = clean_kw;
+        self.phcount = restored;
+        if sdict is not None {
+            for attr_key in sdict {
+                setattr(self, attr_key, sdict[attr_key]);
+            }
+        }
+    }
 }
 
 def _p2_partial(func: any, part_args: tuple = (), keywords: dict = {}) -> _P2Partial {
-    pto = _P2Partial(func=func, part_args=part_args, keywords=keywords);
+    # Construction-time Placeholder restrictions from partial_new: a trailing
+    # placeholder would stay unfilled forever, and keyword placeholders have
+    # no positional slot to bind into.
+    if len(part_args) > 0 and part_args[len(part_args) - 1] is P2_PLACEHOLDER {
+        raise TypeError("trailing Placeholders are not allowed");
+    }
+    for key in keywords {
+        if keywords[key] is P2_PLACEHOLDER {
+            raise TypeError("Placeholder cannot be passed as a keyword argument");
+        }
+    }
+    phcount: int = 0;
+    for i in range(len(part_args) - 1) {
+        if part_args[i] is P2_PLACEHOLDER {
+            phcount += 1;
+        }
+    }
+    pto = _P2Partial(
+        func=func, part_args=part_args, keywords=keywords, phcount=phcount
+    );
     return pto;
 }
 
@@ -261,6 +376,20 @@ obj _P2LRUWrapper {
     def cache_parameters -> dict {
         params: dict = {"maxsize": self._info_maxsize(), "typed": self.typed};
         return params;
+    }
+
+    def __reduce__ -> any {
+        # lru_cache_reduce pickles by qualname: the wrapper reconstructs from
+        # its module-level binding, cache contents excluded.
+        return getattr(self, "__qualname__", "");
+    }
+
+    def __copy__(*args: tuple) -> any {
+        return self;
+    }
+
+    def __deepcopy__(*args: tuple) -> any {
+        return self;
     }
 }
 
