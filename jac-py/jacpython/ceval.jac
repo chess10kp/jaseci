@@ -6164,11 +6164,22 @@ def py_repr(value: PyObj) -> PyObj {
     if isinstance(value, PyTypeAlias) {
         return PyStr(t="str", val=(value as PyTypeAlias).name);
     }
-    # CPython typing.TypeVar.__repr__ for implicit PEP 695 parameters prints
-    # the bare name (module 'typing'); '~T' belongs to explicitly-constructed
-    # TypeVars outside typing.
+    # CPython typevar_repr: infer-variance parameters print the bare name
+    # (module 'typing', implicit PEP 695); explicit construction prefixes the
+    # variance marker ('+' covariant / '-' contravariant / '~' invariant).
     if isinstance(value, PyTypeVar) {
-        return PyStr(t="str", val=(value as PyTypeVar).name);
+        tv = value as PyTypeVar;
+        if tv.infer_variance {
+            return PyStr(t="str", val=tv.name);
+        }
+        marker = "~";
+        if tv.covariant {
+            marker = "+";
+        }
+        if tv.contravariant {
+            marker = "-";
+        }
+        return PyStr(t="str", val=marker + tv.name);
     }
     # CPython _GenericAlias.__repr__ for the implicit generic base prints
     # 'typing.Generic[T, ...]'; str falls back to the same (no __str__).
@@ -13880,7 +13891,19 @@ obj PyTypeVarMethod(PyObj) {
         if len(args) != 0 {
             return meth_takes_none("TypeVar", self.name, len(args));
         }
-        return PyBool(t="bool", val=self.tv.evaluate_default.t != "none");
+        # CPython typevar_has_default_impl is syntactic: an evaluator or an
+        # eagerly-constructed non-sentinel default answers True without ever
+        # forcing lazy evaluation.
+        if self.tv.evaluate_default.t != "none" {
+            return PyBool(t="bool", val=True);
+        }
+        if self.tv.default_resolved {
+            return PyBool(
+                t="bool",
+                val=not ((self.tv.cached_default as PyObj) is no_default_sentinel()),
+            );
+        }
+        return PyBool(t="bool", val=False);
     }
 }
 
