@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_faulthandler.py",
+    "-o",
+    "/var/tmp/worker6-600-port-faulthandler-1686822/jac-py/tests/conv_faulthandler",
+    "--name",
+    "conv_faulthandler"
+  ],
+  "generated_at": "2026-08-25T22:00:45",
+  "hashes": {
+    "pins_jac": "3e8ab94da535eb0284cfa100131e6ce376ec540c1eb3c8362db5381fdb05c3e9"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_faulthandler.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "faulthandler",
+  "pins_file": "conv_faulthandler_pins.jac",
+  "pins": [
+    {
+      "ident": "FaultHandlerTests.test_is_enabled",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import faulthandler\nimport sys\n\ndef _t():\n    orig_stderr = sys.stderr\n    try:\n        sys.stderr = sys.__stderr__\n        was_enabled = faulthandler.is_enabled()\n        try:\n            faulthandler.enable()\n            assert faulthandler.is_enabled(), ('assertTrue', faulthandler.is_enabled())\n            faulthandler.disable()\n            assert not faulthandler.is_enabled(), ('assertFalse', faulthandler.is_enabled())\n        finally:\n            if was_enabled:\n                faulthandler.enable()\n            else:\n                faulthandler.disable()\n    finally:\n        sys.stderr = orig_stderr\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FaultHandlerTests.test_disabled_by_default",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import subprocess\nimport sys\n\ndef _t():\n    code = 'import faulthandler; print(faulthandler.is_enabled())'\n    args = (sys.executable, '-E', '-c', code)\n    output = subprocess.check_output(args)\n    assert output.rstrip() == b'False', ('assertEqual', output.rstrip(), b'False')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FaultHandlerTests.test_sys_xoptions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os\nimport subprocess\nimport sys\n\ndef _t():\n    code = 'import faulthandler; print(faulthandler.is_enabled())'\n    args = filter(None, (sys.executable, '-E' if sys.flags.ignore_environment else '', '-X', 'faulthandler', '-c', code))\n    env = os.environ.copy()\n    env.pop('PYTHONFAULTHANDLER', None)\n    output = subprocess.check_output(args, env=env)\n    assert output.rstrip() == b'True', ('assertEqual', output.rstrip(), b'True')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FaultHandlerTests.test_env_var",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os\nimport subprocess\nimport sys\n\ndef _t():\n    code = 'import faulthandler; print(faulthandler.is_enabled())'\n    args = (sys.executable, '-c', code)\n    env = dict(os.environ)\n    env['PYTHONFAULTHANDLER'] = ''\n    env['PYTHONDEVMODE'] = ''\n    output = subprocess.check_output(args, env=env)\n    assert output.rstrip() == b'False', ('assertEqual', output.rstrip(), b'False')\n    env = dict(os.environ)\n    env['PYTHONFAULTHANDLER'] = '1'\n    env['PYTHONDEVMODE'] = ''\n    output = subprocess.check_output(args, env=env)\n    assert output.rstrip() == b'True', ('assertEqual', output.rstrip(), b'True')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_c_stack_file",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'faulthandler' has no attribute 'dump_c_stack'"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "FaultHandlerTests.test_read_null",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_sigabrt",
+      "reason": "decorator:support.skip_if_sanitizer"
+    },
+    {
+      "ident": "FaultHandlerTests.test_sigfpe",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_sigbus",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_sigill",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_stack_overflow",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_enable_fd",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_fd",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_later_fd",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_later_twice",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "ident": "FaultHandlerTests.test_register_fd",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "FaultHandlerTests.test_register_chain",
+      "reason": "decorator:support.skip_if_sanitizer"
+    },
+    {
+      "ident": "FaultHandlerTests.test_raise_exception",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "FaultHandlerTests.test_ignore_exception",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "FaultHandlerTests.test_raise_nonfatal_exception",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "FaultHandlerTests.test_disable_windows_exc_handler",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "FaultHandlerTests.test_free_threaded_dump_traceback",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "ident": "FaultHandlerTests.test_sigsegv",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_gc",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_fatal_error_c_thread",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_fatal_error",
+      "reason": "helper:check_fatal_error_func(decorated-helper)"
+    },
+    {
+      "ident": "FaultHandlerTests.test_fatal_error_without_gil",
+      "reason": "helper:check_fatal_error_func(decorated-helper)"
+    },
+    {
+      "ident": "FaultHandlerTests.test_gil_released",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_enable_file",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_enable_single_thread",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_disable",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_ext_modules",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_file",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_truncate",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_threads",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_threads_file",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_later",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_later_repeat",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_later_cancel",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_traceback_later_file",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_register",
+      "reason": "helper:check_register(decorated-helper)"
+    },
+    {
+      "ident": "FaultHandlerTests.test_unregister",
+      "reason": "helper:check_register(decorated-helper)"
+    },
+    {
+      "ident": "FaultHandlerTests.test_register_file",
+      "reason": "helper:check_register(decorated-helper)"
+    },
+    {
+      "ident": "FaultHandlerTests.test_register_threads",
+      "reason": "helper:check_register(decorated-helper)"
+    },
+    {
+      "ident": "FaultHandlerTests.test_stderr_None",
+      "reason": "helper:check_stderr_none(decorated-helper)"
+    },
+    {
+      "ident": "FaultHandlerTests.test_cancel_later_without_dump_traceback_later",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "ident": "FaultHandlerTests.test_dump_c_stack",
+      "reason": "unsupported-import:test.support"
+    }
+  ],
+  "counts": {
+    "extracted": 48,
+    "pinned": 4,
+    "quarantined": 44
+  }
+}
