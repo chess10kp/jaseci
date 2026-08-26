@@ -88,6 +88,7 @@ import from codegen_util {
 }
 import from compiler_annotations { ann_scope_plan }
 import from compiler_codegen { emit_module_return, emit_name_store, visit_stmt_tail, visit_stmts }
+import from compiler_dispatch { stmt_handlers }
 obj match_pat_ctx {
     has stores: list[str],
         on_top: int,
@@ -1181,3 +1182,13 @@ def visit_match(
     }
     return stmt_cont(loc=mloc, terminated=terminated);
 }
+
+# Wire statement-dispatch handlers into the leaf registry (see
+# compiler_dispatch.jac). Runs at module load via `with entry`; entry
+# drivers (product_compile, compiler_slice) import this module so the
+# registration always precedes the first compile. Dict item assignment
+# mutates the holder in place (scalar-glob rebinding would be local).
+with entry {
+    stmt_handlers["visit_match"] = visit_match;
+}
+

@@ -23,6 +23,8 @@ import from objects {
     PyCode,
     PyTuple
 }
+# Statement-dispatch handler registry (leaf module; see compiler_dispatch.jac).
+import from compiler_dispatch { stmt_handlers }
 import from opcode_meta {
     OP_RESUME,
     OP_RETURN_GENERATOR,
@@ -1190,22 +1192,22 @@ def visit_stmt(
     if isinstance(s, If) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return visit_if(g, s as If, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_if"](g, s as If, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
     }
     if isinstance(s, While) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return visit_while(g, s as While, more_code_follows, tail, tail_idx, ann_ctx);
+        return stmt_handlers["visit_while"](g, s as While, more_code_follows, tail, tail_idx, ann_ctx);
     }
     if isinstance(s, For) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return visit_for(g, s as For, more_code_follows, tail, tail_idx, ann_ctx);
+        return stmt_handlers["visit_for"](g, s as For, more_code_follows, tail, tail_idx, ann_ctx);
     }
     if isinstance(s, AsyncFor) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return visit_async_for(g, s as AsyncFor, more_code_follows, tail, tail_idx, ann_ctx);
+        return stmt_handlers["visit_async_for"](g, s as AsyncFor, more_code_follows, tail, tail_idx, ann_ctx);
     }
     if isinstance(s, Break) {
         b = s as Break;
@@ -1247,53 +1249,53 @@ def visit_stmt(
         return stmt_cont(loc=stmt_loc(s), terminated=True);
     }
     if isinstance(s, FunctionDef) {
-        return visit_function_def(g, s as FunctionDef);
+        return stmt_handlers["visit_function_def"](g, s as FunctionDef);
     }
     if isinstance(s, AsyncFunctionDef) {
-        return visit_async_function_def(g, s as AsyncFunctionDef);
+        return stmt_handlers["visit_async_function_def"](g, s as AsyncFunctionDef);
     }
     if isinstance(s, ClassDef) {
-        return visit_class_def(g, s as ClassDef);
+        return stmt_handlers["visit_class_def"](g, s as ClassDef);
     }
     if isinstance(s, TypeAlias) {
-        return visit_type_alias(g, s as TypeAlias);
+        return stmt_handlers["visit_type_alias"](g, s as TypeAlias);
     }
     if isinstance(s, Import) {
-        return visit_import(g, s as Import);
+        return stmt_handlers["visit_import"](g, s as Import);
     }
     if isinstance(s, ImportFrom) {
-        return visit_import_from(g, s as ImportFrom);
+        return stmt_handlers["visit_import_from"](g, s as ImportFrom);
     }
     if isinstance(s, Try) {
         t = tail;
         if t is None {
             t = [];
         }
-        return visit_try(g, s as Try, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_try"](g, s as Try, more_code_follows, t, tail_idx, tail_join, ann_ctx);
     }
     if isinstance(s, TryStar) {
         t = tail;
         if t is None {
             t = [];
         }
-        return visit_try_star(g, s as TryStar, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_try_star"](g, s as TryStar, more_code_follows, t, tail_idx, tail_join, ann_ctx);
     }
     if isinstance(s, Raise) {
-        return visit_raise_stmt(g, s as Raise);
+        return stmt_handlers["visit_raise_stmt"](g, s as Raise);
     }
     if isinstance(s, With) {
         t = tail;
         if t is None {
             t = [];
         }
-        return visit_with(g, s as With, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_with"](g, s as With, more_code_follows, t, tail_idx, tail_join, ann_ctx);
     }
     if isinstance(s, AsyncWith) {
         t = tail;
         if t is None {
             t = [];
         }
-        return visit_async_with(
+        return stmt_handlers["visit_async_with"](
             g, s as AsyncWith, more_code_follows, t, tail_idx, tail_join, ann_ctx);
     }
     if isinstance(s, Match) {
@@ -1301,7 +1303,7 @@ def visit_stmt(
         if t is None {
             t = [];
         }
-        return visit_match(g, s as Match, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_match"](g, s as Match, more_code_follows, t, tail_idx, tail_join, ann_ctx);
     }
     if isinstance(s, Assert) {
         return visit_assert_stmt(g, s as Assert);
@@ -1435,7 +1437,7 @@ def compile_exec(
             # are emitted here too -- CPython lays them out after the (dead)
             # epilogue regardless of how the body ended.
             u.add_const(py_none());
-            emit_deferred_comp_handlers(g);
+            stmt_handlers["deferred_comp_handlers"](g);
             u.flush_late_consts();
             return u;
         }
@@ -1460,51 +1462,22 @@ def compile_exec(
         # Dead implicit-return None const, interned like CPython's unreachable
         # epilogue; kept by remove_unused_consts only at index 0.
         u.add_const(py_none());
-        emit_deferred_comp_handlers(g);
+        stmt_handlers["deferred_comp_handlers"](g);
         u.flush_late_consts();
         return u;
     }
     none_idx = u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, last);
     g.emit_op(OP_RETURN_VALUE, 0, last);
-    emit_deferred_comp_handlers(g);
+    stmt_handlers["deferred_comp_handlers"](g);
     u.flush_late_consts();
     return u;
 }
 
-# Late imports: the statement-dispatch above calls visitors that live in the
-# split-out sibling modules, while those modules import shared helpers
-# (visit_stmts, emit_name_store, ...) from THIS module.
-# Ordering contract (VERIFIED 2026-08-22): this module must finish loading
-# before any sibling binds names FROM it, and sibling-first entry breaks:
-# importing e.g. compiler_defs directly pauses its body at its own codegen
-# import, so the late block below re-enters a PARTIALLY INITIALIZED module
-# and fails with "cannot import name 'visit_import' from partially
-# initialized module 'compiler_defs'". Entry points must go through this
-# module (or product_compile), never a bare sibling. Guarded by
-# jac-py/tests/test_split_ordering.jac. The codegen<->sibling IMPORT CYCLES
-# themselves are tracked by p3_import_cycle_gate.py (see TODO item on the
-# dispatch-glob inversion).
-import from compiler_match { visit_match }
-import from compiler_exc {
-    emit_deferred_comp_handlers,
-    visit_raise_stmt,
-    visit_try,
-    visit_try_star,
-    visit_with,
-    visit_async_with
-}
-import from compiler_loops {
-    visit_if,
-    visit_while,
-    visit_for,
-    visit_async_for
-}
-import from compiler_defs {
-    visit_import,
-    visit_import_from,
-    visit_class_def,
-    visit_function_def,
-    visit_async_function_def,
-    visit_type_alias
-}
+# Statement dispatch for compound statements goes through the handler slots
+# in compiler_dispatch (a leaf module), not through imports of the split-out
+# sibling modules: those siblings import shared lowering helpers (visit_stmts,
+# emit_name_store, ...) from THIS module, so a static edge in either direction
+# would close an import cycle. Each sibling registers its visitors at module
+# load; entry drivers (product_compile, compiler_slice) import the siblings so
+# registration runs before the first compile. See compiler_dispatch.jac.

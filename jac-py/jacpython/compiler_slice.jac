@@ -48,6 +48,13 @@ import from ast_nodes {
 import from parser { parse_file }
 import from ast_nodes { Module }
 import from compiler_codegen { compile_eval, compile_exec }
+# Statement-dispatch siblings: imported for their load-time registration into
+# the compiler_dispatch leaf (see compiler_dispatch.jac); compile_exec lowers
+# FunctionDef fixtures through that dispatch.
+import from compiler_defs { visit_function_def }
+import from compiler_exc { visit_try }
+import from compiler_loops { visit_if }
+import from compiler_match { visit_match }
 import from flowgraph { verify_cfg }
 import from pycode_diff { pycode_diff_message }
 import from assembler { assemble }
