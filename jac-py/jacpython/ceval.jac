@@ -1456,6 +1456,7 @@ import from exceptions_core {
 import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
+import from array { array_module_attrs, array_obj_len, array_obj_repr, array_inplace_binop, PyArrayObj }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -1894,6 +1895,18 @@ def import_native(absname: str) -> PyObj {
         # of every guest list (heappush/heapify silently no-op). The native
         # shim operates on live PyList storage instead.
         shim_modules["heapq"] = build_heapq_module();
+    }
+    if absname == "array" {
+        # Native facade wins over the host C extension: a proxied host array
+        # loses every VM-level slot (`a[:] = a`, `a += a`, item assignment),
+        # which is how the converted test_array pins failed before the
+        # facade existed. Forget any cached host proxy first.
+        _sys3_forget("array");
+        if not ("array" in shim_modules) {
+            shim_modules["array"] = PyModule(
+                t="module", name="array", attrs=array_module_attrs()
+            );
+        }
     }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
@@ -4984,6 +4997,16 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # copy of any guest list argument.
         shim_modules["heapq"] = build_heapq_module();
     }
+    if name == "array" {
+        # Mirror of the import_native site: the native facade must win over
+        # the host-proxied C extension on this resolution path too.
+        _sys3_forget("array");
+        if not ("array" in shim_modules) {
+            shim_modules["array"] = PyModule(
+                t="module", name="array", attrs=array_module_attrs()
+            );
+        }
+    }
     if name == "types" and not ("types" in shim_modules) {
         # The host types.coroutine cannot mark VM-native functions (it mutates
         # host code objects our PyFunction does not share), so its fallback
@@ -5748,7 +5771,8 @@ def py_str(value: PyObj) -> PyObj {
     # self-referential structures hit the repr cycle guards instead of
     # recursing unbounded inside to_host conversion.
     if isinstance(value, PyDict) or isinstance(value, PyList)
-        or isinstance(value, PyTuple) or isinstance(value, PyMappingProxy) {
+        or isinstance(value, PyTuple) or isinstance(value, PyMappingProxy)
+        or isinstance(value, PyArrayObj) {
         return py_repr(value);
     }
     return host_convert(value, 1);
@@ -5807,6 +5831,9 @@ def py_repr(value: PyObj) -> PyObj {
                 + str(rg.step)
                 + ")",
         );
+    }
+    if isinstance(value, PyArrayObj) {
+        return array_obj_repr(value as PyArrayObj);
     }
     # CPython TypeAliasType_repr prints the bare alias name (repr(type X = int
     # alias) == 'X'), never a qualified or angled form.
@@ -6499,6 +6526,11 @@ def py_inplace_binop(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
     }
     if isinstance(lhs, PySet) {
         return set_inplace_binop(lhs as PySet, kind, rhs);
+    }
+    if isinstance(lhs, PyArrayObj) {
+        # array += array / array *= n mutate the live storage and return the
+        # receiver (CPython's mutable in-place slot protocol).
+        return array_inplace_binop(lhs as PyArrayObj, kind, rhs);
     }
     return PY_NOT_IMPLEMENTED;
 }
@@ -7446,6 +7478,9 @@ def py_anext(aiter: PyObj) -> PyObj {
 def py_len(value: PyObj) -> PyObj {
     if isinstance(value, PyRange) {
         return PyInt(t="int", val=(value as PyRange).length());
+    }
+    if isinstance(value, PyArrayObj) {
+        return PyInt(t="int", val=array_obj_len(value as PyArrayObj));
     }
     if isinstance(value, PyStr) {
         return PyInt(t="int", val=len((value as PyStr).val));
