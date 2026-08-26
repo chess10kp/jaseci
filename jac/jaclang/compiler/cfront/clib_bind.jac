@@ -29,10 +29,17 @@ def synthesize_clib_bindings(mod: uni.Module, importer_path: str) -> None {
             continue;
         }
         header_rel = hdr.lit_value;
+        if not isinstance(header_rel, str) {
+            continue;
+        }
         header_path = header_rel
             if os.path.isabs(header_rel)
             else os.path.join(base_dir, header_rel);
-        allow = [i.name.value for i in imp.items] or None;
+        allow = [
+            i.name.value
+            for i in imp.items
+            if isinstance(i, uni.ModuleItem)
+        ] or None;
         c_src = read_file_with_encoding(header_path);
         (file_ast, macros) = parse_header_source(c_src, header_path);
         rep = BindReport();
