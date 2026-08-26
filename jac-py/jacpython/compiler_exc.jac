@@ -1817,10 +1817,6 @@ def visit_try_star(
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
     tloc = stmt_loc(t);
-    if t.finalbody is not None and len(t.finalbody) > 0 {
-        codegen_fail(g, "NotImplementedError", "except* with finally");
-        return stmt_cont(loc=tloc);
-    }
     if t.handlers is None or len(t.handlers) == 0 {
         codegen_fail(g, "NotImplementedError", "try* without except*");
         return stmt_cont(loc=tloc);
@@ -1897,8 +1893,9 @@ def visit_try_star_except(
             normal_terminated = True;
         }
     }
+    has_fin = t.finalbody is not None and len(t.finalbody) > 0;
     join_blk: basicblock | None = None;
-    if try_follows {
+    if not has_fin and try_follows {
         # Own block so the nothing-to-reraise path can jump back to it.
         join_blk = g.new_block();
         g.use(join_blk);
@@ -1914,7 +1911,7 @@ def visit_try_star_except(
             emit_module_return(g, tail_cont.loc);
         }
     } else {
-        if not normal_terminated {
+        if not has_fin and not normal_terminated {
             emit_module_return(g, body_cont.loc);
         }
     }
@@ -1948,6 +1945,9 @@ def visit_try_star_except(
     rr_pe = g.new_deferred_block();
     reraise_blk = g.new_deferred_block();
     unwind_blk = g.new_deferred_block();
+    fin_inline = g.new_deferred_block();
+    fin_except = g.new_deferred_block();
+    outer_unwind = g.new_deferred_block();
 
     hi = 0;
     while hi < nh {
@@ -1977,6 +1977,32 @@ def visit_try_star_except(
             preserve_lasti=True
         )
     );
+
+    # try/except*/finally: forward-nest the finally around the whole walk
+    # (CPython compiles it identically to a SETUP_FINALLY wrap). When the
+    # normal path reaches the finally its inline copy sits ahead of the
+    # handler machinery (first use = placement); otherwise the only
+    # predecessor is the nothing-to-reraise path and the copy lands after the
+    # unwind chain. No leading NOP: CPython's trystar layout never inserts
+    # one for the late copy.
+    fin_early = False;
+    if has_fin {
+        fin_early = not normal_terminated;
+        if fin_early {
+            emit_finally_inline_block(
+                g,
+                t.finalbody,
+                fin_inline,
+                False,
+                more_code_follows,
+                tail,
+                tail_idx,
+                tloc, ann_ctx);
+            if codegen_busy(g) {
+                return stmt_cont(loc=tloc);
+            }
+        }
+    }
 
     hloc0 = trystar_handler_loc(t.handlers[0] as ExceptHandler);
     g.use(he);
@@ -2071,7 +2097,16 @@ def visit_try_star_except(
     g.emit_op(OP_POP_TOP, 0, noloc);
     g.use(rr_pe);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
-    if join_blk is not None {
+    if has_fin {
+        # Nothing to reraise: run the inline finally copy. Early copy sits
+        # before the walk (backward hop), late copy after the unwind chain
+        # (forward hop) - matching CPython's jump direction per layout.
+        if fin_early {
+            g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, fin_inline.id, noloc);
+        } else {
+            g.emit_jump(OP_JUMP_FORWARD, fin_inline.id, noloc);
+        }
+    } elif join_blk is not None {
         g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, join_blk.id, noloc);
     } else {
         emit_module_return(g, noloc);
@@ -2084,6 +2119,39 @@ def visit_try_star_except(
     g.emit_op(OP_COPY, 3, noloc);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
     g.emit_op(OP_RERAISE, 1, noloc);
+
+    if has_fin and not fin_early {
+        # Late inline finally copy: only predecessor is the nothing-to-reraise
+        # path above.
+        emit_finally_inline_block(
+            g,
+            t.finalbody,
+            fin_inline,
+            False,
+            more_code_follows,
+            tail,
+            tail_idx,
+            tloc, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=tloc);
+        }
+    }
+    if has_fin {
+        # Exceptional finally handler: finalbody under PUSH_EXC_INFO, then
+        # re-raise through the outer unwind chain (COPY 3 / POP_EXCEPT /
+        # RERAISE 1).
+        g.use(fin_except);
+        g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
+        fe_cont = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=tloc);
+        }
+        g.emit_op(OP_RERAISE, 0, fe_cont.loc);
+        g.use(outer_unwind);
+        g.emit_op(OP_COPY, 3, noloc);
+        g.emit_op(OP_POP_EXCEPT, 0, noloc);
+        g.emit_op(OP_RERAISE, 1, noloc);
+    }
 
     # Exception-table spans, in host entry order; merge_except_spans coalesces
     # the empty-body case where the he span and the mid run become adjacent.
@@ -2141,6 +2209,33 @@ def visit_try_star_except(
             preserve_lasti=True
         )
     );
+    if has_fin {
+        # Post-walk coverage: from the nothing-to-reraise POP_EXCEPT through
+        # the reraise/unwind chain, failures reach the exceptional finally
+        # handler at base depth. With a late inline copy the span runs to the
+        # copy (uncovered, like CPython); otherwise it ends at the handler.
+        fin_span_end = fin_except.id;
+        if not fin_early {
+            fin_span_end = fin_inline.id;
+        }
+        spans.append(
+            except_region(
+                start_block=rr_pe.id,
+                end_block=fin_span_end,
+                handler_block=fin_except.id,
+                stack_depth=1 + nest
+            )
+        );
+        spans.append(
+            except_region(
+                start_block=fin_except.id,
+                end_block=outer_unwind.id,
+                handler_block=outer_unwind.id,
+                stack_depth=3 + nest,
+                preserve_lasti=True
+            )
+        );
+    }
     merged = merge_except_spans(g, spans);
     mi = 0;
     while mi < len(merged) {

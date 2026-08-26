@@ -194,3 +194,108 @@ test "nested except runtime: inner-handler raise reaches outer handler" {
 test "nested except runtime: sequential raises through nested handlers" {
     product_exec(SRC_RT_CHAIN);
 }
+
+# except*/finally: the whole CHECK_EG_MATCH walk is forward-nested in the
+# finally (CPython-identical lowering). Exception-table parity is pinned for
+# both layouts - early inline copy (normal path reaches the finally) and late
+# copy (body always terminates, only the nothing-to-reraise path reaches it).
+glob SRC_TRYSTAR_FIN_BOUND = (
+    "out = []\n"
+    "try:\n"
+    "    raise ValueError(1)\n"
+    "except* TypeError as e:\n"
+    "    out.append('t')\n"
+    "finally:\n"
+    "    out.append('f')\n"
+);
+
+glob SRC_TRYSTAR_FIN_UNBOUND = (
+    "out = []\n"
+    "try:\n"
+    "    out.append(0)\n"
+    "except* TypeError:\n"
+    "    out.append('t')\n"
+    "except* ValueError:\n"
+    "    out.append('v')\n"
+    "finally:\n"
+    "    out.append('f')\n"
+);
+
+glob SRC_TRYSTAR_FIN_MULTI = (
+    "out = []\n"
+    "try:\n"
+    "    raise ValueError(1)\n"
+    "except* TypeError as t:\n"
+    "    out.append('t')\n"
+    "except* ValueError:\n"
+    "    out.append('v')\n"
+    "finally:\n"
+    "    out.append('f')\n"
+);
+
+# Early layout (normal path reaches the finally).
+test "trystar finally etbl: unbound handlers, early copy" {
+    assert etbl_parity("trystar-fin-unbound", SRC_TRYSTAR_FIN_UNBOUND);
+}
+
+# Late layout (body terminates by raising).
+test "trystar finally etbl: bound handler, late copy" {
+    assert etbl_parity("trystar-fin-bound", SRC_TRYSTAR_FIN_BOUND);
+}
+
+test "trystar finally etbl: multi handlers, late copy" {
+    assert etbl_parity("trystar-fin-multi", SRC_TRYSTAR_FIN_MULTI);
+}
+
+# Runtime: handler runs before finally; unmatched groups propagate after it.
+glob SRC_TRYSTAR_FIN_RT_MATCH = (
+    "out = []\n"
+    "try:\n"
+    "    raise ValueError(1)\n"
+    "except* ValueError:\n"
+    "    out.append('v')\n"
+    "finally:\n"
+    "    out.append('f')\n"
+    "assert out == ['v', 'f'], out\n"
+);
+
+test "trystar finally runtime: handler then finally" {
+    product_exec(SRC_TRYSTAR_FIN_RT_MATCH);
+}
+
+glob SRC_TRYSTAR_FIN_RT_NOMATCH = (
+    "out = []\n"
+    "try:\n"
+    "    try:\n"
+    "        raise KeyError('k')\n"
+    "    except* ValueError:\n"
+    "        out.append('v')\n"
+    "    finally:\n"
+    "        out.append('f')\n"
+    "except KeyError:\n"
+    "    out.append('outer')\n"
+    "assert out == ['f', 'outer'], out\n"
+);
+
+test "trystar finally runtime: finally runs before propagation" {
+    product_exec(SRC_TRYSTAR_FIN_RT_NOMATCH);
+}
+
+glob SRC_TRYSTAR_FIN_RT_HANDLER_RAISE = (
+    "out = []\n"
+    "try:\n"
+    "    try:\n"
+    "        raise ValueError(1)\n"
+    "    except* ValueError:\n"
+    "        raise TypeError('t')\n"
+    "    finally:\n"
+    "        out.append('f')\n"
+    "except TypeError:\n"
+    "    out.append('t')\n"
+    "assert out == ['f', 't'], out\n"
+);
+
+test "trystar finally runtime: raise inside handler runs finally" {
+    product_exec(SRC_TRYSTAR_FIN_RT_HANDLER_RAISE);
+}
+
