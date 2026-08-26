@@ -216,9 +216,17 @@ def baseexception_str(exc: PyException, repr_fn: any = None,
     if len(exc.args) == 1 {
         return PyStr(t="str", val=_obj_to_str(exc.args[0], str_fn));
     }
+    # Multi-arg shape is CPython's tuple-repr of .args (BaseException_str
+    # default case): each element renders via REPR -- str(ValueError('a',
+    # 'b')) == "('a', 'b')", not str()-join "(a, b)". Callers without a
+    # repr fn keep the legacy str() rendering.
     parts: list[str] = [];
     for item in exc.args {
-        parts.append(_obj_to_str(item, str_fn));
+        if repr_fn is not None {
+            parts.append(_repr_obj(item, repr_fn));
+        } else {
+            parts.append(_obj_to_str(item, str_fn));
+        }
     }
     inner = ", ".join(parts);
     return PyStr(t="str", val="(" + inner + ")");

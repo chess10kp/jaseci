@@ -129,6 +129,31 @@ test "conv exceptions: else finally interplay replays against the host" {
     assert result.errored == 0;
 }
 
+test "conv exceptions: multi-arg exception str uses tuple-repr" {
+    # CPython BaseException_str default case renders .args as the TUPLE REPR:
+    # repr() per element ("('a', 'b')"), not str()-join ("(a, b)").
+    src = "class TestMultiArgStr(unittest.TestCase):\n"
+    "    def test_str_multi_arg(self):\n"
+    "        got = ''\n"
+    "        try:\n"
+    "            raise ValueError('a', 'b')\n"
+    "        except ValueError as e:\n"
+    "            got = str(e)\n"
+    "        self.assertEqual(got, \"('a', 'b')\")\n"
+    "    def test_str_mixed_containers(self):\n"
+    "        got = ''\n"
+    "        try:\n"
+    "            raise ValueError(['x'], {'k': 1})\n"
+    "        except ValueError as e:\n"
+    "            got = str(e)\n"
+    "        self.assertEqual(got, \"(['x'], {'k': 1})\")\n";
+    result = layer1_replay_source(src);
+    assert result.passed == 2;
+    assert result.skipped == 0;
+    assert result.failed == 0;
+    assert result.errored == 0;
+}
+
 test "conv exceptions: chaining cause context suppress_context" {
     # __cause__/__context__/__suppress_context__ per PyErr_SetCause/SetObject:
     # `from X` sets cause+suppress; `from None` suppresses with empty cause;
