@@ -794,6 +794,13 @@ def _eval_skip_cond(cond: ast.expr, env: dict) -> bool | None:
         return None
 
 
+# Support-harness availability gates whose predicate always passes on the
+# host oracle interpreter unless the feature is genuinely absent -- in which
+# case the snippet body fails oracle capture anyway, so stripping is safe
+# (same policy as _DROPPABLE_DECOS).
+_DROPPABLE_GATE_BASES = {"support", "hashlib_helper"}
+
+
 def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
     name = None
     if isinstance(deco, ast.Name):
@@ -803,6 +810,8 @@ def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
         if deco.attr in _SKIP_DECOS:
             return f"decorator:{base}.{deco.attr}" if base else f"decorator:{deco.attr}"
         if deco.attr in _DROPPABLE_DECOS and base in ("", "support"):
+            return None
+        if base in _DROPPABLE_GATE_BASES and deco.attr.startswith("requires"):
             return None
         if base == "support" or deco.attr.startswith("requires"):
             return f"decorator:{base}.{deco.attr}"
@@ -826,6 +835,11 @@ def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
                 return None if attr == "skipUnless" else "skipped-on-host"
             if verdict is False:
                 return None if attr == "skipIf" else "skipped-on-host"
+        if (
+            attr.startswith("requires")
+            and base in _DROPPABLE_GATE_BASES
+        ):
+            return None
         return _decorator_reason(func, env)
     if name and name in _DROPPABLE_DECOS:
         return None
@@ -917,25 +931,56 @@ def _drop_self_arg(fn: ast.FunctionDef) -> ast.arguments:
 class _HelperCallRewriter(ast.NodeTransformer):
     """``self.helper(...)`` -> ``helper(...)``, lifting helper transitively.
 
-    self-attribute calls that do not resolve to an in-module method are left
-    untouched so downstream checks report them with their usual reason.
+    Bare ``self.helper`` loads bound to in-module methods are rewritten too
+    (suites pass helper methods around as callbacks, e.g.
+    ``functools.partial(self.hmac_new, ...)); both forms left untouched when
+    the attribute does not resolve to an in-module method so downstream
+    checks report them with their usual reason.
     """
 
     def __init__(self, session: "_FixtureVocab") -> None:
         self.session = session
 
+    def _lifted_expr(self, node: ast.Attribute) -> ast.AST | None:
+        """Replacement expr for a resolving ``self.<attr>`` load."""
+        attr = node.attr
+        self.session.ensure(attr)
+        name = ast.Name(id=attr, ctx=ast.Load())
+        if attr in self.session.properties:
+            # @property getters become zero-arg functions: a bare load is
+            # an invocation of the getter.
+            return ast.copy_location(
+                ast.Call(func=name, args=[], keywords=[]), node
+            )
+        return ast.copy_location(name, node)
+
+    def visit_Attribute(self, node: ast.Attribute) -> ast.AST:
+        self.generic_visit(node)
+        # Loads only: stores are instance state, never method binding.
+        if isinstance(node.ctx, ast.Load) and self._resolve_attr(node):
+            expr = self._lifted_expr(node)
+            if expr is not None:
+                return expr
+        return node
+
+    def _resolve_attr(self, node: ast.Attribute) -> bool:
+        return (
+            isinstance(node.value, ast.Name)
+            and node.value.id == "self"
+            # A stored callable (setUp-assigned, seeded) shadows the bound
+            # method at runtime -- keep namespace semantics for those.
+            and node.attr not in self.session.allowed_calls
+            and _resolve_method(
+                self.session.cmap, self.session.cls_name, node.attr
+            )
+            is not None
+        )
+
     def visit_Call(self, node: ast.Call) -> ast.AST:
         self.generic_visit(node)
-        func = node.func
-        if (
-            isinstance(func, ast.Attribute)
-            and isinstance(func.value, ast.Name)
-            and func.value.id == "self"
-            and _resolve_method(self.session.cmap, self.session.cls_name, func.attr)
-            is not None
-        ):
-            self.session.ensure(func.attr)
-            node.func = ast.Name(id=func.attr, ctx=ast.Load())
+        # A resolving ``self.helper(...)`` callee was already rewritten by
+        # visit_Attribute (plain Name, or getter call for properties);
+        # nothing call-specific remains.
         return node
 
 
@@ -954,6 +999,8 @@ class _FixtureVocab:
         # attribute seeds or setUp-assigned); calls through them are legal
         # once the namespace exists.
         self.allowed_calls: set[str] = set()
+        # attrs lifted from @property getters: rewritten to plain calls.
+        self.properties: set[str] = set()
         self._ok: dict[str, ast.FunctionDef] = {}
         self._failed: dict[str, Unsupported] = {}
 
@@ -981,9 +1028,36 @@ class _FixtureVocab:
         # by every test candidate; in-place substitution would leak one
         # candidate's rewriting into the next candidate's lift.
         fn = copy.deepcopy(fn)
+        is_property = (
+            len(fn.decorator_list) == 1
+            and isinstance(fn.decorator_list[0], ast.Name)
+            and fn.decorator_list[0].id == "property"
+        )
         if fn.decorator_list:
+            decos = fn.decorator_list
+            if (
+                len(decos) == 1
+                and isinstance(decos[0], ast.Name)
+                and decos[0].id in ("staticmethod", "property")
+            ):
+                # staticmethod is call-shape identical to the plain function
+                # (no self to drop); @property getters lift to zero-arg
+                # functions whose bare loads rewrite to calls.
+                fn.decorator_list = []
+            else:
+                raise Unsupported("decorated-helper")
+        if any(isinstance(a, ast.Name) and a.id == "self"
+               for a in [*fn.args.posonlyargs, *fn.args.args]):
+            args = _drop_self_arg(fn)
+        else:
+            args = fn.args
+        if is_property and (
+            args.posonlyargs or args.args or args.vararg
+            or args.kwonlyargs or args.kwarg
+        ):
             raise Unsupported("decorated-helper")
-        args = _drop_self_arg(fn)
+        if is_property:
+            self.properties.add(fn.name)
         rewriter = _HelperCallRewriter(self)
         body = [rewriter.visit(stmt) for stmt in fn.body]
         body, needs_re = rewrite_block(body)
@@ -1271,6 +1345,33 @@ def _src(node: ast.AST, source: str) -> str:
     return seg or ast.unparse(node)
 
 
+def _is_guarded_import(node: ast.stmt) -> bool:
+    """True for the canonical ``try: import ... / except ImportError: ...``
+    idiom whose branches hold only imports and plain assignments."""
+    if not isinstance(node, ast.Try) or node.orelse or node.finalbody:
+        return False
+    if not node.handlers:
+        return False
+    simple = (ast.Import, ast.ImportFrom, ast.Assign)
+    for h in node.handlers:
+        if not any(
+            isinstance(t, ast.Name) and t.id == "ImportError"
+            for t in ([h.type] if h.type is not None else [])
+        ):
+            return False
+        if not all(isinstance(s, simple) for s in h.body):
+            return False
+    return all(isinstance(s, simple) for s in node.body)
+
+
+def _guarded_import_names(node: ast.Try) -> set[str]:
+    """Conservative bound-name union of a guarded-import try block."""
+    out: set[str] = set()
+    for stmt in [*node.body, *[s for h in node.handlers for s in h.body]]:
+        out |= _bound_names(stmt)
+    return out
+
+
 def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False) -> tuple[list[ast.stmt], set[str]]:
     """Module-level imports/assigns/function defs/classes usable as prelude.
 
@@ -1287,6 +1388,12 @@ def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False
                              ast.FunctionDef)):
             stmts.append(node)
             names |= _bound_names(node)
+        elif _is_guarded_import(node):
+            # Canonical guarded import (try: import X / except ImportError:
+            # X = None): keep verbatim so the guest replays the same
+            # availability semantics the host oracle captured.
+            stmts.append(node)
+            names |= _guarded_import_names(node)
         elif include_classes and isinstance(node, ast.ClassDef):
             stmts.append(node)
             names.add(node.name)

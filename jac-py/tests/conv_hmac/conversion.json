@@ -1,0 +1,1346 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_hmac.py",
+    "-o",
+    "/var/tmp/worker6-conv-hmac-325/jac-py/tests/conv_hmac",
+    "--name",
+    "conv_hmac"
+  ],
+  "generated_at": "2026-08-26T03:53:08",
+  "hashes": {
+    "pins_jac": "4792611231d73287c8ccf3891925d95d2fdc206736766627447e6ba1152aab03"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_hmac.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "hmac",
+  "pins_file": "conv_hmac_pins.jac",
+  "pins": [
+    {
+      "ident": "PyConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: hmac_digest() missing required argument 'digest' (pos 3)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: hmac_digest() missing required argument 'digest' (pos 3)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: hmac_digest() missing required argument 'digest' (pos 3)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.bind_hmac_new() missing 1 required positional argument: 'digestmod'"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'bytes' object has no attribute 'hmac'"
+    },
+    {
+      "ident": "PySanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.check_update() missing 1 required positional argument: 'chunks'"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.check_update() missing 1 required positional argument: 'chunks'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.check_update() missing 1 required positional argument: 'chunks'"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.HMAC() missing 1 required positional argument: 'key'"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.HMAC() missing 1 required positional argument: 'key'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.HMAC() missing 1 required positional argument: 'key'"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.check_update() missing 1 required positional argument: 'chunks'"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.HMAC() missing 1 required positional argument: 'key'"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.check_update() missing 1 required positional argument: 'chunks'"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.HMAC() missing 1 required positional argument: 'key'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.check_update() missing 1 required positional argument: 'chunks'"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.HMAC() missing 1 required positional argument: 'key'"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "PythonCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "PythonCopyTestCase.test_attributes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import hmac\n\ndef _t():\n    h1 = hmac.HMAC.__new__(hmac.HMAC)\n    h1._init_old(b'key', b'msg', digestmod='sha256')\n    assert h1._hmac is None, ('assertIsNone', h1._hmac)\n    assert h1._inner is not None, ('assertIsNotNone', h1._inner)\n    assert h1._outer is not None, ('assertIsNotNone', h1._outer)\n    h2 = h1.copy()\n    assert h2._hmac is None, ('assertIsNone', h2._hmac)\n    assert h2._inner is not None, ('assertIsNotNone', h2._inner)\n    assert h2._outer is not None, ('assertIsNotNone', h2._outer)\n    assert type(h1._inner) == type(h2._inner), ('assertEqual', type(h1._inner), type(h2._inner))\n    assert type(h1._outer) == type(h2._outer), ('assertEqual', type(h1._outer), type(h2._outer))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_realcopy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import hmac\n\ndef _t():\n    h1 = hmac.HMAC.__new__(hmac.HMAC)\n    h1._init_old(b'key', b'msg', digestmod='sha256')\n    h2 = h1.copy()\n    assert id(h1) != id(h2), ('assertNotEqual', id(h1), id(h2))\n    assert id(h1._inner) != id(h2._inner), ('assertNotEqual', id(h1._inner), id(h2._inner))\n    assert id(h1._outer) != id(h2._outer), ('assertNotEqual', id(h1._outer), id(h2._outer))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_equality",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import hmac\n\ndef _t():\n    h1 = hmac.HMAC(b'key', digestmod='sha256')\n    h1.update(b'some random text')\n    h2 = h1.copy()\n    assert h1.digest() == h2.digest(), ('assertEqual', h1.digest(), h2.digest())\n    assert h1.hexdigest() == h2.hexdigest(), ('assertEqual', h1.hexdigest(), h2.hexdigest())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PythonCopyTestCase.test_equality_new",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import hmac\n\ndef _t():\n    h1 = hmac.new(b'key', digestmod='sha256')\n    h1.update(b'some random text')\n    h2 = h1.copy()\n    assert id(h1) != id(h2), ('assertNotEqual', id(h1), id(h2))\n    assert h1.digest() == h2.digest(), ('assertEqual', h1.digest(), h2.digest())\n    assert h1.hexdigest() == h2.hexdigest(), ('assertEqual', h1.hexdigest(), h2.hexdigest())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.init() missing 1 required positional argument: 'h'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_not_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_not_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_not_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_compare_digest_func",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertIs', <function _t.<locals>.compare_digest at 0x7f15b2942660>, <built-in function compare_digest>)"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_not_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "HMACCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_not_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OpenSSLCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_not_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "OperatorCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: _t.<locals>.assert_digest_equal() missing 1 required positional argument: 'b'"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_constructor_uses_builtin",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_delegated_properties",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import hmac\n\ndef _t():\n    h = hmac.HMAC(b'key', b'msg', digestmod='sha256')\n    assert h.name == 'hmac-sha256', ('assertEqual', h.name, 'hmac-sha256')\n    assert h.digest_size == 32, ('assertEqual', h.digest_size, 32)\n    assert h.block_size == 64, ('assertEqual', h.block_size, 64)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_with_fallback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import hmac\nimport hashlib\n\ndef _t():\n    cache = getattr(hashlib, '__builtin_constructor_cache')\n    try:\n        cache['foo'] = hashlib.sha256\n        hexdigest = hmac.digest(b'key', b'message', 'foo').hex()\n        expected = '6e9ef29b75fffc5b7abae527d58fdadb2fe42e7219011976917343065f58ed4a'\n        assert hexdigest == expected, ('assertEqual', hexdigest, expected)\n    finally:\n        cache.pop('foo')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_digest_overflow_error_openssl_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_digest_overflow_error_builtin_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyRFCOpenSSLTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyRFCBuiltinTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyDotNewOpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "PyDotNewBuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "OpenSSLRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_md5_rfc2202",
+      "reason": "uses-self.md5"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha1_rfc2202",
+      "reason": "uses-self.sha1"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "reason": "uses-self.sha224"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "reason": "uses-self.sha256"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "reason": "uses-self.sha384"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "reason": "uses-self.sha512"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_224_nist",
+      "reason": "uses-self.sha3_224"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_256_nist",
+      "reason": "uses-self.sha3_256"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_384_nist",
+      "reason": "uses-self.sha3_384"
+    },
+    {
+      "ident": "BuiltinRFCTestCase.test_sha3_512_nist",
+      "reason": "uses-self.sha3_512"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_internal_types",
+      "reason": "helper:obj_type(decorated-helper)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_internal_types",
+      "reason": "helper:obj_type(decorated-helper)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_internal_types",
+      "reason": "helper:obj_type(decorated-helper)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_internal_types",
+      "reason": "helper:obj_type(decorated-helper)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "reason": "helper:assert_raises_missing_digestmod(uses-self.assertRaisesRegex)"
+    },
+    {
+      "ident": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "reason": "helper:assert_raises_unknown_digestmod(helper:exc_type(decorated-helper))"
+    },
+    {
+      "ident": "PySanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "PySanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "PySanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "PySanityTestCase.test_repr",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "ident": "PySanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "PySanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "PySanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_repr",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "OpenSSLSanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_repr",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_methods",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_properties",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "ident": "BuiltinSanityTestCase.test_copy",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_large",
+      "reason": "helper:gil_minsize(decorated-helper)"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_large",
+      "reason": "helper:gil_minsize(decorated-helper)"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_large",
+      "reason": "helper:gil_minsize(decorated-helper)"
+    },
+    {
+      "ident": "PyUpdateTestCase.test_update_large",
+      "reason": "helper:gil_minsize(decorated-helper)"
+    },
+    {
+      "ident": "OpenSSLUpdateTestCase.test_update_large",
+      "reason": "helper:gil_minsize(decorated-helper)"
+    },
+    {
+      "ident": "BuiltinUpdateTestCase.test_update_large",
+      "reason": "helper:gil_minsize(decorated-helper)"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_legacy_block_size_warnings",
+      "reason": "uses-self.fail"
+    },
+    {
+      "ident": "PyMiscellaneousTests.test_hmac_digest_no_overflow_error_in_fallback",
+      "reason": "unresolved-name:size"
+    },
+    {
+      "ident": "BuiltinMiscellaneousTests.test_compute_blake2b_32",
+      "reason": "uses-self.blake2b"
+    },
+    {
+      "ident": "BuiltinMiscellaneousTests.test_compute_blake2s_32",
+      "reason": "uses-self.blake2s"
+    }
+  ],
+  "counts": {
+    "extracted": 295,
+    "pinned": 6,
+    "quarantined": 289
+  }
+}
