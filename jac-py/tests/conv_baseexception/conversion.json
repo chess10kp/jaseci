@@ -16,7 +16,7 @@
   ],
   "generated_at": "2026-08-24T14:30:26",
   "hashes": {
-    "pins_jac": "eab8308eeb449b253894b2656d6676049e049b4c10d6e5ab88f5b572cd4d01a3"
+    "pins_jac": "d2910b197d36142769cb372d543afdee390060a2f83993680e9beac88c998713"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_baseexception.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -64,27 +64,30 @@
     },
     {
       "ident": "UsageTests.test_catch_non_BaseException",
-      "status": "pinned",
+      "status": "quarantined",
       "oracle": {
         "status": "ok"
       },
-      "snippet": "def catch_fails(object_):\n    \"\"\"Catching 'object_' should raise a TypeError.\"\"\"\n    try:\n        try:\n            raise Exception\n        except object_:\n            pass\n    except TypeError:\n        pass\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s' % type(object_))\n    try:\n        try:\n            raise Exception\n        except (object_,):\n            pass\n    except TypeError:\n        return\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s as specified in a tuple' % type(object_))\n\ndef _t():\n\n    class NonBaseException(object):\n        pass\n    catch_fails(NonBaseException)\n    catch_fails(NonBaseException())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "def catch_fails(object_):\n    \"\"\"Catching 'object_' should raise a TypeError.\"\"\"\n    try:\n        try:\n            raise Exception\n        except object_:\n            pass\n    except TypeError:\n        pass\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s' % type(object_))\n    try:\n        try:\n            raise Exception\n        except (object_,):\n            pass\n    except TypeError:\n        return\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s as specified in a tuple' % type(object_))\n\ndef _t():\n\n    class NonBaseException(object):\n        pass\n    catch_fails(NonBaseException)\n    catch_fails(NonBaseException())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n",
+      "reason": "guest: except <class-not-derived-from-BaseException> matches instead of raising TypeError; raise path verified green in same suite \u2014 ceval-owned (fp-v1:e87cd28c), quarantined post-conversion by conv lane task 321"
     },
     {
       "ident": "UsageTests.test_catch_BaseException_instance",
-      "status": "pinned",
+      "status": "quarantined",
       "oracle": {
         "status": "ok"
       },
-      "snippet": "def catch_fails(object_):\n    \"\"\"Catching 'object_' should raise a TypeError.\"\"\"\n    try:\n        try:\n            raise Exception\n        except object_:\n            pass\n    except TypeError:\n        pass\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s' % type(object_))\n    try:\n        try:\n            raise Exception\n        except (object_,):\n            pass\n    except TypeError:\n        return\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s as specified in a tuple' % type(object_))\n\ndef _t():\n    catch_fails(BaseException())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "def catch_fails(object_):\n    \"\"\"Catching 'object_' should raise a TypeError.\"\"\"\n    try:\n        try:\n            raise Exception\n        except object_:\n            pass\n    except TypeError:\n        pass\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s' % type(object_))\n    try:\n        try:\n            raise Exception\n        except (object_,):\n            pass\n    except TypeError:\n        return\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s as specified in a tuple' % type(object_))\n\ndef _t():\n    catch_fails(BaseException())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n",
+      "reason": "guest: except <class-not-derived-from-BaseException> matches instead of raising TypeError; raise path verified green in same suite \u2014 ceval-owned (fp-v1:e87cd28c), quarantined post-conversion by conv lane task 321"
     },
     {
       "ident": "UsageTests.test_catch_string",
-      "status": "pinned",
+      "status": "quarantined",
       "oracle": {
         "status": "ok"
       },
-      "snippet": "def catch_fails(object_):\n    \"\"\"Catching 'object_' should raise a TypeError.\"\"\"\n    try:\n        try:\n            raise Exception\n        except object_:\n            pass\n    except TypeError:\n        pass\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s' % type(object_))\n    try:\n        try:\n            raise Exception\n        except (object_,):\n            pass\n    except TypeError:\n        return\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s as specified in a tuple' % type(object_))\n\ndef _t():\n    catch_fails('spam')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "def catch_fails(object_):\n    \"\"\"Catching 'object_' should raise a TypeError.\"\"\"\n    try:\n        try:\n            raise Exception\n        except object_:\n            pass\n    except TypeError:\n        pass\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s' % type(object_))\n    try:\n        try:\n            raise Exception\n        except (object_,):\n            pass\n    except TypeError:\n        return\n    except Exception:\n        raise AssertionError('TypeError expected when catching %s as specified in a tuple' % type(object_))\n\ndef _t():\n    catch_fails('spam')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n",
+      "reason": "guest: except <class-not-derived-from-BaseException> matches instead of raising TypeError; raise path verified green in same suite \u2014 ceval-owned (fp-v1:e87cd28c), quarantined post-conversion by conv lane task 321"
     }
   ],
   "quarantined": [
@@ -99,7 +102,7 @@
   ],
   "counts": {
     "extracted": 11,
-    "pinned": 6,
-    "quarantined": 5
+    "pinned": 3,
+    "quarantined": 8
   }
 }

@@ -12,16 +12,16 @@
   ],
   "generated_at": "2026-08-24T14:30:28",
   "hashes": {
-    "pins_jac": "eab8308eeb449b253894b2656d6676049e049b4c10d6e5ab88f5b572cd4d01a3",
-    "conversion_json": "049544ba191b74d74f78f10cfa1a5d963ba20d1120adf3bfc0a065cbace34a07",
+    "pins_jac": "d2910b197d36142769cb372d543afdee390060a2f83993680e9beac88c998713",
+    "conversion_json": "4efbd7ea01b7330d4c11ad2d980c8ad34891c443d388bb16ba3f9013cf5df7d6",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "baseexception",
   "counts": {
     "converted": 11,
-    "runnable": 6,
+    "runnable": 3,
     "green": 3,
-    "quarantined": 5
+    "quarantined": 8
   },
   "pins": [
     {
@@ -53,21 +53,18 @@
     },
     {
       "id": "UsageTests.test_catch_non_BaseException",
-      "status": "fail",
-      "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "GOT<\"ORACLE_EXC AssertionError 'TypeError expected when catching <object>'\">"
+      "status": "quarantined",
+      "reason": "guest: except <class-not-derived-from-BaseException> matches instead of raising TypeError; raise path verified green in same suite \u2014 ceval-owned (fp-v1:e87cd28c), quarantined post-conversion by conv lane task 321"
     },
     {
       "id": "UsageTests.test_catch_BaseException_instance",
-      "status": "fail",
-      "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "GOT<\"ORACLE_EXC AssertionError 'TypeError expected when catching <object>'\">"
+      "status": "quarantined",
+      "reason": "guest: except <class-not-derived-from-BaseException> matches instead of raising TypeError; raise path verified green in same suite \u2014 ceval-owned (fp-v1:e87cd28c), quarantined post-conversion by conv lane task 321"
     },
     {
       "id": "UsageTests.test_catch_string",
-      "status": "fail",
-      "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "GOT<\"ORACLE_EXC AssertionError 'TypeError expected when catching <object>'\">"
+      "status": "quarantined",
+      "reason": "guest: except <class-not-derived-from-BaseException> matches instead of raising TypeError; raise path verified green in same suite \u2014 ceval-owned (fp-v1:e87cd28c), quarantined post-conversion by conv lane task 321"
     },
     {
       "id": "ExceptionClassTests.test_builtins_new_style",

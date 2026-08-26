@@ -53,8 +53,8 @@
       "jacpython_results": {
         "baseexception": {
           "passed": 3,
-          "total": 6,
-          "notes": "3/6 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+          "total": 3,
+          "notes": "3/3 output-oracle pins pass on jacpython (diff_runner); 8 quarantined \u2014 catch-non-exception TypeError gap is ceval-owned (fp-v1:e87cd28c)."
         }
       }
     },
