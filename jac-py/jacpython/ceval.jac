@@ -11674,7 +11674,7 @@ obj PyFrameLocalsProxy(PyObj) {
 
     # All visible pairs in CPython order: bound slots, then extras, then the
     # namespace dict (empty for function frames).
-    def entry_pairs -> list[PyObj] {
+    def entry_pairs() -> list[PyObj] {
         out: list[PyObj] = [];
         co = self.frame.co;
         i = 0;
@@ -11700,17 +11700,17 @@ obj PyFrameLocalsProxy(PyObj) {
         return out;
     }
 
-    def keys_list -> list[PyObj] {
+    def keys_list() -> list[PyObj] {
         out: list[PyObj] = [];
-        for p in self.entry_pairs {
+        for p in self.entry_pairs() {
             out.append(((p as PyTuple).items[0]));
         }
         return out;
     }
 
-    def as_dict -> PyDict {
+    def as_dict() -> PyDict {
         d = PyDict(t="dict", items={});
-        for p in self.entry_pairs {
+        for p in self.entry_pairs() {
             _ = d.dict_set((p as PyTuple).items[0], (p as PyTuple).items[1]);
         }
         return d;
@@ -11823,7 +11823,7 @@ obj PyFrameLocalsProxy(PyObj) {
     # Pairs of a merge source (dict | proxy); error otherwise.
     def merge_pairs(other: PyObj) -> PyObj {
         if isinstance(other, PyFrameLocalsProxy) {
-            return PyList(t="list", items=(other as PyFrameLocalsProxy).entry_pairs);
+            return PyList(t="list", items=(other as PyFrameLocalsProxy).entry_pairs());
         }
         if isinstance(other, PyDict) {
             src = other as PyDict;
@@ -11900,7 +11900,7 @@ obj PyFrameLocalsProxy(PyObj) {
 # Bound method surface of PyFrameLocalsProxy (dict-shaped mapping API; .clear()
 # is deliberately absent so it raises AttributeError like CPython's).
 def framelocals_len(p: PyFrameLocalsProxy) -> int {
-    return len(p.entry_pairs);
+    return len(p.entry_pairs());
 }
 
 obj PyFrameLocalsMethod(PyObj) {
@@ -11914,19 +11914,19 @@ obj PyFrameLocalsMethod(PyObj) {
         }
         if self.op == "values" {
             out: list[PyObj] = [];
-            for pr in p.entry_pairs {
+            for pr in p.entry_pairs() {
                 out.append((pr as PyTuple).items[1]);
             }
             return PyList(t="list", items=out);
         }
         if self.op == "items" {
-            return PyList(t="list", items=p.entry_pairs);
+            return PyList(t="list", items=p.entry_pairs());
         }
         if self.op == "copy" {
             return p.as_dict();
         }
         if self.op == "__len__" {
-            return PyInt(t="int", val=len(p.entry_pairs));
+            return PyInt(t="int", val=len(p.entry_pairs()));
         }
         if self.op == "__contains__" {
             if len(args) < 1 {
