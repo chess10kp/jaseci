@@ -4032,3 +4032,26 @@ test "objects: slicing with zero step raises ValueError, no hang" {
     assert not is_error(ok);
     assert len((ok as PyList).items) == 2;
 }
+
+# Native shim "type" marker (isinstance-matchable shim classes): wraps a
+# constructor callable and carries the PyObj.t tag its instances carry.
+# py_isinstance answers marker matches with a single value.t comparison --
+# no getattr probes, no host bridge. Registered by module shims that expose
+# real class-shaped surfaces (traceback.FrameSummary, TracebackException,
+# weakref.ReferenceType/ProxyType). Lives here (not ceval) so facade modules
+# can wrap their own type surfaces without an import cycle.
+obj ShimTypeMarker(PyObj) {
+    has tag: str,
+        ctor: PyObj;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        return (self.ctor as PyObj).tp_call(args, kwargs);
+    }
+
+    def tp_getattro(name2: str) -> PyObj {
+        if name2 == "__jac_shim_tag__" {
+            return PyStr(t="str", val=self.tag);
+        }
+        return (self.ctor as PyObj).tp_getattro(name2);
+    }
+}
