@@ -26,6 +26,19 @@ impl TypeEvaluator._walk_compr_clauses(comprs: list[InnerCompr]) -> None {
     }
 }
 
+# Resolve a universal identity/introspection dunder (`__class__`, `__doc__`,
+# ...) from `object` when the concrete type doesn't declare it itself. CPython
+# answers these on every object -- None included -- so `exc.__cause__.__class__`
+# (typed `BaseException | None`) must not report NoneType as missing the attr.
+impl TypeEvaluator._universal_attr_member(attr: str) -> ClassMember | None {
+    if attr not in _universal_attr_names() or self.prefetch.object_class is None {
+        return None;
+    }
+    return self._lookup_object_member(
+        self.prefetch.object_class.clone_as_instance(), attr
+    );
+}
+
 impl TypeEvaluator._null_ok_attr_type(
     expr: AtomTrailer, base_type: (TypeBase | None) = None
 ) -> TypeBase {
@@ -1207,6 +1220,24 @@ impl TypeEvaluator._get_type_of_expression_core(
                                 if decl_for_ide is None {
                                     decl_for_ide = member.symbol.decl;
                                 }
+                            } elif member
+                                := self._universal_attr_member(expr.right.value) {
+                                # Universal dunder on a member that doesn't
+                                # declare it (NoneType.__class__, ...): resolve
+                                # from `object` rather than flagging missing.
+                                if prop_ret
+                                    := self.get_getter_type_from_property(
+                                        member.symbol
+                                    ) {
+                                    member_types.append(prop_ret);
+                                } else {
+                                    member_types.append(
+                                        self.get_type_of_symbol(member.symbol)
+                                    );
+                                }
+                                if decl_for_ide is None {
+                                    decl_for_ide = member.symbol.decl;
+                                }
                             }
                         }
                     }
@@ -1245,9 +1276,15 @@ impl TypeEvaluator._get_type_of_expression_core(
                         }
                         if isinstance(union_member, ClassType)
                             and union_member.is_class_instance() {
-                            if not self._lookup_object_member(
+                            resolved = self._lookup_object_member(
                                 union_member, expr.right.value
-                            ) {
+                            );
+                            if resolved is None {
+                                resolved = self._universal_attr_member(
+                                    expr.right.value
+                                );
+                            }
+                            if not resolved {
                                 missing_types.append(str(union_member));
                             }
                         }
@@ -1334,32 +1371,13 @@ impl TypeEvaluator._get_type_of_expression_core(
                             return UnknownType();
                         }
                     }
-                    universal_attrs = {
-                        "__class__",
-                        "__doc__",
-                        "__dict__",
-                        "__module__",
-                        "__sizeof__",
-                        "__str__",
-                        "__repr__",
-                        "__hash__",
-                        "__eq__",
-                        "__ne__",
-                        "__init__",
-                        "__new__"
-                    };
-                    if attr_name in universal_attrs {
-                        if self.prefetch.object_class {
-                            if member
-                                := self._lookup_object_member(
-                                    self.prefetch.object_class.clone_as_instance(),
-                                    attr_name
-                                ) {
-                                self._set_symbol_to_expr(expr.right, member.symbol);
-                                return self.get_type_of_symbol(member.symbol);
-                            }
+                    if member := self._universal_attr_member(attr_name) {
+                        self._set_symbol_to_expr(expr.right, member.symbol);
+                        if prop_ret
+                            := self.get_getter_type_from_property(member.symbol) {
+                            return prop_ret;
                         }
-                        return UnknownType();
+                        return self.get_type_of_symbol(member.symbol);
                     }
                     self.emit_diag(E1031, expr, attr=attr_name, type=base_type.name);
                     return UnknownType();
@@ -4229,6 +4247,27 @@ impl TypeEvaluator.postinit -> None {
         }
     }
     self._prefetch_types();
+}
+
+# CPython answers these identity/introspection dunders on EVERY object --
+# None included -- so attribute access on a union like
+# `exc.__cause__.__class__` (typed `BaseException | None`) must resolve them
+# on the NoneType half instead of reporting "attribute is missing".
+def _universal_attr_names -> frozenset[str] {
+    return frozenset({
+        "__class__",
+        "__doc__",
+        "__dict__",
+        "__module__",
+        "__sizeof__",
+        "__str__",
+        "__repr__",
+        "__hash__",
+        "__eq__",
+        "__ne__",
+        "__init__",
+        "__new__"
+    });
 }
 
 def _find_cfg_node_for(at_node: UniNode) -> UniCFGNode | None {
