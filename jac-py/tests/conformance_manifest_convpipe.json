@@ -810,15 +810,8 @@
         "jac-py/tests/conv_math/conv_math_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "53 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_math/math.conv.json",
-      "jacpython_results": {
-        "math": {
-          "passed": 48,
-          "total": 53,
-          "notes": "48/53 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
-        }
-      }
+      "notes": "76 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "jac-py/tests/conv_math/conversion.json"
     },
     {
       "stem": "memoryview",
