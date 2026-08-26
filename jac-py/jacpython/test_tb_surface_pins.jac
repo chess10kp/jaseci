@@ -51,7 +51,42 @@ glob SRC_SINGLE_ENTRY = (
     "    assert info == (2, True), info\n"
 );
 
+glob SRC_FMT_EXC_SEGMENTS = (
+    "def h():\n"
+    "    raise ValueError('d')\n"
+    "try:\n"
+    "    h()\n"
+    "except ValueError as e:\n"
+    "    import traceback\n"
+    "    out = traceback.format_exception(e)\n"
+    "    assert isinstance(out, list), type(out).__name__\n"
+    "    assert len(out) == 4, out\n"
+    "    assert out[0] == 'Traceback (most recent call last):\\n', out[0]\n"
+    "    assert 'line 4, in <module>' in out[1], out[1]\n"
+    "    assert 'line 2, in h' in out[2], out[2]\n"
+    "    assert out[3] == \"ValueError: d\\n\", out[3]\n"
+    "    assert ''.join(out).startswith('Traceback')\n"
+);
+
+glob SRC_FMT_EXC_LIMIT_CHAIN = (
+    "def outer():\n"
+    "    try:\n"
+    "        raise ValueError('inner')\n"
+    "    except ValueError:\n"
+    "        raise TypeError('outer')\n"
+    "try:\n"
+    "    outer()\n"
+    "except TypeError as t:\n"
+    "    import traceback\n"
+    "    full = traceback.format_exception(t)\n"
+    "    assert any('During handling' in seg for seg in full), full\n"
+    "    solo = traceback.format_exception(t, chain=False)\n"
+    "    assert not any('During handling' in seg for seg in solo), solo\n"
+);
+
 test "tb surface: chain headed at catching frame" { product_exec(SRC_HEAD); }
 test "tb surface: tb_lasti/tb_lineno are ints" { product_exec(SRC_LASTI); }
 test "tb surface: format_tb two-frame shape" { product_exec(SRC_FMT_TB_SHAPE); }
 test "tb surface: single entry at raise line" { product_exec(SRC_SINGLE_ENTRY); }
+test "tb surface: format_exception per-segment shape" { product_exec(SRC_FMT_EXC_SEGMENTS); }
+test "tb surface: format_exception chain=/limit= plumbing" { product_exec(SRC_FMT_EXC_LIMIT_CHAIN); }
