@@ -246,6 +246,25 @@ def _regex_assert(call: ast.Call, negate: bool) -> ast.Assert:
     return ast.Assert(test=test, msg=_msg_of(call, label, [text, pattern]))
 
 
+def _startswith_assert(call: ast.Call, negate: bool, end: bool = False) -> ast.Assert:
+    # assertStartsWith(a, b): a.startswith(b); assertEndsWith: a.endswith(b).
+    _need_args(call, 2)
+    a, prefix = call.args[0], call.args[1]
+    test: ast.expr = ast.Call(
+        func=ast.Attribute(
+            value=a,
+            attr="endswith" if end else "startswith",
+            ctx=ast.Load(),
+        ),
+        args=[prefix],
+        keywords=[],
+    )
+    if negate:
+        test = ast.UnaryOp(op=ast.Not(), operand=test)
+    label = "assertEndsWith" if end else "assertStartsWith"
+    return ast.Assert(test=test, msg=_msg_of(call, label, [a, prefix]))
+
+
 def _count_equal_assert(call: ast.Call) -> ast.Assert:
     _need_args(call, 2)
     a, b = call.args[0], call.args[1]
@@ -321,6 +340,10 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         ]
     if fname in ("assertWarns", "assertWarnsRegex", "assertLogs", "assertNoLogs"):
         raise Unsupported(fname)
+    if fname == "assertStartsWith":
+        return [_startswith_assert(call, negate=False)]
+    if fname == "assertEndsWith":
+        return [_startswith_assert(call, negate=True, end=True)]
     if fname in ("assertRaises", "assertRaisesRegex"):
         return _rewrite_raises(call, regex=fname == "assertRaisesRegex")
     if fname in _EQUALITY_ALIASES:
@@ -366,6 +389,14 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_regex_assert(call, negate=True)]
     if fname == "addCleanup":
         return [_add_cleanup_stmt(call)]
+    if isinstance(call.func, ast.Attribute) and isinstance(call.func.value, ast.Name) \
+            and call.func.value.id == "self":
+        # Bare ``self.<attr>(...)`` statement outside the known vocabulary:
+        # leave it untouched. Callers scan surviving self-attribute calls
+        # afterwards -- the fixture-vocabulary pass admits those that resolve
+        # through seeded class attributes (``self.theclass(...)``), and every
+        # other path quarantines with its precise ``uses-self.<attr>`` reason.
+        return [stmt]
     raise Unsupported(f"self.{fname}")
 
 
