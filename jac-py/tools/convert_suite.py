@@ -887,6 +887,165 @@ def _resolve_method(
     return None
 
 
+# Lifecycle methods whose chain top (unittest.TestCase / object) is a no-op;
+# a cooperative ``super().m()`` walking off the in-module hierarchy into one
+# of these is mechanically a statement deletion.
+_NOOP_LIFECYCLE_METHODS = frozenset({"setUp", "tearDown"})
+
+
+def _resolve_method_with_cls(
+    cmap: dict[str, _ClassInfo], cls_name: str | None, attr: str
+) -> tuple[str | None, ast.FunctionDef] | None:
+    """_resolve_method, but also returns the defining class name."""
+    seen: set[str] = set()
+    queue = [cls_name] if cls_name else []
+    while queue:
+        name = queue.pop(0)
+        if name in seen:
+            continue
+        seen.add(name)
+        info = cmap.get(name)
+        if info is None:
+            continue
+        fn = info.methods.get(attr)
+        if fn is not None and not attr.startswith("test"):
+            return name, fn
+        queue.extend(info.bases)
+    return None
+
+
+def _next_method_after(
+    cmap: dict[str, _ClassInfo], cls_name: str | None, attr: str
+) -> tuple[str | None, ast.FunctionDef] | None:
+    """Cooperative-super lookup: attr on cls_name's bases (BFS), not itself."""
+    start: list[str] = []
+    info = cmap.get(cls_name) if cls_name else None
+    if info is not None:
+        start = list(info.bases)
+    elif cls_name:
+        start = [cls_name]
+    seen: set[str] = set()
+    queue = list(start)
+    while queue:
+        name = queue.pop(0)
+        if name in seen:
+            continue
+        seen.add(name)
+        info = cmap.get(name)
+        if info is None:
+            continue
+        fn = info.methods.get(attr)
+        if fn is not None and not attr.startswith("test"):
+            return name, fn
+        queue.extend(info.bases)
+    return None
+
+
+def _super_stmt_attr(stmt: ast.stmt) -> str | None:
+    """m when stmt is exactly ``super().m()``; raises on argful variants.
+
+    Zero-arg ``super()`` cannot resolve at runtime once methods are lifted
+    out of their classes, so any surviving form is a quarantine, but only
+    the bare zero-argument zero-keyword call is mechanically splicable.
+    """
+    if not (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call)):
+        return None
+    call = stmt.value
+    func = call.func
+    if not (
+        isinstance(func, ast.Attribute)
+        and isinstance(func.value, ast.Call)
+        and isinstance(func.value.func, ast.Name)
+        and func.value.func.id == "super"
+        and not func.value.args
+        and not func.value.keywords
+    ):
+        return None
+    if call.args or call.keywords:
+        raise Unsupported(f"uses-super.{func.attr}:super-call-with-arguments")
+    return func.attr
+
+
+def _expand_super_calls(
+    stmts: list[ast.stmt],
+    cls_name: str,
+    method_name: str | None,
+    cmap: dict[str, _ClassInfo],
+    _seen: frozenset[tuple[str, str]] = frozenset(),
+) -> list[ast.stmt]:
+    """Linearize cooperative ``super().m()`` chains inside lifted bodies.
+
+    The lifter flattens class methods into plain functions bound to a bare
+    namespace ``self``, so zero-arg ``super()`` dies with
+    ``RuntimeError: super(): no arguments`` at oracle capture. A statement
+    of the form ``super().m()`` inside the lift of ``C.m`` is replaced by
+    the body of the next implementation of ``m`` along C's base chain
+    (itself expanded, cycle-guarded); when the chain walks off the top of
+    the module hierarchy into a unittest no-op lifecycle method the
+    statement vanishes. Anything else quarantines precisely instead of
+    mistranslating.
+    """
+    out: list[ast.stmt] = []
+    for stmt in stmts:
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            # Nested scopes carry their own class binding rules; leave them.
+            out.append(stmt)
+            continue
+        attr = _super_stmt_attr(stmt)
+        if attr is not None:
+            resolved = _next_method_after(cmap, cls_name, attr)
+            if resolved is None:
+                if attr in _NOOP_LIFECYCLE_METHODS:
+                    continue  # unittest.TestCase / object no-op: drop it
+                raise Unsupported(f"uses-super.{attr}:unresolved-in-hierarchy")
+            if attr != method_name:
+                # Different-name cooperative call in statement position has
+                # no mechanical mapping without argument rebinding.
+                raise Unsupported(f"uses-super.{attr}:cross-method")
+            base_cls, base_fn = resolved
+            key = (base_cls or "", attr)
+            if key in _seen:
+                raise Unsupported(f"uses-super.{attr}:cyclic-chain")
+            body = copy.deepcopy(base_fn.body)
+            out.extend(
+                _expand_super_calls(body, base_cls, attr, cmap, _seen | {key})
+            )
+            continue
+        out.append(_expand_super_compound(stmt, cls_name, method_name, cmap))
+    return out
+
+
+def _expand_super_compound(
+    stmt: ast.stmt,
+    cls_name: str,
+    method_name: str | None,
+    cmap: dict[str, _ClassInfo],
+) -> ast.stmt:
+    """Recurse expansion into compound-statement bodies (not nested defs)."""
+    for field in ("body", "orelse", "finalbody"):
+        seq = getattr(stmt, field, None)
+        if seq:
+            setattr(
+                stmt,
+                field,
+                _expand_super_calls(seq, cls_name, method_name, cmap),
+            )
+    for handler in getattr(stmt, "handlers", []) or []:
+        handler.body = _expand_super_calls(
+            handler.body, cls_name, method_name, cmap
+        )
+    return stmt
+
+
+def _assert_no_residual_super(body: list[ast.stmt]) -> None:
+    """Precise quarantine when a super() survives outside spliceable shape."""
+    mod = ast.Module(body=body, type_ignores=[])
+    for node in ast.walk(mod):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) \
+                and node.func.id == "super":
+            raise Unsupported("uses-super.super-in-expression")
+
+
 def _drop_self_arg(fn: ast.FunctionDef) -> ast.arguments:
     """Copy fn.args minus the leading ``self`` parameter."""
     a = fn.args
@@ -963,10 +1122,11 @@ class _FixtureVocab:
         if attr in self._failed:
             raise self._failed[attr]
         try:
-            fn = _resolve_method(self.cmap, self.cls_name, attr)
-            if fn is None:
+            resolved = _resolve_method_with_cls(self.cmap, self.cls_name, attr)
+            if resolved is None:
                 raise Unsupported("not-in-class-hierarchy")
-            lifted, needs_re = self._lift(fn)
+            def_cls, fn = resolved
+            lifted, needs_re = self._lift(def_cls, fn)
         except Unsupported as exc:
             wrapped = Unsupported(f"helper:{attr}({exc})")
             self._failed[attr] = wrapped
@@ -976,13 +1136,14 @@ class _FixtureVocab:
         self.needs_re = self.needs_re or needs_re
         return lifted
 
-    def _lift(self, fn: ast.FunctionDef) -> tuple[ast.FunctionDef, bool]:
+    def _lift(self, def_cls: str, fn: ast.FunctionDef) -> tuple[ast.FunctionDef, bool]:
         # Deep-copy before transforming: helper methods are tree nodes shared
         # by every test candidate; in-place substitution would leak one
         # candidate's rewriting into the next candidate's lift.
         fn = copy.deepcopy(fn)
         if fn.decorator_list:
             raise Unsupported("decorated-helper")
+        fn.body = _expand_super_calls(fn.body, def_cls, fn.name, self.cmap)
         args = _drop_self_arg(fn)
         rewriter = _HelperCallRewriter(self)
         body = [rewriter.visit(stmt) for stmt in fn.body]
@@ -1215,12 +1376,16 @@ def _apply_fixture_vocab(
         # lifted cleanly fails the whole test via ensure()'s reason.
         prefix = list(session.ensure("setUp").body)
         prefix = [copy.deepcopy(s) for s in prefix]
+    body = _expand_super_calls(list(body), cls_name, None, cmap)
     rewriter = _HelperCallRewriter(session)
     stmts = [rewriter.visit(s) for s in prefix + list(body)]
     rewritten, needs_re = rewrite_block(stmts)
+    _assert_no_residual_super(rewritten)
     # Scan lifted helper bodies together with the test body: a helper's
     # ``self.<attr>`` load/store has the same runtime fate as one written
     # inline in the test.
+    for lifted_fn in session.lifted:
+        _assert_no_residual_super(lifted_fn.body)
     scanned = [*session.lifted, *rewritten]
     ns_attrs, call_attrs = _scan_self_usage(scanned)
     bad = {a for a in call_attrs if a not in session.allowed_calls}
