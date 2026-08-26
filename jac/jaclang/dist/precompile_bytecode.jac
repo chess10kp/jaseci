@@ -532,8 +532,6 @@ glob _UNITREE_SEAM_WAIVERS: tuple[str, ...] = (
          "compiler/backends/py/jcir_gen_pass.jac::JcirGenPass.exit_module",
          "compiler/backends/py/jcir_gen_pass.jac::JcirGenPass.exit_multi_string",
          "compiler/backends/py/jcir_gen_pass.jac::JcirGenPass.exit_jsx_element",
-         "compiler/backends/py/jcir_gen_pass.jac::JcirGenPass.exit_complex",
-
      ),
      _JCIR_ENTITY_SEAM_WAIVERS: tuple[str, ...] = (
          "compiler/backends/py/jcir_gen_pass.jac::JcirGenPass.exit_jsx_normal_attribute",
