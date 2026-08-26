@@ -44,6 +44,7 @@ import from _collections_pylib {
     _p2_ordereddict,
 }
 import from mmap { build_mmap_module }
+import from queue { build_queue_module, build__queue_module }
 import from _statmodule {
     _p2_S_ISDIR,
     _p2_S_ISCHR,
@@ -942,6 +943,14 @@ def p2_libtest_reset {
         "_opcode", PyModule(t="module", name="_opcode", attrs=opcode_attrs)
     );
     register_shim_module("mmap", build_mmap_module());
+    # queue facade (Modules/_queuemodule.c + Lib/queue.py port) and the
+    # _queue accelerator surface it also serves. Both are forgotten from the
+    # sys3 cache first: a prior in-VM leg may have cached the HOST module,
+    # which import_native checks before the shim registry.
+    _sys3_forget("queue");
+    _sys3_forget("_queue");
+    register_shim_module("queue", build_queue_module());
+    register_shim_module("_queue", build__queue_module());
     _p2_warn_state_reset();
     register_shim_module(
         "warnings",
