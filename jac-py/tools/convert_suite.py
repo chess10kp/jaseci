@@ -723,6 +723,12 @@ _SKIP_DECOS = {
     "skipUnlessDB", "requires",  # support.requires* caught below
 }
 
+# Availability-gate decorators: pure skip predicates (platform/feature
+# probes), never test logic. On the host that captures the oracle they
+# always pass, so stripping them keeps the oracle valid; drop instead of
+# quarantine.
+_DROPPABLE_DECOS = {"cpython_only", "requires_subprocess"}
+
 
 def _decorator_reason(deco: ast.expr) -> str | None:
     name = None
@@ -732,11 +738,15 @@ def _decorator_reason(deco: ast.expr) -> str | None:
         base = deco.value.id if isinstance(deco.value, ast.Name) else ""
         if deco.attr in _SKIP_DECOS:
             return f"decorator:{base}.{deco.attr}" if base else f"decorator:{deco.attr}"
+        if deco.attr in _DROPPABLE_DECOS and base in ("", "support"):
+            return None
         if base == "support" or deco.attr.startswith("requires"):
             return f"decorator:{base}.{deco.attr}"
         return None
     elif isinstance(deco, ast.Call):
         return _decorator_reason(deco.func)
+    if name and name in _DROPPABLE_DECOS:
+        return None
     if name and name in _SKIP_DECOS:
         return f"decorator:{name}"
     return None
@@ -1024,6 +1034,8 @@ def _class_attr_seeds(
             elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) \
                     and stmt.value is not None:
                 seeds[stmt.target.id] = stmt.value
+            elif isinstance(stmt, ast.ClassDef):
+                seeds[stmt.name] = ast.Name(id=stmt.name, ctx=ast.Load())
     # Drop names that are methods on any class in the chain (a method always
     # wins over a same-named data attribute in the lookup that matters here,
     # and calling conventions differ).
@@ -1033,6 +1045,35 @@ def _class_attr_seeds(
             for meth in info.methods:
                 seeds.pop(meth, None)
     return sorted(seeds.items())
+
+
+def _nested_class_defs(cls_name: str | None, cmap: dict[str, _ClassInfo],
+                       mod_classes: dict[str, ast.ClassDef]) -> list[ast.ClassDef]:
+    """Class definitions nested inside the candidate's class chain.
+
+    ``self.simplecmd``-style references to classes defined in a TestCase body
+    resolve via class attribute lookup in CPython; with a namespace ``self``
+    the definition itself must execute at snippet scope before the seed.
+    """
+    if cls_name is None:
+        return []
+    out: list[ast.ClassDef] = []
+    seen: set[str] = set()
+    stack = [cls_name]
+    while stack:
+        name = stack.pop()
+        if name in seen:
+            continue
+        seen.add(name)
+        cd = mod_classes.get(name)
+        if cd is not None:
+            for stmt in cd.body:
+                if isinstance(stmt, ast.ClassDef):
+                    out.append(stmt)
+        info = cmap.get(name)
+        if info is not None:
+            stack.extend(info.bases)
+    return out
 
 
 def _apply_fixture_vocab(
@@ -1114,8 +1155,13 @@ def _apply_fixture_vocab(
         raise Unsupported(f"uses-self.{sorted(unseeded)[0]}")
     helper_defs = list(session.lifted)
     extra_prelude = _helper_class_deps(session.lifted, mod_classes)
+    extra_prelude += _nested_class_defs(cls_name, cmap, mod_classes)
     ns_block: list[ast.stmt] = []
-    if bool(ns_attrs) or session.needs_ns:
+    # Calls through seeded self.<attr> survive rewriting on purpose (they
+    # resolve at runtime once the namespace exists), so any surviving
+    # self.* usage -- data loads/stores or allowed calls -- needs the
+    # namespace object.
+    if bool(ns_attrs) or bool(call_attrs) or session.needs_ns:
         ns_block = _namespace_prelude()
         for attr, value in _class_attr_seeds(cls_name, cmap, mod_classes):
             for owner in ("self", _NS_CLASS_NAME):
