@@ -1082,6 +1082,70 @@ test "layer_p2_libtest: heapq_heapify snippet prints ok on JacPython" {
     assert ok , detail;
 }
 
+test "layer_p2_libtest: difflib_sequence_matcher_empty pin prints ok on JacPython" {
+    # Census fp: test_difflib pins all TIMEOUT at the guest cap because the
+    # difflib -> heapq/re/collections import chain runs on the interpreted
+    # ceval. Minimal O(1) oracle so CI gates the path without the full suite.
+    snippet = (
+        "import difflib\n"
+        "sm = difflib.SequenceMatcher(None, [], [])\n"
+        "ratio = sm.ratio()\n"
+        "assert ratio == 1.0, ratio\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: asyncgen_anext_once pin prints ok on JacPython" {
+    # Census fp: test_asyncgen pins all TIMEOUT at the guest cap because the
+    # asyncgen -> re/types/inspect import chain runs on the interpreted
+    # ceval. Minimal async-gen oracle driven without asyncio (bare coroutine
+    # send), one anext then drain to StopAsyncIteration.
+    snippet = (
+        "async def agen():\n"
+        "    yield 1\n"
+        "    yield 2\n"
+        "ag = agen()\n"
+        "value = ag.__anext__().send(None)\n"
+        "assert value == 1, value\n"
+        "ag.__anext__().send(None)\n"
+        "try:\n"
+        "    ag.__anext__().send(None)\n"
+        "except StopIteration:\n"
+        "    pass\n"
+        "else:\n"
+        "    raise AssertionError('async gen not exhausted')\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: gc_cycle_collect pin prints ok on JacPython" {
+    # Census fp: test_gc pins all TIMEOUT at the guest cap; gc additionally
+    # exercises guest gc.collect() cycle interop with host objects. Minimal
+    # cycle-collect oracle: a __del__-observed reference cycle must be freed
+    # by one collect() pass.
+    snippet = (
+        "import gc\n"
+        "freed = []\n"
+        "class Node:\n"
+        "    def __del__(self):\n"
+        "        freed.append(1)\n"
+        "a = Node()\n"
+        "b = Node()\n"
+        "a.other = b\n"
+        "b.other = a\n"
+        "del a, b\n"
+        "gc.collect()\n"
+        "assert freed, 'reference cycle was not collected'\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
 test "layer_p2_libtest: stat_filemode snippet prints ok on JacPython" {
     snippet = (
         "import stat\n"
