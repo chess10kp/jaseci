@@ -1,0 +1,529 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "dde8b38148d0f55c7cc9797901d7f3415988a28b",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_locale.py",
+    "-o",
+    "/var/tmp/worker3-locale-1927349/jac-py/tests/conv_locale",
+    "--name",
+    "conv_locale"
+  ],
+  "generated_at": "2026-08-25T22:27:32",
+  "hashes": {
+    "pins_jac": "79b55c59869d7fbe1b736d2a3f6ed4b4e7f6ed01cdebddf023036d189ba06196"
+  },
+  "source_file": "reference/cpython/Lib/test/test_locale.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "locale",
+  "pins_file": "conv_locale_pins.jac",
+  "pins": [
+    {
+      "ident": "LazyImportTest.test_lazy_import",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestNumberFormatting.test_simple",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_simple",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestNumberFormatting.test_padding",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_padding",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestLocaleFormatString.test_percent_escape",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n    assert locale.format_string('%f%%', 1.0) == '%f%%' % 1.0, ('assertEqual', locale.format_string('%f%%', 1.0), '%f%%' % 1.0)\n    assert locale.format_string('%d %f%%d', (1, 1.0)) == '%d %f%%d' % (1, 1.0), ('assertEqual', locale.format_string('%d %f%%d', (1, 1.0)), '%d %f%%d' % (1, 1.0))\n    assert locale.format_string('%(foo)s %%d', {'foo': 'bar'}) == '%(foo)s %%d' % {'foo': 'bar'}, ('assertEqual', locale.format_string('%(foo)s %%d', {'foo': 'bar'}), '%(foo)s %%d' % {'foo': 'bar'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestLocaleFormatString.test_mapping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n    assert locale.format_string('%(foo)s bing.', {'foo': 'bar'}) == '%(foo)s bing.' % {'foo': 'bar'}, ('assertEqual', locale.format_string('%(foo)s bing.', {'foo': 'bar'}), '%(foo)s bing.' % {'foo': 'bar'})\n    assert locale.format_string('%(foo)s', {'foo': 'bar'}) == '%(foo)s' % {'foo': 'bar'}, ('assertEqual', locale.format_string('%(foo)s', {'foo': 'bar'}), '%(foo)s' % {'foo': 'bar'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestNumberFormatting.test_simple",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestNumberFormatting.test_padding",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_currency",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_simple",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_padding",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestCNumberFormatting.test_grouping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_format_string(format, value, out, **format_opts):\n        assert locale.format_string(format, value, **format_opts) == out, ('assertEqual', locale.format_string(format, value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    _SelfNS.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    locale._override_localeconv = self.cooked_values\n    _test_format_string('%.2f', 12345.67, grouping=True, out='12345.67')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCNumberFormatting.test_grouping_and_padding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_format_string(format, value, out, **format_opts):\n        assert locale.format_string(format, value, **format_opts) == out, ('assertEqual', locale.format_string(format, value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    _SelfNS.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    locale._override_localeconv = self.cooked_values\n    _test_format_string('%9.2f', 12345.67, grouping=True, out=' 12345.67')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrFRNumberFormatting.test_decimal_point",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_format_string(format, value, out, **format_opts):\n        assert locale.format_string(format, value, **format_opts) == out, ('assertEqual', locale.format_string(format, value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_format_string('%.2f', 12345.67, out='12345,67')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrFRNumberFormatting.test_grouping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_format_string(format, value, out, **format_opts):\n        assert locale.format_string(format, value, **format_opts) == out, ('assertEqual', locale.format_string(format, value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_format_string('%.2f', 345.67, grouping=True, out='345,67')\n    _test_format_string('%.2f', 12345.67, grouping=True, out='12 345,67')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrFRNumberFormatting.test_grouping_and_padding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_format_string(format, value, out, **format_opts):\n        assert locale.format_string(format, value, **format_opts) == out, ('assertEqual', locale.format_string(format, value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_format_string('%6.2f', 345.67, grouping=True, out='345,67')\n    _test_format_string('%7.2f', 345.67, grouping=True, out=' 345,67')\n    _test_format_string('%8.2f', 12345.67, grouping=True, out='12 345,67')\n    _test_format_string('%9.2f', 12345.67, grouping=True, out='12 345,67')\n    _test_format_string('%10.2f', 12345.67, grouping=True, out=' 12 345,67')\n    _test_format_string('%-6.2f', 345.67, grouping=True, out='345,67')\n    _test_format_string('%-7.2f', 345.67, grouping=True, out='345,67 ')\n    _test_format_string('%-8.2f', 12345.67, grouping=True, out='12 345,67')\n    _test_format_string('%-9.2f', 12345.67, grouping=True, out='12 345,67')\n    _test_format_string('%-10.2f', 12345.67, grouping=True, out='12 345,67 ')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrFRNumberFormatting.test_integer_grouping",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_format_string(format, value, out, **format_opts):\n        assert locale.format_string(format, value, **format_opts) == out, ('assertEqual', locale.format_string(format, value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_format_string('%d', 200, grouping=True, out='200')\n    _test_format_string('%d', 4200, grouping=True, out='4 200')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrFRNumberFormatting.test_integer_grouping_and_padding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_format_string(format, value, out, **format_opts):\n        assert locale.format_string(format, value, **format_opts) == out, ('assertEqual', locale.format_string(format, value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_format_string('%4d', 4200, grouping=True, out='4 200')\n    _test_format_string('%5d', 4200, grouping=True, out='4 200')\n    _test_format_string('%10d', 4200, grouping=True, out='4 200'.rjust(10))\n    _test_format_string('%-4d', 4200, grouping=True, out='4 200')\n    _test_format_string('%-5d', 4200, grouping=True, out='4 200')\n    _test_format_string('%-10d', 4200, grouping=True, out='4 200'.ljust(10))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestFrFRNumberFormatting.test_currency",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_currency(value, out, **format_opts):\n        assert locale.currency(value, **format_opts) == out, ('assertEqual', locale.currency(value, **format_opts), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    euro = '\u20ac'\n    _test_currency(50000, '50000,00 ' + euro)\n    _test_currency(50000, '50 000,00 ' + euro, grouping=True)\n    _test_currency(50000, '50 000,00 EUR', grouping=True, international=True)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestEnUSCollation.test_strcoll",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEnUSCollation.test_strxfrm",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEnUSCollation.test_strcoll",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEnUSCollation.test_strxfrm",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "NormalizeTest.test_locale_alias",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    for localename, alias in locale.locale_alias.items():\n        check(localename, alias)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_empty",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('', '')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_c",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('c', 'C')\n    check('posix', 'C')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_c_utf8",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('c.utf8', 'C.UTF-8')\n    check('C.UTF-8', 'C.UTF-8')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_english",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('en', 'en_US.ISO8859-1')\n    check('EN', 'en_US.ISO8859-1')\n    check('en.iso88591', 'en_US.ISO8859-1')\n    check('en_US', 'en_US.ISO8859-1')\n    check('en_us', 'en_US.ISO8859-1')\n    check('en_GB', 'en_GB.ISO8859-1')\n    check('en_US.UTF-8', 'en_US.UTF-8')\n    check('en_US.utf8', 'en_US.UTF-8')\n    check('en_US:UTF-8', 'en_US.UTF-8')\n    check('en_US.ISO8859-1', 'en_US.ISO8859-1')\n    check('en_US.US-ASCII', 'en_US.ISO8859-1')\n    check('en_US.88591', 'en_US.ISO8859-1')\n    check('en_US.885915', 'en_US.ISO8859-15')\n    check('english', 'en_EN.ISO8859-1')\n    check('english_uk.ascii', 'en_GB.ISO8859-1')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_hyphenated_encoding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('az_AZ.iso88599e', 'az_AZ.ISO8859-9E')\n    check('az_AZ.ISO8859-9E', 'az_AZ.ISO8859-9E')\n    check('tt_RU.koi8c', 'tt_RU.KOI8-C')\n    check('tt_RU.KOI8-C', 'tt_RU.KOI8-C')\n    check('lo_LA.cp1133', 'lo_LA.IBM-CP1133')\n    check('lo_LA.ibmcp1133', 'lo_LA.IBM-CP1133')\n    check('lo_LA.IBM-CP1133', 'lo_LA.IBM-CP1133')\n    check('uk_ua.microsoftcp1251', 'uk_UA.CP1251')\n    check('uk_ua.microsoft-cp1251', 'uk_UA.CP1251')\n    check('ka_ge.georgianacademy', 'ka_GE.GEORGIAN-ACADEMY')\n    check('ka_GE.GEORGIAN-ACADEMY', 'ka_GE.GEORGIAN-ACADEMY')\n    check('cs_CZ.iso88592', 'cs_CZ.ISO8859-2')\n    check('cs_CZ.ISO8859-2', 'cs_CZ.ISO8859-2')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_euro_modifier",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('de_DE@euro', 'de_DE.ISO8859-15')\n    check('en_US.ISO8859-15@euro', 'en_US.ISO8859-15')\n    check('de_DE.utf8@euro', 'de_DE.UTF-8')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_latin_modifier",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('be_BY.UTF-8@latin', 'be_BY.UTF-8@latin')\n    check('sr_RS.UTF-8@latin', 'sr_RS.UTF-8@latin')\n    check('sr_RS.UTF-8@latn', 'sr_RS.UTF-8@latin')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_valencia_modifier",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('ca_ES.UTF-8@valencia', 'ca_ES.UTF-8@valencia')\n    check('ca_ES@valencia', 'ca_ES.UTF-8@valencia')\n    check('ca@valencia', 'ca_ES.ISO8859-1@valencia')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_devanagari_modifier",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('ks_IN.UTF-8@devanagari', 'ks_IN.UTF-8@devanagari')\n    check('ks_IN@devanagari', 'ks_IN.UTF-8@devanagari')\n    check('ks@devanagari', 'ks_IN.UTF-8@devanagari')\n    check('ks_IN.UTF-8', 'ks_IN.UTF-8')\n    check('ks_IN', 'ks_IN.UTF-8')\n    check('ks', 'ks_IN.UTF-8')\n    check('sd_IN.UTF-8@devanagari', 'sd_IN.UTF-8@devanagari')\n    check('sd_IN@devanagari', 'sd_IN.UTF-8@devanagari')\n    check('sd@devanagari', 'sd_IN.UTF-8@devanagari')\n    check('sd_IN.UTF-8', 'sd_IN.UTF-8')\n    check('sd_IN', 'sd_IN.UTF-8')\n    check('sd', 'sd_IN.UTF-8')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_euc_encoding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('ja_jp.euc', 'ja_JP.eucJP')\n    check('ja_jp.eucjp', 'ja_JP.eucJP')\n    check('ko_kr.euc', 'ko_KR.eucKR')\n    check('ko_kr.euckr', 'ko_KR.eucKR')\n    check('zh_cn.euc', 'zh_CN.eucCN')\n    check('zh_tw.euc', 'zh_TW.eucTW')\n    check('zh_tw.euctw', 'zh_TW.eucTW')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "NormalizeTest.test_japanese",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def check(localename, expected):\n        assert locale.normalize(localename) == expected, ('assertEqual', locale.normalize(localename), expected, localename)\n    check('ja', 'ja_JP.eucJP')\n    check('ja.jis', 'ja_JP.JIS7')\n    check('ja.sjis', 'ja_JP.SJIS')\n    check('ja_jp', 'ja_JP.eucJP')\n    check('ja_jp.ajec', 'ja_JP.eucJP')\n    check('ja_jp.euc', 'ja_JP.eucJP')\n    check('ja_jp.eucjp', 'ja_JP.eucJP')\n    check('ja_jp.iso-2022-jp', 'ja_JP.JIS7')\n    check('ja_jp.iso2022jp', 'ja_JP.JIS7')\n    check('ja_jp.jis', 'ja_JP.JIS7')\n    check('ja_jp.jis7', 'ja_JP.JIS7')\n    check('ja_jp.mscode', 'ja_JP.SJIS')\n    check('ja_jp.pck', 'ja_JP.SJIS')\n    check('ja_jp.sjis', 'ja_JP.SJIS')\n    check('ja_jp.ujis', 'ja_JP.eucJP')\n    check('ja_jp.utf8', 'ja_JP.UTF-8')\n    check('japan', 'ja_JP.eucJP')\n    check('japanese', 'ja_JP.eucJP')\n    check('japanese-euc', 'ja_JP.eucJP')\n    check('japanese.euc', 'ja_JP.eucJP')\n    check('japanese.sjis', 'ja_JP.SJIS')\n    check('jp_jp', 'ja_JP.eucJP')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMiscellaneous.test_getencoding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\nimport codecs\n\ndef _t():\n    enc = locale.getencoding()\n    assert isinstance(enc, str), ('assertIsInstance', enc, str)\n    assert enc != '', ('assertNotEqual', enc, '')\n    codecs.lookup(enc)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMiscellaneous.test_getencoding_fallback",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestMiscellaneous.test_getpreferredencoding",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\nimport codecs\n\ndef _t():\n    enc = locale.getpreferredencoding()\n    if enc:\n        codecs.lookup(enc)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMiscellaneous.test_strcoll_3303",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n    try:\n        locale.strcoll(*('a', None))\n    except TypeError:\n        pass\n    try:\n        locale.strcoll(*(b'a', None))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMiscellaneous.test_setlocale_category",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n    locale.setlocale(locale.LC_ALL)\n    locale.setlocale(locale.LC_TIME)\n    locale.setlocale(locale.LC_CTYPE)\n    locale.setlocale(locale.LC_COLLATE)\n    locale.setlocale(locale.LC_MONETARY)\n    locale.setlocale(locale.LC_NUMERIC)\n    try:\n        locale.setlocale(*(12345,))\n    except locale.Error:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMiscellaneous.test_invalid_locale_format_in_localetuple",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n    try:\n        locale.setlocale(locale.LC_ALL, b'fi_FI')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMiscellaneous.test_invalid_iterable_in_localetuple",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n    try:\n        locale.setlocale(locale.LC_ALL, (b'not', b'valid'))\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestEnUSDelocalize.test_delocalize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_delocalize(value, out):\n        assert locale.delocalize(value) == out, ('assertEqual', locale.delocalize(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    _SelfNS.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    locale._override_localeconv = self.cooked_values\n    _test_delocalize('50000.00', '50000.00')\n    _test_delocalize('50,000.00', '50000.00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestEnUSDelocalize.test_atof",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_atof(value, out):\n        assert locale.atof(value) == out, ('assertEqual', locale.atof(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    _SelfNS.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    locale._override_localeconv = self.cooked_values\n    _test_atof('50000.00', 50000.0)\n    _test_atof('50,000.00', 50000.0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestEnUSDelocalize.test_atoi",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_atoi(value, out):\n        assert locale.atoi(value) == out, ('assertEqual', locale.atoi(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    _SelfNS.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    locale._override_localeconv = self.cooked_values\n    _test_atoi('50000', 50000)\n    _test_atoi('50,000', 50000)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCDelocalizeTest.test_delocalize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_delocalize(value, out):\n        assert locale.delocalize(value) == out, ('assertEqual', locale.delocalize(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    _SelfNS.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    locale._override_localeconv = self.cooked_values\n    _test_delocalize('50000.00', '50000.00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCDelocalizeTest.test_atof",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_atof(value, out):\n        assert locale.atof(value) == out, ('assertEqual', locale.atof(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    _SelfNS.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    locale._override_localeconv = self.cooked_values\n    _test_atof('50000.00', 50000.0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCDelocalizeTest.test_atoi",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_atoi(value, out):\n        assert locale.atoi(value) == out, ('assertEqual', locale.atoi(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    _SelfNS.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    locale._override_localeconv = self.cooked_values\n    _test_atoi('50000', 50000)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestfrFRDelocalizeTest.test_delocalize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_delocalize(value, out):\n        assert locale.delocalize(value) == out, ('assertEqual', locale.delocalize(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_delocalize('50000,00', '50000.00')\n    _test_delocalize('50 000,00', '50000.00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestfrFRDelocalizeTest.test_atof",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_atof(value, out):\n        assert locale.atof(value) == out, ('assertEqual', locale.atof(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_atof('50000,00', 50000.0)\n    _test_atof('50 000,00', 50000.0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestfrFRDelocalizeTest.test_atoi",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_atoi(value, out):\n        assert locale.atoi(value) == out, ('assertEqual', locale.atoi(value), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_atoi('50000', 50000)\n    _test_atoi('50 000', 50000)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestEnUSLocalize.test_localize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from decimal import Decimal\nimport locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_localize(value, out, grouping=False):\n        assert locale.localize(value, grouping=grouping) == out, ('assertEqual', locale.localize(value, grouping=grouping), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    _SelfNS.cooked_values = {'currency_symbol': '$', 'decimal_point': '.', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'USD ', 'int_frac_digits': 2, 'mon_decimal_point': '.', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ',', 'n_cs_precedes': 1, 'n_sep_by_space': 0, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 1, 'p_sep_by_space': 0, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ','}\n    locale._override_localeconv = self.cooked_values\n    _test_localize('50000.00', '50000.00')\n    _test_localize('{0:.16f}'.format(Decimal('1.15')), '1.1500000000000000')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestCLocalize.test_localize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_localize(value, out, grouping=False):\n        assert locale.localize(value, grouping=grouping) == out, ('assertEqual', locale.localize(value, grouping=grouping), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    _SelfNS.cooked_values = {'currency_symbol': '', 'decimal_point': '.', 'frac_digits': 127, 'grouping': [], 'int_curr_symbol': '', 'int_frac_digits': 127, 'mon_decimal_point': '', 'mon_grouping': [], 'mon_thousands_sep': '', 'n_cs_precedes': 127, 'n_sep_by_space': 127, 'n_sign_posn': 127, 'negative_sign': '', 'p_cs_precedes': 127, 'p_sep_by_space': 127, 'p_sign_posn': 127, 'positive_sign': '', 'thousands_sep': ''}\n    locale._override_localeconv = self.cooked_values\n    _test_localize('50000.00', '50000.00')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestfrFRLocalize.test_localize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import locale\n\ndef _t():\n\n    def setUp():\n        locale._override_localeconv = self.cooked_values\n\n    def _test_localize(value, out, grouping=False):\n        assert locale.localize(value, grouping=grouping) == out, ('assertEqual', locale.localize(value, grouping=grouping), out)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    _SelfNS.cooked_values = {'currency_symbol': '\u20ac', 'decimal_point': ',', 'frac_digits': 2, 'grouping': [3, 3, 0], 'int_curr_symbol': 'EUR ', 'int_frac_digits': 2, 'mon_decimal_point': ',', 'mon_grouping': [3, 3, 0], 'mon_thousands_sep': ' ', 'n_cs_precedes': 0, 'n_sep_by_space': 1, 'n_sign_posn': 1, 'negative_sign': '-', 'p_cs_precedes': 0, 'p_sep_by_space': 1, 'p_sign_posn': 1, 'positive_sign': '', 'thousands_sep': ' '}\n    locale._override_localeconv = self.cooked_values\n    _test_localize('50000.00', '50000,00')\n    _test_localize('50000.00', '50 000,00', grouping=True)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestEnUSCollation.test_strcoll_with_diacritic",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestEnUSCollation.test_strxfrm_with_diacritic",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestRealLocales.test_setlocale_long_encoding",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestNumberFormatting.test_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_integer_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_integer_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_integer_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_integer_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_complex_formatting",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_complex_formatting",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_integer_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_integer_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestNumberFormatting.test_complex_formatting",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_integer_grouping",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_integer_grouping_and_padding",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestEnUSNumberFormatting.test_complex_formatting",
+      "reason": "uses-self.sep"
+    },
+    {
+      "ident": "TestRealLocales.test_getsetlocale_issue1813",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestMiscellaneous.test_defaults_UTF8",
+      "reason": "unsupported-import:test.support.warnings_helper"
+    }
+  ],
+  "counts": {
+    "extracted": 80,
+    "pinned": 40,
+    "quarantined": 40
+  }
+}
