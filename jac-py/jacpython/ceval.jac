@@ -44,6 +44,13 @@ def _jac_host_call(fn, args, kwargs):
     except BaseException as exc:
         return _jac_host_error(exc)
 
+def _jac_make_host_struct_time(values):
+    # timemodule.c lift: a guest PyStructTime crossing to the host becomes a
+    # REAL time.struct_time so host consumers (tuple()/repr/indexing) see the
+    # reference type instead of a stand-in.
+    import time
+    return time.struct_time(tuple(values))
+
 def _jac_host_dir(value):
     # Exact host dir() for values with a faithful host representation (host
     # proxies, native scalars/containers): CPython's own enumeration, so the
@@ -1625,6 +1632,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from time { time_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -1640,6 +1648,7 @@ import from objects {
     PyComplex,
     PySlice,
     PyTuple,
+    PyStructTime,
     PyList,
     PyCode,
     PyCell,
@@ -2102,6 +2111,14 @@ def import_native(absname: str) -> PyObj {
         # errorcode round-trip; the native facade keeps them guest-native.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if absname == "time" and not ("time" in shim_modules) {
+        # timemodule.c lift: clocks, conversions and tz data served through
+        # the facade's own host bridge so every scalar result, struct_time
+        # and raised error stays guest-native (see time.jac).
+        shim_modules["time"] = PyModule(
+            t="module", name="time", attrs=time_module_attrs()
         );
     }
     if absname == "sys" and not ("sys" in shim_modules) {
@@ -4770,6 +4787,9 @@ def to_host_policy(tag: str) -> BridgePolicy {
         or tag == "notimplemented" {
         return BridgePolicy.VALUE_COPY;
     }
+    # struct_time carries the "tuple" tag (it IS a tuple subclass), so its
+    # DEEP_COPY crossing is covered by the tuple arm above; only the to_host
+    # match order needs the specific class (see _jac_make_host_struct_time).
     if tag == "tuple" or tag == "frozenset" or tag == "slice" or tag == "range" {
         return BridgePolicy.DEEP_COPY;
     }
@@ -4843,6 +4863,19 @@ def to_host(value: PyObj) -> any {
 
         case PyBytes():
             return bytes(value.val);
+
+        case PyStructTime():
+            # timemodule.c lift: the immutable struct_time aggregate crosses
+            # DEEP_COPY as a REAL host time.struct_time (see
+            # _jac_make_host_struct_time), so tuple()/print/repr on the host
+            # side see the reference type. MUST precede the PyTuple case:
+            # PyStructTime inherits PyTuple and class patterns match
+            # subclasses.
+            st_items: list[any] = [];
+            for st_item in (value as PyStructTime).items {
+                st_items.append(to_host(st_item));
+            }
+            return _jac_make_host_struct_time(st_items);
 
         case PyTuple():
             tuple_items: list[any] = [];
@@ -5265,6 +5298,13 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # Same rationale as the import_native site above: host gc cannot see
         # native guest objects.
         shim_modules["gc"] = PyModule(t="module", name="gc", attrs=gc_module_attrs());
+    }
+    if name == "time" and not ("time" in shim_modules) {
+        # Mirror of the import_native site: guest-native scalars/errors for
+        # the time surface instead of host proxies.
+        shim_modules["time"] = PyModule(
+            t="module", name="time", attrs=time_module_attrs()
+        );
     }
     if name == "types" and not ("types" in shim_modules) {
         # The host types.coroutine cannot mark VM-native functions (it mutates

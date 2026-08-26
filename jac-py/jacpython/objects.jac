@@ -1229,6 +1229,95 @@ obj PyTuple(PyObj) {
     }
 }
 
+# timemodule.c struct_time: CPython's PyStructSequence registers the plain
+# tuple slots, so sequence behavior (subscript/iterate/hash/compare) is
+# inherited unchanged from PyTuple and only the named-accessor and repr
+# surfaces are added here. The 11-slot form carries tm_gmtoff/tm_zone after
+# the nine core fields (_STRUCT_TM_ITEMS == 11).
+obj PyStructTime(PyTuple) {
+    def tp_getattro(name: str) -> PyObj {
+        fields: list[str] = [
+            "tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min",
+            "tm_sec", "tm_wday", "tm_yday", "tm_isdst",
+        ];
+        i = 0;
+        while i < len(fields) {
+            if name == fields[i] {
+                return self.items[i];
+            }
+            i = i + 1;
+        }
+        if name == "tm_gmtoff" or name == "tm_zone" {
+            idx = 9;
+            if name == "tm_zone" {
+                idx = 10;
+            }
+            if len(self.items) > idx {
+                return self.items[idx];
+            }
+            # The 9-slot form has no zone info; CPython omits the field.
+            return py_error(
+                "AttributeError",
+                "'time.struct_time' object has no attribute '" + name + "'",
+            );
+        }
+        if name == "n_sequence_fields" {
+            return PyInt(t="int", val=9);
+        }
+        if name == "n_fields" {
+            return PyInt(t="int", val=len(self.items));
+        }
+        if name == "n_unnamed_fields" {
+            return PyInt(t="int", val=0);
+        }
+        return py_error(
+            "AttributeError",
+            "'time.struct_time' object has no attribute '" + name + "'",
+        );
+    }
+
+    def tp_repr -> PyObj {
+        names: list[str] = [
+            "tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min",
+            "tm_sec", "tm_wday", "tm_yday", "tm_isdst", "tm_gmtoff", "tm_zone",
+        ];
+        out = "time.struct_time(";
+        i2 = 0;
+        while i2 < len(self.items) and i2 < len(names) {
+            if i2 > 0 {
+                out = out + ", ";
+            }
+            out = out + names[i2] + "=" + _struct_time_field_repr(self.items[i2]);
+            i2 = i2 + 1;
+        }
+        return PyStr(t="str", val=out + ")");
+    }
+}
+
+# Field repr for struct_time's tm_* surface: ints/bools render bare, strings
+# single-quoted (CPython repr), None for an absent zone.
+def _struct_time_field_repr(v: PyObj) -> str {
+    if isinstance(v, PyStr) {
+        return "'" + (v as PyStr).val + "'";
+    }
+    if isinstance(v, PyBool) {
+        if (v as PyBool).val {
+            return "True";
+        }
+        return "False";
+    }
+    if isinstance(v, PyNoneType) {
+        return "None";
+    }
+    if isinstance(v, PyFloat) {
+        return str((v as PyFloat).val);
+    }
+    if isinstance(v, PyInt) {
+        return str((v as PyInt).val);
+    }
+    return "<unrepresentable>";
+}
+
 obj PyList(PyObj) {
     has items: list[PyObj];
 
