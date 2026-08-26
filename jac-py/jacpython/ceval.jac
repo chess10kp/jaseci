@@ -4607,6 +4607,11 @@ def from_host(raw: any) -> PyObj {
         }
         return PyHostProxy(t="host", val=raw);
     }
+    # VALUE_COPY both ways: the richcompare-deferral sentinel crossing back
+    # home must recover the native singleton, not degrade to an opaque proxy.
+    if raw is NotImplemented {
+        return PY_NOT_IMPLEMENTED;
+    }
     if isinstance(raw, bool) {
         return PyBool(t="bool", val=raw);
     }
@@ -4615,6 +4620,12 @@ def from_host(raw: any) -> PyObj {
     }
     if isinstance(raw, float) {
         return PyFloat(t="float", val=raw);
+    }
+    if isinstance(raw, complex) {
+        # VALUE_COPY declares complex lossless BOTH ways, but the reverse arm
+        # was missing: a host complex (e.g. returned by a bridged call) fell
+        # through to PyHostProxy, breaking native arithmetic/repr on return.
+        return PyComplex(t="complex", real=raw.real, imag=raw.imag);
     }
     if isinstance(raw, str) {
         return PyStr(t="str", val=raw);
