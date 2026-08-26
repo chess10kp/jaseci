@@ -1825,14 +1825,6 @@ def visit_try_star(
         codegen_fail(g, "NotImplementedError", "try* without except*");
         return stmt_cont(loc=tloc);
     }
-    if g.handler_fallthrough_fin is not None {
-        # Plain-except handlers duplicate their epilogue on each nested success
-        # path (handler_fallthrough_* machinery); except* bodies are instead
-        # wrapped per-handler by SETUP_CLEANUP regions. Bridging the two
-        # conventions is its own slice.
-        codegen_fail(g, "NotImplementedError", "except* inside except handler");
-        return stmt_cont(loc=tloc);
-    }
     return visit_try_star_except(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
 }
 
@@ -1866,6 +1858,9 @@ def visit_try_star_except(
 
     nop_blk = g.new_block();
     g.u.nested_try_except_end = -1;
+    # Publish for an enclosing handler's carve-out (nested_in machinery), the
+    # same contract a nested plain try/except honors.
+    g.u.nested_try_except_start = nop_blk.id;
     try_body = g.new_block();
     prev_line = -1;
     if len(g.cur.instrs) > 0 {
@@ -1881,6 +1876,10 @@ def visit_try_star_except(
     if not try_follows and tail is not None and tail_idx < len(tail) {
         try_follows = True;
     }
+    # Inline enclosing-handler epilogue after the normal path (see bridge
+    # below): protected by the enclosing handler's cleanup target at base
+    # depth, exactly like the plain-try bridge.
+    body_fini_region_start: int = -1;
     body_cont = visit_stmts(g, t.body, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
@@ -1914,7 +1913,28 @@ def visit_try_star_except(
             emit_module_return(g, tail_cont.loc);
         }
     } else {
-        if not normal_terminated {
+        if g.handler_fallthrough_fin is not None
+            and not normal_terminated {
+            # Nested inside an enclosing handler: finish it inline (CPython
+            # duplicates the enclosing handler epilogue on each success path).
+            g.handler_fell_through = True;
+            body_fini_region_start = g.cur.id;
+            g.emit_op(OP_POP_EXCEPT, 0, body_cont.loc);
+            if g.handler_fallthrough_bind is not None {
+                emit_except_as_cleanup(
+                    g, g.handler_fallthrough_bind as str, body_cont.loc
+                );
+            }
+            if g.handler_fallthrough_backward {
+                g.emit_jump(
+                    OP_JUMP_BACKWARD_NO_INTERRUPT,
+                    g.handler_fallthrough_fin.id,
+                    body_cont.loc
+                );
+            } else {
+                g.emit_jump(OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, body_cont.loc);
+            }
+        } elif not normal_terminated {
             emit_module_return(g, body_cont.loc);
         }
     }
@@ -1977,6 +1997,19 @@ def visit_try_star_except(
             preserve_lasti=True
         )
     );
+    if body_fini_region_start >= 0 {
+        # Inline enclosing-handler epilogue after the normal path: protected by
+        # the enclosing handler's cleanup target at base depth (CPython maps
+        # the duplicated POP_EXCEPT + jump range to the fin handler).
+        spans.append(
+            except_region(
+                start_block=body_fini_region_start,
+                end_block=he.id,
+                handler_block=g.handler_fallthrough_fin_handler,
+                stack_depth=1
+            )
+        );
+    }
 
     hloc0 = trystar_handler_loc(t.handlers[0] as ExceptHandler);
     g.use(he);
@@ -2147,6 +2180,9 @@ def visit_try_star_except(
         g.u.except_regions.append(merged[mi]);
         mi = mi + 1;
     }
+    # Publish this statement's last block for an enclosing try whose handler
+    # nested us (nested_in carve-out), matching the nested plain-try contract.
+    g.u.nested_try_except_end = unwind_blk.id;
     return stmt_cont(loc=tloc, terminated=True);
 }
 
