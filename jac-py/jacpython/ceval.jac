@@ -2090,6 +2090,15 @@ def import_native(absname: str) -> PyObj {
         # shim operates on live PyList storage instead.
         shim_modules["heapq"] = build_heapq_module();
     }
+    if absname == "copy" and not ("copy" in shim_modules) {
+        # copy.py is pure Python, but its dispatch/reduce engine runs guest
+        # state through HOST type identities: a native list crosses as a
+        # drained copy, a user instance becomes a lossy standin whose state
+        # never round-trips. Serve the native facade instead (PyCopyFn +
+        # cp_* engine): memo-keyed identity, __copy__/__deepcopy__ hooks and
+        # instance-__dict__ cloning run directly on PyObj storage.
+        shim_modules["copy"] = build_copy_module();
+    }
     if absname == "gc" and not ("gc" in shim_modules) {
         # Host gc sees only host objects: native guest containers would cross
         # as lossy to_host copies and every query would answer about the wrong
@@ -5260,6 +5269,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # Same copy-mutation hazard as import_native: host heapq mutates a
         # copy of any guest list argument.
         shim_modules["heapq"] = build_heapq_module();
+    }
+    if name == "copy" and not ("copy" in shim_modules) {
+        # Same rationale as the import_native site above: host copy cannot
+        # see native guest object identity or cycles.
+        shim_modules["copy"] = build_copy_module();
     }
     if name == "gc" and not ("gc" in shim_modules) {
         # Same rationale as the import_native site above: host gc cannot see
@@ -14528,10 +14542,286 @@ obj PyGenFrameClear(PyObj) {
     }
 }
 
-# Native copy.copy / copy.deepcopy. Generators (and coroutines) are uncopyable in
-# CPython -- no __copy__/__reduce_ex__ support, so copy raises TypeError -- and a
-# native generator can't cross to_host as a live generator anyway (it would drain
-# to a list, spuriously succeeding). Every other value delegates to host copy.
+# ---------------- native copy module engine (Lib/copy.py lift) --------------
+
+# CPython's copy module runs its dispatch/reduce machinery against HOST type
+# identities: a guest list crosses to_host as a drained copy, a guest instance
+# becomes a name-faithful standin whose state copy never round-trips, and a
+# cyclic structure recurses until the bridge gives up. This engine implements
+# the Lib/copy.py surface directly on PyObj storage:
+#
+# - atomic kinds (scalars, str/bytes, range/slice/code, property, functions,
+#   classes, modules) return identity -- CPython _deepcopy_atomic;
+# - list/tuple/dict/set/frozenset clone through the native containers with
+#   element-wise deepcopy and cycle-safe memoization (containers memoize
+#   BEFORE filling, exactly like _deepcopy_list/_deepcopy_dict);
+# - user instances honor __copy__/__deepcopy__ hooks via the normal attribute
+#   protocol, then fall back to a fresh instance (no __init__ call) with a
+#   cloned instance __dict__; slotted-only instances delegate to the host
+#   path rather than silently dropping slot state;
+# - everything unhandled here (generators, iterators, exceptions, host
+#   proxies) takes the historical route: generators raise CPython's exact
+#   TypeError, the rest delegates to host copy so behavior never regresses.
+#
+# Divergences from Lib/copy.py (documented for the ledger): the reduce
+# protocols (__reduce_ex__/_reconstruct) are not reproduced -- such values
+# take the host fallback; memo keys are "obj:<id>" strings instead of raw
+# ids, so user __deepcopy__ hooks that write memo[id(self)] do not share
+# entries with the engine (each level still terminates correctly); and
+# _keep_alive has no arm because native storage keeps sources alive for the
+# duration of the call anyway.
+
+# Marks 'not handled natively': the caller falls back to the historical host
+# delegation so unhandled kinds keep their pre-existing behavior.
+glob CP_FALLBACK_SENTINEL: PyObj = PyStr(t="str", val="\x00jac_cp_fallback");
+
+def cp_is_atomic(v: PyObj) -> bool {
+    # The immutable + shared-representation set: copying these must yield
+    # the identical object (CPython copy._deepcopy_dispatch atomic arms).
+    return isinstance(v, PyNoneType) or isinstance(v, PyInt)
+        or isinstance(v, PyBool) or isinstance(v, PyFloat)
+        or isinstance(v, PyComplex) or isinstance(v, PyStr)
+        or isinstance(v, PyBytes) or isinstance(v, PyRange)
+        or isinstance(v, PySlice) or isinstance(v, PyCode)
+        or isinstance(v, PyFunction) or isinstance(v, PyNativeBuiltin)
+        or isinstance(v, PyBoundMethod) or isinstance(v, PyClass)
+        or isinstance(v, PyModule) or isinstance(v, PyProperty)
+        or isinstance(v, PyTypeVar) or isinstance(v, PyGenericAlias)
+        or isinstance(v, PyNotImplementedSentinel);
+}
+
+def cp_memo_key(v: PyObj) -> PyStr {
+    return PyStr(t="str", val="obj:" + str(id(v)));
+}
+
+def cp_memo_hit(memo: PyDict, v: PyObj) -> bool {
+    return memo.dict_contains(cp_memo_key(v));
+}
+
+def cp_deepcopy(x: PyObj, memo: PyDict) -> PyObj {
+    # Memo check first: shared substructure and cycles both collapse here.
+    if cp_memo_hit(memo, x) {
+        return memo.mp_subscript(cp_memo_key(x));
+    }
+    if cp_is_atomic(x) {
+        return x;
+    }
+    res = cp_deepcopy_inner(x, memo);
+    if not is_error(res) {
+        memo.dict_set(cp_memo_key(x), res);
+    }
+    return res;
+}
+
+def cp_deepcopy_inner(x: PyObj, memo: PyDict) -> PyObj {
+    if isinstance(x, PyList) {
+        # Memoize the empty shell BEFORE filling so self-referencing lists
+        # terminate (_deepcopy_list semantics).
+        y = PyList(t="list", items=[]);
+        memo.dict_set(cp_memo_key(x), y);
+        for item in (x as PyList).items {
+            got = cp_deepcopy(item, memo);
+            if is_error(got) {
+                return got;
+            }
+            (y as PyList).items.append(got);
+        }
+        return y;
+    }
+    if isinstance(x, PyTuple) {
+        # _deepcopy_tuple: rebuild element-wise, but if EVERY element copied
+        # to itself the original tuple comes back (tuple identity is stable
+        # when nothing mutable participates).
+        copies: list[PyObj] = [];
+        unchanged = True;
+        for item in (x as PyTuple).items {
+            got = cp_deepcopy(item, memo);
+            if is_error(got) {
+                return got;
+            }
+            if got is not item {
+                unchanged = False;
+            }
+            copies.append(got);
+        }
+        if unchanged {
+            return x;
+        }
+        return PyTuple(t="tuple", items=copies);
+    }
+    if isinstance(x, PyDict) {
+        y_dict = PyDict(t="dict", items={});
+        memo.dict_set(cp_memo_key(x), y_dict);
+        src = x as PyDict;
+        for hk in src.items {
+            kcopy = cp_deepcopy(src.items[hk].key, memo);
+            if is_error(kcopy) {
+                return kcopy;
+            }
+            vcopy = cp_deepcopy(src.items[hk].value, memo);
+            if is_error(vcopy) {
+                return vcopy;
+            }
+            st = (y_dict as PyDict).dict_set(kcopy, vcopy);
+            if is_error(st) {
+                return st;
+            }
+        }
+        return y_dict;
+    }
+    if isinstance(x, PySet) {
+        s = x as PySet;
+        y_set = PySet(t=s.t, items={}, frozen=s.frozen);
+        if s.frozen {
+            # frozenset is only memoizable once fully built (immutable);
+            # elements are hashable so their deepcopies equal themselves in
+            # practice, matching _deepcopy_frozenset's rebuild.
+            members: list[PyObj] = [];
+            for e in s.set_members() {
+                got = cp_deepcopy(e, memo);
+                if is_error(got) {
+                    return got;
+                }
+                members.append(got);
+            }
+            fresh = PySet(t=s.t, items={}, frozen=True);
+            for m in members {
+                ad = (fresh as PySet).set_add(m);
+                if is_error(ad) {
+                    return ad;
+                }
+            }
+            memo.dict_set(cp_memo_key(x), fresh);
+            return fresh;
+        }
+        memo.dict_set(cp_memo_key(x), y_set);
+        for e in s.set_members() {
+            got = cp_deepcopy(e, memo);
+            if is_error(got) {
+                return got;
+            }
+            ad2 = (y_set as PySet).set_add(got);
+            if is_error(ad2) {
+                return ad2;
+            }
+        }
+        return y_set;
+    }
+    if isinstance(x, PyUserObj) {
+        u = x as PyUserObj;
+        hook = u.tp_getattro("__deepcopy__");
+        if not is_error(hook) {
+            return py_invoke(hook, [memo as PyObj], {});
+        }
+        # Slotted-only instances store state outside attrs; cloning the dict
+        # alone would silently drop it. Delegate instead of guessing.
+        if len(u.attrs) == 0 and "__slots__" in u.cls.attrs {
+            return CP_FALLBACK_SENTINEL;
+        }
+        fresh_user = PyUserObj(t="instance", cls=u.cls, attrs={}, base=u.base);
+        memo.dict_set(cp_memo_key(x), fresh_user);
+        for name in u.attrs {
+            got2 = cp_deepcopy(u.attrs[name], memo);
+            if is_error(got2) {
+                return got2;
+            }
+            (fresh_user as PyUserObj).attrs[name] = got2;
+        }
+        return fresh_user;
+    }
+    return CP_FALLBACK_SENTINEL;
+}
+
+def cp_copy_entry(deep: bool, args: list[PyObj]) -> PyObj {
+    if len(args) < 1 {
+        return py_error("TypeError", "copy expected at least 1 argument");
+    }
+    if len(args) > 2 {
+        return py_error("TypeError", "copy expected at most 2 arguments");
+    }
+    x = args[0];
+    if isinstance(x, PyGenerator) {
+        # Generators stay uncopyable with CPython's exact message (a native
+        # generator cannot cross to_host as a live generator anyway).
+        return py_error("TypeError", "cannot pickle 'generator' object");
+    }
+    if not deep {
+        # copy.copy: atomics identity, containers shallow, user objects via
+        # __copy__ hook else fresh-instance-with-copied-dict.
+        if cp_is_atomic(x) {
+            return x;
+        }
+        if isinstance(x, PyList) {
+            items: list[PyObj] = [];
+            items.extend((x as PyList).items);
+            return PyList(t="list", items=items);
+        }
+        if isinstance(x, PyDict) {
+            y = PyDict(t="dict", items={});
+            src = x as PyDict;
+            for hk in src.items {
+                st = (y as PyDict).dict_set(src.items[hk].key, src.items[hk].value);
+                if is_error(st) {
+                    return st;
+                }
+            }
+            return y;
+        }
+        if isinstance(x, PySet) {
+            return (x as PySet).set_copy();
+        }
+        if isinstance(x, PyTuple) {
+            return x;
+        }
+        if isinstance(x, PyUserObj) {
+            u = x as PyUserObj;
+            hook = u.tp_getattro("__copy__");
+            if not is_error(hook) {
+                return py_invoke(hook, [], {});
+            }
+            if len(u.attrs) == 0 and "__slots__" in u.cls.attrs {
+                return CP_FALLBACK_SENTINEL;
+            }
+            fresh = PyUserObj(t="instance", cls=u.cls, attrs={}, base=u.base);
+            for name in u.attrs {
+                (fresh as PyUserObj).attrs[name] = u.attrs[name];
+            }
+            return fresh;
+        }
+        return CP_FALLBACK_SENTINEL;
+    }
+    # deepcopy: optional memo dict second positional (CPython signature
+    # deepcopy(x, memo=None)).
+    memo = PyDict(t="dict", items={});
+    if len(args) > 1 and isinstance(args[1], PyDict) {
+        memo = args[1] as PyDict;
+    }
+    res = cp_deepcopy(x, memo);
+    if is_error(res) {
+        return res;
+    }
+    if res is CP_FALLBACK_SENTINEL {
+        return cp_host_fallback(True, args);
+    }
+    return res;
+}
+
+def cp_host_fallback(deep: bool, args: list[PyObj]) -> PyObj {
+    mod = host_import("copy", py_none());
+    if is_error(mod) {
+        return mod;
+    }
+    fnname = "copy";
+    if deep {
+        fnname = "deepcopy";
+    }
+    fn = mod.tp_getattro(fnname);
+    if is_error(fn) {
+        return fn;
+    }
+    return py_invoke(fn, args, {});
+}
+
 obj PyCopyFn(PyObj) {
     has deep: bool;
 
@@ -14541,30 +14831,24 @@ obj PyCopyFn(PyObj) {
     }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        if len(args) < 1 {
-            return py_error("TypeError", "copy expected at least 1 argument");
+        if len(kwargs) > 0 {
+            return py_error("TypeError", "copy() takes no keyword arguments");
         }
-        if isinstance(args[0], PyGenerator) {
-            return py_error("TypeError", "cannot pickle 'generator' object");
+        res = cp_copy_entry(self.deep, args);
+        if not is_error(res) and res is CP_FALLBACK_SENTINEL {
+            return cp_host_fallback(self.deep, args);
         }
-        mod = host_import("copy", py_none());
-        if is_error(mod) {
-            return mod;
+        if is_error(res) {
+            return res;
         }
-        fnname = "copy";
-        if self.deep {
-            fnname = "deepcopy";
-        }
-        fn = mod.tp_getattro(fnname);
-        if is_error(fn) {
-            return fn;
-        }
-        return py_invoke(fn, args, kwargs);
+        return res;
     }
 }
 
-# The native `copy` module, seeded into a Layer-1 namespace so a test that does
-# copy.copy(gen) sees CPython's TypeError natively (the host proxy would drain).
+# The native `copy` module: the registered product surface for guest
+# `import copy` (shim arm in import_native/host_import) and the same builder
+# Layer-1 replay namespaces seed, so copy.copy(gen) sees CPython's TypeError
+# natively (the host proxy would drain).
 # Native weakref module surface (shimmed over host weakref). CPython-faithful
 # for objects whose RAW Python identity is the object itself (PyUserObj,
 # PyClass, functions, generators): deref hands back the identical object, and
