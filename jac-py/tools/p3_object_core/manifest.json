@@ -92,10 +92,10 @@
    "stem": "test_set",
    "path": "Lib/test/test_set.py",
    "baseline": {
-    "passed": 5,
+    "passed": 7,
     "failed": 0,
     "errored": 0,
-    "skipped": 9
+    "skipped": 7
    },
    "gate": "P3.1b",
    "status": "gated"
