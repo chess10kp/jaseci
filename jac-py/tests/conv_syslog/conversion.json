@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_syslog.py",
+    "-o",
+    "jac-py/tests/conv_syslog",
+    "--name",
+    "conv_syslog"
+  ],
+  "generated_at": "2026-08-25T23:14:18",
+  "hashes": {
+    "pins_jac": "46dbceb58d2c55ec41407c412bf4cd29cbf67b3e606d021fcdec52ae5f7718af"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_syslog.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "syslog",
+  "pins_file": "conv_syslog_pins.jac",
+  "pins": [
+    {
+      "ident": "Test.test_openlog",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\n\ndef _t():\n    syslog.openlog('python')\n    try:\n        syslog.openlog(*('\\ud800',))\n    except UnicodeEncodeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_syslog",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\n\ndef _t():\n    syslog.openlog('python')\n    syslog.syslog('test message from python test_syslog')\n    syslog.syslog(syslog.LOG_ERR, 'test error from python test_syslog')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_syslog_implicit_open",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\n\ndef _t():\n    syslog.closelog()\n    syslog.syslog('test message from python test_syslog')\n    syslog.syslog(syslog.LOG_ERR, 'test error from python test_syslog')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_closelog",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\n\ndef _t():\n    syslog.openlog('python')\n    syslog.closelog()\n    syslog.closelog()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_setlogmask",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\n\ndef _t():\n    mask = syslog.LOG_UPTO(syslog.LOG_WARNING)\n    oldmask = syslog.setlogmask(mask)\n    assert syslog.setlogmask(0) == mask, ('assertEqual', syslog.setlogmask(0), mask)\n    assert syslog.setlogmask(oldmask) == mask, ('assertEqual', syslog.setlogmask(oldmask), mask)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_log_mask",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\n\ndef _t():\n    mask = syslog.LOG_UPTO(syslog.LOG_WARNING)\n    assert mask & syslog.LOG_MASK(syslog.LOG_WARNING), ('assertTrue', mask & syslog.LOG_MASK(syslog.LOG_WARNING))\n    assert mask & syslog.LOG_MASK(syslog.LOG_ERR), ('assertTrue', mask & syslog.LOG_MASK(syslog.LOG_ERR))\n    assert not mask & syslog.LOG_MASK(syslog.LOG_INFO), ('assertFalse', mask & syslog.LOG_MASK(syslog.LOG_INFO))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_openlog_noargs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\n\ndef _t():\n    syslog.openlog()\n    syslog.syslog('test message from python test_syslog')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_subinterpreter_syslog",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\nfrom test import support\nfrom textwrap import dedent\n\ndef _t():\n    code = dedent(\"\\n                import syslog\\n                caught_error = False\\n                try:\\n                    syslog.syslog('foo')\\n                except RuntimeError:\\n                    caught_error = True\\n                assert(caught_error)\\n            \")\n    res = support.run_in_subinterp(code)\n    assert res == 0, ('assertEqual', res, 0)\n    syslog.openlog()\n    try:\n        code = dedent(\"\\n                    import syslog\\n                    syslog.syslog('foo')\\n                \")\n        res = support.run_in_subinterp(code)\n        assert res == 0, ('assertEqual', res, 0)\n    finally:\n        syslog.closelog()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_subinterpreter_openlog",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\nfrom test import support\nfrom textwrap import dedent\n\ndef _t():\n    try:\n        code = dedent('\\n                import syslog\\n                caught_error = False\\n                try:\\n                    syslog.openlog()\\n                except RuntimeError:\\n                    caught_error = True\\n\\n                assert(caught_error)\\n            ')\n        res = support.run_in_subinterp(code)\n        assert res == 0, ('assertEqual', res, 0)\n    finally:\n        syslog.closelog()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "Test.test_subinterpreter_closelog",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper, threading_helper\nsyslog = import_helper.import_module('syslog')\nfrom test import support\nfrom textwrap import dedent\n\ndef _t():\n    syslog.openlog('python')\n    try:\n        code = dedent('\\n                import syslog\\n                caught_error = False\\n                try:\\n                    syslog.closelog()\\n                except RuntimeError:\\n                    caught_error = True\\n\\n                assert(caught_error)\\n            ')\n        res = support.run_in_subinterp(code)\n        assert res == 0, ('assertEqual', res, 0)\n    finally:\n        syslog.closelog()\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "Test.test_syslog_threaded",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    }
+  ],
+  "counts": {
+    "extracted": 11,
+    "pinned": 10,
+    "quarantined": 1
+  }
+}

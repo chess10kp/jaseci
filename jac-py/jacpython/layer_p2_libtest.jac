@@ -44,6 +44,7 @@ import from _collections_pylib {
     _p2_ordereddict,
 }
 import from mmap { build_mmap_module }
+import from syslog { build_syslog_module }
 import from _statmodule {
     _p2_S_ISDIR,
     _p2_S_ISCHR,
@@ -950,6 +951,7 @@ def p2_libtest_reset {
         PyModule(t="module", name="_typing", attrs=typing_module_attrs())
     );
     register_shim_module("mmap", build_mmap_module());
+    register_shim_module("syslog", build_syslog_module());
     _p2_warn_state_reset();
     register_shim_module(
         "warnings",
