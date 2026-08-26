@@ -16434,7 +16434,14 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             # mismatches raise immediately with the got-count in the message,
             # and old-style __getitem__ iterables whose len disagrees with
             # their IndexError termination never hang the drain loop.
-            hint = py_len(seq);
+            # ITERATORS are excluded: their __len__ (when present) reflects
+            # total capacity, not remaining items, and host omits got-count
+            # for them entirely (ex38: '(expected 3)' with no got).
+            use_hint = not PyIter_Check(seq);
+            hint = py_none();
+            if use_hint {
+                hint = py_len(seq);
+            }
             if not is_error(hint) and isinstance(hint, PyInt) {
                 lv = (hint as PyInt).val;
                 if lv < arg {
@@ -16507,6 +16514,28 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                     break;
                 }
                 unpacked.append(nxt);
+                if len(unpacked) > arg {
+                    # CPython stops consuming the moment one extra item
+                    # appears -- the iterator stays positioned for later
+                    # next() calls (doctests rely on this). Draining to
+                    # exhaustion first would strand the caller.
+                    # NOTE: must set drain_failed + BREAK (mirroring the
+                    # send_into-error path above); a bare `continue` here
+                    # would re-enter THIS drain loop instead of dispatching
+                    # to the exception handler.
+                    unpack_err = py_error(
+                        "ValueError",
+                        "too many values to unpack (expected " + str(arg) + ")",
+                    );
+                    target = recover_exception(co, unpack_err, offset, stack);
+                    if target >= 0 {
+                        ip = target;
+                        drain_failed = True;
+                    } else {
+                        return unpack_err;
+                    }
+                    break;
+                }
             }
             if drain_failed {
                 continue;

@@ -2,6 +2,12 @@
 # Set = the 116 opcodes ceval.jac run_frame dispatches
 # (numbers from opcode_meta.jac = CPython opcode_ids.h). Regenerate by
 # re-grepping dispatch arms after adding new arms.
+#
+# PAIRING RULE (do not skip): every NEW run_frame dispatch arm requires BOTH
+# (1) the arm itself AND (2) an opcode_allowlist regen -- the gate below
+# REJECTS code objects carrying opcodes absent from _OP_ALLOW, so an unregen
+# allowlist breaks execution of otherwise-valid bytecode at load time
+# (caught live when the t-string arms shipped without regen).
 import from opcode_meta {
 OP_CACHE,
      OP_BINARY_SLICE,
