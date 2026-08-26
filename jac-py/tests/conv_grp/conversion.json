@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_grp.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_grp",
+    "--name",
+    "conv_grp"
+  ],
+  "generated_at": "2026-08-24T23:51:55",
+  "hashes": {
+    "pins_jac": "929c2f0b89f5fa5e3b167f1794bf8b33f516586f7051f963d29817fb309b4e11"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_grp.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "grp",
+  "pins_file": "conv_grp_pins.jac",
+  "pins": [
+    {
+      "ident": "GroupDatabaseTestCase.test_values",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import import_helper\ngrp = import_helper.import_module('grp')\n\ndef check_value(value):\n    assert len(value) == 4, ('assertEqual', len(value), 4)\n    assert value[0] == value.gr_name, ('assertEqual', value[0], value.gr_name)\n    assert isinstance(value.gr_name, str), ('assertIsInstance', value.gr_name, str)\n    assert value[1] == value.gr_passwd, ('assertEqual', value[1], value.gr_passwd)\n    assert isinstance(value.gr_passwd, str), ('assertIsInstance', value.gr_passwd, str)\n    assert value[2] == value.gr_gid, ('assertEqual', value[2], value.gr_gid)\n    assert isinstance(value.gr_gid, int), ('assertIsInstance', value.gr_gid, int)\n    assert value[3] == value.gr_mem, ('assertEqual', value[3], value.gr_mem)\n    assert isinstance(value.gr_mem, list), ('assertIsInstance', value.gr_mem, list)\n\ndef _t():\n    entries = grp.getgrall()\n    for e in entries:\n        check_value(e)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "GroupDatabaseTestCase.test_errors",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport string\nfrom test.support import import_helper\ngrp = import_helper.import_module('grp')\n\ndef _t():\n    try:\n        grp.getgrgid()\n    except TypeError:\n        pass\n    try:\n        grp.getgrgid(*(3.14,))\n    except TypeError:\n        pass\n    try:\n        grp.getgrgid(*(0.0,))\n    except TypeError:\n        pass\n    try:\n        grp.getgrgid(*(0, 0))\n    except TypeError:\n        pass\n    try:\n        grp.getgrgid(*(2 ** 128,))\n    except OverflowError:\n        pass\n    try:\n        grp.getgrgid(*(-2 ** 128,))\n    except OverflowError:\n        pass\n    try:\n        grp.getgrnam()\n    except TypeError:\n        pass\n    try:\n        grp.getgrnam(*(42,))\n    except TypeError:\n        pass\n    try:\n        grp.getgrnam(*(b'root',))\n    except TypeError:\n        pass\n    try:\n        grp.getgrnam(*('root', 0))\n    except TypeError:\n        pass\n    try:\n        grp.getgrnam(*('a\\x00b',))\n    except ValueError:\n        pass\n    try:\n        grp.getgrnam(*('root\\x00',))\n    except ValueError:\n        pass\n    try:\n        grp.getgrnam(*('roo\\udc74',))\n    except UnicodeEncodeError:\n        pass\n    try:\n        grp.getgrnam(*('',))\n    except KeyError:\n        pass\n    try:\n        grp.getgrall(*(42,))\n    except TypeError:\n        pass\n    for _ in range(30):\n        fakename = ''.join(random.choices(string.ascii_lowercase, k=6))\n        try:\n            grp.getgrnam(fakename)\n        except KeyError:\n            break\n    else:\n        raise AssertionError('Cannot find non-existent group name')\n    maxgid = 2 ** 31\n    for _ in range(30):\n        fakegid = random.randrange(maxgid)\n        try:\n            grp.getgrgid(fakegid)\n        except KeyError:\n            break\n        except OverflowError:\n            if maxgid == 2 ** 31:\n                maxgid = 2 ** 16 - 1\n            elif maxgid == 2 ** 16 - 1:\n                maxgid = 2 ** 15\n            else:\n                raise\n    else:\n        raise AssertionError('Cannot find non-existent gid')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "GroupDatabaseTestCase.test_values_extended",
+      "reason": "self.skipTest"
+    }
+  ],
+  "counts": {
+    "extracted": 3,
+    "pinned": 2,
+    "quarantined": 1
+  }
+}

@@ -7,6 +7,24 @@ import from layer_p2_libtest { p2_libtest_run_snippet }
 
 # Source: test_property.py
 
+test "PropertyTests.test_property_decorator_baseclass" {
+    (ok, detail) = p2_libtest_run_snippet("class BaseClass(object):\n\n    def __init__(self):\n        self._spam = 5\n\n    @property\n    def spam(self):\n        \"\"\"BaseClass.getter\"\"\"\n        return self._spam\n\n    @spam.setter\n    def spam(self, value):\n        self._spam = value\n\n    @spam.deleter\n    def spam(self):\n        del self._spam\n\ndef _t():\n    base = BaseClass()\n    assert base.spam == 5, ('assertEqual', base.spam, 5)\n    assert base._spam == 5, ('assertEqual', base._spam, 5)\n    base.spam = 10\n    assert base.spam == 10, ('assertEqual', base.spam, 10)\n    assert base._spam == 10, ('assertEqual', base._spam, 10)\n    delattr(base, 'spam')\n    assert not hasattr(base, 'spam'), ('assertNotHasAttr', base, 'spam')\n    assert not hasattr(base, '_spam'), ('assertNotHasAttr', base, '_spam')\n    base.spam = 20\n    assert base.spam == 20, ('assertEqual', base.spam, 20)\n    assert base._spam == 20, ('assertEqual', base._spam, 20)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "PropertyTests.test_property_decorator_subclass" {
+    (ok, detail) = p2_libtest_run_snippet("class PropertyBase(Exception):\n    pass\n\nclass PropertyGet(PropertyBase):\n    pass\n\nclass PropertySet(PropertyBase):\n    pass\n\nclass PropertyDel(PropertyBase):\n    pass\n\nclass BaseClass(object):\n\n    def __init__(self):\n        self._spam = 5\n\n    @property\n    def spam(self):\n        \"\"\"BaseClass.getter\"\"\"\n        return self._spam\n\n    @spam.setter\n    def spam(self, value):\n        self._spam = value\n\n    @spam.deleter\n    def spam(self):\n        del self._spam\n\nclass SubClass(BaseClass):\n\n    @BaseClass.spam.getter\n    def spam(self):\n        \"\"\"SubClass.getter\"\"\"\n        raise PropertyGet(self._spam)\n\n    @spam.setter\n    def spam(self, value):\n        raise PropertySet(self._spam)\n\n    @spam.deleter\n    def spam(self):\n        raise PropertyDel(self._spam)\n\ndef _t():\n    sub = SubClass()\n    try:\n        getattr(*(sub, 'spam'))\n    except PropertyGet:\n        pass\n    try:\n        setattr(*(sub, 'spam', None))\n    except PropertySet:\n        pass\n    try:\n        delattr(*(sub, 'spam'))\n    except PropertyDel:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "PropertyTests.test_property_decorator_doc" {
+    (ok, detail) = p2_libtest_run_snippet("class PropertyDocBase(object):\n    _spam = 1\n\n    def _get_spam(self):\n        return self._spam\n    spam = property(_get_spam, doc='spam spam spam')\n\nclass PropertyDocSub(PropertyDocBase):\n\n    @PropertyDocBase.spam.getter\n    def spam(self):\n        \"\"\"The decorator does not use this doc string\"\"\"\n        return self._spam\n\ndef _t():\n    base = PropertyDocBase()\n    sub = PropertyDocSub()\n    assert base.__class__.spam.__doc__ == 'spam spam spam', ('assertEqual', base.__class__.spam.__doc__, 'spam spam spam')\n    assert sub.__class__.spam.__doc__ == 'spam spam spam', ('assertEqual', sub.__class__.spam.__doc__, 'spam spam spam')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
 test "PropertyTests.test_property___isabstractmethod__descriptor" {
     (ok, detail) = p2_libtest_run_snippet("def _t():\n    for val in (True, False, [], [1], '', '1'):\n\n        class C(object):\n\n            def foo(self):\n                pass\n            foo.__isabstractmethod__ = val\n            foo = property(foo)\n        assert C.foo.__isabstractmethod__ is bool(val), ('assertIs', C.foo.__isabstractmethod__, bool(val))\n\n    class NotBool(object):\n\n        def __bool__(self):\n            raise ValueError()\n        __len__ = __bool__\n    try:\n\n        class C(object):\n\n            def foo(self):\n                pass\n            foo.__isabstractmethod__ = NotBool()\n            foo = property(foo)\n        C.foo.__isabstractmethod__\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
     assert ok , "RUN<" + detail + ">";
@@ -33,6 +51,12 @@ test "PropertyTests.test_property_setname_on_property_subclass" {
 
 test "PropertySubclassTests.test_property_with_slots_no_docstring" {
     (ok, detail) = p2_libtest_run_snippet("def _t():\n\n    class slotted_prop(property):\n        __slots__ = ('foo',)\n    p = slotted_prop()\n    assert getattr(p, '__doc__', None) is None, ('assertIsNone', getattr(p, '__doc__', None))\n\n    def undocumented_getter():\n        return 4\n    p = slotted_prop(undocumented_getter)\n    assert getattr(p, '__doc__', None) is None, ('assertIsNone', getattr(p, '__doc__', None))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "PropertySubclassTests.test_property_no_doc_on_getter" {
+    (ok, detail) = p2_libtest_run_snippet("class PropertySub(property):\n    \"\"\"This is a subclass of property\"\"\"\n\ndef _t():\n\n    class NoDoc:\n\n        @property\n        def __doc__(self):\n            raise AttributeError\n    assert property(NoDoc()).__doc__ == None, ('assertEqual', property(NoDoc()).__doc__, None)\n    assert PropertySub(NoDoc()).__doc__ == None, ('assertEqual', PropertySub(NoDoc()).__doc__, None)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }

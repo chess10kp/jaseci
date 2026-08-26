@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,18 +10,18 @@
     "diff_runner.py",
     "jac-py/tests/conv_builtin/conv_builtin_pins.jac"
   ],
-  "generated_at": "2026-08-24T23:12:14",
+  "generated_at": "2026-08-25T12:09:54",
   "hashes": {
-    "pins_jac": "cb1a53c6854b55648278d7294c66f4dbd6db74e643c49f3d75da8216be61e413",
-    "conversion_json": "e09120c7d15bd4356e13208c174d2ac8b1ef172fdba49425d130c2d597749b90",
+    "pins_jac": "cf884f9efaa1592d17c44d25edbf6132192817406fe17f35a84e30adf8706ecb",
+    "conversion_json": "1b2b4356ce3524d93bcc8a3cf87e5e3ae7e721257e033fa6bc866b37cb6707ac",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "builtin",
   "counts": {
     "converted": 133,
-    "runnable": 93,
+    "runnable": 100,
     "green": 44,
-    "quarantined": 40
+    "quarantined": 33
   },
   "pins": [
     {
@@ -80,13 +80,13 @@
       "id": "BuiltinTest.test_compile_top_level_await_no_coro",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<'TypeError: expected code object'>"
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
     },
     {
       "id": "BuiltinTest.test_compile_top_level_await",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<'TypeError: expected code object'>"
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
     },
     {
       "id": "BuiltinTest.test_compile_top_level_await_invalid_cases",
@@ -183,7 +183,7 @@
       "id": "BuiltinTest.test_eval_builtins_mapping_reduce",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (<built-in function iter>, (<function _jac_make_host_iterator.<locals>._next at 0x7f4ddc412cf0>, <object object at 0x7f4ddbae0670>)), (<built-in function iter>, ([1, 2],), 0))\"'>"
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (<built-in function iter>, (<function _jac_make_host_iterator.<locals>._next at 0x7f4a8e7bd9b0>, <object object at 0x7f4a8ecdcad0>)), (<built-in function iter>, ([1, 2],), 0))\"'>"
     },
     {
       "id": "BuiltinTest.test_exec_redirected",
@@ -318,6 +318,12 @@
       "status": "pass"
     },
     {
+      "id": "BuiltinTest.test_open",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'EnvironmentVarGuard' from '<unknown>'\">"
+    },
+    {
       "id": "BuiltinTest.test_ord",
       "status": "pass"
     },
@@ -325,6 +331,12 @@
       "id": "BuiltinTest.test_pow",
       "status": "quarantined",
       "reason": "host-raised:TypeError: type complex doesn't define __round__ method"
+    },
+    {
+      "id": "BuiltinTest.test_input",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'EnvironmentVarGuard' from '<unknown>'\">"
     },
     {
       "id": "BuiltinTest.test_input_gh130163",
@@ -435,6 +447,51 @@
     {
       "id": "BuiltinTest.test_singleton_attribute_access",
       "status": "pass"
+    },
+    {
+      "id": "TestBreakpoint.test_breakpoint",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (typing.py, line 1991)"
+    },
+    {
+      "id": "TestBreakpoint.test_breakpoint_with_breakpointhook_set",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'cpython_only' from '<unknown>'\">"
+    },
+    {
+      "id": "TestBreakpoint.test_breakpoint_with_breakpointhook_reset",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (typing.py, line 1991)"
+    },
+    {
+      "id": "TestBreakpoint.test_breakpoint_with_args_and_keywords",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'cpython_only' from '<unknown>'\">"
+    },
+    {
+      "id": "TestBreakpoint.test_breakpoint_with_passthru_error",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'cpython_only' from '<unknown>'\">"
+    },
+    {
+      "id": "TestBreakpoint.test_envar_good_path_empty_string",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (typing.py, line 1991)"
+    },
+    {
+      "id": "TestBreakpoint.test_envar_ignored_when_hook_is_set",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'cpython_only' from '<unknown>'\">"
+    },
+    {
+      "id": "TestBreakpoint.test_runtime_error_when_hook_is_lost",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'cpython_only' from '<unknown>'\">"
     },
     {
       "id": "TestSorted.test_basic",
@@ -612,7 +669,7 @@
     {
       "id": "BuiltinTest.test_import",
       "status": "quarantined",
-      "reason": "uses-self.assertWarns"
+      "reason": "uses-self.assertRaises"
     },
     {
       "id": "BuiltinTest.test_callable",
@@ -623,16 +680,6 @@
       "id": "BuiltinTest.test_exec_globals_frozen",
       "status": "quarantined",
       "reason": "unresolved-name:__builtins__"
-    },
-    {
-      "id": "BuiltinTest.test_open",
-      "status": "quarantined",
-      "reason": "helper:write_testfile(self.addCleanup)"
-    },
-    {
-      "id": "BuiltinTest.test_input",
-      "status": "quarantined",
-      "reason": "helper:write_testfile(self.addCleanup)"
     },
     {
       "id": "BuiltinTest.test_sum",
@@ -653,46 +700,6 @@
       "id": "BuiltinTest.test_format",
       "status": "quarantined",
       "reason": "self.assertStartsWith"
-    },
-    {
-      "id": "TestBreakpoint.test_breakpoint",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "TestBreakpoint.test_breakpoint_with_breakpointhook_set",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "TestBreakpoint.test_breakpoint_with_breakpointhook_reset",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "TestBreakpoint.test_breakpoint_with_args_and_keywords",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "TestBreakpoint.test_breakpoint_with_passthru_error",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "TestBreakpoint.test_envar_good_path_empty_string",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "TestBreakpoint.test_envar_ignored_when_hook_is_set",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
-    },
-    {
-      "id": "TestBreakpoint.test_runtime_error_when_hook_is_lost",
-      "status": "quarantined",
-      "reason": "helper:setUp(self.addCleanup)"
     }
   ]
 }

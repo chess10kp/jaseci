@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_pkg.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_pkg",
+    "--name",
+    "conv_pkg"
+  ],
+  "generated_at": "2026-08-24T23:52:26",
+  "hashes": {
+    "pins_jac": "c5614036f6fab10e979a90df65f330ebb67f950fb583bfae719f85dc7a47787e"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_pkg.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "pkg",
+  "pins_file": "conv_pkg_pins.jac",
+  "pins": [
+    {
+      "ident": "TestPkg.test_1",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPkg.test_2",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPkg.test_3",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPkg.test_4",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPkg.test_5",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPkg.test_6",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPkg.test_7",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestPkg.test_8",
+      "reason": "decorator:unittest.skipIf"
+    }
+  ],
+  "counts": {
+    "extracted": 8,
+    "pinned": 0,
+    "quarantined": 8
+  }
+}

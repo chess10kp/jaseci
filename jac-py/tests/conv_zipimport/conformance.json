@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_zipimport/conv_zipimport_pins.jac"
+  ],
+  "generated_at": "2026-08-25T12:09:38",
+  "hashes": {
+    "pins_jac": "3c53a89f2d7721d3ab2c3310255979a41b6e6dd09a29eb3ebf015f5ef5f96368",
+    "conversion_json": "c6550653898987f25eb2bfb7cf096d2a4a286891c2a1bbe7922a5cc229b7cec9",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "zipimport",
+  "counts": {
+    "converted": 49,
+    "runnable": 12,
+    "green": 5,
+    "quarantined": 37
+  },
+  "pins": [
+    {
+      "id": "CompressedZipImportTestCase.testPy",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testPyc",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testBoth",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testUncheckedHashBasedPyc",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.test_checked_hash_based_change_pyc",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testEmptyPy",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testBadMagic",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testBadMagic2",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testBadMTime",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.test2038MTime",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testPackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testSubPackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testSubNamespacePackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testPackageExplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testPackageImplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testNamespacePackageExplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testNamespacePackageImplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testMixedNamespacePackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testNamespacePackage",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testZipImporterMethods",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testInvalidateCaches",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testInvalidateCachesWithMultipleZipimports",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testZipImporterMethodsInSubDirectory",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testGetDataExplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testGetDataImplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testImporterAttr",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testDefaultOptimizationLevel",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testImport_WithStuff",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testGetSource",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertModuleSource'"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testGetCompiledSource",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertModuleSource'"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testDoctestFile",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'doDoctestFile'"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testDoctestSuite",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'doDoctestSuite'"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testTraceback",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'doTraceback'"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testBytesPath",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testComment",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testBeginningCruftAndComment",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testLargestPossibleComment",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testZip64LargeFile",
+      "status": "quarantined",
+      "reason": "host-raised:OSError: [Errno 28] No space left on device"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testNoFile",
+      "status": "pass"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testEmptyFilename",
+      "status": "pass"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testBadArgs",
+      "status": "pass"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testFilenameTooLong",
+      "status": "pass"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testEmptyFile",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'create_empty_file'\">"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testNotZipFile",
+      "status": "pass"
+    },
+    {
+      "id": "UncompressedZipImportTestCase.testUnencodable",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "UncompressedZipImportTestCase.testZip64",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "id": "UncompressedZipImportTestCase.testZip64CruftAndComment",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_resource"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testFileUnreadable",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testAFakeZlib",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    }
+  ]
+}

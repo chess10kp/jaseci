@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_pprint/conv_pprint_pins.jac"
+  ],
+  "generated_at": "2026-08-25T00:01:24",
+  "hashes": {
+    "pins_jac": "08e66770eb5edda79c3ecbea8f47f987af6cc99f470cc7fdadfeedec2a9a260a",
+    "conversion_json": "3cff58b03e5c6517af24179535ab8314ae21263e32c2a47d0e45f690775a2f6c",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "pprint",
+  "counts": {
+    "converted": 45,
+    "runnable": 43,
+    "green": 7,
+    "quarantined": 2
+  },
+  "pins": [
+    {
+      "id": "QueryTestCase.test_lazy_import",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ModuleNotFoundError: No module named 'test.support.import_helper'\">"
+    },
+    {
+      "id": "QueryTestCase.test_init",
+      "status": "pass"
+    },
+    {
+      "id": "QueryTestCase.test_basic",
+      "status": "pass"
+    },
+    {
+      "id": "QueryTestCase.test_stdout_is_None",
+      "status": "pass"
+    },
+    {
+      "id": "QueryTestCase.test_knotted",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertTrue\\', False)\"'>"
+    },
+    {
+      "id": "QueryTestCase.test_unreadable",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"bridge-table: type \\'module\\' has policy BridgePolicy.FAIL but no to_host conversion arm\"'>"
+    },
+    {
+      "id": "QueryTestCase.test_same_as_repr",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'assertTrue'"
+    },
+    {
+      "id": "QueryTestCase.test_container_repr_override_called",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_basic_line_wrap",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_nested_indentations",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_width",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'set2' is not defined"
+    },
+    {
+      "id": "QueryTestCase.test_integer",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"unsupported operand type(s) for +: \\'Temperature\\' and \\'float\\'\"'>"
+    },
+    {
+      "id": "QueryTestCase.test_sorted_dict",
+      "status": "pass"
+    },
+    {
+      "id": "QueryTestCase.test_sort_dict",
+      "status": "pass"
+    },
+    {
+      "id": "QueryTestCase.test_ordered_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_mapping_proxy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_empty_simple_namespace",
+      "status": "pass"
+    },
+    {
+      "id": "QueryTestCase.test_small_simple_namespace",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'namespace(b=2, a=1)\\', \\'namespace(a=1, b=2)\\')\"'>"
+    },
+    {
+      "id": "QueryTestCase.test_simple_namespace",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_simple_namespace_subclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'<__main__.AdvancedNamespace object at 0x7fdb92d123d0>\\', \\'AdvancedNamespace(the=0,\\\\\\\\n                  quick=1,\\\\\\\\n                  brown=2,\\\\\\\\n                  fox=3,\\\\\\\\n                  jumped=4,\\\\\\\\n                  over=5,\\\\\\\\n                  a=6,\\\\\\\\n                  lazy=7,\\\\\\\\n                  dog=8)\\')\"'>"
+    },
+    {
+      "id": "QueryTestCase.test_empty_dataclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "QueryTestCase.test_small_dataclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "QueryTestCase.test_larger_dataclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "QueryTestCase.test_dataclass_with_repr",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "QueryTestCase.test_dataclass_no_repr",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "QueryTestCase.test_recursive_dataclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "QueryTestCase.test_cyclic_dataclass",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "QueryTestCase.test_subclassing",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_set_reprs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_set_of_sets_reprs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_depth",
+      "status": "pass"
+    },
+    {
+      "id": "QueryTestCase.test_sort_unorderable_values",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "QueryTestCase.test_sort_orderable_and_unorderable_values",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_str_wrap",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_compact",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_compact_width",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_bytes_wrap",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_bytearray_wrap",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_default_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_counter",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_chainmap",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_deque",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_user_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_user_list",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    },
+    {
+      "id": "QueryTestCase.test_user_string",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'EnumCheck.__init_subclass__() takes no keyword arguments'\">"
+    }
+  ]
+}

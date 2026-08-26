@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "e28b96712cf2972a6bd4dbe85ee2429b7e3837a1",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_abstract_numbers.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_abstract_numbers",
+    "--name",
+    "conv_abstract_numbers"
+  ],
+  "generated_at": "2026-08-25T11:03:25",
+  "hashes": {
+    "pins_jac": "008d7f48de0df9dce969fc4196cb2031855957a23367e0e9147544d8db4c05cb"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_abstract_numbers.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "abstract_numbers",
+  "pins_file": "conv_abstract_numbers_pins.jac",
+  "pins": [
+    {
+      "ident": "TestNumbers.test_int",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from numbers import Complex, Real, Rational, Integral, Number\n\ndef _t():\n    assert issubclass(int, Integral), ('assertIsSubclass', int, Integral)\n    assert issubclass(int, Rational), ('assertIsSubclass', int, Rational)\n    assert issubclass(int, Real), ('assertIsSubclass', int, Real)\n    assert issubclass(int, Complex), ('assertIsSubclass', int, Complex)\n    assert issubclass(int, Number), ('assertIsSubclass', int, Number)\n    assert 7 == int(7).real, ('assertEqual', 7, int(7).real)\n    assert 0 == int(7).imag, ('assertEqual', 0, int(7).imag)\n    assert 7 == int(7).conjugate(), ('assertEqual', 7, int(7).conjugate())\n    assert -7 == int(-7).conjugate(), ('assertEqual', -7, int(-7).conjugate())\n    assert 7 == int(7).numerator, ('assertEqual', 7, int(7).numerator)\n    assert 1 == int(7).denominator, ('assertEqual', 1, int(7).denominator)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestNumbers.test_float",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from numbers import Complex, Real, Rational, Integral, Number\n\ndef _t():\n    assert not issubclass(float, Integral), ('assertNotIsSubclass', float, Integral)\n    assert not issubclass(float, Rational), ('assertNotIsSubclass', float, Rational)\n    assert issubclass(float, Real), ('assertIsSubclass', float, Real)\n    assert issubclass(float, Complex), ('assertIsSubclass', float, Complex)\n    assert issubclass(float, Number), ('assertIsSubclass', float, Number)\n    assert 7.3 == float(7.3).real, ('assertEqual', 7.3, float(7.3).real)\n    assert 0 == float(7.3).imag, ('assertEqual', 0, float(7.3).imag)\n    assert 7.3 == float(7.3).conjugate(), ('assertEqual', 7.3, float(7.3).conjugate())\n    assert -7.3 == float(-7.3).conjugate(), ('assertEqual', -7.3, float(-7.3).conjugate())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestNumbers.test_complex",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import math\nimport operator\nfrom numbers import Complex, Real, Rational, Integral, Number\n\ndef _t():\n    assert not issubclass(complex, Integral), ('assertNotIsSubclass', complex, Integral)\n    assert not issubclass(complex, Rational), ('assertNotIsSubclass', complex, Rational)\n    assert not issubclass(complex, Real), ('assertNotIsSubclass', complex, Real)\n    assert issubclass(complex, Complex), ('assertIsSubclass', complex, Complex)\n    assert issubclass(complex, Number), ('assertIsSubclass', complex, Number)\n    c1, c2 = (complex(3, 2), complex(4, 1))\n    try:\n        math.trunc(*(c1,))\n    except TypeError:\n        pass\n    try:\n        operator.mod(*(c1, c2))\n    except TypeError:\n        pass\n    try:\n        divmod(*(c1, c2))\n    except TypeError:\n        pass\n    try:\n        operator.floordiv(*(c1, c2))\n    except TypeError:\n        pass\n    try:\n        float(*(c1,))\n    except TypeError:\n        pass\n    try:\n        int(*(c1,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestNumbersDefaultMethods.test_complex",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import abc\nfrom numbers import Complex, Real, Rational, Integral, Number\n\ndef concretize(cls):\n\n    def not_implemented(*args, **kwargs):\n        raise NotImplementedError()\n    for name in dir(cls):\n        try:\n            value = getattr(cls, name)\n            if value.__isabstractmethod__:\n                setattr(cls, name, not_implemented)\n        except AttributeError:\n            pass\n    abc.update_abstractmethods(cls)\n    return cls\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    @concretize\n    class MyComplex(Complex):\n\n        def __init__(self, real, imag):\n            self.r = real\n            self.i = imag\n\n        @property\n        def real(self):\n            return self.r\n\n        @property\n        def imag(self):\n            return self.i\n\n        def __add__(self, other):\n            if isinstance(other, Complex):\n                return MyComplex(self.imag + other.imag, self.real + other.real)\n            raise NotImplementedError\n\n        def __neg__(self):\n            return MyComplex(-self.real, -self.imag)\n\n        def __eq__(self, other):\n            if isinstance(other, Complex):\n                return self.imag == other.imag and self.real == other.real\n            if isinstance(other, Number):\n                return self.imag == 0 and self.real == other.real\n    assert bool(MyComplex(1, 1)), ('assertTrue', bool(MyComplex(1, 1)))\n    assert bool(MyComplex(0, 1)), ('assertTrue', bool(MyComplex(0, 1)))\n    assert bool(MyComplex(1, 0)), ('assertTrue', bool(MyComplex(1, 0)))\n    assert not bool(MyComplex(0, 0)), ('assertFalse', bool(MyComplex(0, 0)))\n    assert MyComplex(2, 3) - complex(1, 2) == MyComplex(1, 1), ('assertEqual', MyComplex(2, 3) - complex(1, 2), MyComplex(1, 1))\n    assert complex(2, 3) - MyComplex(1, 2) == MyComplex(1, 1), ('assertEqual', complex(2, 3) - MyComplex(1, 2), MyComplex(1, 1))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestNumbersDefaultMethods.test_real",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import abc\nfrom numbers import Complex, Real, Rational, Integral, Number\n\ndef concretize(cls):\n\n    def not_implemented(*args, **kwargs):\n        raise NotImplementedError()\n    for name in dir(cls):\n        try:\n            value = getattr(cls, name)\n            if value.__isabstractmethod__:\n                setattr(cls, name, not_implemented)\n        except AttributeError:\n            pass\n    abc.update_abstractmethods(cls)\n    return cls\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    @concretize\n    class MyReal(Real):\n\n        def __init__(self, n):\n            self.n = n\n\n        def __pos__(self):\n            return self.n\n\n        def __float__(self):\n            return float(self.n)\n\n        def __floordiv__(self, other):\n            return self.n // other\n\n        def __rfloordiv__(self, other):\n            return other // self.n\n\n        def __mod__(self, other):\n            return self.n % other\n\n        def __rmod__(self, other):\n            return other % self.n\n    assert divmod(MyReal(3), 2) == (1, 1), ('assertEqual', divmod(MyReal(3), 2), (1, 1))\n    assert divmod(3, MyReal(2)) == (1, 1), ('assertEqual', divmod(3, MyReal(2)), (1, 1))\n    assert complex(MyReal(1)) == 1 + 0j, ('assertEqual', complex(MyReal(1)), 1 + 0j)\n    assert MyReal(3).real == 3, ('assertEqual', MyReal(3).real, 3)\n    assert MyReal(3).imag == 0, ('assertEqual', MyReal(3).imag, 0)\n    assert MyReal(123).conjugate() == 123, ('assertEqual', MyReal(123).conjugate(), 123)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestNumbersDefaultMethods.test_rational",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import abc\nfrom numbers import Complex, Real, Rational, Integral, Number\n\ndef concretize(cls):\n\n    def not_implemented(*args, **kwargs):\n        raise NotImplementedError()\n    for name in dir(cls):\n        try:\n            value = getattr(cls, name)\n            if value.__isabstractmethod__:\n                setattr(cls, name, not_implemented)\n        except AttributeError:\n            pass\n    abc.update_abstractmethods(cls)\n    return cls\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    @concretize\n    class MyRational(Rational):\n\n        def __init__(self, numerator, denominator):\n            self.n = numerator\n            self.d = denominator\n\n        @property\n        def numerator(self):\n            return self.n\n\n        @property\n        def denominator(self):\n            return self.d\n    assert float(MyRational(5, 2)) == 2.5, ('assertEqual', float(MyRational(5, 2)), 2.5)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestNumbersDefaultMethods.test_integral",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import abc\nimport operator\nfrom numbers import Complex, Real, Rational, Integral, Number\n\ndef concretize(cls):\n\n    def not_implemented(*args, **kwargs):\n        raise NotImplementedError()\n    for name in dir(cls):\n        try:\n            value = getattr(cls, name)\n            if value.__isabstractmethod__:\n                setattr(cls, name, not_implemented)\n        except AttributeError:\n            pass\n    abc.update_abstractmethods(cls)\n    return cls\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    @concretize\n    class MyIntegral(Integral):\n\n        def __init__(self, n):\n            self.n = n\n\n        def __pos__(self):\n            return self.n\n\n        def __int__(self):\n            return self.n\n    assert operator.index(MyIntegral(123)) == 123, ('assertEqual', operator.index(MyIntegral(123)), 123)\n    assert float(MyIntegral(123)) == 123.0, ('assertEqual', float(MyIntegral(123)), 123.0)\n    assert MyIntegral(123).numerator == 123, ('assertEqual', MyIntegral(123).numerator, 123)\n    assert MyIntegral(123).denominator == 1, ('assertEqual', MyIntegral(123).denominator, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 7,
+    "pinned": 7,
+    "quarantined": 0
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,10 +10,10 @@
     "diff_runner.py",
     "jac-py/tests/conv_deque/conv_deque_pins.jac"
   ],
-  "generated_at": "2026-08-24T23:22:01",
+  "generated_at": "2026-08-25T00:41:14",
   "hashes": {
     "pins_jac": "4310fae9bbc64098e1fca347e730cbf0ab9126b453ec7322b6f953a565f3f579",
-    "conversion_json": "7a22de01de5faf30d03c80ba9a8ba2d44825edd27ae0f3543ba2e0fc4027de76",
+    "conversion_json": "90f5743a8b7e7881e2fac4b4c8cb797b048fb5c0efc854ff7514f21cb2c0ff70",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "deque",

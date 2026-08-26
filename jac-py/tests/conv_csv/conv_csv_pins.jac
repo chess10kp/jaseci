@@ -97,6 +97,24 @@ test "TestDialectRegistry.test_registry_badargs" {
     assert detail == "ok" , "GOT<" + detail + ">";
 }
 
+test "TestDialectRegistry.test_registry" {
+    (ok, detail) = p2_libtest_run_snippet("_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport csv\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    class myexceltsv(csv.excel):\n        delimiter = '\\t'\n    name = 'myexceltsv'\n    expected_dialects = csv.list_dialects() + [name]\n    expected_dialects.sort()\n    csv.register_dialect(name, myexceltsv)\n    _cleanup_stack.append((csv.unregister_dialect, (name,), {}))\n    assert csv.get_dialect(name).delimiter == '\\t', ('assertEqual', csv.get_dialect(name).delimiter, '\\t')\n    got_dialects = sorted(csv.list_dialects())\n    assert expected_dialects == got_dialects, ('assertEqual', expected_dialects, got_dialects)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "TestDialectRegistry.test_register_kwargs" {
+    (ok, detail) = p2_libtest_run_snippet("_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport csv\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    name = 'fedcba'\n    csv.register_dialect(name, delimiter=';')\n    _cleanup_stack.append((csv.unregister_dialect, (name,), {}))\n    assert csv.get_dialect(name).delimiter == ';', ('assertEqual', csv.get_dialect(name).delimiter, ';')\n    assert [['X', 'Y', 'Z']] == list(csv.reader(['X;Y;Z'], name)), ('assertEqual', [['X', 'Y', 'Z']], list(csv.reader(['X;Y;Z'], name)))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "TestDialectRegistry.test_register_kwargs_override" {
+    (ok, detail) = p2_libtest_run_snippet("_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport csv\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    class mydialect(csv.Dialect):\n        delimiter = '\\t'\n        quotechar = '\"'\n        doublequote = True\n        skipinitialspace = False\n        lineterminator = '\\r\\n'\n        quoting = csv.QUOTE_MINIMAL\n    name = 'test_dialect'\n    csv.register_dialect(name, mydialect, delimiter=';', quotechar=\"'\", doublequote=False, skipinitialspace=True, lineterminator='\\n', quoting=csv.QUOTE_ALL)\n    _cleanup_stack.append((csv.unregister_dialect, (name,), {}))\n    dialect = csv.get_dialect(name)\n    assert dialect.delimiter == ';', ('assertEqual', dialect.delimiter, ';')\n    assert dialect.quotechar == \"'\", ('assertEqual', dialect.quotechar, \"'\")\n    assert dialect.doublequote == False, ('assertEqual', dialect.doublequote, False)\n    assert dialect.skipinitialspace == True, ('assertEqual', dialect.skipinitialspace, True)\n    assert dialect.lineterminator == '\\n', ('assertEqual', dialect.lineterminator, '\\n')\n    assert dialect.quoting == csv.QUOTE_ALL, ('assertEqual', dialect.quoting, csv.QUOTE_ALL)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
 test "TestDialectRegistry.test_incomplete_dialect" {
     (ok, detail) = p2_libtest_run_snippet("import csv\n\ndef _t():\n\n    class myexceltsv(csv.Dialect):\n        delimiter = '\\t'\n    try:\n        myexceltsv()\n    except csv.Error:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
     assert ok , "RUN<" + detail + ">";

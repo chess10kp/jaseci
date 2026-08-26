@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "04a42358d6498c6740e9df94cf9b27fbbe2a0a8e",
+  "jac_sha": "9de0dc6358f09498585ca7d9910fb30eefa21187",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -14,9 +14,9 @@
     "--name",
     "conv_statistics"
   ],
-  "generated_at": "2026-08-24T23:28:39",
+  "generated_at": "2026-08-25T00:48:58",
   "hashes": {
-    "pins_jac": "57f494e70bd265ae46eb3f2c9f9f89060a8b661f2785dd87e350046f77e76d7a"
+    "pins_jac": "eb61846b8f4c4c457a80d8cf5dde004155458fed490b17f4feb024c3ed314ea5"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_statistics.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -668,12 +668,160 @@
       "snippet": "import statistics\n\ndef setUp():\n\n    def simplified_sum(*args):\n        T, value, n = statistics._sum(*args)\n        return statistics._coerce(value, T)\n    self.func = simplified_sum\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    def simplified_sum(*args):\n        T, value, n = statistics._sum(*args)\n        return statistics._coerce(value, T)\n    self.func = simplified_sum\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
+      "ident": "TestMean.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mean\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHarmonicMean.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.harmonic_mean\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMedianLow.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.median_low\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMedianHigh.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.median_high\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMedianGrouped.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.median_grouped\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMode.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mode\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPVariance.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pvariance\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestVariance.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.variance\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPStdev.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pstdev\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStdev.test_empty_data",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.stdev\n    for empty in ([], (), iter([])):\n        try:\n            self.func(*(empty,))\n        except statistics.StatisticsError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
       "ident": "TestSumCommon.test_no_inplace_modifications",
       "status": "pinned",
       "oracle": {
         "status": "ok"
       },
       "snippet": "import random\nimport statistics\n\ndef setUp():\n\n    def simplified_sum(*args):\n        T, value, n = statistics._sum(*args)\n        return statistics._coerce(value, T)\n    self.func = simplified_sum\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    def simplified_sum(*args):\n        T, value, n = statistics._sum(*args)\n        return statistics._coerce(value, T)\n    self.func = simplified_sum\n    data = prepare_data()\n    assert len(data) != 1\n    assert data != sorted(data)\n    saved = data[:]\n    assert data is not saved\n    _ = self.func(data)\n    assert data == saved, ('assertListEqual', data, saved)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMean.test_no_inplace_modifications",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mean\n    data = prepare_data()\n    assert len(data) != 1\n    assert data != sorted(data)\n    saved = data[:]\n    assert data is not saved\n    _ = self.func(data)\n    assert data == saved, ('assertListEqual', data, saved)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHarmonicMean.test_no_inplace_modifications",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianLow.test_no_inplace_modifications",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianHigh.test_no_inplace_modifications",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianGrouped.test_no_inplace_modifications",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMode.test_no_inplace_modifications",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef prepare_data():\n    \"\"\"Overload method from UnivariateCommonMixin.\"\"\"\n    return [1, 1, 1, 1, 3, 4, 7, 9, 0, 8, 2]\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mode\n    data = prepare_data()\n    assert len(data) != 1\n    assert data != sorted(data)\n    saved = data[:]\n    assert data is not saved\n    _ = self.func(data)\n    assert data == saved, ('assertListEqual', data, saved)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPVariance.test_no_inplace_modifications",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pvariance\n    data = prepare_data()\n    assert len(data) != 1\n    assert data != sorted(data)\n    saved = data[:]\n    assert data is not saved\n    _ = self.func(data)\n    assert data == saved, ('assertListEqual', data, saved)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestVariance.test_no_inplace_modifications",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.variance\n    data = prepare_data()\n    assert len(data) != 1\n    assert data != sorted(data)\n    saved = data[:]\n    assert data is not saved\n    _ = self.func(data)\n    assert data == saved, ('assertListEqual', data, saved)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPStdev.test_no_inplace_modifications",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pstdev\n    data = prepare_data()\n    assert len(data) != 1\n    assert data != sorted(data)\n    saved = data[:]\n    assert data is not saved\n    _ = self.func(data)\n    assert data == saved, ('assertListEqual', data, saved)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStdev.test_no_inplace_modifications",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.stdev\n    data = prepare_data()\n    assert len(data) != 1\n    assert data != sorted(data)\n    saved = data[:]\n    assert data is not saved\n    _ = self.func(data)\n    assert data == saved, ('assertListEqual', data, saved)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
       "ident": "TestSumCommon.test_order_doesnt_matter",
@@ -772,6 +920,74 @@
       "snippet": "import random\nimport statistics\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef setUp():\n\n    def simplified_sum(*args):\n        T, value, n = statistics._sum(*args)\n        return statistics._coerce(value, T)\n    self.func = simplified_sum\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    def simplified_sum(*args):\n        T, value, n = statistics._sum(*args)\n        return statistics._coerce(value, T)\n    self.func = simplified_sum\n\n    class MyList(list):\n        pass\n\n    class MyTuple(tuple):\n        pass\n\n    def generator(data):\n        return (obj for obj in data)\n    data = prepare_data()\n    expected = self.func(data)\n    for kind in (list, tuple, iter, MyList, MyTuple, generator):\n        result = self.func(kind(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
+      "ident": "TestMean.test_type_of_data_collection",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mean\n\n    class MyList(list):\n        pass\n\n    class MyTuple(tuple):\n        pass\n\n    def generator(data):\n        return (obj for obj in data)\n    data = prepare_data()\n    expected = self.func(data)\n    for kind in (list, tuple, iter, MyList, MyTuple, generator):\n        result = self.func(kind(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHarmonicMean.test_type_of_data_collection",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianLow.test_type_of_data_collection",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianHigh.test_type_of_data_collection",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianGrouped.test_type_of_data_collection",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMode.test_type_of_data_collection",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import statistics\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef prepare_data():\n    \"\"\"Overload method from UnivariateCommonMixin.\"\"\"\n    return [1, 1, 1, 1, 3, 4, 7, 9, 0, 8, 2]\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mode\n\n    class MyList(list):\n        pass\n\n    class MyTuple(tuple):\n        pass\n\n    def generator(data):\n        return (obj for obj in data)\n    data = prepare_data()\n    expected = self.func(data)\n    for kind in (list, tuple, iter, MyList, MyTuple, generator):\n        result = self.func(kind(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPVariance.test_type_of_data_collection",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pvariance\n\n    class MyList(list):\n        pass\n\n    class MyTuple(tuple):\n        pass\n\n    def generator(data):\n        return (obj for obj in data)\n    data = prepare_data()\n    expected = self.func(data)\n    for kind in (list, tuple, iter, MyList, MyTuple, generator):\n        result = self.func(kind(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestVariance.test_type_of_data_collection",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.variance\n\n    class MyList(list):\n        pass\n\n    class MyTuple(tuple):\n        pass\n\n    def generator(data):\n        return (obj for obj in data)\n    data = prepare_data()\n    expected = self.func(data)\n    for kind in (list, tuple, iter, MyList, MyTuple, generator):\n        result = self.func(kind(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPStdev.test_type_of_data_collection",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pstdev\n\n    class MyList(list):\n        pass\n\n    class MyTuple(tuple):\n        pass\n\n    def generator(data):\n        return (obj for obj in data)\n    data = prepare_data()\n    expected = self.func(data)\n    for kind in (list, tuple, iter, MyList, MyTuple, generator):\n        result = self.func(kind(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStdev.test_type_of_data_collection",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport statistics\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.stdev\n\n    class MyList(list):\n        pass\n\n    class MyTuple(tuple):\n        pass\n\n    def generator(data):\n        return (obj for obj in data)\n    data = prepare_data()\n    expected = self.func(data)\n    for kind in (list, tuple, iter, MyList, MyTuple, generator):\n        result = self.func(kind(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
       "ident": "TestSumCommon.test_range_data",
       "status": "pinned",
       "oracle": {
@@ -865,14 +1081,187 @@
       "reason": "host-raised:NameError: name 'self' is not defined"
     },
     {
+      "ident": "TestMean.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestHarmonicMean.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestMedianLow.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestMedianHigh.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestMedianGrouped.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestMode.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPVariance.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestVariance.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPStdev.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestStdev.test_bad_arg_types",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
       "ident": "TestSumCommon.test_type_of_data_element",
       "status": "quarantined",
       "reason": "host-raised:TypeError: issubclass() arg 2 must be a class, a tuple of classes, or a union"
     },
     {
+      "ident": "TestMean.test_type_of_data_element",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mean\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n    raw = prepare_data()\n    expected = self.func(raw)\n    for kind in (float, MyFloat, Decimal, Fraction):\n        data = [kind(x) for x in raw]\n        result = type(expected)(self.func(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHarmonicMean.test_type_of_data_element",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianLow.test_type_of_data_element",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianHigh.test_type_of_data_element",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianGrouped.test_type_of_data_element",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMode.test_type_of_data_element",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Overload method from UnivariateCommonMixin.\"\"\"\n    return [1, 1, 1, 1, 3, 4, 7, 9, 0, 8, 2]\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mode\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n    raw = prepare_data()\n    expected = self.func(raw)\n    for kind in (float, MyFloat, Decimal, Fraction):\n        data = [kind(x) for x in raw]\n        result = type(expected)(self.func(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPVariance.test_type_of_data_element",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pvariance\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n    raw = prepare_data()\n    expected = self.func(raw)\n    for kind in (float, MyFloat, Decimal, Fraction):\n        data = [kind(x) for x in raw]\n        result = type(expected)(self.func(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestVariance.test_type_of_data_element",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.variance\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n    raw = prepare_data()\n    expected = self.func(raw)\n    for kind in (float, MyFloat, Decimal, Fraction):\n        data = [kind(x) for x in raw]\n        result = type(expected)(self.func(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPStdev.test_type_of_data_element",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pstdev\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n    raw = prepare_data()\n    expected = self.func(raw)\n    for kind in (float, MyFloat, Decimal, Fraction):\n        data = [kind(x) for x in raw]\n        result = type(expected)(self.func(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestStdev.test_type_of_data_element",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef _calc_errors(actual, expected):\n    \"\"\"Return the absolute and relative errors between two numbers.\n\n    >>> _calc_errors(100, 75)\n    (25, 0.25)\n    >>> _calc_errors(100, 100)\n    (0, 0.0)\n\n    Returns the (absolute error, relative error) between the two arguments.\n    \"\"\"\n    base = max(abs(actual), abs(expected))\n    abs_err = abs(actual - expected)\n    rel_err = abs_err / base if base else float('inf')\n    return (abs_err, rel_err)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.stdev\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n    raw = prepare_data()\n    expected = self.func(raw)\n    for kind in (float, MyFloat, Decimal, Fraction):\n        data = [kind(x) for x in raw]\n        result = type(expected)(self.func(data))\n        assert result == expected, ('assertEqual', result, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
       "ident": "TestSumCommon.test_types_conserved",
       "status": "quarantined",
       "reason": "host-raised:TypeError: issubclass() arg 2 must be a class, a tuple of classes, or a union"
+    },
+    {
+      "ident": "TestMean.test_types_conserved",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef prepare_types_for_conservation_test():\n    \"\"\"Return the types which are expected to be conserved.\"\"\"\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __rtruediv__(self, other):\n            return type(self)(super().__rtruediv__(other))\n\n        def __sub__(self, other):\n            return type(self)(super().__sub__(other))\n\n        def __rsub__(self, other):\n            return type(self)(super().__rsub__(other))\n\n        def __pow__(self, other):\n            return type(self)(super().__pow__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n\n        def __mul__(self, other):\n            return type(self)(super().__mul__(other))\n        __rmul__ = __mul__\n    return (float, Decimal, Fraction, MyFloat)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mean\n    data = prepare_data()\n    for kind in prepare_types_for_conservation_test():\n        d = [kind(x) for x in data]\n        result = self.func(d)\n        assert type(result) is kind, ('assertIs', type(result), kind)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHarmonicMean.test_types_conserved",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianDataType.test_types_conserved",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    data = list(range(15))\n    assert len(data) % 2 == 1\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef prepare_types_for_conservation_test():\n    \"\"\"Return the types which are expected to be conserved.\"\"\"\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __rtruediv__(self, other):\n            return type(self)(super().__rtruediv__(other))\n\n        def __sub__(self, other):\n            return type(self)(super().__sub__(other))\n\n        def __rsub__(self, other):\n            return type(self)(super().__rsub__(other))\n\n        def __pow__(self, other):\n            return type(self)(super().__pow__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n\n        def __mul__(self, other):\n            return type(self)(super().__mul__(other))\n        __rmul__ = __mul__\n    return (float, Decimal, Fraction, MyFloat)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.median\n    data = prepare_data()\n    for kind in prepare_types_for_conservation_test():\n        d = [kind(x) for x in data]\n        result = self.func(d)\n        assert type(result) is kind, ('assertIs', type(result), kind)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMedianLow.test_types_conserved",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMedianHigh.test_types_conserved",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestMode.test_types_conserved",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Overload method from UnivariateCommonMixin.\"\"\"\n    return [1, 1, 1, 1, 3, 4, 7, 9, 0, 8, 2]\n\ndef prepare_types_for_conservation_test():\n    \"\"\"Return the types which are expected to be conserved.\"\"\"\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __rtruediv__(self, other):\n            return type(self)(super().__rtruediv__(other))\n\n        def __sub__(self, other):\n            return type(self)(super().__sub__(other))\n\n        def __rsub__(self, other):\n            return type(self)(super().__rsub__(other))\n\n        def __pow__(self, other):\n            return type(self)(super().__pow__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n\n        def __mul__(self, other):\n            return type(self)(super().__mul__(other))\n        __rmul__ = __mul__\n    return (float, Decimal, Fraction, MyFloat)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mode\n    data = prepare_data()\n    for kind in prepare_types_for_conservation_test():\n        d = [kind(x) for x in data]\n        result = self.func(d)\n        assert type(result) is kind, ('assertIs', type(result), kind)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPVariance.test_types_conserved",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef prepare_types_for_conservation_test():\n    \"\"\"Return the types which are expected to be conserved.\"\"\"\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __rtruediv__(self, other):\n            return type(self)(super().__rtruediv__(other))\n\n        def __sub__(self, other):\n            return type(self)(super().__sub__(other))\n\n        def __rsub__(self, other):\n            return type(self)(super().__rsub__(other))\n\n        def __pow__(self, other):\n            return type(self)(super().__pow__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n\n        def __mul__(self, other):\n            return type(self)(super().__mul__(other))\n        __rmul__ = __mul__\n    return (float, Decimal, Fraction, MyFloat)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.pvariance\n    data = prepare_data()\n    for kind in prepare_types_for_conservation_test():\n        d = [kind(x) for x in data]\n        result = self.func(d)\n        assert type(result) is kind, ('assertIs', type(result), kind)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestVariance.test_types_conserved",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nimport random\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_data():\n    \"\"\"Return int data for various tests.\"\"\"\n    data = list(range(10))\n    while data == sorted(data):\n        random.shuffle(data)\n    return data\n\ndef prepare_types_for_conservation_test():\n    \"\"\"Return the types which are expected to be conserved.\"\"\"\n\n    class MyFloat(float):\n\n        def __truediv__(self, other):\n            return type(self)(super().__truediv__(other))\n\n        def __rtruediv__(self, other):\n            return type(self)(super().__rtruediv__(other))\n\n        def __sub__(self, other):\n            return type(self)(super().__sub__(other))\n\n        def __rsub__(self, other):\n            return type(self)(super().__rsub__(other))\n\n        def __pow__(self, other):\n            return type(self)(super().__pow__(other))\n\n        def __add__(self, other):\n            return type(self)(super().__add__(other))\n        __radd__ = __add__\n\n        def __mul__(self, other):\n            return type(self)(super().__mul__(other))\n        __rmul__ = __mul__\n    return (float, Decimal, Fraction, MyFloat)\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.rel = 1e-12\n    self.func = statistics.variance\n    data = prepare_data()\n    for kind in prepare_types_for_conservation_test():\n        d = [kind(x) for x in data]\n        result = self.func(d)\n        assert type(result) is kind, ('assertIs', type(result), kind)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
       "ident": "TestSum.test_empty_data",
@@ -1056,6 +1445,43 @@
         "status": "ok"
       },
       "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_values_for_repeated_single_test():\n    return (3.5, 17, 2500000000000000.0, Fraction(61, 67), Decimal('4.9712'))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mean\n    for x in prepare_values_for_repeated_single_test():\n        for count in (2, 5, 10, 20):\n            data = [x] * count\n            assert self.func(data) == x, ('assertEqual', self.func(data), x)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestHarmonicMean.test_repeated_single_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_values_for_repeated_single_test():\n    return (3.5, 17, 2500000000000000.0, Fraction(61, 67), Decimal('4.125'))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.harmonic_mean\n    for x in prepare_values_for_repeated_single_test():\n        for count in (2, 5, 10, 20):\n            data = [x] * count\n            assert self.func(data) == x, ('assertEqual', self.func(data), x)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMedianLow.test_repeated_single_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_values_for_repeated_single_test():\n    return (3.5, 17, 2500000000000000.0, Fraction(61, 67), Decimal('4.9712'))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.median_low\n    for x in prepare_values_for_repeated_single_test():\n        for count in (2, 5, 10, 20):\n            data = [x] * count\n            assert self.func(data) == x, ('assertEqual', self.func(data), x)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMedianHigh.test_repeated_single_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_values_for_repeated_single_test():\n    return (3.5, 17, 2500000000000000.0, Fraction(61, 67), Decimal('4.9712'))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.median_high\n    for x in prepare_values_for_repeated_single_test():\n        for count in (2, 5, 10, 20):\n            data = [x] * count\n            assert self.func(data) == x, ('assertEqual', self.func(data), x)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestMedianGrouped.test_repeated_single_value",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 0.9104477611940298, Fraction(61, 67))"
+    },
+    {
+      "ident": "TestMode.test_repeated_single_value",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "x = 'Test suite for statistics module, including helper NumericTestCase and\\napprox_equal function.\\n\\n'\nimport math\nfrom decimal import Decimal\nfrom fractions import Fraction\nimport statistics\nx, y = (1e+16, 2.9999)\n\ndef sign(x):\n    \"\"\"Return -1.0 for negatives, including -0.0, otherwise +1.0.\"\"\"\n    return math.copysign(1, x)\n\ndef approx_equal(x, y, tol=1e-12, rel=1e-07):\n    \"\"\"approx_equal(x, y [, tol [, rel]]) => True|False\n\n    Return True if numbers x and y are approximately equal, to within some\n    margin of error, otherwise return False. Numbers which compare equal\n    will also compare approximately equal.\n\n    x is approximately equal to y if the difference between them is less than\n    an absolute error tol or a relative error rel, whichever is bigger.\n\n    If given, both tol and rel must be finite, non-negative numbers. If not\n    given, default values are tol=1e-12 and rel=1e-7.\n\n    >>> approx_equal(1.2589, 1.2587, tol=0.0003, rel=0)\n    True\n    >>> approx_equal(1.2589, 1.2587, tol=0.0001, rel=0)\n    False\n\n    Absolute error is defined as abs(x-y); if that is less than or equal to\n    tol, x and y are considered approximately equal.\n\n    Relative error is defined as abs((x-y)/x) or abs((x-y)/y), whichever is\n    smaller, provided x or y are not zero. If that figure is less than or\n    equal to rel, x and y are considered approximately equal.\n\n    Complex numbers are not directly supported. If you wish to compare to\n    complex numbers, extract their real and imaginary parts and compare them\n    individually.\n\n    NANs always compare unequal, even with themselves. Infinities compare\n    approximately equal if they have the same sign (both positive or both\n    negative). Infinities with different signs compare unequal; so do\n    comparisons of infinities with finite numbers.\n    \"\"\"\n    if tol < 0 or rel < 0:\n        raise ValueError('error tolerances must be non-negative')\n    if math.isnan(x) or math.isnan(y):\n        return False\n    if x == y:\n        return True\n    if math.isinf(x) or math.isinf(y):\n        return False\n    actual_error = abs(x - y)\n    allowed_error = max(tol, rel * max(abs(x), abs(y)))\n    return actual_error <= allowed_error\n\ndef prepare_values_for_repeated_single_test():\n    return (3.5, 17, 2500000000000000.0, Fraction(61, 67), Decimal('4.9712'))\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.func = statistics.mode\n    for x in prepare_values_for_repeated_single_test():\n        for count in (2, 5, 10, 20):\n            data = [x] * count\n            assert self.func(data) == x, ('assertEqual', self.func(data), x)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
     },
     {
       "ident": "TestMean.test_torture_pep",
@@ -1644,7 +2070,37 @@
       "reason": "host-raised:NameError: name 'self' is not defined"
     },
     {
+      "ident": "TestVariance.test_domain_error_regression",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPStdev.test_domain_error_regression",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestStdev.test_domain_error_regression",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
       "ident": "TestPVariance.test_shift_data",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestVariance.test_shift_data",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestPStdev.test_shift_data",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "TestStdev.test_shift_data",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
     },
@@ -2369,287 +2825,11 @@
     {
       "ident": "ConvertTest.test_decimal",
       "reason": "uses-self.__class__"
-    },
-    {
-      "ident": "TestMean.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestHarmonicMean.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestMedianLow.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestMedianHigh.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestMedianGrouped.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestMode.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestPVariance.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestVariance.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestPStdev.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestStdev.test_empty_data",
-      "reason": "self.func"
-    },
-    {
-      "ident": "TestMean.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestHarmonicMean.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianLow.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianHigh.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianGrouped.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMode.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestPVariance.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestVariance.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestPStdev.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestStdev.test_no_inplace_modifications",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMean.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestHarmonicMean.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianLow.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianHigh.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianGrouped.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMode.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestPVariance.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestVariance.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestPStdev.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestStdev.test_type_of_data_collection",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMean.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestHarmonicMean.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestMedianLow.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestMedianHigh.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestMedianGrouped.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestMode.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestPVariance.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestVariance.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestPStdev.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestStdev.test_bad_arg_types",
-      "reason": "unresolved-name:check_for_type_error"
-    },
-    {
-      "ident": "TestMean.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestHarmonicMean.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianLow.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianHigh.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianGrouped.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMode.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestPVariance.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestVariance.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestPStdev.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestStdev.test_type_of_data_element",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMean.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestHarmonicMean.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianDataType.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianLow.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMedianHigh.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestMode.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestPVariance.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestVariance.test_types_conserved",
-      "reason": "unresolved-name:prepare_data"
-    },
-    {
-      "ident": "TestHarmonicMean.test_repeated_single_value",
-      "reason": "unresolved-name:prepare_values_for_repeated_single_test"
-    },
-    {
-      "ident": "TestMedianLow.test_repeated_single_value",
-      "reason": "unresolved-name:prepare_values_for_repeated_single_test"
-    },
-    {
-      "ident": "TestMedianHigh.test_repeated_single_value",
-      "reason": "unresolved-name:prepare_values_for_repeated_single_test"
-    },
-    {
-      "ident": "TestMedianGrouped.test_repeated_single_value",
-      "reason": "unresolved-name:prepare_values_for_repeated_single_test"
-    },
-    {
-      "ident": "TestMode.test_repeated_single_value",
-      "reason": "unresolved-name:prepare_values_for_repeated_single_test"
-    },
-    {
-      "ident": "TestVariance.test_domain_error_regression",
-      "reason": "unresolved-name:assertApproxEqual"
-    },
-    {
-      "ident": "TestPStdev.test_domain_error_regression",
-      "reason": "unresolved-name:assertApproxEqual"
-    },
-    {
-      "ident": "TestStdev.test_domain_error_regression",
-      "reason": "unresolved-name:assertApproxEqual"
-    },
-    {
-      "ident": "TestVariance.test_shift_data",
-      "reason": "unresolved-name:assertApproxEqual"
-    },
-    {
-      "ident": "TestPStdev.test_shift_data",
-      "reason": "unresolved-name:assertApproxEqual"
-    },
-    {
-      "ident": "TestStdev.test_shift_data",
-      "reason": "unresolved-name:assertApproxEqual"
     }
   ],
   "counts": {
     "extracted": 378,
-    "pinned": 270,
-    "quarantined": 108
+    "pinned": 307,
+    "quarantined": 71
   }
 }

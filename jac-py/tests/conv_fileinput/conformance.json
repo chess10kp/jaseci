@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "b0e07bc64aac7f7377144c7214eec5b5bf33a18b",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,20 +10,44 @@
     "diff_runner.py",
     "jac-py/tests/conv_fileinput/conv_fileinput_pins.jac"
   ],
-  "generated_at": "2026-08-24T21:51:07",
+  "generated_at": "2026-08-25T12:09:13",
   "hashes": {
-    "pins_jac": "ca4f9581d45ef10226b756e198c414890d46cf602962e67732d10ae2beac9d36",
-    "conversion_json": "e6c9c379cf4060f5cd2b00e869f16fdb5ded0cde81178ab577928c821d4239fc",
+    "pins_jac": "6e944ec42da455e73a4feef9ad9683ad82ae0fe100a492e2884d852231b29f08",
+    "conversion_json": "f5e034b971befcb34aee23e9153fc38e6884fa82c591bf56d0c4a6d54b700682",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "fileinput",
   "counts": {
     "converted": 57,
-    "runnable": 14,
-    "green": 5,
-    "quarantined": 43
+    "runnable": 37,
+    "green": 7,
+    "quarantined": 20
   },
   "pins": [
+    {
+      "id": "BufferSizesTests.test_buffer_sizes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_zero_byte_files",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_files_that_dont_end_with_newline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_fileno",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
     {
       "id": "FileInputTests.test_invalid_opening_mode",
       "status": "pass"
@@ -32,11 +56,103 @@
       "id": "FileInputTests.test_stdin_binary_mode",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<\"AttributeError: 'super' object has no attribute '__init_subclass__'\">"
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "FileInputTests.test_detached_stdin_binary_mode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', [b\\'spam, bacon, sausage, and spam\\'], [b\\'spam, bacon, sausage, and spam\\'])\"'>"
+    },
+    {
+      "id": "FileInputTests.test_file_opening_hook",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_readline",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "FileInputTests.test_readline_binary_mode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "FileInputTests.test_inplace_binary_write_mode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_inplace_encoding_errors",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_file_hook_backward_compatibility",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_context_manager",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_close_on_exception",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
     },
     {
       "id": "FileInputTests.test_empty_files_list_specified_to_constructor",
       "status": "pass"
+    },
+    {
+      "id": "FileInputTests.test_nextfile_oserror_deleting_backup",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_readline_os_fstat_raises_OSError",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_readline_os_chmod_raises_OSError",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_readline_buffering",
+      "status": "pass"
+    },
+    {
+      "id": "FileInputTests.test_iteration_buffering",
+      "status": "pass"
+    },
+    {
+      "id": "FileInputTests.test_pathlike_file",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
+    },
+    {
+      "id": "FileInputTests.test_pathlike_file_inplace",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
     },
     {
       "id": "Test_fileinput_input.test_state_is_not_None_and_state_file_is_None",
@@ -99,6 +215,24 @@
       "detail": "GOT<\"ORACLE_EXC TypeError 'object does not support item assignment'\">"
     },
     {
+      "id": "Test_hook_encoded.test",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"open() argument \\'mode\\' must be str, not object\"'>"
+    },
+    {
+      "id": "Test_hook_encoded.test_errors",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
+      "id": "Test_hook_encoded.test_modes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'BufferedWriter.__enter__() takes no arguments (1 given)'\">"
+    },
+    {
       "id": "MiscTest.test_all",
       "status": "quarantined",
       "reason": "host-raised:NameError: name 'self' is not defined"
@@ -119,109 +253,9 @@
       "reason": "decorator:unittest.skipUnless"
     },
     {
-      "id": "BufferSizesTests.test_buffer_sizes",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_zero_byte_files",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_files_that_dont_end_with_newline",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_fileno",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_detached_stdin_binary_mode",
-      "status": "quarantined",
-      "reason": "self.assertNotHasAttr"
-    },
-    {
-      "id": "FileInputTests.test_file_opening_hook",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_readline",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
-    },
-    {
-      "id": "FileInputTests.test_readline_binary_mode",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
-    },
-    {
-      "id": "FileInputTests.test_inplace_binary_write_mode",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_inplace_encoding_errors",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_file_hook_backward_compatibility",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_context_manager",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_close_on_exception",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_nextfile_oserror_deleting_backup",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_readline_os_fstat_raises_OSError",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_readline_os_chmod_raises_OSError",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
       "id": "FileInputTests.test_fileno_when_ValueError_raised",
       "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_readline_buffering",
-      "status": "quarantined",
-      "reason": "unresolved-name:LineReader"
-    },
-    {
-      "id": "FileInputTests.test_iteration_buffering",
-      "status": "quarantined",
-      "reason": "unresolved-name:LineReader"
-    },
-    {
-      "id": "FileInputTests.test_pathlike_file",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
-    },
-    {
-      "id": "FileInputTests.test_pathlike_file_inplace",
-      "status": "quarantined",
-      "reason": "helper:writeTmp(self.addCleanup)"
+      "reason": "uses-self.__call__"
     },
     {
       "id": "Test_fileinput_input.test_state_is_not_None_and_state_file_is_not_None",
@@ -297,21 +331,6 @@
       "id": "Test_hook_compressed.test_text_mode_encoding",
       "status": "quarantined",
       "reason": "helper:do_test_use_builtin_open_text(helper:replace_builtin_open(decorated-helper))"
-    },
-    {
-      "id": "Test_hook_encoded.test",
-      "status": "quarantined",
-      "reason": "unresolved-name:InvocationRecorder"
-    },
-    {
-      "id": "Test_hook_encoded.test_errors",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
-    },
-    {
-      "id": "Test_hook_encoded.test_modes",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
     }
   ]
 }

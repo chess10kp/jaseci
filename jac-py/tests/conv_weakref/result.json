@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_weakref/conv_weakref_pins.jac"
+  ],
+  "generated_at": "2026-08-25T00:41:19",
+  "hashes": {
+    "pins_jac": "8a2b3cdd6224dd1f657873253d71fdca9b4d83e08de01e383f8f5252b5d339c1",
+    "conversion_json": "a7beefe7d779ca374ff55347f8f7c8e93abc71bafd5210aa06a1134167c1ccd5",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "weakref",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 109,
+    "runnable": 74,
+    "green": 6,
+    "quarantined": 35,
+    "failed": 68,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "ReferencesTestCase.test_basic_ref",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"bridge-table: type \\'weakref\\' has policy BridgePolicy.FAIL but no to_host conversion arm\"'>"
+    },
+    {
+      "id": "ReferencesTestCase.test_repr_failure_gh99184",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"bridge-table: type \\'weakref\\' has policy BridgePolicy.FAIL but no to_host conversion arm\"'>"
+    },
+    {
+      "id": "ReferencesTestCase.test_ref_reuse",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_reuse",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_basic_proxy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_unicode",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_index",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_div",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_matmul",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_shared_ref_without_callback",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_shared_proxy_without_callback",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callable_proxy",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_deletion",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_bool",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_iter",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'compile failed'>"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_next",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'IteratesWeakly\\' object is not iterable\"'>"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_bad_next",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AssertionError 'assertRaisesRegex: message mismatch'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_reversed",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_proxy_hash",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_newstyle_number_ops",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callbacks_protected",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_sf_bug_840829",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callback_in_cycle",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callback_reachable_one_way",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callback_different_classes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callback_in_cycle_resurrection",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callbacks_on_callback",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_gc_during_ref_creation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_gc_during_proxy_creation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'proxy'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_classes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"cannot create weak reference to \\'object\\' object\"'>"
+    },
+    {
+      "id": "ReferencesTestCase.test_equality",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'script_helper' from '<unknown>'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_hashing",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"unhashable type: \\'weakref\\'\"'>"
+    },
+    {
+      "id": "ReferencesTestCase.test_callback_attribute",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_set_callback_attribute",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "ReferencesTestCase.test_callback_gcs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'weakref.ref expected 1 argument'\">"
+    },
+    {
+      "id": "SubclassableWeakrefTestCase.test_subclass_refs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    },
+    {
+      "id": "SubclassableWeakrefTestCase.test_subclass_refs_dont_replace_standard_refs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'getweakrefs'\">"
+    },
+    {
+      "id": "SubclassableWeakrefTestCase.test_subclass_refs_dont_conflate_callbacks",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'getweakrefs'\">"
+    },
+    {
+      "id": "WeakMethodTestCase.test_alive",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakMethod'\">"
+    },
+    {
+      "id": "WeakMethodTestCase.test_object_dead",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakMethod'\">"
+    },
+    {
+      "id": "WeakMethodTestCase.test_method_dead",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakMethod'\">"
+    },
+    {
+      "id": "WeakMethodTestCase.test_callback_when_object_dead",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakMethod'\">"
+    },
+    {
+      "id": "WeakMethodTestCase.test_callback_when_method_dead",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakMethod'\">"
+    },
+    {
+      "id": "WeakMethodTestCase.test_equality",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'script_helper' from '<unknown>'\">"
+    },
+    {
+      "id": "WeakMethodTestCase.test_hashing",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakMethod'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_len_cycles",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_valued_len_cycles",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_make_weak_keyed_dict_from_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_make_weak_keyed_dict_from_weak_keyed_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_make_weak_valued_dict_from_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_make_weak_valued_dict_from_weak_valued_dict",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_make_weak_valued_dict_misc",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_valued_dict_popitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_dict_popitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_valued_dict_setdefault",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_dict_setdefault",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_valued_dict_update",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_valued_union_operators",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_dict_update",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_delitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_union_operators",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_valued_delitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_bad_delitem",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_weak_keyed_cascading_deletes",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    },
+    {
+      "id": "MappingTestCase.test_make_weak_valued_dict_repr",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakValueDictionary'\">"
+    },
+    {
+      "id": "MappingTestCase.test_make_weak_keyed_dict_repr",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'WeakKeyDictionary'\">"
+    },
+    {
+      "id": "ModuleTestCase.test_names",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'ReferenceType'\">"
+    },
+    {
+      "id": "weakref.doctests:libreftest",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'gc_collect' from '<unknown>'\">"
+    }
+  ]
+}

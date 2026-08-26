@@ -25,6 +25,18 @@ test "Test_iskeyword.test_none_value_is_not_a_keyword" {
     assert detail == "ok" , "GOT<" + detail + ">";
 }
 
+test "Test_iskeyword.test_changing_the_kwlist_does_not_affect_iskeyword" {
+    (ok, detail) = p2_libtest_run_snippet("_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport keyword\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    oldlist = keyword.kwlist\n    _cleanup_stack.append((setattr, (keyword, 'kwlist', oldlist), {}))\n    keyword.kwlist = ['its', 'all', 'eggs', 'beans', 'and', 'a', 'slice']\n    assert not keyword.iskeyword('eggs'), ('assertFalse', keyword.iskeyword('eggs'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "Test_iskeyword.test_changing_the_softkwlist_does_not_affect_issoftkeyword" {
+    (ok, detail) = p2_libtest_run_snippet("_cleanup_stack = []\n\ndef _drain_cleanups():\n    while _cleanup_stack:\n        _fn, _a, _k = _cleanup_stack.pop()\n        try:\n            _fn(*_a, **_k)\n        except BaseException as _ce:\n            print('ORACLE_EXC ' + type(_ce).__name__ + ' ' + repr(str(_ce)))\nimport keyword\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    oldlist = keyword.softkwlist\n    _cleanup_stack.append((setattr, (keyword, 'softkwlist', oldlist), {}))\n    keyword.softkwlist = ['foo', 'bar', 'spam', 'egs', 'case']\n    assert not keyword.issoftkeyword('spam'), ('assertFalse', keyword.issoftkeyword('spam'))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _drain_cleanups()\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
 test "Test_iskeyword.test_all_keywords_fail_to_be_used_as_names" {
     (ok, detail) = p2_libtest_run_snippet("import keyword\n\ndef _t():\n    for key in keyword.kwlist:\n        try:\n            exec(f'{key} = 42')\n        except SyntaxError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n");
     assert ok , "RUN<" + detail + ">";

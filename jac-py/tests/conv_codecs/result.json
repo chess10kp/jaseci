@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "615abfd9c3b5ccaab40667ed7c744a40cd1b6d46",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,10 +10,10 @@
     "diff_runner.py",
     "jac-py/tests/conv_codecs/conv_codecs_pins.jac"
   ],
-  "generated_at": "2026-08-24T23:00:22",
+  "generated_at": "2026-08-25T12:08:09",
   "hashes": {
-    "pins_jac": "8440b8898ff2da28cda9a6c3a18b5f75c804b7147100c3ad214440661ead0577",
-    "conversion_json": "d389236cb0bfe22b05500f0cb76fe3c2c507d9ab11dcf299dc7cf70cb7bce6f6",
+    "pins_jac": "a1f339ce27110ef6e844d4a5b2c416802cc396ee595e24cf05514b8eecb2dc3f",
+    "conversion_json": "8b0665d450e640b3ca15db7a06e5dbc8a463f988ee04fbe476c886bc992b864c",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "codecs",
@@ -21,10 +21,10 @@
   "timed_out": false,
   "counts": {
     "converted": 279,
-    "runnable": 200,
-    "green": 83,
-    "quarantined": 79,
-    "failed": 117,
+    "runnable": 209,
+    "green": 89,
+    "quarantined": 70,
+    "failed": 120,
     "infra_failed": 0
   },
   "failures": [
@@ -467,6 +467,12 @@
       "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', (b\\'\\', 0), (b\\'\\', 0))\"'>"
     },
     {
+      "id": "UTF16Test.test_bug691291",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC LookupError 'unknown encoding: utf-16'\">"
+    },
+    {
       "id": "UTF16LETest.test_nonbmp",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
@@ -665,6 +671,12 @@
       "detail": "GOT<'ORACLE_EXC LookupError \"unknown error handler name \\'surrogateescape\\'\"'>"
     },
     {
+      "id": "BomTest.test_seek0",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC TypeError 'StreamReaderWriter.__enter__() takes 1 positional argument but 2 were given'\">"
+    },
+    {
       "id": "TransformCodecTest.test_text_to_binary_denylists_text_transforms",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
@@ -729,6 +741,12 @@
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
       "detail": "GOT<\"ORACLE_EXC AttributeError 'ascii'\">"
+    },
+    {
+      "id": "CodecCacheTest.test_cache_bounded",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"\\'NoneType\\' object is not callable\"'>"
     }
   ]
 }

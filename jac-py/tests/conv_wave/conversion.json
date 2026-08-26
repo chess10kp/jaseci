@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_wave.py",
+    "-o",
+    "/var/tmp/lane8/jac-py/tests/conv_wave",
+    "--name",
+    "conv_wave"
+  ],
+  "generated_at": "2026-08-25T12:09:54",
+  "hashes": {
+    "pins_jac": "7557274e515dae9ccd240d31dcb9cebf7daaebf31cb335d832c6fe9f86fb9e49"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_wave.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "wave",
+  "pins_file": "conv_wave_pins.jac",
+  "pins": [
+    {
+      "ident": "MiscTestCase.test__all__",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_no_chunks",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import io\nimport wave\n\ndef _t():\n    b = b'SPAM'\n    try:\n        wave.open(io.BytesIO(b))\n    except EOFError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_no_riff_chunk",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'SPAM' + struct.pack('<L', 0)\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('file does not start with RIFF id', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_not_wave",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'RIFF' + struct.pack('<L', 4) + b'SPAM'\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('not a WAVE file', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_no_fmt_no_data_chunk",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'RIFF' + struct.pack('<L', 4) + b'WAVE'\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('fmt chunk and/or data chunk missing', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_no_data_chunk",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'RIFF' + struct.pack('<L', 28) + b'WAVE'\n    b += b'fmt ' + struct.pack('<LHHLLHH', 16, 1, 1, 11025, 11025, 1, 8)\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('fmt chunk and/or data chunk missing', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_no_fmt_chunk",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'RIFF' + struct.pack('<L', 12) + b'WAVE'\n    b += b'data' + struct.pack('<L', 0)\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('data chunk before fmt chunk', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_wrong_form",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'RIFF' + struct.pack('<L', 36) + b'WAVE'\n    b += b'fmt ' + struct.pack('<LHHLLHH', 16, 2, 1, 11025, 11025, 1, 1)\n    b += b'data' + struct.pack('<L', 0)\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('unknown format: 2', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_wrong_number_of_channels",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'RIFF' + struct.pack('<L', 36) + b'WAVE'\n    b += b'fmt ' + struct.pack('<LHHLLHH', 16, 1, 0, 11025, 11025, 1, 8)\n    b += b'data' + struct.pack('<L', 0)\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('bad # of channels', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_read_wrong_sample_width",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import re as _re\nimport io\nimport struct\nimport wave\n\ndef _t():\n    b = b'RIFF' + struct.pack('<L', 36) + b'WAVE'\n    b += b'fmt ' + struct.pack('<LHHLLHH', 16, 1, 1, 11025, 11025, 1, 0)\n    b += b'data' + struct.pack('<L', 0)\n    try:\n        wave.open(io.BytesIO(b))\n    except wave.Error as _exc:\n        assert _re.search('bad sample width', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "WaveLowLevelTest.test_open_in_write_raises",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport os\nimport wave\n\ndef _t():\n    with support.catch_unraisable_exception() as cm:\n        try:\n            wave.open(os.curdir, 'wb')\n        except OSError as _exc:\n            pass\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        support.gc_collect()\n        assert cm.unraisable is None, ('assertIsNone', cm.unraisable)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "MiscTestCase.test_read_deprecations",
+      "reason": "uses-self.assertIsNone"
+    },
+    {
+      "ident": "MiscTestCase.test_write_deprecations",
+      "reason": "uses-self.assertIsNone"
+    }
+  ],
+  "counts": {
+    "extracted": 13,
+    "pinned": 10,
+    "quarantined": 3
+  }
+}

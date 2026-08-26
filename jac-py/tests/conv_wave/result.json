@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_wave/conv_wave_pins.jac"
+  ],
+  "generated_at": "2026-08-25T12:09:57",
+  "hashes": {
+    "pins_jac": "7557274e515dae9ccd240d31dcb9cebf7daaebf31cb335d832c6fe9f86fb9e49",
+    "conversion_json": "118d72a2cd304b243c113c43a146b3276b211a73e81003911191c5066be2ddcc",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "wave",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 13,
+    "runnable": 10,
+    "green": 9,
+    "quarantined": 3,
+    "failed": 1,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "WaveLowLevelTest.test_open_in_write_raises",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'catch_unraisable_exception'\">"
+    }
+  ]
+}

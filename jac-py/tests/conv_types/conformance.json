@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "tool_version": "diff_runner-0.2.1",
-  "jac_sha": "615abfd9c3b5ccaab40667ed7c744a40cd1b6d46",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,18 +10,18 @@
     "diff_runner.py",
     "jac-py/tests/conv_types/conv_types_pins.jac"
   ],
-  "generated_at": "2026-08-24T23:01:15",
+  "generated_at": "2026-08-25T00:32:29",
   "hashes": {
-    "pins_jac": "72a05539354321f557cdba48a530b64137fc3c6c88f6bc1e0394cc18f10f2542",
-    "conversion_json": "5ac701c20cd9cb1dd84f0420a419131de90da12f0747fc0369a52f8d4e69155f",
+    "pins_jac": "3de712ac049657d236ac5d892bb7dbf85ebbbe6dd7af89e43d70b4a3bfd2212f",
+    "conversion_json": "a6a191d62f6fdc14b911b6665b0320271e53cb9c1ef424e76041d9d3031ea5ec",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "types",
   "counts": {
     "converted": 129,
-    "runnable": 75,
-    "green": 52,
-    "quarantined": 54
+    "runnable": 77,
+    "green": 53,
+    "quarantined": 52
   },
   "pins": [
     {
@@ -170,7 +170,18 @@
       "detail": "GOT<'ORACLE_EXC TypeError \"unsupported operand type(s) for |: \\'UnhashableMeta\\' and \\'UnhashableMeta\\'\"'>"
     },
     {
+      "id": "UnionTests.test_instancecheck_and_subclasscheck_order",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
       "id": "UnionTests.test_bad_instancecheck",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC TypeError \"unsupported operand type(s) for |: \\'host\\' and \\'BadMeta\\'\"'>"
+    },
+    {
+      "id": "UnionTests.test_bad_subclasscheck",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
       "detail": "GOT<'ORACLE_EXC TypeError \"unsupported operand type(s) for |: \\'host\\' and \\'BadMeta\\'\"'>"
@@ -279,6 +290,10 @@
       "status": "pass"
     },
     {
+      "id": "ClassCreationTests.test_new_class_subclass",
+      "status": "pass"
+    },
+    {
       "id": "ClassCreationTests.test_new_class_meta",
       "status": "quarantined",
       "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'Meta'"
@@ -295,6 +310,11 @@
     {
       "id": "ClassCreationTests.test_new_class_defaults",
       "status": "pass"
+    },
+    {
+      "id": "ClassCreationTests.test_new_class_meta_with_base",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'Meta'"
     },
     {
       "id": "ClassCreationTests.test_new_class_with_mro_entry",
@@ -490,7 +510,7 @@
       "id": "CoroutineTests.test_gen",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsInstance\\', <callable_iterator object at 0x7fb4ce40ad70>, <class \\'types._GeneratorWrapper\\'>)\"'>"
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIsInstance\\', <callable_iterator object at 0x7f269505abc0>, <class \\'types._GeneratorWrapper\\'>)\"'>"
     },
     {
       "id": "CoroutineTests.test_returning_itercoro",
@@ -500,13 +520,13 @@
       "id": "CoroutineTests.test_genfunc",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "RUN<'TypeError: expected code object'>"
+      "detail": "RUN<'TypeError: EnumCheck.__init_subclass__() takes no keyword arguments'>"
     },
     {
       "id": "CoroutineTests.test_wrapper_object",
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
-      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', \\'GeneratorWrapper\\', \\'<callable_iterator object at 0x7fb4ce40bcd0>\\')\"'>"
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertIn\\', \\'GeneratorWrapper\\', \\'<callable_iterator object at 0x7f26947e7e20>\\')\"'>"
     },
     {
       "id": "FunctionTests.test_function_type_defaults",
@@ -529,16 +549,6 @@
       "id": "UnionTests.test_instancecheck_and_subclasscheck",
       "status": "quarantined",
       "reason": "self.assertNotIsInstance"
-    },
-    {
-      "id": "UnionTests.test_instancecheck_and_subclasscheck_order",
-      "status": "quarantined",
-      "reason": "self.assertIsSubclass"
-    },
-    {
-      "id": "UnionTests.test_bad_subclasscheck",
-      "status": "quarantined",
-      "reason": "self.assertIsSubclass"
     },
     {
       "id": "UnionTests.test_or_type_operator_reference_cycle",
@@ -614,16 +624,6 @@
       "id": "MappingProxyTests.test_hash",
       "status": "quarantined",
       "reason": "uses-self.mappingproxy"
-    },
-    {
-      "id": "ClassCreationTests.test_new_class_subclass",
-      "status": "quarantined",
-      "reason": "self.assertIsSubclass"
-    },
-    {
-      "id": "ClassCreationTests.test_new_class_meta_with_base",
-      "status": "quarantined",
-      "reason": "self.assertIsSubclass"
     },
     {
       "id": "ClassCreationTests.test_one_argument_type",

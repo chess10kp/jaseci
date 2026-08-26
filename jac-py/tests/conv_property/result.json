@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "tool_version": "diff_runner-0.2.0",
-  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "d8c008250969fd3f561dcb6bc19630f1990b5716",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,24 +10,30 @@
     "diff_runner.py",
     "jac-py/tests/conv_property/conv_property_pins.jac"
   ],
-  "generated_at": "2026-08-24T14:34:52",
+  "generated_at": "2026-08-25T00:41:32",
   "hashes": {
-    "pins_jac": "8f54e4b296b8ba88e0d5060cca7b137f37ae3f8ed08da508eb036e023bb2b375",
-    "conversion_json": "ee0a67b632285f490992bee23c050bebd721c93640495f8b8d6fbb8a5777dc2d",
+    "pins_jac": "e4f75086fc655ee7e4a90e086b41043cc60522ed34d15d5c9628ebf84f82647d",
+    "conversion_json": "10b69f6968d8163bb7698dcb2fd081d75b92636a7731ceb4ab0907be1df82b60",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "property",
   "status": "failed",
   "timed_out": false,
   "counts": {
-    "converted": 28,
-    "runnable": 5,
-    "green": 1,
-    "quarantined": 23,
-    "failed": 4,
+    "converted": 31,
+    "runnable": 9,
+    "green": 3,
+    "quarantined": 22,
+    "failed": 6,
     "infra_failed": 0
   },
   "failures": [
+    {
+      "id": "PropertyTests.test_property_decorator_doc",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', None, \\'spam spam spam\\')\"'>"
+    },
     {
       "id": "PropertyTests.test_property___isabstractmethod__descriptor",
       "status": "fail",
@@ -51,6 +57,12 @@
       "status": "fail",
       "classification": "GUEST-WRONG-OUTPUT",
       "detail": "GOT<\"ORACLE_EXC AttributeError '__set_name__'\">"
+    },
+    {
+      "id": "PropertySubclassTests.test_property_no_doc_on_getter",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<'ORACLE_EXC AssertionError \"(\\'assertEqual\\', \\'This is a subclass of property\\', None)\"'>"
     }
   ]
 }

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_zipimport/conv_zipimport_pins.jac"
+  ],
+  "generated_at": "2026-08-25T12:09:38",
+  "hashes": {
+    "pins_jac": "3c53a89f2d7721d3ab2c3310255979a41b6e6dd09a29eb3ebf015f5ef5f96368",
+    "conversion_json": "c6550653898987f25eb2bfb7cf096d2a4a286891c2a1bbe7922a5cc229b7cec9",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "zipimport",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 49,
+    "runnable": 12,
+    "green": 5,
+    "quarantined": 37,
+    "failed": 7,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "CompressedZipImportTestCase.testPackageExplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testPackageImplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testNamespacePackageExplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testNamespacePackageImplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testGetDataExplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "CompressedZipImportTestCase.testGetDataImplicitDirectories",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"ImportError: cannot import name 'nlargest' from '<unknown>'\">"
+    },
+    {
+      "id": "BadFileZipImportTestCase.testEmptyFile",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'create_empty_file'\">"
+    }
+  ]
+}

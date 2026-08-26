@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "tool_version": "diff_runner-0.2.0",
-  "jac_sha": "1ef121a8b895522452b0fd0238dd99de3e01d3a7",
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "72fcc30b0f3fcd400352272a69f36a2c66cb5399",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,18 +10,18 @@
     "diff_runner.py",
     "jac-py/tests/conv_keyword/conv_keyword_pins.jac"
   ],
-  "generated_at": "2026-08-24T14:33:48",
+  "generated_at": "2026-08-25T12:09:40",
   "hashes": {
-    "pins_jac": "1faa66b4c4cf1a319a690f87c1b12152b4950a1f9083a93f8090ce6a7b7fe152",
-    "conversion_json": "fbac79128e14d7264aa6671216f8ffac854713c3d533c0abbf1baab635001652",
+    "pins_jac": "38602bf3715627e2104982d5c575539bb98792384ef896931c954552bff2d63a",
+    "conversion_json": "34a0f5cb1b407c8e9497ba98da6354e9053f389681954d443b6bc372bd11be68",
     "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
   },
   "module_stem": "keyword",
   "counts": {
     "converted": 11,
-    "runnable": 9,
-    "green": 9,
-    "quarantined": 2
+    "runnable": 11,
+    "green": 11,
+    "quarantined": 0
   },
   "pins": [
     {
@@ -34,6 +34,14 @@
     },
     {
       "id": "Test_iskeyword.test_none_value_is_not_a_keyword",
+      "status": "pass"
+    },
+    {
+      "id": "Test_iskeyword.test_changing_the_kwlist_does_not_affect_iskeyword",
+      "status": "pass"
+    },
+    {
+      "id": "Test_iskeyword.test_changing_the_softkwlist_does_not_affect_issoftkeyword",
       "status": "pass"
     },
     {
@@ -59,16 +67,6 @@
     {
       "id": "Test_iskeyword.test_softkeywords_are_sorted",
       "status": "pass"
-    },
-    {
-      "id": "Test_iskeyword.test_changing_the_kwlist_does_not_affect_iskeyword",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
-    },
-    {
-      "id": "Test_iskeyword.test_changing_the_softkwlist_does_not_affect_issoftkeyword",
-      "status": "quarantined",
-      "reason": "self.addCleanup"
     }
   ]
 }
