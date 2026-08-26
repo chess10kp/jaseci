@@ -521,6 +521,28 @@ def _is_self_assert_stmt(stmt: ast.stmt) -> bool:
     )
 
 
+class _ImplDetailFolder(ast.NodeTransformer):
+    """``support.check_impl_detail(...)`` -> ``True``.
+
+    The guest mirrors CPython semantics by definition, so the predicate is
+    constant-True at pin scope. Folding it (instead of quarantining on the
+    ``from test import support`` import) lets the pruning pass drop the
+    test.support import from snippets that reference nothing else from it.
+    """
+
+    def visit_Call(self, node: ast.Call) -> ast.AST:
+        self.generic_visit(node)
+        func = node.func
+        if (
+            isinstance(func, ast.Attribute)
+            and func.attr == "check_impl_detail"
+            and isinstance(func.value, ast.Name)
+            and func.value.id in ("support", "test")
+        ):
+            return ast.Constant(value=True)
+        return node
+
+
 def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
     """Recursively rewrite a statement list; returns (new stmts, needs_re)."""
     needs_re = False
@@ -574,6 +596,7 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
         return new
 
     new_block = rec(stmts)
+    new_block = [_ImplDetailFolder().visit(s) for s in new_block]
     # Any emitted statement loading _re requires the module import. Scanning
     # the final AST (not per-rewrite flags) keeps every vocabulary addition
     # that may emit _re.search honest without plumbing a flag through each.
@@ -746,7 +769,20 @@ _SHIMMED_TEST_MODULES = {
 # probes), never test logic. On the host that captures the oracle they
 # always pass, so stripping them keeps the oracle valid; drop instead of
 # quarantine.
-_DROPPABLE_DECOS = {"cpython_only", "requires_subprocess"}
+_DROPPABLE_DECOS = {
+    "cpython_only", "requires_subprocess",
+    # Environment gates, not test logic: requires_mac_ver is a platform
+    # predicate and requires_resource only reserves capture-host quota.
+    "requires_mac_ver", "requires_resource",
+}
+
+# Conditional availability gates (@unittest.skipIf / @unittest.skipUnless):
+# the predicate is capture-environment logic, not test logic, and the oracle
+# is captured by actually running the body on the host -- so stripping the
+# gate keeps every pin a valid host-vs-guest differential regardless of how
+# the predicate evaluates here. Bare @skip stays quarantined: an
+# unconditionally skipped method contributes no upstream coverage to mirror.
+_GATE_DECOS = {"skipIf", "skipUnless"}
 
 
 def _host_skip_env(tree: ast.Module) -> dict:
@@ -801,6 +837,8 @@ def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
     elif isinstance(deco, ast.Attribute):
         base = deco.value.id if isinstance(deco.value, ast.Name) else ""
         if deco.attr in _SKIP_DECOS:
+            if deco.attr in _GATE_DECOS and base in ("", "unittest"):
+                return None
             return f"decorator:{base}.{deco.attr}" if base else f"decorator:{deco.attr}"
         if deco.attr in _DROPPABLE_DECOS and base in ("", "support"):
             return None
@@ -830,6 +868,8 @@ def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
     if name and name in _DROPPABLE_DECOS:
         return None
     if name and name in _SKIP_DECOS:
+        if name in _GATE_DECOS:
+            return None
         return f"decorator:{name}"
     return None
 
