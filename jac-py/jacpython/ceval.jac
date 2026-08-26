@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from typing { typing_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2103,6 +2104,20 @@ def import_native(absname: str) -> PyObj {
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
         );
+    }
+    if absname == "typing" or absname == "_typing" {
+        # _typingmodule.c lift: guest ``import typing`` used to execute
+        # Lib/typing.py in-VM and died on its first stdlib dependency
+        # (functools.cache). Serve the accelerator facade instead -- see
+        # build_typing_module below for the Generic/NoDefault identity rule.
+        if not ("typing" in shim_modules) {
+            tmod = build_typing_module();
+            # One shared module under both names: Lib/typing.py does
+            # ``from _typing import ...``, so converted stdlib source needs
+            # the same object reachable as _typing (sys.modules identity).
+            shim_modules["typing"] = tmod;
+            shim_modules["_typing"] = tmod;
+        }
     }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
@@ -5274,6 +5289,17 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # semantics implemented natively. The layer3 boot path instead runs
         # the real types.py in-VM and overrides just the coroutine attribute.
         shim_modules["types"] = build_types_facade();
+    }
+    if name == "typing" or name == "_typing" {
+        # _typingmodule.c lift, mirror of the import_native site: serve the
+        # accelerator facade instead of running Lib/typing.py in-VM (which
+        # dies on its stdlib dependencies) or proxying host typing (lossy for
+        # native guests). See import_native for the dual-name rationale.
+        if not ("typing" in shim_modules) {
+            tmod = build_typing_module();
+            shim_modules["typing"] = tmod;
+            shim_modules["_typing"] = tmod;
+        }
     }
     if name == "sys" and not ("sys" in shim_modules) {
         # Mirror of the import_native site: exception-state attrs must read
@@ -14661,6 +14687,44 @@ def build_types_facade -> PyObj {
     }
     attrs["coroutine"] = PyTypesCoroutine(t="types_coroutine");
     return PyModule(t="module", name="types", attrs=attrs);
+}
+
+# ---- typing product-path shim ----------------------------------------------
+# _typingmodule.c lift registration: assembles the accelerator surface from
+# jacpython/typing.jac with the ceval-owned intrinsic singletons installed.
+def build_typing_module -> PyObj {
+    mod = PyModule(t="module", name="typing", attrs=typing_module_attrs());
+    # Generic and NoDefault MUST be THE single objects the PEP 695/696
+    # intrinsic arms answer with: __mro_entries__ class-base resolution
+    # compares Generic by identity, and an absent-default __default__ probe
+    # must return the same NoDefault sentinel guest code imported from here.
+    (mod as PyModule).attrs["Generic"] = typing_generic_class();
+    (mod as PyModule).attrs["NoDefault"] = no_default_sentinel();
+    # Enrich with the full host typing namespace (Any/Optional/List/...): the
+    # C-module lift carries only the accelerator names, while converted
+    # stdlib/test sources load the whole surface. Host values cross as
+    # transparent proxies -- same policy as build_types_facade; the native
+    # overrides above stay authoritative.
+    star: list[PyObj] = [PyStr(t="str", val="*")];
+    result = _jac_host_import("typing", star);
+    if host_result_ok(result) {
+        host_mod = result[1];
+        names = _jac_star_names(host_mod);
+        if host_result_ok(names) {
+            for nm in names[1] {
+                if nm in (mod as PyModule).attrs {
+                    continue;
+                }
+                member = _jac_host_getattr(host_mod, nm);
+                if host_result_ok(member) {
+                    (mod as PyModule).attrs[nm] = PyHostProxy(
+                        t="host", val=member[1]
+                    );
+                }
+            }
+        }
+    }
+    return mod;
 }
 
 def build_weakref_module -> PyObj {
