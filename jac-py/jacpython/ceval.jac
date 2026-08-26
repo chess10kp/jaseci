@@ -1731,6 +1731,12 @@ obj PyModule(PyObj) {
         if attr in self.attrs {
             return self.attrs[attr];
         }
+        # Every real module exposes __name__; synthesize it from the registry
+        # name so shims behave like CPython modules (IMPORT_FROM error messages
+        # used to degrade to "cannot import name 'x' from '<unknown>'").
+        if attr == "__name__" {
+            return PyStr(t="str", val=self.name);
+        }
         if attr == "__dict__" {
             return dict_from_str_map(self.attrs);
         }
@@ -1759,6 +1765,10 @@ def shim_module_get(name: str) -> PyObj {
         return shim_modules[name];
     }
     return py_error("ImportError", "shim module '" + name + "' is not installed");
+}
+
+def sys3_module_cached(name: str) -> bool {
+    return name in sys3_modules;
 }
 
 # ---------------- stdlib delegation registry ---------------------------------

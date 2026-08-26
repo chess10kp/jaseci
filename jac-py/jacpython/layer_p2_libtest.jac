@@ -6,7 +6,7 @@
 # differential stays separate; this path exercises ``import platform`` (etc.)
 # through register_shim_module + exec_code.
 
-import from objects { PyObj, PyStr, PyError, PyList, PyInt, PyBool, PyDict, is_error, py_none, py_error, }
+import from objects { PyObj, PyStr, PyError, PyList, PyInt, PyBool, PyDict, is_error, py_none, py_error, str_values, }
 import from getplatform { Py_GetPlatform }
 import from _bisectmodule {
     _p2_bisect_right,
@@ -20,7 +20,20 @@ import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
 }
-import from ceval { _sys3_forget, set_layer3_active, to_host, _jac_host_import, _jac_host_getattr, _jac_host_call, py_repr, py_compare, py_slot_truth, }
+import from ceval {
+    _sys3_forget,
+    set_layer3_active,
+    to_host,
+    _jac_host_import,
+    _jac_host_getattr,
+    _jac_host_call,
+    py_repr,
+    py_compare,
+    py_slot_truth,
+    import_native,
+    shim_module_get,
+    sys3_module_cached,
+}
 import from _collectionsmodule {
     _p2_deque,
     _p2_defaultdict,
@@ -247,6 +260,124 @@ def _p2_json_kwbool(kwargs: dict[str, PyObj], name: str, dflt: bool) -> bool {
 # exceptions; the established shim contract is returning py_error objects
 # (ceval turns those into raised guest exceptions), so catch and convert.
 # JSONDecodeError surfaces as ValueError -- its Lib/json base class.
+# ---------------- test.support.import_helper --------------------------------
+# Lib/test/support/import_helper.py helpers demanded by converted suites
+# (test_ordered_dict, test_atexit, test_configparser and ~65 more). Guest
+# adaptation of the reference contract: the guest serves one native
+# implementation per module (facade shims or in-VM execution), so "fresh"
+# imports reduce to dropping the module from the sys3 import cache before the
+# re-import; there is no second implementation for *blocked* to hide.
+obj P2ImportHelperImportModuleFn(PyObj) {
+    # import_module(name): plain guest import; ImportError on an optional
+    # module (not listed in required_on) becomes unittest.SkipTest per the
+    # reference contract.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) < 1 or not isinstance(args[0], PyStr) {
+            return py_error("TypeError", "import_module expected a module name string");
+        }
+        required_on: list[str] = [];
+        if "required_on" in kwargs {
+            required_on = str_values(kwargs["required_on"]);
+        }
+        mod = import_native((args[0] as PyStr).val);
+        if is_error(mod) {
+            exc = (mod as PyError).exception;
+            if exc.type_name == "ImportError" or exc.type_name == "ModuleNotFoundError" {
+                plat = Py_GetPlatform();
+                hit = False;
+                for prefix in required_on {
+                    if plat.startswith(prefix) { hit = True; }
+                }
+                if not hit {
+                    return py_error("SkipTest", exc.message);
+                }
+            }
+        }
+        return mod;
+    }
+}
+
+obj P2ImportHelperFreshFn(PyObj) {
+    # import_fresh_module(name, fresh=(), blocked=()): forget name/fresh/blocked
+    # from the import caches, preload the fresh set (None on failure), then
+    # return a fresh import of name.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) < 1 or not isinstance(args[0], PyStr) {
+            return py_error("TypeError", "import_fresh_module expected a module name string");
+        }
+        name = (args[0] as PyStr).val;
+        fresh: list[str] = [];
+        blocked: list[str] = [];
+        if len(args) > 1 { fresh = str_values(args[1]); }
+        if len(args) > 2 { blocked = str_values(args[2]); }
+        if "fresh" in kwargs { fresh = str_values(kwargs["fresh"]); }
+        if "blocked" in kwargs { blocked = str_values(kwargs["blocked"]); }
+        _sys3_forget(name);
+        for m in fresh { _sys3_forget(m); }
+        for m in blocked { _sys3_forget(m); }
+        for m in fresh {
+            pre = import_native(m);
+            if is_error(pre) { return py_none(); }
+        }
+        return import_native(name);
+    }
+}
+
+obj P2ImportHelperForgetFn(PyObj) {
+    # forget(modname) / unload(name): drop the module from the guest import
+    # cache so the next import re-executes it. No .pyc cleanup is needed --
+    # in-VM compilation never writes bytecode files.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) != 1 or not isinstance(args[0], PyStr) {
+            return py_error("TypeError", "expected one module name string");
+        }
+        _sys3_forget((args[0] as PyStr).val);
+        return py_none();
+    }
+}
+
+obj P2ImportHelperEnsureLazyFn(PyObj) {
+    # ensure_lazy_imports(imported_module, modules_to_block): reference runs a
+    # subprocess asserting none of modules_to_block land in sys.modules when
+    # imported_module is imported. Same assertion against the GUEST module
+    # state, with the reference's message wording.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) != 2 or not isinstance(args[0], PyStr) {
+            return py_error("TypeError", "ensure_lazy_imports expected (module, submodules)");
+        }
+        pkg = (args[0] as PyStr).val;
+        subs = str_values(args[1]);
+        unexpected = _p2_lazy_violations(pkg, subs);
+        if len(unexpected) > 0 {
+            return py_error(
+                "AssertionError", "unexpectedly imported at startup: " + ", ".join(unexpected)
+            );
+        }
+        mod = import_native(pkg);
+        if is_error(mod) { return mod; }
+        unexpected = _p2_lazy_violations(pkg, subs);
+        if len(unexpected) > 0 {
+            return py_error(
+                "AssertionError",
+                "unexpectedly imported after importing " + pkg + ": " + ", ".join(unexpected)
+            );
+        }
+        return py_none();
+    }
+}
+
+def _p2_lazy_violations(pkg: str, subs: list[str]) -> list[str] {
+    # Submodules present in either guest module registry count as imported.
+    found: list[str] = [];
+    for sub in subs {
+        full = pkg + "." + sub;
+        if sys3_module_cached(full) or not is_error(shim_module_get(full)) {
+            found.append(full);
+        }
+    }
+    return found;
+}
+
 # ---------------- test.support shim -----------------------------------------
 # Converted Lib/test pins import helper names from test.support; p2_libtest_reset
 # registers a minimal module covering what converted suites actually use.
@@ -683,6 +814,18 @@ def p2_libtest_reset {
     os_helper_mod = PyModule(t="module", name="test.support.os_helper", attrs=os_helper_attrs);
     register_shim_module("test.support.os_helper", os_helper_mod);
     support_attrs["os_helper"] = os_helper_mod;
+    import_helper_attrs: dict[str, PyObj] = {
+        "import_module": P2ImportHelperImportModuleFn(t="function"),
+        "import_fresh_module": P2ImportHelperFreshFn(t="function"),
+        "forget": P2ImportHelperForgetFn(t="function"),
+        "unload": P2ImportHelperForgetFn(t="function"),
+        "ensure_lazy_imports": P2ImportHelperEnsureLazyFn(t="function"),
+    };
+    import_helper_mod = PyModule(
+        t="module", name="test.support.import_helper", attrs=import_helper_attrs
+    );
+    register_shim_module("test.support.import_helper", import_helper_mod);
+    support_attrs["import_helper"] = import_helper_mod;
     register_shim_module("test.support", support_mod);
     # Lib/test/support/numbers.py is pure literal data shared by numeric
     # suites (test_underscores et al); embedded verbatim from the pinned
