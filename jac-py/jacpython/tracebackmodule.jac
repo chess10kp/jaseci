@@ -217,19 +217,6 @@ def format_exception_text(exc: PyObj) -> PyObj {
     return PyStr(t="str", val=text);
 }
 
-obj TBFmtExcFn(PyObj) {
-    # format_exception(exc, /, value, tb, limit=None): 3.14 one-arg form over
-    # the full cause/context chain via tb_render's tb_format. Native exception
-    # structs carry .traceback; user-defined instances fall back to their
-    # __traceback__ attribute plus a stack-only rendering.
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        if len(args) < 1 {
-            return py_error("TypeError", "format_exception expected at least 1 argument, got 0");
-        }
-        exc = args[0];
-        return PyList(t="list", items=[format_exception_text(exc)]);
-    }
-}
 
 obj TBWalkFn(PyObj) {
     # walk_tb(tb): list of frames (divergence: CPython returns a generator).
@@ -792,6 +779,77 @@ obj TBFmtExcOnlyFn(PyObj) {
 # LIVE guest frame chain -- blocked until sys._getframe serves GUEST frames
 # (frame-inspect lane); registered anyway so attribute probes find them, and
 # they raise a clear RuntimeError instead of silently printing HOST frames.
+obj TBFmtExcFn(PyObj) {
+    # format_exception(exc, /, value, tb, limit=None, chain=True): both the
+    # 3.14 one-arg form and the legacy (etype, value[, tb]) shape route through
+    # the SAME capture + segment renderer behind TracebackException.format(),
+    # so the returned list holds one newline-terminated string per segment --
+    # chaining headers, the "Traceback (most recent call last):" banner, ONE
+    # entry per stack frame, then the final exception line(s) -- and
+    # "".join(items) is the full rendering. limit= truncates stack frames;
+    # chain=False drops the cause/context sections.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) < 1 {
+            return py_error(
+                "TypeError", "format_exception expected at least 1 argument, got 0"
+            );
+        }
+        if len(args) > 5 {
+            return py_error(
+                "TypeError",
+                "format_exception expected at most 4 arguments, got " + str(len(args)),
+            );
+        }
+        limit = py_none();
+        chain = True;
+        for k in kwargs {
+            if k == "limit" {
+                limit = kwargs[k];
+            } elif k == "chain" {
+                chain = _kw_truthy(kwargs[k]);
+            } else {
+                return py_error(
+                    "TypeError",
+                    "format_exception() got an unexpected keyword argument '" + k + "'",
+                );
+            }
+        }
+        # CPython's signature allows limit=/chain= positionally after tb too.
+        if len(args) > 3 {
+            limit = args[3];
+        }
+        if len(args) > 4 {
+            chain = _kw_truthy(args[4]);
+        }
+        if len(args) == 1 {
+            exc = args[0];
+            if not _is_exc_like(exc) {
+                return py_error(
+                    "TypeError", "Expected BaseException instance, got " + exc.t
+                );
+            }
+            out = _tbe_capture(exc, _attr_tb(exc), limit, False, []);
+        } else {
+            # Legacy pinned-Lib form: (exc_type_or_none, exc_value, tb).
+            exc = args[1];
+            if not _is_exc_like(exc) {
+                return py_error(
+                    "TypeError", "Expected BaseException instance, got " + exc.t
+                );
+            }
+            tb: any = None;
+            if len(args) > 2 and not isinstance(args[2], PyNoneType) {
+                tb = args[2];
+            }
+            out = _tbe_capture(exc, tb, limit, False, []);
+        }
+        if is_error(out) {
+            return out;
+        }
+        return PyList(t="list", items=_tbe_format_list(out as TBExcObj, chain));
+    }
+}
+
 obj TBStackLikeFn(PyObj) {
     has mode: str;
 
