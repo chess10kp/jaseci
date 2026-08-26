@@ -103,6 +103,7 @@ import from _functoolsmodule {
     _p2_lru_cache,
     _p2_cmp_to_key,
 }
+import from typing { typing_module_attrs }
 
 def _p2_wrap_snippet(source: str) -> str {
     return (
@@ -940,6 +941,13 @@ def p2_libtest_reset {
     };
     register_shim_module(
         "_opcode", PyModule(t="module", name="_opcode", attrs=opcode_attrs)
+    );
+    # _typing accelerator facade (Modules/_typingmodule.c port): Lib/typing.py
+    # imports its type-parameter substrate from here, so converted typing
+    # suites resolve it through this shim before any host fallback.
+    register_shim_module(
+        "_typing",
+        PyModule(t="module", name="_typing", attrs=typing_module_attrs())
     );
     register_shim_module("mmap", build_mmap_module());
     _p2_warn_state_reset();

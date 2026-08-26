@@ -1657,7 +1657,13 @@ obj PyTypeVar(PyObj) {
         cached_default: PyObj = py_none(),
         bound_resolved: bool = False,
         constraints_resolved: bool = False,
-        default_resolved: bool = False;
+        default_resolved: bool = False,
+        # Variance flags (typevarobject.c): implicit PEP 695 parameters are
+        # infer-variance; explicit _typing.TypeVar(...) construction flips
+        # these through jacpython/typing.jac.
+        infer_variance: bool = True,
+        covariant: bool = False,
+        contravariant: bool = False;
 
     def tp_getattro(name: str) -> PyObj {
         if name == "__name__" {
@@ -1667,7 +1673,13 @@ obj PyTypeVar(PyObj) {
             return PyStr(t="str", val="typing");
         }
         if name == "__infer_variance__" {
-            return PyBool(t="bool", val=True);
+            return PyBool(t="bool", val=self.infer_variance);
+        }
+        if name == "__covariant__" {
+            return PyBool(t="bool", val=self.covariant);
+        }
+        if name == "__contravariant__" {
+            return PyBool(t="bool", val=self.contravariant);
         }
         # Getset surface (CPython typevarobject.c evaluate_bound/
         # evaluate_constraints/evaluate_default): expose the hidden zero-arg
