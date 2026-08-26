@@ -382,6 +382,17 @@ def _p2_lazy_violations(pkg: str, subs: list[str]) -> list[str] {
 # Converted Lib/test pins import helper names from test.support; p2_libtest_reset
 # registers a minimal module covering what converted suites actually use.
 
+obj P2SupportGcCollectFn(PyObj) {
+    # CPython test/support/__init__.py gc_collect: runs gc.collect() twice so
+    # reference cycles and frame locals settle before weakref assertions.
+    # JacPython's ceval releases guest garbage through the host GC eagerly
+    # (no separate cycle collector), so observably this is a no-op that
+    # returns None -- which is all converted Lib/test pins rely on.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        return py_none();
+    }
+}
+
 obj P2SupportSortdictFn(PyObj) {
     # CPython test/support/__init__.py sortdict: "Like repr(dict), but in
     # sorted order." Sorts by key (real comparisons, so unorderable key
@@ -801,6 +812,7 @@ def p2_libtest_reset {
         "is_apple": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
+        "gc_collect": P2SupportGcCollectFn(t="function"),
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
     os_helper_attrs: dict[str, PyObj] = {
@@ -984,6 +996,21 @@ test "layer_p2_libtest: platform_basic snippet prints ok on JacPython" {
         "assert platform.platform() == platform.platform()\n"
         "assert isinstance(platform.system(), str)\n"
         "assert isinstance(platform.machine(), str)\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: support_gc_collect snippet prints ok on JacPython" {
+    # Census fp 0cb264d9488d: CPython Lib/test/test_frame.py ClearTest and
+    # friends call support.gc_collect(); without the attr the snippet dies
+    # with ORACLE_EXC AttributeError 'gc_collect' before its assertions run.
+    snippet = (
+        "from test import support\n"
+        "assert callable(support.gc_collect)\n"
+        "assert support.gc_collect() is None\n"
+        "support.gc_collect()\n"
         "print('ok')\n"
     );
     (ok, detail) = p2_libtest_expect_ok(snippet);
