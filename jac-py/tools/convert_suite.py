@@ -246,6 +246,24 @@ def _regex_assert(call: ast.Call, negate: bool) -> ast.Assert:
     return ast.Assert(test=test, msg=_msg_of(call, label, [text, pattern]))
 
 
+def _starts_ends_assert(call: ast.Call, negate: bool, *, ends: bool = False) -> ast.Assert:
+    # assertStartsWith(s, prefix) / assertEndsWith(s, suffix): direct
+    # str.startswith/str.endswith checks (both accept tuple arguments,
+    # matching CPython 3.14 unittest semantics).
+    _need_args(call, 2)
+    s, affix = call.args[0], call.args[1]
+    label = ("assertEndsWith" if ends else "assertStartsWith")
+    method = "endswith" if ends else "startswith"
+    test: ast.expr = ast.Call(
+        func=ast.Attribute(value=s, attr=method, ctx=ast.Load()),
+        args=[affix],
+        keywords=[],
+    )
+    if negate:
+        test = ast.UnaryOp(op=ast.Not(), operand=test)
+    return ast.Assert(test=test, msg=_msg_of(call, label, [s, affix]))
+
+
 def _count_equal_assert(call: ast.Call) -> ast.Assert:
     _need_args(call, 2)
     a, b = call.args[0], call.args[1]
@@ -366,6 +384,10 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_regex_assert(call, negate=True)]
     if fname == "addCleanup":
         return [_add_cleanup_stmt(call)]
+    if fname == "assertStartsWith":
+        return [_starts_ends_assert(call, negate=False)]
+    if fname == "assertEndsWith":
+        return [_starts_ends_assert(call, negate=False, ends=True)]
     raise Unsupported(f"self.{fname}")
 
 
@@ -592,6 +614,15 @@ def _with_needs_re(item: ast.withitem) -> bool:
 # ---------------------------------------------------------------------------
 # Cleanup harness (self.addCleanup lowering)
 
+
+_ORACLE_EMIT_HELPERS = '''\
+import os as _os
+def _oracle_write(text):
+    # Raw fd-1 write: survives snippets that monkeypatch sys.stdout/
+    # sys.stderr (unittest.mock.patch of stdout would swallow a plain
+    # print() and strand the oracle marker).
+    _os.write(1, (text + "\\n").encode())
+'''
 
 _CLEANUP_HELPERS = '''\
 _cleanups = []
@@ -1900,6 +1931,7 @@ def render_snippet(
 ) -> str:
     module = ast.Module(body=[], type_ignores=[])
     stmts: list[ast.stmt] = []
+    stmts.extend(_parse_helpers(_ORACLE_EMIT_HELPERS))
     if needs_re:
         stmts.append(ast.Import(names=[ast.alias(name="re as _re", asname=None)]))
     if needs_cleanup and wrap:
@@ -1912,7 +1944,7 @@ def render_snippet(
         stmts.extend(body)
         # Any failure raises and aborts the process (harness reports it);
         # reaching this line means every check passed.
-        stmts.append(ast.Expr(value=ast.Call(func=ast.Name(id="print", ctx=ast.Load()), args=[ast.Constant(value=_ORACLE_OK)], keywords=[])))
+        stmts.append(ast.Expr(value=ast.Call(func=ast.Name(id="_oracle_write", ctx=ast.Load()), args=[ast.Constant(value=_ORACLE_OK)], keywords=[])))
         module.body = stmts
         ast.fix_missing_locations(module)
         return textwrap.dedent(ast.unparse(module)) + "\n"
@@ -1939,7 +1971,7 @@ def render_snippet(
                     body=[
                         ast.Expr(
                             value=ast.Call(
-                                func=ast.Name(id="print", ctx=ast.Load()),
+                                func=ast.Name(id="_oracle_write", ctx=ast.Load()),
                                 args=[
                                     _concat_expr([
                                         ast.Constant(value=_ORACLE_EXC),
@@ -1972,7 +2004,7 @@ def render_snippet(
                     ],
                 )
             ],
-            orelse=[ast.Expr(value=ast.Call(func=ast.Name(id="print", ctx=ast.Load()), args=[ast.Constant(value=_ORACLE_OK)], keywords=[]))],
+            orelse=[ast.Expr(value=ast.Call(func=ast.Name(id="_oracle_write", ctx=ast.Load()), args=[ast.Constant(value=_ORACLE_OK)], keywords=[]))],
             finalbody=(
                 [ast.Expr(value=ast.Call(func=ast.Name(id="_run_cleanups", ctx=ast.Load()), args=[], keywords=[]))]
                 if needs_cleanup
