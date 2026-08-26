@@ -44,6 +44,7 @@ import copy
 import doctest
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -204,6 +205,22 @@ def _almost_assert(call: ast.Call, negate: bool) -> ast.Assert:
     return ast.Assert(test=test, msg=_msg_of(call, label, [a, b]))
 
 
+def _affix_assert(call: ast.Call, negate: bool, suffix: bool) -> ast.Assert:
+    # assertStartsWith(prefix, text) / assertEndsWith(suffix, text):
+    # CPython checks text.startswith(prefix) / text.endswith(suffix).
+    _need_args(call, 2)
+    affix, text = call.args[0], call.args[1]
+    test: ast.expr = ast.Call(
+        func=ast.Attribute(value=text, attr="endswith" if suffix else "startswith", ctx=ast.Load()),
+        args=[affix], keywords=[],
+    )
+    if negate:
+        test = ast.UnaryOp(op=ast.Not(), operand=test)
+    label = ("assertNotEndsWith" if suffix else "assertNotStartsWith") if negate \
+        else ("assertEndsWith" if suffix else "assertStartsWith")
+    return ast.Assert(test=test, msg=_msg_of(call, label, [text, affix]))
+
+
 def _issubclass_assert(call: ast.Call) -> ast.Assert:
     _need_args(call, 2)
     a, b = call.args[0], call.args[1]
@@ -357,6 +374,14 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_regex_assert(call, negate=False)]
     if fname == "assertNotRegex":
         return [_regex_assert(call, negate=True)]
+    if fname == "assertStartsWith":
+        return [_affix_assert(call, negate=False, suffix=False)]
+    if fname == "assertNotStartsWith":
+        return [_affix_assert(call, negate=True, suffix=False)]
+    if fname == "assertEndsWith":
+        return [_affix_assert(call, negate=False, suffix=True)]
+    if fname == "assertNotEndsWith":
+        return [_affix_assert(call, negate=True, suffix=True)]
     raise Unsupported(f"self.{fname}")
 
 
@@ -594,7 +619,12 @@ def _loaded_names(nodes: ast.AST) -> set[str]:
 
 
 def _self_attr_stores(body: list[ast.stmt]) -> set[str]:
-    """Attribute names assigned via ``self.<attr> = ...`` anywhere in body."""
+    """Attribute names assigned via ``self.<attr> = ...`` anywhere in body.
+
+    Targets are walked recursively so tuple/list unpacking stores
+    (``fd, self.filename = tempfile.mkstemp()``) count as executed stores
+    too.
+    """
     out: set[str] = set()
     for node in ast.walk(ast.Module(body=body, type_ignores=[])):
         targets: list[ast.expr] = []
@@ -603,9 +633,10 @@ def _self_attr_stores(body: list[ast.stmt]) -> set[str]:
         elif isinstance(node, ast.AnnAssign):
             targets = [node.target]
         for t in targets:
-            if isinstance(t, ast.Attribute) and isinstance(t.value, ast.Name) \
-                    and t.value.id == "self":
-                out.add(t.attr)
+            for sub in ast.walk(t):
+                if isinstance(sub, ast.Attribute) and isinstance(sub.value, ast.Name) \
+                        and sub.value.id == "self":
+                    out.add(sub.attr)
     return out
 
 
@@ -1060,8 +1091,9 @@ def _apply_fixture_vocab(
     extra_prelude = _helper_class_deps(session.lifted, mod_classes)
     ns_block: list[ast.stmt] = []
     if bool(ns_attrs) or session.needs_ns:
+        seeds = _ordered_seeds(_class_attr_seeds(cls_name, cmap, mod_classes))
         ns_block = _namespace_prelude()
-        for attr, value in _class_attr_seeds(cls_name, cmap, mod_classes):
+        for attr, value in seeds:
             for owner in ("self", _NS_CLASS_NAME):
                 # Seed both the instance and its class: tests that do
                 # ``cls = self.__class__; cls.<attr>`` resolve through the
@@ -1069,11 +1101,83 @@ def _apply_fixture_vocab(
                 assign = ast.Assign(
                     targets=[ast.Attribute(value=ast.Name(id=owner, ctx=ast.Load()),
                                            attr=attr, ctx=ast.Store())],
-                    value=copy.deepcopy(value),
+                    value=value,
                 )
                 ast.fix_missing_locations(assign)
                 ns_block.append(assign)
     return rewritten, helper_defs, extra_prelude, ns_block, needs_re or session.needs_re
+
+
+def _seed_dep_names(value: ast.expr, seed_names: set[str]) -> set[str]:
+    """Seed names a seed value expression loads as bare names."""
+    return {
+        node.id
+        for node in ast.walk(value)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        and node.id in seed_names
+    }
+
+
+class _SeedRefRewriter(ast.NodeTransformer):
+    """Point bare sibling-seed references at the namespace class."""
+
+    def __init__(self, seed_names: set[str]) -> None:
+        self.seed_names = seed_names
+
+    def visit_Name(self, node: ast.Name) -> ast.expr:
+        if node.id in self.seed_names and isinstance(node.ctx, ast.Load):
+            return ast.Attribute(
+                value=ast.Name(id=_NS_CLASS_NAME, ctx=ast.Load()),
+                attr=node.id, ctx=ast.Load(),
+            )
+        return node
+
+
+def _rewrite_seed_refs(value: ast.expr, seed_names: set[str]) -> ast.expr:
+    return _SeedRefRewriter(seed_names).visit(value)
+
+
+def _ordered_seeds(
+    seeds: list[tuple[str, ast.expr]],
+) -> list[tuple[str, ast.expr]]:
+    """Rewrite intra-seed references and order seeds dependency-first.
+
+    A class attribute may be defined in terms of an earlier one
+    (``TEXT_LINES = [...]`` then ``TEXT = b''.join(TEXT_LINES)``). Under a
+    namespace ``self`` those bare references have no module binding, so each
+    value is rewritten to read through ``_SelfNS`` and seeds are emitted
+    only after the seeds they reference.
+    """
+    seed_names = {name for name, _ in seeds}
+    # Dependency edges come from the ORIGINAL values: after rewriting, a
+    # sibling reference is an ``_SelfNS.<attr>`` attribute load and no longer
+    # visible as a name.
+    deps = {
+        name: _seed_dep_names(value, seed_names)
+        for name, value in seeds
+    }
+    prepared = [
+        (name, _rewrite_seed_refs(copy.deepcopy(value), seed_names))
+        for name, value in seeds
+    ]
+    emitted: set[str] = set()
+    out: list[tuple[str, ast.expr]] = []
+    pending = list(prepared)
+    while pending:
+        progressed = False
+        rest: list[tuple[str, ast.expr]] = []
+        for name, value in pending:
+            if deps[name] <= emitted:
+                out.append((name, value))
+                emitted.add(name)
+                progressed = True
+            else:
+                rest.append((name, value))
+        if not progressed:  # defensive: cyclic values keep source order
+            out.extend(rest)
+            break
+        pending = rest
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1722,6 +1826,25 @@ def render_snippet(
 # Host oracle capture
 
 
+_HOST_INTERPRETER: str | None = None
+
+
+def _host_interpreter() -> str:
+    """Interpreter for oracle capture.
+
+    capture_host_oracle puts the pinned CPython Lib on PYTHONPATH, so that
+    Lib shadows the host stdlib; when the running interpreter's version
+differs from CPYTHON_VERSION, shadowed stdlib imports (tempfile, threading,
+warnings, ...) break against the mismatched stdlib. Prefer an interpreter
+whose major.minor matches the pinned Lib and fall back to the running one.
+    """
+    global _HOST_INTERPRETER
+    if _HOST_INTERPRETER is None:
+        want = ".".join(CPYTHON_VERSION.split(".")[:2])
+        _HOST_INTERPRETER = shutil.which(f"python{want}") or sys.executable
+    return _HOST_INTERPRETER
+
+
 def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
     """Run one snippet under host CPython in a sandboxed subprocess."""
     with tempfile.TemporaryDirectory(prefix="conv_suite_") as td:
@@ -1736,7 +1859,7 @@ def capture_host_oracle(snippet: str, cpython_lib: Path) -> dict:
         }
         try:
             proc = subprocess.run(
-                [sys.executable, str(script)],
+                [_host_interpreter(), str(script)],
                 cwd=str(tdp),
                 env=env,
                 capture_output=True,
@@ -1809,7 +1932,15 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
             "module_count": 0,
             "modules": [],
         }
-    rel_pins = str(Path(outdir.relative_to(_REPO)) / pins_file) if outdir.is_relative_to(_REPO) else pins_file
+    try:
+        rel_dir = outdir.resolve().relative_to(_REPO)
+        rel_pins = str(rel_dir / pins_file)
+        rel_meta = str(rel_dir / f"{stem}.conv.json")
+    except ValueError:
+        # Outdir outside the repo (scratch conversions): keep caller-provided
+        # spelling since no repo-relative form exists.
+        rel_pins = pins_file
+        rel_meta = f"{stem}.conv.json"
     row = {
         "stem": stem,
         "gate_type": "oracle",
@@ -1817,9 +1948,7 @@ def write_manifest_entry(stem: str, outdir: Path, pins_file: str, total: int) ->
         "oracle_tests": [rel_pins],
         "libtest_snippets": [],
         "notes": f"{total} output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-        "conversion_meta": str(Path(outdir.relative_to(_REPO)) / f"{stem}.conv.json")
-        if outdir.is_relative_to(_REPO)
-        else f"{stem}.conv.json",
+        "conversion_meta": rel_meta,
     }
     for i, existing in enumerate(doc["modules"]):
         if existing.get("stem") == stem:
