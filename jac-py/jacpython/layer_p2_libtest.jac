@@ -94,7 +94,7 @@ import from pyc_first {
     from_host,
 }
 import from objects { PyDict, PyTuple }
-import from ceval { py_attr, py_set_attr, members_of, builtin_sorted_min_max, is_error, py_error, PyList, PyInt, PyBool }
+import from ceval { py_attr, py_set_attr, members_of, builtin_sorted_min_max, is_error, py_error, PyList, PyInt, PyBool, build_signal_facade }
 import from _functoolsmodule {
     P2_MISSING,
     P2_WRAPPER_ASSIGNMENTS,
@@ -942,6 +942,7 @@ def p2_libtest_reset {
         "_opcode", PyModule(t="module", name="_opcode", attrs=opcode_attrs)
     );
     register_shim_module("mmap", build_mmap_module());
+    register_shim_module("signal", build_signal_facade());
     _p2_warn_state_reset();
     register_shim_module(
         "warnings",
