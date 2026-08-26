@@ -204,12 +204,18 @@ def _almost_assert(call: ast.Call, negate: bool) -> ast.Assert:
     return ast.Assert(test=test, msg=_msg_of(call, label, [a, b]))
 
 
-def _issubclass_assert(call: ast.Call) -> ast.Assert:
+def _issubclass_assert(call: ast.Call, negate: bool) -> ast.Assert:
     _need_args(call, 2)
     a, b = call.args[0], call.args[1]
+    test: ast.expr = ast.Call(
+        func=ast.Name(id="issubclass", ctx=ast.Load()), args=[a, b], keywords=[]
+    )
+    if negate:
+        test = ast.UnaryOp(op=ast.Not(), operand=test)
+    label = "assertNotIsSubclass" if negate else "assertIsSubclass"
     return ast.Assert(
-        test=ast.Call(func=ast.Name(id="issubclass", ctx=ast.Load()), args=[a, b], keywords=[]),
-        msg=_msg_of(call, "assertIsSubclass", [a, b]),
+        test=test,
+        msg=_msg_of(call, label, [a, b]),
     )
 
 
@@ -339,7 +345,8 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_is_none_assert(call, True)]
     if fname == "assertIsInstance":
         return [_isinstance_assert(call, negate=False)]
-    if fname == "assertIsNotInstance":
+    if fname in ("assertIsNotInstance", "assertNotIsInstance"):
+        # assertNotIsInstance is the legacy spelling of assertIsNotInstance.
         return [_isinstance_assert(call, negate=True)]
     if fname == "assertAlmostEqual":
         return [_almost_assert(call, negate=False)]
@@ -347,8 +354,8 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_almost_assert(call, negate=True)]
     if fname == "assertCountEqual":
         return [_count_equal_assert(call)]
-    if fname == "assertIsSubclass":
-        return [_issubclass_assert(call)]
+    if fname in ("assertIsSubclass", "assertNotIsSubclass"):
+        return [_issubclass_assert(call, negate=(fname == "assertNotIsSubclass"))]
     if fname == "assertHasAttr":
         return [_hasattr_assert(call, negate=False)]
     if fname == "assertNotHasAttr":
