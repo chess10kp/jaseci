@@ -1,0 +1,1258 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.5.0",
+  "jac_sha": "dde8b38148d0f55c7cc9797901d7f3415988a28b",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_posix.py",
+    "-o",
+    "jac-py/tests/conv_posix",
+    "--name",
+    "conv_posix"
+  ],
+  "generated_at": "2026-08-25T22:33:01",
+  "hashes": {
+    "pins_jac": "371df90faf74f2220d9f9fa61324602e37d0fdeef40d9fe5f4dc05e0fb5bb83e"
+  },
+  "source_file": "reference/cpython/Lib/test/test_posix.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "posix",
+  "pins_file": "conv_posix_pins.jac",
+  "pins": [
+    {
+      "ident": "TestPosixSpawn.test_returns_pid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pidfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(pidfile,))\n    script = f'if 1:\\n            import os\\n            with open({pidfile!r}, \"w\") as pidfile:\\n                pidfile.write(str(os.getpid()))\\n            '\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ)\n    support.wait_process(pid, exitcode=0)\n    with open(pidfile, encoding='utf-8') as f:\n        assert f.read() == str(pid), ('assertEqual', f.read(), str(pid))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_returns_pid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pidfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(pidfile,))\n    script = f'if 1:\\n            import os\\n            with open({pidfile!r}, \"w\") as pidfile:\\n                pidfile.write(str(os.getpid()))\\n            '\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ)\n    support.wait_process(pid, exitcode=0)\n    with open(pidfile, encoding='utf-8') as f:\n        assert f.read() == str(pid), ('assertEqual', f.read(), str(pid))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_no_such_executable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    no_such_executable = 'no_such_executable'\n    try:\n        pid = self.spawn_func(no_such_executable, [no_such_executable], os.environ)\n    except (FileNotFoundError, PermissionError) as exc:\n        assert exc.filename == no_such_executable, ('assertEqual', exc.filename, no_such_executable)\n    else:\n        pid2, status = os.waitpid(pid, 0)\n        assert pid2 == pid, ('assertEqual', pid2, pid)\n        assert status != 0, ('assertNotEqual', status, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_no_such_executable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    no_such_executable = 'no_such_executable'\n    try:\n        pid = self.spawn_func(no_such_executable, [no_such_executable], os.environ)\n    except (FileNotFoundError, PermissionError) as exc:\n        assert exc.filename == no_such_executable, ('assertEqual', exc.filename, no_such_executable)\n    else:\n        pid2, status = os.waitpid(pid, 0)\n        assert pid2 == pid, ('assertEqual', pid2, pid)\n        assert status != 0, ('assertNotEqual', status, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_specify_environment",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    envfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(envfile,))\n    script = f\"\"\"if 1:\\n            import os\\n            with open({envfile!r}, \"w\", encoding=\"utf-8\") as envfile:\\n                envfile.write(os.environ['foo'])\\n        \"\"\"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, {**os.environ, 'foo': 'bar'})\n    support.wait_process(pid, exitcode=0)\n    with open(envfile, encoding='utf-8') as f:\n        assert f.read() == 'bar', ('assertEqual', f.read(), 'bar')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_specify_environment",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    envfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(envfile,))\n    script = f\"\"\"if 1:\\n            import os\\n            with open({envfile!r}, \"w\", encoding=\"utf-8\") as envfile:\\n                envfile.write(os.environ['foo'])\\n        \"\"\"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, {**os.environ, 'foo': 'bar'})\n    support.wait_process(pid, exitcode=0)\n    with open(envfile, encoding='utf-8') as f:\n        assert f.read() == 'bar', ('assertEqual', f.read(), 'bar')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_none_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_none_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_empty_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=[])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_empty_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=[])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_resetids_explicit_default",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=False)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_resetids_explicit_default",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=False)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_resetids",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=True)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_resetids",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=True)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setpgroup",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup=os.getpgrp())\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setpgroup",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup=os.getpgrp())\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setpgroup_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, setpgroup=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setpgroup_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, setpgroup=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setpgroup_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup='023')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setpgroup_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup='023')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigmask",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigmask=[signal.SIGUSR1])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigmask",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigmask=[signal.SIGUSR1])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigmask_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigmask_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigdef",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    original_handler = signal.signal(signal.SIGUSR1, signal.SIG_IGN)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    try:\n        pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigdef=[signal.SIGUSR1])\n    finally:\n        signal.signal(signal.SIGUSR1, original_handler)\n    support.wait_process(pid, exitcode=-signal.SIGUSR1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigdef",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    original_handler = signal.signal(signal.SIGUSR1, signal.SIG_IGN)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    try:\n        pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigdef=[signal.SIGUSR1])\n    finally:\n        signal.signal(signal.SIGUSR1, original_handler)\n    support.wait_process(pid, exitcode=-signal.SIGUSR1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigdef_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigdef_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_scheduler_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, scheduler=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_scheduler_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, scheduler=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setscheduler_only_param",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(None, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setscheduler_only_param",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(None, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setscheduler_with_policy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(policy, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setscheduler_with_policy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(policy, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_open_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\nimport stat\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    outfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(outfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    file_actions = [(os.POSIX_SPAWN_OPEN, 1, outfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)]\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n    support.wait_process(pid, exitcode=0)\n    with open(outfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_open_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\nimport stat\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    outfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(outfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    file_actions = [(os.POSIX_SPAWN_OPEN, 1, outfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)]\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n    support.wait_process(pid, exitcode=0)\n    with open(outfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_close_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport errno\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    closefile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(closefile,))\n    script = f\"if 1:\\n            import os\\n            try:\\n                os.fstat(0)\\n            except OSError as e:\\n                with open({closefile!r}, 'w', encoding='utf-8') as closefile:\\n                    closefile.write('is closed %d' % e.errno)\\n            \"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=[(os.POSIX_SPAWN_CLOSE, 0)])\n    support.wait_process(pid, exitcode=0)\n    with open(closefile, encoding='utf-8') as f:\n        assert f.read() == 'is closed %d' % errno.EBADF, ('assertEqual', f.read(), 'is closed %d' % errno.EBADF)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_close_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport errno\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    closefile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(closefile,))\n    script = f\"if 1:\\n            import os\\n            try:\\n                os.fstat(0)\\n            except OSError as e:\\n                with open({closefile!r}, 'w', encoding='utf-8') as closefile:\\n                    closefile.write('is closed %d' % e.errno)\\n            \"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=[(os.POSIX_SPAWN_CLOSE, 0)])\n    support.wait_process(pid, exitcode=0)\n    with open(closefile, encoding='utf-8') as f:\n        assert f.read() == 'is closed %d' % errno.EBADF, ('assertEqual', f.read(), 'is closed %d' % errno.EBADF)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_dup2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    dupfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(dupfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    with open(dupfile, 'wb') as childfile:\n        file_actions = [(os.POSIX_SPAWN_DUP2, childfile.fileno(), 1)]\n        args = python_args('-c', script)\n        pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n        support.wait_process(pid, exitcode=0)\n    with open(dupfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_dup2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    dupfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(dupfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    with open(dupfile, 'wb') as childfile:\n        file_actions = [(os.POSIX_SPAWN_DUP2, childfile.fileno(), 1)]\n        args = python_args('-c', script)\n        pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n        support.wait_process(pid, exitcode=0)\n    with open(dupfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_returns_pid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pidfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(pidfile,))\n    script = f'if 1:\\n            import os\\n            with open({pidfile!r}, \"w\") as pidfile:\\n                pidfile.write(str(os.getpid()))\\n            '\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ)\n    support.wait_process(pid, exitcode=0)\n    with open(pidfile, encoding='utf-8') as f:\n        assert f.read() == str(pid), ('assertEqual', f.read(), str(pid))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_no_such_executable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    no_such_executable = 'no_such_executable'\n    try:\n        pid = self.spawn_func(no_such_executable, [no_such_executable], os.environ)\n    except (FileNotFoundError, PermissionError) as exc:\n        assert exc.filename == no_such_executable, ('assertEqual', exc.filename, no_such_executable)\n    else:\n        pid2, status = os.waitpid(pid, 0)\n        assert pid2 == pid, ('assertEqual', pid2, pid)\n        assert status != 0, ('assertNotEqual', status, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_specify_environment",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    envfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(envfile,))\n    script = f\"\"\"if 1:\\n            import os\\n            with open({envfile!r}, \"w\", encoding=\"utf-8\") as envfile:\\n                envfile.write(os.environ['foo'])\\n        \"\"\"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, {**os.environ, 'foo': 'bar'})\n    support.wait_process(pid, exitcode=0)\n    with open(envfile, encoding='utf-8') as f:\n        assert f.read() == 'bar', ('assertEqual', f.read(), 'bar')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_none_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_empty_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=[])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_resetids_explicit_default",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=False)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_resetids",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=True)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setpgroup",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup=os.getpgrp())\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setpgroup_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, setpgroup=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setpgroup_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup='023')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigmask",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigmask=[signal.SIGUSR1])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigmask_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigdef",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    original_handler = signal.signal(signal.SIGUSR1, signal.SIG_IGN)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    try:\n        pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigdef=[signal.SIGUSR1])\n    finally:\n        signal.signal(signal.SIGUSR1, original_handler)\n    support.wait_process(pid, exitcode=-signal.SIGUSR1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsigdef_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_scheduler_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, scheduler=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setscheduler_only_param",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(None, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setscheduler_with_policy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(policy, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_open_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\nimport stat\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    outfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(outfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    file_actions = [(os.POSIX_SPAWN_OPEN, 1, outfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)]\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n    support.wait_process(pid, exitcode=0)\n    with open(outfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_close_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport errno\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    closefile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(closefile,))\n    script = f\"if 1:\\n            import os\\n            try:\\n                os.fstat(0)\\n            except OSError as e:\\n                with open({closefile!r}, 'w', encoding='utf-8') as closefile:\\n                    closefile.write('is closed %d' % e.errno)\\n            \"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=[(os.POSIX_SPAWN_CLOSE, 0)])\n    support.wait_process(pid, exitcode=0)\n    with open(closefile, encoding='utf-8') as f:\n        assert f.read() == 'is closed %d' % errno.EBADF, ('assertEqual', f.read(), 'is closed %d' % errno.EBADF)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawn.test_dup2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawn', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawn', None)\n    dupfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(dupfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    with open(dupfile, 'wb') as childfile:\n        file_actions = [(os.POSIX_SPAWN_DUP2, childfile.fileno(), 1)]\n        args = python_args('-c', script)\n        pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n        support.wait_process(pid, exitcode=0)\n    with open(dupfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_returns_pid",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pidfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(pidfile,))\n    script = f'if 1:\\n            import os\\n            with open({pidfile!r}, \"w\") as pidfile:\\n                pidfile.write(str(os.getpid()))\\n            '\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ)\n    support.wait_process(pid, exitcode=0)\n    with open(pidfile, encoding='utf-8') as f:\n        assert f.read() == str(pid), ('assertEqual', f.read(), str(pid))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_no_such_executable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    no_such_executable = 'no_such_executable'\n    try:\n        pid = self.spawn_func(no_such_executable, [no_such_executable], os.environ)\n    except (FileNotFoundError, PermissionError) as exc:\n        assert exc.filename == no_such_executable, ('assertEqual', exc.filename, no_such_executable)\n    else:\n        pid2, status = os.waitpid(pid, 0)\n        assert pid2 == pid, ('assertEqual', pid2, pid)\n        assert status != 0, ('assertNotEqual', status, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_specify_environment",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    envfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(envfile,))\n    script = f\"\"\"if 1:\\n            import os\\n            with open({envfile!r}, \"w\", encoding=\"utf-8\") as envfile:\\n                envfile.write(os.environ['foo'])\\n        \"\"\"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, {**os.environ, 'foo': 'bar'})\n    support.wait_process(pid, exitcode=0)\n    with open(envfile, encoding='utf-8') as f:\n        assert f.read() == 'bar', ('assertEqual', f.read(), 'bar')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_none_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_empty_file_actions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(self.NOOP_PROGRAM[0], self.NOOP_PROGRAM, os.environ, file_actions=[])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_resetids_explicit_default",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=False)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_resetids",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, resetids=True)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setpgroup",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup=os.getpgrp())\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setpgroup_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, setpgroup=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setpgroup_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setpgroup='023')\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigmask",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigmask=[signal.SIGUSR1])\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigmask_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigmask=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigdef",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport signal\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    original_handler = signal.signal(signal.SIGUSR1, signal.SIG_IGN)\n    code = textwrap.dedent('            import signal\\n            signal.raise_signal(signal.SIGUSR1)')\n    try:\n        pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, setsigdef=[signal.SIGUSR1])\n    finally:\n        signal.signal(signal.SIGUSR1, original_handler)\n    support.wait_process(pid, exitcode=-signal.SIGUSR1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsigdef_wrong_type",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import sys\nimport signal\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=34)\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=['j'])\n    except TypeError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        self.spawn_func(sys.executable, [sys.executable, '-c', 'pass'], os.environ, setsigdef=[signal.NSIG, signal.NSIG + 1])\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_scheduler_allow_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    path, args = (self.NOOP_PROGRAM[0], self.NOOP_PROGRAM)\n    pid = self.spawn_func(path, args, os.environ, scheduler=None)\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setscheduler_only_param",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(None, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setscheduler_with_policy",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test import support\nimport sys\nimport os\nimport textwrap\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    policy = os.sched_getscheduler(0)\n    priority = os.sched_get_priority_min(policy)\n    code = textwrap.dedent(f'            import os, sys\\n            if os.sched_getscheduler(0) != {policy}:\\n                sys.exit(101)\\n            if os.sched_getparam(0).sched_priority != {priority}:\\n                sys.exit(102)')\n    pid = self.spawn_func(sys.executable, [sys.executable, '-c', code], os.environ, scheduler=(policy, os.sched_param(priority)))\n    support.wait_process(pid, exitcode=0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_open_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\nimport stat\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    outfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(outfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    file_actions = [(os.POSIX_SPAWN_OPEN, 1, outfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)]\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n    support.wait_process(pid, exitcode=0)\n    with open(outfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_close_file",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport errno\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    closefile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(closefile,))\n    script = f\"if 1:\\n            import os\\n            try:\\n                os.fstat(0)\\n            except OSError as e:\\n                with open({closefile!r}, 'w', encoding='utf-8') as closefile:\\n                    closefile.write('is closed %d' % e.errno)\\n            \"\n    args = python_args('-c', script)\n    pid = self.spawn_func(args[0], args, os.environ, file_actions=[(os.POSIX_SPAWN_CLOSE, 0)])\n    support.wait_process(pid, exitcode=0)\n    with open(closefile, encoding='utf-8') as f:\n        assert f.read() == 'is closed %d' % errno.EBADF, ('assertEqual', f.read(), 'is closed %d' % errno.EBADF)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_dup2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nfrom test import support\nfrom test.support import os_helper\nimport sys\nimport os\ntry:\n    import posix\nexcept ImportError:\n    import nt as posix\n\ndef _t():\n\n    def python_args(*args):\n        return (sys.executable, '-I', '-S', *args)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    _SelfNS.NOOP_PROGRAM = (sys.executable, '-I', '-S', '-c', 'pass')\n    self.spawn_func = getattr(posix, 'posix_spawnp', None)\n    _SelfNS.spawn_func = getattr(posix, 'posix_spawnp', None)\n    dupfile = os_helper.TESTFN\n    _add_cleanup(os_helper.unlink, *(dupfile,))\n    script = 'if 1:\\n            import sys\\n            sys.stdout.write(\"hello\")\\n            '\n    with open(dupfile, 'wb') as childfile:\n        file_actions = [(os.POSIX_SPAWN_DUP2, childfile.fileno(), 1)]\n        args = python_args('-c', script)\n        pid = self.spawn_func(args[0], args, os.environ, file_actions=file_actions)\n        support.wait_process(pid, exitcode=0)\n    with open(dupfile, encoding='utf-8') as f:\n        assert f.read() == 'hello', ('assertEqual', f.read(), 'hello')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\nfinally:\n    _run_cleanups()\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "PosixTester.test_getresuid",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_getresgid",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_setresuid",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_setresuid_exception",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_setresgid",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_setresgid_exception",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_initgroups",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_statvfs",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_fstatvfs",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_ftruncate",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_truncate",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_fexecve",
+      "reason": "decorator:support.requires_fork"
+    },
+    {
+      "ident": "PosixTester.test_waitid",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_register_at_fork",
+      "reason": "decorator:support.requires_fork"
+    },
+    {
+      "ident": "PosixTester.test_lockf",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_pread",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_preadv",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_preadv_flags",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_preadv_overflow_32bits",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_pwrite",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_pwritev",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_pwritev_flags",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_pwritev_overflow_32bits",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_posix_fallocate",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_posix_fallocate_errno",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_posix_fadvise",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_posix_fadvise_errno",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_writev",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_writev_overflow_32bits",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_readv",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_readv_overflow_32bits",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_dup",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_confstr",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_sysconf",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_dup2",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_oscloexec",
+      "reason": "decorator:support.requires_linux_version"
+    },
+    {
+      "ident": "PosixTester.test_osexlock",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_osshlock",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_fstat",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_stat_fd_zero_follow_symlinks",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_mkfifo",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_mknod",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_makedev",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_chown",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "PosixTester.test_fchown",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_lchown",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_chdir",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_listdir_fd",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_access",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_umask",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_strerror",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_pipe",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_pipe2",
+      "reason": "decorator:support.requires_linux_version"
+    },
+    {
+      "ident": "PosixTester.test_pipe2_c_limits",
+      "reason": "decorator:support.requires_linux_version"
+    },
+    {
+      "ident": "PosixTester.test_utime",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_lchmod_file",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_lchmod_dir",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_lchmod_file_symlink",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_lchmod_dir_symlink",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_chflags",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_lchflags_regular_file",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_lchflags_symlink",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_getcwd_long_pathnames",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_getgrouplist",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_sched_priority",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_sched_rr_get_interval",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixTester.test_rtld_constants",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestPosixDirFd.test_chown_dir_fd",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "TestPosixDirFd.test_link_dir_fd",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "ident": "PosixGroupsTester.test_initgroups",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "PosixGroupsTester.test_setgroups",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "_PosixSpawnMixin.test_scheduler_wrong_type",
+      "reason": "decorator:support.subTests"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_pwritev",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_stat",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_ptsname_r",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_access",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_chmod",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_chown",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_link",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_listdir_scandir",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_mkdir",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_mkfifo",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_mknod",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_rename_replace",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_unlink_rmdir",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_open",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_readlink",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_symlink",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestPosixWeaklinking.test_utime",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "NamespacesTests.test_unshare_setns",
+      "reason": "decorator:support.requires_linux_version"
+    },
+    {
+      "ident": "PosixTester.testNoArgFunctions",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_utime_with_fd",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_utime_nofollow_symlinks",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_stat",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_listdir",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_listdir_default",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_listdir_bytes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_listdir_bytes_like",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_chmod_file",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_chmod_dir",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_fchmod_file",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_chmod_file_symlink",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_chmod_dir_symlink",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_environ",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_putenv",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_getgroups",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_cld_xxxx_constants",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_sched_yield",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_get_and_set_scheduler_and_param",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_sched_param",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_bug_140634",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_sched_getaffinity",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_sched_setaffinity",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_fs_holes",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_path_error2",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_path_with_null_character",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_path_with_null_byte",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_pidfd_open",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "PosixTester.test_link_follow_symlinks",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_access_dir_fd",
+      "reason": "helper:prepare_file(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_chmod_dir_fd",
+      "reason": "helper:prepare_file(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_stat_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_utime_dir_fd",
+      "reason": "helper:prepare_file(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_mkdir_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_mknod_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_open_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_readlink_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_rename_dir_fd",
+      "reason": "helper:prepare_file(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_symlink_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_unlink_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixDirFd.test_mkfifo_dir_fd",
+      "reason": "helper:prepare(decorated-helper)"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsid",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsid",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestPosixSpawn.test_multiple_file_actions",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_multiple_file_actions",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestPosixSpawn.test_bad_file_actions",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_bad_file_actions",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestPosixSpawn.test_setsid",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestPosixSpawn.test_scheduler_wrong_type",
+      "reason": "unresolved-name:scheduler"
+    },
+    {
+      "ident": "TestPosixSpawn.test_multiple_file_actions",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestPosixSpawn.test_bad_file_actions",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_posix_spawnp",
+      "reason": "unsupported-import:test.support.script_helper"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_setsid",
+      "reason": "self.skipTest"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_scheduler_wrong_type",
+      "reason": "unresolved-name:scheduler"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_multiple_file_actions",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "ident": "TestPosixSpawnP.test_bad_file_actions",
+      "reason": "unresolved-name:__file__"
+    }
+  ],
+  "counts": {
+    "extracted": 226,
+    "pinned": 80,
+    "quarantined": 146
+  }
+}

@@ -1292,6 +1292,27 @@ def _src(node: ast.AST, source: str) -> str:
     return seg or ast.unparse(node)
 
 
+def _is_platform_alias_import_guard(node: ast.Try) -> bool:
+    """True for the try-import fallback idiom (test_posix.py's
+    ``try: import posix`` / ``except ImportError: import nt as posix``):
+    every statement in the body and in each ImportError handler is a bare
+    module import, with no else/final clauses. The whole Try joins the
+    prelude pool and binds its import aliases at module scope."""
+    if node.orelse or node.finalbody:
+        return False
+
+    def _all_imports(stmts: list[ast.stmt]) -> bool:
+        return all(isinstance(s, ast.Import) for s in stmts)
+
+    if not _all_imports(node.body):
+        return False
+    return all(
+        isinstance(h.type, ast.Name) and h.type.id == "ImportError"
+        and not h.name and _all_imports(h.body)
+        for h in node.handlers
+    )
+
+
 def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False) -> tuple[list[ast.stmt], set[str]]:
     """Module-level imports/assigns/function defs/classes usable as prelude.
 
@@ -1299,13 +1320,18 @@ def collect_prelude(tree: ast.Module, source: str, include_classes: bool = False
     items whose bindings the test body (transitively) references, so a
     module-level helper class lands in a snippet only when the body actually
     names it -- previously such references quarantined as
-    ``unresolved-name:<Class>``.
+    ``unresolved-name:<Class>``. Try-wrapped platform-alias import guards
+    (see ``_is_platform_alias_import_guard``) join the pool too; previously
+    their bindings (e.g. ``posix``) were invisible to every snippet.
     """
     stmts: list[ast.stmt] = []
     names: set[str] = set()
     for node in tree.body:
         if isinstance(node, (ast.Import, ast.ImportFrom, ast.Assign, ast.AnnAssign,
                              ast.FunctionDef)):
+            stmts.append(node)
+            names |= _bound_names(node)
+        elif isinstance(node, ast.Try) and _is_platform_alias_import_guard(node):
             stmts.append(node)
             names |= _bound_names(node)
         elif include_classes and isinstance(node, ast.ClassDef):
