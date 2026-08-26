@@ -17,9 +17,9 @@
 
 import from host_oracle { host_compile_marshal }
 import from pyc_first { unmarshal, exec_code, to_host }
-import from ceval { to_host_policy, BridgePolicy }
+import from ceval { to_host_policy, BridgePolicy, from_host }
 import from exceptions_core { exc_name_matches, registered_exc_base }
-import from objects { PyObj, PyStr, PyHandler, is_error }
+import from objects { PyObj, PyStr, PyHandler, is_error, PyComplex, PY_NOT_IMPLEMENTED }
 # Importing the facade modules runs their AT-IMPORT registry declarations.
 import from _structmodule { _scale_pow2 }
 import from _jsonmodule { _decode_error }
@@ -104,6 +104,21 @@ test "unknown tag FAILS loudly, never None" {
         raised = True;
     }
     assert raised;
+}
+
+test "host complex crosses back as native PyComplex (VALUE_COPY both ways)" {
+    # The policy table declares complex lossless in BOTH directions; the
+    # missing reverse arm previously degraded host complexes to PyHostProxy.
+    # NB: written as complex(3, 4) -- Jac complex literals currently trip a
+    # TypeEvaluator gap (get_type_of_complex), unrelated to this boundary arm.
+    c = from_host(complex(3, 4));
+    assert isinstance(c, PyComplex);
+    cc = c as PyComplex;
+    assert cc.real == 3.0 and cc.imag == 4.0;
+}
+
+test "host NotImplemented round-trips to the deferral sentinel" {
+    assert from_host(NotImplemented) is PY_NOT_IMPLEMENTED;
 }
 
 # ---- module-exception registry ---------------------------------------------
