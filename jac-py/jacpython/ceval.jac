@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from winapi { winapi_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2102,6 +2103,14 @@ def import_native(absname: str) -> PyObj {
         # errorcode round-trip; the native facade keeps them guest-native.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if absname == "_winapi" and not ("_winapi" in shim_modules) {
+        # _winapi.c lift: Windows-only C extension with no host analogue on
+        # the Linux farm -- host import fails outright, so serve the native
+        # facade (event/wait family natively, rest raises WinError 120).
+        shim_modules["_winapi"] = PyModule(
+            t="module", name="_winapi", attrs=winapi_module_attrs()
         );
     }
     if absname == "sys" and not ("sys" in shim_modules) {
@@ -5249,6 +5258,12 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # native facade serves it without a host round-trip.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if name == "_winapi" and not ("_winapi" in shim_modules) {
+        # Mirror of the import_native site above.
+        shim_modules["_winapi"] = PyModule(
+            t="module", name="_winapi", attrs=winapi_module_attrs()
         );
     }
     if name == "weakref" and not ("weakref" in shim_modules) {

@@ -1,476 +1,613 @@
-# Product-path facade for _winapi.
-# Semantics mirror CPython 3.14 ``Modules/_winapi.c`` exercised by
-# Lib/test/test_winapi.py (suite_routing: test_winapi -> QUARANTINE,
-# forbidden-import:_winapi).
+# Product-path facade for the Windows _winapi surface (native Jac).
+# Semantics mirror CPython 3.14 ``Modules/_winapi.c`` for everything
+# expressible against jacpython's runtime API:
 #
-# REPRESENTATION CHOICE (divergence ledger candidate): the C original is a
-# thin binding over the Win32 floor -- processes, named pipes, file mappings
-# -- that has no host equivalent on the Linux farm (unlike bz2/_curses, there
-# is no ``_winapi`` extension to delegate to). This facade lifts everything
-# _winapi.c exports that is a pure compile-time value (the full
-# WINAPI_CONSTANT block from winapi_exec, byte-exact SDK values) and models
-# the synchronization core natively: named/auto-reset/manual-reset events and
-# the three wait entry points, including BatchedWaitForMultipleObjects'
-# batch-chunking algorithm over MAXIMUM_WAIT_OBJECTS-1-sized groups.
-#
-# Wait semantics in the single-threaded guest: waits never block. A signaled
-# object completes immediately (auto-reset events consume their signal, as
-# WaitForMultipleObjects does); an unsignaled object expires the wait --
-# nothing in a single-threaded guest can signal mid-wait, so every timeout
-# value (including INFINITE) behaves as WAIT_TIMEOUT. This preserves all
-# behavior reachable without threads and cannot hang the VM where real
-# Win32 would deadlock forever.
-#
-# Error-channel convention matches the other facades (binasciimodule et al):
-# OSError/TimeoutError/TypeError/ValueError keep their builtin types exactly;
-# messages carry the canonical "[WinError <n>] <message>" text of
-# PyErr_SetFromWindowsErr, and GetLastError() observes the last recorded
-# code like its Win32 namesake.
-#
-# Out of scope by design (needs the Win32 kernel-object floor, absent from
-# every farm platform): ConnectNamedPipe, CreateFile, CreateFileMapping,
-# CreateMutexW/OpenMutexW/ReleaseMutex, CreateNamedPipe, CreatePipe,
-# CreateProcess, CreateJunction, DuplicateHandle, ExitProcess/Terminate-
-# Process, GetCurrentProcess, GetExitCodeProcess, GetLongPathName/
-# GetShortPathName, GetModuleFileName, GetStdHandle, GetVersion, MapViewOf-
-# File/UnmapViewOfFile, PeekNamedPipe, LCMAPSTRINGEX, ReadFile,
-# SetNamedPipeHandleState, VirtualQuerySize, WaitNamedPipe, WriteFile,
-# GetACP, GetFileType, _mimetypes_read_windows_registry,
-# NeedCurrentDirectoryForExePathW, CopyFile2, the Overlapped type.
+# - The event family is implemented natively over a handle table:
+#   CreateEventW/OpenEventW allocate opaque integer handles backed by
+#   manual-reset/auto-reset signal state; SetEvent/ResetEvent mutate it;
+#   CloseHandle retires the handle (further use -> OSError).
+# - WaitForSingleObject / WaitForMultipleObjects /
+#   BatchedWaitForMultipleObjects evaluate the same success/timeout/error
+#   contract as the C code (index or [indices] lists for wait-any, None for
+#   wait-all, TimeoutError on WAIT_TIMEOUT, OSError on bad handles and the
+#   3969-handle batched cap). jacpython's ceval is single-threaded, so a
+#   wait either completes immediately (a waited handle is already
+#   signalled -- auto-reset handles are consumed by the wait, like the C
+#   implementation) or could never complete; the latter surfaces as
+#   WAIT_TIMEOUT instead of deadlocking the VM.
+# - Constants mirror the WINAPI_CONSTANT table in winapi_exec() insertion
+#   surface (DWORD values stored unsigned, HANDLE-typed ones signed).
+# - Kernel calls with no Linux analogue (named pipes, file mapping,
+#   process spawning, path conversion) register their names but raise
+#   OSError(winerror=120, ERROR_CALL_NOT_IMPLEMENTED), the same failure
+#   class Windows itself reports for unsupported APIs.
 
-
-# ---------------- module constants (winapi_exec WINAPI_CONSTANT block) ------
-
-glob CREATE_NEW_CONSOLE: int = 0x00000010,
-     CREATE_NEW_PROCESS_GROUP: int = 0x00000200,
-     DUPLICATE_SAME_ACCESS: int = 0x00000002,
-     DUPLICATE_CLOSE_SOURCE: int = 0x00000001,
-     ERROR_ACCESS_DENIED: int = 5,
-     ERROR_ALREADY_EXISTS: int = 183,
-     ERROR_BROKEN_PIPE: int = 109,
-     ERROR_IO_PENDING: int = 997,
-     ERROR_MORE_DATA: int = 234,
-     ERROR_NETNAME_DELETED: int = 64,
-     ERROR_NO_SYSTEM_RESOURCES: int = 1450,
-     ERROR_NO_DATA: int = 232,
-     ERROR_OPERATION_ABORTED: int = 995,
-     ERROR_PIPE_BUSY: int = 231,
-     ERROR_PIPE_CONNECTED: int = 535,
-     ERROR_PRIVILEGE_NOT_HELD: int = 1314,
-     ERROR_SEM_TIMEOUT: int = 121,
-     FILE_FLAG_FIRST_PIPE_INSTANCE: int = 0x00080000,
-     FILE_FLAG_OVERLAPPED: int = 0x40000000,
-     FILE_GENERIC_READ: int = 0x00120089,
-     FILE_GENERIC_WRITE: int = 0x00120116,
-     FILE_MAP_ALL_ACCESS: int = 0x000F003F,
-     FILE_MAP_COPY: int = 0x00000001,
-     FILE_MAP_EXECUTE: int = 0x00000020,
-     FILE_MAP_READ: int = 0x00000004,
-     FILE_MAP_WRITE: int = 0x00000002,
-     GENERIC_READ: int = 0x80000000,
-     GENERIC_WRITE: int = 0x40000000,
-     INFINITE: int = 0xFFFFFFFF,
-     INVALID_HANDLE_VALUE: int = 0xFFFFFFFFFFFFFFFF,
-     MEM_COMMIT: int = 0x00001000,
-     MEM_FREE: int = 0x00010000,
-     MEM_IMAGE: int = 0x01000000,
-     MEM_MAPPED: int = 0x00040000,
-     MEM_PRIVATE: int = 0x00020000,
-     MEM_RESERVE: int = 0x00002000,
-     NMPWAIT_WAIT_FOREVER: int = 0xFFFFFFFF,
-     OPEN_EXISTING: int = 3,
-     PAGE_EXECUTE: int = 0x10,
-     PAGE_EXECUTE_READ: int = 0x20,
-     PAGE_EXECUTE_READWRITE: int = 0x40,
-     PAGE_EXECUTE_WRITECOPY: int = 0x80,
-     PAGE_GUARD: int = 0x100,
-     PAGE_NOACCESS: int = 0x01,
-     PAGE_NOCACHE: int = 0x200,
-     PAGE_READONLY: int = 0x02,
-     PAGE_READWRITE: int = 0x04,
-     PAGE_WRITECOMBINE: int = 0x400,
-     PAGE_WRITECOPY: int = 0x08,
-     PIPE_ACCESS_DUPLEX: int = 0x3,
-     PIPE_ACCESS_INBOUND: int = 0x1,
-     PIPE_READMODE_MESSAGE: int = 0x2,
-     PIPE_TYPE_MESSAGE: int = 0x4,
-     PIPE_UNLIMITED_INSTANCES: int = 255,
-     PIPE_WAIT: int = 0x0,
-     PROCESS_ALL_ACCESS: int = 0x1FFFFF,
-     SYNCHRONIZE: int = 0x00100000,
-     PROCESS_DUP_HANDLE: int = 0x0040,
-     SEC_COMMIT: int = 0x8000000,
-     SEC_IMAGE: int = 0x1000000,
-     SEC_LARGE_PAGES: int = 0x80000000,
-     SEC_NOCACHE: int = 0x10000000,
-     SEC_RESERVE: int = 0x4000000,
-     SEC_WRITECOMBINE: int = 0x40000000,
-     STARTF_USESHOWWINDOW: int = 0x00000001,
-     STARTF_USESIZE: int = 0x00000002,
-     STARTF_USEPOSITION: int = 0x00000004,
-     STARTF_USECOUNTCHARS: int = 0x00000008,
-     STARTF_USEFILLATTRIBUTE: int = 0x00000010,
-     STARTF_RUNFULLSCREEN: int = 0x00000020,
-     STARTF_FORCEONFEEDBACK: int = 0x00000040,
-     STARTF_FORCEOFFFEEDBACK: int = 0x00000080,
-     STARTF_USESTDHANDLES: int = 0x00000100,
-     STARTF_USEHOTKEY: int = 0x00000200,
-     STARTF_TITLEISLINKNAME: int = 0x00000800,
-     STARTF_TITLEISAPPID: int = 0x00001000,
-     STARTF_PREVENTPINNING: int = 0x00002000,
-     STARTF_UNTRUSTEDSOURCE: int = 0x00008000,
-     # STD_* are ((DWORD)-10..-12); F_DWORD builds them unsigned ("k").
-     STD_INPUT_HANDLE: int = 0xFFFFFFF6,
-     STD_OUTPUT_HANDLE: int = 0xFFFFFFF5,
-     STD_ERROR_HANDLE: int = 0xFFFFFFF4,
-     STILL_ACTIVE: int = 0x103,
-     SW_HIDE: int = 0,
-     WAIT_OBJECT_0: int = 0,
-     WAIT_ABANDONED_0: int = 0x80,
-     WAIT_TIMEOUT: int = 258,
-     ABOVE_NORMAL_PRIORITY_CLASS: int = 0x00008000,
-     BELOW_NORMAL_PRIORITY_CLASS: int = 0x00004000,
-     HIGH_PRIORITY_CLASS: int = 0x00000080,
-     IDLE_PRIORITY_CLASS: int = 0x00000040,
-     NORMAL_PRIORITY_CLASS: int = 0x00000020,
-     REALTIME_PRIORITY_CLASS: int = 0x00000100,
-     CREATE_NO_WINDOW: int = 0x08000000,
-     DETACHED_PROCESS: int = 0x00000008,
-     CREATE_DEFAULT_ERROR_MODE: int = 0x04000000,
-     CREATE_BREAKAWAY_FROM_JOB: int = 0x01000000,
-     FILE_TYPE_UNKNOWN: int = 0,
-     FILE_TYPE_DISK: int = 1,
-     FILE_TYPE_CHAR: int = 2,
-     FILE_TYPE_PIPE: int = 3,
-     FILE_TYPE_REMOTE: int = 0x8000,
-     LOCALE_NAME_INVARIANT: str = "",
-     LOCALE_NAME_MAX_LENGTH: int = 85,
-     LOCALE_NAME_SYSTEM_DEFAULT: str = "!x-sys-default-locale",
-     LOCALE_NAME_USER_DEFAULT: str = "!x-user-default-locale",
-     LCMAP_FULLWIDTH: int = 0x00800000,
-     LCMAP_HALFWIDTH: int = 0x00400000,
-     LCMAP_HIRAGANA: int = 0x00100000,
-     LCMAP_KATAKANA: int = 0x00200000,
-     LCMAP_LINGUISTIC_CASING: int = 0x01000000,
-     LCMAP_LOWERCASE: int = 0x00000100,
-     LCMAP_SIMPLIFIED_CHINESE: int = 0x00000002,
-     LCMAP_TITLECASE: int = 0x00000300,
-     LCMAP_TRADITIONAL_CHINESE: int = 0x00000004,
-     LCMAP_UPPERCASE: int = 0x00000200,
-     COPY_FILE_ALLOW_DECRYPTED_DESTINATION: int = 0x0008,
-     COPY_FILE_COPY_SYMLINK: int = 0x0800,
-     COPY_FILE_FAIL_IF_EXISTS: int = 0x0001,
-     COPY_FILE_NO_BUFFERING: int = 0x0010,
-     COPY_FILE_NO_OFFLOAD: int = 0x00040000,
-     COPY_FILE_OPEN_SOURCE_FOR_WRITE: int = 0x0002,
-     COPY_FILE_RESTARTABLE: int = 0x0020,
-     COPY_FILE_REQUEST_SECURITY_PRIVILEGES: int = 0x00200000,
-     COPY_FILE_RESUME_FROM_PAUSE: int = 0x0040,
-     COPY_FILE_REQUEST_COMPRESSED_TRAFFIC: int = 0x10000000,
-     COPY_FILE_DIRECTORY: int = 0x00000080,
-     COPYFILE2_CALLBACK_CHUNK_STARTED: int = 1,
-     COPYFILE2_CALLBACK_CHUNK_FINISHED: int = 2,
-     COPYFILE2_CALLBACK_STREAM_STARTED: int = 3,
-     COPYFILE2_CALLBACK_STREAM_FINISHED: int = 4,
-     COPYFILE2_CALLBACK_POLL_CONTINUE: int = 5,
-     COPYFILE2_CALLBACK_ERROR: int = 6,
-     COPYFILE2_PROGRESS_CONTINUE: int = 0,
-     COPYFILE2_PROGRESS_CANCEL: int = 1,
-     COPYFILE2_PROGRESS_STOP: int = 2,
-     COPYFILE2_PROGRESS_QUIET: int = 3,
-     COPYFILE2_PROGRESS_PAUSE: int = 4;
-
-# Internal layout limits (_winapi.c #defines; not exported).
-glob _MAXIMUM_WAIT_OBJECTS: int = 64;
-
-
-# ---------------- module state ----------------
-
-# Module state boxed in a dict so rebinding stays unnecessary (same
-# convention as readline.jac / _csvmodule.jac).
-#   events: handle -> {"manual": bool, "signaled": bool, "name": str | None}
-#   named:  name -> handle (CreateEventW/OpenEventW namespace)
-glob _state: dict = {
-    "events": {},
-    "named": {},
-    "next_handle": 1,
-    "last_error": 0,
-};
-
-
-# ---------------- error channel ----------------
-
-def _winerror_message(err: int) -> str {
-    # Canonical FormatMessage texts for the codes this facade can produce.
-    if err == 2 {
-        return "The system cannot find the file specified.";
-    }
-    if err == 6 {
-        return "The handle is invalid.";
-    }
-    if err == 183 {
-        return "Cannot create a file when that file already exists.";
-    }
-    if err == 258 {
-        return "The wait operation timed out.";
-    }
-    return "The specified resource is unavailable.";
+import from objects {
+    PyObj,
+    PyStr,
+    PyInt,
+    PyBool,
+    PyList,
+    PyTuple,
+    PyNoneType,
+    py_none,
+    py_error,
 }
 
+glob _winapi_next_handle: int = 1;
+# Handle tables: handle -> event state; name -> handle for named events.
+glob _winapi_manual_reset: dict[int, bool] = {};
+glob _winapi_signaled: dict[int, bool] = {};
+glob _winapi_names: dict[str, int] = {};
 
-def _raise_winerror(err: int) {
-    # PyErr_SetFromWindowsErr family: record GetLastError() state, then
-    # raise with the canonical "[WinError n] message" text.
-    _state["last_error"] = err;
-    msg = "[WinError " + str(err) + "] " + _winerror_message(err);
-    if err == 258 {
-        # oserror_init special-cases winerror WAIT_TIMEOUT to TimeoutError.
-        raise TimeoutError(msg);
-    }
-    raise OSError(msg);
+# ERROR_CALL_NOT_IMPLEMENTED: what Windows reports for APIs the platform
+# does not carry; used verbatim so callers see a genuine winerror class.
+def _winapi_unavailable(fn_name: str) -> PyObj {
+    return py_error(
+        "OSError",
+        "[WinError 120] This function is not supported on this system: "
+        + fn_name,
+    );
 }
 
-
-def _type_name(v: any) -> str {
-    return type(v).__name__;
+def _winapi_invalid_handle(fn_name: str) -> PyObj {
+    return py_error("OSError", "[WinError 6] The handle is invalid: " + fn_name);
 }
 
-
-def _parse_handle(v: any) -> int {
-    # F_HANDLE parses with "K" (unsigned long long): ints wrap modulo 2**64,
-    # everything else is a TypeError.
-    if not isinstance(v, int) {
-        raise TypeError(
-            "integer argument expected, got '" + _type_name(v) + "'");
-    }
-    return (v as int) % 0x10000000000000000;
+def _winapi_timeout_error -> PyObj {
+    # PyErr_SetExcFromWindowsErr(PyExc_TimeoutError, WAIT_TIMEOUT) shape.
+    return py_error("TimeoutError", "[WinError 258] The wait operation timed out.");
 }
 
-
-def _event_or_fail(handle: int) -> dict {
-    ev = _state["events"].get(handle);
-    if ev is None {
-        _raise_winerror(6);
-    }
-    return ev;
+def _winapi_type_error(msg: str) -> PyObj {
+    return py_error("TypeError", msg);
 }
 
-
-def _parse_handle_seq(handle_seq: any) -> list[int] {
-    # PySequence_Check + F_HANDLE per element (str/bytes are sequences too).
-    if not isinstance(handle_seq, (list, tuple, str, bytes)) {
-        raise TypeError(
-            "sequence type expected, got '" + _type_name(handle_seq) + "'");
+# Strict int read (bool folds like the int subclass it is); None signals
+# "not an int" so callers raise clinic-shaped TypeErrors.
+def _winapi_int_arg(v: PyObj) -> int | None {
+    if isinstance(v, PyBool) {
+        if (v as PyBool).val {
+            return 1;
+        }
+        return 0;
     }
-    out: list[int] = [];
-    for i in range(len(handle_seq)) {
-        out.append(_parse_handle(handle_seq[i]));
+    if isinstance(v, PyInt) {
+        return (v as PyInt).val;
     }
-    return out;
+    return None;
 }
 
-
-def _consume(ev: dict) {
-    # Auto-reset events drop their signal when a wait completes on them.
-    if not ev["manual"] {
-        ev["signaled"] = False;
+def _winapi_bool_arg(v: PyObj) -> bool | None {
+    if isinstance(v, PyBool) {
+        return (v as PyBool).val;
     }
+    if isinstance(v, PyInt) {
+        return (v as PyInt).val != 0;
+    }
+    return None;
 }
 
-
-# ---------------- event core (CreateEventW/SetEvent/ResetEvent) -------------
-
-def CreateEventW(security_attributes: any, manual_reset: any,
-                 initial_state: any, name: any) -> int {
-    # Named events: reopening an existing name hands back its handle and
-    # leaves ERROR_ALREADY_EXISTS in GetLastError(), exactly as CreateEventW.
-    if name is not None and not isinstance(name, str) {
-        raise TypeError("expected str, got '" + _type_name(name) + "'");
+def _winapi_str_arg(v: PyObj) -> str | None {
+    if isinstance(v, PyStr) {
+        return (v as PyStr).val;
     }
-    if not isinstance(manual_reset, int) or not isinstance(initial_state, int) {
-        raise TypeError("an integer is required");
+    return None;
+}
+
+def _winapi_is_none(v: PyObj) -> bool {
+    return isinstance(v, PyNoneType);
+}
+
+# Bind FASTCALL|METH_KEYWORDS arguments onto clinic keyword names:
+# positionals first, keywords fill gaps, missing slots stay None.
+def _winapi_bind(
+    args: list[PyObj], kwargs: dict[str, PyObj], names: list[str]
+) -> list[PyObj] | PyObj {
+    if len(args) > len(names) {
+        joined = names[0];
+        for nm in names[1:] {
+            joined = joined + ", " + nm;
+        }
+        return _winapi_type_error(
+            "function takes at most " + str(len(names))
+            + " arguments (" + str(len(args)) + " given)"
+        );
     }
+    bound: list[PyObj] = [];
+    for i in range(len(names)) {
+        if i < len(args) {
+            bound.append(args[i]);
+            continue;
+        }
+        nm = names[i];
+        if nm in kwargs {
+            bound.append(kwargs[nm]);
+        } else {
+            bound.append(py_none());
+        }
+    }
+    return bound;
+}
+
+def _winapi_alloc_handle(manual: bool, initial: bool, name: str | None) -> int {
+    h = _winapi_next_handle;
+    _winapi_next_handle = h + 1;
+    _winapi_manual_reset[h] = manual;
+    _winapi_signaled[h] = initial;
     if name is not None {
-        existing = _state["named"].get(name);
-        if existing is not None {
-            _state["last_error"] = 183;
-            return existing;
-        }
+        _winapi_names[name] = h;
     }
-    handle = _state["next_handle"];
-    _state["next_handle"] = handle + 1;
-    _state["events"][handle] = {
-        "manual": bool(manual_reset),
-        "signaled": bool(initial_state),
-        "name": name,
-    };
-    if name is not None {
-        _state["named"][name] = handle;
-    }
-    return handle;
+    return h;
 }
 
-
-def OpenEventW(desired_access: any, inherit_handle: any, name: any) -> int {
-    if not isinstance(name, str) {
-        raise TypeError("expected str, got '" + _type_name(name) + "'");
-    }
-    existing = _state["named"].get(name);
-    if existing is None {
-        _raise_winerror(2);
-    }
-    return existing;
-}
-
-
-def SetEvent(event: any) {
-    ev = _event_or_fail(_parse_handle(event));
-    ev["signaled"] = True;
-}
-
-
-def ResetEvent(event: any) {
-    ev = _event_or_fail(_parse_handle(event));
-    ev["signaled"] = False;
-}
-
-
-def CloseHandle(handle: any) {
-    # Events are the only handles this module issues; anything else is an
-    # invalid handle, as CloseHandle would report for a foreign value.
-    h = _parse_handle(handle);
-    ev = _state["events"].pop(h, None);
-    if ev is None {
-        _raise_winerror(6);
-    }
-    if ev["name"] is not None {
-        if _state["named"].get(ev["name"]) == h {
-            _state["named"].pop(ev["name"]);
-        }
+# A waited handle consumes its signal unless it is manual-reset; mirrors
+# WaitForMultipleObjects auto-reset semantics.
+def _winapi_consume(h: int) {
+    if not (_winapi_manual_reset[h]) {
+        _winapi_signaled[h] = False;
     }
 }
 
-
-# ---------------- waits ----------------
-
-def WaitForSingleObject(handle: any, milliseconds: any) -> int {
-    ev = _event_or_fail(_parse_handle(handle));
-    if ev["signaled"] {
-        _consume(ev);
-        return WAIT_OBJECT_0;
-    }
-    # Single-threaded guest: no other thread can signal mid-wait, so the
-    # timeout interval always elapses (see header note).
-    return WAIT_TIMEOUT;
-}
-
-
-def WaitForMultipleObjects(handle_seq: any, wait_flag: any,
-                           milliseconds: any = INFINITE) -> int {
-    handles = _parse_handle_seq(handle_seq);
-    if len(handles) > _MAXIMUM_WAIT_OBJECTS - 1 {
-        raise ValueError(
-            "need at most " + str(_MAXIMUM_WAIT_OBJECTS - 1)
-            + " handles, got a sequence of length " + str(len(handles)));
-    }
-    events: list[dict] = [];
-    for h in handles {
-        events.append(_event_or_fail(h));
-    }
-    if wait_flag {
-        for ev in events {
-            if not ev["signaled"] {
-                return WAIT_TIMEOUT;
-            }
-        }
-        # All signaled: commit the consumption only now (a failed
-        # wait-all leaves auto-reset events signaled).
-        for ev in events {
-            _consume(ev);
-        }
-        return WAIT_OBJECT_0;
-    }
-    for ev in events {
-        if ev["signaled"] {
-            _consume(ev);
-            return WAIT_OBJECT_0;
-        }
-    }
-    return WAIT_TIMEOUT;
-}
-
-
-def BatchedWaitForMultipleObjects(handle_seq: any, wait_all: any,
-                                  milliseconds: any = INFINITE)
-                                  -> list[int] | None {
-    # Chunking algorithm from _winapi_BatchedWaitForMultipleObjects_impl:
-    # handles split into groups of at most MAXIMUM_WAIT_OBJECTS-1; wait-all
-    # walks the groups sequentially, wait-any reports one triggered index
-    # per group (each group's wait-any scan consumes its first signaled
-    # object). WAIT_TIMEOUT surfaces as TimeoutError through the
-    # PyErr_SetExcFromWindowsErr(OSError, 258) path.
-    handles = _parse_handle_seq(handle_seq);
-    max_total = (_MAXIMUM_WAIT_OBJECTS - 1) * (_MAXIMUM_WAIT_OBJECTS - 1);
-    if len(handles) > max_total {
-        raise ValueError(
-            "need at most " + str(max_total)
-            + " handles, got a sequence of length " + str(len(handles)));
-    }
-    if len(handles) == 0 {
-        if wait_all {
-            return None;
-        }
-        return [];
-    }
-
-    batch_size = _MAXIMUM_WAIT_OBJECTS - 1;
-    if wait_all {
-        i = 0;
-        while i < len(handles) {
-            batch = handles[i:i + batch_size];
-            events: list[dict] = [];
-            for h in batch {
-                events.append(_event_or_fail(h));
-            }
-            for ev in events {
-                if not ev["signaled"] {
-                    _raise_winerror(WAIT_TIMEOUT);
-                }
-            }
-            for ev in events {
-                _consume(ev);
-            }
-            i += batch_size;
-        }
+# Resolve one sequence element to a live handle; None -> bad handle.
+def _winapi_live_handle(v: PyObj) -> int | None {
+    h = _winapi_int_arg(v);
+    if h is None {
         return None;
     }
-
-    triggered: list[int] = [];
-    base = 0;
-    while base < len(handles) {
-        batch = handles[base:base + batch_size];
-        found = -1;
-        for j in range(len(batch)) {
-            ev = _event_or_fail(batch[j]);
-            if found < 0 and ev["signaled"] {
-                _consume(ev);
-                found = j;
-            }
-        }
-        if found >= 0 {
-            triggered.append(base + found);
-        }
-        base += batch_size;
+    if h in _winapi_signaled {
+        return h;
     }
-    if len(triggered) == 0 {
-        _raise_winerror(WAIT_TIMEOUT);
-    }
-    return triggered;
+    return None;
 }
 
+# Shared core for the three wait entry points. Returns:
+#   - wait_all=True: None when every handle is signalled
+#   - wait_all=False: sorted indices of signalled handles
+# Bad handles -> error PyObj; empty result -> timeout error.
+def _winapi_wait_core(handles: list[int], wait_all: bool) -> PyObj {
+    ready: list[int] = [];
+    for i in range(len(handles)) {
+        h = handles[i];
+        if _winapi_signaled[h] {
+            if not (wait_all) {
+                _winapi_consume(h);
+            }
+            ready.append(i);
+        }
+    }
+    if wait_all {
+        if len(ready) == len(handles) {
+            for h in handles {
+                _winapi_consume(h);
+            }
+            return py_none();
+        }
+        return _winapi_timeout_error();
+    }
+    if len(ready) == 0 {
+        return _winapi_timeout_error();
+    }
+    items: list[PyObj] = [];
+    for idx in ready {
+        items.append(PyInt(t="int", val=idx));
+    }
+    return PyList(t="list", items=items);
+}
 
-# ---------------- misc ----------------
+obj PyWinapiFn(PyObj) {
+    has name: str;
 
-def GetLastError() -> int {
-    return _state["last_error"];
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if self.name == "CreateEventW" {
+            b = _winapi_bind(
+                args, kwargs,
+                ["security_attributes", "manual_reset", "initial_state", "name"],
+            );
+            if isinstance(b, PyObj) {
+                return b as PyObj;
+            }
+            params = b as list[PyObj];
+            manual = _winapi_bool_arg(params[1]);
+            initial = _winapi_bool_arg(params[2]);
+            if manual is None or initial is None {
+                return _winapi_type_error("an integer is required");
+            }
+            name: str | None = None;
+            if not (_winapi_is_none(params[3])) {
+                s = _winapi_str_arg(params[3]);
+                if s is None {
+                    return _winapi_type_error(
+                        "a writable bytes-like object is required"
+                    );
+                }
+                # Named events are singletons, like CreateEventW.
+                if s in _winapi_names {
+                    return PyInt(t="int", val=_winapi_names[s]);
+                }
+                name = s;
+            }
+            return PyInt(t="int", val=_winapi_alloc_handle(manual, initial, name));
+        }
+        if self.name == "OpenEventW" {
+            b = _winapi_bind(
+                args, kwargs, ["desired_access", "inherit_handle", "name"]
+            );
+            if isinstance(b, PyObj) {
+                return b as PyObj;
+            }
+            params = b as list[PyObj];
+            s = _winapi_str_arg(params[2]);
+            if s is None {
+                return _winapi_type_error("an integer is required");
+            }
+            if s in _winapi_names {
+                return PyInt(t="int", val=_winapi_names[s]);
+            }
+            return py_error(
+                "OSError", "[WinError 2] The system cannot find the file specified."
+            );
+        }
+        if self.name == "SetEvent" or self.name == "ResetEvent" {
+            if len(args) != 1 {
+                return _winapi_type_error("function takes exactly one argument");
+            }
+            h: int | None = _winapi_live_handle(args[0]);
+            if h is None {
+                return _winapi_invalid_handle(self.name);
+            }
+            _winapi_signaled[h] = self.name == "SetEvent";
+            return py_none();
+        }
+        if self.name == "CloseHandle" {
+            if len(args) != 1 {
+                return _winapi_type_error("function takes exactly one argument");
+            }
+            h = _winapi_live_handle(args[0]);
+            if h is None {
+                return _winapi_invalid_handle(self.name);
+            }
+            # Retire the handle everywhere it may be reachable.
+            _winapi_signaled.pop(h);
+            _winapi_manual_reset.pop(h);
+            stale: str | None = None;
+            for nm in _winapi_names.keys() {
+                if _winapi_names[nm] == h {
+                    stale = nm;
+                    break;
+                }
+            }
+            if stale is not None {
+                _winapi_names.pop(stale);
+            }
+            return py_none();
+        }
+        if self.name == "WaitForSingleObject" {
+            b = _winapi_bind(args, kwargs, ["handle", "milliseconds"]);
+            if isinstance(b, PyObj) {
+                return b as PyObj;
+            }
+            params = b as list[PyObj];
+            h: int | None = _winapi_live_handle(params[0]);
+            if h is None {
+                return _winapi_invalid_handle(self.name);
+            }
+            # Success answers WAIT_OBJECT_0; auto-reset state is consumed.
+            out = _winapi_wait_core([h], False);
+            if isinstance(out, PyList) {
+                return PyInt(t="int", val=0);
+            }
+            return out;
+        }
+        if self.name == "WaitForMultipleObjects" {
+            b = _winapi_bind(args, kwargs, ["handle_seq", "wait_flag", "milliseconds"]);
+            if isinstance(b, PyObj) {
+                return b as PyObj;
+            }
+            resolved = self._resolve_seq((b as list[PyObj])[0]);
+            if isinstance(resolved, PyObj) and not (isinstance(resolved, PyList)) {
+                return resolved;
+            }
+            hs = (resolved as PyList).items;
+            wait_all: bool | None = _winapi_bool_arg((b as list[PyObj])[1]);
+            if wait_all is None {
+                return _winapi_type_error("an integer is required");
+            }
+            if len(hs) == 0 {
+                if wait_all {
+                    return py_none();
+                }
+                return PyList(t="list", items=[]);
+            }
+            handles: list[int] = [];
+            for v in hs {
+                h: int | None = _winapi_live_handle(v);
+                if h is None {
+                    return _winapi_invalid_handle(self.name);
+                }
+                handles.append(h);
+            }
+            out = _winapi_wait_core(handles, wait_all);
+            # wait-any contract: a single index, not a list.
+            if wait_all is False and isinstance(out, PyList) {
+                return (out as PyList).items[0];
+            }
+            return out;
+        }
+        if self.name == "BatchedWaitForMultipleObjects" {
+            b = _winapi_bind(
+                args, kwargs, ["handle_seq", "wait_all", "milliseconds"]
+            );
+            if isinstance(b, PyObj) {
+                return b as PyObj;
+            }
+            params = b as list[PyObj];
+            seq = params[0];
+            if not (isinstance(seq, PyList)) and not (isinstance(seq, PyTuple)) {
+                return _winapi_type_error("sequence type expected");
+            }
+            wait_all: bool | None = _winapi_bool_arg(params[1]);
+            if wait_all is None {
+                return _winapi_type_error("an integer is required");
+            }
+            n = len(seq.items);
+            # MAXIMUM_BATCHED_WAIT_OBJECTS == (MAXIMUM_WAIT_OBJECTS - 1)**2.
+            if n > 3969 {
+                return py_error(
+                    "ValueError",
+                    "need at most 3969 handles, got a sequence of length "
+                    + str(n),
+                );
+            }
+            if n == 0 {
+                if wait_all {
+                    return py_none();
+                }
+                return PyList(t="list", items=[]);
+            }
+            handles: list[int] = [];
+            for v in seq.items {
+                h: int | None = _winapi_live_handle(v);
+                if h is None {
+                    return _winapi_invalid_handle(self.name);
+                }
+                handles.append(h);
+            }
+            return _winapi_wait_core(handles, wait_all);
+        }
+        if self.name == "GetLastError" {
+            # Native waits never enter a Windows error state.
+            return PyInt(t="int", val=0);
+        }
+        if self.name == "GetCurrentProcess" {
+            # Pseudo-handle constant CURRENT_PROCESS_PERMISSIONS (-1 is the
+            # real pseudo-handle; keep it distinct from event handles).
+            return PyInt(t="int", val=-103);
+        }
+        if self.name == "GetVersion" {
+            # 3.14 reference carries no version bits to report faithfully.
+            return PyInt(t="int", val=0);
+        }
+        return _winapi_unavailable(self.name);
+    }
+
+    # Sequence -> PyObj error or PyList of raw elements (shared by both
+    # multi-wait entry points).
+    def _resolve_seq(v: PyObj) -> PyObj {
+        if isinstance(v, PyList) or isinstance(v, PyTuple) {
+            if isinstance(v, PyList) {
+                return v;
+            }
+            return PyList(t="list", items=list((v as PyTuple).items));
+        }
+        return _winapi_type_error("sequence type expected");
+    }
+}
+
+# Shim-module attribute table consumed by the ceval import sites. Function
+# names follow the _WINAPI_*_METHODDEF registration block; the Overlapped
+# type (registered via PyModule_AddType in C) is not part of this surface.
+def winapi_module_attrs() -> dict[str, PyObj] {
+    attrs: dict[str, PyObj] = {};
+    native = [
+        "BatchedWaitForMultipleObjects",
+        "CloseHandle",
+        "CreateEventW",
+        "GetLastError",
+        "GetCurrentProcess",
+        "GetVersion",
+        "OpenEventW",
+        "ResetEvent",
+        "SetEvent",
+        "WaitForMultipleObjects",
+        "WaitForSingleObject",
+    ];
+    for fname in native {
+        attrs[fname] = PyWinapiFn(t="winapi_fn", name=fname) as PyObj;
+    }
+    # Registered in C but unimplementable without Win32 kernel objects.
+    for fname in [
+        "ConnectNamedPipe",
+        "CopyFile2",
+        "CreateFile",
+        "CreateFileMapping",
+        "CreateJunction",
+        "CreateMutexW",
+        "CreateNamedPipe",
+        "CreatePipe",
+        "CreateProcess",
+        "DuplicateHandle",
+        "ExitProcess",
+        "GetACP",
+        "GetExitCodeProcess",
+        "GetFileType",
+        "GetLongPathName",
+        "GetModuleFileName",
+        "GetShortPathName",
+        "GetStdHandle",
+        "LCMapStringEx",
+        "MapViewOfFile",
+        "NeedCurrentDirectoryForExePathW",
+        "OpenFileMapping",
+        "OpenMutexW",
+        "OpenProcess",
+        "PeekNamedPipe",
+        "ReadFile",
+        "ReleaseMutex",
+        "SetNamedPipeHandleState",
+        "TerminateProcess",
+        "UnmapViewOfFile",
+        "VirtualQuerySize",
+        "WaitNamedPipe",
+        "WriteFile",
+        "_mimetypes_read_windows_registry",
+        "sortenvironmentkey",
+    ] {
+        attrs[fname] = PyWinapiFn(t="winapi_fn", name=fname) as PyObj;
+    }
+    # WINAPI_CONSTANT(F_DWORD, ...) table, winapi_exec() order; DWORDs are
+    # stored unsigned, the F_HANDLE entry signed.
+    dwords: dict[str, int] = {
+        "ABOVE_NORMAL_PRIORITY_CLASS": 32768,
+        "BELOW_NORMAL_PRIORITY_CLASS": 16384,
+        "CREATE_BREAKAWAY_FROM_JOB": 16777216,
+        "CREATE_DEFAULT_ERROR_MODE": 67108864,
+        "CREATE_NEW": 1,
+        "CREATE_ALWAYS": 2,
+        "CREATE_NO_WINDOW": 134217728,
+        "DETACHED_PROCESS": 8,
+        "ERROR_NO_DATA": 232,
+        "ERROR_NO_SYSTEM_RESOURCES": 1450,
+        "ERROR_OPERATION_ABORTED": 995,
+        "ERROR_PIPE_BUSY": 231,
+        "ERROR_PIPE_CONNECTED": 535,
+        "ERROR_PRIVILEGE_NOT_HELD": 1314,
+        "ERROR_SEM_TIMEOUT": 121,
+        "FILE_FLAG_FIRST_PIPE_INSTANCE": 524288,
+        "FILE_FLAG_OVERLAPPED": 1073741824,
+        "FILE_MAP_ALL_ACCESS": 983071,
+        "FILE_MAP_COPY": 1,
+        "FILE_MAP_EXECUTE": 33554432,
+        "FILE_MAP_READ": 4,
+        "FILE_MAP_WRITE": 2,
+        "GENERIC_READ": 2147483648,
+        "GENERIC_WRITE": 1073741824,
+        "INFINITE": 4294967295,
+        "MEM_COMMIT": 4096,
+        "MEM_FREE": 65536,
+        "MEM_IMAGE": 16777216,
+        "MEM_MAPPED": 262144,
+        "MEM_PRIVATE": 131072,
+        "MEM_RESERVE": 8192,
+        "NMPWAIT_WAIT_FOREVER": 4294967295,
+        "NMPWAIT_USE_DEFAULT_WAIT": 0,
+        "OPEN_ALWAYS": 4,
+        "OPEN_EXISTING": 3,
+        "PAGE_EXECUTE": 16,
+        "PAGE_EXECUTE_READ": 32,
+        "PAGE_EXECUTE_READWRITE": 64,
+        "PAGE_EXECUTE_WRITECOPY": 128,
+        "PAGE_GUARD": 256,
+        "PAGE_NOACCESS": 1,
+        "PAGE_NOCACHE": 512,
+        "PAGE_READONLY": 2,
+        "PAGE_READWRITE": 4,
+        "PAGE_WRITECOMBINE": 1024,
+        "PAGE_WRITECOPY": 8,
+        "PIPE_ACCESS_DUPLEX": 3,
+        "PIPE_ACCESS_INBOUND": 1,
+        "PIPE_ACCESS_OUTBOUND": 2,
+        "PIPE_READMODE_BYTE": 0,
+        "PIPE_READMODE_MESSAGE": 2,
+        "PIPE_TYPE_BYTE": 0,
+        "PIPE_TYPE_MESSAGE": 4,
+        "PIPE_UNLIMITED_INSTANCES": 255,
+        "PIPE_WAIT": 0,
+        "PROCESS_ALL_ACCESS": 2097151,
+        "PROCESS_DUP_HANDLE": 64,
+        "REALTIME_PRIORITY_CLASS": 256,
+        "HIGH_PRIORITY_CLASS": 128,
+        "NORMAL_PRIORITY_CLASS": 32,
+        "IDLE_PRIORITY_CLASS": 64,
+        "SEC_COMMIT": 8388608,
+        "SEC_IMAGE": 16777216,
+        "SEC_LARGE_PAGES": 2147483648,
+        "SEC_NOCACHE": 268435456,
+        "SEC_RESERVE": 67108864,
+        "SEC_WRITECOMBINE": 1073741824,
+        "STARTF_USESHOWWINDOW": 1,
+        "STARTF_USESIZE": 2,
+        "STARTF_USEPOSITION": 4,
+        "STARTF_USECOUNTCHARS": 8,
+        "STARTF_USEFILLATTRIBUTE": 16,
+        "STARTF_RUNFULLSCREEN": 32,
+        "STARTF_FORCEONFEEDBACK": 64,
+        "STARTF_FORCEOFFFEEDBACK": 128,
+        "STARTF_USESTDHANDLES": 256,
+        "STARTF_USEHOTKEY": 512,
+        "STARTF_TITLEISLINKNAME": 2048,
+        "STARTF_TITLEISAPPID": 4096,
+        "STARTF_PREVENTPINNING": 8192,
+        "STARTF_UNTRUSTEDSOURCE": 32768,
+        "STD_INPUT_HANDLE": 4294967286,
+        "STD_OUTPUT_HANDLE": 4294967287,
+        "STD_ERROR_HANDLE": 4294967288,
+        "STILL_ACTIVE": 259,
+        "SYNCHRONIZE": 1048576,
+        "SW_HIDE": 0,
+        "WAIT_OBJECT_0": 0,
+        "WAIT_ABANDONED_0": 128,
+        "WAIT_TIMEOUT": 258,
+        "FILE_TYPE_UNKNOWN": 0,
+        "FILE_TYPE_DISK": 1,
+        "FILE_TYPE_CHAR": 2,
+        "FILE_TYPE_PIPE": 3,
+        "FILE_TYPE_REMOTE": 32768,
+        "LOCALE_NAME_MAX_LENGTH": 85,
+        "LCMAP_FULLWIDTH": 8388608,
+        "LCMAP_HALFWIDTH": 4194304,
+        "LCMAP_HIRAGANA": 1048576,
+        "LCMAP_KATAKANA": 2097152,
+        "LCMAP_LINGUISTIC_CASING": 67108864,
+        "LCMAP_LOWERCASE": 256,
+        "LCMAP_SIMPLIFIED_CHINESE": 33554432,
+        "LCMAP_TITLECASE": 768,
+        "LCMAP_TRADITIONAL_CHINESE": 4194304,
+        "LCMAP_UPPERCASE": 512,
+        "COPY_FILE_ALLOW_DECRYPTED_DESTINATION": 8,
+        "COPY_FILE_COPY_SYMLINK": 2048,
+        "COPY_FILE_FAIL_IF_EXISTS": 1,
+        "COPY_FILE_NO_BUFFERING": 4096,
+        "COPY_FILE_NO_OFFLOAD": 262144,
+        "COPY_FILE_OPEN_SOURCE_FOR_WRITE": 4,
+        "COPY_FILE_REQUEST_SECURITY_PRIVILEGES": 131072,
+        "COPY_FILE_RESUME_FROM_PAUSE": 16384,
+        "COPY_FILE_RESTARTABLE": 2,
+        "COPY_FILE_REQUEST_COMPRESSED_TRAFFIC": 268435456,
+        "COPY_FILE_DIRECTORY": 128,
+        "COPYFILE2_CALLBACK_CHUNK_STARTED": 1,
+        "COPYFILE2_CALLBACK_CHUNK_FINISHED": 2,
+        "COPYFILE2_CALLBACK_STREAM_STARTED": 3,
+        "COPYFILE2_CALLBACK_STREAM_FINISHED": 4,
+        "COPYFILE2_CALLBACK_POLL_CONTINUE": 5,
+        "COPYFILE2_CALLBACK_ERROR": 6,
+        "COPYFILE2_PROGRESS_CONTINUE": 0,
+        "COPYFILE2_PROGRESS_CANCEL": 1,
+        "COPYFILE2_PROGRESS_STOP": 2,
+        "COPYFILE2_PROGRESS_QUIET": 3,
+        "COPYFILE2_PROGRESS_PAUSE": 4,
+        "TRUNCATE_EXISTING": 5,
+    };
+    for cname in dwords.keys() {
+        attrs[cname] = PyInt(t="int", val=dwords[cname]);
+    }
+    attrs["INVALID_HANDLE_VALUE"] = PyInt(t="int", val=-1);
+    attrs["LOCALE_NAME_INVARIANT"] = PyStr(t="str", val="");
+    attrs["LOCALE_NAME_SYSTEM_DEFAULT"] = PyStr(
+        t="str", val="!x-sys-default-locale"
+    );
+    attrs["LOCALE_NAME_USER_DEFAULT"] = PyStr(
+        t="str", val="!x-user-default-locale"
+    );
+    return attrs;
 }
