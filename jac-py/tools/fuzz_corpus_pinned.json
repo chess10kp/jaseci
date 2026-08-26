@@ -1184,6 +1184,14 @@
   {
    "name": "w2-fmt-nested-repr-containers",
    "src": "class T(unittest.TestCase):\n    def test_case(self):\n        d = {(1, 2): [b'a', None]}\n        self.assertEqual(repr(d), \"{(1, 2): [b'a', None]}\")\n        self.assertEqual(repr(d) == repr(eval(repr(d))), True)\n"
+  },
+  {
+   "name": "repro-consumer-sum-user-iter",
+   "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class It():\n            def __init__(me, data): me.data = data\n            def __iter__(me): return iter(me.data)\n        self.assertEqual(sum(It([1, 2])), 3)\n"
+  },
+  {
+   "name": "repro-consumer-tuple-enumerate-user-iter",
+   "src": "class T(unittest.TestCase):\n    def test_case(self):\n        class It():\n            def __init__(me, data): me.data = data\n            def __iter__(me): return iter(me.data)\n        self.assertEqual(tuple(It([1, 2])), (1, 2))\n        self.assertEqual(list(enumerate(It(['a']))), [(0, 'a')])\n"
   }
  ]
 }
