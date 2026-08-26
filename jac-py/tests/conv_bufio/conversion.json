@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.4.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_bufio.py",
+    "-o",
+    "/var/tmp/worker6-conv-bufio-965758/jac-py/tests/conv_bufio",
+    "--name",
+    "conv_bufio"
+  ],
+  "generated_at": "2026-08-25T19:41:28",
+  "hashes": {
+    "pins_jac": "8c6d82d188994fe517a65dc8d63bdc5888516208e001da94e6c1404fbf5d1d37"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_bufio.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "bufio",
+  "pins_file": "conv_bufio_pins.jac",
+  "pins": [
+    {
+      "ident": "CBufferSizeTest.test_primepat",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import os_helper\nimport io\nlengths = list(range(1, 257)) + [512, 1000, 1024, 2048, 4096, 8192, 10000, 16384, 32768, 65536, 1000000]\n\ndef _t():\n\n    def try_one(s):\n        os_helper.unlink(os_helper.TESTFN)\n        f = self.open(os_helper.TESTFN, 'wb')\n        try:\n            f.write(s)\n            f.write(b'\\n')\n            f.write(s)\n            f.close()\n            f = self.open(os_helper.TESTFN, 'rb')\n            line = f.readline()\n            assert line == s + b'\\n', ('assertEqual', line, s + b'\\n')\n            line = f.readline()\n            assert line == s, ('assertEqual', line, s)\n            line = f.readline()\n            assert not line, ('assertFalse', line)\n            f.close()\n        finally:\n            os_helper.unlink(os_helper.TESTFN)\n\n    def drive_one(pattern):\n        for length in lengths:\n            q, r = divmod(length, len(pattern))\n            teststring = pattern * q + pattern[:r]\n            assert len(teststring) == length, ('assertEqual', len(teststring), length)\n            try_one(teststring)\n            try_one(teststring + b'x')\n            try_one(teststring[:-1])\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.open = io.open\n    _SelfNS.open = io.open\n    drive_one(b'1234567890\\x00\\x01\\x02\\x03\\x04\\x05\\x06')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PyBufferSizeTest.test_primepat",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import os_helper\nimport _pyio as pyio\nlengths = list(range(1, 257)) + [512, 1000, 1024, 2048, 4096, 8192, 10000, 16384, 32768, 65536, 1000000]\n\ndef _t():\n\n    def try_one(s):\n        os_helper.unlink(os_helper.TESTFN)\n        f = self.open(os_helper.TESTFN, 'wb')\n        try:\n            f.write(s)\n            f.write(b'\\n')\n            f.write(s)\n            f.close()\n            f = self.open(os_helper.TESTFN, 'rb')\n            line = f.readline()\n            assert line == s + b'\\n', ('assertEqual', line, s + b'\\n')\n            line = f.readline()\n            assert line == s, ('assertEqual', line, s)\n            line = f.readline()\n            assert not line, ('assertFalse', line)\n            f.close()\n        finally:\n            os_helper.unlink(os_helper.TESTFN)\n\n    def drive_one(pattern):\n        for length in lengths:\n            q, r = divmod(length, len(pattern))\n            teststring = pattern * q + pattern[:r]\n            assert len(teststring) == length, ('assertEqual', len(teststring), length)\n            try_one(teststring)\n            try_one(teststring + b'x')\n            try_one(teststring[:-1])\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.open = staticmethod(pyio.open)\n    _SelfNS.open = staticmethod(pyio.open)\n    drive_one(b'1234567890\\x00\\x01\\x02\\x03\\x04\\x05\\x06')\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "CBufferSizeTest.test_nullpat",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import os_helper\nimport io\nlengths = list(range(1, 257)) + [512, 1000, 1024, 2048, 4096, 8192, 10000, 16384, 32768, 65536, 1000000]\n\ndef _t():\n\n    def try_one(s):\n        os_helper.unlink(os_helper.TESTFN)\n        f = self.open(os_helper.TESTFN, 'wb')\n        try:\n            f.write(s)\n            f.write(b'\\n')\n            f.write(s)\n            f.close()\n            f = self.open(os_helper.TESTFN, 'rb')\n            line = f.readline()\n            assert line == s + b'\\n', ('assertEqual', line, s + b'\\n')\n            line = f.readline()\n            assert line == s, ('assertEqual', line, s)\n            line = f.readline()\n            assert not line, ('assertFalse', line)\n            f.close()\n        finally:\n            os_helper.unlink(os_helper.TESTFN)\n\n    def drive_one(pattern):\n        for length in lengths:\n            q, r = divmod(length, len(pattern))\n            teststring = pattern * q + pattern[:r]\n            assert len(teststring) == length, ('assertEqual', len(teststring), length)\n            try_one(teststring)\n            try_one(teststring + b'x')\n            try_one(teststring[:-1])\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.open = io.open\n    _SelfNS.open = io.open\n    drive_one(b'\\x00' * 1000)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "PyBufferSizeTest.test_nullpat",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "from test.support import os_helper\nimport _pyio as pyio\nlengths = list(range(1, 257)) + [512, 1000, 1024, 2048, 4096, 8192, 10000, 16384, 32768, 65536, 1000000]\n\ndef _t():\n\n    def try_one(s):\n        os_helper.unlink(os_helper.TESTFN)\n        f = self.open(os_helper.TESTFN, 'wb')\n        try:\n            f.write(s)\n            f.write(b'\\n')\n            f.write(s)\n            f.close()\n            f = self.open(os_helper.TESTFN, 'rb')\n            line = f.readline()\n            assert line == s + b'\\n', ('assertEqual', line, s + b'\\n')\n            line = f.readline()\n            assert line == s, ('assertEqual', line, s)\n            line = f.readline()\n            assert not line, ('assertFalse', line)\n            f.close()\n        finally:\n            os_helper.unlink(os_helper.TESTFN)\n\n    def drive_one(pattern):\n        for length in lengths:\n            q, r = divmod(length, len(pattern))\n            teststring = pattern * q + pattern[:r]\n            assert len(teststring) == length, ('assertEqual', len(teststring), length)\n            try_one(teststring)\n            try_one(teststring + b'x')\n            try_one(teststring[:-1])\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.open = staticmethod(pyio.open)\n    _SelfNS.open = staticmethod(pyio.open)\n    drive_one(b'\\x00' * 1000)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 4,
+    "pinned": 4,
+    "quarantined": 0
+  }
+}

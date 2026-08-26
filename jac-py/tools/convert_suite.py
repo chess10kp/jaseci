@@ -1026,7 +1026,9 @@ def _apply_fixture_vocab(
             continue
         for meth in info.methods.values():
             session.allowed_calls |= _self_attr_stores(meth.body)
-    session.allowed_calls |= set(_class_attr_seeds(cls_name, cmap, mod_classes))
+    session.allowed_calls |= {
+        attr for attr, _ in _class_attr_seeds(cls_name, cmap, mod_classes)
+    }
     prefix: list[ast.stmt] = []
     if _resolve_method(cmap, cls_name, "setUp") is not None:
         # unittest runs setUp before every test; splice its lifted body so
@@ -1216,6 +1218,11 @@ def extract_tests(tree: ast.Module, source: str) -> Extraction:
             extra_prelude: list[ast.stmt] = []
             ns_block: list[ast.stmt] = []
             helper_defs: list[ast.FunctionDef] = []
+            # Candidate bodies are shared AST nodes across leaf-class
+            # expansions; the rewriters below mutate in place, so isolate
+            # each candidate's view (helper lifts deep-copy for the same
+            # reason).
+            body_stmts = [copy.deepcopy(s) for s in body_stmts]
             if cls_name is not None:
                 rewritten, helper_defs, extra_prelude, ns_block, needs_re = _apply_fixture_vocab(
                     body_stmts, cls_name, cmap, mod_classes, vocab_available
