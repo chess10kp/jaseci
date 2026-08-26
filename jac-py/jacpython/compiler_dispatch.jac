@@ -5,7 +5,7 @@
 # directly: those siblings import shared lowering helpers (visit_stmts,
 # emit_name_store, ...) FROM compiler_codegen, so any static edge in either
 # direction would close an import cycle. Each sibling wires its visitors at
-# import time in a `with entry` block (see _csvmodule.jac's
+# import time in a `with entry` block (see csv.jac's
 # register_module_exception for the same idiom); entry drivers
 # (product_compile, compiler_slice) import the siblings so registration
 # always precedes the first compile. An unwired slot fails loudly (call

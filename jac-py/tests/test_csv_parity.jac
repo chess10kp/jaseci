@@ -2,7 +2,7 @@
 
 Staged ``jac-py/Modules/_csv.{c,jac}`` stay the c2jac corpus pair
 (staging=lift); this file gates the product-path facade semantics in
-jac-py/jacpython/_csvmodule.jac against the pinned host oracle.
+jac-py/jacpython/csv.jac against the pinned host oracle.
 Expected values and error messages were verified against the host
 stdlib ``_csv`` (CPython 3.14) at authoring time.
 
@@ -10,7 +10,7 @@ Error mapping: the facade raises plain Exception where CPython raises
 _csv.Error; TypeError/ValueError keep their builtin types exactly.
 """
 
-import from _csvmodule {
+import from csv {
     QUOTE_ALL,
     QUOTE_MINIMAL,
     QUOTE_NONNUMERIC,

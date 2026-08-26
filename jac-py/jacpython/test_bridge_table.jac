@@ -23,7 +23,7 @@ import from objects { PyObj, PyStr, PyHandler, is_error }
 # Importing the facade modules runs their AT-IMPORT registry declarations.
 import from _structmodule { _scale_pow2 }
 import from _jsonmodule { _decode_error }
-import from _csvmodule { QUOTE_MINIMAL }
+import from csv { QUOTE_MINIMAL }
 
 # Exec `src` on ceval with fresh module globals; fails the test on raise.
 def vm_exec(src: str) -> dict[str, PyObj] {

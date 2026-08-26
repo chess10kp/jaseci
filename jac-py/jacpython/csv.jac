@@ -1,7 +1,10 @@
-# Product-path facade for _csv (wave 17): reader, writer, dialects.
+# Product-path facade for csv (wave 17): reader, writer, dialects.
 #
-# Staged ``jac-py/Modules/_csv.{c,jac}`` remain the wave-17 c2jac corpus
-# oracle pair (staging=lift); this module carries the runtime truth.
+# Lift/port of CPython ``Modules/_csv.c`` exercised by Lib/test/test_csv.py,
+# named after the Python-level module per product-path convention
+# (bisect.jac, cmath.jac, bz2.jac). Staged ``jac-py/Modules/_csv.{c,jac}``
+# remain the wave-17 c2jac corpus oracle pair (staging=lift); this module
+# carries the runtime truth.
 # Semantics mirror CPython 3.14 ``Modules/_csv.c`` on the pinned host,
 # verified against the host stdlib ``_csv`` at authoring time.
 #
