@@ -1625,6 +1625,7 @@ import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
 import from errno { errno_module_attrs }
+import from termios { termios_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2102,6 +2103,16 @@ def import_native(absname: str) -> PyObj {
         # errorcode round-trip; the native facade keeps them guest-native.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if absname == "termios" and not ("termios" in shim_modules) {
+        # termios.c lift: the constant table serves guest-native like errno;
+        # the tc* syscall surface routes through termios.jac's contained host
+        # bridge, re-raising OS errors as NATIVE termios.error instead of
+        # leaking host proxies (the host class type __name__ is plain 'error',
+        # which breaks except-matching in guest code).
+        shim_modules["termios"] = PyModule(
+            t="module", name="termios", attrs=termios_module_attrs()
         );
     }
     if absname == "sys" and not ("sys" in shim_modules) {
@@ -5249,6 +5260,13 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # native facade serves it without a host round-trip.
         shim_modules["errno"] = PyModule(
             t="module", name="errno", attrs=errno_module_attrs()
+        );
+    }
+    if name == "termios" and not ("termios" in shim_modules) {
+        # Mirror of the import_native site: constants guest-native, syscalls
+        # bridged, OS errors re-raised as native termios.error.
+        shim_modules["termios"] = PyModule(
+            t="module", name="termios", attrs=termios_module_attrs()
         );
     }
     if name == "weakref" and not ("weakref" in shim_modules) {
