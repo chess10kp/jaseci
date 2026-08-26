@@ -57,7 +57,7 @@ _DEFAULT_LIB = _REPO / "reference" / "cpython" / "Lib"
 _TESTS_DIR = _REPO / "jac-py" / "tests"
 _MANIFEST = _TESTS_DIR / "conformance_manifest_convpipe.json"
 
-TOOL_VERSION = "conv_suite-0.5.0"
+TOOL_VERSION = "conv_suite-0.6.0"
 CPYTHON_VERSION = "3.14.6"
 
 
@@ -487,13 +487,27 @@ def _rewrite_raises(call: ast.Call, regex: bool) -> list[ast.stmt]:
 
 
 def rewrite_raises_with(item: ast.withitem, body: list[ast.stmt]) -> ast.Try:
-    """``with self.assertRaises(E[, regex]): <body>`` -> try/except/else."""
+    """``with self.assertRaises(E[, regex]): <body>`` -> try/except/else.
+
+    An ``as <name>`` target binds ``<name>`` directly to the caught exception
+    (unittest's context object only wraps it as ``<name>.exception``, which the
+    alias pre-pass in rewrite_block flattens to plain ``<name>`` loads).
+    """
     call = item.context_expr
     fname = _call_name(call.func) if isinstance(call, ast.Call) else None
     if fname not in ("assertRaises", "assertRaisesRegex") or not isinstance(call, ast.Call):
         raise Unsupported("non-assertRaises with-block")
     _need_args(call, 1)
     exc = call.args[0]
+    # ``except E as n`` deletes ``n`` when the handler exits, so the handler
+    # keeps the internal ``_exc`` name and a visible alias (if any) is bound
+    # inside the handler -- mirroring unittest's context object surviving the
+    # with-block.
+    alias: str | None = None
+    if item.optional_vars is not None:
+        if not isinstance(item.optional_vars, ast.Name):
+            raise Unsupported("non-Name assertRaises target")
+        alias = item.optional_vars.id
     regex = None
     if fname == "assertRaisesRegex":
         _need_args(call, 2)
@@ -513,7 +527,15 @@ def rewrite_raises_with(item: ast.withitem, body: list[ast.stmt]) -> ast.Try:
                 msg=ast.Constant(value="assertRaisesRegex: message mismatch"),
             )
         )
-    handler = ast.ExceptHandler(type=exc, name="_exc", body=handler_body or [ast.Pass()])
+    if alias is not None:
+        handler_body.append(
+            ast.Assign(
+                targets=[ast.Name(id=alias, ctx=ast.Store())],
+                value=ast.Name(id="_exc", ctx=ast.Load()),
+            )
+        )
+    handler = ast.ExceptHandler(type=exc, name="_exc", body=handler_body)
+
     return ast.Try(
         body=list(body),
         handlers=[handler],
@@ -594,6 +616,19 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                     new.append(stmt)
         return new
 
+    binds: list[tuple[str, int]] = [
+        (item.optional_vars.id, item.context_expr.lineno)
+        for node in ast.walk(ast.Module(body=stmts, type_ignores=[]))
+        if isinstance(node, ast.With)
+        for item in node.items
+        if isinstance(item.optional_vars, ast.Name)
+        and isinstance(item.context_expr, ast.Call)
+        and _call_name(item.context_expr.func) in ("assertRaises", "assertRaisesRegex")
+    ]
+    if binds:
+        stmts = _RaisesAliasAttrFlattener(binds).visit(
+            ast.Module(body=list(stmts), type_ignores=[])
+        ).body
     new_block = rec(stmts)
     # Any emitted statement loading _re requires the module import. Scanning
     # the final AST (not per-rewrite flags) keeps every vocabulary addition
@@ -603,6 +638,31 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
             needs_re = True
             break
     return new_block, needs_re
+
+
+class _RaisesAliasAttrFlattener(ast.NodeTransformer):
+    """Flatten ``<alias>.exception`` loads after ``assertRaises(E) as <alias>``.
+
+    The with-rewrite binds ``<alias>`` straight to the caught exception, so
+    post-bind ``<alias>.exception`` attribute loads must become plain
+    ``<alias>`` loads. Only accesses at or after the binding line in the same
+    scope are rewritten; anything else stays untouched and surfaces through
+    the normal unresolved-name quarantine.
+    """
+
+    def __init__(self, binds: list[tuple[str, int]]) -> None:
+        self.binds = binds
+
+    def visit_Attribute(self, node: ast.Attribute) -> ast.expr:
+        self.generic_visit(node)
+        if (
+            node.attr == "exception"
+            and isinstance(node.value, ast.Name)
+            and isinstance(node.ctx, ast.Load)
+            and any(a == node.value.id and ln <= node.lineno for a, ln in self.binds)
+        ):
+            return ast.copy_location(ast.Name(id=node.value.id, ctx=node.ctx), node)
+        return node
 
 
 def _with_needs_re(item: ast.withitem) -> bool:
@@ -1661,6 +1721,12 @@ def collect_doctest_sources(tree: ast.Module, modname: str) -> list[tuple[str, s
                 sources.append((str(label), strings[ref.id]))
     if not sources and "doctests" in strings:
         sources.append(("doctests", strings["doctests"]))
+    if not sources:
+        # DocTestSuite()-style modules carry their examples in the module
+        # docstring (loaded via ``load_tests`` + ``doctest.DocTestSuite()``).
+        doc = ast.get_docstring(tree, clean=False)
+        if doc and ">>>" in doc:
+            sources.append(("__doc__", doc))
     return sources
 
 
