@@ -22,11 +22,13 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Fingerprint 4 (descriptor __get__ slot wrappers): bound __get__ accessors on
+# classmethod/staticmethod/property/member descriptors hash and compare equal by
+# backing descriptor so inspect/functools/copy idioms like `{descr.__get__}` work.
+#
+# Residual (NOT pinned -- live gap on tip): PyClassMethod / PyStaticMethod /
+# their ctors and PyMemberDescr still inherit the base unhashable marker until
+# worker2-descriptor-identity-hash and worker2/604-next-objects-gap merge.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +117,35 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+# ---------------- descriptor __get__ slot-wrapper hash ----------------
+
+test "classmethod __get__ wrapper is a legal set element" {
+    # Host oracle (3.14): cm.__get__ in {cm.__get__}; len 1.
+    src =
+        "class C:\n"
+        "    @classmethod\n"
+        "    def cm(cls): pass\n"
+        "cm = C.__dict__['cm']\n";
+    assert outcome_str(src, "(cm.__get__ in {cm.__get__}, len({cm.__get__}))")
+        == "(True, 1)";
+}
+
+test "property __get__ wrapper is a legal set element and dict key" {
+    # Host oracle (3.14): C.p.__get__ in {C.p.__get__}; dict lookup works.
+    src = "class C:\n    @property\n    def p(self): return 1\n";
+    assert outcome_str(src, "(C.p.__get__ in {C.p.__get__}, len({C.p.__get__}))")
+        == "(True, 1)";
+    assert outcome_str(src, "({C.p.__get__: 'v'})[C.p.__get__]") == "'v'";
+}
+
+test "slots member __get__ wrapper is a legal set element" {
+    # Host oracle (3.14): member.__get__ in {member.__get__}; len 1.
+    src = "class S:\n    __slots__ = ('a',)\n";
+    assert outcome_str(
+        src,
+        "(S.__dict__['a'].__get__ in {S.__dict__['a'].__get__}, "
+            + "len({S.__dict__['a'].__get__}))"
+    ) == "(True, 1)";
 }

@@ -4000,6 +4000,36 @@ obj PyPropAccess(PyObj) {
     has prop: PyProperty,
         op: str;
 
+    # CPython slot wrappers hash/equal by backing descriptor + accessor name.
+    def tp_hashkey -> PyObj {
+        return PyStr(
+            t="str", val="propacc:" + str(id(self.prop)) + ":" + self.op
+        );
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind == Py_EQ {
+            if isinstance(other, PyPropAccess) {
+                o = other as PyPropAccess;
+                return PyBool(
+                    t="bool", val=self.prop is o.prop and self.op == o.op
+                );
+            }
+            return PyBool(t="bool", val=False);
+        }
+        if kind == Py_NE {
+            if isinstance(other, PyPropAccess) {
+                o = other as PyPropAccess;
+                return PyBool(
+                    t="bool",
+                    val=self.prop is not o.prop or self.op != o.op
+                );
+            }
+            return PyBool(t="bool", val=True);
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         p = self.prop;
         if self.op == "__get__" {
@@ -4266,6 +4296,36 @@ obj PyMemberAccess(PyObj) {
     has descr: PyMemberDescr,
         op: str;
 
+    # CPython member slot wrappers hash/equal by backing member descr + op.
+    def tp_hashkey -> PyObj {
+        return PyStr(
+            t="str", val="memacc:" + str(id(self.descr)) + ":" + self.op
+        );
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind == Py_EQ {
+            if isinstance(other, PyMemberAccess) {
+                o = other as PyMemberAccess;
+                return PyBool(
+                    t="bool", val=self.descr is o.descr and self.op == o.op
+                );
+            }
+            return PyBool(t="bool", val=False);
+        }
+        if kind == Py_NE {
+            if isinstance(other, PyMemberAccess) {
+                o = other as PyMemberAccess;
+                return PyBool(
+                    t="bool",
+                    val=self.descr is not o.descr or self.op != o.op
+                );
+            }
+            return PyBool(t="bool", val=True);
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         d = self.descr;
         if self.op == "__get__" {
@@ -4341,6 +4401,29 @@ def descriptor_get(value: PyObj, instance: PyObj, owner: PyObj) -> PyObj {
 # performs the real binding through descriptor_get.
 obj PyGetDescriptorFn(PyObj) {
     has target: PyObj;
+
+    # CPython __get__ slot wrappers hash/equal by the wrapped descriptor.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="getacc:" + str(id(self.target)));
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind == Py_EQ {
+            if isinstance(other, PyGetDescriptorFn) {
+                o = other as PyGetDescriptorFn;
+                return PyBool(t="bool", val=self.target is o.target);
+            }
+            return PyBool(t="bool", val=False);
+        }
+        if kind == Py_NE {
+            if isinstance(other, PyGetDescriptorFn) {
+                o = other as PyGetDescriptorFn;
+                return PyBool(t="bool", val=self.target is not o.target);
+            }
+            return PyBool(t="bool", val=True);
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         instance = py_none();
