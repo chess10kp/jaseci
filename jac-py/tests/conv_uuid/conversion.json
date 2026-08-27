@@ -10,11 +10,11 @@
     "convert_suite.py",
     "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_uuid.py",
     "-o",
-    "/var/tmp/conv_uuid_test",
+    "/var/tmp/worker6-634-next-converter-gap-3202116/jac-py/tests/conv_uuid",
     "--name",
     "conv_uuid"
   ],
-  "generated_at": "2026-08-27T00:50:26",
+  "generated_at": "2026-08-27T01:04:12",
   "hashes": {
     "pins_jac": "ccfafba52b7d0cd6842d63840a4a40ecbbdb34bea09e5bfbeac5cf842586c859"
   },
@@ -1106,6 +1106,11 @@
       "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport weakref\nfrom test.support import import_helper\npy_uuid = import_helper.import_fresh_module('uuid', blocked=['_uuid'])\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.uuid = py_uuid\n    _SelfNS.uuid = py_uuid\n    strong = self.uuid.uuid4()\n    weak = weakref.ref(strong)\n    assert strong is weak(), ('assertIs', strong, weak())\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
+      "ident": "TestUUIDWithExtModule.test_unix_getnode_from_libuuid",
+      "status": "quarantined",
+      "reason": "host-raised:SkipTest: libuuid cannot deduce MAC address"
+    },
+    {
       "ident": "TestUUIDWithExtModule.test_cli_uuid1",
       "status": "pinned",
       "oracle": {
@@ -1803,10 +1808,6 @@
     {
       "ident": "TestInternalsWithExtModule.test_windll_getnode",
       "reason": "skipped-on-host"
-    },
-    {
-      "ident": "TestUUIDWithExtModule.test_unix_getnode_from_libuuid",
-      "reason": "unsupported-import:test.support.script_helper"
     }
   ],
   "counts": {

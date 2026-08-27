@@ -1072,6 +1072,9 @@ _SHIMMED_TEST_MODULES = {
     "test.support.os_helper",
     "test.support.import_helper",
     "test.support.numbers",
+    # test_uuid (and others) import assert_python_ok via this submodule path;
+    # host oracle capture uses CPython's script_helper, same as conv_atexit pins.
+    "test.support.script_helper",
 }
 
 # Availability-gate decorators: pure skip predicates (platform/feature
