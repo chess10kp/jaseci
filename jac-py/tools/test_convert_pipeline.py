@@ -183,6 +183,30 @@ class RewriteBehaviorTests(unittest.TestCase):
         self.assertIn("try:", snippet)
         self.assertEqual(self.outcome(src), "ok")
 
+    def test_mock_patch_decorator_params(self):
+        """Stacked ``@mock.patch`` decorators inject parameters (test_uuid CLI)."""
+        src = (
+            "import io\n"
+            "import sys\n"
+            "import unittest\n"
+            "from unittest import mock\n"
+            "\n"
+            "class T(unittest.TestCase):\n"
+            "    @mock.patch.object(sys, 'argv', ['', '-u', 'uuid3', '-n', '@dns'])\n"
+            "    @mock.patch('sys.stderr', new_callable=io.StringIO)\n"
+            "    def test_cli(self, mock_err):\n"
+            "        mock_err.write('error: Incorrect number of arguments\\n')\n"
+            "        self.assertIn('error: Incorrect number of arguments', mock_err.getvalue())\n"
+        )
+        tree = ast.parse(src)
+        result = cs.extract_tests(tree, src)
+        self.assertEqual(result.quarantined, [])
+        self.assertEqual(len(result.pinned), 1)
+        pin = result.pinned[0]
+        self.assertIn("with mock.patch", pin.snippet)
+        self.assertIn("as mock_err", pin.snippet)
+        self.assertNotIn("unresolved-name:mock_err", pin.snippet)
+
     def test_assert_vocabulary_passes(self):
         for body in (
             "assertIn_check()".replace("assertIn_check()", "self.assertNotIn('z', 'abc')"),

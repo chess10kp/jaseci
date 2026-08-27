@@ -1199,6 +1199,84 @@ def _decorator_reason(deco: ast.expr, env: dict | None = None) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# unittest.mock.patch decorator lifting
+#
+# Stacked ``@mock.patch`` / ``@mock.patch.object`` decorators inject mock
+# parameters (``mock_err`` for ``new_callable=io.StringIO`` on stderr).
+# When *every* decorator on a test is a patch call, wrap the lifted body in
+# the equivalent nested ``with`` blocks so those names resolve without
+# quarantining on ``unresolved-name:<param>``.
+
+
+def _deco_call_name(deco: ast.expr) -> str | None:
+    """``mock.patch``, ``patch``, ``patch.object``, ... on a decorator node."""
+    node = deco.func if isinstance(deco, ast.Call) else deco
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+    if not parts:
+        return None
+    parts.reverse()
+    if parts[0] == "mock" and len(parts) >= 2:
+        return ".".join(parts[1:])
+    return parts[-1]
+
+
+def _is_mock_patch_deco(deco: ast.expr) -> bool:
+    return isinstance(deco, ast.Call) and _deco_call_name(deco) in (
+        "patch",
+        "patch.object",
+    )
+
+
+def _patch_adds_mock_param(deco: ast.Call) -> bool:
+    for kw in deco.keywords:
+        if kw.arg == "new":
+            return False
+    fname = _deco_call_name(deco)
+    if fname == "patch.object" and len(deco.args) >= 3:
+        return False
+    if fname == "patch" and len(deco.args) >= 2:
+        return False
+    return True
+
+
+def _wrap_mock_patch_body(
+    fn: ast.FunctionDef, body: list[ast.stmt],
+) -> tuple[list[ast.stmt], set[str]]:
+    decos = fn.decorator_list
+    if not decos or not all(_is_mock_patch_deco(d) for d in decos):
+        return body, set()
+    params = [a.arg for a in fn.args.args[1:]]
+    param_iter = iter(params)
+    bound: set[str] = set()
+    wrapped: list[ast.stmt] = body
+    for deco in reversed(decos):
+        if not isinstance(deco, ast.Call):
+            raise Unsupported("mock.patch-decorator")
+        ctx = copy.deepcopy(deco)
+        if _patch_adds_mock_param(deco):
+            pname = next(param_iter, None)
+            if pname is None:
+                raise Unsupported("mock.patch-param-mismatch")
+            bound.add(pname)
+            item = ast.withitem(
+                context_expr=ctx,
+                optional_vars=ast.Name(id=pname, ctx=ast.Store()),
+            )
+        else:
+            item = ast.withitem(context_expr=ctx, optional_vars=None)
+        wrapped = [ast.With(items=[item], body=wrapped)]
+        ast.fix_missing_locations(wrapped[0])
+    if next(param_iter, None) is not None:
+        raise Unsupported("mock.patch-param-mismatch")
+    return wrapped, bound
+
+
+# ---------------------------------------------------------------------------
 # Fixture-vocabulary lifting (custom TestCase helper methods)
 #
 # Suites like test_htmlparser route every assertion through helpers defined
@@ -1745,7 +1823,7 @@ def extract_tests(
     # are materialized into the snippet pool afterwards (_helper_class_deps).
     vocab_available = prelude_names | set(mod_classes)
 
-    candidates: list[tuple[str | None, str, list[ast.stmt]]] = []
+    candidates: list[tuple[str | None, str, ast.FunctionDef]] = []
     for node in tree.body:
         if isinstance(node, ast.ClassDef):
             class_reason = None
@@ -1768,7 +1846,7 @@ def extract_tests(
                 if reason is not None:
                     result.quarantined.append(Quarantined(ident, reason))
                     continue
-                candidates.append((node.name, ident, list(member.body)))
+                candidates.append((node.name, ident, member))
             # Inherited test vocabulary: unittest runs every test_* method
             # reachable through the MRO against this class's attribute seeds.
             # Lift each ancestor method once per concrete class here (the
@@ -1792,7 +1870,7 @@ def extract_tests(
                     if class_reason is not None:
                         result.quarantined.append(Quarantined(ident, class_reason))
                         continue
-                    candidates.append((node.name, ident, list(fn.body)))
+                    candidates.append((node.name, ident, fn))
         elif isinstance(node, ast.FunctionDef) and node.name.startswith("test"):
             for deco in node.decorator_list:
                 reason = _decorator_reason(deco, skip_env)
@@ -1800,7 +1878,7 @@ def extract_tests(
                     result.quarantined.append(Quarantined(node.name, reason))
                     break
             else:
-                candidates.append((None, node.name, list(node.body)))
+                candidates.append((None, node.name, node))
 
     # Concrete-subclass variant expansion: a test-bearing base class whose
     # subclasses carry distinct class attributes (``module = py_operator`` vs
@@ -1821,27 +1899,29 @@ def extract_tests(
             out.extend(_leaves(k))
         return out
 
-    expanded: list[tuple[str | None, str, list[ast.stmt]]] = []
-    for cls_name, ident, body_stmts in candidates:
+    expanded: list[tuple[str | None, str, ast.FunctionDef]] = []
+    for cls_name, ident, test_fn in candidates:
         if cls_name is not None and children.get(cls_name):
             for leaf in _leaves(cls_name):
                 expanded.append(
-                    (leaf, f"{leaf}.{ident.split('.', 1)[1]}", body_stmts)
+                    (leaf, f"{leaf}.{ident.split('.', 1)[1]}", test_fn)
                 )
         else:
-            expanded.append((cls_name, ident, body_stmts))
+            expanded.append((cls_name, ident, test_fn))
     candidates = expanded
 
-    for cls_name, ident, body_stmts in candidates:
+    for cls_name, ident, test_fn in candidates:
         try:
             extra_prelude: list[ast.stmt] = []
             ns_block: list[ast.stmt] = []
             helper_defs: list[ast.FunctionDef] = []
+            mock_patch_names: set[str] = set()
             # Candidate bodies are shared AST nodes across leaf-class
             # expansions; the rewriters below mutate in place, so isolate
             # each candidate's view (helper lifts deep-copy for the same
             # reason).
-            body_stmts = [copy.deepcopy(s) for s in body_stmts]
+            body_stmts = [copy.deepcopy(s) for s in test_fn.body]
+            body_stmts, mock_patch_names = _wrap_mock_patch_body(test_fn, body_stmts)
             if cls_name is not None:
                 rewritten, helper_defs, extra_prelude, ns_block, needs_re = _apply_fixture_vocab(
                     body_stmts, cls_name, cmap, mod_classes, vocab_available
@@ -1880,7 +1960,7 @@ def extract_tests(
                     is_test = m == "test" or m.startswith("test.")
                     if is_test and m not in _SHIMMED_TEST_MODULES:
                         raise Unsupported(f"unsupported-import:{m}")
-            available = pool_names | _bound_names(ast.Module(body=kept_prelude, type_ignores=[]))
+            available = pool_names | _bound_names(ast.Module(body=kept_prelude, type_ignores=[])) | mock_patch_names
             _check_names(candidate, available)
         except Unsupported as exc:
             result.quarantined.append(Quarantined(ident, str(exc)))
