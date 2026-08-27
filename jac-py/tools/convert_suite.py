@@ -309,6 +309,70 @@ _ORDER_ALIASES = {
     "assertGreaterEqual": ast.GtE,
 }
 
+# unittest tests often bind ``equal = self.assertEqual`` (and similar) for
+# micro-benchmarking; the alias must fold away so host-oracle snippets never
+# load assertion methods from ``_SelfNS``.
+_ALIASABLE_ASSERT_METHODS = frozenset({
+    "fail",
+    "skipTest",
+    "assertRaises",
+    "assertRaisesRegex",
+    *_EQUALITY_ALIASES.keys(),
+    *_ORDER_ALIASES.keys(),
+    "assertTrue",
+    "assertFalse",
+    "assertIs",
+    "assertIsNot",
+    "assertIn",
+    "assertNotIn",
+    "assertIsNone",
+    "assertIsNotNone",
+    "assertIsInstance",
+    "assertIsNotInstance",
+    "assertNotIsInstance",
+    "assertAlmostEqual",
+    "assertNotAlmostEqual",
+    "assertCountEqual",
+    "assertIsSubclass",
+    "assertNotIsSubclass",
+    "assertHasAttr",
+    "assertNotHasAttr",
+    "assertRegex",
+    "assertNotRegex",
+    "assertStartsWith",
+    "assertEndsWith",
+    "addCleanup",
+})
+
+
+def _as_self_assert_call(call: ast.Call, method: str) -> ast.Call:
+    return ast.Call(
+        func=ast.Attribute(
+            value=ast.Name(id="self", ctx=ast.Load()),
+            attr=method,
+            ctx=ast.Load(),
+        ),
+        args=call.args,
+        keywords=call.keywords,
+    )
+
+
+def _stmt_from_aliased_call(stmt: ast.stmt, aliases: dict[str, str]) -> ast.stmt | None:
+    call: ast.Call | None = None
+    if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+        call = stmt.value
+    elif isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Call):
+        call = stmt.value
+    if call is None or not isinstance(call.func, ast.Name):
+        return None
+    method = aliases.get(call.func.id)
+    if method is None:
+        return None
+    fake_call = _as_self_assert_call(call, method)
+    if isinstance(stmt, ast.Return):
+        return ast.Return(value=fake_call)
+    return ast.Expr(value=fake_call)
+
 
 def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
     """Rewrite one statement; returns replacement statements.
@@ -612,20 +676,42 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
     """Recursively rewrite a statement list; returns (new stmts, needs_re)."""
     needs_re = False
 
-    def rec(block: list[ast.stmt]) -> list[ast.stmt]:
+    def _rewrite_assertish(stmt: ast.stmt) -> list[ast.stmt]:
+        aliased = _stmt_from_aliased_call(stmt, aliases)
+        if aliased is not None:
+            if isinstance(aliased, ast.Return):
+                fake = ast.Expr(value=aliased.value)
+                if _is_self_assert_stmt(fake):
+                    return rewrite_assert_stmt(fake)
+                return [aliased]
+            if _is_self_assert_stmt(aliased):
+                return rewrite_assert_stmt(aliased)
+        if _is_self_assert_stmt(stmt):
+            return rewrite_assert_stmt(stmt)
+        return [stmt]
+
+    def rec(block: list[ast.stmt], aliases: dict[str, str]) -> list[ast.stmt]:
         nonlocal needs_re
         new: list[ast.stmt] = []
         for stmt in block:
-            if isinstance(stmt, (ast.If, ast.For, ast.AsyncFor, ast.While)):
-                stmt.body = rec(stmt.body)
-                stmt.orelse = rec(stmt.orelse)
+            if isinstance(stmt, ast.Assign):
+                if len(stmt.targets) == 1 and isinstance(stmt.targets[0], ast.Name):
+                    tname = stmt.targets[0].id
+                    method = _call_name(stmt.value)
+                    if method in _ALIASABLE_ASSERT_METHODS:
+                        aliases[tname] = method
+                        continue
+                new.append(stmt)
+            elif isinstance(stmt, (ast.If, ast.For, ast.AsyncFor, ast.While)):
+                stmt.body = rec(stmt.body, aliases)
+                stmt.orelse = rec(stmt.orelse, aliases)
                 new.append(stmt)
             elif isinstance(stmt, (ast.Try, ast.TryStar)):
-                stmt.body = rec(stmt.body)
-                stmt.orelse = rec(stmt.orelse)
-                stmt.finalbody = rec(stmt.finalbody)
+                stmt.body = rec(stmt.body, aliases)
+                stmt.orelse = rec(stmt.orelse, aliases)
+                stmt.finalbody = rec(stmt.finalbody, aliases)
                 for handler in stmt.handlers:
-                    handler.body = rec(handler.body)
+                    handler.body = rec(handler.body, aliases)
                 new.append(stmt)
             elif isinstance(stmt, ast.With):
                 handled = False
@@ -644,21 +730,28 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                         # the test; any failing subtest makes the host oracle
                         # non-"ok", so such cases never become pins. Inlining the
                         # body plainly is therefore oracle-safe.
-                        new.extend(rec(stmt.body))
+                        new.extend(rec(stmt.body, aliases))
                         handled = True
                 if not handled:
-                    stmt.body = rec(stmt.body)
+                    stmt.body = rec(stmt.body, aliases)
+                    new.append(stmt)
+            elif isinstance(stmt, ast.Return) and stmt.value is not None:
+                fake = ast.Expr(value=stmt.value)
+                if _is_self_assert_stmt(fake) or _stmt_from_aliased_call(stmt, aliases) is not None:
+                    new.extend(_rewrite_assertish(stmt))
+                else:
                     new.append(stmt)
             else:
-                if _is_self_assert_stmt(stmt):
-                    new.extend(rewrite_assert_stmt(stmt))
-                else:
-                    # Plain statements (assignments, nested helper defs, ...)
-                    # are already valid Python.
+                rewritten = _rewrite_assertish(stmt)
+                if len(rewritten) == 1 and rewritten[0] is stmt:
                     if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        stmt.body = rec(stmt.body)
+                        stmt.body = rec(stmt.body, {})
                     new.append(stmt)
+                else:
+                    new.extend(rewritten)
         return new
+
+    aliases: dict[str, str] = {}
 
     binds: list[tuple[str, int]] = [
         (item.optional_vars.id, item.context_expr.lineno)
@@ -673,7 +766,7 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
         stmts = _RaisesAliasAttrFlattener(binds).visit(
             ast.Module(body=list(stmts), type_ignores=[])
         ).body
-    new_block = rec(stmts)
+    new_block = rec(stmts, aliases)
     new_block = [_ImplDetailFolder().visit(s) for s in new_block]
     # Any emitted statement loading _re requires the module import. Scanning
     # the final AST (not per-rewrite flags) keeps every vocabulary addition
