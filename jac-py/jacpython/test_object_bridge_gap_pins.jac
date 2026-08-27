@@ -22,11 +22,12 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Fingerprint 3 (descriptor siblings): classmethod/staticmethod ctors and
+# instances hash by identity like property, so codec registries and ABC caches
+# can key sets/dicts on them.
+#
+# Residual (NOT pinned -- live gap on tip): PyMemberDescr still inherits the
+# base unhashable marker until worker2/604-next-objects-gap merges.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +116,30 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+test "classmethod ctor is a legal set element and dict key" {
+    # Host oracle (3.14): {classmethod} works; (True, 1).
+    assert outcome_str("s = {classmethod}\n", "(classmethod in s, len(s))")
+        == "(True, 1)";
+}
+
+test "staticmethod ctor is a legal set element and dict key" {
+    # Host oracle (3.14): {staticmethod} works; (True, 1).
+    assert outcome_str("s = {staticmethod}\n", "(staticmethod in s, len(s))")
+        == "(True, 1)";
+}
+
+test "classmethod instances hash distinctly from the ctor" {
+    # Host oracle (3.14): classmethod(f) is not the ctor object.
+    src = "def f(): pass\nm = classmethod(f)\n";
+    assert outcome_str(src, "m in {classmethod}") == "False";
+    assert outcome_str(src, "({classmethod: 'ctor', m: 'inst'})[m]") == "'inst'";
+}
+
+test "staticmethod instances hash distinctly from the ctor" {
+    # Host oracle (3.14): staticmethod(f) is not the ctor object.
+    src = "def f(): pass\nm = staticmethod(f)\n";
+    assert outcome_str(src, "m in {staticmethod}") == "False";
+    assert outcome_str(src, "({staticmethod: 'ctor', m: 'inst'})[m]") == "'inst'";
 }
