@@ -11383,6 +11383,12 @@ obj ShimTypeMarker(PyObj) {
 obj PyNativeBuiltin(PyObj) {
     has name: str;
 
+    # Identity hash (CPython: builtin functions hash by id); stdlib dispatch
+    # tables key sets/dicts on them (e.g. {len}, functools caches).
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
 
         if self.name == "exc_info" {
@@ -12450,6 +12456,11 @@ obj PySetMethod(PyObj) {
     has target: PySet,
         name: str;
 
+    # Identity hash: CPython bound set methods are set/dict-key legal.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         n = self.name;
         s = self.target;
@@ -12643,6 +12654,11 @@ def is_str_method(name: str) -> bool {
 obj PyStrMethod(PyObj) {
     has target: PyStr,
         name: str;
+
+    # Identity hash: CPython bound str methods are set/dict-key legal.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         return str_method_call(self.target.val, self.name, args, kwargs);
@@ -13559,6 +13575,11 @@ obj PyListMethod(PyObj) {
     has target: PyList,
         name: str;
 
+    # Identity hash: CPython bound list methods are set/dict-key legal.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         n = self.name;
         lst = self.target;
@@ -13739,6 +13760,11 @@ def is_dict_method(name: str) -> bool {
 obj PyDictMethod(PyObj) {
     has target: PyDict,
         name: str;
+
+    # Identity hash: CPython bound dict methods are set/dict-key legal.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         n = self.name;
@@ -14405,6 +14431,11 @@ obj PyGenerator(PyObj) {
 obj PyGenMethod(PyObj) {
     has gen: PyGenerator,
         kind: str;
+
+    # Identity hash: CPython generator driver methods hash by id.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         # Method-name prefix in arity errors mirrors CPython's METH_DEF_NAME

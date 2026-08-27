@@ -22,6 +22,10 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
+# Fingerprint 4 (builtin callables/methods): native builtins and bound
+# container/str methods inherit the base unhashable marker; CPython hashes
+# them by identity so {len} and {[].append} work.
+#
 # Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
 # PyStaticMethod / their ctors still inherit the base unhashable marker, so
 # e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
@@ -115,4 +119,20 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+# ---------------- builtin callable / method identity hash ----------------
+
+test "native builtin is a legal set element" {
+    assert outcome_str("", "(len in {len}, len({len}))") == "(True, 1)";
+}
+
+test "bound list method is a legal dict key" {
+    src = "lst = []\nm = lst.append\n";
+    assert outcome_str(src, "({m: 1}[m], m in {m})") == "(1, True)";
+}
+
+test "bound str method is a legal set element" {
+    assert outcome_str("s = 'ab'\n", "(s.upper in {s.upper}, len({s.upper}))")
+        == "(True, 1)";
 }
