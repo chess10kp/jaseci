@@ -134,6 +134,36 @@ class RewriteBehaviorTests(unittest.TestCase):
         self.assertTrue(failed.startswith(cs._ORACLE_EXC), failed)
         self.assertIn("AssertionError", failed)
 
+    def test_return_self_assert_in_nested_def(self):
+        src = (
+            "def check():\n"
+            "    return self.assertEqual(1 + 1, 2)\n"
+            "check()\n"
+        )
+        snippet, _ = self._render(src)
+        self.assertIn("assert 1 + 1 == 2", snippet)
+        self.assertNotIn("return self.assertEqual", snippet)
+
+    def test_bare_self_passed_to_nested_helper(self):
+        src = (
+            "import unittest\n"
+            "class T(unittest.TestCase):\n"
+            "    def test_x(self):\n"
+            "        def helper(self, x):\n"
+            "            assert x == 1\n"
+            "        helper(self, 1)\n"
+        )
+        tree = ast.parse(src)
+        result = cs.extract_tests(tree, src)
+        self.assertEqual(result.quarantined, [])
+        self.assertEqual(len(result.pinned), 1)
+        pin = result.pinned[0]
+        self.assertIn("self = _SelfNS()", pin.snippet)
+        oracle = cs.capture_host_oracle(
+            pin.snippet, Path("/home/jac/repos/jac-python/reference/cpython/Lib")
+        )
+        self.assertEqual(oracle["status"], "ok")
+
     def test_assert_vocabulary_passes(self):
         for body in (
             "assertIn_check()".replace("assertIn_check()", "self.assertNotIn('z', 'abc')"),
