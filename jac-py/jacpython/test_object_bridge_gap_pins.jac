@@ -22,11 +22,13 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Fingerprint 5 (property modifier objects): property.setter/getter/deleter
+# modifiers hash and compare equal by backing property + accessor kind so
+# functools/inspect idioms like `{C.p.setter}` work across fresh reads.
+#
+# Residual (NOT pinned -- live gap on tip): PyClassMethod / PyStaticMethod /
+# their ctors and PyMemberDescr still inherit the base unhashable marker until
+# worker2-descriptor-identity-hash and worker2/604-next-objects-gap merge.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +117,35 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+# ---------------- property modifier hash ----------------
+
+test "property setter modifier is a legal set element" {
+    # Host oracle (3.14): C.p.setter in {C.p.setter}; len 1.
+    src = "class C:\n    @property\n    def p(self): return 1\n";
+    assert outcome_str(src, "(C.p.setter in {C.p.setter}, len({C.p.setter}))")
+        == "(True, 1)";
+}
+
+test "property setter modifier works as a dict key" {
+    # Host oracle (3.14): ({C.p.setter: 'v'})[C.p.setter] -> 'v'.
+    src = "class C:\n    @property\n    def p(self): return 1\n";
+    assert outcome_str(src, "({C.p.setter: 'v'})[C.p.setter]") == "'v'";
+}
+
+test "property getter modifier is a legal set element" {
+    # Host oracle (3.14): C.p.getter in {C.p.getter}; len 1.
+    src = "class C:\n    @property\n    def p(self): return 1\n";
+    assert outcome_str(src, "(C.p.getter in {C.p.getter}, len({C.p.getter}))")
+        == "(True, 1)";
+}
+
+test "property getter and setter modifiers hash distinctly" {
+    # Host oracle (3.14): getter and setter buckets are disjoint.
+    src = "class C:\n    @property\n    def p(self): return 1\n";
+    assert outcome_str(
+        src,
+        "(C.p.getter in {C.p.setter}, C.p.setter in {C.p.getter})"
+    ) == "(False, False)";
 }

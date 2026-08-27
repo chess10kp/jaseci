@@ -4054,6 +4054,37 @@ obj PyPropModifier(PyObj) {
     has prop: PyProperty,
         which: str;
 
+    # CPython property.setter/getter/deleter modifiers hash/equal by backing
+    # property + accessor kind (each read mints a fresh object but compares equal).
+    def tp_hashkey -> PyObj {
+        return PyStr(
+            t="str", val="propmod:" + str(id(self.prop)) + ":" + self.which
+        );
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind == Py_EQ {
+            if isinstance(other, PyPropModifier) {
+                o = other as PyPropModifier;
+                return PyBool(
+                    t="bool", val=self.prop is o.prop and self.which == o.which
+                );
+            }
+            return PyBool(t="bool", val=False);
+        }
+        if kind == Py_NE {
+            if isinstance(other, PyPropModifier) {
+                o = other as PyPropModifier;
+                return PyBool(
+                    t="bool",
+                    val=self.prop is not o.prop or self.which != o.which
+                );
+            }
+            return PyBool(t="bool", val=True);
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         fn = args[0];
         p = self.prop;
