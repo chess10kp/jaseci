@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_type_cache.py",
+    "-o",
+    "/var/tmp/worker6-328-conversion-wave-10-1957175/jac-py/tests/conv_type_cache",
+    "--name",
+    "conv_type_cache"
+  ],
+  "generated_at": "2026-08-26T23:27:57",
+  "hashes": {
+    "pins_jac": "ece9ebee1408db5d61381fad2a0a54a51b18f9f991248b4cc354a960ca66a7d0"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_type_cache.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "type_cache",
+  "pins_file": "conv_type_cache_pins.jac",
+  "pins": [
+    {
+      "ident": "TypeCacheTests.test_type_assign_version",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheTests.test_type_assign_specific_version",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheTests.test_per_class_limit",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheTests.test_119462",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n\ndef _t():\n\n    class Holder:\n        value = None\n\n        @classmethod\n        def set_value(cls):\n            cls.value = object()\n\n    class HolderSub(Holder):\n        pass\n    for _ in range(1050):\n        Holder.set_value()\n        HolderSub.value\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TypeCacheTests.test_abc_register_invalidates_subclass_versions",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheWithSpecializationTests.test_class_load_attr_specialization_user_type",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheWithSpecializationTests.test_class_load_attr_specialization_static_type",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheWithSpecializationTests.test_property_load_attr_specialization_user_type",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheWithSpecializationTests.test_store_attr_specialization_user_type",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheWithSpecializationTests.test_class_call_specialization_user_type",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    },
+    {
+      "ident": "TypeCacheWithSpecializationTests.test_to_bool_specialization_user_type",
+      "status": "quarantined",
+      "reason": "harness-error:unittest.case.SkipTest: No module named '_testcapi'"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TypeCacheTests.test_tp_version_tag_unique",
+      "reason": "uses-self.assertNotEqual"
+    }
+  ],
+  "counts": {
+    "extracted": 12,
+    "pinned": 1,
+    "quarantined": 11
+  }
+}
