@@ -2540,6 +2540,17 @@
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "uuid",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_uuid_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "140 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
     }
   ]
 }
