@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "4da4e4aac59b58d45e4f0fac2362fdf06bc065fb",
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,13 +10,13 @@
     "convert_suite.py",
     "/home/jac/repos/jac-python/reference/cpython/Lib/test/test__opcode.py",
     "-o",
-    "/var/tmp/lane8/jac-py/tests/conv__opcode",
+    "jac-py/tests/conv__opcode",
     "--name",
     "conv__opcode"
   ],
-  "generated_at": "2026-08-24T23:51:53",
+  "generated_at": "2026-08-26T23:46:07",
   "hashes": {
-    "pins_jac": "eb606488ead23160a5404cfe34f79f5255105787cd8b340e2e7d0cc7a39a2303"
+    "pins_jac": "39502c843990efdbdc65e5ce074ed57f49ce6c7f3f25c5b13cee9a8739943eba"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test__opcode.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -29,7 +29,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import dis\nfrom test.support.import_helper import import_module\n_opcode = import_module('_opcode')\n\ndef check_bool_function_result(func, ops, expected):\n    for op in ops:\n        if isinstance(op, str):\n            op = dis.opmap[op]\n        assert isinstance(func(op), bool), ('assertIsInstance', func(op), bool)\n        assert func(op) == expected, ('assertEqual', func(op), expected)\n\ndef _t():\n    invalid = [-100, -1, 512, 513, 1000]\n    check_bool_function_result(_opcode.is_valid, invalid, False)\n    check_bool_function_result(_opcode.has_arg, invalid, False)\n    check_bool_function_result(_opcode.has_const, invalid, False)\n    check_bool_function_result(_opcode.has_name, invalid, False)\n    check_bool_function_result(_opcode.has_jump, invalid, False)\n    check_bool_function_result(_opcode.has_free, invalid, False)\n    check_bool_function_result(_opcode.has_local, invalid, False)\n    check_bool_function_result(_opcode.has_exc, invalid, False)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nfrom test.support.import_helper import import_module\n_opcode = import_module('_opcode')\n\ndef _t():\n\n    def check_bool_function_result(func, ops, expected):\n        for op in ops:\n            if isinstance(op, str):\n                op = dis.opmap[op]\n            assert isinstance(func(op), bool), ('assertIsInstance', func(op), bool)\n            assert func(op) == expected, ('assertEqual', func(op), expected)\n    invalid = [-100, -1, 512, 513, 1000]\n    check_bool_function_result(_opcode.is_valid, invalid, False)\n    check_bool_function_result(_opcode.has_arg, invalid, False)\n    check_bool_function_result(_opcode.has_const, invalid, False)\n    check_bool_function_result(_opcode.has_name, invalid, False)\n    check_bool_function_result(_opcode.has_jump, invalid, False)\n    check_bool_function_result(_opcode.has_free, invalid, False)\n    check_bool_function_result(_opcode.has_local, invalid, False)\n    check_bool_function_result(_opcode.has_exc, invalid, False)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "OpListTests.test_is_valid",
@@ -37,12 +37,23 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import dis\nfrom test.support.import_helper import import_module\n_opcode = import_module('_opcode')\n\ndef check_bool_function_result(func, ops, expected):\n    for op in ops:\n        if isinstance(op, str):\n            op = dis.opmap[op]\n        assert isinstance(func(op), bool), ('assertIsInstance', func(op), bool)\n        assert func(op) == expected, ('assertEqual', func(op), expected)\n\ndef _t():\n    names = ['CACHE', 'POP_TOP', 'IMPORT_NAME', 'JUMP', 'INSTRUMENTED_RETURN_VALUE']\n    opcodes = [dis.opmap[opname] for opname in names]\n    check_bool_function_result(_opcode.is_valid, opcodes, True)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nfrom test.support.import_helper import import_module\n_opcode = import_module('_opcode')\n\ndef _t():\n\n    def check_bool_function_result(func, ops, expected):\n        for op in ops:\n            if isinstance(op, str):\n                op = dis.opmap[op]\n            assert isinstance(func(op), bool), ('assertIsInstance', func(op), bool)\n            assert func(op) == expected, ('assertEqual', func(op), expected)\n    names = ['CACHE', 'POP_TOP', 'IMPORT_NAME', 'JUMP', 'INSTRUMENTED_RETURN_VALUE']\n    opcodes = [dis.opmap[opname] for opname in names]\n    check_bool_function_result(_opcode.is_valid, opcodes, True)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "OpListTests.test_opmaps",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport opcode\n\ndef _t():\n\n    def check_roundtrip(name, map):\n        assert opcode.opname[map[name]] == name, ('assertEqual', opcode.opname[map[name]], name)\n    check_roundtrip('BINARY_OP', opcode.opmap)\n    check_roundtrip('BINARY_OP_ADD_INT', opcode._specialized_opmap)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "OpListTests.test_oplists",
-      "status": "quarantined",
-      "reason": "host-raised:NameError: name 'self' is not defined"
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nfrom test.support.import_helper import import_module\n_opcode = import_module('_opcode')\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n\n    def check_function(self, func, expected):\n        for op in [-10, 520]:\n            res = func(op)\n            assert isinstance(res, bool), ('assertIsInstance', res, bool)\n            assert res == (op in expected), ('assertEqual', res, (op in expected))\n    check_function(self, _opcode.has_arg, dis.hasarg)\n    check_function(self, _opcode.has_const, dis.hasconst)\n    check_function(self, _opcode.has_name, dis.hasname)\n    check_function(self, _opcode.has_jump, dis.hasjump)\n    check_function(self, _opcode.has_free, dis.hasfree)\n    check_function(self, _opcode.has_local, dis.haslocal)\n    check_function(self, _opcode.has_exc, dis.hasexc)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "StackEffectTests.test_stack_effect",
@@ -50,7 +61,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import dis\nimport opcode\nfrom _opcode import stack_effect\n\ndef _t():\n    assert stack_effect(dis.opmap['POP_TOP']) == -1, ('assertEqual', stack_effect(dis.opmap['POP_TOP']), -1)\n    assert stack_effect(dis.opmap['BUILD_SLICE'], 2) == -1, ('assertEqual', stack_effect(dis.opmap['BUILD_SLICE'], 2), -1)\n    assert stack_effect(dis.opmap['BUILD_SLICE'], 3) == -2, ('assertEqual', stack_effect(dis.opmap['BUILD_SLICE'], 3), -2)\n    try:\n        stack_effect(*(30000,))\n    except ValueError:\n        pass\n    has_arg = dis.hasarg\n    for name, code in filter(lambda item: item[0] not in dis.deoptmap, dis.opmap.items()):\n        if code >= opcode.MIN_INSTRUMENTED_OPCODE:\n            continue\n        stack_effect(code)\n        stack_effect(code, 0)\n    for code in set(range(256)) - set(dis.opmap.values()):\n        try:\n            stack_effect(*(code,))\n        except ValueError:\n            pass\n        try:\n            stack_effect(*(code, 0))\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport opcode\nfrom _opcode import stack_effect\n\ndef _t():\n    assert stack_effect(dis.opmap['POP_TOP']) == -1, ('assertEqual', stack_effect(dis.opmap['POP_TOP']), -1)\n    assert stack_effect(dis.opmap['BUILD_SLICE'], 2) == -1, ('assertEqual', stack_effect(dis.opmap['BUILD_SLICE'], 2), -1)\n    assert stack_effect(dis.opmap['BUILD_SLICE'], 3) == -2, ('assertEqual', stack_effect(dis.opmap['BUILD_SLICE'], 3), -2)\n    try:\n        stack_effect(*(30000,))\n    except ValueError:\n        pass\n    has_arg = dis.hasarg\n    for name, code in filter(lambda item: item[0] not in dis.deoptmap, dis.opmap.items()):\n        if code >= opcode.MIN_INSTRUMENTED_OPCODE:\n            continue\n        stack_effect(code)\n        stack_effect(code, 0)\n    for code in set(range(256)) - set(dis.opmap.values()):\n        try:\n            stack_effect(*(code,))\n        except ValueError:\n            pass\n        try:\n            stack_effect(*(code, 0))\n        except ValueError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "StackEffectTests.test_stack_effect_jump",
@@ -58,7 +69,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import dis\nimport opcode\nfrom _opcode import stack_effect\n\ndef _t():\n    FOR_ITER = dis.opmap['FOR_ITER']\n    assert stack_effect(FOR_ITER, 0) == 1, ('assertEqual', stack_effect(FOR_ITER, 0), 1)\n    assert stack_effect(FOR_ITER, 0, jump=True) == 1, ('assertEqual', stack_effect(FOR_ITER, 0, jump=True), 1)\n    assert stack_effect(FOR_ITER, 0, jump=False) == 1, ('assertEqual', stack_effect(FOR_ITER, 0, jump=False), 1)\n    JUMP_FORWARD = dis.opmap['JUMP_FORWARD']\n    assert stack_effect(JUMP_FORWARD, 0) == 0, ('assertEqual', stack_effect(JUMP_FORWARD, 0), 0)\n    assert stack_effect(JUMP_FORWARD, 0, jump=True) == 0, ('assertEqual', stack_effect(JUMP_FORWARD, 0, jump=True), 0)\n    assert stack_effect(JUMP_FORWARD, 0, jump=False) == 0, ('assertEqual', stack_effect(JUMP_FORWARD, 0, jump=False), 0)\n    has_arg = dis.hasarg\n    has_exc = dis.hasexc\n    has_jump = dis.hasjabs + dis.hasjrel\n    for name, code in filter(lambda item: item[0] not in dis.deoptmap, dis.opmap.items()):\n        if code >= opcode.MIN_INSTRUMENTED_OPCODE:\n            continue\n        if code not in has_arg:\n            common = stack_effect(code)\n            jump = stack_effect(code, jump=True)\n            nojump = stack_effect(code, jump=False)\n        else:\n            common = stack_effect(code, 0)\n            jump = stack_effect(code, 0, jump=True)\n            nojump = stack_effect(code, 0, jump=False)\n        if code in has_jump or code in has_exc:\n            assert common == max(jump, nojump), ('assertEqual', common, max(jump, nojump))\n        else:\n            assert jump == common, ('assertEqual', jump, common)\n            assert nojump == common, ('assertEqual', nojump, common)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport opcode\nfrom _opcode import stack_effect\n\ndef _t():\n    FOR_ITER = dis.opmap['FOR_ITER']\n    assert stack_effect(FOR_ITER, 0) == 1, ('assertEqual', stack_effect(FOR_ITER, 0), 1)\n    assert stack_effect(FOR_ITER, 0, jump=True) == 1, ('assertEqual', stack_effect(FOR_ITER, 0, jump=True), 1)\n    assert stack_effect(FOR_ITER, 0, jump=False) == 1, ('assertEqual', stack_effect(FOR_ITER, 0, jump=False), 1)\n    JUMP_FORWARD = dis.opmap['JUMP_FORWARD']\n    assert stack_effect(JUMP_FORWARD, 0) == 0, ('assertEqual', stack_effect(JUMP_FORWARD, 0), 0)\n    assert stack_effect(JUMP_FORWARD, 0, jump=True) == 0, ('assertEqual', stack_effect(JUMP_FORWARD, 0, jump=True), 0)\n    assert stack_effect(JUMP_FORWARD, 0, jump=False) == 0, ('assertEqual', stack_effect(JUMP_FORWARD, 0, jump=False), 0)\n    has_arg = dis.hasarg\n    has_exc = dis.hasexc\n    has_jump = dis.hasjabs + dis.hasjrel\n    for name, code in filter(lambda item: item[0] not in dis.deoptmap, dis.opmap.items()):\n        if code >= opcode.MIN_INSTRUMENTED_OPCODE:\n            continue\n        if code not in has_arg:\n            common = stack_effect(code)\n            jump = stack_effect(code, jump=True)\n            nojump = stack_effect(code, jump=False)\n        else:\n            common = stack_effect(code, 0)\n            jump = stack_effect(code, 0, jump=True)\n            nojump = stack_effect(code, 0, jump=False)\n        if code in has_jump or code in has_exc:\n            assert common == max(jump, nojump), ('assertEqual', common, max(jump, nojump))\n        else:\n            assert jump == common, ('assertEqual', jump, common)\n            assert nojump == common, ('assertEqual', nojump, common)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "SpecializationStatsTests.test_specialization_stats",
@@ -66,18 +77,13 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "from test.support.import_helper import import_module\nimport opcode\n_opcode = import_module('_opcode')\n\ndef _t():\n    stat_names = ['success', 'failure', 'hit', 'deferred', 'miss', 'deopt']\n    specialized_opcodes = [op.lower() for op in opcode._specializations if opcode._inline_cache_entries.get(op, 0)]\n    assert 'load_attr' in specialized_opcodes, ('assertIn', 'load_attr', specialized_opcodes)\n    assert 'binary_op' in specialized_opcodes, ('assertIn', 'binary_op', specialized_opcodes)\n    stats = _opcode.get_specialization_stats()\n    if stats is not None:\n        assert isinstance(stats, dict), ('assertIsInstance', stats, dict)\n        assert sorted(stats.keys(), key=repr) == sorted(specialized_opcodes, key=repr), ('assertCountEqual', stats.keys(), specialized_opcodes)\n        assert sorted(stats['load_attr'].keys(), key=repr) == sorted(stat_names + ['failure_kinds'], key=repr), ('assertCountEqual', stats['load_attr'].keys(), stat_names + ['failure_kinds'])\n        for sn in stat_names:\n            assert isinstance(stats['load_attr'][sn], int), ('assertIsInstance', stats['load_attr'][sn], int)\n        assert isinstance(stats['load_attr']['failure_kinds'], tuple), ('assertIsInstance', stats['load_attr']['failure_kinds'], tuple)\n        for v in stats['load_attr']['failure_kinds']:\n            assert isinstance(v, int), ('assertIsInstance', v, int)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nfrom test.support.import_helper import import_module\nimport opcode\n_opcode = import_module('_opcode')\n\ndef _t():\n    stat_names = ['success', 'failure', 'hit', 'deferred', 'miss', 'deopt']\n    specialized_opcodes = [op.lower() for op in opcode._specializations if opcode._inline_cache_entries.get(op, 0)]\n    assert 'load_attr' in specialized_opcodes, ('assertIn', 'load_attr', specialized_opcodes)\n    assert 'binary_op' in specialized_opcodes, ('assertIn', 'binary_op', specialized_opcodes)\n    stats = _opcode.get_specialization_stats()\n    if stats is not None:\n        assert isinstance(stats, dict), ('assertIsInstance', stats, dict)\n        assert sorted(stats.keys(), key=repr) == sorted(specialized_opcodes, key=repr), ('assertCountEqual', stats.keys(), specialized_opcodes)\n        assert sorted(stats['load_attr'].keys(), key=repr) == sorted(stat_names + ['failure_kinds'], key=repr), ('assertCountEqual', stats['load_attr'].keys(), stat_names + ['failure_kinds'])\n        for sn in stat_names:\n            assert isinstance(stats['load_attr'][sn], int), ('assertIsInstance', stats['load_attr'][sn], int)\n        assert isinstance(stats['load_attr']['failure_kinds'], tuple), ('assertIsInstance', stats['load_attr']['failure_kinds'], tuple)\n        for v in stats['load_attr']['failure_kinds']:\n            assert isinstance(v, int), ('assertIsInstance', v, int)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     }
   ],
-  "quarantined": [
-    {
-      "ident": "OpListTests.test_opmaps",
-      "reason": "uses-self.assertEqual"
-    }
-  ],
+  "quarantined": [],
   "counts": {
     "extracted": 7,
-    "pinned": 5,
-    "quarantined": 2
+    "pinned": 7,
+    "quarantined": 0
   }
 }
