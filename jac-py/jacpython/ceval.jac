@@ -1641,6 +1641,7 @@ import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc { gc_module_attrs }
+import from copyreg { build_copyreg_module }
 import from sysconfig { sysconfig_module_attrs }
 import from errno { errno_module_attrs }
 import from signal { signal_module_attrs }
@@ -2112,6 +2113,12 @@ def import_native(absname: str) -> PyObj {
         # of every guest list (heappush/heapify silently no-op). The native
         # shim operates on live PyList storage instead.
         shim_modules["heapq"] = build_heapq_module();
+    }
+    if absname == "copyreg" and not ("copyreg" in shim_modules) {
+        # copyreg.py keeps type-keyed dispatch/extension tables that must
+        # retain guest PyClass / tuple identity; host delegation snapshots
+        # host types so copyreg.pickle(C, ...) never matches guest instances.
+        shim_modules["copyreg"] = build_copyreg_module();
     }
     if absname == "gc" and not ("gc" in shim_modules) {
         # Host gc sees only host objects: native guest containers would cross
@@ -5391,6 +5398,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # Same copy-mutation hazard as import_native: host heapq mutates a
         # copy of any guest list argument.
         shim_modules["heapq"] = build_heapq_module();
+    }
+    if name == "copyreg" and not ("copyreg" in shim_modules) {
+        # Same rationale as the import_native site above: guest type-keyed
+        # registries must not cross through host type snapshots.
+        shim_modules["copyreg"] = build_copyreg_module();
     }
     if name == "gc" and not ("gc" in shim_modules) {
         # Same rationale as the import_native site above: host gc cannot see
