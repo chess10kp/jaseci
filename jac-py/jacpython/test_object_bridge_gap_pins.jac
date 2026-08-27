@@ -22,11 +22,9 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Fingerprint 3 (residual from property sweep): classmethod/staticmethod
+# descriptors and their ctors hash by identity in CPython (codec registries,
+# ABC caches). Pins lock the sibling fix beside PyProperty/PyPropertyCtor.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +113,28 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+test "classmethod ctor is a legal set element and dict key" {
+    assert outcome_str("s = {classmethod}\n", "(classmethod in s, len(s))")
+        == "(True, 1)";
+}
+
+test "staticmethod ctor is a legal set element and dict key" {
+    assert outcome_str("s = {staticmethod}\n", "(staticmethod in s, len(s))")
+        == "(True, 1)";
+}
+
+test "classmethod instances hash distinctly from the ctor" {
+    src = "cm = classmethod(lambda cls: 1)\n";
+    assert outcome_str(src, "cm in {classmethod}") == "False";
+    assert outcome_str(src, "(cm in {cm}, cm in {classmethod})") == "(True, False)";
+    assert outcome_str(src, "({classmethod: 'ctor', cm: 'inst'})[cm]") == "'inst'";
+}
+
+test "staticmethod instances hash distinctly from the ctor" {
+    src = "sm = staticmethod(lambda: 1)\n";
+    assert outcome_str(src, "sm in {staticmethod}") == "False";
+    assert outcome_str(src, "(sm in {sm}, sm in {staticmethod})") == "(True, False)";
+    assert outcome_str(src, "({staticmethod: 'ctor', sm: 'inst'})[sm]") == "'inst'";
 }

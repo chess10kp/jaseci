@@ -3883,6 +3883,11 @@ obj PyBuildClass(PyObj) {
 obj PyClassMethod(PyObj) {
     has func: PyObj;
 
+    # Identity hash: CPython classmethod descriptors are set/dict-key legal.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     # `__func__` exposes the wrapped function (namedtuple rewrites
     # `_make.__func__.__qualname__`; functools/abc read it too).
     def tp_getattro(name: str) -> PyObj {
@@ -3903,6 +3908,11 @@ obj PyClassMethod(PyObj) {
 
 obj PyStaticMethod(PyObj) {
     has func: PyObj;
+
+    # Identity hash: CPython staticmethod descriptors are set/dict-key legal.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
 
     def tp_getattro(name: str) -> PyObj {
         if name == "__func__" {
@@ -4138,6 +4148,11 @@ obj PyObjectAttrSlot(PyObj) {
 }
 
 obj PyClassMethodCtor(PyObj) {
+    # Identity hash (CPython: builtin descriptor ctors hash by id).
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 1 {
             return py_error(
@@ -4149,6 +4164,11 @@ obj PyClassMethodCtor(PyObj) {
 }
 
 obj PyStaticMethodCtor(PyObj) {
+    # Identity hash (CPython: builtin descriptor ctors hash by id).
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         if len(args) < 1 {
             return py_error(
