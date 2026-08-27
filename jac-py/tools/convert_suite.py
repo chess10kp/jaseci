@@ -649,6 +649,14 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                 if not handled:
                     stmt.body = rec(stmt.body)
                     new.append(stmt)
+            elif isinstance(stmt, ast.Return) and stmt.value is not None:
+                # Nested helpers sometimes ``return self.assertEqual(...)``;
+                # unittest assertions return None, so rewrite to a plain assert.
+                fake = ast.Expr(value=stmt.value)
+                if _is_self_assert_stmt(fake):
+                    new.extend(rewrite_assert_stmt(fake))
+                else:
+                    new.append(stmt)
             else:
                 if _is_self_assert_stmt(stmt):
                     new.extend(rewrite_assert_stmt(stmt))
