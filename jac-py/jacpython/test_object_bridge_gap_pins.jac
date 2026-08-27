@@ -22,11 +22,13 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Fingerprint 6 (object attribute slot wrappers): object.__getattribute__ and
+# bound instance.__getattribute__/__setattr__ wrappers hash and compare equal by
+# backing receiver + accessor name so inspect/functools set/dict idioms work.
+#
+# Residual (NOT pinned -- live gap on tip): PyClassMethod / PyStaticMethod /
+# their ctors and PyMemberDescr still inherit the base unhashable marker until
+# worker2-descriptor-identity-hash and worker2/604-next-objects-gap merge.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +117,37 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+# ---------------- object attribute slot wrapper hash ----------------
+
+test "unbound object.__getattribute__ is a legal set element" {
+    # Host oracle (3.14): object.__getattribute__ in {object.__getattribute__}.
+    assert outcome_str(
+        "",
+        "(object.__getattribute__ in {object.__getattribute__}, len({object.__getattribute__}))"
+    ) == "(True, 1)";
+}
+
+test "unbound object.__setattr__ works as a dict key" {
+    # Host oracle (3.14): {object.__setattr__: 1}[object.__setattr__] -> 1.
+    assert outcome_str("", "{object.__setattr__: 1}[object.__setattr__]") == "1";
+}
+
+test "bound __getattribute__ wrapper is a legal set element" {
+    # Host oracle (3.14): o.__getattribute__ in {o.__getattribute__}; len 1.
+    src = "o = object()\n";
+    assert outcome_str(
+        src,
+        "(o.__getattribute__ in {o.__getattribute__}, len({o.__getattribute__}))"
+    ) == "(True, 1)";
+}
+
+test "bound __getattribute__ and __setattr__ wrappers hash distinctly" {
+    # Host oracle (3.14): accessor buckets are disjoint on the same instance.
+    src = "o = object()\n";
+    assert outcome_str(
+        src,
+        "(o.__getattribute__ in {o.__setattr__}, o.__setattr__ in {o.__getattribute__})"
+    ) == "(False, False)";
 }

@@ -4087,6 +4087,41 @@ obj PyObjectAttrSlot(PyObj) {
     has op: str,
         target: any = None;
 
+    # CPython object.__getattribute__/__setattr__/__delattr__ slot wrappers
+    # hash/equal by backing receiver (None when unbound) + accessor name.
+    def tp_hashkey -> PyObj {
+        tid = "none";
+        if self.target is not None {
+            tid = str(id(self.target));
+        }
+        return PyStr(t="str", val="objattr:" + tid + ":" + self.op);
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind == Py_EQ {
+            if isinstance(other, PyObjectAttrSlot) {
+                o = other as PyObjectAttrSlot;
+                same_target = self.target is o.target;
+                return PyBool(
+                    t="bool", val=same_target and self.op == o.op
+                );
+            }
+            return PyBool(t="bool", val=False);
+        }
+        if kind == Py_NE {
+            if isinstance(other, PyObjectAttrSlot) {
+                o = other as PyObjectAttrSlot;
+                same_target = self.target is o.target;
+                return PyBool(
+                    t="bool",
+                    val=not same_target or self.op != o.op
+                );
+            }
+            return PyBool(t="bool", val=True);
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         recv: PyObj;
         rest: list[PyObj] = [];
