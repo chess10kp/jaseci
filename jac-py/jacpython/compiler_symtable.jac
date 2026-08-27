@@ -1808,14 +1808,15 @@ import from compiler_diagnostics { compiler_diag_message }
 import from objects { PyInt }
 import from ast_nodes { Constant, Assign, USub }
 
-import symtable as _symtable_mod;
+# Host oracle uses CPython stdlib symtable via ::py:: so this module does
+# not import symtable.jac (which would cycle: symtable -> compiler_symtable).
+::py::
+def _host_sym_normalize_py(source, mode="exec"):
+    _host_symtable = __import__("symtable")
+    st = _host_symtable.symtable(source, "<t>", mode)
 
-
-def _host_sym_normalize(source: str, mode: str = "exec") -> dict {
-    st = _symtable_mod.symtable(source, "<t>", mode);
-
-    def block_info(st: any) -> dict {
-        children = [];
+    def block_info(st):
+        children = []
         d = {
             "name": st.get_name(),
             "type": st.get_type().value,
@@ -1823,16 +1824,15 @@ def _host_sym_normalize(source: str, mode: str = "exec") -> dict {
             "nested": st.is_nested(),
             "symbols": {},
             "children": children,
-        };
-        if hasattr(st, "get_parameters") {
-            d["parameters"] = list(st.get_parameters());
-            d["locals"] = list(st.get_locals());
-            d["globals"] = list(st.get_globals());
-            d["nonlocals"] = list(st.get_nonlocals());
-            d["frees"] = list(st.get_frees());
         }
-        for name in sorted(st.get_identifiers()) {
-            sym = st.lookup(name);
+        if hasattr(st, "get_parameters"):
+            d["parameters"] = list(st.get_parameters())
+            d["locals"] = list(st.get_locals())
+            d["globals"] = list(st.get_globals())
+            d["nonlocals"] = list(st.get_nonlocals())
+            d["frees"] = list(st.get_frees())
+        for name in sorted(st.get_identifiers()):
+            sym = st.lookup(name)
             d["symbols"][name] = {
                 "local": sym.is_local(),
                 "global": sym.is_global(),
@@ -1842,19 +1842,15 @@ def _host_sym_normalize(source: str, mode: str = "exec") -> dict {
                 "declared_global": sym.is_declared_global(),
                 "referenced": sym.is_referenced(),
                 "assigned": sym.is_assigned(),
-            };
-        }
-        for ch in st.get_children() {
-            if ch.get_type().value == "annotation" {
-                continue;
             }
-            children.append(block_info(ch));
-        }
-        return d;
-    }
+        for ch in st.get_children():
+            if ch.get_type().value == "annotation":
+                continue
+            children.append(block_info(ch))
+        return d
 
-    return block_info(st);
-}
+    return block_info(st)
+::py::
 
 
 
@@ -1874,7 +1870,7 @@ def _sym_oracle_equal(native: any, expected: any) -> bool {
 
 
 def host_sym_normalize(source: str, mode: str = "exec") -> dict[str, any] {
-    return _host_sym_normalize(source, mode) as dict[str, any];
+    return _host_sym_normalize_py(source, mode) as dict[str, any];
 }
 
 def sym_dicts_equal(a: dict[str, any], b: dict[str, any]) -> bool {
