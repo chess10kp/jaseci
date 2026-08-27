@@ -1289,6 +1289,42 @@ def _wrap_mock_patch_body(
 # mistranslating.
 
 
+def _is_helper_staticmethod(deco: ast.expr) -> bool:
+    node = deco.func if isinstance(deco, ast.Call) else deco
+    return isinstance(node, ast.Name) and node.id == "staticmethod"
+
+
+def _is_helper_contextmanager(deco: ast.expr) -> bool:
+    node = deco.func if isinstance(deco, ast.Call) else deco
+    if isinstance(node, ast.Name) and node.id == "contextmanager":
+        return True
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "contextmanager"
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "contextlib"
+    )
+
+
+def _partition_helper_decorators(
+    decos: list[ast.expr],
+) -> tuple[list[ast.expr], bool]:
+    """Strip liftable helper decorators; keep those required at runtime."""
+    if not decos:
+        return [], False
+    kept: list[ast.expr] = []
+    stripped_static = False
+    for deco in decos:
+        if _is_helper_staticmethod(deco):
+            stripped_static = True
+            continue
+        if _is_helper_contextmanager(deco):
+            kept.append(deco)
+            continue
+        raise Unsupported("decorated-helper")
+    return kept, stripped_static
+
+
 @dataclass
 class _ClassInfo:
     methods: dict[str, ast.FunctionDef]
@@ -1423,9 +1459,10 @@ class _FixtureVocab:
         # by every test candidate; in-place substitution would leak one
         # candidate's rewriting into the next candidate's lift.
         fn = copy.deepcopy(fn)
-        if fn.decorator_list:
-            raise Unsupported("decorated-helper")
-        args = _drop_self_arg(fn)
+        fn.decorator_list, is_staticmethod = _partition_helper_decorators(
+            fn.decorator_list
+        )
+        args = fn.args if is_staticmethod else _drop_self_arg(fn)
         rewriter = _HelperCallRewriter(self)
         body = [rewriter.visit(stmt) for stmt in fn.body]
         body, needs_re = rewrite_block(body)
@@ -1456,7 +1493,7 @@ class _FixtureVocab:
                 name=fn.name,
                 args=args,
                 body=body,
-                decorator_list=[],
+                decorator_list=fn.decorator_list,
                 returns=None,
                 type_params=[],
             ),

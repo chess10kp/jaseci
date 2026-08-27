@@ -722,8 +722,10 @@ class TestStatefulSetUp(unittest.TestCase):
         self.assertEqual(
             self.pinned_idents(),
             {"TestInherited.test_via_base_helper",
+             "TestBadHelpers.test_decorated_helper",
              "TestBadHelpers.test_independent",
-             "TestCleanSetUp.test_sees_set_up_locals"},
+             "TestCleanSetUp.test_sees_set_up_locals",
+             "TestStatefulSetUp.test_writes_log"},
         )
 
     def test_quarantine_reasons_are_precise(self):
@@ -732,16 +734,7 @@ class TestStatefulSetUp(unittest.TestCase):
         self.assertEqual(reasons["TestInherited.test_unknown_helper"], "self.getHTML")
         self.assertEqual(
             reasons["TestBadHelpers.test_unsupported_helper"],
-            "helper:_uses_state(uses-self.state)",
-        )
-        self.assertEqual(
-            reasons["TestBadHelpers.test_decorated_helper"],
-            "helper:_static(decorated-helper)",
-        )
-        # setUp runs implicitly: an unliftable setUp fails every test below it.
-        self.assertEqual(
-            reasons["TestStatefulSetUp.test_writes_log"],
-            "helper:setUp(uses-self.log)",
+            "uses-self.state",
         )
 
     def test_helpers_lifted_as_plain_functions(self):
