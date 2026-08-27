@@ -13,6 +13,7 @@
 # Allowed importers: layer4_compile.jac plus bootstrap allowlist in
 # jac-py/tools/p4_import_gate.py.
 
+import os;
 import shutil;
 import subprocess;
 import sys;
@@ -20,13 +21,26 @@ import from pathlib { Path }
 
 
 def _runner_python() -> str {
+    # Sealed CI sets sys.executable to the jac launcher, not CPython; invoking
+    # the bridge script through it re-enters the CLI and hangs with no output.
+    override = os.environ.get("JACPYTHON_CPYTHON", "");
+    if override {
+        return override;
+    }
     for name in ("python3.14", "python3", "python") {
         found = shutil.which(name);
         if found {
             return found;
         }
     }
-    return sys.executable;
+    exe = sys.executable;
+    if Path(exe).name.lower().startswith("python") {
+        return exe;
+    }
+    raise RuntimeError(
+        "host oracle needs CPython on PATH or JACPYTHON_CPYTHON "
+        "(sys.executable is the jac launcher under JAC_NO_DEV_SOURCE=1)"
+    );
 }
 
 

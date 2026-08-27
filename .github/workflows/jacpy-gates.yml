@@ -22,14 +22,8 @@ permissions:
   contents: read
 
 # Test the SHIPPED binary, never a checkout reroute (same convention as ci.yml).
-# JAC_TEST_NATIVE routes `jac test` through the native runner instead of
-# pytest: pytest collection runs module_is_client() per collected .jac file,
-# and each call performs a full compile -- across jac-py/jacpython/'s 187
-# modules that is hours of silent classification before the first test runs
-# (diagnosed 2026-08-26; see ~/notes/jac-test-hang-diagnosis.md).
 env:
   JAC_NO_DEV_SOURCE: "1"
-  JAC_TEST_NATIVE: "1"
 
 jobs:
   jac-py-gates:
@@ -46,6 +40,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.14"
+
+      # Layer 4 host_oracle bridges compile via a real CPython subprocess.
+      # Under JAC_NO_DEV_SOURCE=1, sys.executable is the jac launcher; without
+      # this pin the bridge falls through to re-enter the CLI and hangs silently.
+      - name: Resolve CPython oracle for host bridges
+        run: echo "JACPYTHON_CPYTHON=$(command -v python3)" >> "$GITHUB_ENV"
 
       - name: Pin CPython reference checkout
         run: python3 jac-py/tools/fetch_cpython_reference.py
@@ -84,7 +84,11 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
           JAC_TEST_RSS_LOG: "1"
-        run: jac test --verbose jac-py/jacpython/layer4_compile.jac
+          JAC_TEST_JOBS: "0"
+          JACPATH: jac-py/jacpython
+        run: |
+          echo "layer4: jac=$(command -v jac) python=${JACPYTHON_CPYTHON:-unset}"
+          jac test --verbose jac-py/jacpython/layer4_compile.jac
 
       - name: P0.10 compiler slice tests
         run: jac test jac-py/jacpython/compiler_slice.jac
@@ -270,12 +274,6 @@ jobs:
 
       - name: P3 Layer-0/1 replay regression tests
         run: jac test jac-py/jacpython/layer0_replay.jac
-
-      # The P3 gate drivers only use JACPYTHON_CPYTHON as a run/skip flag; the
-      # interpreter itself is never executed. Resolve it from PATH (setup-python
-      # above pins 3.14) so no dev-machine path leaks into CI.
-      - name: Resolve CPython oracle flag for P3 gates
-        run: echo "JACPYTHON_CPYTHON=$(command -v python3)" >> "$GITHUB_ENV"
 
       - name: P3 Layer-0/1 corpus ratchet (isolated jac run)
         run: python3 jac-py/tools/p3_object_core/replay_gate.py

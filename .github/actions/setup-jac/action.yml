@@ -76,7 +76,7 @@ runs:
         path: |
           jac/zig-out/bin/jac
           jac/jaclang/vendor/typeshed/stdlib
-        key: jac-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/jaclang/**', 'jac/build.zig', 'jac/launcher/**', 'jac/bootstrap/**') }}
+        key: jac-bin-${{ runner.os }}-${{ runner.arch }}-r8287-${{ hashFiles('jac/jaclang/**', 'jac/build.zig', 'jac/launcher/**', 'jac/bootstrap/**') }}
 
     - name: Restore cached typeshed stdlib stubs
       id: typeshed-cache
@@ -385,7 +385,7 @@ runs:
         path: |
           jac/zig-out/bin/jac
           jac/jaclang/vendor/typeshed/stdlib
-        key: jac-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/jaclang/**', 'jac/build.zig', 'jac/launcher/**', 'jac/bootstrap/**') }}
+        key: jac-bin-${{ runner.os }}-${{ runner.arch }}-r8287-${{ hashFiles('jac/jaclang/**', 'jac/build.zig', 'jac/launcher/**', 'jac/bootstrap/**') }}
 
     # Seed the shared read-mostly caches from trusted refs only (see the note
     # above the restore steps). Main and explicitly trusted campaign runs seed
