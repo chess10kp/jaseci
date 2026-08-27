@@ -171,6 +171,18 @@ class RewriteBehaviorTests(unittest.TestCase):
         self.assertNotIn("self.assertEqual", snippet)
         self.assertNotIn("equal =", snippet)
 
+    def test_assert_raises_lambda_alias(self):
+        """``badvalue = lambda f: self.assertRaises(E, f)`` (test_uuid.test_exceptions)."""
+        src = (
+            "badvalue = lambda f: self.assertRaises(ValueError, f)\n"
+            "badvalue(lambda: (_ for _ in ()).throw(ValueError('x')))\n"
+        )
+        snippet, _ = self._render(src)
+        self.assertNotIn("self.assertRaises", snippet)
+        self.assertNotIn("badvalue =", snippet)
+        self.assertIn("try:", snippet)
+        self.assertEqual(self.outcome(src), "ok")
+
     def test_assert_vocabulary_passes(self):
         for body in (
             "assertIn_check()".replace("assertIn_check()", "self.assertNotIn('z', 'abc')"),
