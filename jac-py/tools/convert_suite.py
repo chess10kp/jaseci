@@ -405,6 +405,8 @@ def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
         return [_regex_assert(call, negate=True)]
     if fname == "addCleanup":
         return [_add_cleanup_stmt(call)]
+    if fname == "enterContext":
+        return _enter_context_stmts(call, assign_target=None)
     if fname == "assertStartsWith":
         return [_starts_ends_assert(call, negate=False)]
     if fname == "assertEndsWith":
@@ -431,6 +433,56 @@ def _add_cleanup_stmt(call: ast.Call) -> ast.Expr:
             args=[fn, *starargs],
             keywords=list(call.keywords),
         )
+    )
+
+
+def _enter_context_stmts(
+    call: ast.Call, assign_target: ast.expr | None
+) -> list[ast.stmt]:
+    """self.enterContext(cm) -> bind cm, __enter__, register __exit__ cleanup.
+
+    unittest.TestCase.enterContext mirrors addCleanup on the context manager's
+  __exit__; lowering matches that so spliced setUp fixtures stay oracle-faithful.
+    """
+    _need_args(call, 1)
+    cm = call.args[0]
+    cm_ref = ast.Name(id="_cm", ctx=ast.Load())
+    enter_val = ast.Call(
+        func=ast.Attribute(value=cm_ref, attr="__enter__", ctx=ast.Load()),
+        args=[],
+        keywords=[],
+    )
+    stmts: list[ast.stmt] = [
+        ast.Assign(targets=[ast.Name(id="_cm", ctx=ast.Store())], value=cm),
+    ]
+    if assign_target is not None:
+        stmts.append(ast.Assign(targets=[assign_target], value=enter_val))
+    else:
+        stmts.append(ast.Expr(value=enter_val))
+    stmts.append(
+        ast.Expr(
+            value=ast.Call(
+                func=ast.Name(id="_add_cleanup", ctx=ast.Load()),
+                args=[
+                    ast.Attribute(value=cm_ref, attr="__exit__", ctx=ast.Load()),
+                    cm_ref,
+                    ast.Constant(value=None),
+                    ast.Constant(value=None),
+                    ast.Constant(value=None),
+                ],
+                keywords=[],
+            )
+        )
+    )
+    return stmts
+
+
+def _is_enter_context_assign(stmt: ast.stmt) -> bool:
+    return (
+        isinstance(stmt, ast.Assign)
+        and len(stmt.targets) == 1
+        and isinstance(stmt.value, ast.Call)
+        and _call_name(stmt.value.func) == "enterContext"
     )
 
 
@@ -650,7 +702,10 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                     stmt.body = rec(stmt.body)
                     new.append(stmt)
             else:
-                if _is_self_assert_stmt(stmt):
+                if _is_enter_context_assign(stmt):
+                    call = stmt.value
+                    new.extend(_enter_context_stmts(call, assign_target=stmt.targets[0]))
+                elif _is_self_assert_stmt(stmt):
                     new.extend(rewrite_assert_stmt(stmt))
                 else:
                     # Plain statements (assignments, nested helper defs, ...)
