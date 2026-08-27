@@ -945,14 +945,25 @@ def _jac_make_host_trampoline(native_fn):
         pass
     return _trampoline
 
+_JAC_HOST_WEAKREF = None
+
+def _jac_host_weakref():
+    # Direct host-module route: a plain `import weakref` in this file resolves
+    # to jacpython/weakref.jac (modresolver prefers same-dir .jac), which
+    # imports ceval and creates a static import cycle.
+    global _JAC_HOST_WEAKREF
+    if _JAC_HOST_WEAKREF is None:
+        import importlib
+        _JAC_HOST_WEAKREF = importlib.import_module("weakref")
+    return _JAC_HOST_WEAKREF
+
 def _jac_make_weakref(target):
     # Host weakref over the RAW jacpython object. PyUserObj/PyClass/native
     # wrappers are ordinary CPython objects, so the host weakref tracks their
     # exact refcount lifetime: when the last strong reference dies, ref()
     # returns None with no extra bookkeeping. Returns None on TypeError.
-    import weakref
     try:
-        return weakref.ref(target)
+        return _jac_host_weakref().ref(target)
     except TypeError:
         return None
 
@@ -1012,7 +1023,6 @@ def _jac_standin_bases(cls):
     # Resolve guest base declarations to host classes for type() minting.
     # Unresolvable bases are skipped; if nothing resolves, `object` is used.
     import builtins
-    import weakref
     bases = []
     for b in cls.bases:
         hb = None
@@ -1146,7 +1156,6 @@ def _jac_standin_install_methods(ns, cls):
 
 def _jac_standin_class(cls):
     # The cached name-faithful host class for a guest PyClass.
-    import weakref
     key = id(cls)
     ent = _JAC_CLASS_STANDINS.get(key)
     if ent is not None and ent[0]() is cls:
@@ -1185,13 +1194,12 @@ def _jac_standin_class(cls):
     else:
         host_cls = type(cls.name, _jac_standin_bases(cls), ns)
     host_cls._jac_guest_cls_ = cls
-    _JAC_CLASS_STANDINS[key] = [weakref.ref(cls), host_cls]
+    _JAC_CLASS_STANDINS[key] = [_jac_host_weakref().ref(cls), host_cls]
     return host_cls
 
 
 def _jac_user_standin(u):
     # The cached name-faithful host instance for a plain guest PyUserObj.
-    import weakref
     key = id(u)
     ent = _JAC_USER_STANDINS.get(key)
     if ent is not None and ent[0]() is u:
@@ -1201,7 +1209,7 @@ def _jac_user_standin(u):
     # Strong back-reference: while the host holds the stand-in, the guest
     # object stays alive and recoverable (identity round-trip).
     inst._jac_guest_ = u
-    _JAC_USER_STANDINS[key] = [weakref.ref(u), inst]
+    _JAC_USER_STANDINS[key] = [_jac_host_weakref().ref(u), inst]
     return inst
 
 
@@ -1227,7 +1235,6 @@ def _jac_user_standin_typed(u):
     # instance is ADOPTED as the stand-in class instead of a fresh __new__
     # shell: C state constructed in-VM survives the crossing AND guest
     # overrides stay visible to host callbacks (marshal-style readers).
-    import weakref
     key = id(u)
     ent = _JAC_USER_STANDINS.get(key)
     if ent is not None and ent[0]() is u:
@@ -1236,7 +1243,7 @@ def _jac_user_standin_typed(u):
     host_cls = _jac_standin_class(u.cls)
     if not _jac_standin_adopt(base_r, host_cls, u):
         return base_r
-    _JAC_USER_STANDINS[key] = [weakref.ref(u), base_r]
+    _JAC_USER_STANDINS[key] = [_jac_host_weakref().ref(u), base_r]
     return base_r
 
 
