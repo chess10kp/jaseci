@@ -11,6 +11,7 @@
 import from objects {
     PyObj,
     PyInt,
+    PyError,
     is_error,
     hashkey_str,
     py_error,
