@@ -1651,6 +1651,7 @@ import from gc { gc_module_attrs }
 import from sysconfig { sysconfig_module_attrs }
 import from errno { errno_module_attrs }
 import from signal { signal_module_attrs }
+import from types { types_module_attrs, types_host_overlay_names }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -2189,6 +2190,12 @@ def import_native(absname: str) -> PyObj {
         }
 
         shim_modules["traceback"] = tbmod;
+    }
+    if absname == "_types" and not ("_types" in shim_modules) {
+        # _typesmodule.c lift: native ShimTypeMarker entries for VM-faithful
+        # families plus host overlays for constructor-backed static types, so
+        # Lib/types.py's `from _types import *` resolves proxy-free.
+        shim_modules["_types"] = build_types_module();
     }
     if absname in sys3_modules {
         return sys3_modules[absname];
@@ -5473,6 +5480,10 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
             );
         }
         shim_modules["traceback"] = tbmod;
+    }
+    if name == "_types" and not ("_types" in shim_modules) {
+        # Mirror of the import_native site: same marker/overlay composition.
+        shim_modules["_types"] = build_types_module();
     }
     if name in shim_modules {
         return shim_modules[name];
@@ -14955,6 +14966,24 @@ def build_signal_facade -> PyObj {
         m.attrs[k] = native[k];
     }
     return mod;
+}
+
+def build_types_module -> PyObj {
+    overlays: dict[str, PyObj] = {};
+    star: list[PyObj] = [PyStr(t="str", val="*")];
+    result = _jac_host_import("_types", star);
+    if host_result_ok(result) {
+        host_mod = result[1];
+        for name in types_host_overlay_names() {
+            member = _jac_host_getattr(host_mod, name);
+            if host_result_ok(member) {
+                overlays[name] = PyHostProxy(t="host", val=member[1]);
+            }
+        }
+    }
+    return PyModule(
+        t="module", name="_types", attrs=types_module_attrs(overlays)
+    );
 }
 
 def build_types_facade -> PyObj {
