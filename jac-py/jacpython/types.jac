@@ -31,6 +31,7 @@ import from objects {
     PyStr,
     py_error,
 }
+import from ceval { ShimTypeMarker, PyModule }
 
 # Every exported name, in _typesmodule.c EXPORT_STATIC_TYPE order.
 def _types_export_order -> list[PyStr] {
@@ -99,4 +100,49 @@ obj TypesMarkerCtor(PyObj) {
             "TypeError", "cannot create '" + self.name + "' instances"
         );
     }
+}
+
+# Names without a faithful VM-native family: the install site overlays each
+# with a transparent host proxy of the real CPython static type (see header).
+def _types_host_overlay_names -> list[str] {
+    native = _types_native_tags();
+    names: list[str] = [];
+    for nm_obj in _types_export_order() {
+        name = nm_obj.val;
+        if not (name in native) {
+            names.append(name);
+        }
+    }
+    return names;
+}
+
+# Build the _types module dict: native ShimTypeMarker entries plus any host
+# overlays supplied by the shim-install site (ceval import_native/host_import).
+def _types_module_attrs(overlays: dict[str, PyObj]) -> dict[str, PyObj] {
+    native = _types_native_tags();
+    attrs: dict[str, PyObj] = {};
+    for nm_obj in _types_export_order() {
+        name = nm_obj.val;
+        if name in overlays {
+            attrs[name] = overlays[name];
+            continue;
+        }
+        if name in native {
+            tag = native[name].val;
+            attrs[name] = ShimTypeMarker(
+                t="shim_type",
+                tag=tag,
+                ctor=TypesMarkerCtor(t="types_marker_ctor", name=name) as PyObj,
+            ) as PyObj;
+        }
+    }
+    return attrs;
+}
+
+def build__types_module(overlays: dict[str, PyObj]) -> PyObj {
+    return PyModule(
+        t="module",
+        name="_types",
+        attrs=_types_module_attrs(overlays),
+    );
 }
