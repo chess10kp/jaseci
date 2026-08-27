@@ -30,13 +30,18 @@
 # - The ERANGE buffer-doubling loop is invisible above the floor; only its
 #   outcomes (entry found / KeyError / MemoryError) cross the bridge.
 
-import grp as host_grp;
+import from importlib { import_module }
+
+# Host bridge (see header note). importlib indirection because a bare
+# ``import grp`` inside this package resolves same-directory first and would
+# re-enter this very module now that jacpython/grp.jac exists.
+glob _hg: any = import_module("grp");
 
 
 def getgrgid(id: any) -> any {
     # grp_getgrgid_impl: gid converter -> getgrgid_r retry loop -> mkgrent;
     # missing gid raises KeyError "getgrgid(): gid not found: <gid>".
-    return host_grp.getgrgid(id);
+    return _hg.getgrgid(id);
 }
 
 
@@ -44,12 +49,12 @@ def getgrnam(name: any) -> any {
     # grp_getgrnam_impl: EncodeFSDefault + embedded-null guard ->
     # getgrnam_r retry loop -> mkgrent; missing name raises KeyError
     # "getgrnam(): name not found: <name>".
-    return host_grp.getgrnam(name);
+    return _hg.getgrnam(name);
 }
 
 
 def getgrall() -> list {
     # grp_getgrall_impl: setgrent() / getgrent() loop / endgrent(), one
     # mkgrent per entry, arbitrary order.
-    return host_grp.getgrall();
+    return _hg.getgrall();
 }

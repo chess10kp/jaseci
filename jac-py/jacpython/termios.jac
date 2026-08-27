@@ -44,11 +44,13 @@ import from objects {
 }
 
 ::py::
+import importlib
+_t = importlib.import_module("termios")
+
 def _termios_host_syscall(op, fd, a, b):
     # Host bridge into the real termios extension (see module header).
     # Returns ("ok", payload) | ("os_error", errno, strerror)
     #       | ("error", type_name, message).
-    import termios as _t
     try:
         if op == "tcgetattr":
             mode = _t.tcgetattr(fd)
