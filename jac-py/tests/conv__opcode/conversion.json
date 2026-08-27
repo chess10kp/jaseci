@@ -10,11 +10,11 @@
     "convert_suite.py",
     "/home/jac/repos/jac-python/reference/cpython/Lib/test/test__opcode.py",
     "-o",
-    "jac-py/tests/conv__opcode",
+    "/var/tmp/worker6-607-next-converter-gap-2309784/jac-py/tests/conv__opcode",
     "--name",
     "conv__opcode"
   ],
-  "generated_at": "2026-08-26T23:46:07",
+  "generated_at": "2026-08-27T00:03:24",
   "hashes": {
     "pins_jac": "39502c843990efdbdc65e5ce074ed57f49ce6c7f3f25c5b13cee9a8739943eba"
   },

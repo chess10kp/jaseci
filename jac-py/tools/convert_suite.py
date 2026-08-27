@@ -374,6 +374,59 @@ def _stmt_from_aliased_call(stmt: ast.stmt, aliases: dict[str, str]) -> ast.stmt
     return ast.Expr(value=fake_call)
 
 
+def _parse_raises_lambda(lam: ast.Lambda) -> tuple[ast.expr, bool] | None:
+    """``lambda f: self.assertRaises(E, f)`` idiom (test_uuid.test_exceptions)."""
+    if len(lam.args.args) != 1 or lam.args.posonlyargs or lam.args.kwonlyargs:
+        return None
+    param = lam.args.args[0].arg
+    if not isinstance(lam.body, ast.Call):
+        return None
+    call = lam.body
+    fname = _call_name(call.func)
+    if fname not in ("assertRaises", "assertRaisesRegex"):
+        return None
+    if not (
+        isinstance(call.func, ast.Attribute)
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id == "self"
+    ):
+        return None
+    if len(call.args) < 2 or not isinstance(call.args[1], ast.Name):
+        return None
+    if call.args[1].id != param:
+        return None
+    return (call.args[0], fname == "assertRaisesRegex")
+
+
+def _stmt_from_raises_lambda(
+    stmt: ast.stmt, raises_lambdas: dict[str, tuple[ast.expr, bool]]
+) -> ast.stmt | None:
+    call: ast.Call | None = None
+    if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+        call = stmt.value
+    elif isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Call):
+        call = stmt.value
+    if call is None or not isinstance(call.func, ast.Name):
+        return None
+    entry = raises_lambdas.get(call.func.id)
+    if entry is None or len(call.args) != 1 or call.keywords:
+        return None
+    exc, is_regex = entry
+    method = "assertRaisesRegex" if is_regex else "assertRaises"
+    fake_call = ast.Call(
+        func=ast.Attribute(
+            value=ast.Name(id="self", ctx=ast.Load()),
+            attr=method,
+            ctx=ast.Load(),
+        ),
+        args=[exc, call.args[0]],
+        keywords=[],
+    )
+    if isinstance(stmt, ast.Return):
+        return ast.Return(value=fake_call)
+    return ast.Expr(value=fake_call)
+
+
 def rewrite_assert_stmt(stmt: ast.stmt) -> list[ast.stmt]:
     """Rewrite one statement; returns replacement statements.
 
@@ -676,8 +729,10 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
     """Recursively rewrite a statement list; returns (new stmts, needs_re)."""
     needs_re = False
 
-    def _rewrite_assertish(stmt: ast.stmt) -> list[ast.stmt]:
+    def _rewrite_assertish(stmt: ast.stmt, raises_lambdas: dict[str, tuple[ast.expr, bool]]) -> list[ast.stmt]:
         aliased = _stmt_from_aliased_call(stmt, aliases)
+        if aliased is None:
+            aliased = _stmt_from_raises_lambda(stmt, raises_lambdas)
         if aliased is not None:
             if isinstance(aliased, ast.Return):
                 fake = ast.Expr(value=aliased.value)
@@ -690,7 +745,11 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
             return rewrite_assert_stmt(stmt)
         return [stmt]
 
-    def rec(block: list[ast.stmt], aliases: dict[str, str]) -> list[ast.stmt]:
+    def rec(
+        block: list[ast.stmt],
+        aliases: dict[str, str],
+        raises_lambdas: dict[str, tuple[ast.expr, bool]],
+    ) -> list[ast.stmt]:
         nonlocal needs_re
         new: list[ast.stmt] = []
         for stmt in block:
@@ -701,17 +760,22 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                     if method in _ALIASABLE_ASSERT_METHODS:
                         aliases[tname] = method
                         continue
+                    if isinstance(stmt.value, ast.Lambda):
+                        parsed = _parse_raises_lambda(stmt.value)
+                        if parsed is not None:
+                            raises_lambdas[tname] = parsed
+                            continue
                 new.append(stmt)
             elif isinstance(stmt, (ast.If, ast.For, ast.AsyncFor, ast.While)):
-                stmt.body = rec(stmt.body, aliases)
-                stmt.orelse = rec(stmt.orelse, aliases)
+                stmt.body = rec(stmt.body, aliases, raises_lambdas)
+                stmt.orelse = rec(stmt.orelse, aliases, raises_lambdas)
                 new.append(stmt)
             elif isinstance(stmt, (ast.Try, ast.TryStar)):
-                stmt.body = rec(stmt.body, aliases)
-                stmt.orelse = rec(stmt.orelse, aliases)
-                stmt.finalbody = rec(stmt.finalbody, aliases)
+                stmt.body = rec(stmt.body, aliases, raises_lambdas)
+                stmt.orelse = rec(stmt.orelse, aliases, raises_lambdas)
+                stmt.finalbody = rec(stmt.finalbody, aliases, raises_lambdas)
                 for handler in stmt.handlers:
-                    handler.body = rec(handler.body, aliases)
+                    handler.body = rec(handler.body, aliases, raises_lambdas)
                 new.append(stmt)
             elif isinstance(stmt, ast.With):
                 handled = False
@@ -730,36 +794,34 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                         # the test; any failing subtest makes the host oracle
                         # non-"ok", so such cases never become pins. Inlining the
                         # body plainly is therefore oracle-safe.
-                        new.extend(rec(stmt.body, aliases))
+                        new.extend(rec(stmt.body, aliases, raises_lambdas))
                         handled = True
                 if not handled:
-                    stmt.body = rec(stmt.body, aliases)
+                    stmt.body = rec(stmt.body, aliases, raises_lambdas)
                     new.append(stmt)
             elif isinstance(stmt, ast.Return) and stmt.value is not None:
-                fake = ast.Expr(value=stmt.value)
-                if _is_self_assert_stmt(fake) or _stmt_from_aliased_call(stmt, aliases) is not None:
-                    new.extend(_rewrite_assertish(stmt))
-                else:
-                    new.append(stmt)
-            elif isinstance(stmt, ast.Return) and stmt.value is not None:
-                # Nested helpers sometimes ``return self.assertEqual(...)``;
-                # unittest assertions return None, so rewrite to a plain assert.
                 fake = ast.Expr(value=stmt.value)
                 if _is_self_assert_stmt(fake):
                     new.extend(rewrite_assert_stmt(fake))
+                elif (
+                    _stmt_from_aliased_call(stmt, aliases) is not None
+                    or _stmt_from_raises_lambda(stmt, raises_lambdas) is not None
+                ):
+                    new.extend(_rewrite_assertish(stmt, raises_lambdas))
                 else:
                     new.append(stmt)
             else:
-                rewritten = _rewrite_assertish(stmt)
+                rewritten = _rewrite_assertish(stmt, raises_lambdas)
                 if len(rewritten) == 1 and rewritten[0] is stmt:
                     if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        stmt.body = rec(stmt.body, {})
+                        stmt.body = rec(stmt.body, {}, {})
                     new.append(stmt)
                 else:
                     new.extend(rewritten)
         return new
 
     aliases: dict[str, str] = {}
+    raises_lambdas: dict[str, tuple[ast.expr, bool]] = {}
 
     binds: list[tuple[str, int]] = [
         (item.optional_vars.id, item.context_expr.lineno)
@@ -774,7 +836,7 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
         stmts = _RaisesAliasAttrFlattener(binds).visit(
             ast.Module(body=list(stmts), type_ignores=[])
         ).body
-    new_block = rec(stmts, aliases)
+    new_block = rec(stmts, aliases, raises_lambdas)
     new_block = [_ImplDetailFolder().visit(s) for s in new_block]
     # Any emitted statement loading _re requires the module import. Scanning
     # the final AST (not per-rewrite flags) keeps every vocabulary addition
