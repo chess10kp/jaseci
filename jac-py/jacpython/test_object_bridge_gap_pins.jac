@@ -22,11 +22,15 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Fingerprint 3 (conv_weakref ReferencesTestCase.test_hashing):
+#   RUN<"TypeError: unhashable type: 'weakref'">
+#   CPython weakref.ref hashes like its referent while alive, caches the digest,
+#   and reuses it after death; hashing a never-hashed dead ref raises
+#   "weak object has gone away".
+#
+# Residual (NOT pinned): PyClassMethod / PyStaticMethod / their ctors on branches
+# wp4/mech-gap-604/608; PyBoundMethod on wp4/mech-gap-605/609; native builtins
+# on wp4/mech-gap-607 — merge queue, not tip yet.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +119,49 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+# ---------------- weakref referent hash (cached across death) ----------------
+
+test "weakref hashes like its referent while alive" {
+    src =
+        "class O:\n"
+        "    def __init__(self, arg):\n"
+        "        self.arg = arg\n"
+        "    def __hash__(self):\n"
+        "        return hash(self.arg)\n"
+        "x = O(42)\n"
+        "import weakref\n"
+        "r = weakref.ref(x)\n";
+    assert outcome_str(src, "hash(r) == hash(42)") == "True";
+}
+
+test "weakref hash is cached after referent dies" {
+    src =
+        "import gc\n"
+        "import weakref\n"
+        "class O:\n"
+        "    def __init__(self, arg):\n"
+        "        self.arg = arg\n"
+        "    def __hash__(self):\n"
+        "        return hash(self.arg)\n"
+        "x = O(42)\n"
+        "r = weakref.ref(x)\n"
+        "h = hash(r)\n"
+        "del x\n"
+        "gc.collect()\n";
+    assert outcome_str(src, "hash(r) == h") == "True";
+}
+
+test "hashing a dead weakref that was never hashed raises" {
+    src =
+        "import gc\n"
+        "import weakref\n"
+        "class O:\n"
+        "  pass\n"
+        "x = O()\n"
+        "r = weakref.ref(x)\n"
+        "del x\n"
+        "gc.collect()\n";
+    assert outcome_str(src, "hash(r)") == "TypeError: weak object has gone away";
 }

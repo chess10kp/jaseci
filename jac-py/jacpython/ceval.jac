@@ -14903,7 +14903,27 @@ obj PyWeakRefFn(PyObj) {
 }
 
 obj PyWeakRef(PyObj) {
-    has wr: any;
+    has wr: any,
+        hashkey: any = None;
+
+    # CPython ref_hash: first hash while the referent is alive keys like the
+    # referent and caches the digest; later hashes (even after death) reuse it.
+    # Hashing a dead ref that was never hashed raises "weak object has gone away".
+    def tp_hashkey -> PyObj {
+        if self.hashkey is not None {
+            return self.hashkey;
+        }
+        raw = _jac_weakref_deref(self.wr);
+        if raw is None {
+            return py_error("TypeError", "weak object has gone away");
+        }
+        hk = (raw as PyObj).tp_hashkey();
+        if is_error(hk) {
+            return hk;
+        }
+        self.hashkey = hk;
+        return hk;
+    }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         raw = _jac_weakref_deref(self.wr);
