@@ -3794,6 +3794,12 @@ obj PyBoundMethod(PyObj) {
     has function: PyObj,
         receiver: PyObj;
 
+    # Identity hash: CPython bound methods are dict/set-key legal (test_funcattrs
+    # FunctionDictsTest.test_func_as_dict_key and functools dispatch tables).
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
         call_args: list[PyObj] = [self.receiver];
         call_args.extend(args);

@@ -22,11 +22,13 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Fingerprint 3 (conv_funcattrs): RUN<"TypeError: cannot use 'bound_method'
+#   as a dict key (unhashable type: 'bound_method')">"
+#   CPython hashes bound methods by identity; PyBoundMethod now answers an
+#   identity tp_hashkey like PyFunction.
+#
+# Residual (NOT pinned): PyClassMethod / PyStaticMethod / their ctors still
+# inherit the base unhashable marker on tip until wp4/mech-gap-604 lands.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +117,29 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+test "bound instance method is a legal dict key" {
+    # Host oracle (3.14, test_funcattrs FunctionDictsTest.test_func_as_dict_key):
+    # d[fi.a] = value round-trips.
+    src =
+        "class F:\n"
+        "    def a(self):\n"
+        "        pass\n"
+        "fi = F()\n"
+        "value = 'Some string'\n"
+        "d = {}\n"
+        "d[fi.a] = value\n";
+    assert outcome_str(src, "d[fi.a]") == "'Some string'";
+}
+
+test "bound methods on distinct instances hash distinctly" {
+    src =
+        "class F:\n"
+        "    def a(self):\n"
+        "        pass\n"
+        "fi = F()\n"
+        "fj = F()\n";
+    assert outcome_str(src, "fi.a in {fi.a, fj.a}") == "True";
+    assert outcome_str(src, "len({fi.a, fj.a})") == "2";
 }
