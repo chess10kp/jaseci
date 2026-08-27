@@ -22,11 +22,10 @@
 #   property constructor and property instances now answer an identity
 #   tp_hashkey ("obj:<id>") instead of inheriting the base unhashable marker.
 #
-# Residual (NOT pinned -- live gap outside this lane's files): PyClassMethod /
-# PyStaticMethod / their ctors still inherit the base unhashable marker, so
-# e.g. `{classmethod}` would raise the same TypeError. CPython hashes those by
-# identity too. The fix belongs beside the sibling descriptors in ceval.jac;
-# flagged here so the sweep trail records it.
+# Residual (NOT pinned -- live gap on a sibling branch): PyClassMethod /
+# PyStaticMethod / their ctors still inherit the base unhashable marker on tip
+# until worker2-descriptor-identity-hash merges; e.g. `{classmethod}` raises the
+# same TypeError. CPython hashes those by identity too.
 #
 # All expectations captured byte-exact from the host oracle (CPython 3.14).
 
@@ -115,4 +114,23 @@ test "property instances hash distinctly from the ctor" {
     assert outcome_str(src, "p in {property}") == "False";
     assert outcome_str(src, "(p in {p}, p in {property})") == "(True, False)";
     assert outcome_str(src, "({property: 'ctor', p: 'inst'})[p]") == "'inst'";
+}
+
+# ---------------- member descriptor identity hash ----------------
+
+test "slots member descriptor is a legal set element and dict key" {
+    # Host oracle (3.14): {C.x} works; (True, 1).
+    src = "class C:\n    __slots__ = ('x',)\n";
+    assert outcome_str(src, "(C.x in {C.x}, len({C.x}))") == "(True, 1)";
+}
+
+test "slots member descriptors hash distinctly per slot" {
+    # Host oracle (3.14): each member_descriptor keys independently by identity.
+    src =
+        "class D:\n"
+        "    __slots__ = ('a', 'b')\n"
+        "da = D.__dict__['a']\n"
+        "db = D.__dict__['b']\n";
+    assert outcome_str(src, "(da in {da}, da in {db}, ({da: 1, db: 2})[da])")
+        == "(True, False, 1)";
 }

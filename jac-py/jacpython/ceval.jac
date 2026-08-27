@@ -4211,6 +4211,11 @@ obj PyMemberDescr(PyObj) {
     has member: str,
         owner: str;
 
+    # Identity hash: CPython member descriptors are set/dict-key legal.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
     def tp_getattro(name: str) -> PyObj {
         if name == "__name__" {
             return PyStr(t="str", val=self.member);
