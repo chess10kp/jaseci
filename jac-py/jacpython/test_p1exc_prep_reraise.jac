@@ -149,6 +149,28 @@ test "except* with finally lowering matches oracle bytes" {
     assert apc.stacksize == epc.stacksize;
 }
 
+test "except* nested in except handler lowering matches oracle bytes" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except ValueError:\n"
+        + "    try:\n"
+        + "        y = 2\n"
+        + "    except* TypeError as e:\n"
+        + "        z = e\n"
+    );
+    act = product_exec(src);
+    assert not is_error(act);
+    exp = oracle_exec(src);
+    apc = act as PyCode;
+    epc = exp as PyCode;
+    assert apc.co_code == epc.co_code;
+    assert apc.linetable == epc.linetable;
+    assert apc.names == epc.names;
+    assert apc.exceptiontable == epc.exceptiontable;
+    assert apc.stacksize == epc.stacksize;
+}
+
 
 # ---------------- intrinsic semantics through the VM ----------------
 
