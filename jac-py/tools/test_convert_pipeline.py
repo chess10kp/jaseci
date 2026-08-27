@@ -164,6 +164,13 @@ class RewriteBehaviorTests(unittest.TestCase):
         )
         self.assertEqual(oracle["status"], "ok")
 
+    def test_assert_equal_local_alias(self):
+        """``equal = self.assertEqual`` then ``equal(a, b)`` (test_uuid idiom)."""
+        self.assertEqual(self.outcome("equal = self.assertEqual\nequal(1, 1)"), "ok")
+        snippet, _ = self._render("equal = self.assertEqual\nequal(2, 3)")
+        self.assertNotIn("self.assertEqual", snippet)
+        self.assertNotIn("equal =", snippet)
+
     def test_assert_vocabulary_passes(self):
         for body in (
             "assertIn_check()".replace("assertIn_check()", "self.assertNotIn('z', 'abc')"),
