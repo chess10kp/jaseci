@@ -649,6 +649,14 @@ def rewrite_block(stmts: list[ast.stmt]) -> tuple[list[ast.stmt], bool]:
                 if not handled:
                     stmt.body = rec(stmt.body)
                     new.append(stmt)
+            elif isinstance(stmt, ast.Return) and stmt.value is not None:
+                # Nested helpers sometimes ``return self.assertEqual(...)``;
+                # unittest assertions return None, so rewrite to a plain assert.
+                fake = ast.Expr(value=stmt.value)
+                if _is_self_assert_stmt(fake):
+                    new.extend(rewrite_assert_stmt(fake))
+                else:
+                    new.append(stmt)
             else:
                 if _is_self_assert_stmt(stmt):
                     new.extend(rewrite_assert_stmt(stmt))
@@ -845,6 +853,40 @@ _NS_CLASS_NAME = "_SelfNS"
 def _namespace_prelude() -> list[ast.stmt]:
     """AST prelude binding ``self`` to a bare attribute namespace."""
     return ast.parse(_NS_PRELUDE_SRC).body
+
+
+def _needs_self_namespace(body: list[ast.stmt]) -> bool:
+    """True when a bare ``self`` name is loaded outside a ``self`` parameter scope."""
+    found = False
+
+    class _Visitor(ast.NodeVisitor):
+        def __init__(self) -> None:
+            self.scope_has_self_param: list[bool] = [False]
+
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            has_self = (
+                (node.args.posonlyargs and node.args.posonlyargs[0].arg == "self")
+                or (node.args.args and node.args.args[0].arg == "self")
+            )
+            self.scope_has_self_param.append(has_self)
+            self.generic_visit(node)
+            self.scope_has_self_param.pop()
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            self.visit_FunctionDef(node)  # type: ignore[arg-type]
+
+        def visit_Name(self, node: ast.Name) -> None:
+            nonlocal found
+            if (
+                node.id == "self"
+                and isinstance(node.ctx, ast.Load)
+                and not self.scope_has_self_param[-1]
+            ):
+                found = True
+            self.generic_visit(node)
+
+    _Visitor().visit(ast.Module(body=body, type_ignores=[]))
+    return found
 
 
 def _check_self_usage(body: list[ast.stmt], prefix: str = "") -> None:
@@ -1412,7 +1454,7 @@ def _apply_fixture_vocab(
     # resolve at runtime once the namespace exists), so any surviving
     # self.* usage -- data loads/stores or allowed calls -- needs the
     # namespace object.
-    if bool(ns_attrs) or bool(call_attrs) or session.needs_ns:
+    if bool(ns_attrs) or bool(call_attrs) or session.needs_ns or _needs_self_namespace(scanned):
         ns_block = _namespace_prelude()
         for attr, value in _class_attr_seeds(cls_name, cmap, mod_classes):
             for owner in ("self", _NS_CLASS_NAME):
