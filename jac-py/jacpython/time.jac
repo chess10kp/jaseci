@@ -41,11 +41,13 @@ import from objects {
 }
 
 ::py::
+import importlib
+_host_time = importlib.import_module("time")
+
 def _time_host_call(name, args):
     # Bridge to the host CPython time module: args is already plain host
     # data (ints/floats/strs/lists). Returns (True, result) or
     # (False, exc_type_name, message).
-    import time as _host_time
     try:
         fn = getattr(_host_time, name)
     except AttributeError:
@@ -60,7 +62,6 @@ def _time_host_struct(name, args):
     # gmtime/localtime arm: flatten the host struct_time into [tm_year..
     # tm_isdst] plus optional [tm_gmtoff, tm_zone] so no host object ever
     # crosses back into the guest.
-    import time as _host_time
     try:
         st = getattr(_host_time, name)(*args)
         vals = [int(st.tm_year), int(st.tm_mon), int(st.tm_mday),
@@ -75,7 +76,6 @@ def _time_host_struct(name, args):
 
 def _time_clock_info(name):
     # get_clock_info arm: the host namedtuple flattened to its four fields.
-    import time as _host_time
     try:
         info = _host_time.get_clock_info(name)
         return (True, str(info.implementation), bool(info.monotonic),
@@ -84,11 +84,9 @@ def _time_clock_info(name):
         return (False, type(exc).__name__, str(exc))
 
 def _time_host_hasattr(name):
-    import time as _host_time
     return hasattr(_host_time, name)
 
 def _time_host_getattr(name):
-    import time as _host_time
     try:
         return (True, getattr(_host_time, name))
     except BaseException as exc:

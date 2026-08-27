@@ -28,14 +28,19 @@
 # - The ERANGE buffer-doubling loop is invisible above the floor; only its
 #   outcomes (entry found / KeyError / MemoryError) cross the bridge.
 
-import pwd as host_pwd;
+import from importlib { import_module }
+
+# Host bridge (see header note). importlib indirection because a bare
+# ``import pwd`` inside this package resolves same-directory first and would
+# re-enter this very module now that jacpython/pwd.jac exists.
+glob _hp: any = import_module("pwd");
 
 
 def getpwuid(uidobj: any) -> any {
     # pwd_getpwuid: _Py_Uid_Converter (OverflowError -> KeyError
     # "getpwuid(): uid not found") -> getpwuid_r retry loop -> mkpwent;
     # missing uid raises KeyError "getpwuid(): uid not found: <uid>".
-    return host_pwd.getpwuid(uidobj);
+    return _hp.getpwuid(uidobj);
 }
 
 
@@ -43,12 +48,12 @@ def getpwnam(name: any) -> any {
     # pwd_getpwnam_impl: EncodeFSDefault + embedded-null guard ->
     # getpwnam_r retry loop -> mkpwent; missing name raises KeyError
     # "getpwnam(): name not found: <name>".
-    return host_pwd.getpwnam(name);
+    return _hp.getpwnam(name);
 }
 
 
 def getpwall -> list {
     # pwd_getpwall_impl: setpwent() / getpwent() loop / endpwent(), one
     # mkpwent per entry, arbitrary order.
-    return host_pwd.getpwall();
+    return _hp.getpwall();
 }

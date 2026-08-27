@@ -48,7 +48,12 @@ import from ceval {
     weakref_target_error,
 }
 
-import weakref as _host_weakref;
+import from importlib { import_module }
+
+# Host bridge (see header note). importlib indirection because a bare
+# ``import weakref`` inside this package resolves same-directory first and
+# would re-enter this very module now that jacpython/weakref.jac exists.
+glob _host_weakref: any = import_module("weakref");
 
 # ---- shared plumbing --------------------------------------------------------
 
