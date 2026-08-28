@@ -24,7 +24,9 @@ impl EsastGenPass._register_jac_virtual_import(module_id: str) -> None {
 
 impl EsastGenPass._register_jac_runtime_import -> None {
     self._ensure_backend();
-    self._register_jac_virtual_import(self.backend.runtime_module());
+    backend = self.backend;
+    assert backend is not None , "framework backend was not initialized";
+    self._register_jac_virtual_import(backend.runtime_module());
 }
 
 impl EsastGenPass._inject_runtime_import(name: str, nd: uni.UniNode) -> None {
