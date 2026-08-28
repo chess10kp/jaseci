@@ -125,7 +125,7 @@ impl eject(source: str = ".", output: str = "", force: bool = False) -> int {
         return 1;
     }
 
-    import from jaclang.jac0core.program { JacProgram }
+    import from jaclang.compiler.driver.program { JacProgram }
 
     import jaclang.jac0core.unitree as uni;
     import from jaclang.jac0core.constant { SymbolType }
