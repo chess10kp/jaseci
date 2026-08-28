@@ -3285,13 +3285,20 @@
     {
       "stem": "zipfile64",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_zipfile64/conv_zipfile64_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_zipfile64/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_zipfile64/conversion.json",
+      "jacpython_results": {
+        "zipfile64": {
+          "passed": 0,
+          "total": 2,
+          "notes": "0/2 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "zipimport",
