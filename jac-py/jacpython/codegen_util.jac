@@ -183,6 +183,7 @@ import from ast_nodes {
     BitAnd,
     FloorDiv,
     MatMult,
+    operator,
     USub,
     UAdd,
     Invert,
@@ -538,7 +539,7 @@ def async_function_def_loc(afd: AsyncFunctionDef) -> cloc {
 }
 
 # Operator AST node -> NB_* binary-op id (opcode.h).
-def binop_id(op: PyObj) -> int {
+def binop_id(op: operator) -> int {
     if isinstance(op, Add) {
         return NB_ADD;
     }
@@ -582,7 +583,7 @@ def binop_id(op: PyObj) -> int {
 }
 
 # AugAssign operator -> NB_INPLACE_* id (opcode.h).
-def inplace_binop_id(op: PyObj) -> int {
+def inplace_binop_id(op: operator) -> int {
     if isinstance(op, Add) {
         return NB_INPLACE_ADD;
     }
