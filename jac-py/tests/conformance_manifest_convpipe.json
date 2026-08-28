@@ -3109,13 +3109,20 @@
     {
       "stem": "sourceencoding",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_sourceencoding/conv_sourceencoding_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_sourceencoding/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_sourceencoding/conversion.json",
+      "jacpython_results": {
+        "sourceencoding": {
+          "passed": 6,
+          "total": 8,
+          "notes": "6/8 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "symtable",
