@@ -1643,6 +1643,8 @@ import from exceptions_core {
     baseexception_repr,
     prep_reraise_star,
     registered_exc_base,
+    exc_chain_attr_read,
+    exc_attr_type_identity,
 }
 import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
@@ -7478,6 +7480,10 @@ def py_attr(value: PyObj, name: str) -> PyObj {
             return PyGenericMroEntries(t="generic_mro_entries");
         }
     }
+    if isinstance(value, PyException)
+        and (name == "__cause__" or name == "__context__") {
+        return exc_chain_attr_read(value as PyException, name);
+    }
     result = value.tp_getattro(name);
     # A native dict's keys()/values()/items() are bound zero-arg constructors of
     # a live, set-like PyDictView (not host proxies), so view comparison / set
@@ -7547,6 +7553,12 @@ def py_attr(value: PyObj, name: str) -> PyObj {
     # args), so inst.__init__(*args) resolves rather than raising.
     if is_error(result) and name == "__init__" {
         return PyNoOpInit(t="noop_init");
+    }
+    if is_error(result) and name == "__class__" {
+        synth = exc_attr_type_identity(value);
+        if not is_error(synth) {
+            return synth;
+        }
     }
     return result;
 }

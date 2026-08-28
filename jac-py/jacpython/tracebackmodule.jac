@@ -44,7 +44,7 @@ import from objects {
     PyException,
     is_error,
 }
-import from exceptions_core { _obj_to_str }
+import from exceptions_core { _obj_to_str, exc_chain_attr_read }
 import from tb_render {
     _tb_linecache_getline,
     _tb_stderr_write,
@@ -388,7 +388,7 @@ def _tbe_capture(exc: PyObj, tb: any, limit: any, compact: bool,
         if not is_error(sup_attr) {
             suppress = _kw_truthy(sup_attr);
         }
-        cause_attr = exc.tp_getattro("__cause__");
+        cause_attr = exc_chain_attr_read(exc, "__cause__");
         if not is_error(cause_attr) and not isinstance(cause_attr, PyNoneType) {
             sub3 = _tbe_capture(
                 cause_attr, _attr_tb(cause_attr), limit, compact, seen
@@ -397,7 +397,7 @@ def _tbe_capture(exc: PyObj, tb: any, limit: any, compact: bool,
                 cause_obj = sub3;
             }
         }
-        ctx_attr = exc.tp_getattro("__context__");
+        ctx_attr = exc_chain_attr_read(exc, "__context__");
         need_ctx2 = True;
         if compact {
             need_ctx2 = cause_obj is None and not suppress;

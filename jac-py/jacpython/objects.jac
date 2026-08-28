@@ -3144,16 +3144,10 @@ obj PyException(PyObj) {
             }
         }
         if name == "__cause__" {
-            if self.cause is not None {
-                return self.cause as PyObj;
-            }
-            return py_none();
+            return exc_chain_carrier_guest(self.cause);
         }
         if name == "__context__" {
-            if self.context is not None {
-                return self.context as PyObj;
-            }
-            return py_none();
+            return exc_chain_carrier_guest(self.context);
         }
         # Identity dunder: e.__class__ resolves to the exception type object
         # (e.__class__.__name__ on caught exceptions is a core idiom).
@@ -3610,6 +3604,35 @@ def py_error_with_args(type_name: str, message: str, args: list[PyObj]) -> PyObj
 
 def py_exception_type(name: str) -> PyObj {
     return PyExceptionType(t="exception_type", name=name);
+}
+
+# Guest-visible view of a chain-carrier exception: strip a host ``raw`` back-
+# pointer so ``carrier.__class__`` resolves through native PyExceptionType
+# synthesis instead of leaking host-proxy getattr semantics. Lives in this
+# na-clean leaf so both PyException.tp_getattro and exceptions_core can
+# share it without an import cycle.
+def exc_chain_carrier_guest(stored: any) -> PyObj {
+    if stored is None {
+        return py_none();
+    }
+    if isinstance(stored, PyException) {
+        e = stored as PyException;
+        if e.raw is not None {
+            return PyException(
+                t="exception",
+                type_name=e.type_name,
+                message=e.message,
+                args=e.args,
+                cause=e.cause,
+                context=e.context,
+                value=e.value,
+                family=e.family,
+                type_fields=e.type_fields,
+            );
+        }
+        return e as PyObj;
+    }
+    return stored as PyObj;
 }
 
 # Unwrap a SUCCESSFUL tp_hashkey result to its key string. Only call after an
