@@ -79,11 +79,13 @@ impl EsastGenPass._try_exit_try_stmt_view_awaiting(nd: uni.TryStmt) -> bool {
         try_expr=try_iife, awaiting_expr=awaiting_iife, except_exprs=except_iifes
     );
     self._ensure_backend();
-    for sym in self.backend.async_boundary_symbols(async_boundary) {
+    backend = self.backend;
+    assert backend is not None , "framework backend was not initialized";
+    for sym in backend.async_boundary_symbols(async_boundary) {
         self._inject_runtime_import(sym, nd);
     }
     wrapper = self.sync_loc(
-        self.backend.lower_async_boundary(async_boundary), jac_node=nd
+        backend.lower_async_boundary(async_boundary), jac_node=nd
     );
     outer = self._cur_view_acc();
     if outer is not None {
