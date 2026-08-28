@@ -280,6 +280,26 @@ def is_path_alias_import(target: str, base_path: str) -> bool {
     return _resolve_path_alias(target, base_path) is not None;
 }
 
+def _has_jac_trace(
+    base_dir: str, actual_parts: list[str], base_path: str
+) -> bool {
+    # True when any prefix of the dotted target statically resolves to jac
+    # source under the base dir or the jac search paths. Such targets must
+    # not fall through to importlib.util.find_spec: finding a spec for a
+    # dotted name imports the parent package, and executing a jac parent
+    # (full compile + run) from inside a compile re-enters the compiler.
+    dirs = [base_dir] + get_jac_search_paths(base_path);
+    for end in range(1, len(actual_parts) + 1) {
+        prefix = actual_parts[:end];
+        for d in dirs {
+            if _candidate_from(d, prefix) {
+                return True;
+            }
+        }
+    }
+    return False;
+}
+
 def resolve_module(
     target: str, base_path: str, string_spec: bool = False
 ) -> tuple[(str, str)] {
@@ -347,20 +367,35 @@ def resolve_module(
     }
 
     if not target.startswith('.') {
-        try {
-            spec = importlib.util.find_spec(target);
-        } except (ImportError, AttributeError, ValueError) {
-            spec = None;
+        parts0 = target.split('.');
+        level0 = 0;
+        while ((level0 < len(parts0)) and (parts0[level0] == '')) {
+            level0 += 1;
         }
-        if (
-            isinstance(spec, ModuleSpec)
-            and spec.origin
-            and (spec.origin not in {'built-in', 'frozen'})
-        ) {
-            origin = os.path.normpath(spec.origin);
-            lang = language_of(origin);
-            if (lang != 'other') {
-                return (origin, lang);
+        actual_parts0 = parts0[level0:];
+        if not _has_jac_trace(base_dir, actual_parts0, base_path) {
+            # Only consult the host import system when the target has no
+            # jac trace: finding a spec for a dotted name imports the
+            # parent package, and executing a jac parent (full compile +
+            # run) from inside a compile re-enters the compiler. With a
+            # jac trace, fall through to the static tail below, which
+            # mirrors what find_spec would have concluded for a
+            # non-module member.
+            try {
+                spec = importlib.util.find_spec(target);
+            } except (ImportError, AttributeError, ValueError) {
+                spec = None;
+            }
+            if (
+                isinstance(spec, ModuleSpec)
+                and spec.origin
+                and (spec.origin not in {'built-in', 'frozen'})
+            ) {
+                origin = os.path.normpath(spec.origin);
+                lang = language_of(origin);
+                if (lang != 'other') {
+                    return (origin, lang);
+                }
             }
         }
     }
