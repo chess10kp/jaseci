@@ -3608,8 +3608,19 @@ def py_error_with_args(type_name: str, message: str, args: list[PyObj]) -> PyObj
     );
 }
 
+# One PyExceptionType marker per name: CPython guarantees sys.exc_info()[0]
+# is THE exception class (exc_info()[0] is ValueError), e.__class__ matches,
+# and identity-keyed tables like {ValueError: 1}[type(e)] work. Fresh mints
+# per lookup break `is` against the builtins namespace.
+glob _py_exception_type_cache: dict[str, PyObj] = {};
+
 def py_exception_type(name: str) -> PyObj {
-    return PyExceptionType(t="exception_type", name=name);
+    if name in _py_exception_type_cache {
+        return _py_exception_type_cache[name] as PyObj;
+    }
+    t = PyExceptionType(t="exception_type", name=name);
+    _py_exception_type_cache[name] = t;
+    return t;
 }
 
 # Unwrap a SUCCESSFUL tp_hashkey result to its key string. Only call after an

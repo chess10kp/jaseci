@@ -1643,6 +1643,7 @@ import from exceptions_core {
     baseexception_repr,
     prep_reraise_star,
     registered_exc_base,
+    canonical_exc_type,
 }
 import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
@@ -5528,7 +5529,7 @@ def py_type_of(o: PyObj) -> PyObj {
         # Synthetic (shim-raised) exception names (unittest.SkipTest et al)
         # are not builtins: serve the canonical exception-type marker instead
         # of crashing type()/__name__ lookups on a faithfully raised error.
-        return py_exception_type(e.type_name);
+        return canonical_exc_type(e.type_name);
     }
     # Native callable wrappers have no faithful host object (to_host drops
     # them), so answer with the matching HOST callable type instead of NoneType
@@ -18090,7 +18091,7 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             exit_func = stack[len(stack) - 5];
             exc_type: PyObj = py_none();
             if val.t == "exception" {
-                exc_type = py_exception_type((val as PyException).type_name);
+                exc_type = canonical_exc_type((val as PyException).type_name);
             }
             exit_args: list[PyObj] = [exc_type, val, py_none()];
             exit_result: PyObj = py_none();

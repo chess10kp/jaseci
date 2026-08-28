@@ -21,6 +21,17 @@ import from objects {
     EXC_PARENT,
     py_error,
     py_none,
+    py_exception_type,
+}
+
+# Canonical PyExceptionType marker for `name` (memoized in py_exception_type).
+# Every surface that exposes an exception TYPE -- sys.exc_info()[0],
+# e.__class__, type(e), WITH_EXCEPT_START's exc_type, traceback capture --
+# must resolve through this helper (or host_builtin for builtins, which
+# delegates here) so repeated lookups return the SAME object and `t is
+# ValueError` identity tests pass.
+def canonical_exc_type(name: str) -> PyObj {
+    return py_exception_type(name);
 }
 
 # The builtin hierarchy table (EXC_PARENT) lives canonically in objects.jac;
