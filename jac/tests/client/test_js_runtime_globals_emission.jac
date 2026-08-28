@@ -9,13 +9,13 @@ import re;
 import tempfile;
 import from pathlib { Path }
 import from tests.support { JAC_ROOT }
-import from jaclang.compiler.passes.ecmascript { EsastGenPass }
-import from jaclang.compiler.passes.ecmascript.es_unparse { es_to_js }
-import from jaclang.compiler.passes.ecmascript.backends.preact { PreactBackend }
-import from jaclang.compiler.passes.ecmascript.backends.solid { SolidBackend }
+import from jaclang.compiler.backends.es { EsastGenPass }
+import from jaclang.compiler.backends.es.es_unparse { es_to_js }
+import from jaclang.compiler.backends.es.backends.preact { PreactBackend }
+import from jaclang.compiler.backends.es.backends.solid { SolidBackend }
 import from jaclang.compiler.passes.main.type_checker_pass { TypeCheckPass }
 import from jaclang.jac0core.program { JacProgram }
-import from jaclang.compiler.passes.ecmascript.backends.react { ReactBackend }
+import from jaclang.compiler.backends.es.backends.react { ReactBackend }
 import from jaclang.runtimelib.client_surface { with_runtime_globals }
 
 glob FIXTURES = os.path.join(
