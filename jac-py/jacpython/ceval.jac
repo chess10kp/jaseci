@@ -136,7 +136,7 @@ def _jac_is_type_type(value):
     # build a class object (type.__new__), not a plain instance.
     return value is type
 
-def _jac_static_type_name(value: any) -> str:
+def _jac_static_type_name(value) -> str {
     # CPython type.__setattr__ policy probe (Objects/typeobject.c
     # type_setattro): attribute writes land only on HEAP types; a static
     # builtin/extension type rejects EVERY write with the canonical TypeError,
@@ -145,7 +145,7 @@ def _jac_static_type_name(value: any) -> str:
     import builtins
     if isinstance(value, type) and not (value.__flags__ & (1 << 9)):
         return str(getattr(value, "__name__", ""))  # Py_TPFLAGS_HEAPTYPE = 1 << 9
-    return ""
+    return "";
 
 def _jac_is_super_type(value):
     # True iff value is exactly the builtin `super` type. Zero-arg super() at a
@@ -203,7 +203,7 @@ def _jac_is_complex_type(value):
     import builtins
     return value is builtins.complex
 
-def _jac_host_hashkey(value: any) -> str:
+def _jac_host_hashkey(value) -> str:
     # Bucket a proxied host object by its host hash so it can be a dict/set key
     # (type-keyed dispatch tables in functools/copyreg/typing/contextlib). Equal
     # host objects share a hash, hence a bucket; the dict layer confirms a bucket
@@ -260,9 +260,8 @@ def _jac_host_source_marshal(source):
 def _jac_host_type_name(value):
     return type(value).__name__
 
-def _jac_host_id(value: any) -> int:
-    host_id: int = id(value)
-    return host_id
+def _jac_host_id(value) -> int:
+    return id(value) as int
 
 def _jac_host_type(value):
     # type(value) for a host object -- the fallback for py_type_of when the
@@ -486,7 +485,7 @@ def _jac_is_exception_type(host_val):
     # a user class like `class Exc(Exception)` whose host base proxy is here).
     return isinstance(host_val, type) and issubclass(host_val, BaseException)
 
-def _jac_host_exception_instance(raw) -> tuple[bool, str, str, list[PyObj]]:
+def _jac_host_exception_instance(raw) -> tuple[bool, str, str, list[PyObj]] {
   # True with (type_name, message, args) when raw is a raised host BaseException
   # instance. Args carries the FULL constructor tuple (BaseException.args) so a
   # host-proxied exception raised through the VM keeps its arguments -- a single
@@ -1373,7 +1372,7 @@ def _jac_host_val_is_object_type(val):
     return val is object
 
 
-def _jac_host_val_same(a: any, b: any) -> bool:
+def _jac_host_val_same(a, b) -> bool:
     return a is b
 
 
@@ -4422,15 +4421,15 @@ obj PyFunction(PyObj) {
             if self.kw_live is not None {
                 return self.kw_live as PyObj;
             }
-            d = PyFuncKwDefaults(t="dict", owner=self, items={});
+            kw_view = PyFuncKwDefaults(t="dict", owner=self, items={});
             for k in self.kwdefaults {
                 hk = hashkey_str((PyStr(t="str", val=k)).tp_hashkey());
-                d.items[hk] = DictEntry(
+                kw_view.items[hk] = DictEntry(
                     key=PyStr(t="str", val=k), value=self.kwdefaults[k]
                 );
             }
-            self.kw_live = d;
-            return d as PyObj;
+            self.kw_live = kw_view;
+            return kw_view as PyObj;
         }
         if name == "__closure__" {
             # CPython: None for functions without free variables, else a tuple
@@ -4452,17 +4451,17 @@ obj PyFunction(PyObj) {
             if self.attr_dict_live is not None {
                 return self.attr_dict_live as PyObj;
             }
-            dict_view = PyFuncDictView(t="dict", owner=self, items={});
+            attr_view = PyFuncDictView(t="dict", owner=self, items={});
             for k in self.attrs {
                 if not func_attr_is_fixed(k) {
                     hk = hashkey_str((PyStr(t="str", val=k)).tp_hashkey());
-                    dict_view.items[hk] = DictEntry(
+                    attr_view.items[hk] = DictEntry(
                         key=PyStr(t="str", val=k), value=self.attrs[k]
                     );
                 }
             }
-            self.attr_dict_live = dict_view;
-            return dict_view as PyObj;
+            self.attr_dict_live = attr_view;
+            return attr_view as PyObj;
         }
         if name == "__wrapped__" {
             return py_error("AttributeError", name);
@@ -4803,7 +4802,7 @@ def from_host(raw: any) -> PyObj {
         for item in raw {
             (placeholder as PyList).items.append(from_host(item));
         }
-        _from_host_memo.pop(memo_key);
+        del _from_host_memo[memo_key];
         return placeholder;
     }
     if isinstance(raw, tuple) {
@@ -4818,7 +4817,7 @@ def from_host(raw: any) -> PyObj {
         for item in raw {
             tuple_values.append(from_host(item));
         }
-        _from_host_memo.pop(memo_key);
+        del _from_host_memo[memo_key];
         return PyTuple(t="tuple", items=tuple_values);
     }
     if isinstance(raw, dict) {
@@ -4828,19 +4827,19 @@ def from_host(raw: any) -> PyObj {
         # as a PyHostProxy -- it round-trips through to_host unchanged.
         memo_key: int = _jac_host_id(raw) as int;
         if memo_key in _from_host_memo {
-            return _from_host_memo[memo_key];
+            return _from_host_memo[memo_key] as PyObj;
         }
         native = PyDict(t="dict", items={});
         _from_host_memo[memo_key] = native;
         for key in raw {
             keyobj = from_host(key);
             if is_error(keyobj.tp_hashkey()) {
-                _from_host_memo.pop(memo_key);
+                del _from_host_memo[memo_key];
                 return PyHostProxy(t="host", val=raw);
             }
             native.dict_set(keyobj, from_host(raw[key]));
         }
-        _from_host_memo.pop(memo_key);
+        del _from_host_memo[memo_key];
         return native;
     }
     if isinstance(raw, frozenset) {
@@ -5280,13 +5279,14 @@ def host_result_error(result: any) -> PyObj {
     if len(result) > 3 and result[3] is not None {
         inst = _jac_host_exception_instance(result[3]);
         if bool(inst[0]) {
+            host_args: list[PyObj] = inst[3] as list[PyObj];
             return PyError(
                 t="error",
                 exception=PyException(
                     t="exception",
                     type_name=str(result[1]),
                     message=str(inst[2]),
-                    args=inst[3] as list[PyObj],
+                    args=host_args,
                     raw=PyHostProxy(t="host", val=result[3]),
                 ),
             );
@@ -9218,13 +9218,14 @@ def py_raise_value(value: PyObj) -> PyObj {
         }
         inst = _jac_host_exception_instance(raw);
         if bool(inst[0]) {
+            host_args: list[PyObj] = inst[3] as list[PyObj];
             return PyError(
                 t="error",
                 exception=PyException(
                     t="exception",
                     type_name=str(inst[1]),
                     message=str(inst[2]),
-                    args=inst[3] as list[PyObj],
+                    args=host_args,
                     raw=value
                 )
             );
@@ -9637,7 +9638,7 @@ def _jac_mro_node_is(a: PyObj, b: PyObj) -> bool {
     if isinstance(a, PyHostProxy) and isinstance(b, PyHostProxy) {
         raw_a = (a as PyHostProxy).val;
         raw_b = (b as PyHostProxy).val;
-        return (_jac_host_val_same(raw_a, raw_b) as bool);
+        return raw_a is raw_b;
     }
     return False;
 }
@@ -10780,11 +10781,13 @@ def make_pyclass_from_map(
     # receiver arrives as the explicit mcls argument). Without this, metaclass
     # chains double-bind through descriptor_get and die with 'too many
     # positional arguments' (Lib/typing.py _ProtocolMeta.__new__).
-    if "__new__" in namespace and isinstance(namespace["__new__"], PyFunction) {
-        new_body = namespace["__new__"] as PyFunction;
-        (namespace as dict[str, PyObj])["__new__"] = PyStaticMethod(
-            t="staticmethod", func=new_body
-        ) as PyObj;
+    if "__new__" in namespace {
+        new_fn = namespace["__new__"];
+        if isinstance(new_fn, PyFunction) {
+            namespace["__new__"] = PyStaticMethod(
+                t="staticmethod", func=new_fn as PyFunction
+            );
+        }
     }
     flags = type_ready(0);
     if flags < 0 {
@@ -13065,14 +13068,14 @@ def str_method_call(s: str, n: str, args: list[PyObj], kwargs: dict[str, PyObj])
             env = (ei as PyInt).val;
         }
         sv = (sub as PyStr).val;
-        ri: int = 0;
-        if n == "rfind" or n == "rindex" { ri = s.rfind(sv, stv, env); }
-        elif n == "count" { ri = s.count(sv, stv, env); }
-        else { ri = s.find(sv, stv, env); }
-        if (n == "index" or n == "rindex") and ri == -1 {
+        idx = 0;
+        if n == "rfind" or n == "rindex" { idx = s.rfind(sv, stv, env); }
+        elif n == "count" { idx = s.count(sv, stv, env); }
+        else { idx = s.find(sv, stv, env); }
+        if (n == "index" or n == "rindex") and idx == -1 {
             return py_error("ValueError", "subsection not found");
         }
-        return PyInt(t="int", val=ri);
+        return PyInt(t="int", val=idx);
     }
     # ---- startswith / endswith ----
     if n == "startswith" or n == "endswith" {
@@ -16410,9 +16413,9 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_BUILD_TEMPLATE {
             # Stack: [literals_tuple, parts_tuple] -- Template(strings,
             # interpolations).
-            tmpl_parts = stack.pop() as PyTuple;
-            tmpl_lits = stack.pop() as PyTuple;
-            stack.append(make_template(tmpl_lits, tmpl_parts));
+            tpl_parts = stack.pop();
+            tpl_lits = stack.pop();
+            stack.append(make_template(tpl_lits as PyTuple, tpl_parts as PyTuple));
             continue;
         }
         if op == OP_BUILD_MAP {
@@ -16624,12 +16627,12 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             continue;
         }
         if op == OP_BUILD_STRING {
-            str_parts: list[PyObj] = [];
-            while len(str_parts) < arg {
-                str_parts.insert(0, stack.pop());
+            parts: list[PyObj] = [];
+            while len(parts) < arg {
+                parts.insert(0, stack.pop());
             }
             joined = "";
-            for part in str_parts {
+            for part in parts {
                 joined = joined + expect_str(part);
             }
             stack.append(PyStr(t="str", val=joined));
@@ -16894,10 +16897,10 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             }
             # Push in reverse so the first element lands on top of the stack for
             # the successive STORE ops (CPython's UNPACK_SEQUENCE ordering).
-            unpack_k: int = arg - 1;
-            while unpack_k >= 0 {
-                stack.append(unpacked[unpack_k]);
-                unpack_k = unpack_k - 1;
+            uki = arg - 1;
+            while uki >= 0 {
+                stack.append(unpacked[uki]);
+                uki = uki - 1;
             }
             continue;
         }
@@ -17749,12 +17752,12 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                 and self_or_null.t == "none" and len(call_args) == 0
                 and len(kwargs_for_call) == 0 {
                 local_names: dict[str, bool] = {};
-                for k in locals {
-                    local_names[k] = True;
+                for local_key in locals {
+                    local_names[local_key] = True;
                 }
                 si = 0;
                 while si < len(fast) {
-                    slot_bound: bool = False;
+                    slot_bound = False;
                     if isinstance(fast[si], PyCell) {
                         if ((fast[si] as PyCell).filled) {
                             slot_bound = True;
@@ -18235,7 +18238,7 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                         "SystemError", "malformed CALL_INTRINSIC_1 TYPEALIAS operand"
                     );
                 }
-                alias_parts: list[PyObj] = (operand as PyTuple).items;
+                alias_parts = (operand as PyTuple).items;
                 if not isinstance(alias_parts[0], PyStr) {
                     return py_error(
                         "SystemError", "CALL_INTRINSIC_1 TYPEALIAS name must be a str"
@@ -18449,17 +18452,17 @@ def builtin_exec(
             "exec expected at least 1 argument, got " + str(len(args))
         );
     }
+    arg0: PyObj = args[0];
     # str/bytes source: compile through the same marshal transport the import
     # machinery uses (native statement-mode compile is Phase C) and normalize
     # to a PyCode before dispatch. A host SyntaxError surfaces as a catchable
     # guest exception, matching CPython's exec('for = 1') -> SyntaxError.
-    co: PyCode;
-    if isinstance(args[0], PyStr) or isinstance(args[0], PyBytes) {
+    if isinstance(arg0, PyStr) or isinstance(arg0, PyBytes) {
         src = "";
-        if isinstance(args[0], PyStr) {
-            src = (args[0] as PyStr).val;
+        if isinstance(arg0, PyStr) {
+            src = (arg0 as PyStr).val;
         } else {
-            src = bytes_to_str((args[0] as PyBytes).val);
+            src = bytes_to_str((arg0 as PyBytes).val);
         }
         packed_src = _jac_host_source_marshal(src);
         if not host_result_ok(packed_src) {
@@ -18473,27 +18476,27 @@ def builtin_exec(
         if not isinstance(converted_src, PyCode) {
             return py_error("TypeError", "exec() argument 1 must be a code object");
         }
-        co = converted_src as PyCode;
-    } else {
-        match args[0] {
-            case PyCode():
-                co = args[0] as PyCode;
-            case PyHostProxy():
-                # compile()/types.CodeType built on the host arrive as proxies;
-                # bring the code back through the marshal transport -- the same
-                # route every oracle code object already travels.
-                packed = _jac_host_code_marshal((args[0] as PyHostProxy).val);
-                if not host_result_ok(packed) {
-                    return py_error("TypeError", "exec() argument 1 must be a code object");
-                }
-                converted = unmarshal(packed[1] as list[int]);
-                if not isinstance(converted, PyCode) {
-                    return py_error("TypeError", "exec() argument 1 must be a code object");
-                }
-                co = converted as PyCode;
-            case _:
+        arg0 = converted_src;
+    }
+    co: PyCode;
+    match arg0 {
+        case PyCode():
+            co = arg0 as PyCode;
+        case PyHostProxy():
+            # compile()/types.CodeType built on the host arrive as proxies;
+            # bring the code back through the marshal transport -- the same
+            # route every oracle code object already travels.
+            packed = _jac_host_code_marshal((arg0 as PyHostProxy).val);
+            if not host_result_ok(packed) {
                 return py_error("TypeError", "exec() argument 1 must be a code object");
-        }
+            }
+            converted = unmarshal(packed[1] as list[int]);
+            if not isinstance(converted, PyCode) {
+                return py_error("TypeError", "exec() argument 1 must be a code object");
+            }
+            co = converted as PyCode;
+        case _:
+            return py_error("TypeError", "exec() argument 1 must be a code object");
     }
     g_work: dict[str, PyObj] = frame_globals;
     g_copy = False;
