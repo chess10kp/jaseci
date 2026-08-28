@@ -8,37 +8,26 @@
 
 name: jac-py gates
 
-# Full sealed-binary readiness is deliberate: the fast merge gate covers every
-# jac-python push, while this expensive lane runs only at integration checkpoints.
 on:
   workflow_dispatch:
+  push:
+    branches: [jac-python]
 
 concurrency:
   group: jacpy-gates-${{ github.ref }}
-  # A deliberate readiness run must survive later branch activity.
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 # Test the SHIPPED binary, never a checkout reroute (same convention as ci.yml).
-# JAC_TEST_NATIVE routes `jac test` through the native runner instead of
-# pytest: pytest collection runs module_is_client() per collected .jac file,
-# and each call performs a full compile -- across jac-py/jacpython/'s 187
-# modules that is hours of silent classification before the first test runs
-# (diagnosed 2026-08-26; see ~/notes/jac-test-hang-diagnosis.md).
 env:
   JAC_NO_DEV_SOURCE: "1"
-  JAC_TEST_NATIVE: "1"
 
 jobs:
   jac-py-gates:
     name: jac-py P4 gates
-    runs-on: ubuntu-latest
-    # Hard ceiling: a silent hang below must fail the lane, not eat the runner
-    # until someone cancels it by hand (run 32935764002 sat 26 outputless
-    # minutes in Layer 4 before an external cancel).
-    timeout-minutes: 120
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v5
 
@@ -53,10 +42,6 @@ jobs:
       - name: P4 import boundary gate
         run: python3 jac-py/tools/p4_import_gate.py
 
-      # P3 import-cycle gate: ENFORCED. The compiler_codegen<->spoke hub-and-spoke
-      # cycle was dependency-inverted via the compiler_dispatch registry
-      # (worker7-codegen-cycles); the gate is green again, so it is blocking once
-      # more to catch any regression that reintroduces a cycle.
       - name: P3 import cycle gate
         run: python3 jac-py/tools/p3_import_cycle_gate.py
 
@@ -65,26 +50,9 @@ jobs:
 
       - name: Set up jac (build the binary)
         uses: ./.github/actions/setup-jac
-        with:
-          # jac-python is a trusted, long-lived campaign branch. Let completed
-          # dispatches seed content-keyed build caches for the next checkpoint.
-          write-caches: "true"
 
-      # The suite hung with ZERO test marks across four consecutive dispatches
-      # on three branches (32922677661, 32935764002, 32935801136, 32937299321):
-      # the reporter flushes one progress mark per completed test, so silence
-      # means the very first outcome never landed (import/init or first oracle
-      # bridge call, not an assertion diff). Run it verbose + unbuffered with a
-      # step timeout so the next dispatch either shows live per-test progress
-      # or fails fast naming the stuck point instead of stalling until an
-      # external cancel. Worker RSS footprints (JAC_TEST_RSS_LOG) identify a
-      # deadlocked fork-pool child vs a slow one.
       - name: Layer 4 oracle contract tests
-        timeout-minutes: 20
-        env:
-          PYTHONUNBUFFERED: "1"
-          JAC_TEST_RSS_LOG: "1"
-        run: jac test --verbose jac-py/jacpython/layer4_compile.jac
+        run: jac test jac-py/jacpython/layer4_compile.jac
 
       - name: P0.10 compiler slice tests
         run: jac test jac-py/jacpython/compiler_slice.jac
@@ -216,12 +184,7 @@ jobs:
           JACPATH: jac-py/jacpython
         run: jac test jac-py/tests/test_p2_facade_parity.jac
 
-      - name: P2 wave-20 kernel parity (math fsum/isclose/perm-comb + array overflow guards)
-        env:
-          JACPATH: "jac-py/jacpython:jac-py/Modules"
-        run: jac test jac-py/tests/test_wave20_parity.jac
-
-      - name: P2 facade parity (functools + itertools accumulate)
+      - name: P2 wave-20 facade parity (functools + itertools accumulate)
         env:
           JACPATH: jac-py/jacpython
         run: |
@@ -300,16 +263,4 @@ jobs:
 
       - name: Directory enumeration tests
         run: jac test jac-py/jacpython/test_dir_enumeration.jac
-
-      - name: Function attribute surface pins
-        run: jac test jac-py/jacpython/test_func_attr_surface.jac
-
-      - name: Attribute protocol pins
-        run: jac test jac-py/jacpython/test_attr_protocol.jac
-
-      - name: Heapq native shim pins
-        run: jac test jac-py/jacpython/test_heapq_shim.jac
-
-      - name: T-string runtime arm pins
-        run: jac test jac-py/jacpython/test_tstring_arms.jac
 

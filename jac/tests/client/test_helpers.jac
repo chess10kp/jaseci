@@ -3,6 +3,7 @@
 import gc;
 import os;
 import shutil;
+import signal;
 import socket;
 import sys;
 import time;
@@ -33,7 +34,7 @@ def get_jac_command -> list[str] {
 
 """Get environment dict with bun in PATH."""
 def get_env_with_bun -> dict[str, str] {
-    import from jaclang.client { get_bun }
+    import from jaclang.runtimelib.client { get_bun }
     env = os.environ.copy();
     bun_path = get_bun();
     if not bun_path {
@@ -131,11 +132,9 @@ def request_endpoint(
     );
 }
 
-"""Start `jac run --serve` on a project dir and wait for the port.
+"""Start `jac start main.jac` for a project dir and wait for the port.
 
-``extra_args`` is inserted after ``--serve`` (e.g. ``["--profile", "prod"]``).
-Every flag precedes the filename: `run` carries a REMAINDER for script args,
-so a flag written after `main.jac` would be handed to the script instead.
+``extra_args`` is inserted after ``start`` (e.g. ``["--profile", "prod"]``).
 Returns ``(server_process, port)``. Caller must ``stop_server`` it.
 """
 def start_app_server(project_path: any, extra_args: list | None = None) -> tuple {
@@ -143,18 +142,31 @@ def start_app_server(project_path: any, extra_args: list | None = None) -> tuple
     port = get_free_port();
     jac_cmd = get_jac_command();
     env = get_env_with_bun();
-    args = [*jac_cmd, "run", "--serve"];
+    args = [*jac_cmd, "start"];
     if extra_args {
         args = [*args, *extra_args];
     }
-    args = [*args, "-p", str(port), "main.jac"];
+    args = [*args, "main.jac", "-p", str(port)];
+    import tempfile;
     # Capture the server's output so a boot failure surfaces as a diagnosis
     # instead of an opaque 120s port-wait timeout (a crashed server and a
     # hung one look identical from wait_for_port).
     log_f = tempfile.NamedTemporaryFile(
         mode="w+", suffix=".log", prefix="jac_server_", delete=False
     );
-    server = Popen(args, cwd=project_path, env=env, stdout=log_f, stderr=log_f);
+    # start_new_session=True makes the server its own process-group leader, so
+    # stop_server can signal the whole tree (jac start -> bun x vite -> node
+    # vite -> esbuild). Without it, terminate() only reaches the top process and
+    # the vite/esbuild children orphan, holding the pytest-xdist worker fds open
+    # and hanging the suite at teardown.
+    server = Popen(
+        args,
+        cwd=project_path,
+        env=env,
+        stdout=log_f,
+        stderr=log_f,
+        start_new_session=True
+    );
     try {
         wait_for_port("127.0.0.1", port, timeout=120.0);
     } except TimeoutError as exc {
@@ -173,29 +185,65 @@ def start_app_server(project_path: any, extra_args: list | None = None) -> tuple
     return (server, port);
 }
 
-"""Terminate a server process, escalating to kill if it lingers."""
-def stop_server(server: any) -> None {
-    if server is None {
+"""Signal a whole process group, tolerating an already-dead group."""
+def _signal_group(server: any, sig: int) -> bool {
+    try {
+        pgid = os.getpgid(server.pid);
+    } except Exception {
+        return False;
+    }
+    try {
+        os.killpg(pgid, sig);
+    } except Exception {
+        return False;
+    }
+    return True;
+}
+
+"""Terminate a process tree started with ``start_new_session=True``.
+
+Closes any captured streams first so pipe readers cannot wedge, then signals
+the whole process group (jac start -> bun/vite/esbuild). Falls back to
+terminate()/kill() on the lone process if the group is already gone.
+"""
+def stop_process_group(process: any) -> None {
+    if process is None {
         return;
     }
-    if server.stdout {
-        try {
-            server.stdout.close();
-        } except Exception {
-            0;
+    for stream in (process.stdout, process.stderr) {
+        if stream {
+            try {
+                stream.close();
+            } except Exception {
+                0;
+            }
         }
     }
-    server.terminate();
+    if not _signal_group(process, signal.SIGTERM) {
+        process.terminate();
+    }
     try {
-        server.`wait(timeout=15);
+        process.`wait(timeout=15);
     } except Exception {
-        server.kill();
+        if not _signal_group(process, signal.SIGKILL) {
+            process.kill();
+        }
         try {
-            server.`wait(timeout=5);
+            process.`wait(timeout=5);
         } except Exception {
             0;
         }
     }
+}
+
+"""Terminate a server process tree, escalating to kill if it lingers.
+
+Signals the entire process group (see ``start_app_server``) so bun/vite/esbuild
+children die with the parent instead of orphaning and wedging the test session.
+Falls back to terminate()/kill() on the lone process if the group is gone.
+"""
+def stop_server(server: any) {
+    stop_process_group(server);
     time.sleep(1);
     gc.collect();
 }

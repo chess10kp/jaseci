@@ -3,6 +3,7 @@
 import os;
 import re;
 import shutil;
+import signal;
 import socket;
 import time;
 import from pathlib { Path }
@@ -10,18 +11,18 @@ import from subprocess { Popen }
 import from tempfile { TemporaryDirectory }
 
 import from jaclang.project.config { JacConfig }
-import from jaclang.testing.testing { JacTestClient }
+import from jaclang.runtimelib.testing { JacTestClient }
 
 glob FIXTURES = str(Path(__file__).parent / "fixtures");
 
-def _as_any(v: any) -> any {
-    return v;
-}
-
 """Skip unless the Vite/Bun client toolchain is available."""
 def _require_client_integration {
-    import from jaclang.testing.requires { require_tool }
-    require_tool("bun");
+    if not os.environ.get("JAC_CLIENT_INTEGRATION") {
+        testskip(
+            "Preact E2E requires the Vite/Bun toolchain; "
+            "set JAC_CLIENT_INTEGRATION=1 to run"
+        );
+    }
 }
 
 def _get_free_port -> int {
@@ -67,13 +68,15 @@ def _write_preact_project(dest: Path) {
         '[dev-dependencies.npm]\n'
         'vite = "^6.4.1"\n'
         '"@vitejs/plugin-react" = "^4.2.1"\n'
-        'typescript = "^5.3.3"\n',
+        'typescript = "^5.3.3"\n'
+        '\n'
+        '[client]\n',
         encoding="utf-8",
     );
     shutil.copy(Path(FIXTURES) / "preact_counter_app.jac", dest / "main.jac");
 }
 
-"""Start `jac run --serve` for a temp preact project. Returns (process, port, url)."""
+"""Start `jac start` for a temp preact project. Returns (process, port, url)."""
 def _start_preact_server(project_dir: Path) -> tuple {
     import shutil as sh;
     import sys;
@@ -87,8 +90,15 @@ def _start_preact_server(project_dir: Path) -> tuple {
     env["PYTHONPATH"] = (
         f"{repo_jac}{os.pathsep}{existing_path}" if existing_path else repo_jac
     );
+    # start_new_session=True makes the server its own process-group leader so
+    # _stop_server can signal the whole tree (jac start -> bun x vite -> node
+    # vite -> esbuild). Without it, terminate() only reaches the top process and
+    # the vite/esbuild children orphan, holding fds open and wedging the suite.
     proc = Popen(
-        [*jac_cmd, "run", "--serve", "-p", str(port)], cwd=str(project_dir), env=env,
+        [*jac_cmd, "start", "-p", str(port)],
+        cwd=str(project_dir),
+        env=env,
+        start_new_session=True
     );
     _wait_for_port("127.0.0.1", port);
     # First client bundle can take a while (bun install + vite build).
@@ -96,12 +106,32 @@ def _start_preact_server(project_dir: Path) -> tuple {
     return (proc, port, f"http://127.0.0.1:{port}");
 }
 
+"""Signal the server's whole process group, tolerating an already-dead group.
+
+Returns False if the group is gone so the caller can fall back to the lone
+process.
+"""
+def _signal_group(proc: Popen, sig: int) -> bool {
+    try {
+        os.killpg(os.getpgid(proc.pid), sig);
+        return True;
+    } except Exception {
+        return False;
+    }
+}
+
 def _stop_server(proc: Popen) {
-    proc.terminate();
+    # Signal the entire process group so bun/vite/esbuild children die with the
+    # parent instead of orphaning and wedging the test session.
+    if not _signal_group(proc, signal.SIGTERM) {
+        proc.terminate();
+    }
     try {
         proc.`wait(timeout=20);
     } except Exception {
-        proc.kill();
+        if not _signal_group(proc, signal.SIGKILL) {
+            proc.kill();
+        }
         proc.`wait(timeout=5);
     }
 }
@@ -139,10 +169,7 @@ test "preact backend bundles client page with preact hooks" {
             entry_src = (compiled_dir / "_entry.js").read_text(encoding="utf-8");
             main_src = (compiled_dir / "main.js").read_text(encoding="utf-8");
             assert 'from "preact"' in entry_src;
-            # Compiled modules use the framework-neutral state wrapper; the
-            # runtime maps it onto preact hooks, so no direct hooks import.
-            assert 'useJacState' in main_src;
-            assert 'from "@jac/runtime"' in main_src;
+            assert 'from "preact/hooks"' in main_src;
             assert 'from "react-dom/client"' not in entry_src;
             assert 'from "react-dom/client"' not in main_src;
         } finally {
@@ -165,7 +192,7 @@ test "preact counter increments in browser" {
         proc = started[0];
         url = started[2];
         try {
-            with _as_any(sync_playwright()) as p {
+            with sync_playwright() as p {
                 browser = p.chromium.launch(headless=True);
                 context = browser.new_context();
                 page = context.new_page();

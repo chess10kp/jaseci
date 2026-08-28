@@ -28,10 +28,10 @@ impl ViteCompiler.compile_and_bundle(
 }
 
 impl ViteCompiler._emit_na_wasm(self: ViteCompiler, module_path: Path) -> None {
-    import from jaclang.compiler.frontend.constant { CodeContext }
+    import from jaclang.jac0core.constant { CodeContext }
     import from jaclang { JacRuntime as Jac }
     has_na = False;
-    compiled = Jac.get_program().mod.hub.get(str(module_path.resolve()));
+    compiled = Jac.program.mod.hub.get(str(module_path.resolve()));
     if compiled is None {
         console.warning(
             f"'{module_path.name}' not found in the compile hub; cannot "
@@ -63,8 +63,8 @@ impl ViteCompiler._emit_na_wasm(self: ViteCompiler, module_path: Path) -> None {
 }
 
 impl ViteCompiler._emit_wasm_module(self: ViteCompiler, module_path: Path) -> None {
-    import from jaclang.compiler.backends.native.wasm_build { compile_to_wasm }
-    import from jaclang.compiler.frontend.codeinfo { native_wasm_stem }
+    import from jaclang.compiler.passes.native.wasm_build { compile_to_wasm }
+    import from jaclang.jac0core.codeinfo { native_wasm_stem }
     try {
         wasm = compile_to_wasm(str(module_path));
     } except Exception as e {
@@ -80,8 +80,8 @@ impl ViteCompiler._emit_wasm_module(self: ViteCompiler, module_path: Path) -> No
 
     try {
         import json;
-        import from jaclang.compiler.backends.native.wasm_build { wasm_import_map }
-        import from jaclang.compiler.backends.native.wasm_host_abi { WASM_HOST_MODULE }
+        import from jaclang.compiler.passes.native.wasm_build { wasm_import_map }
+        import from jaclang.compiler.passes.native.wasm_host_abi { WASM_HOST_MODULE }
         imports = wasm_import_map(wasm);
         manifest_path = dist / f"{stem}.wasm.imports.json";
         manifest_path.write_text(
@@ -106,7 +106,7 @@ impl ViteCompiler._emit_wasm_module(self: ViteCompiler, module_path: Path) -> No
 }
 
 impl ViteCompiler.create_entry_file(self: ViteCompiler, module_path: Path) -> None {
-    import from jaclang.compiler.backends.es.backends.registry {
+    import from jaclang.compiler.passes.ecmascript.backends.registry {
         resolve_active_backend
     }
     backend = resolve_active_backend();
@@ -131,12 +131,12 @@ impl ViteCompiler.create_entry_file(self: ViteCompiler, module_path: Path) -> No
 impl ViteCompiler._create_pages_entry_content(
     self: ViteCompiler, module_path: Path
 ) -> str {
-    import from jaclang.compiler.backends.es.backends.registry {
+    import from jaclang.compiler.passes.ecmascript.backends.registry {
         resolve_active_backend
     }
     auth_redirect = "/login";
     try {
-        import from jaclang.client.config_loader { JacClientConfig }
+        import from jaclang.runtimelib.client.config_loader { JacClientConfig }
         config = JacClientConfig(project_dir=self.project_dir);
         routing = config.get_section('routing');
         if routing {
@@ -161,8 +161,7 @@ impl ViteCompiler.compile_runtime_utils(self: ViteCompiler) -> tuple[str, list[s
     if not self.runtime_path {
         raise ClientBundleError('Runtime path not set');
     }
-    import from jaclang.client.runtime_source { resolve_client_runtime_cl_path }
-    import from jaclang.client.client_surface { prepend_active_runtime_globals }
+    import from jaclang.runtimelib.runtime_source { resolve_client_runtime_cl_path }
     runtime_utils_path = Path(resolve_client_runtime_cl_path());
     (runtimeutils_js, mod, runtimeutils_manifest) = self.jac_compiler.compile_module(
         runtime_utils_path
@@ -188,7 +187,6 @@ impl ViteCompiler.compile_runtime_utils(self: ViteCompiler) -> tuple[str, list[s
         );
         if core_match {
             (core_js, core_mod, _) = self.jac_compiler.compile_module(core_path);
-            core_js = prepend_active_runtime_globals(core_js);
             runtimeutils_js = runtimeutils_js.replace(
                 core_match.group(1), './client_runtime_core.js'
             );
@@ -210,7 +208,7 @@ impl ViteCompiler.compile_runtime_utils(self: ViteCompiler) -> tuple[str, list[s
 }
 
 impl ViteCompiler.compile_desktop_sdk(self: ViteCompiler) {
-    import from jaclang.compiler.driver.modresolver { resolve_jac_virtual_module_path }
+    import from jaclang.jac0core.modresolver { resolve_jac_virtual_module_path }
     desktop_src = resolve_jac_virtual_module_path('@jac/desktop');
     if not desktop_src {
         return;
@@ -227,16 +225,11 @@ impl ViteCompiler.compile_desktop_sdk(self: ViteCompiler) {
     }
 
     desktop_exports = self.jac_compiler.extract_exports(desktop_manifest);
-    desktop_globals: dict[str, any] = {};
-    if mod is not None {
-        desktop_globals = self.jac_compiler.extract_globals(desktop_manifest, mod);
-    }
+    desktop_globals = self.jac_compiler.extract_globals(desktop_manifest, mod);
     all_names = sorted(set(desktop_exports + list(desktop_globals.keys())));
 
     if not all_names {
-        import from jaclang.compiler.driver.modresolver {
-            resolve_jac_virtual_module_exports
-        }
+        import from jaclang.jac0core.modresolver { resolve_jac_virtual_module_exports }
         all_names = sorted(resolve_jac_virtual_module_exports('@jac/desktop'));
     }
     if all_names {
@@ -286,11 +279,7 @@ impl ViteCompiler.init(
         extract_exports_func=extract_exports_func,
         extract_globals_func=extract_globals_func
     );
-    compiled_dir = self.jac_client_compiler.compiled_dir;
-    if compiled_dir is None {
-        raise ClientBundleError('Client compiled directory could not be resolved');
-    }
-    self.compiled_dir = compiled_dir;
+    self.compiled_dir = self.jac_client_compiler.compiled_dir;
     self.jac_compiler = JacToJSCompiler(
         compile_to_js_func, extract_exports_func, extract_globals_func
     );

@@ -28,6 +28,7 @@ import from opcode_meta {
     OP_STORE_FAST,
     OP_STORE_FAST_MAYBE_NULL,
     OP_LOAD_FAST,
+    OP_LOAD_FAST_CHECK,
     OP_LOAD_FAST_BORROW,
     OP_LOAD_FAST_LOAD_FAST,
     OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW,
@@ -44,6 +45,7 @@ import from opcode_meta {
     OP_FOR_ITER,
     OP_SEND,
     OP_END_SEND,
+    OP_RETURN_VALUE,
     OP_SET_FUNCTION_ATTRIBUTE,
     OP_FORMAT_SIMPLE,
     OP_GET_ANEXT,
@@ -1110,173 +1112,512 @@ def lf_is_consume_only_op(op: int) -> bool {
 }
 
 def optimize_load_fast(u: unverified_cfg) {
+    # CPython's escape analysis runs over ITS basic blocks; jac splits blocks
+    # finer (e.g. at exception-region boundaries), which would strand a fast
+    # load's ref identity at every seam. So analyze maximal fallthrough chains
+    # of blocks as one virtual block, exactly matching CPython's granularity:
+    # a chain breaks at any jump target, jump, or scope exit.
     sds = u.block_startdepths;
+    jump_targets: list[int] = [];
+    bj = 0;
+    while bj < len(u.blocks) {
+        bjt = u.blocks[bj];
+        ij = 0;
+        while ij < len(bjt.instrs) {
+            inj = bjt.instrs[ij];
+            if is_conditional_jump(inj.opcode) or is_unconditional_jump_opcode(inj.opcode) {
+                jump_targets.append(inj.target_block);
+            }
+            ij = ij + 1;
+        }
+        bj = bj + 1;
+    }
+    bi = 0;
+    while bi < len(u.blocks) {
+        # Collect the next chain [bi..bj_end).
+        bj_end = bi + 1;
+        while bj_end < len(u.blocks) {
+            prev_blk = u.blocks[bj_end - 1];
+            nxt_blk = u.blocks[bj_end];
+            np_i = len(prev_blk.instrs);
+            if np_i == 0 or nxt_blk.id in jump_targets {
+                break;
+            }
+            lop = prev_blk.instrs[np_i - 1].opcode;
+            if is_conditional_jump(lop)
+                or is_unconditional_jump_opcode(lop)
+                or is_scope_exit_opcode(lop) {
+                break;
+            }
+            if sds[nxt_blk.id] == UNSET_STARTDEPTH {
+                break;
+            }
+            bj_end = bj_end + 1;
+        }
+        head = u.blocks[bi];
+        sd = UNSET_STARTDEPTH;
+        if head.id >= 0 and head.id < len(sds) {
+            sd = sds[head.id];
+        }
+        # Unreachable via normal/jump/fallthrough edges: leave loads owned.
+        if sd != UNSET_STARTDEPTH {
+            # Flatten the chain into one instruction run.
+            cins: list[cinstr] = [];
+            coffs: list[int] = [0];
+            cb = bi;
+            while cb < bj_end {
+                cblk = u.blocks[cb];
+                ci2 = 0;
+                while ci2 < len(cblk.instrs) {
+                    cins.append(cblk.instrs[ci2]);
+                    ci2 = ci2 + 1;
+                }
+                coffs.append(len(cins));
+                cb = cb + 1;
+            }
+            n = len(cins);
+            flags: list[int] = [];
+            k = 0;
+            while k < n {
+                flags.append(0);
+                k = k + 1;
+            }
+            s = lf_stack(instr=[], local=[]);
+            # Seed the incoming stack with dummy refs (identity unknown).
+            k = 0;
+            while k < sd {
+                lf_push(s, LF_DUMMY_INSTR, LF_NOT_LOCAL);
+                k = k + 1;
+            }
+            i = 0;
+            while i < n {
+                ins = cins[i];
+                op = ins.opcode;
+                arg = ins.oparg;
+                if op == OP_DELETE_FAST {
+                    lf_kill_local(flags, s, arg);
+                } elif op == OP_LOAD_FAST {
+                    lf_push(s, i, arg);
+                } elif op == OP_LOAD_FAST_AND_CLEAR {
+                    lf_kill_local(flags, s, arg);
+                    lf_push(s, i, arg);
+                } elif op == OP_LOAD_FAST_LOAD_FAST {
+                    lf_push(s, i, arg // 16);
+                    lf_push(s, i, arg % 16);
+                } elif op == OP_STORE_FAST {
+                    r = lf_pop(s);
+                    lf_store_local(flags, s, arg, r[0]);
+                } elif op == OP_STORE_FAST_LOAD_FAST {
+                    r = lf_pop(s);
+                    lf_store_local(flags, s, arg // 16, r[0]);
+                    lf_push(s, i, arg % 16);
+                } elif op == OP_STORE_FAST_STORE_FAST {
+                    r = lf_pop(s);
+                    lf_store_local(flags, s, arg // 16, r[0]);
+                    r2 = lf_pop(s);
+                    lf_store_local(flags, s, arg % 16, r2[0]);
+                } elif op == OP_COPY {
+                    idx = len(s.instr) - arg;
+                    r = lf_at(s, idx);
+                    lf_push(s, r[0], r[1]);
+                } elif op == OP_SWAP {
+                    lf_swap_top(s, arg);
+                } elif op == OP_RETURN_VALUE {
+                    # Terminator: TOS is consumed; references left below are
+                    # dead frame state, not values escaping into a successor,
+                    # so they reset silently (CPython still borrows such loads).
+                    dr = lf_pop(s);
+                    seg = 0;
+                    while seg < len(s.instr) {
+                        s.instr[seg] = LF_DUMMY_INSTR;
+                        s.local[seg] = LF_NOT_LOCAL;
+                        seg = seg + 1;
+                    }
+                } elif lf_is_no_input_op(op) {
+                    np = _opcode_num_popped(op, arg);
+                    pu = _opcode_num_pushed(op, arg);
+                    net_pushed = pu - np;
+                    k2 = 0;
+                    while k2 < net_pushed {
+                        lf_push(s, k2, LF_NOT_LOCAL);
+                        k2 = k2 + 1;
+                    }
+                } elif lf_is_consume_only_op(op) {
+                    np = _opcode_num_popped(op, arg);
+                    pu = _opcode_num_pushed(op, arg);
+                    net_popped = np - pu;
+                    k2 = 0;
+                    while k2 < net_popped {
+                        dr = lf_pop(s);
+                        k2 = k2 + 1;
+                    }
+                } elif op == OP_END_SEND or op == OP_SET_FUNCTION_ATTRIBUTE {
+                    tos = lf_pop(s);
+                    dr = lf_pop(s);
+                    lf_push(s, tos[0], tos[1]);
+                } elif op == OP_CHECK_EXC_MATCH {
+                    dr = lf_pop(s);
+                    lf_push(s, i, LF_NOT_LOCAL);
+                } elif op == OP_FOR_ITER {
+                    lf_push(s, i, LF_NOT_LOCAL);
+                } elif op == OP_LOAD_ATTR or op == OP_LOAD_SUPER_ATTR {
+                    self_ref = lf_pop(s);
+                    if op == OP_LOAD_SUPER_ATTR {
+                        dr = lf_pop(s);
+                        dr2 = lf_pop(s);
+                    }
+                    lf_push(s, i, LF_NOT_LOCAL);
+                    if arg % 2 == 1 {
+                        # method form: self is conservatively pushed back.
+                        lf_push(s, self_ref[0], self_ref[1]);
+                    }
+                } elif op == OP_LOAD_SPECIAL or op == OP_PUSH_EXC_INFO {
+                    tos = lf_pop(s);
+                    lf_push(s, i, LF_NOT_LOCAL);
+                    lf_push(s, tos[0], tos[1]);
+                } elif op == OP_SEND {
+                    dr = lf_pop(s);
+                    lf_push(s, i, LF_NOT_LOCAL);
+                } else {
+                    np = _opcode_num_popped(op, arg);
+                    pu = _opcode_num_pushed(op, arg);
+                    k2 = 0;
+                    while k2 < np {
+                        dr = lf_pop(s);
+                        k2 = k2 + 1;
+                    }
+                    k2 = 0;
+                    while k2 < pu {
+                        lf_push(s, i, LF_NOT_LOCAL);
+                        k2 = k2 + 1;
+                    }
+                }
+                # CPython ends a basic block at every jump / scope exit and
+                # re-seeds the next block's ref stack with dummies. Chains end
+                # there too by construction, but jac coalesces conditional-jump
+                # tails (e.g. match guards) into one block, so replicate the
+                # fine-grained boundary inside the chain: any reference still
+                # live at the jump escapes, and identities reset afterwards.
+                if is_conditional_jump(op)
+                    or is_unconditional_jump_opcode(op)
+                    or is_scope_exit_opcode(op) {
+                    seg = 0;
+                    while seg < len(s.instr) {
+                        pseg = s.instr[seg];
+                        if pseg >= 0 {
+                            flags[pseg] = flags[pseg] | LF_REF_UNCONSUMED;
+                        }
+                        s.instr[seg] = LF_DUMMY_INSTR;
+                        s.local[seg] = LF_NOT_LOCAL;
+                        seg = seg + 1;
+                    }
+                }
+                i = i + 1;
+            }
+            # Any produced reference still live at chain end escapes into the
+            # next block; the load that produced it must stay owned.
+            j = 0;
+            while j < len(s.instr) {
+                pi = s.instr[j];
+                if pi >= 0 {
+                    flags[pi] = flags[pi] | LF_REF_UNCONSUMED;
+                }
+                j = j + 1;
+            }
+            # Strength-reduce every unflagged fast load to its borrow variant.
+            i = 0;
+            while i < n {
+                if flags[i] == 0 {
+                    op = cins[i].opcode;
+                    if op == OP_LOAD_FAST {
+                        cins[i].opcode = OP_LOAD_FAST_BORROW;
+                    } elif op == OP_LOAD_FAST_LOAD_FAST {
+                        cins[i].opcode = OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW;
+                    }
+                }
+                i = i + 1;
+            }
+        }
+        bi = bj_end;
+    }
+}
+
+# ---------------------------------------------------------------------------
+# CPython flowgraph.c add_checks_for_loads_of_uninitialized_variables. A
+# worklist dataflow over "unsafe" bitmasks (local i may be uninitialized at a
+# block entry): seeds are non-parameter locals at the entry block; each scanned
+# instruction also propagates the block's current mask to its innermost
+# exception handler (derived from except_regions, unlike CPython's per-instr
+# i_except links). LOAD_FAST under an unsafe bit becomes LOAD_FAST_CHECK.
+# Runs BEFORE superinstruction fusion and borrow analysis, matching CPython's
+# pass order (CHECK loads never fuse or downgrade to borrows).
+def ac_innermost_handler(u: unverified_cfg, pos: list[int], bid: int) -> int {
+    # Innermost region covering block bid = greatest start position among
+    # regions whose [start,end) layout span contains it (spans nest properly).
+    if bid >= len(pos) or pos[bid] < 0 {
+        return -1;
+    }
+    bp = pos[bid];
+    best_start = -1;
+    handler = -1;
+    ri = 0;
+    while ri < len(u.except_regions) {
+        r = u.except_regions[ri];
+        if r.start_block < 0 or r.end_block < 0 or r.start_block >= len(pos)
+            or r.end_block >= len(pos) {
+            ri = ri + 1;
+            continue;
+        }
+        sp = pos[r.start_block];
+        ep = pos[r.end_block];
+        if sp >= 0 and ep >= 0 and sp <= bp and bp < ep and sp > best_start {
+            best_start = sp;
+            handler = r.handler_block;
+        }
+        ri = ri + 1;
+    }
+    return handler;
+}
+
+def ac_maybe_push(
+    nbids: int,
+    unsafe: int,
+    masks: list[int],
+    onstack: list[bool],
+    blocks_by_id: list[basicblock],
+    worklist: list[basicblock]
+) {
+    both = masks[nbids] | unsafe;
+    if masks[nbids] != both {
+        masks[nbids] = both;
+        if not onstack[nbids] and blocks_by_id[nbids] is not None {
+            worklist.append(blocks_by_id[nbids]);
+            onstack[nbids] = True;
+        }
+    }
+}
+
+def ac_scan_block(
+    u: unverified_cfg,
+    b: basicblock,
+    pos: list[int],
+    mask_in: int,
+    masks: list[int],
+    onstack: list[bool],
+    blocks_by_id: list[basicblock],
+    worklist: list[basicblock],
+    nlocals: int
+) {
+    all_mask = 0;
+    if nlocals < 63 {
+        all_mask = (1 << nlocals) - 1;
+    } else {
+        all_mask = -1;
+    }
+    mask = mask_in & all_mask;
+    h = ac_innermost_handler(u, pos, b.id);
+    i = 0;
+    n = len(b.instrs);
+    while i < n {
+        ins = b.instrs[i];
+        # Exception edge: the handler can start at any point of this block.
+        if h >= 0 and h < len(masks) {
+            ac_maybe_push(h, mask, masks, onstack, blocks_by_id, worklist);
+        }
+        oparg = ins.oparg;
+        # Fused superinstructions carry packed nibble pairs, so they are not
+        # subject to the single-local oparg bound. Scoped pre-fusion (match
+        # arms, bind seams) can produce them before this pass runs.
+        op = ins.opcode;
+        if op == OP_STORE_FAST_STORE_FAST or op == OP_STORE_FAST_LOAD_FAST
+            or op == OP_LOAD_FAST_LOAD_FAST
+            or op == OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW {
+            f_lo = oparg & 15;
+            f_hi = (oparg >> 4) & 15;
+            if op == OP_STORE_FAST_STORE_FAST {
+                mask = mask & ~((1 << f_lo) | (1 << f_hi));
+            } elif op == OP_STORE_FAST_LOAD_FAST {
+                mask = mask & ~(1 << f_hi);
+                if mask & (1 << f_lo) {
+                    # CHECK cannot be encoded in the fused form: split.
+                    ins.opcode = OP_STORE_FAST;
+                    ins.oparg = f_hi;
+                    b.instrs.insert(
+                        i + 1,
+                        cinstr(
+                            opcode=OP_LOAD_FAST_CHECK,
+                            oparg=f_lo,
+                            loc=ins.loc,
+                            target_block=-1
+                        )
+                    );
+                    n = n + 1;
+                }
+                mask = mask & ~(1 << f_lo);
+            } else {
+                if mask & ((1 << f_lo) | (1 << f_hi)) {
+                    ins.opcode = (
+                        OP_LOAD_FAST_CHECK if mask & (1 << f_hi) else OP_LOAD_FAST
+                    );
+                    ins.oparg = f_hi;
+                    b.instrs.insert(
+                        i + 1,
+                        cinstr(
+                            opcode=(
+                                OP_LOAD_FAST_CHECK
+                                if mask & (1 << f_lo)
+                                else OP_LOAD_FAST
+                            ),
+                            oparg=f_lo,
+                            loc=ins.loc,
+                            target_block=-1
+                        )
+                    );
+                    n = n + 1;
+                }
+                mask = mask & ~((1 << f_lo) | (1 << f_hi));
+            }
+            i = i + 1;
+            continue;
+        }
+        if oparg >= 0 and oparg < 64 and oparg < nlocals {
+            bit = 1 << oparg;
+            op = ins.opcode;
+            if op == OP_DELETE_FAST or op == OP_LOAD_FAST_AND_CLEAR
+                or op == OP_STORE_FAST_MAYBE_NULL {
+                mask = mask | bit;
+            } elif op == OP_STORE_FAST or op == OP_LOAD_FAST_CHECK {
+                mask = mask & ~bit;
+            } elif op == OP_LOAD_FAST {
+                if mask & bit {
+                    ins.opcode = OP_LOAD_FAST_CHECK;
+                }
+                mask = mask & ~bit;
+            }
+        }
+        i = i + 1;
+    }
+    # Fallthrough successor.
+    if block_has_fallthrough(b) {
+        nb = layout_next_block_from(u, b);
+        if nb is not None {
+            ac_maybe_push(nb.id, mask, masks, onstack, blocks_by_id, worklist);
+        }
+    }
+    last = block_last_instr(b);
+    if last is not None and last.target_block >= 0
+        and (is_conditional_jump(last.opcode) or is_unconditional_jump_opcode(last.opcode)) {
+        tb = find_block(u, last.target_block);
+        if tb is not None {
+            ac_maybe_push(tb.id, mask, masks, onstack, blocks_by_id, worklist);
+        }
+    }
+}
+
+def layout_next_block_from(u: unverified_cfg, b: basicblock) -> basicblock | None {
+    bi = 0;
+    while bi < len(u.blocks) {
+        if u.blocks[bi].id == b.id {
+            if bi + 1 < len(u.blocks) {
+                return u.blocks[bi + 1];
+            }
+            return None;
+        }
+        bi = bi + 1;
+    }
+    return None;
+}
+
+def add_checks_for_uninitialized(u: unverified_cfg) {
+    nlocals = len(u.varnames);
+    if nlocals == 0 {
+        return;
+    }
+    # Layout position per block id (ids are dense 0..next_block_id-1).
+    nblocks = u.next_block_id;
+    pos: list[int] = [];
+    i = 0;
+    while i < nblocks {
+        pos.append(-1);
+        i = i + 1;
+    }
+    bi = 0;
+    while bi < len(u.blocks) {
+        if u.blocks[bi].id < nblocks {
+            pos[u.blocks[bi].id] = bi;
+        }
+        bi = bi + 1;
+    }
+    blocks_by_id: list[basicblock] = [];
+    i = 0;
+    while i < nblocks {
+        blocks_by_id.append(None);
+        i = i + 1;
+    }
+    for b in u.blocks {
+        if b.id < nblocks {
+            blocks_by_id[b.id] = b;
+        }
+    }
+    masks: list[int] = [];
+    onstack: list[bool] = [];
+    i = 0;
+    while i < nblocks {
+        masks.append(0);
+        onstack.append(False);
+        i = i + 1;
+    }
+    worklist: list[basicblock] = [];
+    # Seed 1: non-parameter locals are uninitialized at function entry.
+    start_mask = 0;
+    i = u.param_count;
+    while i < nlocals {
+        start_mask = start_mask | (1 << i);
+        i = i + 1;
+    }
+    entry_blk = u.blocks[0];
+    masks[entry_blk.id] = start_mask;
+    onstack[entry_blk.id] = True;
+    worklist.append(entry_blk);
+    # Seed 2: scan every block once so DELETE_FAST origins are covered.
+    bi = 0;
+    while bi < len(u.blocks) {
+        bb = u.blocks[bi];
+        ops: list[str] = [];
+        ii = 0;
+        while ii < len(bb.instrs) {
+            ops.append(str(bb.instrs[ii].opcode) + ":" + str(bb.instrs[ii].oparg));
+            ii = ii + 1;
+        }
+        print("BLK " + u.name + " " + str(bb.id) + " [" + str.join(" ", ops) + "]");
+        bi = bi + 1;
+    }
+    bi = 0;
+    while bi < len(u.blocks) {
+        ac_scan_block(
+            u, u.blocks[bi], pos, masks[u.blocks[bi].id], masks, onstack,
+            blocks_by_id, worklist, nlocals
+        );
+        bi = bi + 1;
+    }
+    while len(worklist) > 0 {
+        b = worklist[len(worklist) - 1];
+        worklist.pop();
+        onstack[b.id] = False;
+        ac_scan_block(u, b, pos, masks[b.id], masks, onstack, blocks_by_id, worklist, nlocals);
+    }
+}
+
+# Scoped STORE_FAST -> LOAD_FAST fusion for flagged bind-seam blocks. Runs
+# after add_checks_for_uninitialized so the dataflow sees the plain store
+# (CPython's CFG has these in one block and fuses after the same pass).
+def fuse_flagged_stores(u: unverified_cfg) {
     bi = 0;
     while bi < len(u.blocks) {
         b = u.blocks[bi];
-        sd = UNSET_STARTDEPTH;
-        if b.id >= 0 and b.id < len(sds) {
-            sd = sds[b.id];
-        }
-        # Unreachable via normal/jump/fallthrough edges: leave loads owned.
-        if sd == UNSET_STARTDEPTH {
-            bi = bi + 1;
-            continue;
-        }
-        n = len(b.instrs);
-        flags: list[int] = [];
-        k = 0;
-        while k < n {
-            flags.append(0);
-            k = k + 1;
-        }
-        s = lf_stack(instr=[], local=[]);
-        # Seed the incoming stack with dummy refs (identity unknown).
-        k = 0;
-        while k < sd {
-            lf_push(s, LF_DUMMY_INSTR, LF_NOT_LOCAL);
-            k = k + 1;
-        }
-        i = 0;
-        while i < n {
-            ins = b.instrs[i];
-            op = ins.opcode;
-            arg = ins.oparg;
-            if op == OP_DELETE_FAST {
-                lf_kill_local(flags, s, arg);
-            } elif op == OP_LOAD_FAST {
-                lf_push(s, i, arg);
-            } elif op == OP_LOAD_FAST_AND_CLEAR {
-                lf_kill_local(flags, s, arg);
-                lf_push(s, i, arg);
-            } elif op == OP_LOAD_FAST_LOAD_FAST {
-                lf_push(s, i, arg // 16);
-                lf_push(s, i, arg % 16);
-            } elif op == OP_STORE_FAST {
-                r = lf_pop(s);
-                lf_store_local(flags, s, arg, r[0]);
-            } elif op == OP_STORE_FAST_LOAD_FAST {
-                r = lf_pop(s);
-                lf_store_local(flags, s, arg // 16, r[0]);
-                lf_push(s, i, arg % 16);
-            } elif op == OP_STORE_FAST_STORE_FAST {
-                r = lf_pop(s);
-                lf_store_local(flags, s, arg // 16, r[0]);
-                r2 = lf_pop(s);
-                lf_store_local(flags, s, arg % 16, r2[0]);
-            } elif op == OP_COPY {
-                idx = len(s.instr) - arg;
-                r = lf_at(s, idx);
-                lf_push(s, r[0], r[1]);
-            } elif op == OP_SWAP {
-                lf_swap_top(s, arg);
-            } elif lf_is_no_input_op(op) {
-                np = _opcode_num_popped(op, arg);
-                pu = _opcode_num_pushed(op, arg);
-                net_pushed = pu - np;
-                k2 = 0;
-                # CPython pushes the inner counter as the producing instr here
-                # (a faithful-to-source quirk); local is NOT_LOCAL either way.
-                while k2 < net_pushed {
-                    lf_push(s, k2, LF_NOT_LOCAL);
-                    k2 = k2 + 1;
-                }
-            } elif lf_is_consume_only_op(op) {
-                np = _opcode_num_popped(op, arg);
-                pu = _opcode_num_pushed(op, arg);
-                net_popped = np - pu;
-                k2 = 0;
-                while k2 < net_popped {
-                    dr = lf_pop(s);
-                    k2 = k2 + 1;
-                }
-            } elif op == OP_END_SEND or op == OP_SET_FUNCTION_ATTRIBUTE {
-                tos = lf_pop(s);
-                dr = lf_pop(s);
-                lf_push(s, tos[0], tos[1]);
-            } elif op == OP_CHECK_EXC_MATCH {
-                dr = lf_pop(s);
-                lf_push(s, i, LF_NOT_LOCAL);
-            } elif op == OP_FOR_ITER {
-                lf_push(s, i, LF_NOT_LOCAL);
-            } elif op == OP_LOAD_ATTR or op == OP_LOAD_SUPER_ATTR {
-                self_ref = lf_pop(s);
-                if op == OP_LOAD_SUPER_ATTR {
-                    dr = lf_pop(s);
-                    dr2 = lf_pop(s);
-                }
-                lf_push(s, i, LF_NOT_LOCAL);
-                if arg % 2 == 1 {
-                    # method form: self is conservatively pushed back.
-                    lf_push(s, self_ref[0], self_ref[1]);
-                }
-            } elif op == OP_LOAD_SPECIAL or op == OP_PUSH_EXC_INFO {
-                tos = lf_pop(s);
-                lf_push(s, i, LF_NOT_LOCAL);
-                lf_push(s, tos[0], tos[1]);
-            } elif op == OP_SEND {
-                dr = lf_pop(s);
-                lf_push(s, i, LF_NOT_LOCAL);
-            } else {
-                np = _opcode_num_popped(op, arg);
-                pu = _opcode_num_pushed(op, arg);
-                k2 = 0;
-                while k2 < np {
-                    dr = lf_pop(s);
-                    k2 = k2 + 1;
-                }
-                k2 = 0;
-                while k2 < pu {
-                    lf_push(s, i, LF_NOT_LOCAL);
-                    k2 = k2 + 1;
-                }
-            }
-            # CPython ends a basic block at every jump / scope exit and re-seeds the
-            # next block's ref stack with dummies. jac emits coarser blocks (a
-            # conditional jump does not start a new block -- e.g. match guards), so
-            # replicate the fine-grained boundary here: any reference still live at
-            # the jump escapes (stays owned), and identities reset to dummies for
-            # the following segment. Without this, a value loaded before a guard
-            # jump and consumed after it (in the same jac block) is wrongly seen as
-            # consumed and downgraded to a borrow.
-            if is_conditional_jump(op)
-                or is_unconditional_jump_opcode(op)
-                or is_scope_exit_opcode(op) {
-                seg = 0;
-                while seg < len(s.instr) {
-                    pseg = s.instr[seg];
-                    if pseg != -1 {
-                        flags[pseg] = flags[pseg] | LF_REF_UNCONSUMED;
-                    }
-                    s.instr[seg] = LF_DUMMY_INSTR;
-                    s.local[seg] = LF_NOT_LOCAL;
-                    seg = seg + 1;
-                }
-            }
-            i = i + 1;
-        }
-        # Any produced reference still live at block end escapes into the next
-        # block; the load that produced it must stay owned.
-        j = 0;
-        while j < len(s.instr) {
-            pi = s.instr[j];
-            if pi != -1 {
-                flags[pi] = flags[pi] | LF_REF_UNCONSUMED;
-            }
-            j = j + 1;
-        }
-        # Strength-reduce every unflagged fast load to its borrow variant.
-        i = 0;
-        while i < n {
-            if flags[i] == 0 {
-                op = b.instrs[i].opcode;
-                if op == OP_LOAD_FAST {
-                    b.instrs[i].opcode = OP_LOAD_FAST_BORROW;
-                } elif op == OP_LOAD_FAST_LOAD_FAST {
-                    b.instrs[i].opcode = OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW;
-                }
-            }
-            i = i + 1;
+        if b.fuse_store_ok {
+            opt_superinstructions(b, 0);
+            opt_compact_block(b);
         }
         bi = bi + 1;
     }
@@ -1340,6 +1681,8 @@ def remove_unused_consts(u: unverified_cfg, flat: list[cinstr]) {
 
 def verify_cfg(u: unverified_cfg) -> verified_cfg {
     optimize_cfg(u);
+    add_checks_for_uninitialized(u);
+    fuse_flagged_stores(u);
     insert_superinstructions(u);
     normalize_jumps(u);
     tdiag = check_cfg_terminators(u);

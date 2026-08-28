@@ -320,3 +320,104 @@ compiler_ir.jac / assembler.jac
   except_region             # start/end/handler blocks + stack_depth
   assemble_exception_table  # varint encoding for co_exceptiontable
 ```
+
+## 9. Return-inside-with unwinding (landed)
+
+- cfg_builder.with_fblocks tracks enclosing with/async-with frames
+  (is_async, protect_region index, frame_idx). visit_return_stmt calls
+  emit_with_return_unwind: innermost-first, per frame a fresh boundary block
+  closes the open protect region (CPython's POP_BLOCK position), then
+  SWAP 3 / SWAP 2 (TOS preservation), LC None x3, CALL 3, and for async a
+  GET_AWAITABLE(2) send loop, then POP_TOP. RETURN_VALUE afterwards.
+- Protect regions are opened at bind time (end=-1) and closed by whichever
+  path unwinds first; the handler_block is patched after handlers exist.
+- Bodies that always terminate (body_cont.terminated) skip the statement-tail
+  inline exits entirely - CPython drops them as unreachable; keeping them
+  breaks byte parity.
+- optimize_load_fast was rewritten to analyze maximal FALLTHROUGH CHAINS of
+  blocks as one virtual block (CPython's blocks are coarser; jac blocks split
+  at region boundaries). RETURN_VALUE resets leftover refs silently instead of
+  marking them escaping (dead frame state below a return still borrows).
+  Without this, `LOAD_FAST x` before SWAP3/SWAP2/CALL/RETURN_VALUE stayed
+  owned where CPython emits LOAD_FAST_BORROW.
+
+## 10. Multi-item async with (LANDED)
+
+`visit_async_with` lowers n items; two shapes:
+
+Trailing shape (body falls through): enters+binds | body | xs[k] inline exits
+(innermost first) | tail | enter CT footers 0..n-1 | per frame k descending:
+exit footer, W_k handler, unwind_k.
+
+Return shape (body terminates via return): enters+binds | body's return loads
+value then emit_with_return_unwind pops every frame inline (SWAP3/SWAP2 prefix
+per frame + await loop) | RETURN_VALUE | CT footers: enters ascending, then
+unwind loops descending (g.with_unwind_recs, one deferred ct/cj per frame) |
+W_k with fresh exit copy fcs[k] interleaved after it (deferred lead blocks,
+JUMP_FORWARD success chain, last copy ends LC None/RETURN_VALUE).
+
+Depth formulas in region.stack_depth terms (printed = sd-1-(lasti?1:0)):
+  A_f protect: 4+2f T; B_f handler internals: 6+2f T
+  enter_i carve: 5+2i F; trail-exit carve: 3+2f F;
+  return-unwind carve: 4+2f F (retval on stack); fresh-copy carve: 3+2f F
+  handler wloop carve: 8+2f F
+  loop-footer self-regions of frame f>0 -> W_{f-1} at 4+2(f-1) T;
+  outermost loop footer -> pep479 intrinsic at 2 T.
+A_f hand-partitioned pieces (assembler does no overlap resolution):
+  [bind_f..e_{f+1}.yield), [e_{f+1}.ar..bind_{f+1}), then for each inner span
+  (trail: X_{f+1}; ret: U_{f+1}=with_unwind_recs[n-2-f], and fresh copy
+  fcs[n-3-f]) a pair around its yield carve. Spans of frame j are covered by
+  A_{j-1}; outermost span keeps the generator-level p479 triple
+  (emit_await_send_except_regions, pep479_end=ecj[0]).
+Suppressed paths: trail W_f JBNI backward to shared xs[n-f]; ret W_k
+JUMP_FORWARD to fcs[k]; outermost handler inlines tail copy / module return.
+
+## 10.1 Supporting passes landed with multi-item async-with
+
+flowgraph.jac:
+
+- add_checks_for_uninitialized: port of CPython's
+  add_checks_for_loads_of_uninitialized_variables. Worklist dataflow over
+  per-block unsafe-local bitmasks; exception edges derived from except_regions
+  (innermost covering region by layout pos) instead of CPython's per-instr
+  i_except. LOAD_FAST under an unsafe bit -> LOAD_FAST_CHECK. Runs in
+  verify_cfg BEFORE fusion/borrow passes (CPython order). This is why the
+  n>=2 main tail gets CHECK while n=1 stays BORROW: W_1.supp jumps backward
+  into the shared X_0, contaminating the tail path with r-uninit.
+- fuse_flagged_stores + basicblock.fuse_store_ok: scoped STORE_FAST+LOAD_FAST
+  superinstruction fusion for async-with bind seams (CPython fuses these in
+  its finer CFG when same line, opargs<16). Runs AFTER add_checks so the
+  dataflow still sees the plain store. Global store fusion stays deliberately
+  off (jac's coarser blocks would over-fuse comprehension save/restore).
+
+compiler_ir.jac: with_unwind_rec list (g.with_unwind_recs) replaces the
+single-frame scalar with_unwind_* fields; emit_with_return_unwind appends one
+record per popped async frame.
+`visit_async_with` lowers n items; two shapes:
+
+Trailing shape (body falls through): enters+binds | body | xs[k] inline exits
+(innermost first) | tail | enter CT footers 0..n-1 | per frame k descending:
+exit footer, W_k handler, unwind_k.
+
+Return shape (body terminates via return): enters+binds | body's return loads
+value then emit_with_return_unwind pops every frame inline (SWAP3/SWAP2 prefix
+per frame + await loop) | RETURN_VALUE | CT footers: enters ascending, then
+unwind loops descending (g.with_unwind_recs, one deferred ct/cj per frame) |
+W_k with fresh exit copy fcs[k] interleaved after it (deferred lead blocks,
+JUMP_FORWARD success chain, last copy ends LC None/RETURN_VALUE).
+
+Depth formulas in region.stack_depth terms (printed = sd-1-(lasti?1:0)):
+  A_f protect: 4+2f T; B_f handler internals: 6+2f T
+  enter_i carve: 5+2i F; trail-exit carve: 3+2f F;
+  return-unwind carve: 4+2f F (retval on stack); fresh-copy carve: 3+2f F
+  handler wloop carve: 8+2f F
+  loop-footer self-regions of frame f>0 -> W_{f-1} at 4+2(f-1) T;
+  outermost loop footer -> pep479 intrinsic at 2 T.
+A_f hand-partitioned pieces (assembler does no overlap resolution):
+  [bind_f..e_{f+1}.yield), [e_{f+1}.ar..bind_{f+1}), then for each inner span
+  (trail: X_{f+1}; ret: U_{f+1}=with_unwind_recs[n-2-f], and fresh copy
+  fcs[n-3-f]) a pair around its yield carve. Spans of frame j are covered by
+  A_{j-1}; outermost span keeps the generator-level p479 triple
+  (emit_await_send_except_regions, pep479_end=ecj[0]).
+Suppressed paths: trail W_f JBNI backward to shared xs[n-f]; ret W_k
+JUMP_FORWARD to fcs[k]; outermost handler inlines tail copy / module return.
