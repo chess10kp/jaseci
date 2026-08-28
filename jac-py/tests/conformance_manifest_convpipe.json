@@ -151,13 +151,20 @@
     {
       "stem": "codeccallbacks",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_codeccallbacks/conv_codeccallbacks_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "38 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_codeccallbacks/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_codeccallbacks/conversion.json",
+      "jacpython_results": {
+        "codeccallbacks": {
+          "passed": 18,
+          "total": 38,
+          "notes": "18/38 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "codecs",
