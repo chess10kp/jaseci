@@ -1,0 +1,454 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "888737bb476d88dc6dc77c271a2da80c2da8713d",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/var/tmp/laneb-out/test_random/conv_random_pins.jac"
+  ],
+  "generated_at": "2026-08-24T11:07:49",
+  "hashes": {
+    "pins_jac": "42894c38a714c652e6520031afbe6b13fd503e479f30218343a1b460ef568aea",
+    "conversion_json": "2dae3d22313ed30b80a8aaccdf96d64f151cd6d1762b691365d0f5aa20f1f84f",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "random",
+  "counts": {
+    "converted": 83,
+    "runnable": 15,
+    "green": 2,
+    "quarantined": 68
+  },
+  "pins": [
+    {
+      "id": "TestBasicOps.test_bug_1727780",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "GOT<\"ORACLE_EXC AttributeError 'findfile'\">"
+    },
+    {
+      "id": "TestRawMersenneTwister.test_bug_41052",
+      "status": "pass"
+    },
+    {
+      "id": "TestRawMersenneTwister.test_bug_42008",
+      "status": "pass"
+    },
+    {
+      "id": "TestDistributions.test_zeroinputs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDistributions.test_avg_std",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDistributions.test_constant",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDistributions.test_binomialvariate",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDistributions.test_von_mises_range",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDistributions.test_von_mises_large_kappa",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDistributions.test_gammavariate_errors",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestRandomSubclassing.test_random_subclass_with_kwargs",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestRandomSubclassing.test_subclasses_overriding_methods",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestModule.testMagicConstants",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestModule.test__all__",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "CommandLineTest.test_main",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestBasicOps.test_53_bits_per_float",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "id": "SystemRandom_TestBasicOps.test_autoseed",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SystemRandom_TestBasicOps.test_saverestore",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SystemRandom_TestBasicOps.test_seedargs",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SystemRandom_TestBasicOps.test_gauss",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "SystemRandom_TestBasicOps.test_pickling",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_getrandbits_4G_bits",
+      "status": "quarantined",
+      "reason": "decorator:support.bigmemtest"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_randbytes_256M",
+      "status": "quarantined",
+      "reason": "decorator:support.bigmemtest"
+    },
+    {
+      "id": "TestModule.test_after_fork",
+      "status": "quarantined",
+      "reason": "decorator:.requires_fork"
+    },
+    {
+      "id": "CommandLineTest.test_parse_args",
+      "status": "quarantined",
+      "reason": "decorator:support.force_not_colorized"
+    },
+    {
+      "id": "TestBasicOps.test_autoseed",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_saverestore",
+      "status": "quarantined",
+      "reason": "uses-self.randomlist"
+    },
+    {
+      "id": "TestBasicOps.test_seedargs",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_seed_no_mutate_bug_44018",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_seed_when_randomness_source_not_found",
+      "status": "quarantined",
+      "reason": "self.test_seedargs"
+    },
+    {
+      "id": "TestBasicOps.test_shuffle",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_choice",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_choice_with_numpy",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_sample",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_sample_distribution",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_sample_inputs",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_sample_on_dicts",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_sample_on_sets",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_sample_on_seqsets",
+      "status": "quarantined",
+      "reason": "uses-self._items"
+    },
+    {
+      "id": "TestBasicOps.test_sample_with_counts",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_choices",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_choices_subnormal",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_choices_with_all_zero_weights",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_choices_negative_total",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_choices_infinite_total",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_gauss",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_getrandbits",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_bigrand",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_bigrand_ranges",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_rangelimits",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_randrange_nonunit_step",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_randrange_errors",
+      "status": "quarantined",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "id": "TestBasicOps.test_randrange_step",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_randbelow_logic",
+      "status": "quarantined",
+      "reason": "unresolved-name:_log"
+    },
+    {
+      "id": "TestBasicOps.test_randrange_index",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_randint",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_pickling",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_bug_9025",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_randrange_bug_1590891",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_randbytes",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestBasicOps.test_mu_sigma_default_args",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_guaranteed_stable",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_bug_27706",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_bug_31478",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_bug_31482",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_setstate_first_arg",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_setstate_middle_arg",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_referenceImplementation",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_strong_reference_implementation",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_long_seed",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_getrandbits",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_getrandbits_2G_bits",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_randrange_uses_getrandbits",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_randbelow_without_getrandbits",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_choices_algorithms",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_randbytes",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_randbytes_getrandbits",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "MersenneTwister_TestBasicOps.test_sample_counts_equivalence",
+      "status": "quarantined",
+      "reason": "uses-self.gen"
+    },
+    {
+      "id": "TestDistributions.test_gammavariate_alpha_greater_one",
+      "status": "quarantined",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "id": "TestDistributions.test_gammavariate_alpha_equal_one",
+      "status": "quarantined",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "id": "TestDistributions.test_gammavariate_alpha_equal_one_equals_expovariate",
+      "status": "quarantined",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "id": "TestDistributions.test_gammavariate_alpha_between_zero_and_one",
+      "status": "quarantined",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "id": "TestDistributions.test_betavariate_return_zero",
+      "status": "quarantined",
+      "reason": "unresolved-name:gammavariate_mock"
+    }
+  ]
+}
