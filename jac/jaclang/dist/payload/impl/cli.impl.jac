@@ -1,3 +1,4 @@
+import os;
 import sys;
 
 import from jaclang.dist.payload.assemble { mk_payload }
@@ -63,6 +64,11 @@ impl dispatch(argv: list[str]) {
     } elif cmd == "mkpayload" {
         _need(argv, 4, MKPAYLOAD_USAGE);
         check_host_python();
+        # The seal's precompile pass type-checks modules against LIVE class
+        # objects (vendored python packages, self-imports), so path
+        # resolution here must keep the host import system's module warm-up
+        # (see modresolver's find_spec guard).
+        os.environ["JAC_HOST_EXEC_RESOLUTION"] = "1";
         mk_payload(argv[1], argv[2], argv[3], parse_mkpayload_flags(argv[4:]));
     } elif cmd == "typeshed-sha" {
         _need(argv, 2, "usage: payload typeshed-sha <commit>");

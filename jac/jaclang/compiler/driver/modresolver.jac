@@ -287,8 +287,13 @@ def _find_spec_would_exec_jac(
     # package that is not already in sys.modules. Executing a jac ancestor
     # means a full compile + run from inside whatever compile is resolving
     # this path -- a re-entry that livelocks when the closure contains
-    # native-failing modules. True when any jac-lang ancestor prefix
-    # resolves statically but is not loaded yet.
+    # native-failing modules (observed: the jac-py test classifier spun at
+    # 100% CPU fully recompiling tokenizer.jac 415x). Sealed payload
+    # precompile opts back into the warm behavior explicitly: its type
+    # checks read live class objects (JAC_HOST_EXEC_RESOLUTION).
+    if os.environ.get("JAC_HOST_EXEC_RESOLUTION") {
+        return False;
+    }
     dirs = [base_dir] + get_jac_search_paths(base_path);
     mod_name = '';
     for i in range(1, len(actual_parts) + 1) {
