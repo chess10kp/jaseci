@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "4ee3fb846c76bff10fcbf45e581c15530b002b42",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_curses/conv_curses_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:11:38",
+  "hashes": {
+    "pins_jac": "3c88b77ca6d1f7d5fc8d326beec276a1944dbaf148e48a650214d945cd3f86ee",
+    "conversion_json": "5229f5716fd50f16d0b0c49f6571b23dd6f90b227699a38d0831a43530e2bc2c",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "curses",
+  "counts": {
+    "converted": 81,
+    "runnable": 7,
+    "green": 0,
+    "quarantined": 74
+  },
+  "pins": [
+    {
+      "id": "MiscTests.test_update_lines_cols",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "MiscTests.test_has_extended_color_support",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestAscii.test_ctypes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestAscii.test_ascii",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestAscii.test_ctrl",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestAscii.test_alt",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestAscii.test_unctrl",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestCurses.test_filter",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_use_env",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_create_windows",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_subwindows_references",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_move_cursor",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_refresh_control",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_output_character",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_output_string",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_output_string_embedded_null_chars",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_read_from_window",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_getch",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_getstr",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_clear",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_insert_delete",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_scroll",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_attributes",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_chgat",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_background",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_overlay",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_refresh",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_resize",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_enclose",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_putwin",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_borders_and_lines",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_unctrl",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_endwin",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_terminfo",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_misc_module_funcs",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_env_queries",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_output_options",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_input_options",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_typeahead",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_prog_mode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_beep",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_flash",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_curs_set",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_escdelay",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_tabsize",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_getsyx",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_has_colors",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_start_color",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_color_content",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_init_color",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_pair_content",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_init_pair",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_color_attrs",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_use_default_colors",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_assume_default_colors",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_keyname",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_has_key",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_getmouse",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TestCurses.test_userptr_without_set",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_userptr_memory_leak",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_userptr_segfault",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_is_term_resized",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_resize_term",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_resizeterm",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_ungetch",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_issue6243",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_unget_wch",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_encoding",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_issue21088",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestCurses.test_issue13051",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "MiscTests.test_ncurses_version",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support"
+    },
+    {
+      "id": "TestAscii.test_controlnames",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_init",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_insert",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_delete",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_move_left",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_move_right",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_move_left_and_right",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_move_up",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "TextboxTest.test_move_down",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    }
+  ]
+}
