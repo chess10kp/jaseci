@@ -49,27 +49,6 @@ def _exc_parent_of(name: str) -> str {
     return "";
 }
 
-def _exc_is_subclass(exc_name: str, base_name: str) -> bool {
-    if exc_name == base_name {
-        return True;
-    }
-    cur = exc_name;
-    while True {
-        nxt = _exc_parent_of(cur);
-        if nxt == "" {
-            # Last resort: "pkg.Name" IS "Name" (registry short-form alias).
-            if "." in cur and base_name == _exc_short_name(cur) {
-                return True;
-            }
-            return False;
-        }
-        cur = nxt;
-        if cur == base_name {
-            return True;
-        }
-    }
-}
-
 # ---------------- module-exception registry --------------------------------
 # Facade modules declare their exception types here AT IMPORT
 # (register_module_exception("struct.error", "Exception")), replacing the old

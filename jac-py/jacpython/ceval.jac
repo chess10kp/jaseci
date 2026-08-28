@@ -507,21 +507,6 @@ def _jac_host_class_name(value):
     # falling back to type(value).__name__ for a non-class value.
     return getattr(value, "__name__", None) or type(value).__name__
 
-def _jac_exc_name_subclass(target_name, exc_name):
-    # True iff a builtin exception named exc_name is target_name or a subclass of
-    # it -- e.g. FileNotFoundError is-a OSError, ValueError is-a Exception. Both
-    # names are resolved against builtins; user/native names not found there fall
-    # back to the exact-name compare done by the caller (returns False here).
-    try:
-        t = getattr(builtins, target_name, None)
-        e = getattr(builtins, exc_name, None)
-        if (isinstance(t, type) and isinstance(e, type)
-                and issubclass(t, BaseException)):
-            return issubclass(e, t)
-        return False
-    except BaseException:
-        return False
-
 def _jac_host_format(value, spec):
     try:
         return (True, format(value, spec))
@@ -969,12 +954,6 @@ def _jac_make_weakref(target):
 
 def _jac_weakref_deref(wr):
     return wr()
-
-def _jac_dbg_dead_check_simple(r):
-    # Minimal: alive or dead, no walking.
-    import sys
-    wr = getattr(r, "wr")
-    return wr() is None
 
 def _jac_recover_native(raw) -> PyObj | None:
     # If raw is a trampoline we minted, hand back the native function it wraps
@@ -1958,13 +1937,6 @@ def install_sys_guest_overrides(mod: PyObj) {
         t="native_builtin", name="sys_currentframe"
     );
     m.attrs["__jac_marker__"] = PyStr(t="str", val="installed");
-}
-
-def register_delegate_module(name: str, policy: str) {
-    if policy != "full" {
-        raise ValueError("unknown delegation policy: " + policy);
-    }
-    delegate_modules[name] = policy;
 }
 
 def clear_delegate_modules {
