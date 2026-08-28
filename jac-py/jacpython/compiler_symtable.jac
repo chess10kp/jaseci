@@ -2442,6 +2442,43 @@ test "compiler_symtable: class name mangling matches oracle" {
     );
 }
 
+test "compiler_symtable: init_subclass hierarchy matches oracle" {
+    src = (
+        "class A:\n"
+        + "    initialized = False\n"
+        + "    def __init_subclass__(cls):\n"
+        + "        cls.initialized = True\n"
+        + "class B(A):\n"
+        + "    pass\n"
+    );
+    m = parse_file(src, "<t>");
+    assert m is not None;
+    sr = build_module_symtable((m as Module).body);
+    assert sr.diag is None;
+    assert sr.top is not None;
+    native = sym_normalize(sr.top);
+    expected = host_sym_normalize(src, "exec");
+    assert _sym_oracle_equal_py(native, expected);
+}
+
+test "compiler_symtable: metaclass keyword matches oracle" {
+    src = (
+        "class Meta(type):\n"
+        + "    def __new__(cls, name, bases, ns):\n"
+        + "        return super().__new__(cls, name, bases, ns)\n"
+        + "class C(metaclass=Meta):\n"
+        + "    pass\n"
+    );
+    m = parse_file(src, "<t>");
+    assert m is not None;
+    sr = build_module_symtable((m as Module).body);
+    assert sr.diag is None;
+    assert sr.top is not None;
+    native = sym_normalize(sr.top);
+    expected = host_sym_normalize(src, "exec");
+    assert _sym_oracle_equal_py(native, expected);
+}
+
 test "compiler_symtable: genexpr matches oracle" {
     m = parse_file("x = (y for y in range(3))\n", "<t>");
     assert m is not None;
