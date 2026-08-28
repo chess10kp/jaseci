@@ -1,20 +1,7 @@
-# P3 — ``__slots__`` layout helpers + ``type_ready`` flags (import-free leaf).
-# Used by ``typeobject`` / ``ceval`` during ``PyType_Ready`` class finalization.
+# P3 — ``__slots__`` layout helpers (import-free leaf).
+# Wired into ``ceval.compute_class_slots`` / ``PyUserObj`` attr enforcement during
+# ``PyType_Ready`` class finalization. ``type_ready`` lives in ``typeobject.jac``.
 # Mirrors CPython type_new dict/weakref inheritance rules for heap types.
-
-glob Py_TPFLAGS_READY: int = 4096,
-     Py_TPFLAGS_READYING: int = 8192;
-
-# ``PyType_Ready`` flag stub — set READY; slot name finalization is separate.
-def type_ready(flags: int) -> int {
-    if (flags & Py_TPFLAGS_READY) != 0 {
-        return flags;
-    }
-    if (flags & Py_TPFLAGS_READYING) != 0 {
-        return -1;
-    }
-    return flags | Py_TPFLAGS_READY;
-}
 
 # CPython ``_Py_Mangle``: a private name (two leading underscores, at most one
 # trailing underscore) is rewritten to ``_<class>__name`` with the class name's
