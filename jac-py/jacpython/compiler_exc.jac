@@ -1482,6 +1482,19 @@ def visit_try(
                         OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, hbody.loc
                     );
                 }
+            } elif try_follows or not normal_terminated {
+                # Spot-check (nested-except parity): a taken handler must reach
+                # the same continuation as the normal path (code after the try,
+                # or the module RETURN already laid out in after_try_epilogue).
+                # emit_module_return here skipped post-try stmts when try_follows.
+                # Nested try as the sole stmt of an enclosing body still needs
+                # a deferred join block (except* join_blk pattern) when
+                # normal_terminated and not try_follows.
+                g.emit_jump(
+                    OP_JUMP_BACKWARD_NO_INTERRUPT,
+                    after_try_epilogue.id,
+                    hbody.loc
+                );
             } else {
                 emit_module_return(g, hbody.loc);
             }
