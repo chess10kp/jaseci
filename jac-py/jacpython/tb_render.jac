@@ -64,8 +64,8 @@ glob _TB_CONTEXT_MESSAGE: str = (
 # One rendered stack entry: header line always, source line only when
 # linecache resolves one (FrameSummary.line strips; format re-indents 4).
 def _tb_frame_text(filename: str, lineno: int, name: str) -> str {
-    out = '  File "' + filename + '", line ' + str(lineno) + ", in " + name + "\n";
-    text = _tb_linecache_getline(filename, lineno).strip();
+    out: str = '  File "' + filename + '", line ' + str(lineno) + ", in " + name + "\n";
+    text: str = (_tb_linecache_getline(filename, lineno) as str).strip();
     if text != "" {
         out = out + "    " + text + "\n";
     }
@@ -154,16 +154,16 @@ def tb_exception_only(exc: PyException, repr_fn: any = None,
 
 def _tb_keyerror_arg_repr(arg: PyObj, str_fn: any = None) -> str {
     if isinstance(arg, PyStr) {
-        return (str_repr(arg as PyStr)).val;
+        return (str_repr(arg as PyStr) as PyStr).val;
     }
     if isinstance(arg, PyInt) {
-        return (int_repr(arg as PyInt)).val;
+        return (int_repr(arg as PyInt) as PyStr).val;
     }
     if isinstance(arg, PyFloat) {
-        return (float_repr(arg as PyFloat)).val;
+        return (float_repr(arg as PyFloat) as PyStr).val;
     }
     if isinstance(arg, PyBytes) {
-        return (bytes_repr(arg as PyBytes)).val;
+        return (bytes_repr(arg as PyBytes) as PyStr).val;
     }
     if arg.t == "none" {
         return "None";
