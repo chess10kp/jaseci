@@ -131,6 +131,14 @@ def _jac_construct_host_type(host_type, raw_args):
 def _jac_builtin_base_name(host_val):
     return _hb._jac_builtin_base_name(host_val)
 
+def _jac_ext_base_name(host_val) -> str {
+    return _hb._jac_ext_base_name(host_val);
+}
+
+def _jac_construct_ext(qualname, raw_args) {
+    return _hb._jac_construct_ext(qualname, raw_args);
+}
+
 def _jac_construct_builtin(name, raw_args):
     return _hb._jac_construct_builtin(name, raw_args)
 
@@ -1997,7 +2005,7 @@ obj PyClass(PyObj) {
                 # builtin base's own -- it rejects keywords exactly as the bare
                 # constructor does (`Sub(sequence=())` must TypeError).
                 return py_error(
-                    "TypeError", self.native_base + "() takes no keyword arguments"
+                    "TypeError", self.native_base.rpartition(".")[2] + "() takes no keyword arguments"
                 );
             }
             box_args = args;
@@ -8127,6 +8135,17 @@ obj PyBuiltinSuperMethod(PyObj) {
                     t="dict_method", target=(b as PyDict), name="update"
                 ).tp_call(args, kwargs);
             }
+            # An extension-type base (boxed host value): super().__init__(...)
+            # runs the host type's own initializer over the live instance
+            # (_random.Random.__init__(x) seeds the MT state) instead of being
+            # dropped like an immutable-builtin's inherited object.__init__.
+            if isinstance(b, PyHostProxy) {
+                host_init = py_attr(b, "__init__");
+                if is_error(host_init) {
+                    return host_init;
+                }
+                return (host_init as PyObj).tp_call(args, kwargs);
+            }
             return py_none();
         }
         if n == "__setitem__" {
@@ -8332,7 +8351,8 @@ def construct_native_base(name: str, args: list[PyObj]) -> PyObj {
         }
         raw_args.append(ha);
     }
-    result = _jac_construct_builtin(name, raw_args);
+    result = _jac_construct_ext(name, raw_args) if "." in name
+        else _jac_construct_builtin(name, raw_args);
     if host_result_ok(result) {
         return from_host(result[1]);
     }
@@ -8622,6 +8642,11 @@ def compute_native_base(bases: list[PyObj]) -> str {
                 builtin_name: str = str(_jac_builtin_base_name(hostval));
                 if builtin_name != "" and builtin_name != "object" {
                     native_base = builtin_name;
+                } else {
+                    ext_name: str = str(_jac_ext_base_name(hostval));
+                    if ext_name != "" {
+                        native_base = ext_name;
+                    }
                 }
             }
         }

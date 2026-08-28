@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.0",
+  "jac_sha": "650ee872e0d3c99d05e0381bc327198773e37a2d",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/var/tmp/laneb-out/test_sort/conv_sort_pins.jac"
+  ],
+  "generated_at": "2026-08-24T10:20:39",
+  "hashes": {
+    "pins_jac": "61e3ed1adfcc173a8abdf9033c5d4cd2af49b29e25537b7b0fedd27e3a37c287",
+    "conversion_json": "602ba1bcd2a032b26c21bf5d467d3ae4f3cd8609a416c022135b4f8b9370bf99",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "sort",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 21,
+    "runnable": 14,
+    "green": 3,
+    "quarantined": 7,
+    "failed": 11,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "TestBugs.test_bug453523",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestBugs.test_undetected_mutation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_decorated",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_stability",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_key_with_exception",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_key_with_mutation",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_key_with_mutating_del",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_key_with_mutating_del_and_exception",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_reverse",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestDecorateSortUndecorate.test_reverse_stability",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<\"AttributeError: 'super' object has no attribute 'seed'\">"
+    },
+    {
+      "id": "TestOptimizedCompares.test_none_in_tuples",
+      "status": "fail",
+      "classification": "GUEST-WRONG-OUTPUT",
+      "detail": "RUN<'AttributeError: verbose'>"
+    }
+  ]
+}

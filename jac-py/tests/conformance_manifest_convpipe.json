@@ -1003,6 +1003,17 @@
       }
     },
     {
+      "stem": "random",
+      "gate_type": "oracle",
+      "status": "partial",
+      "oracle_tests": [
+        "conv_random_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "15 output-oracle pins from test_random.py; superseed + test.support harness unblock.",
+      "conversion_meta": "random.conv.json"
+    },
+    {
       "stem": "robotparser",
       "gate_type": "oracle",
       "status": "partial",
@@ -1685,6 +1696,17 @@
           "notes": "0/11 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
         }
       }
+    },
+    {
+      "stem": "sort",
+      "gate_type": "oracle",
+      "status": "partial",
+      "oracle_tests": [
+        "conv_sort_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "14 output-oracle pins from test_sort.py; superseed + test.support harness unblock.",
+      "conversion_meta": "sort.conv.json"
     },
     {
       "stem": "statistics",
