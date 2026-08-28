@@ -184,12 +184,12 @@ impl EsastGenPass._build_compr_expr(
 
 impl EsastGenPass._compr_param(
     target: es.Expression, jac_node: uni.UniNode
-) -> es.Node {
+) -> es.Identifier | es.ArrayPattern {
     if isinstance(target, es.Identifier) {
         return self.sync_loc(es.Identifier(name=target.name), jac_node=jac_node);
     }
     if isinstance(target, es.ArrayExpression) {
-        elements: list[(es.Node | None)] = [];
+        elements: list[(es.Identifier | None)] = [];
         for elem in target.elements {
             if isinstance(elem, es.Identifier) {
                 elements.append(
