@@ -1332,73 +1332,10 @@ obj PyHostProxy(PyObj) {
     }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        # `type(x)` (one positional arg) must be answered in-VM: a native user
-        # instance's type is its own PyClass, not host type(to_host(x)) -- which
-        # was NoneType because to_host of a plain user object is None. The 3-arg
-        # `type(name, bases, ns)` class constructor and every real metaclass call
-        # stay host-routed. `type` is the exact builtin here, never a subclass.
-        if len(args) == 1 and len(kwargs) == 0 and bool(_jac_is_type_type(self.val)) {
-            return py_type_of(args[0]);
-        }
-        # 3-arg type(name, bases, ns): reject __mro_entries__ / non-class bases
-        # with CPython's messages BEFORE building. Then construct IN-VM per
-        # CPython type_call: resolve the most-derived metaclass among 'type'
-        # and the bases' metaclasses and build through it. Host routing here
-        # minted standins and lost class identity entirely (enum's
-        # _simple_enum converts classes through exactly this shape).
-        if len(args) == 3 and bool(_jac_is_type_type(self.val)) {
-            raw_bases: list[PyObj] = [];
-            if isinstance(args[1], PyTuple) {
-                for tb in (args[1] as PyTuple).items {
-                    raw_bases.append(tb);
-                }
-            } elif isinstance(args[1], PyList) {
-                for tb in (args[1] as PyList).items {
-                    raw_bases.append(tb);
-                }
-            }
-            rejected = _jac_validate_type_bases(raw_bases);
-            if rejected is not None {
-                return rejected;
-            }
-            winner: any = None;
-            conflict = False;
-            for tb3 in raw_bases {
-                if not isinstance(tb3, PyClass) {
-                    continue;
-                }
-                bm3 = metaclass_of(tb3 as PyClass);
-                if bm3 is None or not isinstance(bm3, PyClass) {
-                    continue;
-                }
-                if winner is None {
-                    winner = bm3;
-                } elif py_issubclass(bm3 as PyObj, winner as PyObj) {
-                    # current winner stays most-derived
-                } elif py_issubclass(winner as PyObj, bm3 as PyObj) {
-                    winner = bm3;
-                } else {
-                    conflict = True;
-                }
-            }
-            if conflict {
-                return py_error("TypeError", "metaclass conflict");
-            }
-            ns_obj = args[2];
-            if winner is not None {
-                made_t = py_invoke(
-                    winner as PyObj, [args[0], args[1], ns_obj], kwargs
-                );
-                if is_error(made_t) {
-                    return made_t;
-                }
-                return made_t;
-            }
-            built_t = type_new([self as PyObj, args[0], args[1], ns_obj], kwargs);
-            if is_error(built_t) {
-                return built_t;
-            }
-            return built_t;
+        # Exact host `type` still reaches this proxy on identity edges; route
+        # factory shapes through the shared native type_call implementation.
+        if bool(_jac_is_type_type(self.val)) {
+            return py_type_call(self as PyObj, args, kwargs);
         }
         # Zero-arg super() at a GENERIC call site (the proxy wraps the host
         # super TYPE): the compiler lowers every cell-backed super().attr to
@@ -4194,6 +4131,11 @@ def _mint_host_builtin(name: str) -> PyObj {
     }
     if name == "property" {
         return PyPropertyCtor(t="property_ctor");
+    }
+    # type() must stay native: a host-routed bare type(name, bases, ns) mints
+    # standin classes and loses guest identity (enum's _simple_enum path).
+    if name == "type" {
+        return PyNativeBuiltin(t="native_builtin", name="type");
     }
     result = _jac_host_builtin(name);
     if host_result_ok(result) {
@@ -8993,6 +8935,79 @@ def _jac_validate_type_bases(bases: list[PyObj]) -> PyObj | None {
     return None;
 }
 
+# Shared type(obj) / type(name, bases, ns[, **kwds]) dispatch for the native
+# builtin and any exact-host-type proxy edge. Builds guest PyClass objects
+# through type_new instead of py_call_host standins.
+def py_type_call(mcls: PyObj, args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+    if len(args) == 1 and len(kwargs) == 0 {
+        return py_type_of(args[0]);
+    }
+    if len(args) != 3 {
+        return py_error("TypeError", "type() takes 1 or 3 arguments");
+    }
+    raw_bases: list[PyObj] = [];
+    if isinstance(args[1], PyTuple) {
+        for tb in (args[1] as PyTuple).items {
+            raw_bases.append(tb);
+        }
+    } elif isinstance(args[1], PyList) {
+        for tb in (args[1] as PyList).items {
+            raw_bases.append(tb);
+        }
+    }
+    rejected = _jac_validate_type_bases(raw_bases);
+    if rejected is not None {
+        return rejected;
+    }
+    winner: any = None;
+    conflict = False;
+    if "metaclass" in kwargs and isinstance(kwargs["metaclass"], PyClass) {
+        winner = kwargs["metaclass"];
+    }
+    for tb3 in raw_bases {
+        if not isinstance(tb3, PyClass) {
+            continue;
+        }
+        bm3 = metaclass_of(tb3 as PyClass);
+        if bm3 is None or not isinstance(bm3, PyClass) {
+            continue;
+        }
+        if winner is None {
+            winner = bm3;
+        } elif py_issubclass(bm3 as PyObj, winner as PyObj) {
+            # current winner stays most-derived
+        } elif py_issubclass(winner as PyObj, bm3 as PyObj) {
+            winner = bm3;
+        } else {
+            conflict = True;
+        }
+    }
+    if conflict {
+        return py_error("TypeError", "metaclass conflict");
+    }
+    ns_obj = args[2];
+    if winner is not None {
+        call_kwds: dict[str, PyObj] = {};
+        for k in kwargs {
+            if k != "metaclass" {
+                call_kwds[k] = kwargs[k];
+            }
+        }
+        made_t = py_invoke(
+            winner as PyObj, [args[0], args[1], ns_obj], call_kwds
+        );
+        if is_error(made_t) {
+            return made_t;
+        }
+        return made_t;
+    }
+    built_t = type_new([mcls, args[0], args[1], ns_obj], kwargs);
+    if is_error(built_t) {
+        return built_t;
+    }
+    return built_t;
+}
+
 def type_new(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
     # kwargs = class-creation keywords left over by the metaclass chain
     # (CPython type.__new__ forwards them to __init_subclass__).
@@ -9737,6 +9752,9 @@ obj PyNativeBuiltin(PyObj) {
                 );
             }
             return py_repr(args[0]);
+        }
+        if self.name == "type" {
+            return py_type_call(self as PyObj, args, kwargs);
         }
         if self.name == "isinstance" {
             if len(args) != 2 {
