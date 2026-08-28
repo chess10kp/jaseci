@@ -14,6 +14,8 @@ import from objects {
     PyBytes,
     PyList,
     PyTuple,
+    PyTraceback,
+    PyTracebackFrame,
     expect_str,
     str_repr_text,
     exc_is_subclass_of,
@@ -21,6 +23,43 @@ import from objects {
     EXC_PARENT,
     py_error,
     py_none,
+    exc_chain_carrier_guest,
+}
+
+# CPython ``object.__class__`` never raises AttributeError. Values that flow
+# out of BaseException data attributes (__cause__/__context__/__traceback__,
+# unset slots reading as None, native traceback frames) must answer identity
+# dunders through PyExceptionType synthesis -- the same surrogate the caught
+# exception instance itself uses for ``e.__class__.__name__``.
+def exc_attr_type_identity(value: PyObj) -> PyObj {
+    if isinstance(value, PyNoneType) {
+        return PyExceptionType(t="exception_type", name="NoneType");
+    }
+    if isinstance(value, PyException) {
+        return PyExceptionType(
+            t="exception_type", name=(value as PyException).type_name
+        );
+    }
+    if isinstance(value, PyTraceback) {
+        return PyExceptionType(t="exception_type", name="traceback");
+    }
+    if isinstance(value, PyTracebackFrame) {
+        return PyExceptionType(t="exception_type", name="frame");
+    }
+    return py_error("AttributeError", "__class__");
+}
+
+# Read ``__cause__`` / ``__context__`` with guest-visible carrier synthesis.
+def exc_chain_attr_read(exc: PyException, name: str) -> PyObj {
+    stored: any = None;
+    if name == "__cause__" {
+        stored = exc.cause;
+    } elif name == "__context__" {
+        stored = exc.context;
+    } else {
+        return py_error("AttributeError", name);
+    }
+    return exc_chain_carrier_guest(stored);
 }
 
 # The builtin hierarchy table (EXC_PARENT) lives canonically in objects.jac;
