@@ -1,42 +1,71 @@
 # Triage report: `conv_faulthandler_pins.jac`
 
-- source: reference/cpython/Lib/test/test_faulthandler.py (CPython 3.14.6)
-- conversion: 48 extracted -> 4 pinned / 44 quarantined
-- guest leg: NOT RUN locally (compute-gated box; diff_runner is CI-gated on the branch)
+- source: /home/jac/repos/jac-python/reference/cpython/Lib/test/test_faulthandler.py
+- guest leg: 0/4 marks
+- pins: **0 passed** / 4 run (+44 quarantined of 48 extracted)
 
-## Pins (host oracle captured; runtime unverified locally - CI gates it)
+| pin | result | got |
+|---|---|---|
+| FaultHandlerTests.test_is_enabled | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| FaultHandlerTests.test_disabled_by_default | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| FaultHandlerTests.test_sys_xoptions | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| FaultHandlerTests.test_env_var | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
 
-| pin | status |
+## Shared failure signatures
+
+These pins fail with a byte-identical detail, which usually means
+one shared root cause (for example an import-time error in the
+guest module) instead of per-test defects.
+
+| count | classification | got | pins |
+|---|---|---|---|
+| 4 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler | FaultHandlerTests.test_disabled_by_default, FaultHandlerTests.test_env_var, FaultHandlerTests.test_is_enabled, FaultHandlerTests.test_sys_xoptions |
+
+## Quarantined at conversion
+
+| test | reason |
 |---|---|
-| FaultHandlerTests.test_is_enabled | pinned |
-| FaultHandlerTests.test_disabled_by_default | pinned |
-| FaultHandlerTests.test_sys_xoptions | pinned |
-| FaultHandlerTests.test_env_var | pinned |
-
-Note: three of the four pins drive subprocess-based checks of interpreter
-startup flags (`-X faulthandler`, `PYTHONFAULTHANDLER`); they replay through
-`p2_libtest_run_snippet` and depend on guest subprocess support, not on
-`jacpython/faulthandler.jac`. `test_is_enabled` exercises the facade directly.
-
-## Quarantine buckets (44)
-
-- 19 unsupported-import:test.support - subprocess/crash harness lives in test.support
-- 13 decorator - unittest.skipIf/skipUnless, support.skip_if_sanitizer,
-  requires_resource, threading_helper.requires_working_threading
-- 7 decorated-helper - check_register x4, check_fatal_error_func x2,
-  check_stderr_none x1
-- 1 host-raised - host oracle raised during capture (test_dump_c_stack_file)
-- 4 remaining decorator/helper variants (see conversion.json for exact list)
-
-## Facade
-
-`jac-py/jacpython/faulthandler.jac` ports Modules/faulthandler.c's Python
-surface (enable/disable/is_enabled/dump_traceback/dump_c_stack/
-dump_traceback_later/cancel_dump_traceback_later/register/unregister plus the
-_read_null/_sigsegv/_sigfpe/_sigabrt/_fatal_error_c_thread crash primitives).
-Divergences are documented in the file header (guest-level signal handlers via
-host `signal`, `_stack_overflow` hits RecursionError instead of a guard-page
-SIGSEGV, MS_WINDOWS `_raise_exception` out of scope).
-
-Re-diff command once CI lands:
-`.venv/bin/python jac-py/tools/diff_runner.py jac-py/tests/conv_faulthandler/conv_faulthandler_pins.jac`
+| FaultHandlerTests.test_read_null | decorator:unittest.skipIf |
+| FaultHandlerTests.test_sigabrt | decorator:support.skip_if_sanitizer |
+| FaultHandlerTests.test_sigfpe | decorator:unittest.skipIf |
+| FaultHandlerTests.test_sigbus | decorator:unittest.skipIf |
+| FaultHandlerTests.test_sigill | decorator:unittest.skipIf |
+| FaultHandlerTests.test_stack_overflow | decorator:unittest.skipIf |
+| FaultHandlerTests.test_enable_fd | decorator:unittest.skipIf |
+| FaultHandlerTests.test_dump_traceback_fd | decorator:unittest.skipIf |
+| FaultHandlerTests.test_dump_traceback_later_fd | decorator:unittest.skipIf |
+| FaultHandlerTests.test_dump_traceback_later_twice | decorator:support.requires_resource |
+| FaultHandlerTests.test_register_fd | decorator:unittest.skipIf |
+| FaultHandlerTests.test_register_chain | decorator:support.skip_if_sanitizer |
+| FaultHandlerTests.test_raise_exception | decorator:unittest.skipUnless |
+| FaultHandlerTests.test_ignore_exception | decorator:unittest.skipUnless |
+| FaultHandlerTests.test_raise_nonfatal_exception | decorator:unittest.skipUnless |
+| FaultHandlerTests.test_disable_windows_exc_handler | decorator:unittest.skipUnless |
+| FaultHandlerTests.test_free_threaded_dump_traceback | decorator:threading_helper.requires_working_threading |
+| FaultHandlerTests.test_sigsegv | unsupported-import:test.support |
+| FaultHandlerTests.test_gc | unsupported-import:test.support |
+| FaultHandlerTests.test_fatal_error_c_thread | unsupported-import:test.support |
+| FaultHandlerTests.test_fatal_error | helper:check_fatal_error_func(decorated-helper) |
+| FaultHandlerTests.test_fatal_error_without_gil | helper:check_fatal_error_func(decorated-helper) |
+| FaultHandlerTests.test_gil_released | unsupported-import:test.support |
+| FaultHandlerTests.test_enable_file | unsupported-import:test.support |
+| FaultHandlerTests.test_enable_single_thread | unsupported-import:test.support |
+| FaultHandlerTests.test_disable | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_ext_modules | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback_file | unsupported-import:test.support |
+| FaultHandlerTests.test_truncate | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback_threads | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback_threads_file | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback_later | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback_later_repeat | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback_later_cancel | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_traceback_later_file | unsupported-import:test.support |
+| FaultHandlerTests.test_register | helper:check_register(decorated-helper) |
+| FaultHandlerTests.test_unregister | helper:check_register(decorated-helper) |
+| FaultHandlerTests.test_register_file | helper:check_register(decorated-helper) |
+| FaultHandlerTests.test_register_threads | helper:check_register(decorated-helper) |
+| FaultHandlerTests.test_stderr_None | helper:check_stderr_none(decorated-helper) |
+| FaultHandlerTests.test_cancel_later_without_dump_traceback_later | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_c_stack | unsupported-import:test.support |
+| FaultHandlerTests.test_dump_c_stack_file | host-raised:AttributeError: module 'faulthandler' has no attribute 'dump_c_stack' |

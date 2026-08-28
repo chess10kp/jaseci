@@ -2956,13 +2956,20 @@
     {
       "stem": "faulthandler",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_faulthandler/conv_faulthandler_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_faulthandler/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_faulthandler/conversion.json",
+      "jacpython_results": {
+        "faulthandler": {
+          "passed": 0,
+          "total": 4,
+          "notes": "0/4 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "flufl",
