@@ -2830,7 +2830,14 @@
       ],
       "libtest_snippets": [],
       "notes": "52 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_grammar/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_grammar/conversion.json",
+      "jacpython_results": {
+        "grammar": {
+          "passed": 44,
+          "total": 52,
+          "notes": "44/52 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "grp",
