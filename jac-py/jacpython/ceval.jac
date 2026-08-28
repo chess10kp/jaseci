@@ -136,7 +136,7 @@ def _jac_is_type_type(value):
     # build a class object (type.__new__), not a plain instance.
     return value is type
 
-def _jac_static_type_name(value) -> str {
+def _jac_static_type_name(value) -> str:
     # CPython type.__setattr__ policy probe (Objects/typeobject.c
     # type_setattro): attribute writes land only on HEAP types; a static
     # builtin/extension type rejects EVERY write with the canonical TypeError,
@@ -145,7 +145,7 @@ def _jac_static_type_name(value) -> str {
     import builtins
     if isinstance(value, type) and not (value.__flags__ & (1 << 9)):
         return str(getattr(value, "__name__", ""))  # Py_TPFLAGS_HEAPTYPE = 1 << 9
-    return "";
+    return ""
 
 def _jac_is_super_type(value):
     # True iff value is exactly the builtin `super` type. Zero-arg super() at a
