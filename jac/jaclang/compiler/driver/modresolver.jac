@@ -280,19 +280,23 @@ def is_path_alias_import(target: str, base_path: str) -> bool {
     return _resolve_path_alias(target, base_path) is not None;
 }
 
-def _has_jac_trace(
-    base_dir: str, actual_parts: list[str], base_path: str
+def _find_spec_would_exec_jac(
+    actual_parts: list[str], base_dir: str, base_path: str
 ) -> bool {
-    # True when any prefix of the dotted target statically resolves to jac
-    # source under the base dir or the jac search paths. Such targets must
-    # not fall through to importlib.util.find_spec: finding a spec for a
-    # dotted name imports the parent package, and executing a jac parent
-    # (full compile + run) from inside a compile re-enters the compiler.
+    # importlib.util.find_spec on a dotted name imports every ancestor
+    # package that is not already in sys.modules. Executing a jac ancestor
+    # means a full compile + run from inside whatever compile is resolving
+    # this path -- a re-entry that livelocks when the closure contains
+    # native-failing modules. True when any jac-lang ancestor prefix
+    # resolves statically but is not loaded yet.
     dirs = [base_dir] + get_jac_search_paths(base_path);
-    for end in range(1, len(actual_parts) + 1) {
-        prefix = actual_parts[:end];
+    mod_name = '';
+    for i in range(1, len(actual_parts) + 1) {
+        part = actual_parts[i - 1];
+        mod_name = mod_name + '.' + part if mod_name else part;
         for d in dirs {
-            if _candidate_from(d, prefix) {
+            res = _candidate_from(d, actual_parts[:i]);
+            if res and res[1] == 'jac' and (mod_name not in sys.modules) {
                 return True;
             }
         }
@@ -373,14 +377,12 @@ def resolve_module(
             level0 += 1;
         }
         actual_parts0 = parts0[level0:];
-        if not _has_jac_trace(base_dir, actual_parts0, base_path) {
-            # Only consult the host import system when the target has no
-            # jac trace: finding a spec for a dotted name imports the
-            # parent package, and executing a jac parent (full compile +
-            # run) from inside a compile re-enters the compiler. With a
-            # jac trace, fall through to the static tail below, which
-            # mirrors what find_spec would have concluded for a
-            # non-module member.
+        if not _find_spec_would_exec_jac(actual_parts0, base_dir, base_path) {
+            # The host import system is safe to consult only when it will
+            # not execute an as-yet-unloaded jac ancestor package. When it
+            # would, fall through to the static tail below, which mirrors
+            # what find_spec concludes for a non-module member -- minus the
+            # parent execution.
             try {
                 spec = importlib.util.find_spec(target);
             } except (ImportError, AttributeError, ValueError) {
