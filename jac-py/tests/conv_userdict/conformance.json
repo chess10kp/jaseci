@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "578bd657a2e79228e10d0a7cac3f43c584714cbd",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_userdict/conv_userdict_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:25:48",
+  "hashes": {
+    "pins_jac": "75202b54c9b89b95be606a7e548977440c57b9792bf89a7b7277854fd036271f",
+    "conversion_json": "d766d294a7fa12ef24bd9e3672f27d628c6e813ae9b2e2b7a4d7f660a2b72879",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "userdict",
+  "counts": {
+    "converted": 7,
+    "runnable": 6,
+    "green": 0,
+    "quarantined": 1
+  },
+  "pins": [
+    {
+      "id": "UserDictTest.test_all",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "UserDictTest.test_init",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "UserDictTest.test_data",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "UserDictTest.test_update",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "UserDictTest.test_missing",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "UserDictTest.test_mixed_or",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "UserDictTest.test_mixed_ior",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    }
+  ]
+}
