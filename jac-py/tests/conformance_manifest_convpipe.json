@@ -3194,13 +3194,20 @@
     {
       "stem": "quopri",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_quopri/conv_quopri_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_quopri/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_quopri/conversion.json",
+      "jacpython_results": {
+        "quopri": {
+          "passed": 0,
+          "total": 11,
+          "notes": "0/11 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "resource",

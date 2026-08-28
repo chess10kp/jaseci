@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "6843e2007398b66830939ee571778d83e687087e",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_quopri/conv_quopri_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:47:10",
+  "hashes": {
+    "pins_jac": "485bc1eb6cfc4b7c6bfb4cdf965233b0d9838fe813a4731fc716bfde54cb58c0",
+    "conversion_json": "b4300ac2da210ede6d2aad7318657db603406da8755a73ce2c8256fe19496b7e",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "quopri",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 11,
+    "runnable": 11,
+    "green": 0,
+    "quarantined": 0,
+    "failed": 11,
+    "infra_failed": 11
+  },
+  "failures": [
+    {
+      "id": "QuopriTestCase.test_encodestring",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_decodestring",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_decodestring_double_equals",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_idempotent_string",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_encode",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_decode",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_embedded_ws",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_encode_header",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_decode_header",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_scriptencode",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "QuopriTestCase.test_scriptdecode",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    }
+  ]
+}
