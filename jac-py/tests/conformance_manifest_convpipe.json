@@ -2,7 +2,7 @@
   "version": 1,
   "wave": "conv_pipeline",
   "description": "D2 mechanical test-conversion pipeline (convert_suite/diff_runner)",
-  "module_count": 169,
+  "module_count": 208,
   "modules": [
     {
       "stem": "array",
@@ -2704,6 +2704,435 @@
       ],
       "libtest_snippets": [],
       "notes": "92 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "_opcode",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv__opcode_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "5 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "abstract_numbers",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_abstract_numbers_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "annotationlib",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_annotationlib_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "67 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "atexit",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_atexit_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "code_module",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_code_module_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "17 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "codecmaps_jp",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_codecmaps_jp_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "codecmaps_kr",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_codecmaps_kr_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "curses",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_curses_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "exception_group",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_exception_group_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "34 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "faulthandler",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_faulthandler_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "flufl",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_flufl_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "grammar",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_grammar_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "52 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "grp",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_grp_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "harness_canary",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_harness_canary_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "hmac",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_hmac_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "ipaddress",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_ipaddress_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "83 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "locale",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_locale_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "40 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "lzma",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_lzma_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "115 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "pkg",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_pkg_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "posix",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_posix_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "80 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "pprint",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_pprint_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "43 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "pwd",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_pwd_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "pyexpat",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_pyexpat_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "34 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "quopri",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_quopri_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "resource",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_resource_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "13 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "select",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_select_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "signal",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_signal_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "14 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "socket",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_socket_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "39 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "sourceencoding",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_sourceencoding_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "symtable",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_symtable_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "sys",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_sys_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "19 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "syslog",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_syslog_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "10 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "tracemalloc",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_tracemalloc_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "26 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "typing",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_typing_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "535 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "unicodedata",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_unicodedata_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "wave",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_wave_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "10 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "xml_etree",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_xml_etree_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "zipfile64",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_zipfile64_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
+    },
+    {
+      "stem": "zipimport",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_zipimport_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "12 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "conversion.json"
     }
   ]
