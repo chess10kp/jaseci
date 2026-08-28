@@ -386,17 +386,6 @@ def _p2_lazy_violations(pkg: str, subs: list[str]) -> list[str] {
 # Converted Lib/test pins import helper names from test.support; p2_libtest_reset
 # registers a minimal module covering what converted suites actually use.
 
-obj P2SupportGcCollectFn(PyObj) {
-    # CPython test/support/__init__.py gc_collect: runs gc.collect() twice so
-    # reference cycles and frame locals settle before weakref assertions.
-    # JacPython's ceval releases guest garbage through the host GC eagerly
-    # (no separate cycle collector), so observably this is a no-op that
-    # returns None -- which is all converted Lib/test pins rely on.
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        return py_none();
-    }
-}
-
 obj P2SupportSortdictFn(PyObj) {
     # CPython test/support/__init__.py sortdict: "Like repr(dict), but in
     # sorted order." Sorts by key (real comparisons, so unorderable key
@@ -769,6 +758,40 @@ obj P2SupportRequiresDebugRangesFn(PyObj) {
     }
 }
 
+obj P2SupportFindfileFn(PyObj) {
+    # CPython test.support.findfile: locate Lib/test data files on the host
+    # reference tree (randv2_32.pck, pstats.pck, ...). Delegates to the host
+    # interpreter's own test.support so paths match the pinned CPython corpus.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) < 1 {
+            return py_error("TypeError", "findfile expected at least 1 argument");
+        }
+        support_res = _jac_host_import(
+            "test.support", PyList(t="list", items=[PyStr(t="str", val="*")])
+        );
+        if not ((support_res[0] as bool)) {
+            return py_error(str(support_res[1]), str(support_res[2]));
+        }
+        findfile_res = _jac_host_getattr(support_res[1], "findfile");
+        if not ((findfile_res[0] as bool)) {
+            return py_error(str(findfile_res[1]), str(findfile_res[2]));
+        }
+        host_args: list[any] = [];
+        for a in args {
+            host_args.append(to_host(a));
+        }
+        host_kwargs: dict[str, any] = {};
+        for kw in kwargs {
+            host_kwargs[kw] = to_host(kwargs[kw]);
+        }
+        res = _jac_host_call(findfile_res[1], host_args, host_kwargs);
+        if res[0] as bool {
+            return from_host(res[1]);
+        }
+        return py_error(str(res[1]), str(res[2]));
+    }
+}
+
 obj P2SupportGcCollectFn(PyObj) {
     # CPython test.support.gc_collect: "Run the garbage collector." Guest
     # objects are real host-CPython objects, so the host cycle collector is
@@ -837,6 +860,8 @@ def p2_libtest_reset {
         "is_apple": PyBool(t="bool", val=False),
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
+        "findfile": P2SupportFindfileFn(t="function"),
+        "verbose": PyBool(t="bool", val=False),
         "gc_collect": P2SupportGcCollectFn(t="function"),
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
@@ -1048,6 +1073,30 @@ test "layer_p2_libtest: support_gc_collect snippet prints ok on JacPython" {
         "assert callable(support.gc_collect)\n"
         "assert support.gc_collect() is None\n"
         "support.gc_collect()\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: support_verbose snippet prints ok on JacPython" {
+    snippet = (
+        "from test import support\n"
+        "verbose = support.verbose\n"
+        "assert verbose in (False, True)\n"
+        "if verbose:\n"
+        "    print('verbose')\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: support_findfile snippet prints ok on JacPython" {
+    snippet = (
+        "from test import support\n"
+        "p = support.findfile('pstats.pck')\n"
+        "assert isinstance(p, str) and len(p) > 0\n"
         "print('ok')\n"
     );
     (ok, detail) = p2_libtest_expect_ok(snippet);
