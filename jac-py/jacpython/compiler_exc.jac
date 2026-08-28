@@ -1482,6 +1482,14 @@ def visit_try(
                         OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, hbody.loc
                     );
                 }
+            } elif try_follows or not normal_terminated {
+                # Taken handler must reach the same continuation as the normal
+                # path (code after the try, or module RETURN in after_try_epilogue).
+                g.emit_jump(
+                    OP_JUMP_BACKWARD_NO_INTERRUPT,
+                    after_try_epilogue.id,
+                    hbody.loc
+                );
             } else {
                 emit_module_return(g, hbody.loc);
             }
