@@ -64,6 +64,8 @@ def _required_runtime_globals(
     return (default_names, "@jac/runtime");
 }
 
+# String-level runtime import injection for non-codegen paths (jsdom harnesses).
+# Jac2js emission injects @jac/runtime imports via EsastGenPass._inject_runtime_import.
 def with_runtime_globals(
     js_code: str, backend: (FrameworkBackend | None) = None
 ) -> str {
@@ -83,6 +85,7 @@ def with_runtime_globals(
     return line + '\n' + js_code;
 }
 
+# Deprecated: prefer codegen-injected imports. Kept for HMR/jac_to_js legacy finalizers.
 def prepend_active_runtime_globals(js_code: str) -> str {
     import from jaclang.compiler.backends.es.backends.registry {
         resolve_active_backend
