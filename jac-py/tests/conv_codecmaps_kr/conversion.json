@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_codecmaps_kr.py",
+    "-o",
+    "jac-py/tests/conv_codecmaps_kr",
+    "--name",
+    "conv_codecmaps_kr"
+  ],
+  "generated_at": "2026-08-28T16:27:21",
+  "hashes": {
+    "pins_jac": "282143adbeb08a2eca06a7c25b3de0633b38f34b387f284950879835fbe8bcd2"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_codecmaps_kr.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "codecmaps_kr",
+  "pins_file": "conv_codecmaps_kr_pins.jac",
+  "pins": [
+    {
+      "ident": "TestCP949Map.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestCP949Map.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestCP949Map.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEUCKRMap.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEUCKRMap.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestEUCKRMap.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestJOHABMap.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestJOHABMap.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "TestJOHABMap.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 9,
+    "pinned": 0,
+    "quarantined": 9
+  }
+}
