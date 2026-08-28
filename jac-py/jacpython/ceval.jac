@@ -485,7 +485,7 @@ def _jac_is_exception_type(host_val):
     # a user class like `class Exc(Exception)` whose host base proxy is here).
     return isinstance(host_val, type) and issubclass(host_val, BaseException)
 
-def _jac_host_exception_instance(raw) {
+def _jac_host_exception_instance(raw):
   # True with (type_name, message, args) when raw is a raised host BaseException
   # instance. Args carries the FULL constructor tuple (BaseException.args) so a
   # host-proxied exception raised through the VM keeps its arguments -- a single
