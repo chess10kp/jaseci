@@ -13756,3 +13756,196 @@ def gen_drain(gen: PyGenerator) -> PyObj {
     while True {
         nxt = gen_resume(gen, py_none());
         if nxt.t == "genstop" {
+            return PyList(t="list", items=items);
+        }
+        if is_error(nxt) {
+            return nxt;
+        }
+        items.append(nxt);
+    }
+    return PyList(t="list", items=items);
+}
+# Sync a guest PyDict argument with the working map exec() ran against:
+# every name the code bound (or rebound) lands in the caller's dict, and
+# every name the code deleted is removed -- STORE_NAME must stay observable
+# through the ORIGINAL object the caller passed.
+def _sync_ns_back(d: PyDict, work: dict[str, PyObj]) -> PyObj {
+    stale: list[PyObj] = [];
+    for hk in d.items {
+        key_obj = d.items[hk].key;
+        if key_obj.t == "str" and not (expect_str(key_obj) in work) {
+            stale.append(key_obj);
+        }
+    }
+    for k in stale {
+        del_err = d.mp_del_subscript(k);
+        if is_error(del_err) {
+            return del_err;
+        }
+    }
+    for name in work {
+        set_err = d.dict_set(PyStr(t="str", val=name), work[name]);
+        if is_error(set_err) {
+            return set_err;
+        }
+    }
+    return py_none();
+}
+
+# Native builtin exec(source, globals=None, locals=None) -- port of
+# bltinmodule.c builtin_exec_impl. The executed module-level MAKE_FUNCTION /
+# STORE_NAME sequence binds top-level names through the frame's f_locals and
+# f_globals, so those must be the caller's LIVE namespaces -- never copies on
+# the host side of the bridge. Guest PyDict arguments run against an internal
+# map seeded from the dict and synced back after the run (see _sync_ns_back);
+# PyGlobalsProxy views (globals()) are live already. Known accepted delta:
+# functions/classes defined by the exec'd code capture the working map as
+# their __globals__, not the caller's dict object.
+def builtin_exec(
+    args: list[PyObj],
+    kwargs: dict[str, PyObj],
+    frame_globals: dict[str, PyObj],
+    frame_locals: dict[str, PyObj]
+) -> PyObj {
+    if len(kwargs) > 0 {
+        return py_error("TypeError", "exec() takes no keyword arguments");
+    }
+    if len(args) < 1 or len(args) > 3 {
+        return py_error(
+            "TypeError",
+            "exec expected at least 1 argument, got " + str(len(args))
+        );
+    }
+    # str/bytes source: compile through the same marshal transport the import
+    # machinery uses (native statement-mode compile is Phase C) and normalize
+    # to a PyCode before dispatch. A host SyntaxError surfaces as a catchable
+    # guest exception, matching CPython's exec('for = 1') -> SyntaxError.
+    if isinstance(args[0], PyStr) or isinstance(args[0], PyBytes) {
+        src = "";
+        if isinstance(args[0], PyStr) {
+            src = (args[0] as PyStr).val;
+        } else {
+            src = bytes_to_str((args[0] as PyBytes).val);
+        }
+        packed_src = _jac_host_source_marshal(src);
+        if not host_result_ok(packed_src) {
+            return host_result_error(packed_src);
+        }
+        converted_src = unmarshal(packed_src[1] as list[int]);
+        if is_error(converted_src) {
+            # Surface load-time failures (e.g. opcode validation) verbatim.
+            return converted_src;
+        }
+        if not isinstance(converted_src, PyCode) {
+            return py_error("TypeError", "exec() argument 1 must be a code object");
+        }
+        args[0] = converted_src;
+    }
+    co: PyCode;
+    match args[0] {
+        case PyCode():
+            co = args[0] as PyCode;
+        case PyHostProxy():
+            # compile()/types.CodeType built on the host arrive as proxies;
+            # bring the code back through the marshal transport -- the same
+            # route every oracle code object already travels.
+            packed = _jac_host_code_marshal((args[0] as PyHostProxy).val);
+            if not host_result_ok(packed) {
+                return py_error("TypeError", "exec() argument 1 must be a code object");
+            }
+            converted = unmarshal(packed[1] as list[int]);
+            if not isinstance(converted, PyCode) {
+                return py_error("TypeError", "exec() argument 1 must be a code object");
+            }
+            co = converted as PyCode;
+        case _:
+            return py_error("TypeError", "exec() argument 1 must be a code object");
+    }
+    g_work: dict[str, PyObj] = frame_globals;
+    g_copy = False;
+    if len(args) >= 2 and not isinstance(args[1], PyNoneType) {
+        if isinstance(args[1], PyDict) {
+            g_work = (args[1] as PyDict).dict_str_map();
+            g_copy = True;
+        } elif isinstance(args[1], PyGlobalsProxy) {
+            g_work = (args[1] as PyGlobalsProxy).ns;
+        } else {
+            return py_error(
+                "TypeError",
+                "exec() argument 2 must be a dict, not '"
+                    + _compare_type_name(args[1]) + "'"
+            );
+        }
+    }
+    l_work: dict[str, PyObj] = g_work;
+    l_copy = False;
+    if len(args) == 3 and not isinstance(args[2], PyNoneType) {
+        if isinstance(args[2], PyDict) {
+            l_work = (args[2] as PyDict).dict_str_map();
+            l_copy = True;
+        } elif isinstance(args[2], PyGlobalsProxy) {
+            l_work = (args[2] as PyGlobalsProxy).ns;
+        } else {
+            return py_error(
+                "TypeError",
+                "exec() argument 3 must be a dict, not '"
+                    + _compare_type_name(args[2]) + "'"
+            );
+        }
+    }
+    outcome = exec_code_frame(co, [], {}, g_work, l_work, [], [], {});
+    if is_error(outcome) {
+        return outcome;
+    }
+    if g_copy {
+        sync_g = _sync_ns_back(args[1] as PyDict, g_work);
+        if is_error(sync_g) {
+            return sync_g;
+        }
+    }
+    if l_copy {
+        sync_l = _sync_ns_back(args[2] as PyDict, l_work);
+        if is_error(sync_l) {
+            return sync_l;
+        }
+    }
+    return py_none();
+}
+
+# Depth of exec_code invocations on the current host stack. Guest execution
+# re-enters exec_code for synthesized operator/comprehension code objects
+# (pyc_first), so the final-error traceback display must only fire at the
+# OUTERMOST call -- where an error genuinely escapes the program -- never for
+# inner errors a guest handler may still catch.
+glob _tb_exec_depth: int = 0;
+
+def exec_code(co: PyObj, args: list[PyObj], globals: dict[str, PyObj]) -> PyObj {
+    match co {
+        case PyCode():
+            _tb_exec_depth += 1;
+            try {
+                outcome = exec_code_frame(co, args, {}, globals, globals, [], [], {});
+            } finally {
+                _tb_exec_depth -= 1;
+            }
+            if is_error(outcome) and _tb_exec_depth == 0 {
+                # Final-error surfacing: render the guest traceback chain to
+                # stderr shaped exactly like CPython's uncaught-exception path.
+                tb_display_error(outcome, py_str);
+            }
+            return outcome;
+    }
+    return py_error("TypeError", "expected code object");
+}
+
+def exec_module(co: PyObj) -> dict[str, PyObj] {
+    globals: dict[str, PyObj] = {"__name__": PyStr(t="str", val="__main__")};
+    outcome = exec_code(co, [], globals);
+    # CPython import semantics: an exception raised by a module body propagates
+    # to the importer. Discarding it here silently handed callers partial
+    # globals on any failure.
+    if is_error(outcome) {
+        _jac_reraise_pyerror(outcome as PyError);
+    }
+    return globals;
+}
