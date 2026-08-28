@@ -817,11 +817,7 @@ impl JacCompiler.resolve_absorb_imports(
             }
         } else {
             try {
-                module = target_program.compile(
-                    resolved,
-                    no_cgen=True,
-                    symtab_ir_only=target_program.options.symtab_ir_only
-                );
+                module = target_program.compile(resolved, no_cgen=True);
             } except Exception {
                 module = None;
             }
