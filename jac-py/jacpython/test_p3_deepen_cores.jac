@@ -79,10 +79,12 @@ import from iterobject {
     seqiter_length_hint, seqiter_exhausted, seqiter_next_index,
     seqiter_remaining, calliter_has_callable, seqiter_set_exhausted,
 }
-import from type_slots {
+import from typeobject {
     type_ready,
     Py_TPFLAGS_READY,
     Py_TPFLAGS_READYING,
+}
+import from type_slots {
     type_slots_filter_members,
     type_slots_wants_dict,
     type_slots_wants_weakref,
