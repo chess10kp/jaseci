@@ -17,6 +17,8 @@
 # subclasses resolve identically whether callers arrive from native or
 # bridged guest classes.
 
+import from ceval { py_obj_is_type, py_type_same }
+
 # Internal state held by the ABC machinery (mirrors _abc._abc_data).
 obj _ABCImpl {
     has registry: list = [],
@@ -39,6 +41,19 @@ def _p2_impl_for(cls: any) -> _ABCImpl | None {
         return _impls[key];
     }
     return None;
+}
+
+def _p2_list_has_type(lst: list, target: any) -> bool {
+    for item in lst {
+        if py_type_same(item, target) {
+            return True;
+        }
+    }
+    return False;
+}
+
+def _p2_is_class(value: any) -> bool {
+    return py_obj_is_type(value);
 }
 
 def _p2_is_abstract(value: any) -> bool {
@@ -136,7 +151,7 @@ def _abc_init(cls: any) {
 
 def _abc_register(cls: any, subclass: any) -> any {
     # Mirrors _abc__abc_register_impl.
-    if not isinstance(subclass, type) {
+    if not _p2_is_class(subclass) {
         raise TypeError("Can only register classes");
     }
     if _p2_real_issubclass(subclass, cls) {
@@ -151,7 +166,7 @@ def _abc_register(cls: any, subclass: any) -> any {
     if data is None {
         raise TypeError("_abc_impl is set to a wrong type");
     }
-    if subclass not in data.registry {
+    if not _p2_list_has_type(data.registry, subclass) {
         data.registry.append(subclass);
     }
     _invalidation_counter += 1;
@@ -160,7 +175,7 @@ def _abc_register(cls: any, subclass: any) -> any {
 
 def _abc_subclasscheck(cls: any, subclass: any) -> bool {
     # Mirrors _abc__abc_subclasscheck_impl steps 1-6.
-    if not isinstance(subclass, type) {
+    if not _p2_is_class(subclass) {
         raise TypeError("issubclass() arg 1 must be a class");
     }
     data = _p2_impl_for(cls);
@@ -169,7 +184,7 @@ def _abc_subclasscheck(cls: any, subclass: any) -> bool {
     }
 
     # 1. Positive cache.
-    if subclass in data.cache {
+    if _p2_list_has_type(data.cache, subclass) {
         return True;
     }
 
@@ -177,7 +192,7 @@ def _abc_subclasscheck(cls: any, subclass: any) -> bool {
     if data.negative_cache_version < _invalidation_counter {
         data.negative_cache.clear();
         data.negative_cache_version = _invalidation_counter;
-    } elif subclass in data.negative_cache {
+    } elif _p2_list_has_type(data.negative_cache, subclass) {
         return False;
     }
 
@@ -266,13 +281,13 @@ def _abc_instancecheck(cls: any, instance: any) -> bool {
         raise TypeError("_abc_impl is set to a wrong type");
     }
     subclass: any = getattr(instance, "__class__");
-    if subclass in data.cache {
+    if _p2_list_has_type(data.cache, subclass) {
         return True;
     }
     subtype: any = type(instance);
     if subtype == subclass {
         if data.negative_cache_version == _invalidation_counter {
-            if subclass in data.negative_cache {
+            if _p2_list_has_type(data.negative_cache, subclass) {
                 return False;
             }
         }
