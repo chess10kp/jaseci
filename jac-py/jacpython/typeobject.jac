@@ -3,8 +3,8 @@
 # c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/typeobject_core.c``
 # (lift: ``jac-py/Objects/_lifted/typeobject_core.jac``).
 #
-# ``type_ready`` / ``type_hash_unimplemented`` are reference stubs until heap
-# types (P5) wire ``PyType_Ready`` into class construction.
+# ``type_ready`` is wired into ``make_pyclass_from_map`` (P5 heap types).
+# ``type_hash_unimplemented`` remains a reference stub.
 import from objects { PyObj, PyStr, PyBool, is_error, py_error, Py_EQ, Py_NE, }
 
 glob Py_TPFLAGS_READY: int = 4096,
@@ -54,9 +54,8 @@ def type_richcompare_same(op: int, same: bool) -> PyObj {
     return py_error("TypeError", "unsupported comparison between classes");
 }
 
-# ``PyType_Ready`` minimal stub — set READY without full MRO/slot setup.
-# Wired into ``make_pyclass_from_map`` (P5 heap types); full slot finalization
-# remains future work.
+# ``PyType_Ready`` flag stub — set READY; slot layout finalization is in
+# ``ceval.compute_class_slots`` via ``type_slots.jac`` helpers.
 def type_ready(flags: int) -> int {
     if (flags & Py_TPFLAGS_READY) != 0 {
         return flags;
