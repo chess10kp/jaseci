@@ -1,10 +1,9 @@
 # Item 19 - native PyRange across the bridge (DESIGN, pre-implementation)
 
-Status: DESIGN-FIRST per Runtime fix lane handoff brief. No runtime edits until
-sign-off. Author: YoungHawk (VM runtime fix lane). Reviewers: UltraJaguar
-(BrightTiger continuity - verification half + design judgment), IronArrow
-(integrator fresh-eyes pass). GoldLion successor not yet spawned; walker-lane
-sign-off pending.
+Status: **IMPLEMENTED** (Option A, Phase 1 + Phase 2 core landed on `jac-python`).
+DESIGN-FIRST retry (mech lane, 2026-08-28): design agreed; O(1) slot table and
+both bridge arms are in-tree. Remaining gaps are bridge-policy follow-ups, not
+core range semantics.
 
 ## Problem
 
@@ -159,3 +158,26 @@ used by every container op; wants its own corpus run, not a P1 rider.
 2. Hash/dict-key: phase 2, firmly.
 3. Iterator cursor: explicit send_into arm (hot-loop path, no per-next()
    getattro indirection).
+
+## Implementation status (2026-08-28, mech lane sign-off)
+
+**Agreed design:** Option A (native `PyRange` / `PyRangeIter` with O(1)
+`len`/`contains`/int-index/slice via `rangeobject.jac` leaf math; host
+`range` objects bridge in/out without materializing elements.
+
+**Landed in `ceval.jac`:**
+
+- `PyRange` ctor interception (`range` builtin), `from_host` O(1) arm at
+  `isinstance(raw, range)`, `to_host` `case PyRange()` arm (D-RANGE-ID).
+- Slots: iter, len, contains, int-index, slice → new `PyRange`, eq/ne, repr,
+  bool, `.start/.stop/.step`, `.index`/`.count` (int fast path + scan fallback),
+  `tp_hashkey` via lifted tuple hash.
+- `PyRangeIter` cursor; laziness sentinel `range(10**9)` never materializes.
+
+**Not in this pass (bridge-policy follow-ups):**
+
+- `PyRangeIter` / exhausted-iterator `to_host` arm (`BridgePolicy.LAZY_ITER`).
+- Iterator `__setstate__` / pickling parity (`conv_range_pins` triage).
+- Test harness `ALWAYS_EQ` import for `.index`/`.count`/`.types` pins.
+
+No further design changes required before those follow-up tasks land.
