@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "e306f05004aa237414b78d527c128f70d416adb7",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/home/jac/repos/jac-python/jac-py/tests/conv_code_module/conv_code_module_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:09:50",
+  "hashes": {
+    "pins_jac": "13db059ba6d8d5c72a190fdf1e5a127bc4eb461abd495d3f58447ba4e9cbed0f",
+    "conversion_json": "a44884100db607150e2a5b4cb1f8e38c0f1ac862d162394530efa1a311d06574",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "code_module",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 17,
+    "runnable": 17,
+    "green": 0,
+    "quarantined": 0,
+    "failed": 17,
+    "infra_failed": 17
+  },
+  "failures": [
+    {
+      "id": "TestInteractiveConsole.test_ps1",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_ps2",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_console_stderr",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_syntax_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_indentation_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_unicode_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_sysexcepthook",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_sysexcepthook_syntax_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_sysexcepthook_indentation_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_sysexcepthook_crashing_doesnt_close_repl",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_sysexcepthook_raising_BaseException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_sysexcepthook_raising_SystemExit_gets_through",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_banner",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_exit_msg",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_cause_tb",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsole.test_context_tb",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    },
+    {
+      "id": "TestInteractiveConsoleLocalExit.test_exit",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "home/jac/repos/jac-python/jac\nnote: /home/jac/repos/jac-python/jac-py/jacpython/_jsonmodule.jac preferred native but did not lower; compiled in the server codespace (error[E1055]: No matching overload found for method \"__add__\" with the given arguments)\n[ERROR] Error: error[E1055]: No matching overl"
+    }
+  ]
+}
