@@ -1,0 +1,27 @@
+# OWNERS — worker → family (owned files) → lane. Derived from the LIVE tmux
+# peer-orchestrator sessions (workerN pi --name workerN-orchestrator) + their
+# stated FAMILY, Aug 25. The desk reads this to route instead of scanning a
+# 1400-line ledger. One worker per family so concurrent commits never collide.
+#
+# Coordinator: the DESK (stable role name "desk"), reading `snapshot`. Model A
+# retires pi-messenger and its random per-session codenames (IronUnion,
+# SlatePetrel, BrightTiger, ...) — identity is now the stable worker/lane below.
+#
+# worker    lane        key file             family / owned territory
+# --------------------------------------------------------------------------------------------
+worker2     objects     ~/.second-worker.env  objects.jac — dataclass bridge, instance __dict__, property attr, __kwdefaults__, field metadata
+worker3     exceptions  ~/.third-worker.env   exceptions_core.jac + compiler exception-table paths (nested-except emission)
+worker4     mech        ~/.fourth.env         runtime-gap / mechanical conversions / bridge-policy (branches wp4/*)
+worker6     converter   ~/.sixth.env          converter throughput (jac-py/tools) — doctest extraction (conv/*)
+worker7     typesys     ~/.seven.env          type-system / metaclass surface (design-heavy; coord w/ objects family)
+worker8     census      ~/.eight.env          census-driven gap closing  <-- consumes gapq-bridge output
+worker5     mech        ~/.fifth.env          SPARE — documented unused key; park on mech when activated
+#
+# Standing rules (from the live worker prompts): branch-only pushes to your OWN
+# branches (NEVER push jac-python), fresh worktrees off fetched origin tip,
+# /var/tmp caches (not /tmp), ONE jac process at a time + named test files + hard
+# timeouts, .venv/bin/jac check gates, conventional commits, NO Co-Authored-By,
+# rebase onto fetched tip before push.
+#
+# Deadline: Aug 27 EOD, then token cliff (post-cliff model = Composer 2.5).
+# Front-load everything before the cliff — keep every lane's pending non-empty.
