@@ -178,30 +178,6 @@ sys.modules["jaclang.compiler.driver.modresolver"] = _modresolver
 get_jac_search_paths = _modresolver.get_jac_search_paths
 
 
-# Static-scan mode: placement/codespace analysis resolves import paths as a
-# compile-time fact. Finding a spec for a dotted name makes CPython import
-# the parent package, and for jac packages that EXECUTES the module (full
-# compile + run) -- recursion that livelocks when the closure contains
-# native-failing modules. While the depth below is > 0, find_spec declines
-# jac specs so resolution stays static.
-_static_scan_depth = 0
-
-
-def static_scan_begin() -> None:
-    global _static_scan_depth
-    _static_scan_depth += 1
-
-
-def static_scan_end() -> None:
-    global _static_scan_depth
-    if _static_scan_depth > 0:
-        _static_scan_depth -= 1
-
-
-def static_scan_active() -> bool:
-    return _static_scan_depth > 0
-
-
 class JacMetaImporter(MetaPathFinder, Loader):
     """Meta path importer to load .jac modules via Python's import system."""
 
@@ -235,8 +211,6 @@ class JacMetaImporter(MetaPathFinder, Loader):
         target: ModuleType | None = None,
     ) -> ModuleSpec | None:
         """Find the spec for the module."""
-        if static_scan_active():
-            return None
         # Sealed image is authoritative: a sealed binary resolves its modules
         # from the manifest by name, with no filesystem probing for .jac. This
         # is the primary path (not a fallback) so a sealed runtime never touches
