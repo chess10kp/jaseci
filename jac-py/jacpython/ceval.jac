@@ -482,6 +482,12 @@ import from objects {
     hashkey_str,
     PY_NOT_IMPLEMENTED
 }
+import from _weakrefmodule {
+    build_weakref_module_attrs,
+    PyWeakRefFn,
+    PyWeakRef,
+    PyWeakProxy,
+}
 import from ceval_opcodes_containers {
     op_build_list,
     op_build_map,
@@ -909,9 +915,14 @@ def _resolve_relative(current_package: str, name: str, level: int) -> str {
 # parent, per CPython). Pure-Python source runs in-VM; anything else is proxied.
 def import_native(absname: str) -> PyObj {
     if absname == "weakref" and not ("weakref" in shim_modules) {
-        # Register before the module-info lookup: weakref.py is pure-Python
-        # stdlib and would otherwise be executed in-VM against C internals.
-        shim_modules["weakref"] = build_weakref_module();
+        # _weakref.c lift (see _weakrefmodule.jac): full native surface with
+        # ref/proxy types, registry-backed getweakrefcount/getweakrefs, and
+        # _remove_dead_weakref. Registered before the module-info lookup:
+        # weakref.py is pure-Python stdlib and would otherwise be executed
+        # in-VM against C internals.
+        shim_modules["weakref"] = PyModule(
+            t="module", name="weakref", attrs=build_weakref_module_attrs()
+        );
     }
     if absname == "heapq" and not ("heapq" in shim_modules) {
         # heapq.py is pure Python but served from the host it mutates a COPY
@@ -4200,9 +4211,11 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         );
     }
     if name == "weakref" and not ("weakref" in shim_modules) {
-        # The host module's ref() sees to_host conversions (plain objects ->
-        # None), so serve our identity-faithful shim instead.
-        shim_modules["weakref"] = build_weakref_module();
+        # Mirror of the import_native site: host weakref cannot see guest
+        # identity, so serve the native _weakref.c facade instead.
+        shim_modules["weakref"] = PyModule(
+            t="module", name="weakref", attrs=build_weakref_module_attrs()
+        );
     }
     if name == "heapq" and not ("heapq" in shim_modules) {
         # Same copy-mutation hazard as import_native: host heapq mutates a
@@ -4578,6 +4591,13 @@ def py_slot_truth(value: PyObj) -> PyObj {
             return ln;
         }
         return PyBool(t="bool", val=(ln as PyInt).val != 0);
+    }
+    if isinstance(value, PyWeakProxy) {
+        live = _deref_weakproxy(value as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_slot_truth(live);
     }
     return PyBool(t="bool", val=value.tp_bool());
 }
@@ -5177,6 +5197,20 @@ def py_repr(value: PyObj) -> PyObj {
 }
 
 def py_compare(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
+    if isinstance(lhs, PyWeakProxy) {
+        live = _deref_weakproxy(lhs as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_compare(kind, live, rhs);
+    }
+    if isinstance(rhs, PyWeakProxy) {
+        live = _deref_weakproxy(rhs as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_compare(kind, lhs, live);
+    }
     if isinstance(lhs, PyUserObj) or isinstance(rhs, PyUserObj) {
         return user_compare(kind, lhs, rhs);
     }
@@ -5752,6 +5786,13 @@ def set_inplace_binop(s: PySet, kind: int, rhs: PyObj) -> PyObj {
 # folds the kind to its base binop (immutable fallback: str/bytes/int/tuple
 # legitimately rebind).
 def py_inplace_binop(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
+    if isinstance(lhs, PyWeakProxy) {
+        live = _deref_weakproxy(lhs as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_inplace_binop(kind, live, rhs);
+    }
     if isinstance(lhs, PyList) {
         return list_inplace_binop(lhs as PyList, kind, rhs);
     }
@@ -5772,6 +5813,20 @@ def py_binop(kind: int, lhs: PyObj, rhs: PyObj) -> PyObj {
             return inplace;
         }
         kind = kind - NB_INPLACE_ADD;
+    }
+    if isinstance(lhs, PyWeakProxy) {
+        live = _deref_weakproxy(lhs as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_binop(kind, live, rhs);
+    }
+    if isinstance(rhs, PyWeakProxy) {
+        live = _deref_weakproxy(rhs as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_binop(kind, lhs, live);
     }
     # A user-class operand routes through the operator-overload protocol first.
     # EXCEPT str %-format over a native operand carrying user instances: CPython
@@ -5853,6 +5908,13 @@ def py_subscript(container: PyObj, index: PyObj) -> PyObj {
 # protocol; other container shapes route through the host so `in` stays
 # consistent for opaque proxies during bootstrap.
 def py_contains(container: PyObj, member: PyObj) -> PyObj {
+    if isinstance(container, PyWeakProxy) {
+        live = _deref_weakproxy(container as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_contains(live, member);
+    }
     if isinstance(container, PyRange) {
         rg = container as PyRange;
         # Exact-int needles (incl. bool, per CPython's int-instance check) take
@@ -6713,6 +6775,13 @@ def py_anext(aiter: PyObj) -> PyObj {
 }
 
 def py_len(value: PyObj) -> PyObj {
+    if isinstance(value, PyWeakProxy) {
+        live = _deref_weakproxy(value as PyWeakProxy);
+        if is_error(live) {
+            return live;
+        }
+        return py_len(live);
+    }
     if isinstance(value, PyRange) {
         return PyInt(t="int", val=(value as PyRange).length());
     }
@@ -12936,48 +13005,9 @@ def weakref_target_error(target: PyObj) -> PyObj {
     return py_error("TypeError", "cannot create weak reference to '" + tname + "' object");
 }
 
-# Native weakref module surface (shimmed over host weakref). CPython-faithful
-# for objects whose RAW Python identity is the object itself (PyUserObj,
-# PyClass, functions, generators): deref hands back the identical object, and
-# death follows refcounting exactly. Boxed value types (int/str/list/...) are
-# rejected up front because CPython makes them un-weakreferenceable, and host
-# proxies are rejected because deref would mint a fresh proxy and break
-# `r() is o` identity.
-obj PyWeakRefFn(PyObj) {
-    # Identity hash (CPython: builtin-style callables hash by id); copy.py's
-    # module init stores these wrappers in hash-keyed dispatch structures.
-    def tp_hashkey -> PyObj {
-        return PyStr(t="str", val="obj:" + str(id(self)));
-    }
-
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        if len(args) != 1 {
-            # callback= / weakref.ref(cls) forms unsupported by this surface.
-            return py_error("TypeError", "weakref.ref expected 1 argument");
-        }
-        target = args[0];
-        if weakref_target_rejected(target) {
-            return weakref_target_error(target);
-        }
-        wr = _jac_make_weakref(target);
-        if wr is None {
-            return py_error("TypeError", "cannot create weak reference to 'object' object");
-        }
-        return PyWeakRef(t="weakref", wr=wr);
-    }
-}
-
-obj PyWeakRef(PyObj) {
-    has wr: any;
-
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        raw = _jac_weakref_deref(self.wr);
-        if raw is None {
-            return py_none();
-        }
-        # The raw value IS the original PyObj: identity (`r() is o`) holds.
-        return raw as PyObj;
-    }
+# Live referent of a weakref proxy, or ReferenceError when dead.
+def _deref_weakproxy(w: PyWeakProxy) -> PyObj {
+    return w._live_referent();
 }
 
 # Native types.coroutine fast path: mark a generator function's code object
@@ -13040,16 +13070,6 @@ def build_types_facade -> PyObj {
     }
     attrs["coroutine"] = PyTypesCoroutine(t="types_coroutine");
     return PyModule(t="module", name="types", attrs=attrs);
-}
-
-def build_weakref_module -> PyObj {
-    return PyModule(
-        t="module",
-        name="weakref",
-        attrs={
-            "ref": PyWeakRefFn(t="weakref_fn"),
-        },
-    );
 }
 
 # ---- heapq product-path shim ----------------------------------------------

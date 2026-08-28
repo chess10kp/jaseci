@@ -40,13 +40,12 @@ import from objects {
 import from ceval {
     PyModule,
     PyHostProxy,
-    PyWeakRefFn,
-    PyWeakRef,
     register_shim_module,
     to_host,
     weakref_target_rejected,
     weakref_target_error,
 }
+import from _weakrefmodule { PyWeakRefFn, PyWeakRef }
 
 import from importlib { import_module }
 

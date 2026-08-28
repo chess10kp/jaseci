@@ -306,6 +306,46 @@ obj PyWeakProxy(PyWeakRef) {
         }
         return PY_NOT_IMPLEMENTED;
     }
+
+    def mp_subscript(index: PyObj) -> PyObj {
+        target = self._live_referent();
+        if is_error(target) {
+            return target;
+        }
+        return target.mp_subscript(index);
+    }
+
+    def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
+        target = self._live_referent();
+        if is_error(target) {
+            return target;
+        }
+        return target.mp_ass_subscript(index, value);
+    }
+
+    def mp_del_subscript(index: PyObj) -> PyObj {
+        target = self._live_referent();
+        if is_error(target) {
+            return target;
+        }
+        return target.mp_del_subscript(index);
+    }
+
+    def tp_iter -> PyObj {
+        target = self._live_referent();
+        if is_error(target) {
+            return target;
+        }
+        return target.tp_iter();
+    }
+
+    def tp_hashkey -> PyObj {
+        target = self._live_referent();
+        if is_error(target) {
+            return target;
+        }
+        return target.tp_hashkey();
+    }
 }
 
 # The shared constructor behind ProxyType / CallableProxyType / proxy().
