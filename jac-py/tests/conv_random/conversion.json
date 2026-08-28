@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.3.0",
+  "jac_sha": "888737bb476d88dc6dc77c271a2da80c2da8713d",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_random.py",
+    "-o",
+    "/var/tmp/laneb-out/test_random",
+    "--name",
+    "conv_random"
+  ],
+  "generated_at": "2026-08-24T11:07:24",
+  "hashes": {
+    "pins_jac": "42894c38a714c652e6520031afbe6b13fd503e479f30218343a1b460ef568aea"
+  },
+  "source_file": "reference/cpython/Lib/test/test_random.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "random",
+  "pins_file": "conv_random_pins.jac",
+  "pins": [
+    {
+      "ident": "TestBasicOps.test_bug_1727780",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pickle\nfrom test import support\n\ndef _t():\n    files = [('randv2_32.pck', 780), ('randv2_64.pck', 866), ('randv3.pck', 343)]\n    for file, value in files:\n        with open(support.findfile(file), 'rb') as f:\n            r = pickle.load(f)\n        assert int(r.random() * 1000) == value, ('assertEqual', int(r.random() * 1000), value)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestRawMersenneTwister.test_bug_41052",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import pickle\n\ndef _t():\n    import _random\n    for proto in range(pickle.HIGHEST_PROTOCOL + 1):\n        r = _random.Random()\n        try:\n            pickle.dumps(*(r, proto))\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestRawMersenneTwister.test_bug_42008",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "def _t():\n    import _random\n    r1 = _random.Random()\n    r1.seed(8675309)\n    r2 = _random.Random(8675309)\n    assert r1.random() == r2.random(), ('assertEqual', r1.random(), r2.random())\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_zeroinputs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n    g = random.Random()\n    x = [g.random() for i in range(50)] + [0.0] * 5\n    g.random = x[:].pop\n    g.uniform(1, 10)\n    g.random = x[:].pop\n    g.paretovariate(1.0)\n    g.random = x[:].pop\n    g.expovariate(1.0)\n    g.random = x[:].pop\n    g.expovariate()\n    g.random = x[:].pop\n    g.weibullvariate(1.0, 1.0)\n    g.random = x[:].pop\n    g.vonmisesvariate(1.0, 1.0)\n    g.random = x[:].pop\n    g.normalvariate(0.0, 1.0)\n    g.random = x[:].pop\n    g.gauss(0.0, 1.0)\n    g.random = x[:].pop\n    g.lognormvariate(0.0, 1.0)\n    g.random = x[:].pop\n    g.vonmisesvariate(0.0, 1.0)\n    g.random = x[:].pop\n    g.gammavariate(0.01, 1.0)\n    g.random = x[:].pop\n    g.gammavariate(1.0, 1.0)\n    g.random = x[:].pop\n    g.gammavariate(200.0, 1.0)\n    g.random = x[:].pop\n    g.betavariate(3.0, 3.0)\n    g.random = x[:].pop\n    g.triangular(0.0, 1.0, 1.0 / 3.0)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_avg_std",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nfrom math import log, exp, pi, fsum, sin, factorial\n\ndef gamma(z, sqrt2pi=(2.0 * pi) ** 0.5):\n    if z < 0.5:\n        return pi / sin(pi * z) / gamma(1.0 - z)\n    az = z + (7.0 - 0.5)\n    return az ** (z - 0.5) / exp(az) * sqrt2pi * fsum([0.9999999999995183, 676.5203681218835 / z, -1259.139216722289 / (z + 1.0), 771.3234287757674 / (z + 2.0), -176.6150291498386 / (z + 3.0), 12.50734324009056 / (z + 4.0), -0.1385710331296526 / (z + 5.0), 9.934937113930748e-06 / (z + 6.0), 1.659470187408462e-07 / (z + 7.0)])\n\ndef _t():\n    g = random.Random()\n    N = 5000\n    x = [i / float(N) for i in range(1, N)]\n    for variate, args, mu, sigmasqrd in [(g.uniform, (1.0, 10.0), (10.0 + 1.0) / 2, (10.0 - 1.0) ** 2 / 12), (g.triangular, (0.0, 1.0, 1.0 / 3.0), 4.0 / 9.0, 7.0 / 9.0 / 18.0), (g.expovariate, (1.5,), 1 / 1.5, 1 / 1.5 ** 2), (g.vonmisesvariate, (1.23, 0), pi, pi ** 2 / 3), (g.paretovariate, (5.0,), 5.0 / (5.0 - 1), 5.0 / ((5.0 - 1) ** 2 * (5.0 - 2))), (g.weibullvariate, (1.0, 3.0), gamma(1 + 1 / 3.0), gamma(1 + 2 / 3.0) - gamma(1 + 1 / 3.0) ** 2)]:\n        g.random = x[:].pop\n        y = []\n        for i in range(len(x)):\n            try:\n                y.append(variate(*args))\n            except IndexError:\n                pass\n        s1 = s2 = 0\n        for e in y:\n            s1 += e\n            s2 += (e - mu) ** 2\n        N = len(y)\n        assert round(s1 / N - mu, 2) == 0, ('assertAlmostEqual', s1 / N, mu, '%s%r' % (variate.__name__, args))\n        assert round(s2 / (N - 1) - sigmasqrd, 2) == 0, ('assertAlmostEqual', s2 / (N - 1), sigmasqrd, '%s%r' % (variate.__name__, args))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_constant",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n    g = random.Random()\n    N = 100\n    for variate, args, expected in [(g.uniform, (10.0, 10.0), 10.0), (g.triangular, (10.0, 10.0), 10.0), (g.triangular, (10.0, 10.0, 10.0), 10.0), (g.expovariate, (float('inf'),), 0.0), (g.vonmisesvariate, (3.0, float('inf')), 3.0), (g.gauss, (10.0, 0.0), 10.0), (g.lognormvariate, (0.0, 0.0), 1.0), (g.lognormvariate, (-float('inf'), 0.0), 0.0), (g.normalvariate, (10.0, 0.0), 10.0), (g.binomialvariate, (0, 0.5), 0), (g.binomialvariate, (10, 0.0), 0), (g.binomialvariate, (10, 1.0), 10), (g.paretovariate, (float('inf'),), 1.0), (g.weibullvariate, (10.0, float('inf')), 10.0), (g.weibullvariate, (0.0, 10.0), 0.0)]:\n        for i in range(N):\n            assert variate(*args) == expected, ('assertEqual', variate(*args), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_binomialvariate",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nfrom collections import abc, Counter\n\ndef _t():\n    B = random.binomialvariate\n    try:\n        B(n=-1)\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        B(n=1, p=-0.5)\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        B(n=1, p=1.5)\n    except ValueError as _exc:\n        pass\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert B(0, 0.5) == 0, ('assertEqual', B(0, 0.5), 0)\n    assert B(10, 0.0) == 0, ('assertEqual', B(10, 0.0), 0)\n    assert B(10, 1.0) == 10, ('assertEqual', B(10, 1.0), 10)\n    assert B(1, 0.3) in {0, 1}, ('assertTrue', B(1, 0.3) in {0, 1})\n    assert B(1, 0.9) in {0, 1}, ('assertTrue', B(1, 0.9) in {0, 1})\n    assert B(1, 0.0) in {0}, ('assertTrue', B(1, 0.0) in {0})\n    assert B(1, 1.0) in {1}, ('assertTrue', B(1, 1.0) in {1})\n    assert B(5, 1e-18) == 0, ('assertEqual', B(5, 1e-18), 0)\n    assert B(5, 0.25) in set(range(6)), ('assertTrue', B(5, 0.25) in set(range(6)))\n    assert B(5, 0.75) in set(range(6)), ('assertTrue', B(5, 0.75) in set(range(6)))\n    assert B(100, 0.25) in set(range(101)), ('assertTrue', B(100, 0.25) in set(range(101)))\n    assert B(100, 0.75) in set(range(101)), ('assertTrue', B(100, 0.75) in set(range(101)))\n    c = Counter((B(4, 0.25) for i in range(100000)))\n    assert 29641 <= c[0] <= 33641, ('assertTrue', 29641 <= c[0] <= 33641)\n    assert 40188 <= c[1] <= 44188, ('assertTrue', 40188 <= c[1] <= 44188)\n    assert 19094 <= c[2] <= 23094, ('assertTrue', 19094 <= c[2] <= 23094)\n    assert 2688 <= c[3] <= 6688, ('assertTrue', 2688 <= c[3] <= 6688)\n    assert set(c) == {0, 1, 2, 3, 4}, ('assertEqual', set(c), {0, 1, 2, 3, 4})\n    c = Counter((B(100, 0.25) for i in range(100000)))\n    assert 34214 <= c[20] + c[21] + c[22] + c[23] + c[24] <= 38214, ('assertTrue', 34214 <= c[20] + c[21] + c[22] + c[23] + c[24] <= 38214)\n    assert set(c) <= set(range(101)), ('assertTrue', set(c) <= set(range(101)))\n    assert c.total() == 100000, ('assertEqual', c.total(), 100000)\n    assert 19000000 <= B(100000000, 0.2) <= 21000000, ('assertTrue', 19000000 <= B(100000000, 0.2) <= 21000000)\n    assert 89000000 <= B(100000000, 0.9) <= 91000000, ('assertTrue', 89000000 <= B(100000000, 0.9) <= 91000000)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_von_mises_range",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n    g = random.Random()\n    N = 100\n    for mu in (0.0, 0.1, 3.1, 6.2):\n        for kappa in (0.0, 2.3, 500.0):\n            for _ in range(N):\n                sample = g.vonmisesvariate(mu, kappa)\n                assert 0 <= sample <= random.TWOPI, ('assertTrue', 0 <= sample <= random.TWOPI, 'vonmisesvariate({}, {}) produced a result {} out of range [0, 2*pi]'.format(mu, kappa, sample))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_von_mises_large_kappa",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n    random.vonmisesvariate(0, 1000000000000000.0)\n    random.vonmisesvariate(0, 1e+100)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_errors",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n    try:\n        random.gammavariate(*(-1, 3))\n    except ValueError:\n        pass\n    try:\n        random.gammavariate(*(0, 2))\n    except ValueError:\n        pass\n    try:\n        random.gammavariate(*(2, 0))\n    except ValueError:\n        pass\n    try:\n        random.gammavariate(*(1, -3))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestRandomSubclassing.test_random_subclass_with_kwargs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n\n    class Subclass(random.Random):\n\n        def __init__(self, newarg=None):\n            random.Random.__init__(self)\n    Subclass(newarg=1)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestRandomSubclassing.test_subclasses_overriding_methods",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n\n    class SubClass1(random.Random):\n\n        def random(self):\n            called.add('SubClass1.random')\n            return random.Random.random(self)\n\n        def getrandbits(self, n):\n            called.add('SubClass1.getrandbits')\n            return random.Random.getrandbits(self, n)\n    called = set()\n    SubClass1().randrange(42)\n    assert called == {'SubClass1.getrandbits'}, ('assertEqual', called, {'SubClass1.getrandbits'})\n\n    class SubClass2(random.Random):\n\n        def random(self):\n            called.add('SubClass2.random')\n            return random.Random.random(self)\n    called = set()\n    SubClass2().randrange(42)\n    assert called == {'SubClass2.random'}, ('assertEqual', called, {'SubClass2.random'})\n\n    class SubClass3(SubClass2):\n\n        def getrandbits(self, n):\n            called.add('SubClass3.getrandbits')\n            return random.Random.getrandbits(self, n)\n    called = set()\n    SubClass3().randrange(42)\n    assert called == {'SubClass3.getrandbits'}, ('assertEqual', called, {'SubClass3.getrandbits'})\n\n    class SubClass4(SubClass3):\n\n        def random(self):\n            called.add('SubClass4.random')\n            return random.Random.random(self)\n    called = set()\n    SubClass4().randrange(42)\n    assert called == {'SubClass4.random'}, ('assertEqual', called, {'SubClass4.random'})\n\n    class Mixin1:\n\n        def random(self):\n            called.add('Mixin1.random')\n            return random.Random.random(self)\n\n    class Mixin2:\n\n        def getrandbits(self, n):\n            called.add('Mixin2.getrandbits')\n            return random.Random.getrandbits(self, n)\n\n    class SubClass5(Mixin1, random.Random):\n        pass\n    called = set()\n    SubClass5().randrange(42)\n    assert called == {'Mixin1.random'}, ('assertEqual', called, {'Mixin1.random'})\n\n    class SubClass6(Mixin2, random.Random):\n        pass\n    called = set()\n    SubClass6().randrange(42)\n    assert called == {'Mixin2.getrandbits'}, ('assertEqual', called, {'Mixin2.getrandbits'})\n\n    class SubClass7(Mixin1, Mixin2, random.Random):\n        pass\n    called = set()\n    SubClass7().randrange(42)\n    assert called == {'Mixin1.random'}, ('assertEqual', called, {'Mixin1.random'})\n\n    class SubClass8(Mixin2, Mixin1, random.Random):\n        pass\n    called = set()\n    SubClass8().randrange(42)\n    assert called == {'Mixin2.getrandbits'}, ('assertEqual', called, {'Mixin2.getrandbits'})\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestModule.testMagicConstants",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n    assert round(random.NV_MAGICCONST - 1.71552776992141, 7) == 0, ('assertAlmostEqual', random.NV_MAGICCONST, 1.71552776992141)\n    assert round(random.TWOPI - 6.28318530718, 7) == 0, ('assertAlmostEqual', random.TWOPI, 6.28318530718)\n    assert round(random.LOG4 - 1.38629436111989, 7) == 0, ('assertAlmostEqual', random.LOG4, 1.38629436111989)\n    assert round(random.SG_MAGICCONST - 2.50407739677627, 7) == 0, ('assertAlmostEqual', random.SG_MAGICCONST, 2.50407739677627)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "TestModule.test__all__",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\n\ndef _t():\n    assert set(random.__all__) <= set(dir(random)), ('assertTrue', set(random.__all__) <= set(dir(random)))\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    },
+    {
+      "ident": "CommandLineTest.test_main",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import random\nimport shlex\n\ndef _t():\n    for command, expected in [('--choice a b c', 'b'), ('\"a b c\"', 'b'), ('a b c', 'b'), (\"--choice 'a a' 'b b' 'c c'\", 'b b'), (\"'a a' 'b b' 'c c'\", 'b b'), ('--integer 5', 4), ('5', 4), ('--float 2.5', 2.1110546288126204), ('2.5', 2.1110546288126204)]:\n        random.seed(0)\n        assert random.main(shlex.split(command)) == expected, ('assertEqual', random.main(shlex.split(command)), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestBasicOps.test_53_bits_per_float",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_autoseed",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_saverestore",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_seedargs",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_gauss",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_pickling",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_getrandbits_4G_bits",
+      "reason": "decorator:support.bigmemtest"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbytes_256M",
+      "reason": "decorator:support.bigmemtest"
+    },
+    {
+      "ident": "TestModule.test_after_fork",
+      "reason": "decorator:.requires_fork"
+    },
+    {
+      "ident": "CommandLineTest.test_parse_args",
+      "reason": "decorator:support.force_not_colorized"
+    },
+    {
+      "ident": "TestBasicOps.test_autoseed",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_saverestore",
+      "reason": "uses-self.randomlist"
+    },
+    {
+      "ident": "TestBasicOps.test_seedargs",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_seed_no_mutate_bug_44018",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_seed_when_randomness_source_not_found",
+      "reason": "self.test_seedargs"
+    },
+    {
+      "ident": "TestBasicOps.test_shuffle",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_choice",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_choice_with_numpy",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_sample",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_sample_distribution",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_sample_inputs",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_sample_on_dicts",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_sample_on_sets",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_sample_on_seqsets",
+      "reason": "uses-self._items"
+    },
+    {
+      "ident": "TestBasicOps.test_sample_with_counts",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_choices",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_choices_subnormal",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_choices_with_all_zero_weights",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_choices_negative_total",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_choices_infinite_total",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_gauss",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_getrandbits",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_bigrand",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_bigrand_ranges",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_rangelimits",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_randrange_nonunit_step",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_randrange_errors",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "ident": "TestBasicOps.test_randrange_step",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_randbelow_logic",
+      "reason": "unresolved-name:_log"
+    },
+    {
+      "ident": "TestBasicOps.test_randrange_index",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_randint",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_pickling",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_bug_9025",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_randrange_bug_1590891",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_randbytes",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestBasicOps.test_mu_sigma_default_args",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_guaranteed_stable",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_27706",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_31478",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_31482",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_setstate_first_arg",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_setstate_middle_arg",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_referenceImplementation",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_strong_reference_implementation",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_long_seed",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_getrandbits",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_getrandbits_2G_bits",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_uses_getrandbits",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbelow_without_getrandbits",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_algorithms",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbytes",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbytes_getrandbits",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_counts_equivalence",
+      "reason": "uses-self.gen"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_greater_one",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_equal_one",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_equal_one_equals_expovariate",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_between_zero_and_one",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_betavariate_return_zero",
+      "reason": "unresolved-name:gammavariate_mock"
+    }
+  ],
+  "counts": {
+    "extracted": 83,
+    "pinned": 15,
+    "quarantined": 68
+  }
+}
