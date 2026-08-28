@@ -1919,6 +1919,58 @@ test "pyc-first: PEP 487 __init_subclass__ fires on subclass creation" {
     assert expect_int(r["isc"]) == 1;
 }
 
+test "pyc-first: super().__init_subclass__() chains to object terminal" {
+    r = run_source(
+        "class A:\n"
+        "    initialized = False\n"
+        "    def __init_subclass__(cls):\n"
+        "        super().__init_subclass__()\n"
+        "        cls.initialized = True\n"
+        "class B(A): pass\n"
+        "ai = 1 if A.initialized else 0\n"
+        "bi = 1 if B.initialized else 0\n"
+    );
+    assert expect_int(r["ai"]) == 0;
+    assert expect_int(r["bi"]) == 1;
+}
+
+test "pyc-first: __init_subclass__ forwards class keyword args" {
+    r = run_source(
+        "class A:\n"
+        "    def __init_subclass__(cls, **kwargs):\n"
+        "        cls.kwargs = kwargs\n"
+        "class B(A, x=3): pass\n"
+        "kx = B.kwargs.get('x', 0)\n"
+    );
+    assert expect_int(r["kx"]) == 3;
+}
+
+test "pyc-first: __init_subclass__ cooperative super skips inherited hooks on intermediate bases" {
+    r = run_source(
+        "class BaseWithInit:\n"
+        "    def __init_subclass__(cls, **kwargs):\n"
+        "        super().__init_subclass__(**kwargs)\n"
+        "        cls.initialized = cls\n"
+        "class BaseWithoutInit(BaseWithInit): pass\n"
+        "class Leaf(BaseWithoutInit): pass\n"
+        "leaf_ok = 1 if Leaf.initialized is Leaf else 0\n"
+        "mid_ok = 1 if BaseWithoutInit.initialized is BaseWithoutInit else 0\n"
+    );
+    assert expect_int(r["leaf_ok"]) == 1;
+    assert expect_int(r["mid_ok"]) == 1;
+}
+
+test "pyc-first: enum class creation survives metaclass-only boundary kwds" {
+    r = run_source(
+        "from enum import Enum\n"
+        "class Color(Enum):\n"
+        "    RED = 1\n"
+        "    GREEN = 2\n"
+        "enum_ok = 1 if Color.RED.name == 'RED' else 0\n"
+    );
+    assert expect_int(r["enum_ok"]) == 1;
+}
+
 test "pyc-first: C3 MRO resolves a diamond in strict order; value overwrite in a loop is legal" {
     r = run_source(
         # Diamond W(Y, Z), Y(X), Z(X); m on Z and X only. C3 MRO [W,Y,Z,X] picks Z,
