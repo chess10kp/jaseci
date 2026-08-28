@@ -1,0 +1,1424 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_compileall.py",
+    "-o",
+    "/var/tmp/worker6-010-conversion-wave-v4-2763188/jac-py/tests/conv_compileall",
+    "--name",
+    "conv_compileall"
+  ],
+  "generated_at": "2026-08-28T12:52:36",
+  "hashes": {
+    "pins_jac": "00a8295dc622e8ca6cf2807230bea2b4b587d681b3a1e2437615981e6910b381"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_compileall.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "compileall",
+  "pins_file": "conv_compileall_pins.jac",
+  "pins": [
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_year_2038_mtime_compilation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 32 - 1, 2 ** 32 - 1))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support timestamps near 2**32\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_year_2038_mtime_compilation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 32 - 1, 2 ** 32 - 1))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support timestamps near 2**32\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_larger_than_32_bit_times",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 35, 2 ** 35))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support large timestamps\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_larger_than_32_bit_times",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 35, 2 ** 35))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support large timestamps\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_files",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    for fn in (self.bc_path, self.bc_path2):\n        try:\n            os.unlink(fn)\n        except:\n            pass\n    assert compileall.compile_file(self.source_path, force=False, quiet=True), ('assertTrue', compileall.compile_file(self.source_path, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)), ('assertTrue', os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)))\n    os.unlink(self.bc_path)\n    assert compileall.compile_dir(self.directory, force=False, quiet=True), ('assertTrue', compileall.compile_dir(self.directory, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2), ('assertTrue', os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2))\n    os.unlink(self.bc_path)\n    os.unlink(self.bc_path2)\n    add_bad_source_file()\n    assert not compileall.compile_file(self.bad_source_path, force=False, quiet=2), ('assertFalse', compileall.compile_file(self.bad_source_path, force=False, quiet=2))\n    assert not compileall.compile_dir(self.directory, force=False, quiet=2), ('assertFalse', compileall.compile_dir(self.directory, force=False, quiet=2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_files",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    for fn in (self.bc_path, self.bc_path2):\n        try:\n            os.unlink(fn)\n        except:\n            pass\n    assert compileall.compile_file(self.source_path, force=False, quiet=True), ('assertTrue', compileall.compile_file(self.source_path, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)), ('assertTrue', os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)))\n    os.unlink(self.bc_path)\n    assert compileall.compile_dir(self.directory, force=False, quiet=True), ('assertTrue', compileall.compile_dir(self.directory, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2), ('assertTrue', os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2))\n    os.unlink(self.bc_path)\n    os.unlink(self.bc_path2)\n    add_bad_source_file()\n    assert not compileall.compile_file(self.bad_source_path, force=False, quiet=2), ('assertFalse', compileall.compile_file(self.bad_source_path, force=False, quiet=2))\n    assert not compileall.compile_dir(self.directory, force=False, quiet=2), ('assertFalse', compileall.compile_dir(self.directory, force=False, quiet=2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_no_pycache_in_non_package",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    data_dir = os.path.join(self.directory, 'data')\n    data_file = os.path.join(data_dir, 'file')\n    os.mkdir(data_dir)\n    with open(data_file, 'wb'):\n        pass\n    compileall.compile_file(data_file)\n    assert not os.path.exists(os.path.join(data_dir, '__pycache__')), ('assertFalse', os.path.exists(os.path.join(data_dir, '__pycache__')))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_no_pycache_in_non_package",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    data_dir = os.path.join(self.directory, 'data')\n    data_file = os.path.join(data_dir, 'file')\n    os.mkdir(data_dir)\n    with open(data_file, 'wb'):\n        pass\n    compileall.compile_file(data_file)\n    assert not os.path.exists(os.path.join(data_dir, '__pycache__')), ('assertFalse', os.path.exists(os.path.join(data_dir, '__pycache__')))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_encoding_fallback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    add_bad_source_file()\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert not compileall.compile_file(self.bad_source_path), ('assertFalse', compileall.compile_file(self.bad_source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_encoding_fallback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    add_bad_source_file()\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert not compileall.compile_file(self.bad_source_path), ('assertFalse', compileall.compile_file(self.bad_source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_optimize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    optimize, opt = (1, 1) if __debug__ else (0, '')\n    compileall.compile_dir(self.directory, quiet=True, optimize=optimize)\n    cached = importlib.util.cache_from_source(self.source_path, optimization=opt)\n    assert os.path.isfile(cached), ('assertTrue', os.path.isfile(cached))\n    cached2 = importlib.util.cache_from_source(self.source_path2, optimization=opt)\n    assert os.path.isfile(cached2), ('assertTrue', os.path.isfile(cached2))\n    cached3 = importlib.util.cache_from_source(self.source_path3, optimization=opt)\n    assert os.path.isfile(cached3), ('assertTrue', os.path.isfile(cached3))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_optimize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    optimize, opt = (1, 1) if __debug__ else (0, '')\n    compileall.compile_dir(self.directory, quiet=True, optimize=optimize)\n    cached = importlib.util.cache_from_source(self.source_path, optimization=opt)\n    assert os.path.isfile(cached), ('assertTrue', os.path.isfile(cached))\n    cached2 = importlib.util.cache_from_source(self.source_path2, optimization=opt)\n    assert os.path.isfile(cached2), ('assertTrue', os.path.isfile(cached2))\n    cached3 = importlib.util.cache_from_source(self.source_path3, optimization=opt)\n    assert os.path.isfile(cached3), ('assertTrue', os.path.isfile(cached3))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_workers_non_positive",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        compileall.compile_dir(self.directory, workers=-1)\n    except ValueError as _exc:\n        assert _re.search('workers must be greater or equal to 0', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_workers_non_positive",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        compileall.compile_dir(self.directory, workers=-1)\n    except ValueError as _exc:\n        assert _re.search('workers must be greater or equal to 0', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_maxlevels",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    depth = 3\n    path = self.directory\n    for i in range(1, depth + 1):\n        path = os.path.join(path, f'dir_{i}')\n        source = os.path.join(path, 'script.py')\n        os.mkdir(path)\n        shutil.copyfile(self.source_path, source)\n    pyc_filename = importlib.util.cache_from_source(source)\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth - 1)\n    assert not os.path.isfile(pyc_filename), ('assertFalse', os.path.isfile(pyc_filename))\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth)\n    assert os.path.isfile(pyc_filename), ('assertTrue', os.path.isfile(pyc_filename))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_maxlevels",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    depth = 3\n    path = self.directory\n    for i in range(1, depth + 1):\n        path = os.path.join(path, f'dir_{i}')\n        source = os.path.join(path, 'script.py')\n        os.mkdir(path)\n        shutil.copyfile(self.source_path, source)\n    pyc_filename = importlib.util.cache_from_source(source)\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth - 1)\n    assert not os.path.isfile(pyc_filename), ('assertFalse', os.path.isfile(pyc_filename))\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth)\n    assert os.path.isfile(pyc_filename), ('assertTrue', os.path.isfile(pyc_filename))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_only_invalid",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_only_invalid",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_prepend_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_prepend_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_prepend_and_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 60"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_prepend_and_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 60"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_year_2038_mtime_compilation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 32 - 1, 2 ** 32 - 1))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support timestamps near 2**32\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_larger_than_32_bit_times",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 35, 2 ** 35))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support large timestamps\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_files",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    for fn in (self.bc_path, self.bc_path2):\n        try:\n            os.unlink(fn)\n        except:\n            pass\n    assert compileall.compile_file(self.source_path, force=False, quiet=True), ('assertTrue', compileall.compile_file(self.source_path, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)), ('assertTrue', os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)))\n    os.unlink(self.bc_path)\n    assert compileall.compile_dir(self.directory, force=False, quiet=True), ('assertTrue', compileall.compile_dir(self.directory, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2), ('assertTrue', os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2))\n    os.unlink(self.bc_path)\n    os.unlink(self.bc_path2)\n    add_bad_source_file()\n    assert not compileall.compile_file(self.bad_source_path, force=False, quiet=2), ('assertFalse', compileall.compile_file(self.bad_source_path, force=False, quiet=2))\n    assert not compileall.compile_dir(self.directory, force=False, quiet=2), ('assertFalse', compileall.compile_dir(self.directory, force=False, quiet=2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_no_pycache_in_non_package",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    data_dir = os.path.join(self.directory, 'data')\n    data_file = os.path.join(data_dir, 'file')\n    os.mkdir(data_dir)\n    with open(data_file, 'wb'):\n        pass\n    compileall.compile_file(data_file)\n    assert not os.path.exists(os.path.join(data_dir, '__pycache__')), ('assertFalse', os.path.exists(os.path.join(data_dir, '__pycache__')))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_file_encoding_fallback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    add_bad_source_file()\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert not compileall.compile_file(self.bad_source_path), ('assertFalse', compileall.compile_file(self.bad_source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_optimize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    optimize, opt = (1, 1) if __debug__ else (0, '')\n    compileall.compile_dir(self.directory, quiet=True, optimize=optimize)\n    cached = importlib.util.cache_from_source(self.source_path, optimization=opt)\n    assert os.path.isfile(cached), ('assertTrue', os.path.isfile(cached))\n    cached2 = importlib.util.cache_from_source(self.source_path2, optimization=opt)\n    assert os.path.isfile(cached2), ('assertTrue', os.path.isfile(cached2))\n    cached3 = importlib.util.cache_from_source(self.source_path3, optimization=opt)\n    assert os.path.isfile(cached3), ('assertTrue', os.path.isfile(cached3))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_workers_non_positive",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        compileall.compile_dir(self.directory, workers=-1)\n    except ValueError as _exc:\n        assert _re.search('workers must be greater or equal to 0', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_dir_maxlevels",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    depth = 3\n    path = self.directory\n    for i in range(1, depth + 1):\n        path = os.path.join(path, f'dir_{i}')\n        source = os.path.join(path, 'script.py')\n        os.mkdir(path)\n        shutil.copyfile(self.source_path, source)\n    pyc_filename = importlib.util.cache_from_source(source)\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth - 1)\n    assert not os.path.isfile(pyc_filename), ('assertFalse', os.path.isfile(pyc_filename))\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth)\n    assert os.path.isfile(pyc_filename), ('assertTrue', os.path.isfile(pyc_filename))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_only_invalid",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_prepend_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_strip_prepend_and_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 60"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_year_2038_mtime_compilation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 32 - 1, 2 ** 32 - 1))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support timestamps near 2**32\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_larger_than_32_bit_times",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\nimport unittest\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        os.utime(self.source_path, (2 ** 35, 2 ** 35))\n    except (OverflowError, OSError):\n        raise unittest.SkipTest(\"filesystem doesn't support large timestamps\")\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert compileall.compile_file(self.source_path), ('assertTrue', compileall.compile_file(self.source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_files",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    for fn in (self.bc_path, self.bc_path2):\n        try:\n            os.unlink(fn)\n        except:\n            pass\n    assert compileall.compile_file(self.source_path, force=False, quiet=True), ('assertTrue', compileall.compile_file(self.source_path, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)), ('assertTrue', os.path.isfile(self.bc_path) and (not os.path.isfile(self.bc_path2)))\n    os.unlink(self.bc_path)\n    assert compileall.compile_dir(self.directory, force=False, quiet=True), ('assertTrue', compileall.compile_dir(self.directory, force=False, quiet=True))\n    assert os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2), ('assertTrue', os.path.isfile(self.bc_path) and os.path.isfile(self.bc_path2))\n    os.unlink(self.bc_path)\n    os.unlink(self.bc_path2)\n    add_bad_source_file()\n    assert not compileall.compile_file(self.bad_source_path, force=False, quiet=2), ('assertFalse', compileall.compile_file(self.bad_source_path, force=False, quiet=2))\n    assert not compileall.compile_dir(self.directory, force=False, quiet=2), ('assertFalse', compileall.compile_dir(self.directory, force=False, quiet=2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_no_pycache_in_non_package",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    data_dir = os.path.join(self.directory, 'data')\n    data_file = os.path.join(data_dir, 'file')\n    os.mkdir(data_dir)\n    with open(data_file, 'wb'):\n        pass\n    compileall.compile_file(data_file)\n    assert not os.path.exists(os.path.join(data_dir, '__pycache__')), ('assertFalse', os.path.exists(os.path.join(data_dir, '__pycache__')))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_file_encoding_fallback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport contextlib\nimport importlib.util\nimport io\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    def add_bad_source_file():\n        self.bad_source_path = os.path.join(self.directory, '_test_bad.py')\n        with open(self.bad_source_path, 'w', encoding='utf-8') as file:\n            file.write('x (\\n')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    add_bad_source_file()\n    with contextlib.redirect_stdout(io.StringIO()):\n        assert not compileall.compile_file(self.bad_source_path), ('assertFalse', compileall.compile_file(self.bad_source_path))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_optimize",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    optimize, opt = (1, 1) if __debug__ else (0, '')\n    compileall.compile_dir(self.directory, quiet=True, optimize=optimize)\n    cached = importlib.util.cache_from_source(self.source_path, optimization=opt)\n    assert os.path.isfile(cached), ('assertTrue', os.path.isfile(cached))\n    cached2 = importlib.util.cache_from_source(self.source_path2, optimization=opt)\n    assert os.path.isfile(cached2), ('assertTrue', os.path.isfile(cached2))\n    cached3 = importlib.util.cache_from_source(self.source_path3, optimization=opt)\n    assert os.path.isfile(cached3), ('assertTrue', os.path.isfile(cached3))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_pathlike",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_pathlike_stripdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_pathlike_prependdir",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_workers_non_positive",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    try:\n        compileall.compile_dir(self.directory, workers=-1)\n    except ValueError as _exc:\n        assert _re.search('workers must be greater or equal to 0', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_dir_maxlevels",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport compileall\nimport importlib.util\nimport os\nimport shutil\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        _add_cleanup(shutil.rmtree, *(self.directory,))\n        self.source_path = os.path.join(self.directory, '_test.py')\n        self.bc_path = importlib.util.cache_from_source(self.source_path)\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('x = 123\\n')\n        self.source_path2 = os.path.join(self.directory, '_test2.py')\n        self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n        shutil.copyfile(self.source_path, self.source_path2)\n        self.subdirectory = os.path.join(self.directory, '_subdir')\n        os.mkdir(self.subdirectory)\n        self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n        shutil.copyfile(self.source_path, self.source_path3)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    _add_cleanup(shutil.rmtree, *(self.directory,))\n    self.source_path = os.path.join(self.directory, '_test.py')\n    self.bc_path = importlib.util.cache_from_source(self.source_path)\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('x = 123\\n')\n    self.source_path2 = os.path.join(self.directory, '_test2.py')\n    self.bc_path2 = importlib.util.cache_from_source(self.source_path2)\n    shutil.copyfile(self.source_path, self.source_path2)\n    self.subdirectory = os.path.join(self.directory, '_subdir')\n    os.mkdir(self.subdirectory)\n    self.source_path3 = os.path.join(self.subdirectory, '_test3.py')\n    shutil.copyfile(self.source_path, self.source_path3)\n    depth = 3\n    path = self.directory\n    for i in range(1, depth + 1):\n        path = os.path.join(path, f'dir_{i}')\n        source = os.path.join(path, 'script.py')\n        os.mkdir(path)\n        shutil.copyfile(self.source_path, source)\n    pyc_filename = importlib.util.cache_from_source(source)\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth - 1)\n    assert not os.path.isfile(pyc_filename), ('assertFalse', os.path.isfile(pyc_filename))\n    compileall.compile_dir(self.directory, quiet=True, maxlevels=depth)\n    assert os.path.isfile(pyc_filename), ('assertTrue', os.path.isfile(pyc_filename))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_only_invalid",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_prepend_only",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_strip_prepend_and_ddir",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 60"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "EncodingTest.test_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport compileall\nimport contextlib\nimport io\nimport os\nimport tempfile\n\ndef _t():\n\n    def setUp():\n        self.directory = tempfile.mkdtemp()\n        self.source_path = os.path.join(self.directory, '_test.py')\n        with open(self.source_path, 'w', encoding='utf-8') as file:\n            file.write('b\"\u20ac\"')\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.directory = tempfile.mkdtemp()\n    self.source_path = os.path.join(self.directory, '_test.py')\n    with open(self.source_path, 'w', encoding='utf-8') as file:\n        file.write('b\"\u20ac\"')\n    buffer = io.TextIOWrapper(io.BytesIO(), encoding='ascii')\n    with contextlib.redirect_stdout(buffer):\n        compiled = compileall.compile_dir(self.directory)\n    assert not compiled, ('assertFalse', compiled)\n    buffer.seek(0)\n    res = buffer.read()\n    assert 'SyntaxError: bytes can only contain ASCII literal characters' in res, ('assertIn', 'SyntaxError: bytes can only contain ASCII literal characters', res)\n    assert 'UnicodeEncodeError' not in res, ('assertNotIn', 'UnicodeEncodeError', res)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_legacy_paths",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_legacy_paths",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_multiple_runs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_multiple_runs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_force",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_force",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_recursion_control",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_recursion_control",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_recursion_limit",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_recursion_limit",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_symlink_loop",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_symlink_loop",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_quiet",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_quiet",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_silent",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_silent",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_regexp",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_regexp",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_multiple_dirs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_multiple_dirs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_d_compile_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_d_compile_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_bad_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_bad_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_file_with_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_file_with_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_file_no_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_file_no_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_on_stdin",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_on_stdin",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_compiles_as_much_as_possible",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_compiles_as_much_as_possible",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_invalid_arg_produces_message",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_invalid_arg_produces_message",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_pyc_invalidation_mode",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_pyc_invalidation_mode",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_workers",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_workers",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_hardlink_bad_args",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_hardlink_bad_args",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_hardlink",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_hardlink",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_legacy_paths",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_multiple_runs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_force",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_recursion_control",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_recursion_limit",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_symlink_loop",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_quiet",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_silent",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_regexp",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_multiple_dirs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_d_compile_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_d_runtime_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_bad_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_file_with_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_file_no_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_include_on_stdin",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_compiles_as_much_as_possible",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_invalid_arg_produces_message",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_pyc_invalidation_mode",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_workers",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_hardlink_bad_args",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_hardlink",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_legacy_paths",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_multiple_runs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_force",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_recursion_control",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_recursion_limit",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_symlink_loop",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_quiet",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_silent",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_regexp",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_multiple_dirs",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_d_compile_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_d_runtime_error",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_bad_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_file_with_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_file_no_arg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_include_on_stdin",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_compiles_as_much_as_possible",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_invalid_arg_produces_message",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_pyc_invalidation_mode",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_workers",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_strip_and_prepend",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_multiple_optimization_levels",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_ignore_symlink_destination",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_hardlink_bad_args",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_hardlink",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "CommandLineTestsBase.test_d_runtime_error",
+      "reason": "decorator:support.force_not_colorized"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_mtime",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_mtime",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_magic_number",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_magic_number",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_path",
+      "reason": "unsupported-import:test.test_importlib.util"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_path",
+      "reason": "unsupported-import:test.test_importlib.util"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_pool_called",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_pool_called",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_workers_cpu_count",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_workers_cpu_count",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_one_worker",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_one_worker",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_missing_multiprocessing",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_missing_multiprocessing",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_empty_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_empty_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_empty_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_empty_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_mtime",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_magic_number",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_path",
+      "reason": "unsupported-import:test.test_importlib.util"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_pool_called",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_workers_cpu_count",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_one_worker",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_compile_missing_multiprocessing",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_empty_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithSourceEpoch.test_ddir_empty_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_mtime",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_magic_number",
+      "reason": "helper:recreation_check(too few operands)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_path",
+      "reason": "unsupported-import:test.test_importlib.util"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_pool_called",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_workers_cpu_count",
+      "reason": "unresolved-name:pool_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_one_worker",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_compile_missing_multiprocessing",
+      "reason": "unresolved-name:compile_file_mock"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_empty_only_one_worker",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CompileallTestsWithoutSourceEpoch.test_ddir_empty_multiple_workers",
+      "reason": "helper:_test_ddir_only(unresolved-name:multiprocessing_cleanup_tests)"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_no_args_compiles_path",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_no_args_compiles_path",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_no_args_respects_force_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_no_args_respects_force_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_no_args_respects_quiet_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_no_args_respects_quiet_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_workers_available_cores",
+      "reason": "unresolved-name:compile_dir"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_workers_available_cores",
+      "reason": "unresolved-name:compile_dir"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_no_args_compiles_path",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_no_args_respects_force_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_no_args_respects_quiet_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsWithSourceEpoch.test_workers_available_cores",
+      "reason": "unresolved-name:compile_dir"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_no_args_compiles_path",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_no_args_respects_force_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_no_args_respects_quiet_flag",
+      "reason": "helper:temporary_pycache_prefix(decorated-helper)"
+    },
+    {
+      "ident": "CommandLineTestsNoSourceEpoch.test_workers_available_cores",
+      "reason": "unresolved-name:compile_dir"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_bad_args",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_bad_args",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_disabled",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_disabled",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_hardlink",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_hardlink",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_only_two_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_only_two_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_duplicated_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_duplicated_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_recompilation",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_recompilation",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_import",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_import",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_bad_args",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_disabled",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_hardlink",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_only_two_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_duplicated_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_recompilation",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsWithSourceEpoch.test_import",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_bad_args",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_disabled",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_hardlink",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_only_two_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_duplicated_levels",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_recompilation",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    },
+    {
+      "ident": "HardlinkDedupTestsNoSourceEpoch.test_import",
+      "reason": "helper:temporary_directory(decorated-helper)"
+    }
+  ],
+  "counts": {
+    "extracted": 276,
+    "pinned": 33,
+    "quarantined": 243
+  }
+}
