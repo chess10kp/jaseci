@@ -23,6 +23,7 @@ import from _warningsmodule {
 import from fcntl { fcntl_module_attrs }
 import from ceval {
     _sys3_forget,
+    _sys3_forget_all,
     set_layer3_active,
     to_host,
     _jac_host_import,
@@ -796,10 +797,10 @@ def p2_libtest_reset {
     # with the flag down every snippet import would silently hit the HOST
     # stdlib instead of the shim under test.
     set_layer3_active(True);
-    # A prior in-VM leg (e.g. unittest's support closure) may have cached the
-    # HOST collections module in the sys3 cache, which import_native checks
-    # before the shim registry -- drop it so the facade shim always wins.
-    _sys3_forget("collections");
+    # Evict every pre-activation import resolution (sys3_modules and
+    # delegate_cache). import_native consults sys3_modules before shim_modules;
+    # stale host-side views would otherwise win over in-VM boots.
+    _sys3_forget_all();
     platform_attrs: dict[str, PyObj] = {
         "platform": P2LibtestPlatformFn(t="function"),
         "system": P2LibtestSystemFn(t="function"),
