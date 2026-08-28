@@ -16,7 +16,8 @@ import from objects {
     expect_str,
     is_error,
     PyError,
-    py_none
+    py_none,
+    DictEntry
 }
 import from ast_nodes {
     expr,
@@ -3043,7 +3044,7 @@ test "compiler_slice: band7 async list comprehension parsed executes in ceval" {
     assert finished.type_name == "StopIteration";
     result = finished.value as PyObj;
     assert result.t == "list";
-    items = (result as PyList).items;
+    items: list[PyObj] = (result as any).items;
     assert len(items) == 1;
     assert expect_int(items[0]) == 42;
 }
@@ -3089,7 +3090,7 @@ test "compiler_slice: band7 async set comprehension executes in ceval" {
     assert finished.type_name == "StopIteration";
     result = finished.value as PyObj;
     assert result.t == "set";
-    sitems = (result as PySet).items;
+    sitems: dict[str, PyObj] = (result as any).items;
     assert len(sitems) == 1;
     for hk in sitems {
         assert expect_int(sitems[hk]) == 42;
@@ -3137,7 +3138,7 @@ test "compiler_slice: band7 async dict comprehension executes in ceval" {
     assert finished.type_name == "StopIteration";
     result = finished.value as PyObj;
     assert result.t == "dict";
-    ditems = (result as PyDict).items;
+    ditems: dict[str, DictEntry] = (result as any).items;
     assert len(ditems) == 1;
     for hk in ditems {
         assert expect_int(ditems[hk].key) == 42;
