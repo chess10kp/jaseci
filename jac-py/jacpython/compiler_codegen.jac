@@ -294,6 +294,7 @@ import from compiler_ir {
     break_site,
     except_region,
     comp_handler,
+    with_unwind_rec,
 }
 import from compiler_symtable {
     sym_block,
@@ -1316,6 +1317,51 @@ def visit_stmt(
     return stmt_cont(loc=stmt_loc(s));
 }
 
+# Return inside with / async with: unwind enclosing frames innermost-first,
+# mirroring CPython codegen_unwind_fblock_stack with preserve_tos. Each frame's
+# open protect region closes at a fresh boundary right before its inline
+# __exit__ call (the POP_BLOCK marker position).
+def emit_with_return_unwind(g: cfg_builder, wloc: cloc) {
+    g.with_unwind_used = True;
+    while len(g.with_fblocks) > 0 {
+        fb = g.with_fblocks[len(g.with_fblocks) - 1];
+        g.with_fblocks = g.with_fblocks[0 : len(g.with_fblocks) - 1];
+        boundary = g.new_block();
+        g.use(boundary);
+        if fb.protect_region >= 0 and g.u.except_regions[fb.protect_region].end_block < 0 {
+            g.u.except_regions[fb.protect_region].end_block = boundary.id;
+        }
+        g.emit_op(OP_SWAP, 3, wloc);
+        g.emit_op(OP_SWAP, 2, wloc);
+        none_idx = g.u.add_const(py_none());
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_CALL, 3, wloc);
+        if fb.is_async {
+            als = emit_await_send_loop_header(g, OP_GET_AWAITABLE, 2, 3, wloc);
+            # CT footer blocks are allocated now but positioned later by the
+            # with-statement visitor (after the main flow terminates), so the
+            # layout matches CPython (footers grouped after the return).
+            ct = g.u.add_deferred_block();
+            cj = g.u.add_deferred_block();
+            g.with_unwind_recs.append(
+                with_unwind_rec(
+                    send_blk=als.send_blk.id,
+                    yield_blk=als.yield_blk.id,
+                    after_resume_blk=als.after_resume_blk.id,
+                    end_send_blk=als.end_send_blk.id,
+                    boundary=boundary.id,
+                    depth=4 + 2 * fb.frame_idx,
+                    ct=ct,
+                    cj=cj
+                )
+            );
+        }
+        g.emit_op(OP_POP_TOP, 0, wloc);
+    }
+}
+
 # Emit a Return statement and finish the compile unit (no module epilogue).
 def visit_return_stmt(
     g: cfg_builder, r: Return, check_fast: bool = False, borrow_fast: bool = False
@@ -1326,6 +1372,7 @@ def visit_return_stmt(
     # pins BOTH the load and RETURN_VALUE to the value's span. Fast-local loads
     # keep the Name node's own span.
     rloc = nloc(r.lineno, r.end_lineno, r.col_offset, r.end_col_offset);
+    has_fblocks = len(g.with_fblocks) > 0;
     if r.value is not None {
         if isinstance(r.value, Name) {
             n = r.value as Name;
@@ -1340,6 +1387,9 @@ def visit_return_stmt(
                 } else {
                     g.emit_op(OP_LOAD_FAST, fi, nloc_name);
                 }
+                if has_fblocks {
+                    emit_with_return_unwind(g, rloc);
+                }
                 g.emit_op(OP_RETURN_VALUE, 0, rloc);
                 return;
             }
@@ -1349,11 +1399,17 @@ def visit_return_stmt(
         if isinstance(r.value, Constant) {
             ret_loc = expr_loc(r.value);
         }
+        if has_fblocks {
+            emit_with_return_unwind(g, rloc);
+        }
         g.emit_op(OP_RETURN_VALUE, 0, ret_loc);
         return;
     }
     none_idx = g.u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, rloc);
+    if has_fblocks {
+        emit_with_return_unwind(g, rloc);
+    }
     g.emit_op(OP_RETURN_VALUE, 0, rloc);
 }
 
