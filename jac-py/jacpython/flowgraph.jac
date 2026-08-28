@@ -1384,14 +1384,14 @@ def ac_maybe_push(
     unsafe: int,
     masks: list[int],
     onstack: list[bool],
-    blocks_by_id: list[basicblock],
+    blocks_by_id: list[basicblock | None],
     worklist: list[basicblock]
 ) {
     both = masks[nbids] | unsafe;
     if masks[nbids] != both {
         masks[nbids] = both;
         if not onstack[nbids] and blocks_by_id[nbids] is not None {
-            worklist.append(blocks_by_id[nbids]);
+            worklist.append(blocks_by_id[nbids] as basicblock);
             onstack[nbids] = True;
         }
     }
@@ -1404,7 +1404,7 @@ def ac_scan_block(
     mask_in: int,
     masks: list[int],
     onstack: list[bool],
-    blocks_by_id: list[basicblock],
+    blocks_by_id: list[basicblock | None],
     worklist: list[basicblock],
     nlocals: int
 ) {
@@ -1548,7 +1548,7 @@ def add_checks_for_uninitialized(u: unverified_cfg) {
         }
         bi = bi + 1;
     }
-    blocks_by_id: list[basicblock] = [];
+    blocks_by_id: list[basicblock | None] = [];
     i = 0;
     while i < nblocks {
         blocks_by_id.append(None);
@@ -1580,18 +1580,6 @@ def add_checks_for_uninitialized(u: unverified_cfg) {
     onstack[entry_blk.id] = True;
     worklist.append(entry_blk);
     # Seed 2: scan every block once so DELETE_FAST origins are covered.
-    bi = 0;
-    while bi < len(u.blocks) {
-        bb = u.blocks[bi];
-        ops: list[str] = [];
-        ii = 0;
-        while ii < len(bb.instrs) {
-            ops.append(str(bb.instrs[ii].opcode) + ":" + str(bb.instrs[ii].oparg));
-            ii = ii + 1;
-        }
-        print("BLK " + u.name + " " + str(bb.id) + " [" + str.join(" ", ops) + "]");
-        bi = bi + 1;
-    }
     bi = 0;
     while bi < len(u.blocks) {
         ac_scan_block(
