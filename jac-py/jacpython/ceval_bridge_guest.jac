@@ -381,6 +381,30 @@ def _jac_standin_next_method():
     _meth.__name__ = "__next__"
     return _meth
 
+
+def _jac_standin_getattribute_method():
+    # Host attribute access on a guest stand-in: installed standin methods and
+    # internals resolve locally; everything else replays through py_attr on the
+    # recovered guest object and crosses back (KeysView, bound methods, ...).
+    def _meth(self, name):
+        if name == "_jac_guest_":
+            return object.__getattribute__(self, "_jac_guest_")
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            pass
+        u = object.__getattribute__(self, "_jac_guest_")
+        res = py_attr(u, name)
+        if isinstance(res, PyError):
+            exc = res.exception
+            if exc_name_matches(exc.type_name, "AttributeError"):
+                raise AttributeError(name)
+            _jac_reraise_pyerror(res)
+        return to_host(res)
+    _meth.__name__ = "__getattribute__"
+    return _meth
+
+
 def _jac_standin_method(name):
     # Host method that replays a guest-defined method through the VM on the
     # recovered original object. Host callers (C reader loops, callbacks) then
@@ -436,6 +460,7 @@ def _jac_standin_class(cls):
         return ent[1]
     ns = {}
     _jac_standin_install_methods(ns, cls)
+    ns["__getattribute__"] = _jac_standin_getattribute_method()
     r = class_lookup_attr(cls, "__repr__")
     if not is_error(r):
         ns["__repr__"] = _jac_standin_dunder("__repr__", py_repr)
