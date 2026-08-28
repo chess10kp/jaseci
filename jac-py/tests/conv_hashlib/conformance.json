@@ -1,0 +1,449 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "fbcc64100fc0c33130df6229364bd973ab13e411",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_hashlib/conv_hashlib_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:45:40",
+  "hashes": {
+    "pins_jac": "78c6d75593e25b101e291c1d66c70de94a6a754e2d3d85c0e42847ffda5f2890",
+    "conversion_json": "af60319159b34544c79ab1d8de00a5d0c5570048e7005fce2d6ca743310e8579",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "hashlib",
+  "counts": {
+    "converted": 82,
+    "runnable": 11,
+    "green": 0,
+    "quarantined": 71
+  },
+  "pins": [
+    {
+      "id": "HashLibTestCase.test_algorithms_guaranteed",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_unknown_hash",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_new_upper_to_lower",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_sha256_update_over_4gb",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_sha3_256_update_over_4gb",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_blake2_update_over_4gb",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_blake2b",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_blake2s",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_sha256_gil",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "KDFTests.test_normalized_name",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "KDFTests.test_file_digest",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "HashLibTestCase.test_clinic_signature",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "HashLibTestCase.test_clinic_signature_errors",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "HashLibTestCase.test_get_builtin_constructor",
+      "status": "quarantined",
+      "reason": "decorator:support.thread_unsafe"
+    },
+    {
+      "id": "HashLibTestCase.test_case_md5_huge",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "HashLibTestCase.test_case_md5_uintmax",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "HashLibTestCase.test_threaded_hashing",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "HashLibTestCase.test_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "HashLibTestCase.test_hash_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "KDFTests.test_pbkdf2_hmac_c",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "KDFTests.test_scrypt",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "HashLibTestCase.test_hash_array",
+      "status": "quarantined",
+      "reason": "uses-self.hash_constructors"
+    },
+    {
+      "id": "HashLibTestCase.test_algorithms_available",
+      "status": "quarantined",
+      "reason": "helper:skip_if_blake2_not_builtin(self.skipTest)"
+    },
+    {
+      "id": "HashLibTestCase.test_usedforsecurity_true",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "HashLibTestCase.test_usedforsecurity_false",
+      "status": "quarantined",
+      "reason": "uses-self._hashlib"
+    },
+    {
+      "id": "HashLibTestCase.test_hexdigest",
+      "status": "quarantined",
+      "reason": "uses-self.hash_constructors"
+    },
+    {
+      "id": "HashLibTestCase.test_digest_length_overflow",
+      "status": "quarantined",
+      "reason": "uses-self.hash_constructors"
+    },
+    {
+      "id": "HashLibTestCase.test_name_attribute",
+      "status": "quarantined",
+      "reason": "uses-self.hash_constructors"
+    },
+    {
+      "id": "HashLibTestCase.test_large_update",
+      "status": "quarantined",
+      "reason": "uses-self.hash_constructors"
+    },
+    {
+      "id": "HashLibTestCase.test_no_unicode",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_no_unicode_blake2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_no_unicode_sha3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_blocksize_and_name",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_blocksize_name_sha3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_extra_sha3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_blocksize_name_blake2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_md5_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_md5_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_md5_2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha1_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha1_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha1_2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha1_3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha224_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha224_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha224_2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha224_3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha256_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha256_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha256_2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha256_3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha384_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha384_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha384_2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha384_3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha512_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha512_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha512_2",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha512_3",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_blake2b_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_blake2b_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_blake2b_all_parameters",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_blake2b_vectors",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_blake2s_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_blake2s_1",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_blake2s_all_parameters",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_blake2s_vectors",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_224_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_224_vector",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_256_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_256_vector",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_384_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_384_vector",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_512_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_sha3_512_vector",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_shake_128_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_shake128_vector",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_shake_256_0",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_case_shake256_vector",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    },
+    {
+      "id": "HashLibTestCase.test_gil",
+      "status": "quarantined",
+      "reason": "uses-self.hash_constructors"
+    },
+    {
+      "id": "HashLibTestCase.test_get_fips_mode",
+      "status": "quarantined",
+      "reason": "uses-self.is_fips_mode"
+    },
+    {
+      "id": "HashLibTestCase.test_readonly_types",
+      "status": "quarantined",
+      "reason": "uses-self.constructors_to_test"
+    }
+  ]
+}

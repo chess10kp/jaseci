@@ -2450,13 +2450,20 @@
     {
       "stem": "hashlib",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_hashlib/conv_hashlib_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_hashlib/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_hashlib/conversion.json",
+      "jacpython_results": {
+        "hashlib": {
+          "passed": 0,
+          "total": 11,
+          "notes": "0/11 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "heapq",
