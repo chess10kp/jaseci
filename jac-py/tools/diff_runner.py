@@ -123,7 +123,7 @@ def run_pins_chunked(
 ) -> tuple[list[tuple[str, str, str]], bool, str]:
     """Run pins, splitting into smaller jac processes on batch TIMEOUT.
 
-    A single 60s cap over one process means one slow pin (or plain batch
+    A single wall-clock cap over one process means one slow pin (or plain batch
     slowness near the cap) wipes classification for every pin after it.
     On timeout this binary-splits and re-runs each half in its own process
     (each getting a fresh cap), recursing down to single pins; marks from
@@ -464,7 +464,13 @@ def main(argv: list[str] | None = None) -> int:
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     pinned = [e for e in meta["pins"] if e.get("status") == "pinned"]
 
-    marks, timed_out, _stderr = run_pins_chunked(pinned)
+    # Zero-pin suites (all quarantined at conversion) must not invoke jac:
+    # an empty harness still pays compile+startup cost and a cap hit would
+    # fingerprint as guest-leg TIMEOUT in gap_queue despite no runnable pins.
+    if pinned:
+        marks, timed_out, _stderr = run_pins_chunked(pinned)
+    else:
+        marks, timed_out = [], False
     elapsed_note = "TIMEOUT at %ds cap" % JAC_TIMEOUT if timed_out else (
         f"{sum(1 for m in marks if m[1] == 'PASS')}/{len(pinned)} marks"
     )
