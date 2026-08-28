@@ -149,7 +149,7 @@
         "conv_codeccallbacks_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "27 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "38 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "codeccallbacks.conv.json"
     },
     {
@@ -160,7 +160,7 @@
         "jac-py/tests/conv_codecs/conv_codecs_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "200 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "209 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_codecs/codecs.conv.json",
       "jacpython_results": {
         "codecs": {
@@ -286,7 +286,7 @@
         "jac-py/tests/conv_csv/conv_csv_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "34 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "37 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_csv/csv.conv.json",
       "jacpython_results": {
         "csv": {
@@ -691,7 +691,7 @@
         "jac-py/tests/conv_keyword/conv_keyword_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "9 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_keyword/keyword.conv.json",
       "jacpython_results": {
         "keyword": {
@@ -947,7 +947,7 @@
         "jac-py/tests/conv_property/conv_property_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "5 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "9 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_property/property.conv.json",
       "jacpython_results": {
         "property": {
@@ -981,7 +981,7 @@
         "conv_range_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "25 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "22 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "range.conv.json",
       "jacpython_results": {
         "range": {
@@ -1046,7 +1046,7 @@
         "jac-py/tests/conv_set/conv_set_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "68 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "300 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_set/set.conv.json",
       "jacpython_results": {
         "set": {
@@ -1244,7 +1244,7 @@
         "jac-py/tests/conv_types/conv_types_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "98 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "77 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_types/types.conv.json",
       "jacpython_results": {
         "types": {
@@ -1388,7 +1388,7 @@
         "conv_weakref_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "20 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "74 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "weakref.conv.json",
       "jacpython_results": {
         "weakref": {
@@ -1698,7 +1698,7 @@
         "jac-py/tests/conv_statistics/conv_statistics_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "270 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "307 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_statistics/statistics.conv.json",
       "jacpython_results": {
         "statistics": {
@@ -2058,7 +2058,7 @@
         "jac-py/tests/conv_fileinput/conv_fileinput_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "14 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "37 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_fileinput/fileinput.conv.json",
       "jacpython_results": {
         "fileinput": {
@@ -2177,7 +2177,7 @@
         "jac-py/tests/conv_builtin/conv_builtin_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "93 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "100 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_builtin/builtin.conv.json",
       "jacpython_results": {
         "builtin": {
@@ -2253,7 +2253,7 @@
         "conv_base64_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "18 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "base64.conv.json"
     },
     {
