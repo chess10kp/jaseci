@@ -2,8 +2,8 @@
 # Pure ::py:: helpers for guest<->host crossings: host syscall shims, type
 # probes, module discovery, weakref lazy import. ceval.jac re-exports these via
 # thin ::py:: wrappers (Jac type checker treats inline ::py:: as opaque).
-# Jac-coupled bridge shims (live views, trampolines, reraise, standins) stay
-# in ceval.jac to preserve the acyclic objects <- ceval DAG.
+# Jac-coupled bridge shims (live views, trampolines, reraise, standins) live
+# in ceval_bridge_guest.jac to preserve the acyclic objects <- ceval DAG.
 
 import marshal;
 
