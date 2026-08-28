@@ -2246,11 +2246,11 @@
       "gate_type": "oracle",
       "status": "converted",
       "oracle_tests": [
-        "conv_base64_pins.jac"
+        "jac-py/tests/conv_base64/conv_base64_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "18 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "base64.conv.json"
+      "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "jac-py/tests/conv_base64/conversion.json"
     },
     {
       "stem": "asyncgen",
