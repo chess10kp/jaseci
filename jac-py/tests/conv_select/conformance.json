@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "909f62939ebc9014b58dd1e49f44278b4404a261",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_select/conv_select_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:14:18",
+  "hashes": {
+    "pins_jac": "a544ee3dbafc4745a08291f29f72b25c9f08d6ee2b808dc0241eb13ba0767231",
+    "conversion_json": "1cf80a16428599247937117c7aed264e32a854bb458671bde6ee2e79d5e0f35a",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "select",
+  "counts": {
+    "converted": 6,
+    "runnable": 2,
+    "green": 0,
+    "quarantined": 4
+  },
+  "pins": [
+    {
+      "id": "SelectTestCase.test_error_conditions",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SelectTestCase.test_returned_list_identity",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SelectTestCase.test_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "SelectTestCase.test_select",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_fork"
+    },
+    {
+      "id": "SelectTestCase.test_select_mutated",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "SelectTestCase.test_errno",
+      "status": "quarantined",
+      "reason": "unresolved-name:__file__"
+    }
+  ]
+}
