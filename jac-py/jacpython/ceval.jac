@@ -9069,23 +9069,42 @@ def apply_set_name_hooks(cls: PyClass, ordered_names: list[str]) -> PyObj {
     return cls;
 }
 
-# PEP 487: after a subclass is built, its nearest base's __init_subclass__ is
-# called with the new class (implicit classmethod) plus the class keyword args --
-# `class Sub(Base, key=1)` runs Base.__init_subclass__(cls=Sub, key=1). Only a
-# user base that actually defines it fires (the object default is a no-op); a
-# base that stores it as a plain def takes the new class as its first argument.
-def apply_init_subclass(cls: PyClass, kwds: dict[str, PyObj]) -> PyObj {
-    for base in cls.bases {
-        if isinstance(base, PyClass) {
-            found = class_lookup_attr(base as PyClass, "__init_subclass__");
-            if not is_error(found) and isinstance(found, PyFunction) {
-                res = py_invoke(found, [cls], kwds);
-                if is_error(res) {
-                    return res;
-                }
-                return cls;
-            }
+# Metaclass __new__ keyword-only parameters (enum.EnumType.boundary, _simple, ...)
+# are consumed before type.__new__ forwards leftovers to __init_subclass__.
+# Guest type() calls that bypass the metaclass must not leak them through.
+def filter_init_subclass_kwds(kwds: dict[str, PyObj]) -> dict[str, PyObj] {
+    metaclass_only: dict[str, bool] = {
+        "boundary": True,
+        "_simple": True,
+    };
+    out: dict[str, PyObj] = {};
+    for k in kwds {
+        if not (k in metaclass_only) {
+            out[k] = kwds[k];
         }
+    }
+    return out;
+}
+
+# PEP 487: CPython type_new_init_subclass calls super(type, type).__init_subclass__
+# once with the class-creation keywords. That cooperative super walk fires only
+# bases that DEFINE __init_subclass__ in their own namespace (skipping inherited
+# copies on intermediate bases like Left(Base)) and chains through each hook's
+# super().__init_subclass__() for the rest.
+def apply_init_subclass(cls: PyClass, kwds: dict[str, PyObj]) -> PyObj {
+    hook_kwds = filter_init_subclass_kwds(kwds);
+    cls_obj = cls as PyObj;
+    found = super_lookup(cls_obj, cls_obj, "__init_subclass__");
+    if is_error(found) {
+        return cls;
+    }
+    bound = descriptor_get(found, cls_obj, cls_obj);
+    if is_error(bound) {
+        return bound;
+    }
+    res = py_invoke(bound, [], hook_kwds);
+    if is_error(res) {
+        return res;
     }
     return cls;
 }
