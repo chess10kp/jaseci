@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_codecmaps_hk.py",
+    "-o",
+    "/var/tmp/worker6-951-convert-backup-552054/jac-py/tests/conv_codecmaps_hk",
+    "--name",
+    "conv_codecmaps_hk"
+  ],
+  "generated_at": "2026-08-28T16:24:51",
+  "hashes": {
+    "pins_jac": "b586533e27ed291d9761922a10c296420c5f9b07c63617e0241983a3989d1f2d"
+  },
+  "source_file": "reference/cpython/Lib/test/test_codecmaps_hk.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "codecmaps_hk",
+  "pins_file": "conv_codecmaps_hk_pins.jac",
+  "pins": [
+    {
+      "ident": "TestBig5HKSCSMap.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "TestBig5HKSCSMap.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "TestBig5HKSCSMap.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 3,
+    "pinned": 0,
+    "quarantined": 3
+  }
+}
