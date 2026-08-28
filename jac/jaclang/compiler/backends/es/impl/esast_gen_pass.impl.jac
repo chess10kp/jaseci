@@ -223,16 +223,6 @@ impl EsastGenPass.exit_builtin_type(nd: uni.BuiltinType) -> None {
     nd.gen.es_ast = tag;
 }
 
-impl EsastGenPass.exit_yield_expr(nd: uni.YieldExpr) -> None {
-    argument: (es.Expression | None) = None;
-    if nd.expr and nd.expr.gen.es_ast {
-        argument = cast(es.Expression, nd.expr.gen.es_ast);
-    }
-    nd.gen.es_ast = self.sync_loc(
-        es.YieldExpression(argument=argument, delegate=nd.with_from), jac_node=nd
-    );
-}
-
 impl EsastGenPass._ability_is_generator(nd: uni.Ability) -> bool {
     for y in nd.get_all_sub_nodes(uni.YieldExpr) {
         if y.find_parent_of_type(uni.Ability) is nd {
