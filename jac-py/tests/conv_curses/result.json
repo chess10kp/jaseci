@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_curses/conv_curses_pins.jac"
+  ],
+  "generated_at": "2026-08-28T18:56:32",
+  "hashes": {
+    "pins_jac": "3c88b77ca6d1f7d5fc8d326beec276a1944dbaf148e48a650214d945cd3f86ee",
+    "conversion_json": "5229f5716fd50f16d0b0c49f6571b23dd6f90b227699a38d0831a43530e2bc2c",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "curses",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 81,
+    "runnable": 7,
+    "green": 0,
+    "quarantined": 74,
+    "failed": 7,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "MiscTests.test_update_lines_cols",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "MiscTests.test_has_extended_color_support",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "TestAscii.test_ctypes",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "TestAscii.test_ascii",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "TestAscii.test_ctrl",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "TestAscii.test_alt",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "TestAscii.test_unctrl",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    }
+  ]
+}
