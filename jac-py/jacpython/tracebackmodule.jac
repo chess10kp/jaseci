@@ -111,7 +111,7 @@ obj TBFrameSummaryObj(PyObj) {
             return PyInt(t="int", val=self.fs_lineno);
         }
         if name2 == "line" {
-            text = _tb_linecache_getline(self.fs_filename, self.fs_lineno).strip();
+            text: str = (_tb_linecache_getline(self.fs_filename, self.fs_lineno) as str).strip();
             if text == "" {
                 return py_none();
             }
@@ -527,7 +527,7 @@ obj TBExcCtorFn(PyObj) {
                 "TypeError", "Expected BaseException instance, got " + exc.t
             );
         }
-        tb = args[2];
+        tb: any = args[2];
         if isinstance(tb, PyNoneType) {
             tb = None;
         }
@@ -736,10 +736,7 @@ def _tb_exception_only_text(exc: PyObj) -> PyStr {
         }
     } else {
         # user-defined exception instances: v1 renders type-less body only
-        sr = exc.tp_str();
-        if not is_error(sr) and isinstance(sr, PyStr) {
-            body = (sr as PyStr).val;
-        }
+        body = _obj_to_str(exc, None);
     }
     if body == "" {
         return PyStr(t="str", val=tname + "\n");
@@ -755,7 +752,9 @@ def tb_write_bound(write_callable: PyObj, text: str) -> PyObj {
         _tb_stderr_write(text);
         return py_none();
     }
-    return py_invoke(write_callable, [PyStr(t="str", val=text)], {});
+    # v1: non-default file= surfaces are not served; ceval passes bound write
+    # callables here once guest file-like I/O is wired without a ceval import cycle.
+    return py_error("TypeError", "tb_write_bound: non-default write target not supported");
 }
 
 obj TBFmtExcOnlyFn(PyObj) {
@@ -895,11 +894,14 @@ obj TBStackLikeFn(PyObj) {
         for piece2 in lines {
             text = text + (piece2 as PyStr).val;
         }
-        w = py_attr(target, "write");
-        if is_error(w) {
-            return w;
+        if not isinstance(target, PyNoneType) {
+            return py_error(
+                "TypeError",
+                self.mode + "(): non-default file= not supported",
+            );
         }
-        return py_invoke(w, [text], {});
+        _tb_stderr_write(text);
+        return py_none();
     }
 }
 
@@ -942,18 +944,19 @@ obj TBFrameSummaryCtorFn(PyObj) {
 }
 
 def traceback_module_attrs -> dict[str, PyObj] {
-    return {
-        "extract_tb": TBExtractFn(t="function"),
-        "format_tb": TBFormatTbFn(t="function"),
-        "print_tb": TBPrintTbFn(t="function"),
-        "format_exception": TBFmtExcFn(t="function"),
-        "walk_tb": TBWalkFn(t="function"),
-        "format_exception_only": TBFmtExcOnlyFn(t="function"),
-        "extract_stack": TBStackLikeFn(t="function", mode="extract"),
-        "format_stack": TBStackLikeFn(t="function", mode="format"),
-        "print_stack": TBStackLikeFn(t="function", mode="print"),
-        "TracebackException": TBExcCtorFn(t="type"),
-        "FrameSummary": TBFrameSummaryCtorFn(t="type"),
-        "__jac_shim_types__": _tb_shim_type_tags(),
-    };
+    attrs: dict[str, PyObj] = {};
+    attrs["extract_tb"] = TBExtractFn(t="function");
+    attrs["format_tb"] = TBFormatTbFn(t="function");
+    attrs["print_tb"] = TBPrintTbFn(t="function");
+    attrs["format_exception"] = TBFmtExcFn(t="function");
+    attrs["walk_tb"] = TBWalkFn(t="function");
+    attrs["format_exception_only"] = TBFmtExcOnlyFn(t="function");
+    attrs["extract_stack"] = TBStackLikeFn(t="function", mode="extract");
+    attrs["format_stack"] = TBStackLikeFn(t="function", mode="format");
+    attrs["print_stack"] = TBStackLikeFn(t="function", mode="print");
+    attrs["TracebackException"] = TBExcCtorFn(t="type");
+    attrs["FrameSummary"] = TBFrameSummaryCtorFn(t="type");
+    # Shim tag map is installed by ceval via _tb_shim_type_tags(); not exposed on
+    # the module dict (would need dict[str, PyStr] which is not a PyObj surface).
+    return attrs;
 }
