@@ -670,7 +670,7 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
         comprs: list[uni.InnerCompr], out_expr: es.Expression, nd: uni.UniNode
     ) -> (es.Expression | None);
 
-    def _compr_param(target: es.Expression, jac_node: uni.UniNode) -> es.Node;
+    def _compr_param(target: es.Expression, jac_node: uni.UniNode) -> es.Identifier | es.ArrayPattern;
     def exit_bool(nd: uni.Bool) -> None;
     def exit_int(nd: uni.Int) -> None;
     def exit_float(nd: uni.Float) -> None;
