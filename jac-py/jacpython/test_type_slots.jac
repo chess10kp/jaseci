@@ -1,8 +1,10 @@
 """PyType_Ready ``__slots__`` layout helpers (type_slots.jac leaf — no OSP)."""
-import from type_slots {
+import from typeobject {
     type_ready,
     Py_TPFLAGS_READY,
     Py_TPFLAGS_READYING,
+}
+import from type_slots {
     type_slots_filter_members,
     type_slots_wants_dict,
     type_slots_wants_weakref,
