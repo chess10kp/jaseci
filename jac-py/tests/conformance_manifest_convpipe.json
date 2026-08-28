@@ -2816,13 +2816,20 @@
     {
       "stem": "annotationlib",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_annotationlib/conv_annotationlib_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "67 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_annotationlib/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_annotationlib/conversion.json",
+      "jacpython_results": {
+        "annotationlib": {
+          "passed": 0,
+          "total": 67,
+          "notes": "0/67 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "atexit",
