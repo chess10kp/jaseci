@@ -261,7 +261,7 @@ def _jac_host_type_name(value):
     return type(value).__name__
 
 def _jac_host_id(value) -> int:
-    return id(value) as int
+    return int(id(value))
 
 def _jac_host_type(value):
     # type(value) for a host object -- the fallback for py_type_of when the
