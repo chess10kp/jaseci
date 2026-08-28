@@ -3196,13 +3196,20 @@
     {
       "stem": "unicodedata",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_unicodedata/conv_unicodedata_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_unicodedata/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_unicodedata/conversion.json",
+      "jacpython_results": {
+        "unicodedata": {
+          "passed": 4,
+          "total": 8,
+          "notes": "4/8 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "wave",
