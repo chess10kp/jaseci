@@ -3771,6 +3771,9 @@ def to_host_policy(tag: str) -> BridgePolicy {
     if tag == "exception" {
         return BridgePolicy.EXCEPTION;
     }
+    if tag == "weakref" {
+        return BridgePolicy.PROXY;
+    }
     if tag == "host" {
         return BridgePolicy.PROXY;
     }
@@ -3965,6 +3968,11 @@ def to_host(value: PyObj) -> any {
 
         case PyHostProxy():
             return value.val;
+
+        case PyWeakRef():
+            # PROXY: the guest wrapper holds the host weakref.ref object;
+            # crossing passes it through so host pickling/repr see a real ref.
+            return value.wr;
 
         case PyException():
             # A caught exception crossing to the host (str(e)/repr(e)/type(e), or
