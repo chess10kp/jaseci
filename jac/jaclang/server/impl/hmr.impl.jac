@@ -198,8 +198,7 @@ impl HotReloader._dispatch_change(file_path: str, is_directory: bool = False) ->
     }
 
     if has_client {
-        visited: set = set();
-        self._recompile_client_code(target_path, visited);
+        self._recompile_client_code(target_path);
     }
 
     self._refresh_routing(target_path);
@@ -360,57 +359,40 @@ impl HotReloader._reload_server_module(file_path: str) -> None {
     }
 }
 
-impl HotReloader._recompile_client_unified(file_path: str) -> None {
-    import from jaclang.jac0core.runtime { JacRuntime as Jac }
-    import from jaclang.runtimelib.client_bundle { ClientBundleError }
-    try {
-        source_path = Path(file_path).resolve();
-        if not source_path.exists() {
-            return;
-        }
-
-        js_path = self._client_js_path(file_path);
-        old_exports: set[str] = set();
-        had_js = False;
-        if js_path is not None and js_path.exists() {
-            had_js = True;
-            old_exports = self._extract_js_exports(js_path);
-        }
-
-        program = Jac.program;
-        if program is not None {
-            for key in {file_path, str(source_path)} {
-                program.invalidate_module(key);
-                program.drop_module_alerts(key);
-            }
-        }
-        jcc = self.client_compiler.jac_client_compiler;
-        jcc.compile_dependencies_recursively(
-            source_path, source_root=Path(self.base_path).resolve(), skip_existing=True
-        );
-        console.success(
-            f"Recompiled: {file_path} -> {self._get_js_filename(file_path)}"
-        );
-
-        if had_js
-            and js_path is not None
-            and self._extract_js_exports(js_path) != old_exports {
-            console.print(
-                f"  ↻ Export set of {self._get_js_filename(
-                    file_path
-                )} changed; full reload"
-            );
-            self._signal_full_reload();
-        }
-    } except ClientBundleError as e {
-        base_prefix = str(Path(self.base_path).resolve()) + '/';
-        errors = str(e).replace(base_prefix, '');
-        console.error(f"Compile error in {file_path}:\n{errors}");
-        self.record_error(file_path, errors);
-    } except Exception as e {
-        console.error(f"Compile error in {file_path}: {e}");
-        self.record_error(file_path, str(e));
+impl HotReloader._client_compile_track_visit(
+    file_path: str, visited: set | None
+) -> (tuple[str, set] | None) {
+    source_key = str(Path(file_path).resolve());
+    if visited is None {
+        visited = set();
     }
+    if source_key in visited {
+        return None;
+    }
+    visited.add(source_key);
+    return (source_key, visited);
+}
+
+impl HotReloader._client_compile_invalidate_keys(
+    file_path: str, source_key: str
+) -> None {
+    import from jaclang.jac0core.runtime { JacRuntime as Jac }
+    program = Jac.program;
+    if program is None {
+        return;
+    }
+    for key in {file_path, source_key} {
+        program.invalidate_module(key);
+        program.drop_module_alerts(key);
+    }
+}
+
+impl HotReloader._client_compile_strip_base(text: str) -> str {
+    return text.replace(str(Path(self.base_path).resolve()) + '/', '');
+}
+
+impl HotReloader._client_compile_format_errors(errors: list) -> str {
+    return '\n'.join(self._client_compile_strip_base(str(err)) for err in errors);
 }
 
 impl HotReloader._client_js_path(file_path: str) -> (Path | None) {
@@ -461,22 +443,63 @@ impl HotReloader._recompile_client_code(
     file_path: str, visited: set | None = None, force: bool = True
 ) -> None {
     import from jaclang.jac0core.runtime { JacRuntime as Jac }
-    if self.client_compiler {
-        self._recompile_client_unified(file_path);
+    import from jaclang.runtimelib.client_bundle { ClientBundleError }
+
+    source_path = Path(file_path).resolve();
+    if not source_path.exists() {
         return;
     }
+    source_key = str(source_path);
+
+    if self.client_compiler {
+        try {
+            js_path = self._client_js_path(file_path);
+            old_exports: set[str] = set();
+            had_js = False;
+            if js_path is not None and js_path.exists() {
+                had_js = True;
+                old_exports = self._extract_js_exports(js_path);
+            }
+
+            self._client_compile_invalidate_keys(file_path, source_key);
+            jcc = self.client_compiler.jac_client_compiler;
+            jcc.compile_dependencies_recursively(
+                source_path,
+                source_root=Path(self.base_path).resolve(),
+                skip_existing=True
+            );
+            console.success(
+                f"Recompiled: {file_path} -> {self._get_js_filename(file_path)}"
+            );
+
+            if had_js
+                and js_path is not None
+                and self._extract_js_exports(js_path) != old_exports {
+                console.print(
+                    f"  ↻ Export set of {self._get_js_filename(
+                        file_path
+                    )} changed; full reload"
+                );
+                self._signal_full_reload();
+            }
+        } except ClientBundleError as e {
+            errors = self._client_compile_strip_base(str(e));
+            console.error(f"Compile error in {file_path}:\n{errors}");
+            self.record_error(file_path, errors);
+        } except Exception as e {
+            console.error(f"Compile error in {file_path}: {e}");
+            self.record_error(file_path, str(e));
+        }
+        return;
+    }
+
+    tracked = self._client_compile_track_visit(file_path, visited);
+    if tracked is None {
+        return;
+    }
+    (source_key, visited) = tracked;
+
     try {
-        source_path = Path(file_path).resolve();
-        source_key = str(source_path);
-
-        if visited is None {
-            visited = set();
-        }
-        if source_key in visited {
-            return;
-        }
-        visited.add(source_key);
-
         base_dir = Path(self.base_path).resolve();
         output_base = Path(self.base_path) / self._client_output_dir;
 
@@ -492,23 +515,20 @@ impl HotReloader._recompile_client_code(
         if not force and output_path.exists() {
             return;
         }
-        if not source_path.exists() {
+
+        program = Jac.program;
+        if program is None {
             return;
         }
+        self._client_compile_invalidate_keys(file_path, source_key);
 
-        Jac.program.invalidate_module(source_key);
-        Jac.program.drop_module_alerts(source_key);
+        mark = len(program.errors_had);
+        mod = program.compile(source_key);
 
-        mark = len(Jac.program.errors_had);
-        mod = Jac.program.compile(source_key);
-
-        new_errors = Jac.program.errors_had[mark:];
+        new_errors = program.errors_had[mark:];
         if new_errors {
             if force {
-                base_prefix = str(base_dir) + '/';
-                errors = '\n'.join(
-                    str(err).replace(base_prefix, '') for err in new_errors
-                );
+                errors = self._client_compile_format_errors(new_errors);
                 console.error(f"Compile error in {file_path}:\n{errors}");
                 self.record_error(file_path, errors);
             } else {

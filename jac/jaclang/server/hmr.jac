@@ -39,7 +39,13 @@ obj HotReloader {
         file_path: str, visited: set | None = None, force: bool = True
     ) -> None;
 
-    def _recompile_client_unified(file_path: str) -> None;
+    def _client_compile_track_visit(
+        file_path: str, visited: set | None
+    ) -> (tuple[str, set] | None);
+
+    def _client_compile_invalidate_keys(file_path: str, source_key: str) -> None;
+    def _client_compile_strip_base(text: str) -> str;
+    def _client_compile_format_errors(errors: list) -> str;
     def _client_js_path(file_path: str) -> (Path | None);
     def _extract_js_exports(js_path: Path) -> set[str];
     def _signal_full_reload -> None;
