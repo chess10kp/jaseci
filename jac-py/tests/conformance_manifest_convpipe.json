@@ -2685,13 +2685,20 @@
     {
       "stem": "random",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_random/conv_random_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "15 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_random/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_random/conversion.json",
+      "jacpython_results": {
+        "random": {
+          "passed": 2,
+          "total": 15,
+          "notes": "2/15 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "uuid",
