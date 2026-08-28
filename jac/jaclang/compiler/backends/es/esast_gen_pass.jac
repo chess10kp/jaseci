@@ -570,6 +570,17 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
         props: list[(es.Property | es.SpreadElement)]
     ) -> es.Expression;
 
+    def _try_lower_component_props_destructure_call(
+        nd: uni.FuncCall,
+        ability_node_resolved: uni.Ability,
+        callee_expr: es.Expression,
+        args: list[(es.Expression | es.SpreadElement)],
+        props: list[(es.Property | es.SpreadElement)],
+        call_args: list[(es.Expression | es.SpreadElement)],
+        spread_arg: (es.Expression | None),
+        use_kwargs_temp: bool
+    ) -> (es.Expression | None);
+
     def _pos_params_from_ability(ability_node: uni.Ability) -> list[uni.ParamVar];
     def _param_names_from_ability(ability_node: uni.Ability) -> list[str];
     def _param_type_map_from_ability(ability_node: uni.Ability) -> dict[(str, str)];
