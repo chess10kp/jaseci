@@ -218,13 +218,13 @@ def stop_process_group(process: any) -> None {
             }
         }
     }
-    if not _signal_group(process, signal.SIGTERM) {
+    if not _signal_group(process, int(signal.SIGTERM)) {
         process.terminate();
     }
     try {
         process.`wait(timeout=15);
     } except Exception {
-        if not _signal_group(process, signal.SIGKILL) {
+        if not _signal_group(process, int(signal.SIGKILL)) {
             process.kill();
         }
         try {
