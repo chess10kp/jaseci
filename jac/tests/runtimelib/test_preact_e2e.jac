@@ -91,11 +91,11 @@ def _start_preact_server(project_dir: Path) -> tuple {
         f"{repo_jac}{os.pathsep}{existing_path}" if existing_path else repo_jac
     );
     # start_new_session=True makes the server its own process-group leader so
-    # _stop_server can signal the whole tree (jac start -> bun x vite -> node
+    # _stop_server can signal the whole tree (jac run -> bun x vite -> node
     # vite -> esbuild). Without it, terminate() only reaches the top process and
     # the vite/esbuild children orphan, holding fds open and wedging the suite.
     proc = Popen(
-        [*jac_cmd, "start", "-p", str(port)],
+        [*jac_cmd, "run", "--serve", "-p", str(port)],
         cwd=str(project_dir),
         env=env,
         start_new_session=True
@@ -123,13 +123,13 @@ def _signal_group(proc: Popen, sig: int) -> bool {
 def _stop_server(proc: Popen) {
     # Signal the entire process group so bun/vite/esbuild children die with the
     # parent instead of orphaning and wedging the test session.
-    if not _signal_group(proc, signal.SIGTERM) {
+    if not _signal_group(proc, int(signal.SIGTERM)) {
         proc.terminate();
     }
     try {
         proc.`wait(timeout=20);
     } except Exception {
-        if not _signal_group(proc, signal.SIGKILL) {
+        if not _signal_group(proc, int(signal.SIGKILL)) {
             proc.kill();
         }
         proc.`wait(timeout=5);

@@ -146,8 +146,7 @@ def start_app_server(project_path: any, extra_args: list | None = None) -> tuple
     if extra_args {
         args = [*args, *extra_args];
     }
-    args = [*args, "main.jac", "-p", str(port)];
-    import tempfile;
+    args = [*args, "-p", str(port), "main.jac"];
     # Capture the server's output so a boot failure surfaces as a diagnosis
     # instead of an opaque 120s port-wait timeout (a crashed server and a
     # hung one look identical from wait_for_port).

@@ -2146,7 +2146,7 @@ impl EsastGenPass.exit_func_call(nd: uni.FuncCall) -> None {
         );
     } else {
         if isinstance(nd.target, uni.Name) {
-            import from jaclang.runtimelib.client_surface {
+            import from jaclang.client.client_surface {
                 runtime_import_source,
                 runtime_symbol
             }
@@ -4473,7 +4473,7 @@ impl EsastGenPass._view_push_stmt(
 impl EsastGenPass._jsx_fragment(
     children: es.Expression, anchor: uni.UniNode
 ) -> es.Expression {
-    import from jaclang.compiler.passes.ecmascript.view_ir {
+    import from jaclang.compiler.backends.es.view_ir {
         ViewElement,
         FragmentTag,
         DynamicChild
