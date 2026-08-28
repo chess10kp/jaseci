@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
   "tool_version": "conv_suite-0.6.0",
-  "jac_sha": "unknown",
+  "jac_sha": "8867f425e56c2a17e96fb92035ee4e3bfe578d5b",
   "cpython": {
     "version": "3.14.6",
-    "sha": "unknown"
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
   },
   "command": [
     "convert_suite.py",
     "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_codecencodings_tw.py",
     "-o",
-    "/var/tmp/worker6-949-convert-backup-529297/jac-py/tests/conv_codecencodings_tw",
+    "/var/tmp/worker6-956-convert-backup/jac-py/tests/conv_codecencodings_tw",
     "--name",
     "conv_codecencodings_tw"
   ],
-  "generated_at": "2026-08-28T16:22:51",
+  "generated_at": "2026-08-28T16:32:20",
   "hashes": {
     "pins_jac": "fbca1ce75e7266e063cf20b05296f22d3ce857b43a541a46e5fab84eebcd37db"
   },
