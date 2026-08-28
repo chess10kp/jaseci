@@ -13,7 +13,7 @@
       ],
       "libtest_snippets": [],
       "notes": "5 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_array/array.conv.json",
+      "conversion_meta": "jac-py/tests/conv_array/conversion.json",
       "jacpython_results": {
         "array": {
           "passed": 2,
@@ -31,7 +31,7 @@
       ],
       "libtest_snippets": [],
       "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_augassign/augassign.conv.json",
+      "conversion_meta": "jac-py/tests/conv_augassign/conversion.json",
       "jacpython_results": {
         "augassign": {
           "passed": 5,
@@ -49,7 +49,7 @@
       ],
       "libtest_snippets": [],
       "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_baseexception/baseexception.conv.json",
+      "conversion_meta": "jac-py/tests/conv_baseexception/conversion.json",
       "jacpython_results": {
         "baseexception": {
           "passed": 6,
@@ -78,7 +78,7 @@
       ],
       "libtest_snippets": [],
       "notes": "28 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_bool/bool.conv.json",
+      "conversion_meta": "jac-py/tests/conv_bool/conversion.json",
       "jacpython_results": {
         "bool": {
           "passed": 26,
@@ -96,7 +96,7 @@
       ],
       "libtest_snippets": [],
       "notes": "56 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_bytes/bytes.conv.json",
+      "conversion_meta": "jac-py/tests/conv_bytes/conversion.json",
       "jacpython_results": {
         "bytes": {
           "passed": 19,
@@ -114,7 +114,7 @@
       ],
       "libtest_snippets": [],
       "notes": "52 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_calendar/calendar.conv.json",
+      "conversion_meta": "jac-py/tests/conv_calendar/conversion.json",
       "jacpython_results": {
         "calendar": {
           "passed": 0,
@@ -132,7 +132,7 @@
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_class/class.conv.json",
+      "conversion_meta": "jac-py/tests/conv_class/conversion.json",
       "jacpython_results": {
         "class": {
           "passed": 1,
@@ -161,7 +161,7 @@
       ],
       "libtest_snippets": [],
       "notes": "209 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_codecs/codecs.conv.json",
+      "conversion_meta": "jac-py/tests/conv_codecs/conversion.json",
       "jacpython_results": {
         "codecs": {
           "passed": 83,
@@ -179,7 +179,7 @@
       ],
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_colorsys/colorsys.conv.json",
+      "conversion_meta": "jac-py/tests/conv_colorsys/conversion.json",
       "jacpython_results": {
         "colorsys": {
           "passed": 7,
@@ -197,7 +197,7 @@
       ],
       "libtest_snippets": [],
       "notes": "9 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_compare/compare.conv.json",
+      "conversion_meta": "jac-py/tests/conv_compare/conversion.json",
       "jacpython_results": {
         "compare": {
           "passed": 7,
@@ -215,7 +215,7 @@
       ],
       "libtest_snippets": [],
       "notes": "20 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_complex/complex.conv.json",
+      "conversion_meta": "jac-py/tests/conv_complex/conversion.json",
       "jacpython_results": {
         "complex": {
           "passed": 15,
@@ -233,7 +233,7 @@
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_contains/contains.conv.json",
+      "conversion_meta": "jac-py/tests/conv_contains/conversion.json",
       "jacpython_results": {
         "contains": {
           "passed": 2,
@@ -251,7 +251,7 @@
       ],
       "libtest_snippets": [],
       "notes": "73 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_copy/copy.conv.json",
+      "conversion_meta": "jac-py/tests/conv_copy/conversion.json",
       "jacpython_results": {
         "copy": {
           "passed": 33,
@@ -269,7 +269,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_copyreg/copyreg.conv.json",
+      "conversion_meta": "jac-py/tests/conv_copyreg/conversion.json",
       "jacpython_results": {
         "copyreg": {
           "passed": 1,
@@ -287,7 +287,7 @@
       ],
       "libtest_snippets": [],
       "notes": "37 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_csv/csv.conv.json",
+      "conversion_meta": "jac-py/tests/conv_csv/conversion.json",
       "jacpython_results": {
         "csv": {
           "passed": 29,
@@ -305,7 +305,7 @@
       ],
       "libtest_snippets": [],
       "notes": "14 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_decorators/decorators.conv.json",
+      "conversion_meta": "jac-py/tests/conv_decorators/conversion.json",
       "jacpython_results": {
         "decorators": {
           "passed": 11,
@@ -340,7 +340,7 @@
       ],
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_descrtut/descrtut.conv.json",
+      "conversion_meta": "jac-py/tests/conv_descrtut/conversion.json",
       "jacpython_results": {
         "descrtut": {
           "passed": 4,
@@ -358,7 +358,7 @@
       ],
       "libtest_snippets": [],
       "notes": "75 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_dict/dict.conv.json",
+      "conversion_meta": "jac-py/tests/conv_dict/conversion.json",
       "jacpython_results": {
         "dict": {
           "passed": 50,
@@ -376,7 +376,7 @@
       ],
       "libtest_snippets": [],
       "notes": "9 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_dictcomps/dictcomps.conv.json",
+      "conversion_meta": "jac-py/tests/conv_dictcomps/conversion.json",
       "jacpython_results": {
         "dictcomps": {
           "passed": 8,
@@ -394,7 +394,7 @@
       ],
       "libtest_snippets": [],
       "notes": "32 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_difflib/difflib.conv.json",
+      "conversion_meta": "jac-py/tests/conv_difflib/conversion.json",
       "jacpython_results": {
         "difflib": {
           "passed": 25,
@@ -412,7 +412,7 @@
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_errno/errno.conv.json",
+      "conversion_meta": "jac-py/tests/conv_errno/conversion.json",
       "jacpython_results": {
         "errno": {
           "passed": 3,
@@ -430,7 +430,7 @@
       ],
       "libtest_snippets": [],
       "notes": "26 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_float/float.conv.json",
+      "conversion_meta": "jac-py/tests/conv_float/conversion.json",
       "jacpython_results": {
         "float": {
           "passed": 20,
@@ -448,7 +448,7 @@
       ],
       "libtest_snippets": [],
       "notes": "14 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_fnmatch/fnmatch.conv.json",
+      "conversion_meta": "jac-py/tests/conv_fnmatch/conversion.json",
       "jacpython_results": {
         "fnmatch": {
           "passed": 13,
@@ -466,7 +466,7 @@
       ],
       "libtest_snippets": [],
       "notes": "15 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_format/format.conv.json",
+      "conversion_meta": "jac-py/tests/conv_format/conversion.json",
       "jacpython_results": {
         "format": {
           "passed": 9,
@@ -484,7 +484,7 @@
       ],
       "libtest_snippets": [],
       "notes": "60 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_fstring/fstring.conv.json",
+      "conversion_meta": "jac-py/tests/conv_fstring/conversion.json",
       "jacpython_results": {
         "fstring": {
           "passed": 50,
@@ -502,7 +502,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_generator_stop/generator_stop.conv.json",
+      "conversion_meta": "jac-py/tests/conv_generator_stop/conversion.json",
       "jacpython_results": {
         "generator_stop": {
           "passed": 1,
@@ -531,7 +531,7 @@
       ],
       "libtest_snippets": [],
       "notes": "21 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_genericclass/genericclass.conv.json",
+      "conversion_meta": "jac-py/tests/conv_genericclass/conversion.json",
       "jacpython_results": {
         "genericclass": {
           "passed": 21,
@@ -549,7 +549,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_genexps/genexps.conv.json",
+      "conversion_meta": "jac-py/tests/conv_genexps/conversion.json",
       "jacpython_results": {
         "genexps": {
           "passed": 0,
@@ -567,7 +567,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_getopt/getopt.conv.json",
+      "conversion_meta": "jac-py/tests/conv_getopt/conversion.json",
       "jacpython_results": {
         "getopt": {
           "passed": 1,
@@ -585,7 +585,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_html/html.conv.json",
+      "conversion_meta": "jac-py/tests/conv_html/conversion.json",
       "jacpython_results": {
         "html": {
           "passed": 2,
@@ -603,7 +603,7 @@
       ],
       "libtest_snippets": [],
       "notes": "50 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_htmlparser/htmlparser.conv.json",
+      "conversion_meta": "jac-py/tests/conv_htmlparser/conversion.json",
       "jacpython_results": {
         "htmlparser": {
           "passed": 0,
@@ -621,7 +621,7 @@
       ],
       "libtest_snippets": [],
       "notes": "10 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_index/index.conv.json",
+      "conversion_meta": "jac-py/tests/conv_index/conversion.json",
       "jacpython_results": {
         "index": {
           "passed": 5,
@@ -639,7 +639,7 @@
       ],
       "libtest_snippets": [],
       "notes": "16 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_int/int.conv.json",
+      "conversion_meta": "jac-py/tests/conv_int/conversion.json",
       "jacpython_results": {
         "int": {
           "passed": 13,
@@ -657,7 +657,7 @@
       ],
       "libtest_snippets": [],
       "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_int_literal/int_literal.conv.json",
+      "conversion_meta": "jac-py/tests/conv_int_literal/conversion.json",
       "jacpython_results": {
         "int_literal": {
           "passed": 6,
@@ -675,7 +675,7 @@
       ],
       "libtest_snippets": [],
       "notes": "32 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_iter/iter.conv.json",
+      "conversion_meta": "jac-py/tests/conv_iter/conversion.json",
       "jacpython_results": {
         "iter": {
           "passed": 17,
@@ -693,7 +693,7 @@
       ],
       "libtest_snippets": [],
       "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_keyword/keyword.conv.json",
+      "conversion_meta": "jac-py/tests/conv_keyword/conversion.json",
       "jacpython_results": {
         "keyword": {
           "passed": 9,
@@ -711,7 +711,7 @@
       ],
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_keywordonlyarg/keywordonlyarg.conv.json",
+      "conversion_meta": "jac-py/tests/conv_keywordonlyarg/conversion.json",
       "jacpython_results": {
         "keywordonlyarg": {
           "passed": 6,
@@ -729,7 +729,7 @@
       ],
       "libtest_snippets": [],
       "notes": "62 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_listcomps/listcomps.conv.json",
+      "conversion_meta": "jac-py/tests/conv_listcomps/conversion.json",
       "jacpython_results": {
         "listcomps": {
           "passed": 14,
@@ -747,7 +747,7 @@
       ],
       "libtest_snippets": [],
       "notes": "33 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_long/long.conv.json",
+      "conversion_meta": "jac-py/tests/conv_long/conversion.json",
       "jacpython_results": {
         "long": {
           "passed": 30,
@@ -765,7 +765,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_longexp/longexp.conv.json",
+      "conversion_meta": "jac-py/tests/conv_longexp/conversion.json",
       "jacpython_results": {
         "longexp": {
           "passed": 1,
@@ -783,7 +783,7 @@
       ],
       "libtest_snippets": [],
       "notes": "39 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_marshal/marshal.conv.json",
+      "conversion_meta": "jac-py/tests/conv_marshal/conversion.json",
       "jacpython_results": {
         "marshal": {
           "passed": 17,
@@ -823,7 +823,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_metaclass/metaclass.conv.json",
+      "conversion_meta": "jac-py/tests/conv_metaclass/conversion.json",
       "jacpython_results": {
         "metaclass": {
           "passed": 0,
@@ -841,7 +841,7 @@
       ],
       "libtest_snippets": [],
       "notes": "73 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_named_expressions/named_expressions.conv.json",
+      "conversion_meta": "jac-py/tests/conv_named_expressions/conversion.json",
       "jacpython_results": {
         "named_expressions": {
           "passed": 73,
@@ -859,7 +859,7 @@
       ],
       "libtest_snippets": [],
       "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_opcodes/opcodes.conv.json",
+      "conversion_meta": "jac-py/tests/conv_opcodes/conversion.json",
       "jacpython_results": {
         "opcodes": {
           "passed": 3,
@@ -877,7 +877,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_pep646_syntax/pep646_syntax.conv.json",
+      "conversion_meta": "jac-py/tests/conv_pep646_syntax/conversion.json",
       "jacpython_results": {
         "pep646_syntax": {
           "passed": 0,
@@ -895,7 +895,7 @@
       ],
       "libtest_snippets": [],
       "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_picklebuffer/picklebuffer.conv.json",
+      "conversion_meta": "jac-py/tests/conv_picklebuffer/conversion.json",
       "jacpython_results": {
         "picklebuffer": {
           "passed": 2,
@@ -913,7 +913,7 @@
       ],
       "libtest_snippets": [],
       "notes": "25 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_posixpath/posixpath.conv.json",
+      "conversion_meta": "jac-py/tests/conv_posixpath/conversion.json",
       "jacpython_results": {
         "posixpath": {
           "passed": 17,
@@ -931,7 +931,7 @@
       ],
       "libtest_snippets": [],
       "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_pow/pow.conv.json",
+      "conversion_meta": "jac-py/tests/conv_pow/conversion.json",
       "jacpython_results": {
         "pow": {
           "passed": 3,
@@ -949,7 +949,7 @@
       ],
       "libtest_snippets": [],
       "notes": "9 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_property/property.conv.json",
+      "conversion_meta": "jac-py/tests/conv_property/conversion.json",
       "jacpython_results": {
         "property": {
           "passed": 1,
@@ -1002,7 +1002,7 @@
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_robotparser/robotparser.conv.json",
+      "conversion_meta": "jac-py/tests/conv_robotparser/conversion.json",
       "jacpython_results": {
         "robotparser": {
           "passed": 0,
@@ -1020,7 +1020,7 @@
       ],
       "libtest_snippets": [],
       "notes": "33 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_scope/scope.conv.json",
+      "conversion_meta": "jac-py/tests/conv_scope/conversion.json",
       "jacpython_results": {
         "scope": {
           "passed": 24,
@@ -1038,7 +1038,7 @@
       ],
       "libtest_snippets": [],
       "notes": "300 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_set/set.conv.json",
+      "conversion_meta": "jac-py/tests/conv_set/conversion.json",
       "jacpython_results": {
         "set": {
           "passed": 66,
@@ -1056,7 +1056,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_setcomps/setcomps.conv.json",
+      "conversion_meta": "jac-py/tests/conv_setcomps/conversion.json",
       "jacpython_results": {
         "setcomps": {
           "passed": 1,
@@ -1074,7 +1074,7 @@
       ],
       "libtest_snippets": [],
       "notes": "19 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_shlex/shlex.conv.json",
+      "conversion_meta": "jac-py/tests/conv_shlex/conversion.json",
       "jacpython_results": {
         "shlex": {
           "passed": 4,
@@ -1092,7 +1092,7 @@
       ],
       "libtest_snippets": [],
       "notes": "10 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_string_literals/string_literals.conv.json",
+      "conversion_meta": "jac-py/tests/conv_string_literals/conversion.json",
       "jacpython_results": {
         "string_literals": {
           "passed": 0,
@@ -1110,7 +1110,7 @@
       ],
       "libtest_snippets": [],
       "notes": "34 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_struct/struct.conv.json",
+      "conversion_meta": "jac-py/tests/conv_struct/conversion.json",
       "jacpython_results": {
         "struct": {
           "passed": 29,
@@ -1128,7 +1128,7 @@
       ],
       "libtest_snippets": [],
       "notes": "35 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_syntax/syntax.conv.json",
+      "conversion_meta": "jac-py/tests/conv_syntax/conversion.json",
       "jacpython_results": {
         "syntax": {
           "passed": 34,
@@ -1146,7 +1146,7 @@
       ],
       "libtest_snippets": [],
       "notes": "48 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_textwrap/textwrap.conv.json",
+      "conversion_meta": "jac-py/tests/conv_textwrap/conversion.json",
       "jacpython_results": {
         "textwrap": {
           "passed": 48,
@@ -1164,7 +1164,7 @@
       ],
       "libtest_snippets": [],
       "notes": "26 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_time/time.conv.json",
+      "conversion_meta": "jac-py/tests/conv_time/conversion.json",
       "jacpython_results": {
         "time": {
           "passed": 23,
@@ -1182,7 +1182,7 @@
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_tstring/tstring.conv.json",
+      "conversion_meta": "jac-py/tests/conv_tstring/conversion.json",
       "jacpython_results": {
         "tstring": {
           "passed": 1,
@@ -1200,7 +1200,7 @@
       ],
       "libtest_snippets": [],
       "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_tuple/tuple.conv.json",
+      "conversion_meta": "jac-py/tests/conv_tuple/conversion.json",
       "jacpython_results": {
         "tuple": {
           "passed": 6,
@@ -1218,7 +1218,7 @@
       ],
       "libtest_snippets": [],
       "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_typechecks/typechecks.conv.json",
+      "conversion_meta": "jac-py/tests/conv_typechecks/conversion.json",
       "jacpython_results": {
         "typechecks": {
           "passed": 0,
@@ -1236,7 +1236,7 @@
       ],
       "libtest_snippets": [],
       "notes": "77 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_types/types.conv.json",
+      "conversion_meta": "jac-py/tests/conv_types/conversion.json",
       "jacpython_results": {
         "types": {
           "passed": 49,
@@ -1254,7 +1254,7 @@
       ],
       "libtest_snippets": [],
       "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_unary/unary.conv.json",
+      "conversion_meta": "jac-py/tests/conv_unary/conversion.json",
       "jacpython_results": {
         "unary": {
           "passed": 6,
@@ -1272,7 +1272,7 @@
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_unicode_identifiers/unicode_identifiers.conv.json",
+      "conversion_meta": "jac-py/tests/conv_unicode_identifiers/conversion.json",
       "jacpython_results": {
         "unicode_identifiers": {
           "passed": 2,
@@ -1290,7 +1290,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_unpack/unpack.conv.json",
+      "conversion_meta": "jac-py/tests/conv_unpack/conversion.json",
       "jacpython_results": {
         "unpack": {
           "passed": 0,
@@ -1308,7 +1308,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_unpack_ex/unpack_ex.conv.json",
+      "conversion_meta": "jac-py/tests/conv_unpack_ex/conversion.json",
       "jacpython_results": {
         "unpack_ex": {
           "passed": 0,
@@ -1362,7 +1362,7 @@
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_utf8source/utf8source.conv.json",
+      "conversion_meta": "jac-py/tests/conv_utf8source/conversion.json",
       "jacpython_results": {
         "utf8source": {
           "passed": 2,
@@ -1398,7 +1398,7 @@
       ],
       "libtest_snippets": [],
       "notes": "18 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_with/with.conv.json",
+      "conversion_meta": "jac-py/tests/conv_with/conversion.json",
       "jacpython_results": {
         "with": {
           "passed": 12,
@@ -1416,7 +1416,7 @@
       ],
       "libtest_snippets": [],
       "notes": "34 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_yield_from/yield_from.conv.json",
+      "conversion_meta": "jac-py/tests/conv_yield_from/conversion.json",
       "jacpython_results": {
         "yield_from": {
           "passed": 26,
@@ -1434,7 +1434,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_unicode_file/unicode_file.conv.json",
+      "conversion_meta": "jac-py/tests/conv_unicode_file/conversion.json",
       "jacpython_results": {
         "unicode_file": {
           "passed": 0,
@@ -1452,7 +1452,7 @@
       ],
       "libtest_snippets": [],
       "notes": "13 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_defaultdict/defaultdict.conv.json",
+      "conversion_meta": "jac-py/tests/conv_defaultdict/conversion.json",
       "jacpython_results": {
         "defaultdict": {
           "passed": 6,
@@ -1470,7 +1470,7 @@
       ],
       "libtest_snippets": [],
       "notes": "60 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_deque/deque.conv.json",
+      "conversion_meta": "jac-py/tests/conv_deque/conversion.json",
       "jacpython_results": {
         "deque": {
           "passed": 37,
@@ -1488,7 +1488,7 @@
       ],
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_enumerate/enumerate.conv.json",
+      "conversion_meta": "jac-py/tests/conv_enumerate/conversion.json",
       "jacpython_results": {
         "enumerate": {
           "passed": 3,
@@ -1506,7 +1506,7 @@
       ],
       "libtest_snippets": [],
       "notes": "16 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_dictviews/dictviews.conv.json",
+      "conversion_meta": "jac-py/tests/conv_dictviews/conversion.json",
       "jacpython_results": {
         "dictviews": {
           "passed": 10,
@@ -1535,7 +1535,7 @@
       ],
       "libtest_snippets": [],
       "notes": "10 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_slice/slice.conv.json",
+      "conversion_meta": "jac-py/tests/conv_slice/conversion.json",
       "jacpython_results": {
         "slice": {
           "passed": 6,
@@ -1553,7 +1553,7 @@
       ],
       "libtest_snippets": [],
       "notes": "25 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_positional_only_arg/positional_only_arg.conv.json",
+      "conversion_meta": "jac-py/tests/conv_positional_only_arg/conversion.json",
       "jacpython_results": {
         "positional_only_arg": {
           "passed": 9,
@@ -1571,7 +1571,7 @@
       ],
       "libtest_snippets": [],
       "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_isinstance/isinstance.conv.json",
+      "conversion_meta": "jac-py/tests/conv_isinstance/conversion.json",
       "jacpython_results": {
         "isinstance": {
           "passed": 9,
@@ -1589,7 +1589,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_iterlen/iterlen.conv.json",
+      "conversion_meta": "jac-py/tests/conv_iterlen/conversion.json",
       "jacpython_results": {
         "iterlen": {
           "passed": 0,
@@ -1607,7 +1607,7 @@
       ],
       "libtest_snippets": [],
       "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_numeric_tower/numeric_tower.conv.json",
+      "conversion_meta": "jac-py/tests/conv_numeric_tower/conversion.json",
       "jacpython_results": {
         "numeric_tower": {
           "passed": 2,
@@ -1625,7 +1625,7 @@
       ],
       "libtest_snippets": [],
       "notes": "14 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_subclassinit/subclassinit.conv.json",
+      "conversion_meta": "jac-py/tests/conv_subclassinit/conversion.json",
       "jacpython_results": {
         "subclassinit": {
           "passed": 8,
@@ -1643,7 +1643,7 @@
       ],
       "libtest_snippets": [],
       "notes": "40 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_weakset/weakset.conv.json",
+      "conversion_meta": "jac-py/tests/conv_weakset/conversion.json",
       "jacpython_results": {
         "weakset": {
           "passed": 0,
@@ -1661,7 +1661,7 @@
       ],
       "libtest_snippets": [],
       "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_secrets/secrets.conv.json",
+      "conversion_meta": "jac-py/tests/conv_secrets/conversion.json",
       "jacpython_results": {
         "secrets": {
           "passed": 0,
@@ -1690,7 +1690,7 @@
       ],
       "libtest_snippets": [],
       "notes": "307 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_statistics/statistics.conv.json",
+      "conversion_meta": "jac-py/tests/conv_statistics/conversion.json",
       "jacpython_results": {
         "statistics": {
           "passed": 16,
@@ -1708,7 +1708,7 @@
       ],
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_timeit/timeit.conv.json",
+      "conversion_meta": "jac-py/tests/conv_timeit/conversion.json",
       "jacpython_results": {
         "timeit": {
           "passed": 7,
@@ -1726,7 +1726,7 @@
       ],
       "libtest_snippets": [],
       "notes": "43 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_optparse/optparse.conv.json",
+      "conversion_meta": "jac-py/tests/conv_optparse/conversion.json",
       "jacpython_results": {
         "optparse": {
           "passed": 42,
@@ -1744,7 +1744,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_print/print.conv.json",
+      "conversion_meta": "jac-py/tests/conv_print/conversion.json",
       "jacpython_results": {
         "print": {
           "passed": 0,
@@ -1762,7 +1762,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_pyclbr/pyclbr.conv.json",
+      "conversion_meta": "jac-py/tests/conv_pyclbr/conversion.json",
       "jacpython_results": {
         "pyclbr": {
           "passed": 1,
@@ -1780,7 +1780,7 @@
       ],
       "libtest_snippets": [],
       "notes": "46 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_type_annotations/type_annotations.conv.json",
+      "conversion_meta": "jac-py/tests/conv_type_annotations/conversion.json",
       "jacpython_results": {
         "type_annotations": {
           "passed": 7,
@@ -1798,7 +1798,7 @@
       ],
       "libtest_snippets": [],
       "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_strtod/strtod.conv.json",
+      "conversion_meta": "jac-py/tests/conv_strtod/conversion.json",
       "jacpython_results": {
         "strtod": {
           "passed": 2,
@@ -1816,7 +1816,7 @@
       ],
       "libtest_snippets": [],
       "notes": "8 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_pkgutil/pkgutil.conv.json",
+      "conversion_meta": "jac-py/tests/conv_pkgutil/conversion.json",
       "jacpython_results": {
         "pkgutil": {
           "passed": 0,
@@ -1834,7 +1834,7 @@
       ],
       "libtest_snippets": [],
       "notes": "25 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_string/string.conv.json",
+      "conversion_meta": "jac-py/tests/conv_string/conversion.json",
       "jacpython_results": {
         "string": {
           "passed": 13,
@@ -1852,7 +1852,7 @@
       ],
       "libtest_snippets": [],
       "notes": "25 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_doctest/doctest.conv.json",
+      "conversion_meta": "jac-py/tests/conv_doctest/conversion.json",
       "jacpython_results": {
         "doctest": {
           "passed": 22,
@@ -1870,7 +1870,7 @@
       ],
       "libtest_snippets": [],
       "notes": "126 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_minidom/minidom.conv.json",
+      "conversion_meta": "jac-py/tests/conv_minidom/conversion.json",
       "jacpython_results": {
         "minidom": {
           "passed": 113,
@@ -1888,7 +1888,7 @@
       ],
       "libtest_snippets": [],
       "notes": "12 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_pstats/pstats.conv.json",
+      "conversion_meta": "jac-py/tests/conv_pstats/conversion.json",
       "jacpython_results": {
         "pstats": {
           "passed": 0,
@@ -1906,7 +1906,7 @@
       ],
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_pulldom/pulldom.conv.json",
+      "conversion_meta": "jac-py/tests/conv_pulldom/conversion.json",
       "jacpython_results": {
         "pulldom": {
           "passed": 4,
@@ -1924,7 +1924,7 @@
       ],
       "libtest_snippets": [],
       "notes": "5 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_shelve/shelve.conv.json",
+      "conversion_meta": "jac-py/tests/conv_shelve/conversion.json",
       "jacpython_results": {
         "shelve": {
           "passed": 5,
@@ -1942,7 +1942,7 @@
       ],
       "libtest_snippets": [],
       "notes": "41 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_fractions/fractions.conv.json",
+      "conversion_meta": "jac-py/tests/conv_fractions/conversion.json",
       "jacpython_results": {
         "fractions": {
           "passed": 20,
@@ -1960,7 +1960,7 @@
       ],
       "libtest_snippets": [],
       "notes": "30 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_funcattrs/funcattrs.conv.json",
+      "conversion_meta": "jac-py/tests/conv_funcattrs/conversion.json",
       "jacpython_results": {
         "funcattrs": {
           "passed": 12,
@@ -1978,7 +1978,7 @@
       ],
       "libtest_snippets": [],
       "notes": "7 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_richcmp/richcmp.conv.json",
+      "conversion_meta": "jac-py/tests/conv_richcmp/conversion.json",
       "jacpython_results": {
         "richcmp": {
           "passed": 4,
@@ -1996,7 +1996,7 @@
       ],
       "libtest_snippets": [],
       "notes": "31 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_configparser/configparser.conv.json",
+      "conversion_meta": "jac-py/tests/conv_configparser/conversion.json",
       "jacpython_results": {
         "configparser": {
           "passed": 0,
@@ -2014,7 +2014,7 @@
       ],
       "libtest_snippets": [],
       "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_abc/abc.conv.json",
+      "conversion_meta": "jac-py/tests/conv_abc/conversion.json",
       "jacpython_results": {
         "abc": {
           "passed": 0,
@@ -2032,7 +2032,7 @@
       ],
       "libtest_snippets": [],
       "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_codeop/codeop.conv.json",
+      "conversion_meta": "jac-py/tests/conv_codeop/conversion.json",
       "jacpython_results": {
         "codeop": {
           "passed": 0,
@@ -2050,7 +2050,7 @@
       ],
       "libtest_snippets": [],
       "notes": "37 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_fileinput/fileinput.conv.json",
+      "conversion_meta": "jac-py/tests/conv_fileinput/conversion.json",
       "jacpython_results": {
         "fileinput": {
           "passed": 5,
@@ -2068,7 +2068,7 @@
       ],
       "libtest_snippets": [],
       "notes": "1 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_dynamicclassattribute/dynamicclassattribute.conv.json",
+      "conversion_meta": "jac-py/tests/conv_dynamicclassattribute/conversion.json",
       "jacpython_results": {
         "dynamicclassattribute": {
           "passed": 1,
@@ -2086,7 +2086,7 @@
       ],
       "libtest_snippets": [],
       "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_getpass/getpass.conv.json",
+      "conversion_meta": "jac-py/tests/conv_getpass/conversion.json",
       "jacpython_results": {
         "getpass": {
           "passed": 4,
@@ -2104,7 +2104,7 @@
       ],
       "libtest_snippets": [],
       "notes": "34 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_pickletools/pickletools.conv.json",
+      "conversion_meta": "jac-py/tests/conv_pickletools/conversion.json",
       "jacpython_results": {
         "pickletools": {
           "passed": 0,
@@ -2122,7 +2122,7 @@
       ],
       "libtest_snippets": [],
       "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_type_aliases/type_aliases.conv.json",
+      "conversion_meta": "jac-py/tests/conv_type_aliases/conversion.json",
       "jacpython_results": {
         "type_aliases": {
           "passed": 0,
@@ -2140,7 +2140,7 @@
       ],
       "libtest_snippets": [],
       "notes": "30 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_unparse/unparse.conv.json",
+      "conversion_meta": "jac-py/tests/conv_unparse/conversion.json",
       "jacpython_results": {
         "unparse": {
           "passed": 0,
@@ -2169,7 +2169,7 @@
       ],
       "libtest_snippets": [],
       "notes": "100 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_builtin/builtin.conv.json",
+      "conversion_meta": "jac-py/tests/conv_builtin/conversion.json",
       "jacpython_results": {
         "builtin": {
           "passed": 44,
@@ -2198,7 +2198,7 @@
       ],
       "libtest_snippets": [],
       "notes": "46 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_call/call.conv.json",
+      "conversion_meta": "jac-py/tests/conv_call/conversion.json",
       "jacpython_results": {
         "call": {
           "passed": 38,
@@ -2216,7 +2216,7 @@
       ],
       "libtest_snippets": [],
       "notes": "88 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_ordered_dict/ordered_dict.conv.json",
+      "conversion_meta": "jac-py/tests/conv_ordered_dict/conversion.json",
       "jacpython_results": {
         "ordered_dict": {
           "passed": 0,
@@ -2300,7 +2300,7 @@
       ],
       "libtest_snippets": [],
       "notes": "15 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_binascii/binascii.conv.json",
+      "conversion_meta": "jac-py/tests/conv_binascii/conversion.json",
       "jacpython_results": {
         "binascii": {
           "passed": 15,
@@ -2318,7 +2318,7 @@
       ],
       "libtest_snippets": [],
       "notes": "42 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_bisect/bisect.conv.json",
+      "conversion_meta": "jac-py/tests/conv_bisect/conversion.json",
       "jacpython_results": {
         "bisect": {
           "passed": 0,
@@ -2347,7 +2347,7 @@
       ],
       "libtest_snippets": [],
       "notes": "105 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_functools/functools.conv.json"
+      "conversion_meta": "jac-py/tests/conv_functools/conversion.json"
     },
     {
       "stem": "hashlib",
@@ -2358,7 +2358,7 @@
       ],
       "libtest_snippets": [],
       "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_hashlib/hashlib.conv.json"
+      "conversion_meta": "jac-py/tests/conv_hashlib/conversion.json"
     },
     {
       "stem": "heapq",
@@ -2369,7 +2369,7 @@
       ],
       "libtest_snippets": [],
       "notes": "59 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_heapq/heapq.conv.json"
+      "conversion_meta": "jac-py/tests/conv_heapq/conversion.json"
     },
     {
       "stem": "collections",
@@ -2402,7 +2402,7 @@
       ],
       "libtest_snippets": [],
       "notes": "4 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_bufio/bufio.conv.json"
+      "conversion_meta": "jac-py/tests/conv_bufio/conversion.json"
     },
     {
       "stem": "cmath",
@@ -2413,7 +2413,7 @@
       ],
       "libtest_snippets": [],
       "notes": "14 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_cmath/cmath.conv.json"
+      "conversion_meta": "jac-py/tests/conv_cmath/conversion.json"
     },
     {
       "stem": "charmapcodec",
@@ -2435,7 +2435,7 @@
       ],
       "libtest_snippets": [],
       "notes": "2 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_cmd/cmd.conv.json"
+      "conversion_meta": "jac-py/tests/conv_cmd/conversion.json"
     },
     {
       "stem": "codecencodings_iso2022",
