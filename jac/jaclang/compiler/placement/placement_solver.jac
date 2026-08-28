@@ -971,14 +971,7 @@ impl PlacementApplyPass.postinit -> None {
 
 impl PlacementApplyPass.transform(ir_in: uni.Module) -> uni.Module {
     import from jaclang.compiler.symbol_utils { report_serverless_kind_errors }
-    # Analysis-only compiles (symtab_ir_only) exist to produce symbol facts,
-    # not codegen placement. Solving placement here would scan the import
-    # closure, whose resolution can execute host imports and re-enter full
-    # compiles -- a livelock when the closure contains native-failing
-    # modules. The ir-gen schedule runs this pass with solving intact.
-    if not self.prog.options.symtab_ir_only {
-        solve_module_placement(ir_in, self.prog);
-        report_serverless_kind_errors(self, ir_in);
-    }
+    solve_module_placement(ir_in, self.prog);
+    report_serverless_kind_errors(self, ir_in);
     return ir_in;
 }
