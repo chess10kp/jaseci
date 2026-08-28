@@ -5,6 +5,7 @@
 # Jac-coupled bridge shims live in ceval_bridge_guest.jac.
 # Exception unwind/matching and except* kernel in ceval_exceptions.jac.
 # Container opcode handlers live in ceval_opcodes_containers.jac.
+# Load/store/call/attribute opcode handlers in ceval_opcodes_loadcall.jac.
 # Frame execution (exec_code_frame/run_frame) in ceval_exec_frame.jac.
 
 ::py::
