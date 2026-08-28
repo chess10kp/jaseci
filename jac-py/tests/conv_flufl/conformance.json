@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_flufl/conv_flufl_pins.jac"
+  ],
+  "generated_at": "2026-08-28T18:56:13",
+  "hashes": {
+    "pins_jac": "5afaa966d9162b1cdfa12fe25de8b5241c364e71e0334720f86683dd2d557bfc",
+    "conversion_json": "894a4a161bdb4ba670cd57e9f109812321b29c9ac35a9fc29631857f1f14a2e0",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "flufl",
+  "counts": {
+    "converted": 4,
+    "runnable": 4,
+    "green": 0,
+    "quarantined": 0
+  },
+  "pins": [
+    {
+      "id": "FLUFLTests.test_barry_as_bdfl",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "FLUFLTests.test_guido_as_bdfl",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "FLUFLTests.test_barry_as_bdfl_look_ma_with_no_compiler_flags",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "FLUFLTests.test_barry_as_bdfl_relative_import",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    }
+  ]
+}
