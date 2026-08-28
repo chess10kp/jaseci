@@ -10,6 +10,16 @@ impl EsastGenPass.exit_await_expr(nd: uni.AwaitExpr) -> None {
     nd.gen.es_ast = await_expr;
 }
 
+impl EsastGenPass.exit_yield_expr(nd: uni.YieldExpr) -> None {
+    argument: (es.Expression | None) = None;
+    if nd.expr and nd.expr.gen.es_ast {
+        argument = cast(es.Expression, nd.expr.gen.es_ast);
+    }
+    nd.gen.es_ast = self.sync_loc(
+        es.YieldExpression(argument=argument, delegate=nd.with_from), jac_node=nd
+    );
+}
+
 impl EsastGenPass._try_exit_except_view_awaiting(nd: uni.Except) -> bool {
     parent_try = nd.find_parent_of_type(uni.TryStmt);
     if parent_try is not None and id(parent_try) in self._view_awaiting_tries {
