@@ -1,3 +1,5 @@
+import type from jaclang.compiler.backends.es.framework_backend { FrameworkBackend }
+
 obj RuntimeSymbol {
     has name: str,
         source: str = "@jac/runtime",
@@ -20,7 +22,7 @@ def runtime_symbol(name: str) -> (RuntimeSymbol | None) {
     return None;
 }
 
-def runtime_import_source(name: str, backend: (object | None) = None) -> str {
+def runtime_import_source(name: str, backend: (FrameworkBackend | None) = None) -> str {
     if backend is not None {
         src = backend.import_source(name);
         if isinstance(src, str) and src {
@@ -34,7 +36,7 @@ def runtime_import_source(name: str, backend: (object | None) = None) -> str {
     return "@jac/runtime";
 }
 
-def backend_jsx_factory_name(backend: (object | None) = None) -> str {
+def backend_jsx_factory_name(backend: (FrameworkBackend | None) = None) -> str {
     if backend is not None {
         name = backend.jsx_factory_name();
         if isinstance(name, str) and name {
@@ -45,7 +47,7 @@ def backend_jsx_factory_name(backend: (object | None) = None) -> str {
 }
 
 def _required_runtime_globals(
-    backend: (object | None) = None
+    backend: (FrameworkBackend | None) = None
 ) -> tuple[list[str], str] {
     if backend is not None {
         names = backend.required_globals();
@@ -62,7 +64,7 @@ def _required_runtime_globals(
     return (default_names, "@jac/runtime");
 }
 
-def with_runtime_globals(js_code: str, backend: (object | None) = None) -> str {
+def with_runtime_globals(js_code: str, backend: (FrameworkBackend | None) = None) -> str {
     import re;
     (names, src) = _required_runtime_globals(backend);
     missing: list[str] = [];
@@ -87,7 +89,7 @@ def with_runtime_globals(js_code: str, backend: (object | None) = None) -> str {
 }
 
 def prepend_active_runtime_globals(js_code: str) -> str {
-    import from jaclang.compiler.passes.ecmascript.backends.registry {
+    import from jaclang.compiler.backends.es.backends.registry {
         resolve_active_backend
     }
     return with_runtime_globals(js_code, resolve_active_backend());

@@ -1,5 +1,5 @@
-import from jaclang.compiler.passes.tool.unparse_pass { unparse_node }
-import from jaclang.compiler.passes.ecmascript.reactive_intent {
+import from jaclang.compiler.tools.unparse_pass { unparse_node }
+import from jaclang.compiler.backends.es.reactive_intent {
     StateField,
     RefField,
     StateUpdate,
@@ -9,15 +9,15 @@ import from jaclang.compiler.passes.ecmascript.reactive_intent {
 
 impl EsastGenPass._ensure_backend -> None {
     if self.backend is None {
-        import from jaclang.compiler.passes.ecmascript.backends.registry {
+        import from jaclang.compiler.backends.es.backends.registry {
             resolve_active_backend
         }
         try {
             self.backend = resolve_active_backend();
         } except ValueError {
             import from jaclang.project.config { get_config }
-            import from jaclang.jac0core.diagnostics { E5081 }
-            import from jaclang.compiler.passes.ecmascript.backends.react {
+            import from jaclang.compiler.frontend.diagnostics { E5081 }
+            import from jaclang.compiler.backends.es.backends.react {
                 ReactBackend
             }
             cfg = get_config();
@@ -1730,7 +1730,7 @@ impl EsastGenPass._warn_rpc_callable_params(
         return;
     }
     import re;
-    import from jaclang.jac0core.diagnostics { W6005 }
+    import from jaclang.compiler.frontend.diagnostics { W6005 }
     _sig = ability_node.signature;
     for _plist in [_sig.posonly_params, _sig.params or [], _sig.kwonlyargs] {
         for _p in _plist {
@@ -1811,7 +1811,7 @@ impl EsastGenPass._build_server_forwarder(
     self._inject_runtime_import('__jacCallFunction', jac_node);
     ret_label = self._forwarder_ret_label(ability_node);
     if ret_label {
-        import from jaclang.jac0core.diagnostics { W6009 }
+        import from jaclang.compiler.frontend.diagnostics { W6009 }
         self.emit(W6009, node_override=jac_node, name=func_name, ret=ret_label);
     }
     return self.sync_loc(
@@ -1927,7 +1927,7 @@ impl EsastGenPass.exit_func_call(nd: uni.FuncCall) -> None {
         and isinstance(callee.property, es.Identifier)
         and isinstance(nd.target, uni.AtomTrailer)
     ) {
-        import from jaclang.compiler.passes.ecmascript.es_unparse { JSCodeGenerator }
+        import from jaclang.compiler.backends.es.es_unparse { JSCodeGenerator }
 
         _obj_type = nd.target.target?.type;
         _type_name = self._resolve_primitive_type_name(_obj_type);
@@ -2004,7 +2004,7 @@ impl EsastGenPass.exit_func_call(nd: uni.FuncCall) -> None {
 
     _call_kind = nd.call_kind;
     if _call_kind == "builtin" and isinstance(nd.target, uni.Name) {
-        import from jaclang.compiler.passes.ecmascript.es_unparse { JSCodeGenerator }
+        import from jaclang.compiler.backends.es.es_unparse { JSCodeGenerator }
         _builtin_name = nd.target.sym_name;
         _emit_fn_name = "emit_" + _builtin_name;
         _emit_fn = getattr(self._builtin_emitter, _emit_fn_name, None);
@@ -2510,7 +2510,7 @@ impl EsastGenPass._ensure_emitters -> None {
         return;
     }
     import from jaclang.compiler.type_registry { JAC_TYPE_REGISTRY }
-    import jaclang.compiler.passes.ecmascript.primitives_es as _pes;
+    import jaclang.compiler.backends.es.primitives_es as _pes;
     self._primitives_es_mod = _pes;
     self._primitive_emitters = {};
     for (_tn, _suffix) in JAC_TYPE_REGISTRY.emitter_items() {
@@ -2545,7 +2545,7 @@ impl EsastGenPass._try_primitive_op(
     right_es: (es.Expression | None),
     jac_node: uni.UniNode
 ) -> (es.Expression | None) {
-    import from jaclang.compiler.passes.ecmascript.es_unparse { JSCodeGenerator }
+    import from jaclang.compiler.backends.es.es_unparse { JSCodeGenerator }
 
     import from jaclang.compiler.type_system.type_utils { expr_primitive_name }
     _type_name = expr_primitive_name(self.prog, expr_node);
@@ -4473,7 +4473,7 @@ impl EsastGenPass._view_push_stmt(
 impl EsastGenPass._jsx_fragment(
     children: es.Expression, anchor: uni.UniNode
 ) -> es.Expression {
-    import from jaclang.compiler.passes.ecmascript.view_ir {
+    import from jaclang.compiler.backends.es.view_ir {
         ViewElement,
         FragmentTag,
         DynamicChild
@@ -4640,7 +4640,7 @@ impl EsastGenPass._has_import(name: str) -> bool {
 }
 
 impl EsastGenPass._register_jac_virtual_import(module_id: str) -> None {
-    import from jaclang.jac0core.modresolver { resolve_jac_virtual_module_path }
+    import from jaclang.compiler.driver.modresolver { resolve_jac_virtual_module_path }
     if not self.client_manifest or module_id in self.client_manifest.imports {
         return;
     }
@@ -5136,7 +5136,7 @@ impl EsastGenPass.exit_ability(nd: uni.Ability) -> None {
 }
 
 impl EsastGenPass._osp_model -> OspModel {
-    import from jaclang.jac0core.osp_model { get_osp_model }
+    import from jaclang.runtime.osp_model { get_osp_model }
     _root = self.ir_in if isinstance(self.ir_in, uni.Module) else self.get_main_mod();
     return get_osp_model(_root);
 }
@@ -5508,7 +5508,7 @@ impl EsastGenPass._osp_slots_js(slots: list, tags: dict) -> str {
                 ttag = tags[trig] if (trig in tags) else -1;
                 if ttag < 0 {
                     if self._arch_kind_by_name(trig) in ("node", "edge", "walker") {
-                        import from jaclang.jac0core.osp_model { stable_osp_tag }
+                        import from jaclang.runtime.osp_model { stable_osp_tag }
                         ttag = stable_osp_tag(trig);
                     }
                 }
@@ -5619,12 +5619,12 @@ impl EsastGenPass._edge_tag_literal(
             _xkind = self._arch_kind_of_type(self._expr_class_type(type_expr));
         }
         if _xkind in ("node", "edge") {
-            import from jaclang.jac0core.osp_model { stable_osp_tag }
+            import from jaclang.runtime.osp_model { stable_osp_tag }
             _tag = stable_osp_tag(_etname);
         }
     }
     if (_tag < 0) and hard {
-        import from jaclang.jac0core.diagnostics { E5097 }
+        import from jaclang.compiler.frontend.diagnostics { E5097 }
         self.emit(
             E5097,
             node_override=nd,
@@ -5635,7 +5635,7 @@ impl EsastGenPass._edge_tag_literal(
 }
 
 impl EsastGenPass._build_edge_ref(nd: uni.EdgeRefTrailer) -> es.Expression {
-    import from jaclang.jac0core.diagnostics { E5097 }
+    import from jaclang.compiler.frontend.diagnostics { E5097 }
     fail = self.sync_loc(es.ArrayExpression(elements=[]), jac_node=nd);
     chain = nd.chain;
     if not chain {
@@ -5752,7 +5752,7 @@ impl EsastGenPass._build_edge_ref(nd: uni.EdgeRefTrailer) -> es.Expression {
 impl EsastGenPass._build_osp_filter_pred(
     nd: uni.UniNode, filt: uni.FilterCompr
 ) -> (es.Expression | None) {
-    import from jaclang.jac0core.diagnostics { E5097 }
+    import from jaclang.compiler.frontend.diagnostics { E5097 }
     parts: list[es.Expression] = [];
     if filt.f_type is not None {
         _ntag = self._edge_tag_literal(nd, filt.f_type, True);
@@ -6550,12 +6550,12 @@ impl EsastGenPass._generate_sv_import_stubs(
 }
 
 impl EsastGenPass._is_client_native_import(nd: uni.Import) -> bool {
-    import from jaclang.jac0core.compiler { import_binds_client_native }
+    import from jaclang.compiler.driver.boundary_classify { import_binds_client_native }
     return import_binds_client_native(nd, self.ir_in.gen.interop_manifest);
 }
 
 impl EsastGenPass._generate_na_import_binding(nd: uni.Import) -> None {
-    import from jaclang.jac0core.codeinfo { native_wasm_stem }
+    import from jaclang.compiler.frontend.codeinfo { native_wasm_stem }
     resolved_path = nd.from_loc.resolve_relative_path();
     stem = native_wasm_stem(resolved_path);
 
@@ -7365,7 +7365,7 @@ impl EsastGenPass.exit_module(nd: uni.Module) -> None {
         self.needs_jac_runtime = True;
     }
     if self.needs_jac_runtime {
-        import from jaclang.compiler.passes.ecmascript.jac_runtime_js {
+        import from jaclang.compiler.backends.es.jac_runtime_js {
             build_jac_runtime_js
         }
         jac_rt_decl = es.VariableDeclaration(
@@ -7401,7 +7401,7 @@ impl EsastGenPass.exit_module(nd: uni.Module) -> None {
     body.extend(self._flatten_ast_list(target_body));
 
     if self.needs_osp_graph or self.needs_osp_kernel {
-        import from jaclang.compiler.passes.ecmascript.jac_runtime_js {
+        import from jaclang.compiler.backends.es.jac_runtime_js {
             build_osp_core_js,
             build_osp_driver_js
         }
@@ -7557,7 +7557,7 @@ impl EsastGenPass._get_ast_or_default(
         and (nd not in self._unlowered_reported)
         and self._is_client_destined(nd)
     ) {
-        import from jaclang.jac0core.diagnostics { E5097 }
+        import from jaclang.compiler.frontend.diagnostics { E5097 }
         self._unlowered_reported.add(nd);
         self.emit(E5097, node_override=nd, kind=nd.__class__.__name__);
     }
@@ -8088,12 +8088,12 @@ impl EsastGenPass.enter_node(nd: uni.UniNode) -> None {
 }
 
 impl EsastGenPass.before_pass -> None {
-    import from jaclang.jac0core.codeinfo { ClientManifest }
+    import from jaclang.compiler.frontend.codeinfo { ClientManifest }
 
-    import from jaclang.jac0core.passes.module_codegen_pass {
+    import from jaclang.compiler.backends.py.module_codegen_pass {
         client_capability_violations
     }
-    import from jaclang.jac0core.diagnostics { E5096 }
+    import from jaclang.compiler.frontend.diagnostics { E5096 }
     if not self.ir_in.client_viols_reported {
         for (_vnode, _vkind) in client_capability_violations(self.ir_in) {
             self.emit(E5096, node_override=_vnode, kind=_vkind);
@@ -8108,7 +8108,7 @@ impl EsastGenPass.before_pass -> None {
         self.ir_in.gen.interop_manifest.endpoint_effects
     );
 
-    import from jaclang.jac0core.passes.module_codegen_pass { ModuleCodegenPass }
+    import from jaclang.compiler.backends.py.module_codegen_pass { ModuleCodegenPass }
     self.shared_arch_names: set[str] = {
         a.name.value
         for a in ModuleCodegenPass.shared_archetypes_for_context(
