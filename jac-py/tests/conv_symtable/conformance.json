@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "df54d545aa7d68e4f60d06f79a761dbeddb56e1b",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_symtable/conv_symtable_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:34:57",
+  "hashes": {
+    "pins_jac": "4c6821ec7fa0a1246ac6f892970be933e947dea69c158937b0d8ab3ee6e61b75",
+    "conversion_json": "60246db3f1af26b41c8c69c608942aec6d5f19c17db7e88a2c48f24b7b6a8c03",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "symtable",
+  "counts": {
+    "converted": 32,
+    "runnable": 8,
+    "green": 0,
+    "quarantined": 24
+  },
+  "pins": [
+    {
+      "id": "SymtableTest.test_annotated",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SymtableTest.test_filename_correct",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SymtableTest.test_eval",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SymtableTest.test_single",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SymtableTest.test_exec",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SymtableTest.test_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SymtableTest.test__symtable_refleak",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CommandLineTest.test_stdin",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "SymtableTest.test_type",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_id",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_optimized",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_nested",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_children",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_lineno",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_function_info",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_globals",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_nonlocal",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_local",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_free",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_referenced",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_parameters",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_symbol_lookup",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_namespaces",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_assigned",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_imported",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_name",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_class_get_methods",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "id": "SymtableTest.test_symtable_repr",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_symbol_repr",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "SymtableTest.test_symtable_entry_repr",
+      "status": "quarantined",
+      "reason": "unresolved-name:GenericAlias"
+    },
+    {
+      "id": "ComprehensionTests.test_loopvar_in_only_one_scope",
+      "status": "quarantined",
+      "reason": "helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(helper:get_identifiers_recursive(deepcopy-recursion))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))"
+    },
+    {
+      "id": "CommandLineTest.test_file",
+      "status": "quarantined",
+      "reason": "self.addCleanup"
+    }
+  ]
+}
