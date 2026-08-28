@@ -1131,6 +1131,7 @@ test "start dev with client does initial compilation" {
                 "utf-8", errors="ignore"
             );
             assert body.strip() , "dev server should respond after initial compilation";
+            assert server is not None;
             assert server.poll() is None , "dev server exited before the probe request";
         } finally {
             stop_server(server);
