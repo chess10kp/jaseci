@@ -36,6 +36,7 @@ import from objects {
     find_name,
     expect_str,
     str_values,
+    tuple_value,
     py_none,
     py_error,
     py_exception_type,
