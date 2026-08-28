@@ -2,7 +2,7 @@
   "version": 1,
   "wave": "conv_pipeline",
   "description": "D2 mechanical test-conversion pipeline (convert_suite/diff_runner)",
-  "module_count": 163,
+  "module_count": 165,
   "modules": [
     {
       "stem": "array",
@@ -2661,6 +2661,28 @@
       "libtest_snippets": [],
       "notes": "100 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_itertools/conversion.json"
+    },
+    {
+      "stem": "re",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "jac-py/tests/conv_re/conv_re_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "108 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "jac-py/tests/conv_re/conversion.json"
+    },
+    {
+      "stem": "stat",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "jac-py/tests/conv_stat/conv_stat_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "9 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "jac-py/tests/conv_stat/conversion.json"
     }
   ]
 }
