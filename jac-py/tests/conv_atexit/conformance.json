@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "fe67a35d77687462c1a1849df7c751e20ddb7456",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_atexit/conv_atexit_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:17:20",
+  "hashes": {
+    "pins_jac": "546cb8150eec160a9c72d68f21c0e8007692470d89d762f2fdfee1b0c90bb7d1",
+    "conversion_json": "f9f60ba5120ef2fec72af623284aa9083d1235260b771fbe1c9cbfbe49e1c916",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "atexit",
+  "counts": {
+    "converted": 8,
+    "runnable": 3,
+    "green": 0,
+    "quarantined": 5
+  },
+  "pins": [
+    {
+      "id": "GeneralTest.test_general",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FunctionalTest.test_shutdown",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FunctionalTest.test_atexit_instances",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FunctionalTest.test_atexit_thread_safety",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "SubinterpreterTest.test_callbacks_leak",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SubinterpreterTest.test_callbacks_leak_refcycle",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SubinterpreterTest.test_callback_on_subinterpreter_teardown",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    },
+    {
+      "id": "SubinterpreterTest.test_atexit_with_low_memory",
+      "status": "quarantined",
+      "reason": "decorator:support.cpython_only"
+    }
+  ]
+}
