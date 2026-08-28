@@ -2284,13 +2284,20 @@
     {
       "stem": "context",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_context/conv_context_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "28 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_context/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_context/conversion.json",
+      "jacpython_results": {
+        "context": {
+          "passed": 17,
+          "total": 27,
+          "notes": "17/27 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "base64",
