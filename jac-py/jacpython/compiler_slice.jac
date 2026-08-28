@@ -18,7 +18,9 @@ import from objects {
     PyError,
     py_none,
     PyList,
-    PyTuple
+    PyTuple,
+    PySet,
+    PyDict
 }
 import from ast_nodes {
     expr,
