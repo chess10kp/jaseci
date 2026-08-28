@@ -17,6 +17,21 @@
 # subclasses resolve identically whether callers arrive from native or
 # bridged guest classes.
 
+def _p2_is_class(value: any) -> bool {
+    # Guest PyClass nodes (t == "class") and host types both satisfy the C guard.
+    try {
+        tag = getattr(value, "t");
+        if tag == "class" {
+            return True;
+        }
+        if tag == "host" {
+            return isinstance(getattr(value, "val"), type);
+        }
+    } except AttributeError {
+    }
+    return isinstance(value, type);
+}
+
 # Internal state held by the ABC machinery (mirrors _abc._abc_data).
 obj _ABCImpl {
     has registry: list = [],
@@ -136,7 +151,7 @@ def _abc_init(cls: any) {
 
 def _abc_register(cls: any, subclass: any) -> any {
     # Mirrors _abc__abc_register_impl.
-    if not isinstance(subclass, type) {
+    if not _p2_is_class(subclass) {
         raise TypeError("Can only register classes");
     }
     if _p2_real_issubclass(subclass, cls) {
@@ -160,7 +175,7 @@ def _abc_register(cls: any, subclass: any) -> any {
 
 def _abc_subclasscheck(cls: any, subclass: any) -> bool {
     # Mirrors _abc__abc_subclasscheck_impl steps 1-6.
-    if not isinstance(subclass, type) {
+    if not _p2_is_class(subclass) {
         raise TypeError("issubclass() arg 1 must be a class");
     }
     data = _p2_impl_for(cls);
