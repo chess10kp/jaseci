@@ -306,6 +306,23 @@ test "chain attribute __class__ synthesis (cause/context/traceback/None)" {
     );
 }
 
+test "chain attribute __class__ synthesis with explicit raise-from cause" {
+    # ``raise X from Y``: both __cause__ and __context__ point at live
+    # exception instances; nested __class__.__name__ reads each type_name.
+    ns = vm_exec(
+        "names = []\n"
+        "try:\n"
+        "    try:\n"
+        "        raise ValueError('inner')\n"
+        "    except ValueError as inner:\n"
+        "        raise TypeError('outer') from inner\n"
+        "except TypeError as e:\n"
+        "    names.append(e.__cause__.__class__.__name__)\n"
+        "    names.append(e.__context__.__class__.__name__)\n"
+    );
+    assert vm_str(ns, "names") == "['ValueError', 'ValueError']";
+}
+
 # ---------------- ImportError __str__ slot (CPython ImportError_str) --------
 #
 # Ground truth from host python3.14: ImportError_str returns the ``msg``

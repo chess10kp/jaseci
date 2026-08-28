@@ -34,6 +34,36 @@ def canonical_exc_type(name: str) -> PyObj {
     return py_exception_type(name);
 }
 
+# ---- exc attribute route audit (050 / cause-__class__ synthesis) ------------
+# Attribute reads on caught exceptions live in objects.jac ``PyException.tp_getattro``
+# (and ``PyExcGroup`` overrides). This module owns matching/str/repr; the audit
+# below maps every served attribute to its nested ``.__class__.__name__`` path so
+# ``e.__cause__.__class__.__name__`` and siblings resolve like CPython.
+#
+# Route (PyException.tp_getattro)     | Value when unset    | Nested __class__ synthesis
+# ------------------------------------|---------------------|----------------------------
+# args                                | (always tuple)      | host tuple -> 'tuple'
+# __cause__                           | py_none()           | PyNoneType -> NoneType (*)
+# __context__                         | py_none()           | PyNoneType -> NoneType (*)
+# __traceback__                       | py_none()           | PyNoneType -> NoneType (*)
+# __class__                           | n/a                 | py_exception_type(type_name) (*)
+# __suppress_context__                | PyBool(False)       | host bool -> 'bool'
+# value (StopIteration)               | py_none()           | PyNoneType -> NoneType (*)
+# __notes__                           | empty PyList        | host list -> 'list'
+# type_fields (errno, msg, ...)       | py_none() or stored | PyNoneType / host type
+# raw (user subclass)                 | delegates           | user / PyException surface
+# __setstate__                        | ExcSetStateFn       | (callable; not chained)
+#
+# (*) PyExceptionType identity surrogates -- memoized via py_exception_type /
+# canonical_exc_type. PyNoneType/PyTraceback/PyTracebackFrame each expose an
+# explicit ``__class__`` arm (objects.jac) so object.__class__ NEVER raises.
+# Host-backed scalars/containers (tuple, bool, str, int, list) fall through
+# py_attr's host_getattr after tp_getattro misses __class__.
+#
+# Set chain entries (``raise X from Y`` / implicit ``__context__``) return live
+# PyException instances; their ``.__class__`` arm serves canonical_exc_type of
+# the stored type_name. Pin: test_exc_fidelity chain __class__ tests.
+
 # The builtin hierarchy table (EXC_PARENT) lives canonically in objects.jac;
 # this module reads it via the import above instead of keeping its own copy.
 
