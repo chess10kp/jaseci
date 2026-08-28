@@ -50,6 +50,8 @@ import from ceval_exceptions {
     eg_validate_star_target,
     exception_group_split,
 }
+import from ceval_opcodes_imports { try_dispatch_imports, }
+import from ceval_generators { try_dispatch_generators, }
 import from ceval_opcodes_containers {
     op_build_list,
     op_build_map,
@@ -1521,89 +1523,36 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             stack[len(stack) - 1] = awaitable;
             continue;
         }
-        if op == OP_GET_AITER {
-            iterable = stack.pop();
-            aiter = py_aiter(iterable);
-            if is_error(aiter) {
-                target = recover_exception(co, aiter, offset, stack);
-                if target >= 0 {
-                    ip = target;
-                    continue;
-                }
-                return aiter;
+        handled, imp_out = try_dispatch_imports(
+            op, arg, stack, co, offset, globals
+        );
+        if handled {
+            imp_apply = apply_opcode_outcome(imp_out);
+            if not imp_apply[0] {
+                return imp_apply[2];
             }
-            stack.append(aiter);
-            continue;
-        }
-        if op == OP_GET_ANEXT {
-            aiter = stack[len(stack) - 1];
-            awaitable = py_anext(aiter);
-            if is_error(awaitable) {
-                target = recover_exception(co, awaitable, offset, stack);
-                if target >= 0 {
-                    ip = target;
-                    continue;
-                }
-                return awaitable;
-            }
-            stack.append(awaitable);
-            continue;
-        }
-        if op == OP_END_ASYNC_FOR {
-            # Async-for cleanup: [..., aiter, exc]. StopAsyncIteration ends the
-            # loop (pop both, jump past the body); anything else re-raises.
-            exc = stack.pop();
-            stack.pop();
-            exc_name = "";
-            if exc.t == "exception" {
-                exc_name = (exc as PyException).type_name;
-            }
-            if exc_name == "StopAsyncIteration" {
-                continue;
-            }
-            reraised = py_raise_value(exc);
-            # This is a RERAISE-class event (the error entry for main was
-            # already appended when the awaited __anext__ failed): growing the
-            # traceback here duplicated main's frame (main|main|agen vs host
-            # main|agen). Route through dispatch like every other reraise.
-            target = dispatch_exception(co, reraised, offset, offset, stack);
-            if target >= 0 {
-                ip = target;
-                continue;
-            }
-            return reraised;
-        }
-        if op == OP_SEND {
-            # yield-from step. Stack: [..., receiver, sent]. Drive the receiver
-            # one step; on a yield replace `sent` with the yielded value and fall
-            # through to YIELD_VALUE (re-suspending the outer generator); on
-            # exhaustion replace `sent` with the sub-iterator's return value and
-            # jump past the loop to END_SEND.
-            sent = stack[len(stack) - 1];
-            receiver = stack[len(stack) - 2];
-            if frame.pending_throw is not None {
-                thrown_err = frame.pending_throw as PyObj;
-                frame.pending_throw = None;
-                step = send_throw_into(receiver, thrown_err);
-            } else {
-                step = send_into(receiver, sent);
-            }
-            if is_error(step) {
-                target = recover_exception(co, step, offset, stack);
-                if target >= 0 {
-                    ip = target;
-                    continue;
-                }
-                return step;
-            }
-            if step.t == "genstop" {
-                stack[len(stack) - 1] = (step as PyGenStop).val;
-                ip = ip + 2 * arg;
-            } else {
-                stack[len(stack) - 1] = step;
+            if imp_apply[1] >= 0 {
+                ip = imp_apply[1];
             }
             continue;
         }
+        handled, gen_out = try_dispatch_generators(
+            op, arg, stack, frame, co, offset, ip, exc_handling
+        );
+        if handled {
+            if gen_out[0] == -2 and gen_out[1].t == "yield" {
+                return gen_out[1];
+            }
+            gen_apply = apply_opcode_outcome(gen_out);
+            if not gen_apply[0] {
+                return gen_apply[2];
+            }
+            if gen_apply[1] >= 0 {
+                ip = gen_apply[1];
+            }
+            continue;
+        }
+
         if op == OP_END_SEND {
             # (receiver, value -- value): drop the exhausted sub-iterator, keep
             # its return value as the yield-from expression result.
@@ -2050,73 +1999,6 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             }
             continue;
         }
-        if op == OP_IMPORT_NAME {
-            fromlist = stack.pop();
-            level_obj = stack.pop();
-            result = py_none();
-            if layer3_is_active() {
-                import_level = 0;
-                if isinstance(level_obj, PyInt) {
-                    import_level = (level_obj as PyInt).val;
-                }
-                result = py_import_name(co.names[arg], fromlist, import_level, globals);
-            } else {
-                result = host_import(co.names[arg], fromlist);
-            }
-            if is_error(result) {
-                target = recover_exception(co, result, offset, stack);
-                if target >= 0 {
-                    ip = target;
-                    continue;
-                }
-                return result;
-            }
-            stack.append(result);
-            continue;
-        }
-        if op == OP_IMPORT_FROM {
-            module = stack[len(stack) - 1];
-            result = py_attr(module, co.names[arg]);
-            if is_error(result) {
-                # CPython's import_from converts a bare AttributeError into
-                # "ImportError: cannot import name 'x' from 'mod' (__file__)"
-                # -- every other error propagates unchanged.
-                exc = (result as PyError).exception;
-                if exc.type_name == "AttributeError" {
-                    modname = "<unknown>";
-                    nmobj = py_attr(module, "__name__");
-                    if not is_error(nmobj) and isinstance(nmobj, PyStr) {
-                        modname = (nmobj as PyStr).val;
-                    }
-                    origin = "";
-                    fileobj = py_attr(module, "__file__");
-                    if not is_error(fileobj) and isinstance(fileobj, PyStr) {
-                        origin = (fileobj as PyStr).val;
-                    }
-                    if origin != "" {
-                        result = py_error(
-                            "ImportError",
-                            "cannot import name '" + co.names[arg] + "' from '"
-                                + modname + "' (" + origin + ")"
-                        );
-                    } else {
-                        result = py_error(
-                            "ImportError",
-                            "cannot import name '" + co.names[arg] + "' from '"
-                                + modname + "'"
-                        );
-                    }
-                }
-                target = recover_exception(co, result, offset, stack);
-                if target >= 0 {
-                    ip = target;
-                    continue;
-                }
-                return result;
-            }
-            stack.append(result);
-            continue;
-        }
         if op == OP_PUSH_NULL {
             stack.append(py_none());
             continue;
@@ -2526,27 +2408,6 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             }
             stack.append(exit_result);
             continue;
-        }
-        if op == OP_RETURN_GENERATOR {
-            # The generator object already exists (created at call time). Push a
-            # placeholder standing in for it; the following POP_TOP discards it.
-            stack.append(py_none());
-            continue;
-        }
-        if op == OP_YIELD_VALUE {
-            # Suspend: pop the yielded value, freeze the resume point, and hand
-            # the value up to gen_resume. run_frame re-enters here from ip.
-            # oparg 1 marks a yield-from delegation, so a later throw knows to
-            # route into the sub-iterator rather than inject at this point.
-            value = stack.pop();
-            frame.ip = ip;
-            frame.yf = arg == 1;
-            frame.exc_state = exc_handling;
-            # Suspend deactivates this frame's handler entries in the global
-            # exc_info view (re-appended on resume); without this, an unrelated
-            # frame reading sys.exc_info() sees the suspended gen's exception.
-            _handled_stack_remove_each(exc_handling);
-            return PyYield(t="yield", val=value);
         }
         if op == OP_TO_BOOL {
             condition = stack.pop();
