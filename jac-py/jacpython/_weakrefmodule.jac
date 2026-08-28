@@ -237,10 +237,25 @@ obj PyWeakRefFn(PyObj) {
 # Calling a weakref derefs it: the raw value IS the original PyObj, so
 # identity (`r() is o`) holds; a dead reference calls to None.
 obj PyWeakRef(PyObj) {
-    has wr: any;
+    has wr: any,
+        hashkey: any = None;
 
+    # CPython ref_hash: first hash while the referent is alive keys like the
+    # referent and caches the digest; later hashes (even after death) reuse it.
     def tp_hashkey -> PyObj {
-        return PyStr(t="str", val="obj:" + str(id(self)));
+        if self.hashkey is not None {
+            return self.hashkey;
+        }
+        raw = self.wr();
+        if raw is None {
+            return py_error("TypeError", "weak object has gone away");
+        }
+        hk = (raw as PyObj).tp_hashkey();
+        if is_error(hk) {
+            return hk;
+        }
+        self.hashkey = hk;
+        return hk;
     }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
