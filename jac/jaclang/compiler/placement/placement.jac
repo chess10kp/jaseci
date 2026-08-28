@@ -196,6 +196,12 @@ def project_kind_name(source_path: str) -> str {
 }
 
 def _resolve_import_path(nd: (uni.ModulePath | uni.ModuleItem)) -> (str | None) {
+    # Placement scans are static analysis: resolving a dotted import item
+    # through the host import system would execute its parent package (a
+    # full compile + run of a jac module), recursively re-entering the
+    # compiler. Decline jac specs for the duration of the resolve.
+    import jaclang.meta_importer as _mi;
+    _mi.static_scan_begin();
     path: (str | None) = None;
     try {
         resolved = nd.resolve_relative_path();
@@ -204,6 +210,8 @@ def _resolve_import_path(nd: (uni.ModulePath | uni.ModuleItem)) -> (str | None) 
         }
     } except Exception {
         return None;
+    } finally {
+        _mi.static_scan_end();
     }
     if path and os.path.exists(path) {
         return path;
