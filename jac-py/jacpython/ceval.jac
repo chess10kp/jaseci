@@ -8521,6 +8521,25 @@ def py_isinstance(ob: PyObj, typ: PyObj) -> bool {
     return False;
 }
 
+# issubclass(cls, typ) metaclass hook: ABCMeta.__subclasscheck__ (and peers)
+# consult virtual registries (numbers.Integral.register(int), ...). Builtin
+# issubclass must route here before answering False for host cls + guest ABC.
+def py_type_subclasscheck_via_meta(cls: PyObj, typ: PyClass) -> bool | None {
+    sc = typ._meta_dunder("__subclasscheck__");
+    if is_error(sc) {
+        return None;
+    }
+    result = sc.tp_call([cls], {});
+    if is_error(result) {
+        return None;
+    }
+    truth = py_slot_truth(result);
+    if is_error(truth) {
+        return None;
+    }
+    return (truth as PyBool).val;
+}
+
 def py_issubclass(cls: PyObj, typ: PyObj) -> bool {
     if isinstance(typ, PyTuple) {
         for t in (typ as PyTuple).items {
@@ -8537,6 +8556,10 @@ def py_issubclass(cls: PyObj, typ: PyObj) -> bool {
                 if klass is (typ as PyClass) {
                     return True;
                 }
+            }
+            via_meta = py_type_subclasscheck_via_meta(cls, typ as PyClass);
+            if via_meta is not None {
+                return via_meta;
             }
             return False;
         }
@@ -8591,6 +8614,12 @@ def py_issubclass(cls: PyObj, typ: PyObj) -> bool {
     }
     if cls_name != "" and typ_name != "" {
         return exc_name_matches(cls_name, typ_name);
+    }
+    if isinstance(typ, PyClass) {
+        via_meta = py_type_subclasscheck_via_meta(cls, typ as PyClass);
+        if via_meta is not None {
+            return via_meta;
+        }
     }
     return False;
 }
