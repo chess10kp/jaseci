@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_xml_etree/conv_xml_etree_pins.jac"
+  ],
+  "generated_at": "2026-08-28T18:56:07",
+  "hashes": {
+    "pins_jac": "61ed1dcd87be84b371ea1e772eeae8a80ab7139198b76342aa399029ff488d29",
+    "conversion_json": "a3c141826bd46a149a95d39bdb7fa60e5ccc7e138ee40ddc650fac6dec9496cc",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "xml_etree",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 225,
+    "runnable": 2,
+    "green": 0,
+    "quarantined": 223,
+    "failed": 2,
+    "infra_failed": 0
+  },
+  "failures": [
+    {
+      "id": "ModuleTest.test_sanity",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    },
+    {
+      "id": "ElementTreeTest.test_xpath_tokenizer",
+      "status": "fail",
+      "classification": "NOT-RUN-LOCALLY",
+      "detail": "backup drain: jacpython oracle deferred to CI"
+    }
+  ]
+}
