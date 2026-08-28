@@ -754,7 +754,9 @@ impl JacCompiler.parse_str(
 
     if run_codespace_infer {
         _opts = target_program.options;
-        _analysis_only = _opts is not None and _opts.no_cgen;
+        _analysis_only = (
+            _opts is not None and (_opts.no_cgen or _opts.symtab_ir_only)
+        );
         _native_eligible = (
             not _analysis_only
             and not self.selfhost.is_selfhost(target_program)
@@ -815,7 +817,11 @@ impl JacCompiler.resolve_absorb_imports(
             }
         } else {
             try {
-                module = target_program.compile(resolved, no_cgen=True);
+                module = target_program.compile(
+                    resolved,
+                    no_cgen=True,
+                    symtab_ir_only=target_program.options.symtab_ir_only
+                );
             } except Exception {
                 module = None;
             }
