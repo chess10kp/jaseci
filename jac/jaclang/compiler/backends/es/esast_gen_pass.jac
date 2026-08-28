@@ -491,6 +491,8 @@ obj EsastGenPass(BaseAstGenPass[es.Statement]) {
     def _target_to_pattern(target: es.Node, loc: uni.UniNode) -> es.Node;
     def exit_try_stmt(nd: uni.TryStmt) -> None;
     def exit_except(nd: uni.Except) -> None;
+    def _try_exit_except_view_awaiting(nd: uni.Except) -> bool;
+    def _try_exit_try_stmt_view_awaiting(nd: uni.TryStmt) -> bool;
     def exit_finally_stmt(nd: uni.FinallyStmt) -> None;
     def exit_raise_stmt(nd: uni.RaiseStmt) -> None;
     def exit_assert_stmt(nd: uni.AssertStmt) -> None;
