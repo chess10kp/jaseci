@@ -63,11 +63,11 @@
       "gate_type": "oracle",
       "status": "converted",
       "oracle_tests": [
-        "conv_binop_pins.jac"
+        "jac-py/tests/conv_binop/conv_binop_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "11 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "binop.conv.json"
+      "conversion_meta": "jac-py/tests/conv_binop/conversion.json"
     },
     {
       "stem": "bool",
