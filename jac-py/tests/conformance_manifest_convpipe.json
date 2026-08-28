@@ -2965,13 +2965,20 @@
     {
       "stem": "harness_canary",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_harness_canary/conv_harness_canary_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "6 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_harness_canary/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_harness_canary/conversion.json",
+      "jacpython_results": {
+        "harness_canary": {
+          "passed": 1,
+          "total": 5,
+          "notes": "1/5 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "hmac",
