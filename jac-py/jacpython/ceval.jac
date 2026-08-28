@@ -424,6 +424,7 @@ import from gc_shim { gc_module_attrs }
 import from sysconfig_shim { sysconfig_module_attrs }
 import from errno_shim { errno_module_attrs }
 import from signal_shim { signal_module_attrs }
+import from _abcmodule { abc_module_attrs }
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -988,6 +989,16 @@ def import_native(absname: str) -> PyObj {
         }
 
         shim_modules["traceback"] = tbmod;
+    }
+    if absname == "_abc" and not ("_abc" in shim_modules) {
+        # Modules/_abc.c lift: guest Lib/abc.py must run subclass/instance
+        # checks against native PyClass MROs. A host-proxied _abc hands
+        # standins to C ABCMeta.__subclasscheck__, which cannot see guest
+        # ancestry -- typing's Protocol gate and enum's IntFlag extend check
+        # die with spurious ceval.Flag failures.
+        shim_modules["_abc"] = PyModule(
+            t="module", name="_abc", attrs=abc_module_attrs()
+        );
     }
     if absname in sys3_modules {
         return sys3_modules[absname];
@@ -4272,6 +4283,13 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
             );
         }
         shim_modules["traceback"] = tbmod;
+    }
+    if name == "_abc" and not ("_abc" in shim_modules) {
+        # Mirror of the import_native site: guest abc boot needs native
+        # subclasscheck over PyClass MROs, not host C _abc on standins.
+        shim_modules["_abc"] = PyModule(
+            t="module", name="_abc", attrs=abc_module_attrs()
+        );
     }
     if name in shim_modules {
         return shim_modules[name];
