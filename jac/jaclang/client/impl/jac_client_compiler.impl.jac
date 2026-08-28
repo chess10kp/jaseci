@@ -1,4 +1,5 @@
 import from jaclang.cli.console { console }
+import from jaclang.client.runtime_import_policy { merge_runtime_imports }
 
 def _jac_client_plugin_dir -> Path {
     import importlib;
@@ -286,17 +287,6 @@ impl JacClientCompiler.compile_dependencies_recursively(
     }
 }
 
-def _extract_import_lines(js_code: str) -> list[str] {
-    imports: list[str] = [];
-    for line in js_code.split('\n') {
-        trimmed = line.strip();
-        if trimmed.startswith('import ') {
-            imports.append(line);
-        }
-    }
-    return imports;
-}
-
 def _extract_jac_preamble(js_code: str) -> str {
     start = js_code.find('const _jac =');
     if start < 0 {
@@ -346,22 +336,6 @@ def _extract_function_bodies(js_code: str) -> str {
     return body;
 }
 
-def _merge_runtime_imports(platform_js: str, core_js: str) -> str {
-    seen: set[str] = set();
-    merged: list[str] = [];
-    for line in _extract_import_lines(platform_js) + _extract_import_lines(core_js) {
-        if 'client_react_core' in line {
-            continue;
-        }
-        if line in seen {
-            continue;
-        }
-        seen.add(line);
-        merged.append(line);
-    }
-    return '\n'.join(merged);
-}
-
 def _strip_esm_export_line(js_code: str) -> str {
     lines = js_code.split('\n');
     filtered: list[str] = [];
@@ -376,7 +350,7 @@ def _strip_esm_export_line(js_code: str) -> str {
 }
 
 def _bundle_runtime_js(core_js: str, platform_js: str, export_names: list[str]) -> str {
-    imports = _merge_runtime_imports(platform_js, core_js);
+    imports = merge_runtime_imports(platform_js, core_js);
     jac_preamble = _extract_jac_preamble(platform_js);
     if not jac_preamble {
         jac_preamble = _extract_jac_preamble(core_js);

@@ -2,6 +2,11 @@ import re;
 import json;
 import jaclang;
 import from pathlib { Path }
+import from jaclang.client.runtime_import_policy {
+    remap_runtime_imports,
+    runtime_import_symbols,
+    strip_runtime_imports
+}
 import from jaclang.dist.publish.npm_tarball { pack_tarball }
 
 glob _api_names_cache: dict[str, set[str]] = {},
@@ -196,31 +201,6 @@ def _index_import_spec(from_rel: str) -> str {
     return ("../" * depth) + "index.js";
 }
 
-def _jac_runtime_import_symbols(js: str) -> set[str] {
-    names: set[str] = set();
-    norm = js.replace("'", '"');
-    for m in re.finditer('import\\s*\\{([^}]*)\\}\\s*from\\s*"@jac/runtime"', norm) {
-        for part in m.group(1).split(",") {
-            piece = part.strip();
-            if piece {
-                tokens = re.split(r"\s+as\s+", piece);
-                names.add(tokens[-1].strip());
-            }
-        }
-    }
-    return names;
-}
-
-def _remap_bundle_runtime_imports(js: str, from_rel: str) -> str {
-    spec = _index_import_spec(from_rel);
-    out = js.replace('from "@jac/runtime"', f'from "{spec}"');
-    return out.replace("from '@jac/runtime'", f"from '{spec}'");
-}
-
-def _strip_jac_runtime_imports(js: str) -> str {
-    return re.sub(r'import\s*\{[^}]*\}\s*from\s*["\']@jac/runtime["\'];?\n?', "", js);
-}
-
 def _collect_dep_modules(
     entry_js: str, entry_dir: str = ""
 ) -> tuple[str, list[tuple[str, str]]] {
@@ -295,10 +275,10 @@ impl build_runtime_tarball(
 
     bundle_symbols: set[str] = set();
     for (_, dep_js) in deps {
-        bundle_symbols.update(_jac_runtime_import_symbols(dep_js));
+        bundle_symbols.update(runtime_import_symbols(dep_js));
     }
 
-    entry_js = _strip_jac_runtime_imports(entry_js);
+    entry_js = strip_runtime_imports(entry_js);
     if bundle_symbols {
         api = runtime_api_names(framework);
         missing_exports = sorted(
@@ -318,7 +298,9 @@ impl build_runtime_tarball(
 
     rewritten_deps: list[tuple[str, str]] = [];
     for (rel, dep_js) in deps {
-        rewritten_deps.append((rel, _remap_bundle_runtime_imports(dep_js, rel)));
+        rewritten_deps.append(
+            (rel, remap_runtime_imports(dep_js, _index_import_spec(rel)))
+        );
     }
     deps = rewritten_deps;
 

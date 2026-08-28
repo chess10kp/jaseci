@@ -5,6 +5,10 @@ import from jaclang.project.config { JacConfig }
 import from jaclang.dist.publish.sources { EXCLUDED_DIRS }
 import from jaclang.dist.publish.jsdoc { jsdoc_for_module, inject_jsdoc }
 import from jaclang.dist.publish.dts { dts_for_module }
+import from jaclang.client.runtime_import_policy {
+    imported_symbols_from,
+    remap_runtime_imports
+}
 import from jaclang.dist.publish.runtime_npm { runtime_api_names }
 
 glob _DEFAULT_RUNTIME_PKG: str = "@jaseci/runtime";
@@ -28,38 +32,12 @@ def _top_level_decls(js: str) -> set[str] {
     return names;
 }
 
-def _imported_from(js: str, src: str) -> set[str] {
-    names: set[str] = set();
-    norm = js.replace("'", '"');
-    pattern = 'import\\s*\\{([^}]*)\\}\\s*from\\s*"' + re.escape(src) + '"';
-    for m in re.finditer(pattern, norm) {
-        for part in m.group(1).split(",") {
-            piece = part.strip();
-            if piece {
-                names.add(piece.split()[-1]);
-            }
-        }
-    }
-    return names;
-}
-
-def _remap_jac_runtime_imports(js: str, runtime_pkg: str) -> str {
-    if runtime_pkg == "@jac/runtime" {
-        return js;
-    }
-    return (
-        js.replace('from "@jac/runtime"', f'from "{runtime_pkg}"').replace(
-            "from '@jac/runtime'", f"from '{runtime_pkg}'"
-        )
-    );
-}
-
 def _wire_externals(js: str, runtime_pkg: str) -> tuple[str, list[str]] {
     externals: list[str] = [];
-    out = _remap_jac_runtime_imports(js, runtime_pkg);
+    out = remap_runtime_imports(js, runtime_pkg);
     local = _top_level_decls(out);
     api = runtime_api_names();
-    already_imported = _imported_from(out, runtime_pkg);
+    already_imported = imported_symbols_from(out, runtime_pkg);
 
     used: list[str] = [];
     for name in sorted(api) {
