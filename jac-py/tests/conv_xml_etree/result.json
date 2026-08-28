@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "7e292897d8751794104f412f5fbfabcb042a1148",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_xml_etree/conv_xml_etree_pins.jac"
+  ],
+  "generated_at": "2026-08-28T19:15:56",
+  "hashes": {
+    "pins_jac": "61ed1dcd87be84b371ea1e772eeae8a80ab7139198b76342aa399029ff488d29",
+    "conversion_json": "a3c141826bd46a149a95d39bdb7fa60e5ccc7e138ee40ddc650fac6dec9496cc",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "xml_etree",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 225,
+    "runnable": 2,
+    "green": 0,
+    "quarantined": 223,
+    "failed": 2,
+    "infra_failed": 2
+  },
+  "failures": [
+    {
+      "id": "ModuleTest.test_sanity",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "ElementTreeTest.test_xpath_tokenizer",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    }
+  ]
+}
