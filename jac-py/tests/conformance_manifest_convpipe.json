@@ -2,7 +2,7 @@
   "version": 1,
   "wave": "conv_pipeline",
   "description": "D2 mechanical test-conversion pipeline (convert_suite/diff_runner)",
-  "module_count": 168,
+  "module_count": 169,
   "modules": [
     {
       "stem": "array",
@@ -2694,6 +2694,17 @@
       "libtest_snippets": [],
       "notes": "20 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_argparse/conversion.json"
+    },
+    {
+      "stem": "bz2",
+      "gate_type": "oracle",
+      "status": "converted",
+      "oracle_tests": [
+        "conv_bz2_pins.jac"
+      ],
+      "libtest_snippets": [],
+      "notes": "92 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "conversion_meta": "conversion.json"
     }
   ]
 }
