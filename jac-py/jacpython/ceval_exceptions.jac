@@ -640,7 +640,7 @@ def eg_split_rec(gexc: PyObj, kind: str, cond: PyObj) -> tuple[PyObj, PyObj, PyO
             continue;
         }
         if kind == "all" {
-            matched = true;
+            matched = True;
         } elif kind == "match" {
             matched = eg_cond_match(m, cond);
         } else {
