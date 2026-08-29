@@ -1,0 +1,522 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "5a5dcec58ba878be78331103df5f661a6b87848a",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_asyncgen/conv_asyncgen_pins.jac"
+  ],
+  "generated_at": "2026-08-28T21:20:46",
+  "hashes": {
+    "pins_jac": "481f8e9fba539e6628b089c59fd94009a431e6f7c7fc6623c67e149827a749e1",
+    "conversion_json": "a63cc89035eee82b9db1db72e2327ea8184448dd7b766cb9928cca95251b2762",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "asyncgen",
+  "counts": {
+    "converted": 85,
+    "runnable": 69,
+    "green": 0,
+    "quarantined": 16
+  },
+  "pins": [
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_04",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_05",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_iteration_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_iteration_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_04",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_05",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_06",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_07",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_08",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_09",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_11",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_asend_throw_concurrent_with_send",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_athrow_throw_concurrent_with_send",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_asend_throw_concurrent_with_throw",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_athrow_throw_concurrent_with_throw",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_api_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_asend_close_runtime_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_athrow_close_runtime_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_generator_anext",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_python_async_iterator_anext",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_python_async_iterator_types_coroutine_anext",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aiter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aiter_class",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_aiter_idempotent",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_bad_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_bad_await",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_await_raises",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_aiter_bad_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_04",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_05",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_06",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple_no_exceptions",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_sync_anext_raises_exception",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_06",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_07",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_08",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_gc_aclose_09",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_11",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_12",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_asend_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_asend_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_asend_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_tuple",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_stopiteration",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_exception_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_exception_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_expression_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_expression_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_expression_incorrect",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_asyncgen_nonstarted_hooks_are_cancellable",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_await_same_anext_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_await_same_aclose_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_throw_same_aclose_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_throw_custom_same_aclose_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_throw_custom_same_athrow_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aclose_twice_with_different_coros",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aclose_after_exhaustion",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aclose_compatible_with_get_stack",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_aclose_throw",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_asend_send_already_running",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_athrow_send_already_running",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "[dev] jac dev mode - using compiler source at /var/tmp/worker6-1095-converter-backup-3531792/jac\n[ERROR] Error: type inference is on the critical path of every compilation, but the vendored typeshed stdlib stubs are missing from this environment, so no module can be compiled. In a source checkout ru"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_12",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_3_arg_deprecation_warning",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_return_iterator",
+      "status": "quarantined",
+      "reason": "uses-self.check_anext_returning_iterator"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_return_generator",
+      "status": "quarantined",
+      "reason": "uses-self.check_anext_returning_iterator"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_iter",
+      "status": "quarantined",
+      "reason": "uses-self.assertEqual"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_01",
+      "status": "quarantined",
+      "reason": "uses-self.to_list"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_02",
+      "status": "quarantined",
+      "reason": "uses-self.to_list"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_03",
+      "status": "quarantined",
+      "reason": "uses-self.to_list"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_stopiteration",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_asend",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_athrow",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_aclose",
+      "status": "quarantined",
+      "reason": "uses-self.assertWarnsRegex"
+    }
+  ]
+}

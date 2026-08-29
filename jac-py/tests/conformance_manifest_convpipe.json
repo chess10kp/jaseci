@@ -2255,13 +2255,20 @@
     {
       "stem": "asyncgen",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "conv_asyncgen_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "69 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "asyncgen.conv.json"
+      "conversion_meta": "asyncgen.conv.json",
+      "jacpython_results": {
+        "asyncgen": {
+          "passed": 0,
+          "total": 69,
+          "notes": "0/69 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "reprlib",
