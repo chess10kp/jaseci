@@ -995,9 +995,9 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         if op == OP_BUILD_TEMPLATE {
             # Stack: [literals_tuple, parts_tuple] -- Template(strings,
             # interpolations).
-            parts = stack.pop();
-            lits = stack.pop();
-            stack.append(make_template(lits, parts));
+            tmpl_parts = stack.pop();
+            tmpl_lits = stack.pop();
+            stack.append(make_template(tmpl_lits as PyTuple, tmpl_parts as PyTuple));
             continue;
         }
         if op == OP_BUILD_MAP {
@@ -1112,12 +1112,12 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             continue;
         }
         if op == OP_BUILD_STRING {
-            parts: list[PyObj] = [];
-            while len(parts) < arg {
-                parts.insert(0, stack.pop());
+            str_parts: list[PyObj] = [];
+            while len(str_parts) < arg {
+                str_parts.insert(0, stack.pop());
             }
             joined = "";
-            for part in parts {
+            for part in str_parts {
                 joined = joined + expect_str(part);
             }
             stack.append(PyStr(t="str", val=joined));
@@ -1327,10 +1327,10 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             }
             # Push in reverse so the first element lands on top of the stack for
             # the successive STORE ops (CPython's UNPACK_SEQUENCE ordering).
-            k = arg - 1;
-            while k >= 0 {
-                stack.append(unpacked[k]);
-                k = k - 1;
+            uk = arg - 1;
+            while uk >= 0 {
+                stack.append(unpacked[uk]);
+                uk = uk - 1;
             }
             continue;
         }
@@ -1359,7 +1359,7 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             # (materialized iters, generators/coroutines, calliter/seqiter/
             # rangeiter): the old shape-dispatch silently produced an empty
             # unpack for rangeiter/seqiter/calliter.
-            unpacked = [];
+            unpack_ex_items: list[PyObj] = [];
             drain_failed = False;
             while True {
                 nxt = send_into(it, py_none());
@@ -1377,12 +1377,12 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                 if nxt.t == "genstop" {
                     break;
                 }
-                unpacked.append(nxt);
+                unpack_ex_items.append(nxt);
             }
             if drain_failed {
                 continue;
             }
-            m = len(unpacked);
+            m = len(unpack_ex_items);
             if m < before + after {
                 ex_err = py_error(
                     "ValueError",
@@ -1403,19 +1403,19 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             # tail[m-after..m-1]. Push tail deepest-first, then middle, then head.
             j = m - 1;
             while j >= m - after {
-                stack.append(unpacked[j]);
+                stack.append(unpack_ex_items[j]);
                 j = j - 1;
             }
             middle_items: list[PyObj] = [];
             mk = before;
             while mk < m - after {
-                middle_items.append(unpacked[mk]);
+                middle_items.append(unpack_ex_items[mk]);
                 mk = mk + 1;
             }
             stack.append(PyList(t="list", items=middle_items));
             b = before - 1;
             while b >= 0 {
-                stack.append(unpacked[b]);
+                stack.append(unpack_ex_items[b]);
                 b = b - 1;
             }
             continue;
@@ -1983,12 +1983,12 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
             # CPython super_getattro applies the descriptor protocol to what
             # the MRO walk found: a property getter fires against the live
             # instance, a function binds to it, a classmethod binds its class.
-            bound = descriptor_get(result, super_self, super_self);
+            super_bound = descriptor_get(result, super_self, super_self);
             if (arg & 1) != 0 {
-                stack.append(bound);
+                stack.append(super_bound);
                 stack.append(py_none());
             } else {
-                stack.append(bound);
+                stack.append(super_bound);
             }
             continue;
         }
@@ -2164,20 +2164,20 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                 and self_or_null.t == "none" and len(call_args) == 0
                 and len(kwargs_for_call) == 0 {
                 local_names: dict[str, bool] = {};
-                for k in locals {
-                    local_names[k] = True;
+                for loc_key in locals {
+                    local_names[loc_key] = True;
                 }
                 si = 0;
                 while si < len(fast) {
-                    bound = False;
+                    slot_bound = False;
                     if isinstance(fast[si], PyCell) {
                         if ((fast[si] as PyCell).filled) {
-                            bound = True;
+                            slot_bound = True;
                         }
                     } elif si < len(assigned) and assigned[si] {
-                        bound = True;
+                        slot_bound = True;
                     }
-                    if bound {
+                    if slot_bound {
                         local_names[localsplus_name(co, si)] = True;
                     }
                     si = si + 1;
@@ -2650,17 +2650,17 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                         "SystemError", "malformed CALL_INTRINSIC_1 TYPEALIAS operand"
                     );
                 }
-                parts = (operand as PyTuple).items;
-                if not isinstance(parts[0], PyStr) {
+                alias_items = (operand as PyTuple).items;
+                if not isinstance(alias_items[0], PyStr) {
                     return py_error(
                         "SystemError", "CALL_INTRINSIC_1 TYPEALIAS name must be a str"
                     );
                 }
                 stack.append(PyTypeAlias(
                     t="TypeAliasType",
-                    name=(parts[0] as PyStr).val,
-                    type_params=parts[1],
-                    value_fn=parts[2],
+                    name=(alias_items[0] as PyStr).val,
+                    type_params=alias_items[1],
+                    value_fn=alias_items[2],
                 ));
                 continue;
             }
