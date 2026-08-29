@@ -7,6 +7,7 @@ Static checks on ``jac-py/jacpython/*.jac`` import graph:
   - ``ceval.jac`` may import objects + *object.jac helpers, not pyc_first.
   - ``pyc_first.jac`` may import ceval + objects (top bootstrap driver).
   - Object helper modules (*object.jac except objects) must not import ceval/pyc_first.
+  - Shared ceval runtime archetypes have one canonical definition in ceval_defs.
 
 Run from repo root:
     python3 jac-py/tools/p3_import_cycle_gate.py
@@ -35,6 +36,21 @@ BOOTSTRAP_MODULES = frozenset(
 
 EXEC_MODULES = frozenset({"ceval", "pyc_first"})
 FORBIDDEN_OBJECTS_IMPORTS = EXEC_MODULES | BOOTSTRAP_MODULES
+CANONICAL_CEVAL_TYPES = frozenset(
+    {
+        "PyHostProxy",
+        "PyClass",
+        "PyUserObj",
+        "PyFunction",
+        "PyNativeBuiltin",
+        "PyGenStop",
+        "PyAsyncGenWrappedValue",
+    }
+)
+TYPE_IMPORT = re.compile(
+    r"^\s*import\s+from\s+(objects|ceval)\s*\{([^}]*)\}",
+    re.MULTILINE | re.DOTALL,
+)
 
 
 def _repo_root() -> Path:
@@ -119,6 +135,36 @@ def _check_invariants(graph: dict[str, set[str]]) -> list[str]:
     return errors
 
 
+def _check_type_ownership(jac_dir: Path) -> list[str]:
+    errors: list[str] = []
+    owners = {name: [] for name in CANONICAL_CEVAL_TYPES}
+
+    for path in jac_dir.glob("*.jac"):
+        text = path.read_text()
+        for name in CANONICAL_CEVAL_TYPES:
+            if re.search(rf"^obj\s+{name}\b", text, re.MULTILINE):
+                owners[name].append(path.stem)
+
+        for source, body in TYPE_IMPORT.findall(text):
+            imported = {
+                item.strip().rstrip(",")
+                for item in body.replace("\n", " ").split(",")
+                if item.strip()
+            }
+            for name in sorted(imported & CANONICAL_CEVAL_TYPES):
+                errors.append(
+                    f"{path.name} must import {name} from ceval_defs, not {source}"
+                )
+
+    for name, modules in sorted(owners.items()):
+        if modules != ["ceval_defs"]:
+            found = ", ".join(sorted(modules)) or "nowhere"
+            errors.append(
+                f"{name} must be defined exactly once in ceval_defs.jac; found in {found}"
+            )
+    return errors
+
+
 def main() -> int:
     root = _repo_root()
     jac_dir = root / "jac-py" / "jacpython"
@@ -129,6 +175,7 @@ def main() -> int:
         fail_msgs.append(f"import cycle: {' -> '.join(cycle)}")
 
     fail_msgs.extend(_check_invariants(graph))
+    fail_msgs.extend(_check_type_ownership(jac_dir))
 
     if fail_msgs:
         for msg in fail_msgs:

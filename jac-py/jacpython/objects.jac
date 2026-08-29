@@ -1566,13 +1566,6 @@ obj PyList(PyObj) {
     }
 }
 
-# Host-backed proxy archetype: declared here so acyclic spokes (ceval_defs,
-# ceval_bridge_guest, ...) can isinstance/import it; ceval.jac overrides the
-# slots via cross-module inheritance (header comment above).
-obj PyHostProxy(PyObj) {
-    has val: any;
-}
-
 # PyCode -- jacpython's direct code-object carrier (PLAN.md P0.1 contract).
 #
 # Pinned to CPython 3.14.6 (CURRENT.md). The native compiler assembles PyCode
