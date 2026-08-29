@@ -74,6 +74,7 @@ JAC_TYPES: dict[str, str] = {
     "arguments_ty": "arguments",
     "alias_ty": "alias",
     "arg_ty": "arg",
+    "keyword_ty": "keyword",
     "comprehension_ty": "comprehension",
     "excepthandler_ty": "excepthandler",
     "match_case_ty": "match_case",
@@ -84,7 +85,7 @@ JAC_TYPES: dict[str, str] = {
     "KeyValuePair*": "kv_pair",
     "KeyPatternPair*": "kp_pair",
     "KeywordOrStarred*": "keyword_or_starred_node",
-    "NameDefaultPair*": "pa_name_default_pair",
+    "NameDefaultPair*": "name_default_pair",
     "ResultTokenWithMetadata*": "peg_token",
     "SlashWithDefault*": "object",
     "StarEtc*": "object",
@@ -171,7 +172,14 @@ def jac_type(c_type: str | None, *, is_seq: bool = False) -> str:
     if c_type is None:
         return "object"
     if c_type in JAC_TYPES:
-        return JAC_TYPES[c_type]
+        inner = JAC_TYPES[c_type]
+        if (
+            is_seq
+            and c_type.endswith("*")
+            and not inner.startswith("list[")
+        ):
+            return f"list[{inner}]"
+        return inner
     if c_type.startswith("asdl_") and c_type.endswith("_seq*"):
         inner_name = c_type[len("asdl_") : -len("_seq*")]
         if inner_name in JAC_TYPES:
@@ -212,6 +220,10 @@ def jac_list_elem_type(c_type: str | None) -> str:
     """Element type T for a grammar sequence typed as list[T] / asdl_*_seq*."""
     if c_type is None:
         return "object"
+    if c_type.endswith("*") and c_type in JAC_TYPES:
+        inner = JAC_TYPES[c_type]
+        if not inner.startswith("list["):
+            return inner
     jac = jac_type(c_type, is_seq=True)
     if jac.startswith("list[") and jac.endswith("]"):
         return jac[5:-1]
@@ -221,7 +233,16 @@ def jac_list_elem_type(c_type: str | None) -> str:
     return single
 
 
-# Gather rules call the matching typed pa_seq_insert_front_* helper.
+RULE_JAC_RET_OVERRIDES: dict[str, str] = {
+    "kwargs": "list[keyword_or_starred_node] | None",
+    "double_starred_kvpairs": "list[kv_pair] | None",
+    "open_sequence_pattern": "list[pattern] | None",
+    "maybe_sequence_pattern": "list[pattern] | None",
+    "items_pattern": "list[pattern] | None",
+    "keyword_patterns": "list[pattern] | None",
+}
+
+
 SEQ_INSERT_HELPERS: dict[str, str] = {
     "expr": "pa_seq_insert_front_expr",
     "pattern": "pa_seq_insert_front_pattern",
@@ -437,6 +458,9 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         self._rule_name = ""
         self._rule_ret = "object | None"
         self._rule_memo = False
+        self._alt_conflict_renames: list[dict[str, str]] = []
+        self._alt_renames: dict[str, str] = {}
+        self._alt_type_env: dict[str, str] = {}
 
     def set_exact_tokens(self, exact: dict[str, int]) -> None:
         self.exact_token_map = exact
@@ -458,7 +482,53 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
             return self._infer_rhs_c_type(item)
         return None
 
+    def _alt_result_jac_type(self, alt: Alt) -> str:
+        if alt.action:
+            action = " ".join(alt.action.split())
+            if re.fullmatch(r"[A-Za-z_]\w*", action):
+                for name, typ in self._alt_capture_types(alt):
+                    if name == action:
+                        return typ
+            return "object | None"
+        captures = self._alt_capture_types(alt)
+        semantic = [(n, t) for n, t in captures if not n.startswith("lit")]
+        if len(semantic) > 1:
+            return "object | None"
+        if len(semantic) == 1:
+            return semantic[0][1]
+        if len(captures) == 1:
+            return captures[0][1]
+        elem = self._infer_alt_element_c_type(alt)
+        if elem is not None:
+            return jac_return_type(elem)
+        return "object | None"
+
+    def _infer_rhs_unified_jac_ret(
+        self, rhs: Rhs, *, is_loop: bool, is_gather: bool
+    ) -> str | None:
+        if is_loop or is_gather:
+            return None
+        first_types: dict[str, str] = {}
+        capture_conflict = False
+        for alt in rhs.alts:
+            for name, typ in self._alt_capture_types(alt):
+                if name in first_types and first_types[name] != typ:
+                    capture_conflict = True
+                else:
+                    first_types.setdefault(name, typ)
+        if not capture_conflict:
+            return None
+        types = [self._alt_result_jac_type(alt) for alt in rhs.alts]
+        if not types:
+            return None
+        if len(set(types)) == 1:
+            return types[0]
+        return "object | None"
+
     def _infer_rhs_c_type(self, rhs: Rhs) -> str | None:
+        jac_types = [self._alt_result_jac_type(alt) for alt in rhs.alts]
+        if jac_types and len(set(jac_types)) > 1:
+            return None
         types: list[str] = []
         for alt in rhs.alts:
             got = self._infer_alt_element_c_type(alt)
@@ -506,7 +576,7 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
             inner = JAC_TYPES[elem_c]
             if inner.startswith("list["):
                 return elem_c
-            return "asdl_seq*"
+            return elem_c
         return "asdl_seq*"
 
     def _infer_artificial_rule_c_type(self, rule: Rule) -> str | None:
@@ -521,6 +591,12 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                     elem_c = self._item_element_c_type(item.item)
                     return self._elem_c_to_seq_c_type(elem_c)
             return None
+        if rule.name.startswith("_loop0_") or rule.name.startswith("_loop1_"):
+            for item in alt.items:
+                elem_c = self._item_element_c_type(item.item)
+                if elem_c is not None:
+                    return self._elem_c_to_seq_c_type(elem_c)
+            return None
         if rule.name.startswith("_loop"):
             for item in alt.items:
                 if item.name == "elem":
@@ -533,8 +609,18 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
             return self._infer_rhs_c_type(rule.rhs)
         return None
 
+    def _loop_element_capture_type(self, rule: Rule) -> str | None:
+        if not rule.rhs.alts:
+            return None
+        alt = rule.rhs.alts[0]
+        for item in alt.items:
+            if isinstance(item, NamedItem):
+                return self._infer_capture_jac_type(item)
+        return None
+
     def _rule_list_elem_jac_type(self, rule: Rule) -> str:
-        c_type = rule.type or self._infer_artificial_rule_c_type(rule)
+        inferred = self._infer_artificial_rule_c_type(rule)
+        c_type = inferred or rule.type
         return jac_list_elem_type(c_type)
 
     def _gather_elem_jac_type(self, rule: Rule) -> str:
@@ -562,6 +648,89 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
     def _seq_insert_helper(self, rule_name: str) -> str:
         elem = self._gather_elem_jac_type(self.all_rules[rule_name])
         return SEQ_INSERT_HELPERS.get(elem, "pa_seq_insert_front_expr")
+
+    def _alt_capture_types(self, alt: Alt) -> list[tuple[str, str]]:
+        captures: list[tuple[str, str]] = []
+        for item in alt.items:
+            self._collect_alt_capture_types(item, captures)
+        return captures
+
+    def _collect_alt_capture_types(self, item: NamedItem, captures: list[tuple[str, str]]) -> None:
+        inner = item.item
+        if isinstance(inner, Cut):
+            return
+        name, _ = self.callmakervisitor.visit(item)
+        if not name or name == "cut":
+            return
+        captures.append((name, self._infer_capture_jac_type(item)))
+
+    def _infer_capture_jac_type(self, item: NamedItem) -> str:
+        _, call = self.callmakervisitor.visit(item)
+        call = call.rstrip(",").strip()
+        if call.startswith("pa_name_from_token("):
+            return "Name | None"
+        if call.startswith("pa_number_from_token("):
+            return "expr | None"
+        if call.startswith("peg_expect_token(") or call.startswith("peg_expect_soft_keyword("):
+            return "peg_token | None"
+        m = re.fullmatch(r"rule_(\w+)\(p\)", call)
+        if m is not None:
+            rule = self.all_rules.get(m.group(1))
+            if rule is not None:
+                inferred = rule.type or self._infer_artificial_rule_c_type(rule)
+                return jac_return_type(
+                    inferred,
+                    is_seq=rule.is_loop() or rule.is_gather(),
+                )
+        return "object | None"
+
+    def _compute_alt_conflict_renames(self, rhs: Rhs) -> list[dict[str, str]]:
+        first_types: dict[str, str] = {}
+        per_alt: list[dict[str, str]] = []
+        for alt_idx, alt in enumerate(rhs.alts, start=1):
+            renames: dict[str, str] = {}
+            for name, typ in self._alt_capture_types(alt):
+                if name not in first_types:
+                    first_types[name] = typ
+                elif first_types[name] != typ:
+                    renames[name] = f"{name}_{alt_idx}"
+            per_alt.append(renames)
+        return per_alt
+
+    def _emit_capture_name(self, grammar_name: str) -> str:
+        base = self._alt_renames.get(grammar_name, grammar_name)
+        return self.dedupe(base)
+
+    def _rewrite_action_names(self, action: str, renames: dict[str, str]) -> str:
+        if not renames:
+            return action
+        out = action
+        for old, new in sorted(renames.items(), key=lambda kv: -len(kv[0])):
+            pattern = rf"(?<![.\w`]){re.escape(old)}(?![=\w`])"
+            out = re.sub(pattern, new, out)
+        return out
+
+    def _needs_result_cast(self, local: str, ret: str) -> bool:
+        if local == ret:
+            return False
+        local_base = local.replace(" | None", "")
+        ret_base = ret.replace(" | None", "")
+        if local_base == ret_base:
+            return False
+        if local_base == "object" or ret_base == "object":
+            return True
+        if local_base.startswith("list[object]") or ret_base.startswith("list[object]"):
+            return True
+        return local != ret
+
+    def _format_action_result(self, action: str) -> str:
+        action = self._rewrite_action_names(action, self._alt_renames)
+        cast_ret = jac_cast_type(self._rule_ret)
+        if re.fullmatch(r"[A-Za-z_]\w*", action.strip()):
+            local = self._alt_type_env.get(action.strip())
+            if local is not None and self._needs_result_cast(local, self._rule_ret):
+                return f"{action} as {cast_ret}"
+        return action
 
     def artificial_rule_from_rhs(self, rhs: Rhs) -> str:
         self.counter += 1
@@ -675,14 +844,15 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("    peg_left_rec_finish, peg_token,")
         self.print("}")
         self.print("import from parser_actions {")
+        self.print("    kv_pair, kp_pair, keyword_or_starred_node, name_default_pair,")
         self.print("    pa_cmpop_expr_pair, pa_key_value_pair, pa_key_pattern_pair, pa_keyword_or_starred,")
         self.print("    pa_name_default_pair, pa_make_cmpop_pair, pa_name_from_token, pa_name_id, pa_number_from_token,")
         self.print("    pa_ast_expression, pa_ast_binop, pa_ast_unaryop, pa_ast_boolop, pa_ast_compare, pa_ast_call,")
-        self.print("    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_from_expr, pa_singleton_seq, pa_stmt_list_or_empty,")
+        self.print("    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_from_expr, pa_match_singleton, pa_pattern_list, pa_singleton_seq, pa_stmt_list_or_empty,")
         self.print("    pa_seq_insert_front_expr, pa_seq_insert_front_pattern, pa_seq_insert_front_stmt,")
         self.print("    pa_seq_insert_front_alias, pa_seq_insert_front_type_param, pa_seq_insert_front_withitem,")
         self.print("    pa_seq_insert_front_arg, pa_seq_insert_front_kw_or_starred, pa_seq_insert_front_kvpair,")
-        self.print("    pa_seq_insert_front_kvpattern, pa_seq_insert_front, pa_seq_append_to_end, pa_get_cmpops, pa_get_exprs, pa_get_keys, pa_get_values,")
+        self.print("    pa_seq_insert_front_kvpattern, pa_seq_insert_front, pa_seq_append_to_end, pa_seq_append_to_end_expr, pa_seq_append_to_end_stmt, pa_get_cmpops, pa_get_exprs, pa_get_keys, pa_get_values,")
         self.print("    pa_get_patterns, pa_get_pattern_keys, pa_collect_call_seqs, pa_call_from_optional_args,")
         self.print("    pa_ast_starred, pa_check, pa_make_module, pa_seq_flatten, pa_set_context, pa_map_names_to_ids,")
         self.print("    pa_ast_expr_stmt, pa_ast_assign, pa_ast_annassign, pa_ast_return, pa_ast_pass, pa_ast_break,")
@@ -714,7 +884,8 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("    FormattedValue, Interpolation, MatchAs, MatchOr, MatchSequence, MatchMapping, MatchClass,")
         self.print("    MatchStar, MatchSingleton, MatchValue,")
         self.print("    Add, Sub, Mult, Div, FloorDiv, Mod, MatMult, Pow, LShift, RShift, BitOr, BitXor, BitAnd,")
-        self.print("    USub, UAdd, Not, Invert, Or, And, Lt, LtE, Gt, GtE, Eq, NotEq, In, IsNot, Is,")
+        self.print("    USub, UAdd, Not, Invert, Or, And, Lt, LtE, Gt, GtE, Eq, NotEq, In, IsNot, Is, NotIn,")
+        self.print("    TypeVar, TypeVarTuple, ParamSpec,")
         self.print("}")
         self.print("")
 
@@ -853,16 +1024,56 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         if node.name == "function_def_raw":
             rhs = self._function_def_raw_rhs(rhs)
         inferred = self._infer_artificial_rule_c_type(node)
-        if is_gather and not node.name.startswith("_loop"):
-            ret = "object | None"
+        if inferred and node.name.startswith("_loop"):
+            ret = jac_return_type(inferred, is_seq=is_loop or is_gather)
+        elif is_gather and not node.name.startswith("_loop"):
+            ret = self._gather_return_type(node)
+        elif node.name in RULE_JAC_RET_OVERRIDES:
+            ret = RULE_JAC_RET_OVERRIDES[node.name]
         elif node.type == "asdl_seq*":
-            elem_c = self._infer_rhs_c_type(rhs)
+            elem_c = self._infer_rhs_c_type(rhs) or self._infer_artificial_rule_c_type(
+                node
+            )
             ret = jac_return_type(
                 self._elem_c_to_seq_c_type(elem_c) if elem_c else node.type,
                 is_seq=True,
             )
         else:
-            ret = jac_return_type(inferred or node.type, is_seq=is_loop or is_gather)
+            if node.name.startswith("_tmp_"):
+                alt_types = [self._alt_result_jac_type(alt) for alt in rhs.alts]
+                if alt_types and len(set(alt_types)) == 1:
+                    ret = alt_types[0]
+                elif alt_types and len(set(alt_types)) > 1:
+                    ret = "object | None"
+                else:
+                    ret = jac_return_type(
+                        inferred or node.type, is_seq=is_loop or is_gather
+                    )
+            elif node.type is not None:
+                ret = jac_return_type(
+                    node.type, is_seq=is_loop or is_gather
+                )
+            else:
+                unified = self._infer_rhs_unified_jac_ret(
+                    rhs, is_loop=is_loop, is_gather=is_gather
+                )
+                if unified is not None:
+                    ret = unified
+                else:
+                    ret = jac_return_type(
+                        inferred or node.type, is_seq=is_loop or is_gather
+                    )
+        if (
+            node.name.startswith("_loop")
+            and ret == "list[object] | None"
+        ):
+            cap = self._loop_element_capture_type(node)
+            if cap is not None:
+                cap_base = cap.replace(" | None", "")
+                if cap_base and cap_base != "object" and not cap_base.startswith(
+                    "list["
+                ):
+                    ret = f"list[{cap_base}] | None"
         rule_id = self.rule_ids[node.name]
         if node.left_recursive and node.leader:
             self._emit_left_rec_leader(node, rhs, ret, rule_id)
@@ -897,8 +1108,22 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                     self.print("start_col_offset = t0.col_offset;")
                 self.print("}")
             if is_loop:
-                elem_jac = self._rule_list_elem_jac_type(node)
-                self.print(f"children: list[{elem_jac}] = [];")
+                loop_cap = self._loop_element_capture_type(node)
+                loop_cap_base = (
+                    loop_cap.replace(" | None", "") if loop_cap is not None else ""
+                )
+                loop_elem = jac_cast_type(ret)
+                if loop_elem.startswith("list[") and loop_elem.endswith("]"):
+                    loop_elem = loop_elem[5:-1]
+                if loop_cap_base.startswith("list["):
+                    self._loop_elem_jac = loop_elem
+                    self.print("children: list[object] = [];")
+                else:
+                    self._loop_elem_jac = loop_elem
+                    self.print(f"children: list[{loop_elem}] = [];")
+            else:
+                self.print(f"res: {ret} = None;")
+            self._alt_conflict_renames = self._compute_alt_conflict_renames(rhs)
             self._rule_name = node.name
             self._rule_ret = ret
             self._rule_memo = memo
@@ -972,6 +1197,9 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                     self.print("start_lineno = t0.lineno;")
                     self.print("start_col_offset = t0.col_offset;")
                 self.print("}")
+            self.print(f"res: {ret} = None;")
+            self._alt_conflict_renames = self._compute_alt_conflict_renames(rhs)
+            self._rule_ret = ret
             self.visit(rhs, is_loop=False, is_gather=False)
             self.print("return None;")
         self.print("}")
@@ -1022,13 +1250,23 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         is_loop: bool = False,
         is_gather: bool = False,
     ) -> None:
-        for alt in node.alts:
+        for alt_idx, alt in enumerate(node.alts, start=1):
+            self._alt_renames = (
+                self._alt_conflict_renames[alt_idx - 1]
+                if self._alt_conflict_renames
+                else {}
+            )
+            self._alt_type_env = {}
             self.visit(alt, is_loop=is_loop, is_gather=is_gather)
             if not is_loop:
                 self.print("peg_reset(p, mark);")
 
     def visit_Alt(self, node: Alt, is_loop: bool = False, is_gather: bool = False) -> None:
         if is_loop:
+            self._alt_type_env = {}
+            self._alt_renames = (
+                self._alt_conflict_renames[0] if self._alt_conflict_renames else {}
+            )
             self._visit_alt_loop(node, is_gather)
             return
         has_cut = any(isinstance(i.item, Cut) for i in node.items)
@@ -1057,7 +1295,7 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print("end_lineno = end_tok.end_lineno;")
                 self.print("end_col_offset = end_tok.end_col_offset;")
             action = self._emit_action(node, is_gather)
-            self.print(f"res = {action};")
+            self.print(f"res = {self._format_action_result(action)};")
             if self._rule_memo:
                 self.print(f"peg_insert_memo(p, mark, RULE_{self._rule_name}, res);")
             self.print("return res;")
@@ -1069,7 +1307,9 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
             return
         if isinstance(item.item, Opt):
             name, call = self.callmakervisitor.visit(item)
-            v = self.dedupe(name if name else "opt")
+            v = self._emit_capture_name(name if name else "opt")
+            if name:
+                self._alt_type_env[name] = self._infer_capture_jac_type(item)
             call_clean = call[:-1] if call.endswith(",") else call
             self.print(f"{v} = {call_clean};")
             self._emit_alt_body_nested(items, idx + 1, node, is_gather, has_cut)
@@ -1079,7 +1319,8 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
             self._emit_alt_body_nested(items, idx + 1, node, is_gather, has_cut)
             return
         if name:
-            v = self.dedupe(name)
+            v = self._emit_capture_name(name)
+            self._alt_type_env[name] = self._infer_capture_jac_type(item)
             call_clean = call[:-1] if call.endswith(",") else call
             self.print(f"{v} = {call_clean};")
             self.print(f"if {v} is not None {{")
@@ -1122,6 +1363,13 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print("end_lineno = end_tok.end_lineno;")
                 self.print("end_col_offset = end_tok.end_col_offset;")
             action = self._emit_action(node, is_gather)
+            loop_elem = getattr(self, "_loop_elem_jac", None)
+            if (
+                loop_elem
+                and loop_elem != "object"
+                and re.fullmatch(r"[A-Za-z_]\w*", action.strip())
+            ):
+                action = f"{action} as {loop_elem}"
             self.print(f"children.append({action});")
             self.print("mark = peg_mark(p);")
             return
@@ -1135,7 +1383,8 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
             self._emit_loop_body_nested(items, idx + 1, node, is_gather, has_cut)
             return
         if name:
-            v = self.dedupe(name)
+            v = self._emit_capture_name(name)
+            self._alt_type_env[name] = self._infer_capture_jac_type(item)
             call_clean = call[:-1] if call.endswith(",") else call
             self.print(f"{v} = {call_clean};")
             self.print(f"if {v} is None {{")
@@ -1158,14 +1407,21 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         if node.action:
             try:
                 return _escape_jac_kwargs(
-                    self.action_translator.translate(node.action)
+                    self.action_translator.translate(
+                        node.action, type_env=self._alt_type_env
+                    )
                 )
             except ActionTranslationError as err:
                 raise ActionTranslationError(f"in alt {node!s}: {err}") from err
         names = list(self.local_variable_names)
         if is_gather:
             helper = self._seq_insert_helper(self._rule_name)
-            return f"{helper}({names[0]}, {names[1]}) as object"
+            cast_ty = jac_cast_type(self._rule_ret)
+            elem_ty = self._gather_elem_jac_type(self.all_rules[self._rule_name])
+            head = names[0]
+            if elem_ty != "object":
+                head = f"{head} as {elem_ty}"
+            return f"{helper}({head}, {names[1]}) as {cast_ty}"
         # Trailing peg_expect_token captures (lit, lit_1, ...) are not semantic
         # values; match CPython gather/repeat element actions that return only z.
         semantic = [n for n in names if not n.startswith("lit")]
