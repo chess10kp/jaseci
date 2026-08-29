@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_codecmaps_jp/conv_codecmaps_jp_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:27:40",
+  "hashes": {
+    "pins_jac": "e547c44209682132b951ed6d194241e9933fa17d92c3a57718894e50a3f043b9",
+    "conversion_json": "0b17585b61eb4cddefbceca5a762b4dd535dde3d1167f639c431113b9329755d",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "codecmaps_jp",
+  "counts": {
+    "converted": 15,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 15
+  },
+  "pins": [
+    {
+      "id": "TestCP932Map.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestCP932Map.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestCP932Map.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestEUCJPCOMPATMap.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestEUCJPCOMPATMap.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestEUCJPCOMPATMap.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestSJISCOMPATMap.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestSJISCOMPATMap.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestSJISCOMPATMap.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestEUCJISX0213Map.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestEUCJISX0213Map.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestEUCJISX0213Map.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestSJISX0213Map.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestSJISX0213Map.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "id": "TestSJISX0213Map.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    }
+  ]
+}
