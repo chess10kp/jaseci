@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "9f0ade47bf933636fc0025a06cb2a8d4641b187e",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/opt/jacpy/work/test_bdb-i-0839395b48f637477/output/conv_bdb_pins.jac"
+  ],
+  "generated_at": "2026-08-25T22:52:11",
+  "hashes": {
+    "pins_jac": "f94f5b28abdc7b9579fde0674c89625fb96690603b2e122bbbc3aeed11e675d7",
+    "conversion_json": "d9ff6b08559cd70850979efc1eead04adc27ce6167bdd250fdf1acfbb4c3d1b2",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "bdb",
+  "counts": {
+    "converted": 36,
+    "runnable": 2,
+    "green": 0,
+    "quarantined": 34
+  },
+  "pins": [
+    {
+      "id": "StateTestCase.test_step",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_stepinstr",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_next",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_next_over_import",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_next_on_plain_statement",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_next_in_caller_frame",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_return",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_return_in_caller_frame",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_until",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_until_with_too_large_count",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_until_in_caller_frame",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_skip",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_skip_with_no_name_module",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "StateTestCase.test_down",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "StateTestCase.test_up",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_bp_on_non_existent_module",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_bp_after_last_statement",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_temporary_bp",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_disabled_temporary_bp",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_bp_condition",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_bp_exception_on_condition_evaluation",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_bp_ignore_count",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_ignore_count_on_disabled_bp",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "BreakpointTestCase.test_clear_two_bp_on_same_line",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "RunTestCase.test_run_step",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "RunTestCase.test_runeval_step",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "IssuesTestCase.test_step_at_return_with_no_trace_in_caller",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "IssuesTestCase.test_next_until_return_in_generator",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "IssuesTestCase.test_next_command_in_generator_for_loop",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "IssuesTestCase.test_next_command_in_generator_with_subiterator",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "IssuesTestCase.test_return_command_in_generator_with_subiterator",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "IssuesTestCase.test_next_to_botframe",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_SelfNS' object has no attribute 'id'"
+    },
+    {
+      "id": "TestRegressions.test_format_stack_entry_no_lineno",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "StateTestCase.test_step_next_on_last_statement",
+      "status": "quarantined",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "id": "BreakpointTestCase.test_clear_at_no_bp",
+      "status": "quarantined",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "id": "BreakpointTestCase.test_load_bps_from_previous_Bdb_instance",
+      "status": "quarantined",
+      "reason": "unresolved-name:__file__"
+    }
+  ]
+}
