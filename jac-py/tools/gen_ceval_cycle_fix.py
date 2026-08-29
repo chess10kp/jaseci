@@ -26,6 +26,18 @@ TYPE_SYMS = {
     "PyBoundMethod",
     "PyNativeBuiltin",
     "PyGenericAlias",
+    "PyHostProxy",
+    "PyClass",
+    "PyUserObj",
+    "PyFunction",
+    "PyInstanceDict",
+    "PyClassMroMethod",
+    "PyStaticMethod",
+    "PyObjectAttrSlot",
+    "PyFuncDictView",
+    "PyFuncKwDefaults",
+    "PyNativeNew",
+    "PyDictMethod",
 }
 
 # Mutable process-wide slot; spokes read/write through ceval_api accessors.
@@ -159,7 +171,12 @@ def collect_sig_types(header: str) -> set[str]:
 
 def load_ceval_signatures() -> dict[str, dict[str, str | list[str]]]:
     sigs: dict[str, dict[str, str | list[str]]] = {}
-    for path in (ROOT / "ceval.jac", ROOT / "ceval_defs.jac"):
+    for path in (
+        ROOT / "ceval.jac",
+        ROOT / "ceval_defs.jac",
+        ROOT / "ceval_exceptions.jac",
+        ROOT / "ceval_exec_frame.jac",
+    ):
         if not path.exists():
             continue
         text = path.read_text()
@@ -170,13 +187,34 @@ def load_ceval_signatures() -> dict[str, dict[str, str | list[str]]]:
         ):
             kind, name = m.group(1), m.group(2)
             line_start = m.start()
-            brace = text.find("{", m.end())
-            if brace == -1:
-                semi = text.find(";", m.end())
-                end = semi if semi != -1 else len(text)
-                header = text[line_start:end].strip().rstrip(";")
+            line_end = text.find("\n", m.end())
+            if line_end == -1:
+                line_end = len(text)
+            source_line = text[line_start:line_end].strip()
+
+            # Inline ::py:: helpers use Python's trailing colon, not a Jac
+            # brace. Treating the next Jac brace as their header terminator
+            # copied whole Python blocks into ceval_api.jac.
+            if kind == "def" and source_line.endswith(":"):
+                params = [
+                    p
+                    for p in parse_param_names(source_line)
+                    if p.isidentifier()
+                ]
+                ret_match = re.search(r"->\s*([^:]+):$", source_line)
+                ret = ret_match.group(1).strip() if ret_match else "any"
+                if ret not in JAC_BUILTIN_TYPES:
+                    ret = "any"
+                typed = ", ".join(f"{param}: any" for param in params)
+                header = f"def {name}({typed}) -> {ret}"
             else:
-                header = text[line_start:brace].strip()
+                brace = text.find("{", m.end())
+                semi = text.find(";", m.end())
+                if semi != -1 and (brace == -1 or semi < brace):
+                    end = semi
+                else:
+                    end = brace if brace != -1 else len(text)
+                header = text[line_start:end].strip().rstrip(";")
 
             if kind == "glob":
                 sigs[name] = {"kind": "glob", "header": header, "params": []}
@@ -276,6 +314,10 @@ def load_ceval_impl_names() -> set[str]:
     text = (ROOT / "ceval.jac").read_text()
     names = set(re.findall(r"^def\s+([A-Za-z_][A-Za-z0-9_]*)", text, re.MULTILINE))
     names.update(re.findall(r"^glob\s+([A-Za-z_][A-Za-z0-9_]*)", text, re.MULTILINE))
+    # Functions imported by ceval are valid registry implementations too. This
+    # keeps ceval_defs acyclic when a moved archetype needs exception policy.
+    names.update(parse_module_imports("ceval_exceptions", text))
+    names.update(parse_module_imports("ceval_exec_frame", text))
     return names
 
 
