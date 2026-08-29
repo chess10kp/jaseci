@@ -2511,13 +2511,20 @@
     {
       "stem": "multibytecodec",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "conv_multibytecodec_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "25 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "conversion.json"
+      "conversion_meta": "conversion.json",
+      "jacpython_results": {
+        "multibytecodec": {
+          "passed": 0,
+          "total": 25,
+          "notes": "0/25 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "tcl",

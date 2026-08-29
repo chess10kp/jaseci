@@ -1,0 +1,59 @@
+# Triage report: `conv_multibytecodec_pins.jac`
+
+- source: reference/cpython/Lib/test/test_multibytecodec.py
+- guest leg: 0/25 marks
+- pins: **0 passed** / 25 run (+11 quarantined of 36 extracted)
+
+| pin | result | got |
+|---|---|---|
+| Test_MultibyteCodec.test_nullcoding | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_MultibyteCodec.test_str_decode | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_MultibyteCodec.test_errorcallback_longindex | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_MultibyteCodec.test_errorcallback_custom_ignore | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_MultibyteCodec.test_init_segfault | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_MultibyteCodec.test_decode_unicode | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_stateless | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_stateful | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_stateful_keep_buffer | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_state_methods_with_buffer_state | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_state_methods_with_non_buffer_state | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_getstate_returns_expected_value | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_setstate_validates_input_size | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_setstate_validates_input_bytes | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalEncoder.test_issue5640 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalDecoder.test_dbcs | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalDecoder.test_dbcs_keep_buffer | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalDecoder.test_iso2022 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalDecoder.test_decode_unicode | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_IncrementalDecoder.test_state_methods | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_StreamWriter.test_gb18030 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_StreamWriter.test_utf_8 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_StreamWriter.test_streamwriter_strwrite | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_ISO2022.test_g2 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+| Test_ISO2022.test_iso2022_jp_g0 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler |
+
+## Shared failure signatures
+
+These pins fail with a byte-identical detail, which usually means
+one shared root cause (for example an import-time error in the
+guest module) instead of per-test defects.
+
+| count | classification | got | pins |
+|---|---|---|---|
+| 25 | VM-CRASH | jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...   Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...   Compiling jaclang/compiler | Test_ISO2022.test_g2, Test_ISO2022.test_iso2022_jp_g0, Test_IncrementalDecoder.test_dbcs, Test_IncrementalDecoder.test_dbcs_keep_buffer, Test_IncrementalDecoder.test_decode_unicode, Test_IncrementalDecoder.test_iso2022, Test_IncrementalDecoder.test_state_methods, Test_IncrementalEncoder.test_getstate_returns_expected_value, Test_IncrementalEncoder.test_issue5640, Test_IncrementalEncoder.test_setstate_validates_input_bytes, Test_IncrementalEncoder.test_setstate_validates_input_size, Test_IncrementalEncoder.test_state_methods_with_buffer_state, Test_IncrementalEncoder.test_state_methods_with_non_buffer_state, Test_IncrementalEncoder.test_stateful, Test_IncrementalEncoder.test_stateful_keep_buffer, Test_IncrementalEncoder.test_stateless, Test_MultibyteCodec.test_decode_unicode, Test_MultibyteCodec.test_errorcallback_custom_ignore, Test_MultibyteCodec.test_errorcallback_longindex, Test_MultibyteCodec.test_init_segfault, Test_MultibyteCodec.test_nullcoding, Test_MultibyteCodec.test_str_decode, Test_StreamWriter.test_gb18030, Test_StreamWriter.test_streamwriter_strwrite, Test_StreamWriter.test_utf_8 |
+
+## Quarantined at conversion
+
+| test | reason |
+|---|---|
+| Test_ISO2022.test_bug1572832 | decorator:support.requires_resource |
+| Test_StreamReader.test_bug1728403 | uses-self.assertWarns |
+| TestHZStateful.test_encode | unresolved-name:expected |
+| TestHZStateful.test_incrementalencoder | unresolved-name:expected |
+| TestHZStateful.test_incrementalencoder_final | unresolved-name:expected |
+| TestHZStateful.test_encode | unresolved-name:expected |
+| TestHZStateful.test_incrementalencoder | unresolved-name:expected |
+| TestHZStateful.test_incrementalencoder_final | unresolved-name:expected |
+| Test_MultibyteCodec.test_codingspec | harness-error:SyntaxError: invalid syntax |
+| Test_IncrementalEncoder.test_subinterp | harness-error:SyntaxError: invalid syntax |
+| Test_IncrementalDecoder.test_setstate_validates_input | host-raised:UnicodeError: pending buffer too large |
