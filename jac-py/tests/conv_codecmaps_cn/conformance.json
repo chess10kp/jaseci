@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_codecmaps_cn/conv_codecmaps_cn_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:29:07",
+  "hashes": {
+    "pins_jac": "f4fcc29581bb3728975dee35780509b82490df00afa011850344fe895729b115",
+    "conversion_json": "927f7660a6e897ab0b5aefbd9aefeb5d1def90637a864c92e4372097925df9fd",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "codecmaps_cn",
+  "counts": {
+    "converted": 9,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 9
+  },
+  "pins": [
+    {
+      "id": "TestGB2312Map.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGB2312Map.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGB2312Map.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGBKMap.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGBKMap.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGBKMap.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGB18030Map.test_mapping_file",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGB18030Map.test_mapping_supplemental",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestGB18030Map.test_errorhandle",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    }
+  ]
+}
