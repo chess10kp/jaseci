@@ -1,0 +1,630 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_bz2/conv_bz2_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:39:37",
+  "hashes": {
+    "pins_jac": "c82b02609a2d726f986bc961f5f4e98017e1d5eed6c9ea4769565c5be7340001",
+    "conversion_json": "54d87321778f3b535443de914d6f43f728387f998b2960b8a67cb25ec29dc959",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "bz2",
+  "counts": {
+    "converted": 102,
+    "runnable": 92,
+    "green": 0,
+    "quarantined": 10
+  },
+  "pins": [
+    {
+      "id": "BZ2FileTest.testBadArgs",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testRead",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadBadFile",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadMonkeyMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadTrailingJunk",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadMultiStreamTrailingJunk",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testRead0",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadChunk10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadChunk10MultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testRead100",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testPeek",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadInto",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadLine",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadLineMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadLines",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadLinesMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testIterator",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testIteratorMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testClosedIteratorDeadlock",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testWrite",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testWriteChunks10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testWriteNonDefaultCompressLevel",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testWriteLines",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testWriteMethodsOnReadOnlyFile",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testAppend",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekForward",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekForwardAcrossStreams",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwards",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsAcrossStreams",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsFromEnd",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsFromEndAcrossStreams",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEnd",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEndMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEndTwice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEndTwiceMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPreStart",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPreStartMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testFileno",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekable",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadable",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testWritable",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenDel",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenNonexistent",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadlinesNoNewline",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testContextProtocol",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testMixedIterationAndReads",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testMultiStreamOrdering",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFilename",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFileWithName",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFileWithoutName",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFileWithIntName",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenBytesFilename",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testOpenPathLikeFilename",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testDecompressLimited",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testReadBytesIO",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testPeekBytesIO",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testWriteBytesIO",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekForwardBytesIO",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsBytesIO",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.test_read_truncated",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.test_issue44439",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompress",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompressEmptyString",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompressChunks10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2CompressorTest.testPickle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_Constructor",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompress",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompressChunks10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompressUnusedData",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.testEOFError",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.testPickle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompressorChunksMaxsize",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertFalse', True)"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompressor_inputbuf_1",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompressor_inputbuf_2",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompressor_inputbuf_3",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_failure",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompress_after_data_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_uninitialized_BZ2Decompressor_crash",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testCompress",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testCompressEmptyString",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompress",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressEmpty",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressToEmptyString",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressIncomplete",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressBadData",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressMultiStream",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressTrailingJunk",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressMultiStreamTrailingJunk",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "OpenTest.test_binary_modes",
+      "status": "quarantined",
+      "reason": "host-raised:CalledProcessError: Command '['bunzip2']' returned non-zero exit status 2."
+    },
+    {
+      "id": "OpenTest.test_implicit_binary_modes",
+      "status": "quarantined",
+      "reason": "host-raised:CalledProcessError: Command '['bunzip2']' returned non-zero exit status 2."
+    },
+    {
+      "id": "OpenTest.test_text_modes",
+      "status": "quarantined",
+      "reason": "host-raised:CalledProcessError: Command '['bunzip2']' returned non-zero exit status 2."
+    },
+    {
+      "id": "OpenTest.test_x_mode",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "OpenTest.test_fileobj",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "OpenTest.test_encoding",
+      "status": "quarantined",
+      "reason": "host-raised:CalledProcessError: Command '['bunzip2']' returned non-zero exit status 2."
+    },
+    {
+      "id": "OpenTest.test_encoding_error_handler",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "OpenTest.test_newline",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "BZ2FileTest.testThreading",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompress4G",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompress4G",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_refleaks_in___init__",
+      "status": "quarantined",
+      "reason": "decorator:support.refcount_test"
+    },
+    {
+      "id": "OpenTest.test_bad_params",
+      "status": "quarantined",
+      "reason": "uses-self.open"
+    }
+  ]
+}
