@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "9f0ade47bf933636fc0025a06cb2a8d4641b187e",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/opt/jacpy/work/test_asyncgen-i-000411fc9ceab79a3/output/conv_asyncgen_pins.jac"
+  ],
+  "generated_at": "2026-08-25T22:52:14",
+  "hashes": {
+    "pins_jac": "418a14deee7674a5974d96c78f6c1dfd0eeaf82c24fd51fa41630d048d6f083e",
+    "conversion_json": "a2b651da2c0732cd98d37c42a89d636e8948694745ec2034e04e0d050288fcc4",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "asyncgen",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 85,
+    "runnable": 72,
+    "green": 0,
+    "quarantined": 13,
+    "failed": 72,
+    "infra_failed": 72
+  },
+  "failures": [
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_04",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenSyntaxTest.test_async_gen_syntax_05",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_iteration_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_iteration_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_04",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_05",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_06",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_07",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_08",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_09",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_exception_11",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_asend_throw_concurrent_with_send",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_athrow_throw_concurrent_with_send",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_asend_throw_concurrent_with_throw",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_athrow_throw_concurrent_with_throw",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_api_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_asend_close_runtime_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenTest.test_async_gen_athrow_close_runtime_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_generator_anext",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_python_async_iterator_anext",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_python_async_iterator_types_coroutine_anext",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aiter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aiter_class",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_aiter_idempotent",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_bad_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_bad_await",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_anext_await_raises",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_aiter_bad_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_04",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_05",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_06",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple_no_exceptions",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_sync_anext_raises_exception",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_06",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_07",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_08",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_gc_aclose_09",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_10",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_11",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_12",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_asend_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_asend_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_asend_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_03",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_tuple",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_stopiteration",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_exception_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_exception_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_expression_01",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_expression_02",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_expression_incorrect",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_asyncgen_nonstarted_hooks_are_cancellable",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_await_same_anext_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_await_same_aclose_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_throw_same_aclose_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_throw_custom_same_aclose_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_throw_custom_same_athrow_coro_twice",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aclose_twice_with_different_coros",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aclose_after_exhaustion",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "AsyncGenAsyncioTest.test_async_gen_aclose_compatible_with_get_stack",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_aclose_throw",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_asend_send_already_running",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    },
+    {
+      "id": "TestUnawaitedWarnings.test_athrow_send_already_running",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "Compiling jaclang/scale/config/project_env.jac...\n  Compiling jaclang/scale/_optdeps/__init__.jac...\n  Compiling jaclang/scale/_optdeps/optional_deps.jac...\n  Compiling jaclang/project/capabilities.jac...\n  Compiling jaclang/scale/events/streams/__init__.jac...\n  Compiling jaclang/scale/events/strea"
+    }
+  ]
+}
