@@ -49,6 +49,7 @@ import from ceval_exceptions {
     exception_matches,
     eg_validate_star_target,
     exception_group_split,
+    error_is_stopiteration,
 }
 import from ceval_opcodes_containers {
     op_build_list,
@@ -189,7 +190,7 @@ import from opcode_meta {
     OP_POP_ITER,
     opcode_cache_count,
 }
-import from ceval {
+import from ceval_defs {
     _handled_exc_stack,
     _handled_stack_append_each,
     _handled_stack_remove_each,
@@ -202,6 +203,8 @@ import from ceval {
     PyBoundMethod,
     PyNativeBuiltin,
     PyGenericAlias,
+}
+import from ceval_api {
     builtin_exec,
     dict_from_str_map,
     fast_value,
@@ -228,7 +231,6 @@ import from ceval {
     seqiter_next,
     dictiter_yield,
     dictiter_error,
-    error_is_stopiteration,
     py_import_name,
     py_slot_truth,
     py_repr,
@@ -263,13 +265,13 @@ import from ceval {
 }
 
 
-glob jac_frame_chain_slot: list[PyFrame] = [];
+import from vm_dispatch { jac_frame_chain_slot_ref, }
 
 def jac_current_frame -> PyFrame | None {
-    if len(jac_frame_chain_slot) == 0 {
+    if len(jac_frame_chain_slot_ref()) == 0 {
         return None;
     }
-    return jac_frame_chain_slot[len(jac_frame_chain_slot) - 1];
+    return jac_frame_chain_slot_ref()[len(jac_frame_chain_slot_ref()) - 1];
 }
 
 def exec_code_frame(
@@ -465,11 +467,11 @@ def run_frame(frame: PyFrame) -> PyObj {
     # Publish the live frame chain (innermost last) for sys._getframe and
     # f_back; suspended generator frames are off the chain while suspended,
     # matching CPython.
-    jac_frame_chain_slot.append(frame);
+    jac_frame_chain_slot_ref().append(frame);
     try {
         return run_frame_inner(frame);
     } finally {
-        jac_frame_chain_slot.pop();
+        jac_frame_chain_slot_ref().pop();
         jac_frame_globals_slot[0] = outer_globals;
     }
 }

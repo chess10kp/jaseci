@@ -25,7 +25,7 @@ import from exceptions_core {
     exc_name_matches,
     registered_exc_base,
 }
-import from ceval {
+import from ceval_api {
     to_host,
     from_host,
     host_exception,

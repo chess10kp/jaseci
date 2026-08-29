@@ -28,7 +28,7 @@ import from objects {
     py_error,
 }
 import from exceptions_core { exc_name_matches }
-import from ceval { class_mro, py_invoke }
+import from ceval_api { class_mro, py_invoke }
 
 ::py::
 def _jac_is_exception_type(host_val):
