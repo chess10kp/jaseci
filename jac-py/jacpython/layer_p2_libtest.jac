@@ -20,6 +20,10 @@ import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
 }
+import from _atexitmodule {
+    atexit_module_attrs,
+    _p2_atexit_state_reset,
+}
 import from fcntl { fcntl_module_attrs }
 import from ceval {
     _sys3_forget,
@@ -385,17 +389,6 @@ def _p2_lazy_violations(pkg: str, subs: list[str]) -> list[str] {
 # ---------------- test.support shim -----------------------------------------
 # Converted Lib/test pins import helper names from test.support; p2_libtest_reset
 # registers a minimal module covering what converted suites actually use.
-
-obj P2SupportGcCollectFn(PyObj) {
-    # CPython test/support/__init__.py gc_collect: runs gc.collect() twice so
-    # reference cycles and frame locals settle before weakref assertions.
-    # JacPython's ceval releases guest garbage through the host GC eagerly
-    # (no separate cycle collector), so observably this is a no-op that
-    # returns None -- which is all converted Lib/test pins rely on.
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        return py_none();
-    }
-}
 
 obj P2SupportSortdictFn(PyObj) {
     # CPython test/support/__init__.py sortdict: "Like repr(dict), but in
@@ -979,6 +972,10 @@ def p2_libtest_reset {
         "warnings",
         PyModule(t="module", name="warnings", attrs=warnings_module_attrs())
     );
+    _p2_atexit_state_reset();
+    register_shim_module(
+        "atexit", PyModule(t="module", name="atexit", attrs=atexit_module_attrs())
+    );
     register_shim_module(
         "fcntl", PyModule(t="module", name="fcntl", attrs=fcntl_module_attrs())
     );
@@ -1111,6 +1108,24 @@ test "layer_p2_libtest: heapq_heapify snippet prints ok on JacPython" {
         "parent_ok = all(data[(i - 1) >> 1] <= data[i] for i in range(1, len(data)))\n"
         "assert parent_ok\n"
         "assert sorted(data) == [1, 1, 2, 3, 4, 5, 6, 9]\n"
+        "print('ok')\n"
+    );
+    (ok, detail) = p2_libtest_expect_ok(snippet);
+    assert ok , detail;
+}
+
+test "layer_p2_libtest: atexit_register_lifo snippet prints ok on JacPython" {
+    snippet = (
+        "import atexit\n"
+        "seen = []\n"
+        "def f(msg):\n"
+        "    seen.append(msg)\n"
+        "atexit.register(f, 'one')\n"
+        "atexit.register(f, 'two')\n"
+        "assert atexit._ncallbacks() == 2\n"
+        "atexit._run_exitfuncs()\n"
+        "assert seen == ['two', 'one']\n"
+        "assert atexit._ncallbacks() == 0\n"
         "print('ok')\n"
     );
     (ok, detail) = p2_libtest_expect_ok(snippet);
