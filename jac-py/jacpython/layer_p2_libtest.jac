@@ -21,6 +21,7 @@ import from _warningsmodule {
     _p2_warn_state_reset,
 }
 import from fcntl { fcntl_module_attrs }
+import from atexit { atexit_state_reset }
 import from ceval {
     _sys3_forget,
     set_layer3_active,
@@ -95,7 +96,7 @@ import from pyc_first {
     to_host,
     from_host,
 }
-import from objects { PyDict, PyTuple }
+import from objects { PyDict, PyTuple, PyBytes }
 import from ceval { py_attr, py_set_attr, members_of, builtin_sorted_min_max, is_error, py_error, PyList, PyInt, PyBool }
 import from _functoolsmodule {
     P2_MISSING,
@@ -130,6 +131,105 @@ def _p2_libtest_host_machine() -> str {
     return _host_platform.machine();
 }
 
+def _p2_utf8_bytes(text: str) -> PyObj {
+    raw: list[int] = [];
+    for ch in text.encode("utf-8") {
+        raw.append(ch);
+    }
+    return PyBytes(t="bytes", val=raw);
+}
+
+def _p2_python_run_result(rc: int, out_text: str, err_text: str) -> PyObj {
+    return PyModule(
+        t="module",
+        name="_PythonRunResult",
+        attrs={
+            "rc": PyInt(t="int", val=rc),
+            "out": _p2_utf8_bytes(out_text),
+            "err": _p2_utf8_bytes(err_text),
+        },
+    );
+}
+
+def _p2_script_helper_run_c(code: str) -> PyObj {
+    _sys3_forget("atexit");
+    atexit_state_reset();
+    wrapped = (
+        "_stdout_capture = []\n"
+        "def print(*args, **kwargs):\n"
+        "    sep = kwargs.get('sep', ' ')\n"
+        "    _stdout_capture.append(sep.join(str(a) for a in args))\n"
+        + code
+        + "\nimport atexit\natexit._run_exitfuncs()\n"
+    );
+    co = unmarshal(host_compile_marshal(wrapped));
+    if is_error(co) {
+        exc = (co as PyError).exception;
+        return _p2_python_run_result(1, "", exc.type_name + ": " + exc.message);
+    }
+    run_globals: dict[str, PyObj] = {
+        "__name__": PyStr(t="str", val="__main__"),
+    };
+    outcome = exec_code(co, [], run_globals);
+    if is_error(outcome) {
+        exc = (outcome as PyError).exception;
+        return _p2_python_run_result(1, "", exc.type_name + ": " + exc.message);
+    }
+    if "_stdout_capture" not in run_globals {
+        return _p2_python_run_result(0, "", "");
+    }
+    lines_obj = run_globals["_stdout_capture"];
+    host_lines = to_host(lines_obj);
+    if not isinstance(host_lines, list) {
+        return _p2_python_run_result(0, "", "");
+    }
+    out_text = "";
+    idx = 0;
+    while idx < len(host_lines) {
+        if idx > 0 {
+            out_text = out_text + "\n";
+        }
+        out_text = out_text + str(host_lines[idx]);
+        idx += 1;
+    }
+    if len(out_text) > 0 {
+        out_text = out_text + "\n";
+    }
+    return _p2_python_run_result(0, out_text, "");
+}
+
+obj P2ScriptHelperAssertPythonOkFn(PyObj) {
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        code = "";
+        i = 0;
+        while i < len(args) - 1 {
+            if isinstance(args[i], PyStr) and (args[i] as PyStr).val == "-c" {
+                if isinstance(args[i + 1], PyStr) {
+                    code = (args[i + 1] as PyStr).val;
+                }
+                break;
+            }
+            i += 1;
+        }
+        if code == "" {
+            return py_error("ValueError", "assert_python_ok expected -c code argument");
+        }
+        return _p2_script_helper_run_c(code);
+    }
+}
+
+obj P2SuppressCrashReportFn(PyObj) {
+    # Context manager stub: converted atexit pins import it but never enter it.
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        return P2SuppressCrashReportCtx(t="suppress_crash_ctx");
+    }
+}
+
+obj P2SuppressCrashReportCtx(PyObj) {
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        return self;
+    }
+}
 
 
 # ---------------- test.support.os_helper ------------------------------------
@@ -385,17 +485,6 @@ def _p2_lazy_violations(pkg: str, subs: list[str]) -> list[str] {
 # ---------------- test.support shim -----------------------------------------
 # Converted Lib/test pins import helper names from test.support; p2_libtest_reset
 # registers a minimal module covering what converted suites actually use.
-
-obj P2SupportGcCollectFn(PyObj) {
-    # CPython test/support/__init__.py gc_collect: runs gc.collect() twice so
-    # reference cycles and frame locals settle before weakref assertions.
-    # JacPython's ceval releases guest garbage through the host GC eagerly
-    # (no separate cycle collector), so observably this is a no-op that
-    # returns None -- which is all converted Lib/test pins rely on.
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        return py_none();
-    }
-}
 
 obj P2SupportSortdictFn(PyObj) {
     # CPython test/support/__init__.py sortdict: "Like repr(dict), but in
@@ -792,6 +881,7 @@ obj P2SupportGcCollectFn(PyObj) {
 
 def p2_libtest_reset {
     clear_shim_modules();
+    atexit_state_reset();
     # Route IMPORT_NAME through py_import_name so the registered facades win;
     # with the flag down every snippet import would silently hit the HOST
     # stdlib instead of the shim under test.
@@ -838,6 +928,7 @@ def p2_libtest_reset {
         "requires_debug_ranges": P2SupportRequiresDebugRangesFn(t="function"),
         "sortdict": P2SupportSortdictFn(t="function"),
         "gc_collect": P2SupportGcCollectFn(t="function"),
+        "SuppressCrashReport": P2SuppressCrashReportFn(t="function"),
     };
     support_mod = PyModule(t="module", name="test.support", attrs=support_attrs);
     os_helper_attrs: dict[str, PyObj] = {
@@ -863,6 +954,14 @@ def p2_libtest_reset {
     );
     register_shim_module("test.support.import_helper", import_helper_mod);
     support_attrs["import_helper"] = import_helper_mod;
+    script_helper_attrs: dict[str, PyObj] = {
+        "assert_python_ok": P2ScriptHelperAssertPythonOkFn(t="function"),
+    };
+    script_helper_mod = PyModule(
+        t="module", name="test.support.script_helper", attrs=script_helper_attrs
+    );
+    register_shim_module("test.support.script_helper", script_helper_mod);
+    support_attrs["script_helper"] = script_helper_mod;
     register_shim_module("test.support", support_mod);
     # Lib/test/support/numbers.py is pure literal data shared by numeric
     # suites (test_underscores et al); embedded verbatim from the pinned

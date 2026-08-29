@@ -422,6 +422,7 @@ import from objects { exc_is_subclass_of }
 import from tb_render { tb_display_error, }
 import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_write_bound, _tb_shim_type_tags }
 import from gc_shim { gc_module_attrs }
+import from atexit { build_atexit_module }
 import from sysconfig_shim { sysconfig_module_attrs }
 import from errno_shim { errno_module_attrs }
 import from signal_shim { signal_module_attrs }
@@ -1022,6 +1023,14 @@ def import_native(absname: str) -> PyObj {
     }
     if absname in sys3_modules {
         return sys3_modules[absname];
+    }
+    if absname == "atexit" {
+        # atexitmodule.c: per-import module objects share one interpreter callback
+        # list. Never singleton-cache in shim_modules -- only sys3_modules governs
+        # identity across imports within a run.
+        mod = build_atexit_module();
+        sys3_modules[absname] = mod;
+        return mod;
     }
     if absname in shim_modules {
         return shim_modules[absname];
