@@ -1,0 +1,1514 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "source_file": "reference/cpython/Lib/test/test_json/",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "json",
+  "pins_file": "conv_json_pins.jac",
+  "pins": [],
+  "quarantined": [
+    {
+      "ident": "TestPyDecode.test_decimal",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_decimal",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_float",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_float",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_nonascii_digits_rejected",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_nonascii_digits_rejected",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_bytes",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_bytes",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_parse_constant",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_parse_constant",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_constant_invalid_case",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_constant_invalid_case",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_empty_objects",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_empty_objects",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_object_pairs_hook",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_object_pairs_hook",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_decoder_optimizations",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_decoder_optimizations",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_keys_reuse",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDecode.test_keys_reuse",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDecode.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_invalid_escape",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_invalid_escape",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_invalid_input_type",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_invalid_input_type",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_string_with_utf8_bom",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_string_with_utf8_bom",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_negative_index",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDecode.test_negative_index",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDecode.test_limit_int",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_limit_int",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_decimal",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_float",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_nonascii_digits_rejected",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_bytes",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_parse_constant",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_constant_invalid_case",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_empty_objects",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_object_pairs_hook",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_decoder_optimizations",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_keys_reuse",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDecode.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_invalid_escape",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_invalid_input_type",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_string_with_utf8_bom",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyDecode.test_negative_index",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDecode.test_limit_int",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_decimal",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_float",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_nonascii_digits_rejected",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_bytes",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_parse_constant",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_constant_invalid_case",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_empty_objects",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_object_pairs_hook",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_decoder_optimizations",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_keys_reuse",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDecode.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_invalid_escape",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_invalid_input_type",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_string_with_utf8_bom",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCDecode.test_negative_index",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDecode.test_limit_int",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestPyDefault.test_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDefault.test_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDefault.test_bad_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDefault.test_bad_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDefault.test_ordereddict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDefault.test_ordereddict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDefault.test_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDefault.test_bad_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDefault.test_ordereddict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDefault.test_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDefault.test_bad_default",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDefault.test_ordereddict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_dump",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_dump",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_dumps",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_dumps",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_dump_skipkeys",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_dump_skipkeys",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_dump_skipkeys_indent_empty",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_dump_skipkeys_indent_empty",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_skipkeys_indent",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_skipkeys_indent",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_encode_truefalse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_encode_truefalse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_encode_mutated",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_encode_mutated",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_encode_evil_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_encode_evil_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_dump",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_dumps",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_dump_skipkeys",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_dump_skipkeys_indent_empty",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_skipkeys_indent",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyDump.test_encode_truefalse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_encode_mutated",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyDump.test_encode_evil_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_large_list",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_dump",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_dumps",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_dump_skipkeys",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_dump_skipkeys_indent_empty",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_skipkeys_indent",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCDump.test_encode_truefalse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_encode_mutated",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCDump.test_encode_evil_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEncodeBasestringAscii.test_encode_basestring_ascii",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCEncodeBasestringAscii.test_encode_basestring_ascii",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyEncodeBasestringAscii.test_ordered_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEncodeBasestringAscii.test_ordered_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEncodeBasestringAscii.test_sorted_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEncodeBasestringAscii.test_sorted_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEncodeBasestringAscii.test_encode_basestring_ascii",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyEncodeBasestringAscii.test_ordered_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEncodeBasestringAscii.test_sorted_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEncodeBasestringAscii.test_overflow",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCEncodeBasestringAscii.test_encode_basestring_ascii",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCEncodeBasestringAscii.test_ordered_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEncodeBasestringAscii.test_sorted_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_weird_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_weird_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_list",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_list",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_dict_keys",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_dict_keys",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_dict_values",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_dict_values",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_weird_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_list",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_dict_keys",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyEnum.test_dict_values",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_weird_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_list",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_dict_keys",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCEnum.test_dict_values",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFail.test_failures",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestCFail.test_failures",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_non_string_keys_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFail.test_non_string_keys_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFail.test_not_serializable",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFail.test_not_serializable",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFail.test_truncated_input",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_truncated_input",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_unexpected_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_unexpected_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_linecol",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_linecol",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_failures",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_non_string_keys_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFail.test_not_serializable",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFail.test_truncated_input",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_unexpected_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFail.test_linecol",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_failures",
+      "reason": "self.loads"
+    },
+    {
+      "ident": "TestCFail.test_non_string_keys_dict",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFail.test_not_serializable",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFail.test_truncated_input",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_unexpected_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_extra_data",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFail.test_linecol",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFloat.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFloat.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFloat.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFloat.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFloat.test_out_of_range",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFloat.test_out_of_range",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFloat.test_allow_nan",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFloat.test_allow_nan",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFloat.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFloat.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyFloat.test_out_of_range",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyFloat.test_allow_nan",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFloat.test_floats",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFloat.test_ints",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCFloat.test_out_of_range",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCFloat.test_allow_nan",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyIndent.test_indent",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCIndent.test_indent",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyIndent.test_indent0",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCIndent.test_indent0",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyIndent.test_indent",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyIndent.test_indent0",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCIndent.test_indent",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCIndent.test_indent0",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyPass1.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCPass1.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyPass1.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCPass1.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyPass2.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCPass2.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyPass2.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCPass2.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyPass3.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCPass3.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyPass3.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCPass3.test_parse",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestRecursion.test_highly_nested_objects_decoding",
+      "reason": "decorator:support.skip_if_unlimited_stack_size"
+    },
+    {
+      "ident": "TestRecursion.test_highly_nested_objects_encoding",
+      "reason": "decorator:support.skip_if_unlimited_stack_size"
+    },
+    {
+      "ident": "TestRecursion.test_endless_recursion",
+      "reason": "decorator:support.skip_if_unlimited_stack_size"
+    },
+    {
+      "ident": "TestPyRecursion.test_listrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestCRecursion.test_listrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestPyRecursion.test_dictrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestCRecursion.test_dictrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestPyRecursion.test_defaultrecursion",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCRecursion.test_defaultrecursion",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyRecursion.test_listrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestPyRecursion.test_dictrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestPyRecursion.test_defaultrecursion",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyRecursion.test_highly_nested_objects_decoding",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyRecursion.test_highly_nested_objects_encoding",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyRecursion.test_endless_recursion",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCRecursion.test_listrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestCRecursion.test_dictrecursion",
+      "reason": "self.dumps"
+    },
+    {
+      "ident": "TestCRecursion.test_defaultrecursion",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCRecursion.test_highly_nested_objects_decoding",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCRecursion.test_highly_nested_objects_encoding",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCRecursion.test_endless_recursion",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyScanstring.test_scanstring",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCScanstring.test_scanstring",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyScanstring.test_surrogates",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCScanstring.test_surrogates",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyScanstring.test_bad_escapes",
+      "reason": "uses-self.JSONDecodeError"
+    },
+    {
+      "ident": "TestCScanstring.test_bad_escapes",
+      "reason": "uses-self.JSONDecodeError"
+    },
+    {
+      "ident": "TestPyScanstring.test_overflow",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCScanstring.test_overflow",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyScanstring.test_scanstring",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyScanstring.test_surrogates",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPyScanstring.test_bad_escapes",
+      "reason": "uses-self.JSONDecodeError"
+    },
+    {
+      "ident": "TestPyScanstring.test_overflow",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCScanstring.test_scanstring",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCScanstring.test_surrogates",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestCScanstring.test_bad_escapes",
+      "reason": "uses-self.JSONDecodeError"
+    },
+    {
+      "ident": "TestCScanstring.test_overflow",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestPySeparators.test_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCSeparators.test_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPySeparators.test_illegal_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCSeparators.test_illegal_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPySeparators.test_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPySeparators.test_illegal_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCSeparators.test_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCSeparators.test_illegal_separators",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestSpeedups.test_scanstring",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestSpeedups.test_encode_basestring_ascii",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestDecode.test_make_scanner",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestDecode.test_bad_bool_args",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_make_encoder",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_bad_str_encoder",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_bad_markers_argument_to_encoder",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_bad_bool_args",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_unsortable_keys",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_current_indent_level",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_mutate_dict_items_during_encode",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestEncode.test_mutate_list_during_encode",
+      "reason": "uses-self.json"
+    },
+    {
+      "ident": "TestMain.test_stdin_stdout",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_infile_stdout",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_non_ascii_infile",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_infile_outfile",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_writing_in_place",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_jsonlines",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_jsonlines_from_file",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_help_flag",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_sort_keys_flag",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_indent",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_no_indent",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_tab",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_compact",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_no_ensure_ascii_flag",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_ensure_ascii_default",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_broken_pipe_error",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestMain.test_colors",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_stdin_stdout",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_infile_stdout",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_non_ascii_infile",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_infile_outfile",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_writing_in_place",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_jsonlines",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_jsonlines_from_file",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_help_flag",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_sort_keys_flag",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_indent",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_no_indent",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_tab",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_compact",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_no_ensure_ascii_flag",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_ensure_ascii_default",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_broken_pipe_error",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestTool.test_colors",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding3",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding3",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding4",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding4",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding5",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding5",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding6",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding6",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding7",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding7",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_ascii_non_printable_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_ascii_non_printable_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_ascii_non_printable_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_ascii_non_printable_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_escaped_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_escaped_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_big_unicode_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_big_unicode_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_big_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_big_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_single_surrogate_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_single_surrogate_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_single_surrogate_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_single_surrogate_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_unicode_preservation",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_unicode_preservation",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_bytes_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_bytes_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_bytes_decode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_bytes_decode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_object_pairs_hook_with_unicode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_object_pairs_hook_with_unicode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding3",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding4",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding5",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding6",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_encoding7",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_ascii_non_printable_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_ascii_non_printable_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_escaped_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_big_unicode_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_big_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_single_surrogate_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_single_surrogate_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_unicode_preservation",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestPyUnicode.test_bytes_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_bytes_decode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestPyUnicode.test_object_pairs_hook_with_unicode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding3",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding4",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding5",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding6",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_encoding7",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_ascii_non_printable_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_ascii_non_printable_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_escaped_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_big_unicode_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_big_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_unicode_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_single_surrogate_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_single_surrogate_decode",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_unicode_preservation",
+      "reason": "uses-self.loads"
+    },
+    {
+      "ident": "TestCUnicode.test_bytes_encode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_bytes_decode",
+      "reason": "uses-self.dumps"
+    },
+    {
+      "ident": "TestCUnicode.test_object_pairs_hook_with_unicode",
+      "reason": "uses-self.loads"
+    }
+  ],
+  "counts": {
+    "extracted": 369,
+    "pinned": 0,
+    "quarantined": 369
+  },
+  "sources": [
+    "reference/cpython/Lib/test/test_json/test_decode.py",
+    "reference/cpython/Lib/test/test_json/test_default.py",
+    "reference/cpython/Lib/test/test_json/test_dump.py",
+    "reference/cpython/Lib/test/test_json/test_encode_basestring_ascii.py",
+    "reference/cpython/Lib/test/test_json/test_enum.py",
+    "reference/cpython/Lib/test/test_json/test_fail.py",
+    "reference/cpython/Lib/test/test_json/test_float.py",
+    "reference/cpython/Lib/test/test_json/test_indent.py",
+    "reference/cpython/Lib/test/test_json/test_pass1.py",
+    "reference/cpython/Lib/test/test_json/test_pass2.py",
+    "reference/cpython/Lib/test/test_json/test_pass3.py",
+    "reference/cpython/Lib/test/test_json/test_recursion.py",
+    "reference/cpython/Lib/test/test_json/test_scanstring.py",
+    "reference/cpython/Lib/test/test_json/test_separators.py",
+    "reference/cpython/Lib/test/test_json/test_speedups.py",
+    "reference/cpython/Lib/test/test_json/test_tool.py",
+    "reference/cpython/Lib/test/test_json/test_unicode.py"
+  ],
+  "hashes": {
+    "pins_jac": "ad152337992bbf85a7491c6f091ad4ce36d221417569d7d8ab0591161cb91633"
+  }
+}
