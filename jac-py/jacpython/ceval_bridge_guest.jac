@@ -3,7 +3,7 @@
 # coroutine/async-generator host faces. Pure ::py:: helpers live in
 # ceval_host_bridge.jac (acyclic leaf); ceval.jac re-exports via thin wrappers.
 
-import ceval_host_bridge as _hb
+import ceval_host_bridge as _hb;
 
 import from objects {
     PyException,
