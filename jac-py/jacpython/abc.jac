@@ -30,7 +30,7 @@ obj _ABCImpl {
 glob _invalidation_counter: int = 0;
 
 # id(class) -> _ABCImpl; populated by _abc_init.
-glob _impls: dict = {};
+glob _impls: dict[int, _ABCImpl] = {};
 
 
 def _p2_impl_for(cls: any) -> _ABCImpl | None {
@@ -52,7 +52,7 @@ def _p2_is_abstract(value: any) -> bool {
 
 def _p2_class_dict(cls: any) -> dict | None {
     try {
-        return getattr(cls, "__dict__");
+        return getattr(cls, "__dict__") as dict;
     } except AttributeError {
         return None;
     }
@@ -63,7 +63,7 @@ def _p2_real_issubclass(sub: any, sup: any) -> bool {
     try {
         mro = getattr(sub, "__mro__");
     } except AttributeError {
-        return bool(issubclass(sub, sup));
+        return bool(issubclass(sub as type, sup as type));
     }
     for node in mro {
         if node == sup {
@@ -109,7 +109,7 @@ def _p2_compute_abstract_methods(cls: any) {
             # marker (an override without the marker makes it concrete).
             found = True;
             try {
-                current = getattr(cls, name);
+                current = getattr(cls, name as str);
             } except AttributeError {
                 found = False;
             }
