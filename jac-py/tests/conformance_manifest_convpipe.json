@@ -2631,13 +2631,20 @@
     {
       "stem": "mmap",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_mmap/conv_mmap_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "40 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_mmap/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_mmap/conversion.json",
+      "jacpython_results": {
+        "mmap": {
+          "passed": 0,
+          "total": 40,
+          "notes": "0/40 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "frame",
