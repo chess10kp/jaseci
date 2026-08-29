@@ -3308,13 +3308,20 @@
     {
       "stem": "socket",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_socket/conv_socket_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "39 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_socket/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_socket/conversion.json",
+      "jacpython_results": {
+        "socket": {
+          "passed": 0,
+          "total": 39,
+          "notes": "0/39 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "sourceencoding",
