@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "42318cea176ab14b5c4367cf3242ba2053a9de88",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/var/tmp/worker6-1267-converter-backup-2297518/jac-py/tests/conv_codecmaps_jp/conv_codecmaps_jp_pins.jac"
+  ],
+  "generated_at": "2026-08-29T00:56:01",
+  "hashes": {
+    "pins_jac": "e547c44209682132b951ed6d194241e9933fa17d92c3a57718894e50a3f043b9",
+    "conversion_json": "0b17585b61eb4cddefbceca5a762b4dd535dde3d1167f639c431113b9329755d",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "codecmaps_jp",
+  "status": "passed",
+  "timed_out": false,
+  "counts": {
+    "converted": 0,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 0,
+    "failed": 0,
+    "infra_failed": 0
+  },
+  "failures": []
+}
