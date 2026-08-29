@@ -2678,13 +2678,20 @@
     {
       "stem": "tcl",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_tcl/conv_tcl_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "35 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_tcl/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_tcl/conversion.json",
+      "jacpython_results": {
+        "tcl": {
+          "passed": 0,
+          "total": 35,
+          "notes": "0/35 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "codecmaps_tw",
