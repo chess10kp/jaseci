@@ -1122,7 +1122,7 @@ obj PySlice(PyObj) {
             if is_error(eq) {
                 return eq;
             }
-            if _richcompare_to_bool(eq) != 1 {
+            if _richcompare_truth(eq) != 1 {
                 return PyBool(t="bool", val=kind == Py_NE);
             }
         }
@@ -1542,7 +1542,7 @@ obj PyList(PyObj) {
             if is_error(keq) {
                 return keq;
             }
-            if not _object_is_true(keq) {
+            if _richcompare_truth(keq) != 1 {
                 break;
             }
             i = i + 1;
@@ -1933,7 +1933,7 @@ obj PyDict(PyObj) {
                 if is_error(keq) {
                     return keq;
                 }
-                if not _object_is_true(keq) {
+                if _richcompare_truth(keq) != 1 {
                     return PyBool(t="bool", val=False);
                 }
             }
@@ -1942,7 +1942,7 @@ obj PyDict(PyObj) {
                 if is_error(veq) {
                     return veq;
                 }
-                if not _object_is_true(veq) {
+                if _richcompare_truth(veq) != 1 {
                     return PyBool(t="bool", val=False);
                 }
             }
@@ -1961,7 +1961,7 @@ obj PyDict(PyObj) {
             return eq;
         }
         if kind == Py_NE {
-            return PyBool(t="bool", val=not _object_is_true(eq));
+            return PyBool(t="bool", val=_richcompare_truth(eq) != 1);
         }
         return eq;
     }
@@ -2201,35 +2201,30 @@ obj PySet(PyObj) {
 
 # Shared set/set richcompare (na-clean). ``setobject.set_richcompare`` and ceval
 # ``py_compare`` both route here; keeps one implementation for subset algebra.
-# Truth of a comparison/protocol result: errors are silently false, none and
-# zero are false, everything else is true.
-def _object_is_true(res: PyObj) -> bool {
-    if is_error(res) {
-        return False;
-    }
-    if isinstance(res, PyBool) {
-        return (res as PyBool).val;
-    }
-    if res.t == "none" {
-        return False;
-    }
-    if res.t == "int" {
-        return (res as PyInt).val != 0;
-    }
-    return True;
-}
-
-# Tri-state truth of a comparison result: 1 true, 0 false, -1 error
-# (matches the C API convention; shared by dict/list/set membership and
-# PyObject_RichCompareBool).
-def _richcompare_to_bool(res: PyObj) -> int {
+# Tri-state truth of a comparison/protocol result: 1 true, 0 false, -1 error
+# (CPython PyObject_RichCompareBool / PyObject_IsTrue convention). Canonical
+# implementation lives here (acyclic leaf); abstract_protocol re-exports it for
+# dict/list/set helpers and external protocol callers.
+def _richcompare_truth(res: PyObj) -> int {
     if is_error(res) {
         return -1;
     }
-    if _object_is_true(res) {
-        return 1;
+    if isinstance(res, PyBool) {
+        if (res as PyBool).val {
+            return 1;
+        }
+        return 0;
     }
-    return 0;
+    if res.t == "none" {
+        return 0;
+    }
+    if res.t == "int" {
+        if (res as PyInt).val != 0 {
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
 }
 
 # CPython ``PyObject_RichCompare`` (abstract.c do_richcompare): left slot,
@@ -2299,7 +2294,7 @@ def PyObject_RichCompareBool(v: PyObj, w: PyObj, op: int) -> int {
         }
     }
     res = PyObject_RichCompare(v, w, op);
-    return _richcompare_to_bool(res);
+    return _richcompare_truth(res);
 }
 
 # Three-way integer compare (-1 / 0 / +1). Only for NaN-free values:
@@ -2383,7 +2378,7 @@ def _set_contains_elem(so: PySet, key: PyObj) -> PyObj {
         if is_error(res) {
             return res;
         }
-        if _object_is_true(res) {
+        if _richcompare_truth(res) == 1 {
             return PyBool(t="bool", val=True);
         }
     }
@@ -2398,7 +2393,7 @@ def _set_contains_elem(so: PySet, key: PyObj) -> PyObj {
         if is_error(res) {
             return res;
         }
-        if _object_is_true(res) {
+        if _richcompare_truth(res) == 1 {
             return PyBool(t="bool", val=True);
         }
     }
