@@ -2602,13 +2602,20 @@
     {
       "stem": "codecencodings_hk",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_codecencodings_hk/conv_codecencodings_hk_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "17 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_codecencodings_hk/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_codecencodings_hk/conversion.json",
+      "jacpython_results": {
+        "codecencodings_hk": {
+          "passed": 0,
+          "total": 17,
+          "notes": "0/17 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "codecencodings_jp",
