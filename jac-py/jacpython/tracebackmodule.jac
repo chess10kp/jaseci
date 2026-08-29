@@ -45,6 +45,7 @@ import from objects {
     is_error,
 }
 import from exceptions_core { _obj_to_str }
+import from ceval_api { py_attr, py_invoke }
 import from tb_render {
     _tb_linecache_getline,
     _tb_stderr_write,
@@ -529,7 +530,7 @@ obj TBExcCtorFn(PyObj) {
         }
         tb = args[2];
         if isinstance(tb, PyNoneType) {
-            tb = None;
+            tb = py_none();
         }
         return _tbe_construct(exc, tb, kwargs);
     }
@@ -736,10 +737,7 @@ def _tb_exception_only_text(exc: PyObj) -> PyStr {
         }
     } else {
         # user-defined exception instances: v1 renders type-less body only
-        sr = exc.tp_str();
-        if not is_error(sr) and isinstance(sr, PyStr) {
-            body = (sr as PyStr).val;
-        }
+        body = _obj_to_str(exc, None);
     }
     if body == "" {
         return PyStr(t="str", val=tname + "\n");
@@ -748,8 +746,6 @@ def _tb_exception_only_text(exc: PyObj) -> PyStr {
 }
 
 # Write text to a guest file-like via its BOUND write callable, or stderr.
-# The caller resolves target.write through ceval helpers -- importing them
-# here would create an import cycle with ceval.jac.
 def tb_write_bound(write_callable: PyObj, text: str) -> PyObj {
     if isinstance(write_callable, PyNoneType) {
         _tb_stderr_write(text);
@@ -942,7 +938,7 @@ obj TBFrameSummaryCtorFn(PyObj) {
 }
 
 def traceback_module_attrs -> dict[str, PyObj] {
-    return {
+    attrs: dict[str, PyObj] = {
         "extract_tb": TBExtractFn(t="function"),
         "format_tb": TBFormatTbFn(t="function"),
         "print_tb": TBPrintTbFn(t="function"),
@@ -954,6 +950,7 @@ def traceback_module_attrs -> dict[str, PyObj] {
         "print_stack": TBStackLikeFn(t="function", mode="print"),
         "TracebackException": TBExcCtorFn(t="type"),
         "FrameSummary": TBFrameSummaryCtorFn(t="type"),
-        "__jac_shim_types__": _tb_shim_type_tags(),
     };
+    attrs["__jac_shim_types__"] = _tb_shim_type_tags() as PyObj;
+    return attrs;
 }
