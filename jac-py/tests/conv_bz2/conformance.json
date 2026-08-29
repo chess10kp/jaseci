@@ -1,0 +1,538 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "9f0ade47bf933636fc0025a06cb2a8d4641b187e",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/opt/jacpy/work/test_bz2-i-01886b0fe289275d5/output/conv_bz2_pins.jac"
+  ],
+  "generated_at": "2026-08-25T22:52:06",
+  "hashes": {
+    "pins_jac": "6eec59e74e00bf60516ee13fac7b8ac3e20de338e508694f0190a6c60be750fa",
+    "conversion_json": "8c253528edf32115317af368b460d26a2940556d700dec02ec47df39f300bfd8",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "bz2",
+  "counts": {
+    "converted": 102,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 102
+  },
+  "pins": [
+    {
+      "id": "BZ2FileTest.testThreading",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompress4G",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompress4G",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_if_pgo_task"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_refleaks_in___init__",
+      "status": "quarantined",
+      "reason": "decorator:support.refcount_test"
+    },
+    {
+      "id": "BZ2FileTest.testBadArgs",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testRead",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadBadFile",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadMonkeyMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadTrailingJunk",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadMultiStreamTrailingJunk",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testRead0",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadChunk10",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadChunk10MultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testRead100",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testPeek",
+      "status": "quarantined",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "id": "BZ2FileTest.testReadInto",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadLine",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadLineMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadLines",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadLinesMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testIterator",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testIteratorMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testClosedIteratorDeadlock",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testWrite",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testWriteChunks10",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testWriteNonDefaultCompressLevel",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testWriteLines",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testWriteMethodsOnReadOnlyFile",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testAppend",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekForward",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekForwardAcrossStreams",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwards",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsAcrossStreams",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsFromEnd",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsFromEndAcrossStreams",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEnd",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEndMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEndTwice",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPostEndTwiceMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPreStart",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekPreStartMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testFileno",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekable",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadable",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testWritable",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenDel",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenNonexistent",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadlinesNoNewline",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testContextProtocol",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testMixedIterationAndReads",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testMultiStreamOrdering",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFilename",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFileWithName",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFileWithoutName",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenFileWithIntName",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenBytesFilename",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testOpenPathLikeFilename",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testDecompressLimited",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testReadBytesIO",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testPeekBytesIO",
+      "status": "quarantined",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "id": "BZ2FileTest.testWriteBytesIO",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekForwardBytesIO",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.testSeekBackwardsBytesIO",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.test_read_truncated",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2FileTest.test_issue44439",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompress",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompressEmptyString",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2CompressorTest.testCompressChunks10",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2CompressorTest.testPickle",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_Constructor",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompress",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompressChunks10",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompressUnusedData",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.testEOFError",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.testPickle",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.testDecompressorChunksMaxsize",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompressor_inputbuf_1",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompressor_inputbuf_2",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompressor_inputbuf_3",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_failure",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_decompress_after_data_error",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "BZ2DecompressorTest.test_uninitialized_BZ2Decompressor_crash",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testCompress",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testCompressEmptyString",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompress",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressEmpty",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressToEmptyString",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressIncomplete",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressBadData",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressMultiStream",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressTrailingJunk",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "CompressDecompressTest.testDecompressMultiStreamTrailingJunk",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_binary_modes",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_implicit_binary_modes",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_text_modes",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_x_mode",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_fileobj",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_bad_params",
+      "status": "quarantined",
+      "reason": "uses-self.open"
+    },
+    {
+      "id": "OpenTest.test_encoding",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_encoding_error_handler",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    },
+    {
+      "id": "OpenTest.test_newline",
+      "status": "quarantined",
+      "reason": "uses-self.filename"
+    }
+  ]
+}

@@ -2895,13 +2895,20 @@
     {
       "stem": "bz2",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_bz2/conv_bz2_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "92 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_bz2/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_bz2/conversion.json",
+      "jacpython_results": {
+        "bz2": {
+          "passed": 0,
+          "total": 0,
+          "notes": "0/0 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "_opcode",
