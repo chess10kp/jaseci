@@ -24,7 +24,7 @@ import from parser_actions {
     pa_cmpop_expr_pair, pa_key_value_pair, pa_key_pattern_pair, pa_keyword_or_starred,
     pa_name_default_pair, pa_make_cmpop_pair, pa_name_from_token, pa_name_id, pa_number_from_token,
     pa_ast_expression, pa_ast_binop, pa_ast_unaryop, pa_ast_boolop, pa_ast_compare, pa_ast_call,
-    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_from_expr, pa_match_singleton, pa_pattern_list, pa_singleton_seq, pa_stmt_list_or_empty,
+    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_from_expr, pa_match_singleton, pa_pattern_list, pa_singleton_seq, pa_singleton_seq_expr, pa_singleton_seq_stmt, pa_singleton_seq_alias, pa_stmt_list_or_empty,
     pa_seq_insert_front_expr, pa_seq_insert_front_pattern, pa_seq_insert_front_stmt,
     pa_seq_insert_front_alias, pa_seq_insert_front_type_param, pa_seq_insert_front_withitem,
     pa_seq_insert_front_arg, pa_seq_insert_front_kw_or_starred, pa_seq_insert_front_kvpair,
@@ -41,7 +41,7 @@ import from parser_actions {
     pa_arguments_parsing_error, pa_check_legacy_stmt, pa_concatenate_strings, pa_concatenate_tstrings,
     pa_constant_from_string, pa_constant_from_token, pa_decoded_constant_from_token, pa_ensure_imaginary,
     pa_ensure_real, pa_get_expr_name, pa_get_last_comprehension_item, pa_join_names_with_dot,
-    pa_join_sequences, pa_alias_for_star, pa_add_type_comment_to_arg, pa_seq_delete_starred_exprs,
+    pa_join_sequences, pa_join_sequences_kw_or_starred, pa_alias_for_star, pa_add_type_comment_to_arg, pa_seq_delete_starred_exprs,
     pa_seq_extract_starred_exprs, pa_setup_full_format_spec, pa_check_fstring_conversion,
     pa_function_def_decorators, pa_class_def_decorators, pa_make_arguments, pa_star_etc, pa_slash_with_default,
     pa_joined_str, pa_template_str, pa_formatted_value, pa_interpolation, pa_err_occurred,
@@ -1115,19 +1115,19 @@ def rule__loop0_126(p: peg_parser) -> list[expr] | None {
     return children as list[expr];
 }
 
-def rule__loop0_129(p: peg_parser) -> list[object] | None {
+def rule__loop0_129(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_148(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
 def rule__loop0_130(p: peg_parser) -> list[expr] | None {
@@ -1315,19 +1315,19 @@ def rule__loop0_24(p: peg_parser) -> list[peg_token] | None {
     return children as list[peg_token];
 }
 
-def rule__loop0_26(p: peg_parser) -> list[object] | None {
+def rule__loop0_26(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_149(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
 def rule__loop0_28(p: peg_parser) -> list[expr] | None {
@@ -1360,9 +1360,9 @@ def rule__loop0_29(p: peg_parser) -> list[expr] | None {
     return children as list[expr];
 }
 
-def rule__loop0_32(p: peg_parser) -> list[expr] | None {
+def rule__loop0_32(p: peg_parser) -> list[Name] | None {
     mark = peg_mark(p);
-    children: list[expr] = [];
+    children: list[Name] = [];
     while True {
         comma_mark = peg_mark(p);
         lit = peg_expect_token(p, 12);
@@ -1374,25 +1374,25 @@ def rule__loop0_32(p: peg_parser) -> list[expr] | None {
             peg_reset(p, comma_mark);
             break;
         }
-        children.append(elem as expr);
+        children.append(elem as Name);
         mark = peg_mark(p);
     }
-    return children as list[expr];
+    return children as list[Name];
 }
 
-def rule__loop0_35(p: peg_parser) -> list[object] | None {
+def rule__loop0_35(p: peg_parser) -> list[peg_token] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[peg_token] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_150(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as peg_token);
         mark = peg_mark(p);
     }
-    return children as list[object];
+    return children as list[peg_token];
 }
 
 def rule__loop0_37(p: peg_parser) -> list[alias] | None {
@@ -1671,22 +1671,22 @@ def rule__loop1_111(p: peg_parser) -> list[match_case] | None {
     return children as list[match_case];
 }
 
-def rule__loop1_125(p: peg_parser) -> list[object] | None {
+def rule__loop1_125(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_153(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
     if len(children) == 0 {
         return None;
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
 def rule__loop1_13(p: peg_parser) -> list[pa_cmpop_expr_pair] | None {
@@ -1707,22 +1707,22 @@ def rule__loop1_13(p: peg_parser) -> list[pa_cmpop_expr_pair] | None {
     return children as list[pa_cmpop_expr_pair];
 }
 
-def rule__loop1_132(p: peg_parser) -> list[object] | None {
+def rule__loop1_132(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_148(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
     if len(children) == 0 {
         return None;
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
 def rule__loop1_133(p: peg_parser) -> list[stmt] | None {
@@ -1743,76 +1743,76 @@ def rule__loop1_133(p: peg_parser) -> list[stmt] | None {
     return children as list[stmt];
 }
 
-def rule__loop1_14(p: peg_parser) -> list[object] | None {
+def rule__loop1_14(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_154(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
     if len(children) == 0 {
         return None;
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
-def rule__loop1_15(p: peg_parser) -> list[object] | None {
+def rule__loop1_15(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_155(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
     if len(children) == 0 {
         return None;
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
-def rule__loop1_18(p: peg_parser) -> list[object] | None {
+def rule__loop1_18(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_156(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
     if len(children) == 0 {
         return None;
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
-def rule__loop1_25(p: peg_parser) -> list[object] | None {
+def rule__loop1_25(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[expr] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_5(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as expr);
         mark = peg_mark(p);
     }
     if len(children) == 0 {
         return None;
     }
-    return children as list[object];
+    return children as list[expr];
 }
 
 def rule__loop1_27(p: peg_parser) -> list[comprehension] | None {
@@ -1833,22 +1833,22 @@ def rule__loop1_27(p: peg_parser) -> list[comprehension] | None {
     return children as list[comprehension];
 }
 
-def rule__loop1_36(p: peg_parser) -> list[object] | None {
+def rule__loop1_36(p: peg_parser) -> list[peg_token] | None {
     mark = peg_mark(p);
-    children: list[object] = [];
+    children: list[peg_token] = [];
     while True {
         comma_mark = peg_mark(p);
         rhs = rule__tmp_150(p);
         if rhs is None {
             break;
         }
-        children.append(rhs);
+        children.append(rhs as peg_token);
         mark = peg_mark(p);
     }
     if len(children) == 0 {
         return None;
     }
-    return children as list[object];
+    return children as list[peg_token];
 }
 
 def rule__loop1_54(p: peg_parser) -> list[expr] | None {
@@ -2173,9 +2173,9 @@ def rule__tmp_128(p: peg_parser) -> expr | None {
     return None;
 }
 
-def rule__tmp_136(p: peg_parser) -> object | None {
+def rule__tmp_136(p: peg_parser) -> list[expr] | None {
     mark = peg_mark(p);
-    res: object | None = None;
+    res: list[expr] | None = None;
     y = rule_star_named_expression(p);
     if y is not None {
         lit = peg_expect_token(p, 12);
@@ -2505,27 +2505,27 @@ def rule__tmp_34(p: peg_parser) -> expr | None {
     return None;
 }
 
-def rule__tmp_39(p: peg_parser) -> list[object] | None {
+def rule__tmp_39(p: peg_parser) -> object | None {
     mark = peg_mark(p);
-    res: list[object] | None = None;
+    res: object | None = None;
     rhs = rule__tmp_40(p);
     if rhs is not None {
-        res = rhs;
+        res = rhs as object;
         return res;
     }
     peg_reset(p, mark);
     kwargs = rule_kwargs(p);
     if kwargs is not None {
-        res = kwargs;
+        res = kwargs as object;
         return res;
     }
     peg_reset(p, mark);
     return None;
 }
 
-def rule__tmp_4(p: peg_parser) -> list[object] | None {
+def rule__tmp_4(p: peg_parser) -> list[keyword_or_starred_node] | None {
     mark = peg_mark(p);
-    res: list[object] | None = None;
+    res: list[keyword_or_starred_node] | None = None;
     lit = peg_expect_token(p, 12);
     if lit is not None {
         k = rule_kwargs(p);
@@ -3013,12 +3013,12 @@ def rule__tmp_71(p: peg_parser) -> object | None {
     return None;
 }
 
-def rule__tmp_74(p: peg_parser) -> object | None {
+def rule__tmp_74(p: peg_parser) -> peg_token | None {
     mark = peg_mark(p);
-    res: object | None = None;
+    res: peg_token | None = None;
     lit = peg_expect_token(p, 11);
     if lit is not None {
-        res = lit as object;
+        res = lit;
         return res;
     }
     peg_reset(p, mark);
@@ -3148,12 +3148,12 @@ def rule__tmp_82(p: peg_parser) -> object | None {
     return None;
 }
 
-def rule__tmp_85(p: peg_parser) -> object | None {
+def rule__tmp_85(p: peg_parser) -> peg_token | None {
     mark = peg_mark(p);
-    res: object | None = None;
+    res: peg_token | None = None;
     lit = peg_expect_token(p, 8);
     if lit is not None {
-        res = lit as object;
+        res = lit;
         return res;
     }
     peg_reset(p, mark);
@@ -3533,8 +3533,8 @@ def rule_assignment(p: peg_parser) -> stmt | None {
         b_4 = rule_augassign(p);
         if b_4 is not None {
             cut = True;
-            c_4 = rule_annotated_rhs(p);
-            if c_4 is not None {
+            c = rule_annotated_rhs(p);
+            if c is not None {
                 end_tok = peg_get_last_nonnwhitespace_token(p);
                 if end_tok is None {
                     p.error_indicator = True;
@@ -3543,7 +3543,7 @@ def rule_assignment(p: peg_parser) -> stmt | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_augassign(a_4, pa_aug_op(b_4), c_4, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_augassign(a_4, pa_aug_op(b_4), c, start_lineno, start_col_offset, end_lineno, end_col_offset);
                 return res;
             }
         }
@@ -4346,7 +4346,7 @@ def rule_class_pattern(p: peg_parser) -> pattern | None {
     if cls is not None {
         lit = peg_expect_token(p, 7);
         if lit is not None {
-            keywords = rule_keyword_patterns(p);
+            keywords = pa_pattern_list(rule_keyword_patterns(p));
             if keywords is not None {
                 lit_1 = peg_expect_token(p, 12);
                 lit_2 = peg_expect_token(p, 8);
@@ -4374,7 +4374,7 @@ def rule_class_pattern(p: peg_parser) -> pattern | None {
             if patterns is not None {
                 lit_1 = peg_expect_token(p, 12);
                 if lit_1 is not None {
-                    keywords = rule_keyword_patterns(p);
+                    keywords = pa_pattern_list(rule_keyword_patterns(p));
                     if keywords is not None {
                         lit_2 = peg_expect_token(p, 12);
                         lit_3 = peg_expect_token(p, 8);
@@ -5286,7 +5286,7 @@ def rule_double_starred_kvpairs(p: peg_parser) -> list[kv_pair] | None {
     if a is not None {
         lit = peg_expect_token(p, 12);
         res = a;
-        return res;
+        return res as list[kv_pair];
     }
     peg_reset(p, mark);
     return None;
@@ -5328,7 +5328,7 @@ def rule_elif_stmt(p: peg_parser) -> stmt | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(pa_check(pa_singleton_seq(c)) as list[stmt]), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(pa_check(pa_singleton_seq_stmt(c)) as list[stmt]), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
                         return res;
                     }
                 }
@@ -5823,7 +5823,7 @@ def rule_expressions(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_singleton_seq(a)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(pa_check(pa_singleton_seq_expr(a)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
             return res;
         }
     }
@@ -6290,7 +6290,7 @@ def rule_func_type(p: peg_parser) -> mod | None {
                     if seq is not None {
                         _endmarker = peg_expect_token(p, ENDMARKER);
                         if _endmarker is not None {
-                            res = FunctionType(argtypes=a, returns=b);
+                            res = FunctionType(argtypes=(a if a is not None else []), returns=b);
                             return res;
                         }
                     }
@@ -6641,7 +6641,7 @@ def rule_if_stmt(p: peg_parser) -> stmt | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(pa_check(pa_singleton_seq(c)) as list[stmt]), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(pa_check(pa_singleton_seq_stmt(c)) as list[stmt]), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
                         return res;
                     }
                 }
@@ -6843,7 +6843,7 @@ def rule_import_from_targets(p: peg_parser) -> list[alias] | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_singleton_seq(pa_check(pa_alias_for_star(start_lineno, start_col_offset, end_lineno, end_col_offset)) as alias);
+        res = pa_singleton_seq_alias(pa_check(pa_alias_for_star(start_lineno, start_col_offset, end_lineno, end_col_offset)) as alias);
         return res;
     }
     peg_reset(p, mark);
@@ -6990,7 +6990,7 @@ def rule_invalid_arguments(p: peg_parser) -> object | None {
         if b is not None {
             lit = peg_expect_token(p, 12);
             if lit is not None {
-                rhs_2 = rule__tmp_43(p);
+                rhs = rule__tmp_43(p);
                 res = pa_raise_syntax_known_range(p, False, a_2, pa_get_last_comprehension_item(pa_seq_last(b)), "Generator expression must be parenthesized");
                 return res;
             }
@@ -7253,7 +7253,7 @@ def rule_invalid_class_argument_pattern(p: peg_parser) -> list[pattern] | None {
     mark = peg_mark(p);
     res: list[pattern] | None = None;
     rhs = rule__tmp_48(p);
-    keyword_patterns = rule_keyword_patterns(p);
+    keyword_patterns = pa_pattern_list(rule_keyword_patterns(p));
     if keyword_patterns is not None {
         lit = peg_expect_token(p, 12);
         if lit is not None {
@@ -7696,8 +7696,8 @@ def rule_invalid_except_star_stmt(p: peg_parser) -> object | None {
     if a_3 is not None {
         lit = peg_expect_token(p, 16);
         if lit is not None {
-            rhs = rule__tmp_53(p);
-            if rhs is not None {
+            rhs_3 = rule__tmp_53(p);
+            if rhs_3 is not None {
                 res = pa_raise_syntax(p, False, "expected one or more exception types");
                 return res;
             }
@@ -8467,15 +8467,15 @@ def rule_invalid_kwarg(p: peg_parser) -> object | None {
         }
     }
     peg_reset(p, mark);
-    a_4 = peg_expect_token(p, 35);
-    if a_4 is not None {
+    a = peg_expect_token(p, 35);
+    if a is not None {
         expression = rule_expression(p);
         if expression is not None {
             lit = peg_expect_token(p, 22);
             if lit is not None {
                 b_4 = rule_expression(p);
                 if b_4 is not None {
-                    res = pa_raise_syntax_known_range(p, False, a_4, b_4, "cannot assign to keyword argument unpacking");
+                    res = pa_raise_syntax_known_range(p, False, a, b_4, "cannot assign to keyword argument unpacking");
                     return res;
                 }
             }
@@ -8521,9 +8521,9 @@ def rule_invalid_kwds(p: peg_parser) -> object | None {
         if param is not None {
             lit_1 = peg_expect_token(p, 12);
             if lit_1 is not None {
-                a_3 = rule__tmp_65(p);
-                if a_3 is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a_3, "arguments cannot follow var-keyword argument");
+                a = rule__tmp_65(p);
+                if a is not None {
+                    res = pa_raise_syntax_known_expr(p, False, a, "arguments cannot follow var-keyword argument");
                     return res;
                 }
             }
@@ -8569,9 +8569,9 @@ def rule_invalid_lambda_kwds(p: peg_parser) -> object | None {
         if lambda_param is not None {
             lit_1 = peg_expect_token(p, 12);
             if lit_1 is not None {
-                a_3 = rule__tmp_65(p);
-                if a_3 is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a_3, "arguments cannot follow var-keyword argument");
+                a = rule__tmp_65(p);
+                if a is not None {
+                    res = pa_raise_syntax_known_expr(p, False, a, "arguments cannot follow var-keyword argument");
                     return res;
                 }
             }
@@ -8712,14 +8712,14 @@ def rule_invalid_lambda_star_etc(p: peg_parser) -> object | None {
     peg_reset(p, mark);
     lit = peg_expect_token(p, 16);
     if lit is not None {
-        rhs = rule__tmp_76(p);
-        if rhs is not None {
+        rhs_3 = rule__tmp_76(p);
+        if rhs_3 is not None {
             seq = rule__loop0_67(p);
             if seq is not None {
                 a = peg_expect_token(p, 16);
                 if a is not None {
-                    rhs_1 = rule__tmp_76(p);
-                    if rhs_1 is not None {
+                    rhs_3_1 = rule__tmp_76(p);
+                    if rhs_3_1 is not None {
                         res = pa_raise_syntax_known_expr(p, False, a, "* argument may appear only once");
                         return res;
                     }
@@ -8982,14 +8982,14 @@ def rule_invalid_star_etc(p: peg_parser) -> object | None {
     peg_reset(p, mark);
     lit = peg_expect_token(p, 16);
     if lit is not None {
-        rhs = rule__tmp_87(p);
-        if rhs is not None {
+        rhs_4 = rule__tmp_87(p);
+        if rhs_4 is not None {
             seq = rule__loop0_79(p);
             if seq is not None {
                 a = peg_expect_token(p, 16);
                 if a is not None {
-                    rhs_1 = rule__tmp_87(p);
-                    if rhs_1 is not None {
+                    rhs_4_1 = rule__tmp_87(p);
+                    if rhs_4_1 is not None {
                         res = pa_raise_syntax_known_expr(p, False, a, "* argument may appear only once");
                         return res;
                     }
@@ -9575,7 +9575,7 @@ def rule_items_pattern(p: peg_parser) -> list[pattern] | None {
     gather = rule__gather_101(p);
     if gather is not None {
         res = gather as list[pattern];
-        return res;
+        return res as list[pattern];
     }
     peg_reset(p, mark);
     return None;
@@ -9641,7 +9641,7 @@ def rule_keyword_patterns(p: peg_parser) -> list[pattern] | None {
     gather = rule__gather_104(p);
     if gather is not None {
         res = gather as list[pattern];
-        return res;
+        return res as list[pattern];
     }
     peg_reset(p, mark);
     return None;
@@ -9788,8 +9788,8 @@ def rule_kwargs(p: peg_parser) -> list[keyword_or_starred_node] | None {
         if lit is not None {
             b = rule__gather_108(p);
             if b is not None {
-                res = pa_join_sequences(a, b);
-                return res;
+                res = pa_join_sequences_kw_or_starred(a, b);
+                return res as list[keyword_or_starred_node];
             }
         }
     }
@@ -9797,13 +9797,13 @@ def rule_kwargs(p: peg_parser) -> list[keyword_or_starred_node] | None {
     gather = rule__gather_106(p);
     if gather is not None {
         res = gather;
-        return res;
+        return res as list[keyword_or_starred_node];
     }
     peg_reset(p, mark);
     gather = rule__gather_108(p);
     if gather is not None {
         res = gather;
-        return res;
+        return res as list[keyword_or_starred_node];
     }
     peg_reset(p, mark);
     return None;
@@ -10555,7 +10555,7 @@ def rule_mapping_pattern(p: peg_parser) -> pattern | None {
     peg_reset(p, mark);
     lit = peg_expect_token(p, 25);
     if lit is not None {
-        items = rule_items_pattern(p);
+        items = pa_pattern_list(rule_items_pattern(p));
         if items is not None {
             lit_1 = peg_expect_token(p, 12);
             if lit_1 is not None {
@@ -10582,7 +10582,7 @@ def rule_mapping_pattern(p: peg_parser) -> pattern | None {
     peg_reset(p, mark);
     lit = peg_expect_token(p, 25);
     if lit is not None {
-        items = rule_items_pattern(p);
+        items = pa_pattern_list(rule_items_pattern(p));
         if items is not None {
             lit_1 = peg_expect_token(p, 12);
             lit_2 = peg_expect_token(p, 26);
@@ -10664,7 +10664,7 @@ def rule_maybe_sequence_pattern(p: peg_parser) -> list[pattern] | None {
     if patterns is not None {
         lit = peg_expect_token(p, 12);
         res = patterns;
-        return res;
+        return res as list[pattern];
     }
     peg_reset(p, mark);
     return None;
@@ -10808,9 +10808,9 @@ def rule_open_sequence_pattern(p: peg_parser) -> list[pattern] | None {
     if pattern is not None {
         lit = peg_expect_token(p, 12);
         if lit is not None {
-            patterns = rule_maybe_sequence_pattern(p);
-            res = pa_seq_insert_front_pattern(pattern, patterns);
-            return res;
+            patterns = pa_pattern_list(rule_maybe_sequence_pattern(p));
+            res = pa_pattern_list(pa_seq_insert_front_pattern(pattern, patterns));
+            return res as list[pattern];
         }
     }
     peg_reset(p, mark);
@@ -11188,7 +11188,7 @@ def rule_patterns(p: peg_parser) -> pattern | None {
         start_col_offset = t0.col_offset;
     }
     res: pattern | None = None;
-    patterns = rule_open_sequence_pattern(p);
+    patterns = pa_pattern_list(rule_open_sequence_pattern(p));
     if patterns is not None {
         end_tok = peg_get_last_nonnwhitespace_token(p);
         if end_tok is None {
@@ -11332,7 +11332,7 @@ def rule_primary_raw(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_call(a, pa_check(pa_singleton_seq(b_2)) as list[expr], None, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_call(a, pa_check(pa_singleton_seq_expr(b_2)) as list[expr], None, start_lineno, start_col_offset, end_lineno, end_col_offset);
             return res;
         }
     }
@@ -11493,7 +11493,7 @@ def rule_sequence_pattern(p: peg_parser) -> pattern | None {
     res: pattern | None = None;
     lit = peg_expect_token(p, 9);
     if lit is not None {
-        patterns = rule_maybe_sequence_pattern(p);
+        patterns = pa_pattern_list(rule_maybe_sequence_pattern(p));
         lit_1 = peg_expect_token(p, 10);
         if lit_1 is not None {
             end_tok = peg_get_last_nonnwhitespace_token(p);
@@ -11511,7 +11511,7 @@ def rule_sequence_pattern(p: peg_parser) -> pattern | None {
     peg_reset(p, mark);
     lit = peg_expect_token(p, 7);
     if lit is not None {
-        patterns = rule_open_sequence_pattern(p);
+        patterns = pa_pattern_list(rule_open_sequence_pattern(p));
         lit_1 = peg_expect_token(p, 8);
         if lit_1 is not None {
             end_tok = peg_get_last_nonnwhitespace_token(p);
@@ -11934,7 +11934,7 @@ def rule_simple_stmts(p: peg_parser) -> list[stmt] | None {
         if (peg_negative_lookahead_token(p, 13)) {
             _newline = peg_expect_token(p, NEWLINE);
             if _newline is not None {
-                res = pa_singleton_seq(a);
+                res = pa_singleton_seq_stmt(a);
                 return res;
             }
         }
@@ -11958,7 +11958,7 @@ def rule_single_compound_stmt(p: peg_parser) -> list[stmt] | None {
     res: list[stmt] | None = None;
     a = rule_compound_stmt(p);
     if a is not None {
-        res = pa_singleton_seq(a);
+        res = pa_singleton_seq_stmt(a);
         return res;
     }
     peg_reset(p, mark);
@@ -12443,7 +12443,7 @@ def rule_star_expressions(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_singleton_seq(a)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(pa_check(pa_singleton_seq_expr(a)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
             return res;
         }
     }
@@ -12680,7 +12680,7 @@ def rule_star_targets_tuple_seq(p: peg_parser) -> list[expr] | None {
     if a is not None {
         lit = peg_expect_token(p, 12);
         if lit is not None {
-            res = pa_singleton_seq(a);
+            res = pa_singleton_seq_expr(a);
             return res;
         }
     }
@@ -12737,7 +12737,7 @@ def rule_statement(p: peg_parser) -> list[stmt] | None {
     res: list[stmt] | None = None;
     a = rule_compound_stmt(p);
     if a is not None {
-        res = pa_singleton_seq(a);
+        res = pa_singleton_seq_stmt(a);
         return res;
     }
     peg_reset(p, mark);
@@ -12787,7 +12787,7 @@ def rule_statement_newline(p: peg_parser) -> list[stmt] | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_singleton_seq(pa_check(pa_ast_pass(start_lineno, start_col_offset, end_lineno, end_col_offset)) as stmt);
+        res = pa_singleton_seq_stmt(pa_check(pa_ast_pass(start_lineno, start_col_offset, end_lineno, end_col_offset)) as stmt);
         return res;
     }
     peg_reset(p, mark);
@@ -13125,7 +13125,7 @@ def rule_t_primary_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_call(a, pa_check(pa_singleton_seq(b_3)) as list[expr], None, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_call(a, pa_check(pa_singleton_seq_expr(b_3)) as list[expr], None, start_lineno, start_col_offset, end_lineno, end_col_offset);
                 return res;
             }
         }
@@ -13814,7 +13814,7 @@ def rule_type_expressions(p: peg_parser) -> list[expr] | None {
                 if lit_2 is not None {
                     b = rule_expression(p);
                     if b is not None {
-                        res = pa_seq_append_to_end_expr(pa_check(pa_singleton_seq(a_4)) as list[object], b);
+                        res = pa_seq_append_to_end_expr(pa_check(pa_singleton_seq_expr(a_4)) as list[expr], b);
                         return res;
                     }
                 }
@@ -13826,7 +13826,7 @@ def rule_type_expressions(p: peg_parser) -> list[expr] | None {
     if lit is not None {
         a_5 = rule_expression(p);
         if a_5 is not None {
-            res = pa_singleton_seq(a_5);
+            res = pa_singleton_seq_expr(a_5);
             return res;
         }
     }
@@ -13835,7 +13835,7 @@ def rule_type_expressions(p: peg_parser) -> list[expr] | None {
     if lit is not None {
         a_6 = rule_expression(p);
         if a_6 is not None {
-            res = pa_singleton_seq(a_6);
+            res = pa_singleton_seq_expr(a_6);
             return res;
         }
     }
