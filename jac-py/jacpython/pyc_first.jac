@@ -25,12 +25,7 @@ import from opcode_meta { NB_LSHIFT, NB_TRUE_DIVIDE }
 
 import from ceval {
     py_slot_truth,
-    PyClass,
-    PyFunction,
     PyModule,
-    PyUserObj,
-    PyBoundMethod,
-    PyGenerator,
     PyObj,
     PyStr,
     PyInt,
@@ -59,6 +54,14 @@ import from ceval {
     clear_sys3_modules,
     gen_send,
     build_copy_module,
+}
+
+import from ceval_defs {
+    PyClass,
+    PyFunction,
+    PyUserObj,
+    PyBoundMethod,
+    PyGenerator,
 }
 
 import from objects {

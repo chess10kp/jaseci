@@ -38,8 +38,6 @@ import from objects {
     expect_str,
 }
 import from ceval {
-    PyClass,
-    PyUserObj,
     PyModule,
     PyMappingProxy,
     class_lookup_attr,
@@ -53,6 +51,7 @@ import from ceval {
     py_str,
     register_shim_module,
 }
+import from ceval_defs { PyClass, PyUserObj, }
 import from pyc_first { unmarshal, exec_code }
 import from host_oracle { host_compile_marshal }
 

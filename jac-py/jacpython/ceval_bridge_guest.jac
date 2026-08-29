@@ -7,19 +7,21 @@ import ceval_host_bridge as _hb;
 
 import from objects {
     PyException,
-    PyHostProxy,
     PyError,
     PyStr,
     PyInt,
-    PyClass,
     PyExceptionType,
+    is_error,
+    py_none,
+}
+import from ceval_defs {
+    PyHostProxy,
+    PyClass,
     PyFunction,
     PyGenStop,
     PyAsyncGenWrappedValue,
     PyNativeBuiltin,
     PyUserObj,
-    is_error,
-    py_none,
 }
 import from exceptions_core {
     exc_name_matches,
