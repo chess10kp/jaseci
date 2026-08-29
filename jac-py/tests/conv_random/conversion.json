@@ -1,0 +1,1317 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "/var/tmp/worker6-400-convert-test_random-3999550/reference/cpython/Lib/test/test_random.py",
+    "-o",
+    "/var/tmp/worker6-400-convert-test_random-3999550/jac-py/tests/conv_random",
+    "--name",
+    "conv_random"
+  ],
+  "generated_at": "2026-08-29T14:51:38",
+  "hashes": {
+    "pins_jac": "d1128b08b9cba631a5a9862af67160a990dad02060ca29e89c503735fa18386c"
+  },
+  "source_file": "/var/tmp/worker6-400-convert-test_random-3999550/reference/cpython/Lib/test/test_random.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "random",
+  "pins_file": "conv_random_pins.jac",
+  "pins": [
+    {
+      "ident": "SystemRandom_TestBasicOps.test_autoseed",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: System entropy source does not have state."
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_autoseed",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport time\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.seed()\n    state1 = self.gen.getstate()\n    time.sleep(0.1)\n    self.gen.seed()\n    state2 = self.gen.getstate()\n    assert state1 != state2, ('assertNotEqual', state1, state2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_saverestore",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: System entropy source does not have state."
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_saverestore",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    def randomlist(n):\n        \"\"\"Helper function to make a list of random numbers\"\"\"\n        return [self.gen.random() for i in range(n)]\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    N = 1000\n    self.gen.seed()\n    state = self.gen.getstate()\n    randseq = randomlist(N)\n    self.gen.setstate(state)\n    assert randseq == randomlist(N), ('assertEqual', randseq, randomlist(N))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_seedargs",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 24"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_seedargs",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 24"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_seed_no_mutate_bug_44018",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    a = bytearray(b'1234')\n    self.gen.seed(a)\n    assert a == bytearray(b'1234'), ('assertEqual', a, bytearray(b'1234'))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_seed_no_mutate_bug_44018",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    a = bytearray(b'1234')\n    self.gen.seed(a)\n    assert a == bytearray(b'1234'), ('assertEqual', a, bytearray(b'1234'))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_shuffle",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    shuffle = self.gen.shuffle\n    lst = []\n    shuffle(lst)\n    assert lst == [], ('assertEqual', lst, [])\n    lst = [37]\n    shuffle(lst)\n    assert lst == [37], ('assertEqual', lst, [37])\n    seqs = [list(range(n)) for n in range(10)]\n    shuffled_seqs = [list(range(n)) for n in range(10)]\n    for shuffled_seq in shuffled_seqs:\n        shuffle(shuffled_seq)\n    for seq, shuffled_seq in zip(seqs, shuffled_seqs):\n        assert len(seq) == len(shuffled_seq), ('assertEqual', len(seq), len(shuffled_seq))\n        assert set(seq) == set(shuffled_seq), ('assertEqual', set(seq), set(shuffled_seq))\n    lst = list(range(1000))\n    shuffled_lst = list(range(1000))\n    shuffle(shuffled_lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    shuffle(lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    try:\n        shuffle(*((1, 2, 3),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_shuffle",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    shuffle = self.gen.shuffle\n    lst = []\n    shuffle(lst)\n    assert lst == [], ('assertEqual', lst, [])\n    lst = [37]\n    shuffle(lst)\n    assert lst == [37], ('assertEqual', lst, [37])\n    seqs = [list(range(n)) for n in range(10)]\n    shuffled_seqs = [list(range(n)) for n in range(10)]\n    for shuffled_seq in shuffled_seqs:\n        shuffle(shuffled_seq)\n    for seq, shuffled_seq in zip(seqs, shuffled_seqs):\n        assert len(seq) == len(shuffled_seq), ('assertEqual', len(seq), len(shuffled_seq))\n        assert set(seq) == set(shuffled_seq), ('assertEqual', set(seq), set(shuffled_seq))\n    lst = list(range(1000))\n    shuffled_lst = list(range(1000))\n    shuffle(shuffled_lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    shuffle(lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    try:\n        shuffle(*((1, 2, 3),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choice",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choice",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choice_with_numpy",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 23"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choice_with_numpy",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 23"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    N = 100\n    population = range(N)\n    for k in range(N + 1):\n        s = self.gen.sample(population, k)\n        assert len(s) == k, ('assertEqual', len(s), k)\n        uniq = set(s)\n        assert len(uniq) == k, ('assertEqual', len(uniq), k)\n        assert uniq <= set(population), ('assertTrue', uniq <= set(population))\n    assert self.gen.sample([], 0) == [], ('assertEqual', self.gen.sample([], 0), [])\n    try:\n        self.gen.sample(*(population, N + 1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*([], -1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*(population, 1.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    N = 100\n    population = range(N)\n    for k in range(N + 1):\n        s = self.gen.sample(population, k)\n        assert len(s) == k, ('assertEqual', len(s), k)\n        uniq = set(s)\n        assert len(uniq) == k, ('assertEqual', len(uniq), k)\n        assert uniq <= set(population), ('assertTrue', uniq <= set(population))\n    assert self.gen.sample([], 0) == [], ('assertEqual', self.gen.sample([], 0), [])\n    try:\n        self.gen.sample(*(population, N + 1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*([], -1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*(population, 1.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_distribution",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nfrom math import log, exp, pi, fsum, sin, factorial\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    n = 5\n    pop = range(n)\n    trials = 10000\n    for k in range(n):\n        expected = factorial(n) // factorial(n - k)\n        perms = {}\n        for i in range(trials):\n            perms[tuple(self.gen.sample(pop, k))] = None\n            if len(perms) == expected:\n                break\n        else:\n            raise AssertionError('fail()')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_distribution",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nfrom math import log, exp, pi, fsum, sin, factorial\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    n = 5\n    pop = range(n)\n    trials = 10000\n    for k in range(n):\n        expected = factorial(n) // factorial(n - k)\n        perms = {}\n        for i in range(trials):\n            perms[tuple(self.gen.sample(pop, k))] = None\n            if len(perms) == expected:\n                break\n        else:\n            raise AssertionError('fail()')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_inputs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    self.gen.sample(range(20), 2)\n    self.gen.sample(range(20), 2)\n    self.gen.sample(str('abcdefghijklmnopqrst'), 2)\n    self.gen.sample(tuple('abcdefghijklmnopqrst'), 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_inputs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.sample(range(20), 2)\n    self.gen.sample(range(20), 2)\n    self.gen.sample(str('abcdefghijklmnopqrst'), 2)\n    self.gen.sample(tuple('abcdefghijklmnopqrst'), 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_on_dicts",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    try:\n        self.gen.sample(*(dict.fromkeys('abcdef'), 2))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_on_dicts",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    try:\n        self.gen.sample(*(dict.fromkeys('abcdef'), 2))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_on_sets",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_on_sets",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_on_seqsets",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport warnings\nfrom collections import abc, Counter\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n\n    class SeqSet(abc.Sequence, abc.Set):\n\n        def __init__(self, items):\n            self._items = items\n\n        def __len__(self):\n            return len(self._items)\n\n        def __getitem__(self, index):\n            return self._items[index]\n    population = SeqSet([2, 4, 1, 3])\n    with warnings.catch_warnings():\n        warnings.simplefilter('error', DeprecationWarning)\n        self.gen.sample(population, k=2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_on_seqsets",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport warnings\nfrom collections import abc, Counter\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n\n    class SeqSet(abc.Sequence, abc.Set):\n\n        def __init__(self, items):\n            self._items = items\n\n        def __len__(self):\n            return len(self._items)\n\n        def __getitem__(self, index):\n            return self._items[index]\n    population = SeqSet([2, 4, 1, 3])\n    with warnings.catch_warnings():\n        warnings.simplefilter('error', DeprecationWarning)\n        self.gen.sample(population, k=2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_with_counts",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 37"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_with_counts",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 37"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 34"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 34"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_subnormal",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    choices = self.gen.choices\n    choices(population=[1, 2], weights=[1e-323, 1e-323], k=5000)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_subnormal",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    choices = self.gen.choices\n    choices(population=[1, 2], weights=[1e-323, 1e-323], k=5000)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_with_all_zero_weights",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_with_all_zero_weights",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_negative_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_negative_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_infinite_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_infinite_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_gauss",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 0.7315641538064142, 0.5274774828504104)"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_gauss",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for seed in (1, 12, 123, 1234, 12345, 123456, 654321):\n        self.gen.seed(seed)\n        x1 = self.gen.random()\n        y1 = self.gen.gauss(0, 1)\n        self.gen.seed(seed)\n        x2 = self.gen.random()\n        y2 = self.gen.gauss(0, 1)\n        assert x1 == x2, ('assertEqual', x1, x2)\n        assert y1 == y2, ('assertEqual', y1, y2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_getrandbits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    getrandbits = self.gen.getrandbits\n    for k in range(1, 1000):\n        assert 0 <= getrandbits(k) < 2 ** k, ('assertTrue', 0 <= getrandbits(k) < 2 ** k)\n    assert getrandbits(0) == 0, ('assertEqual', getrandbits(0), 0)\n    for span in [1, 2, 3, 4, 31, 32, 32, 52, 53, 54, 119, 127, 128, 129]:\n        all_bits = 2 ** span - 1\n        cum = 0\n        cpl_cum = 0\n        for i in range(100):\n            v = getrandbits(span)\n            cum |= v\n            cpl_cum |= all_bits ^ v\n        assert cum == all_bits, ('assertEqual', cum, all_bits)\n        assert cpl_cum == all_bits, ('assertEqual', cpl_cum, all_bits)\n    try:\n        getrandbits()\n    except TypeError:\n        pass\n    try:\n        getrandbits(*(1, 2))\n    except TypeError:\n        pass\n    try:\n        getrandbits(*(-1,))\n    except ValueError:\n        pass\n    try:\n        getrandbits(*(1 << 1000,))\n    except OverflowError:\n        pass\n    try:\n        getrandbits(*(-1 << 1000,))\n    except ValueError:\n        pass\n    try:\n        getrandbits(*(10.1,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_getrandbits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    getrandbits = self.gen.getrandbits\n    for k in range(1, 1000):\n        assert 0 <= getrandbits(k) < 2 ** k, ('assertTrue', 0 <= getrandbits(k) < 2 ** k)\n    assert getrandbits(0) == 0, ('assertEqual', getrandbits(0), 0)\n    for span in [1, 2, 3, 4, 31, 32, 32, 52, 53, 54, 119, 127, 128, 129]:\n        all_bits = 2 ** span - 1\n        cum = 0\n        cpl_cum = 0\n        for i in range(100):\n            v = getrandbits(span)\n            cum |= v\n            cpl_cum |= all_bits ^ v\n        assert cum == all_bits, ('assertEqual', cum, all_bits)\n        assert cpl_cum == all_bits, ('assertEqual', cpl_cum, all_bits)\n    try:\n        getrandbits()\n    except TypeError:\n        pass\n    try:\n        getrandbits(*(1, 2))\n    except TypeError:\n        pass\n    try:\n        getrandbits(*(-1,))\n    except ValueError:\n        pass\n    try:\n        getrandbits(*(1 << 1000,))\n    except OverflowError:\n        pass\n    try:\n        getrandbits(*(-1 << 1000,))\n    except ValueError:\n        pass\n    try:\n        getrandbits(*(10.1,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bigrand",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    span = 2 ** 500\n    cum = 0\n    for i in range(100):\n        r = self.gen.randrange(span)\n        assert 0 <= r < span, ('assertTrue', 0 <= r < span)\n        cum |= r\n    assert cum == span - 1, ('assertEqual', cum, span - 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bigrand",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    span = 2 ** 500\n    cum = 0\n    for i in range(100):\n        r = self.gen.randrange(span)\n        assert 0 <= r < span, ('assertTrue', 0 <= r < span)\n        cum |= r\n    assert cum == span - 1, ('assertEqual', cum, span - 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bigrand_ranges",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    for i in [40, 80, 160, 200, 211, 250, 375, 512, 550]:\n        start = self.gen.randrange(2 ** (i - 2))\n        stop = self.gen.randrange(2 ** i)\n        if stop <= start:\n            continue\n        assert start <= self.gen.randrange(start, stop) < stop, ('assertTrue', start <= self.gen.randrange(start, stop) < stop)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bigrand_ranges",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for i in [40, 80, 160, 200, 211, 250, 375, 512, 550]:\n        start = self.gen.randrange(2 ** (i - 2))\n        stop = self.gen.randrange(2 ** i)\n        if stop <= start:\n            continue\n        assert start <= self.gen.randrange(start, stop) < stop, ('assertTrue', start <= self.gen.randrange(start, stop) < stop)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_rangelimits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    for start, stop in [(-2, 0), (-2 ** 60 - 2, -2 ** 60), (2 ** 60, 2 ** 60 + 2)]:\n        assert set(range(start, stop)) == set([self.gen.randrange(start, stop) for i in range(100)]), ('assertEqual', set(range(start, stop)), set([self.gen.randrange(start, stop) for i in range(100)]))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_rangelimits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for start, stop in [(-2, 0), (-2 ** 60 - 2, -2 ** 60), (2 ** 60, 2 ** 60 + 2)]:\n        assert set(range(start, stop)) == set([self.gen.randrange(start, stop) for i in range(100)]), ('assertEqual', set(range(start, stop)), set([self.gen.randrange(start, stop) for i in range(100)]))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_nonunit_step",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    rint = self.gen.randrange(0, 10, 2)\n    assert rint in (0, 2, 4, 6, 8), ('assertIn', rint, (0, 2, 4, 6, 8))\n    rint = self.gen.randrange(0, 2, 2)\n    assert rint == 0, ('assertEqual', rint, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_nonunit_step",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    rint = self.gen.randrange(0, 10, 2)\n    assert rint in (0, 2, 4, 6, 8), ('assertIn', rint, (0, 2, 4, 6, 8))\n    rint = self.gen.randrange(0, 2, 2)\n    assert rint == 0, ('assertEqual', rint, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_step",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 25"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_step",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 25"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_index",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    randrange = self.gen.randrange\n    assert randrange(MyIndex(5)) in range(5), ('assertIn', randrange(MyIndex(5)), range(5))\n    assert randrange(MyIndex(2), MyIndex(7)) in range(2, 7), ('assertIn', randrange(MyIndex(2), MyIndex(7)), range(2, 7))\n    assert randrange(MyIndex(5), MyIndex(15), MyIndex(2)) in range(5, 15, 2), ('assertIn', randrange(MyIndex(5), MyIndex(15), MyIndex(2)), range(5, 15, 2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_index",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    randrange = self.gen.randrange\n    assert randrange(MyIndex(5)) in range(5), ('assertIn', randrange(MyIndex(5)), range(5))\n    assert randrange(MyIndex(2), MyIndex(7)) in range(2, 7), ('assertIn', randrange(MyIndex(2), MyIndex(7)), range(2, 7))\n    assert randrange(MyIndex(5), MyIndex(15), MyIndex(2)) in range(5, 15, 2), ('assertIn', randrange(MyIndex(5), MyIndex(15), MyIndex(2)), range(5, 15, 2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randint",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    randint = self.gen.randint\n    assert randint(2, 5) in (2, 3, 4, 5), ('assertIn', randint(2, 5), (2, 3, 4, 5))\n    assert randint(2, 2) == 2, ('assertEqual', randint(2, 2), 2)\n    assert randint(MyIndex(2), MyIndex(5)) in (2, 3, 4, 5), ('assertIn', randint(MyIndex(2), MyIndex(5)), (2, 3, 4, 5))\n    assert randint(MyIndex(2), MyIndex(2)) == 2, ('assertEqual', randint(MyIndex(2), MyIndex(2)), 2)\n    try:\n        randint(*(5, 2))\n    except ValueError:\n        pass\n    try:\n        randint()\n    except TypeError:\n        pass\n    try:\n        randint(*(2,))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5, 1))\n    except TypeError:\n        pass\n    try:\n        randint(*(2.0, 5))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randint",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    randint = self.gen.randint\n    assert randint(2, 5) in (2, 3, 4, 5), ('assertIn', randint(2, 5), (2, 3, 4, 5))\n    assert randint(2, 2) == 2, ('assertEqual', randint(2, 2), 2)\n    assert randint(MyIndex(2), MyIndex(5)) in (2, 3, 4, 5), ('assertIn', randint(MyIndex(2), MyIndex(5)), (2, 3, 4, 5))\n    assert randint(MyIndex(2), MyIndex(2)) == 2, ('assertEqual', randint(MyIndex(2), MyIndex(2)), 2)\n    try:\n        randint(*(5, 2))\n    except ValueError:\n        pass\n    try:\n        randint()\n    except TypeError:\n        pass\n    try:\n        randint(*(2,))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5, 1))\n    except TypeError:\n        pass\n    try:\n        randint(*(2.0, 5))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_pickling",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: System entropy source does not have state."
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_pickling",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport pickle\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for proto in range(pickle.HIGHEST_PROTOCOL + 1):\n        state = pickle.dumps(self.gen, proto)\n        origseq = [self.gen.random() for i in range(10)]\n        newgen = pickle.loads(state)\n        restoredseq = [newgen.random() for i in range(10)]\n        assert origseq == restoredseq, ('assertEqual', origseq, restoredseq)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bug_1727780",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport pickle\nfrom test import support\n\ndef _t():\n    files = [('randv2_32.pck', 780), ('randv2_64.pck', 866), ('randv3.pck', 343)]\n    for file, value in files:\n        with open(support.findfile(file), 'rb') as f:\n            r = pickle.load(f)\n        assert int(r.random() * 1000) == value, ('assertEqual', int(r.random() * 1000), value)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_1727780",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport pickle\nfrom test import support\n\ndef _t():\n    files = [('randv2_32.pck', 780), ('randv2_64.pck', 866), ('randv3.pck', 343)]\n    for file, value in files:\n        with open(support.findfile(file), 'rb') as f:\n            r = pickle.load(f)\n        assert int(r.random() * 1000) == value, ('assertEqual', int(r.random() * 1000), value)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bug_9025",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    n = 100000\n    randrange = self.gen.randrange\n    k = sum((randrange(6755399441055744) % 3 == 2 for i in range(n)))\n    assert 0.3 < k / n < 0.37, ('assertTrue', 0.3 < k / n < 0.37)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_9025",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    n = 100000\n    randrange = self.gen.randrange\n    k = sum((randrange(6755399441055744) % 3 == 2 for i in range(n)))\n    assert 0.3 < k / n < 0.37, ('assertTrue', 0.3 < k / n < 0.37)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_bug_1590891",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    start = 1000000000000\n    stop = -100000000000000000000\n    step = -200\n    x = self.gen.randrange(start, stop, step)\n    assert stop < x <= start, ('assertTrue', stop < x <= start)\n    assert (x + stop) % step == 0, ('assertEqual', (x + stop) % step, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_bug_1590891",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    start = 1000000000000\n    stop = -100000000000000000000\n    step = -200\n    x = self.gen.randrange(start, stop, step)\n    assert stop < x <= start, ('assertTrue', stop < x <= start)\n    assert (x + stop) % step == 0, ('assertEqual', (x + stop) % step, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randbytes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    for n in range(1, 10):\n        data = self.gen.randbytes(n)\n        assert type(data) == bytes, ('assertEqual', type(data), bytes)\n        assert len(data) == n, ('assertEqual', len(data), n)\n    assert self.gen.randbytes(0) == b'', ('assertEqual', self.gen.randbytes(0), b'')\n    try:\n        self.gen.randbytes()\n    except TypeError:\n        pass\n    try:\n        self.gen.randbytes(*(1, 2))\n    except TypeError:\n        pass\n    try:\n        self.gen.randbytes(*(-1,))\n    except ValueError:\n        pass\n    try:\n        self.gen.randbytes(*(1 << 1000,))\n    except OverflowError:\n        pass\n    try:\n        self.gen.randbytes(*(-1 << 1000,))\n    except (ValueError, OverflowError):\n        pass\n    try:\n        self.gen.randbytes(*(1.0,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbytes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for n in range(1, 10):\n        data = self.gen.randbytes(n)\n        assert type(data) == bytes, ('assertEqual', type(data), bytes)\n        assert len(data) == n, ('assertEqual', len(data), n)\n    assert self.gen.randbytes(0) == b'', ('assertEqual', self.gen.randbytes(0), b'')\n    try:\n        self.gen.randbytes()\n    except TypeError:\n        pass\n    try:\n        self.gen.randbytes(*(1, 2))\n    except TypeError:\n        pass\n    try:\n        self.gen.randbytes(*(-1,))\n    except ValueError:\n        pass\n    try:\n        self.gen.randbytes(*(1 << 1000,))\n    except OverflowError:\n        pass\n    try:\n        self.gen.randbytes(*(-1 << 1000,))\n    except (ValueError, OverflowError):\n        pass\n    try:\n        self.gen.randbytes(*(1.0,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_mu_sigma_default_args",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    assert isinstance(self.gen.normalvariate(), float), ('assertIsInstance', self.gen.normalvariate(), float)\n    assert isinstance(self.gen.gauss(), float), ('assertIsInstance', self.gen.gauss(), float)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_mu_sigma_default_args",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    assert isinstance(self.gen.normalvariate(), float), ('assertIsInstance', self.gen.normalvariate(), float)\n    assert isinstance(self.gen.gauss(), float), ('assertIsInstance', self.gen.gauss(), float)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_autoseed",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    self.gen.seed()\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_saverestore",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    try:\n        self.gen.getstate()\n    except NotImplementedError:\n        pass\n    try:\n        self.gen.setstate(*(None,))\n    except NotImplementedError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_seedargs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    self.gen.seed(100)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_gauss",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    self.gen.gauss_next = None\n    self.gen.seed(100)\n    assert self.gen.gauss_next == None, ('assertEqual', self.gen.gauss_next, None)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_pickling",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport pickle\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    for proto in range(pickle.HIGHEST_PROTOCOL + 1):\n        try:\n            pickle.dumps(*(self.gen, proto))\n        except NotImplementedError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_seed_no_mutate_bug_44018",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    a = bytearray(b'1234')\n    self.gen.seed(a)\n    assert a == bytearray(b'1234'), ('assertEqual', a, bytearray(b'1234'))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_shuffle",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    shuffle = self.gen.shuffle\n    lst = []\n    shuffle(lst)\n    assert lst == [], ('assertEqual', lst, [])\n    lst = [37]\n    shuffle(lst)\n    assert lst == [37], ('assertEqual', lst, [37])\n    seqs = [list(range(n)) for n in range(10)]\n    shuffled_seqs = [list(range(n)) for n in range(10)]\n    for shuffled_seq in shuffled_seqs:\n        shuffle(shuffled_seq)\n    for seq, shuffled_seq in zip(seqs, shuffled_seqs):\n        assert len(seq) == len(shuffled_seq), ('assertEqual', len(seq), len(shuffled_seq))\n        assert set(seq) == set(shuffled_seq), ('assertEqual', set(seq), set(shuffled_seq))\n    lst = list(range(1000))\n    shuffled_lst = list(range(1000))\n    shuffle(shuffled_lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    shuffle(lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    try:\n        shuffle(*((1, 2, 3),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choice",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choice_with_numpy",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 23"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    N = 100\n    population = range(N)\n    for k in range(N + 1):\n        s = self.gen.sample(population, k)\n        assert len(s) == k, ('assertEqual', len(s), k)\n        uniq = set(s)\n        assert len(uniq) == k, ('assertEqual', len(uniq), k)\n        assert uniq <= set(population), ('assertTrue', uniq <= set(population))\n    assert self.gen.sample([], 0) == [], ('assertEqual', self.gen.sample([], 0), [])\n    try:\n        self.gen.sample(*(population, N + 1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*([], -1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*(population, 1.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_distribution",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nfrom math import log, exp, pi, fsum, sin, factorial\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    n = 5\n    pop = range(n)\n    trials = 10000\n    for k in range(n):\n        expected = factorial(n) // factorial(n - k)\n        perms = {}\n        for i in range(trials):\n            perms[tuple(self.gen.sample(pop, k))] = None\n            if len(perms) == expected:\n                break\n        else:\n            raise AssertionError('fail()')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_inputs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    self.gen.sample(range(20), 2)\n    self.gen.sample(range(20), 2)\n    self.gen.sample(str('abcdefghijklmnopqrst'), 2)\n    self.gen.sample(tuple('abcdefghijklmnopqrst'), 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_on_dicts",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    try:\n        self.gen.sample(*(dict.fromkeys('abcdef'), 2))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_on_sets",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_on_seqsets",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport warnings\nfrom collections import abc, Counter\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n\n    class SeqSet(abc.Sequence, abc.Set):\n\n        def __init__(self, items):\n            self._items = items\n\n        def __len__(self):\n            return len(self._items)\n\n        def __getitem__(self, index):\n            return self._items[index]\n    population = SeqSet([2, 4, 1, 3])\n    with warnings.catch_warnings():\n        warnings.simplefilter('error', DeprecationWarning)\n        self.gen.sample(population, k=2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_sample_with_counts",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 37"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 34"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_subnormal",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    choices = self.gen.choices\n    choices(population=[1, 2], weights=[1e-323, 1e-323], k=5000)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_with_all_zero_weights",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_negative_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_choices_infinite_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_53_bits_per_float",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    span = 2 ** 53\n    cum = 0\n    for i in range(100):\n        cum |= int(self.gen.random() * span)\n    assert cum == span - 1, ('assertEqual', cum, span - 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_getrandbits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    getrandbits = self.gen.getrandbits\n    for k in range(1, 1000):\n        assert 0 <= getrandbits(k) < 2 ** k, ('assertTrue', 0 <= getrandbits(k) < 2 ** k)\n    assert getrandbits(0) == 0, ('assertEqual', getrandbits(0), 0)\n    for span in [1, 2, 3, 4, 31, 32, 32, 52, 53, 54, 119, 127, 128, 129]:\n        all_bits = 2 ** span - 1\n        cum = 0\n        cpl_cum = 0\n        for i in range(100):\n            v = getrandbits(span)\n            cum |= v\n            cpl_cum |= all_bits ^ v\n        assert cum == all_bits, ('assertEqual', cum, all_bits)\n        assert cpl_cum == all_bits, ('assertEqual', cpl_cum, all_bits)\n    try:\n        getrandbits()\n    except TypeError:\n        pass\n    try:\n        getrandbits(*(1, 2))\n    except TypeError:\n        pass\n    try:\n        getrandbits(*(-1,))\n    except ValueError:\n        pass\n    try:\n        getrandbits(*(1 << 1000,))\n    except OverflowError:\n        pass\n    try:\n        getrandbits(*(-1 << 1000,))\n    except ValueError:\n        pass\n    try:\n        getrandbits(*(10.1,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bigrand",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    span = 2 ** 500\n    cum = 0\n    for i in range(100):\n        r = self.gen.randrange(span)\n        assert 0 <= r < span, ('assertTrue', 0 <= r < span)\n        cum |= r\n    assert cum == span - 1, ('assertEqual', cum, span - 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bigrand_ranges",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    for i in [40, 80, 160, 200, 211, 250, 375, 512, 550]:\n        start = self.gen.randrange(2 ** (i - 2))\n        stop = self.gen.randrange(2 ** i)\n        if stop <= start:\n            continue\n        assert start <= self.gen.randrange(start, stop) < stop, ('assertTrue', start <= self.gen.randrange(start, stop) < stop)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_rangelimits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    for start, stop in [(-2, 0), (-2 ** 60 - 2, -2 ** 60), (2 ** 60, 2 ** 60 + 2)]:\n        assert set(range(start, stop)) == set([self.gen.randrange(start, stop) for i in range(100)]), ('assertEqual', set(range(start, stop)), set([self.gen.randrange(start, stop) for i in range(100)]))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_nonunit_step",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    rint = self.gen.randrange(0, 10, 2)\n    assert rint in (0, 2, 4, 6, 8), ('assertIn', rint, (0, 2, 4, 6, 8))\n    rint = self.gen.randrange(0, 2, 2)\n    assert rint == 0, ('assertEqual', rint, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_step",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 25"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_index",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    randrange = self.gen.randrange\n    assert randrange(MyIndex(5)) in range(5), ('assertIn', randrange(MyIndex(5)), range(5))\n    assert randrange(MyIndex(2), MyIndex(7)) in range(2, 7), ('assertIn', randrange(MyIndex(2), MyIndex(7)), range(2, 7))\n    assert randrange(MyIndex(5), MyIndex(15), MyIndex(2)) in range(5, 15, 2), ('assertIn', randrange(MyIndex(5), MyIndex(15), MyIndex(2)), range(5, 15, 2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randint",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    randint = self.gen.randint\n    assert randint(2, 5) in (2, 3, 4, 5), ('assertIn', randint(2, 5), (2, 3, 4, 5))\n    assert randint(2, 2) == 2, ('assertEqual', randint(2, 2), 2)\n    assert randint(MyIndex(2), MyIndex(5)) in (2, 3, 4, 5), ('assertIn', randint(MyIndex(2), MyIndex(5)), (2, 3, 4, 5))\n    assert randint(MyIndex(2), MyIndex(2)) == 2, ('assertEqual', randint(MyIndex(2), MyIndex(2)), 2)\n    try:\n        randint(*(5, 2))\n    except ValueError:\n        pass\n    try:\n        randint()\n    except TypeError:\n        pass\n    try:\n        randint(*(2,))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5, 1))\n    except TypeError:\n        pass\n    try:\n        randint(*(2.0, 5))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bug_1727780",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport pickle\nfrom test import support\n\ndef _t():\n    files = [('randv2_32.pck', 780), ('randv2_64.pck', 866), ('randv3.pck', 343)]\n    for file, value in files:\n        with open(support.findfile(file), 'rb') as f:\n            r = pickle.load(f)\n        assert int(r.random() * 1000) == value, ('assertEqual', int(r.random() * 1000), value)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_bug_9025",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    n = 100000\n    randrange = self.gen.randrange\n    k = sum((randrange(6755399441055744) % 3 == 2 for i in range(n)))\n    assert 0.3 < k / n < 0.37, ('assertTrue', 0.3 < k / n < 0.37)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_bug_1590891",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    start = 1000000000000\n    stop = -100000000000000000000\n    step = -200\n    x = self.gen.randrange(start, stop, step)\n    assert stop < x <= start, ('assertTrue', stop < x <= start)\n    assert (x + stop) % step == 0, ('assertEqual', (x + stop) % step, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randbytes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    for n in range(1, 10):\n        data = self.gen.randbytes(n)\n        assert type(data) == bytes, ('assertEqual', type(data), bytes)\n        assert len(data) == n, ('assertEqual', len(data), n)\n    assert self.gen.randbytes(0) == b'', ('assertEqual', self.gen.randbytes(0), b'')\n    try:\n        self.gen.randbytes()\n    except TypeError:\n        pass\n    try:\n        self.gen.randbytes(*(1, 2))\n    except TypeError:\n        pass\n    try:\n        self.gen.randbytes(*(-1,))\n    except ValueError:\n        pass\n    try:\n        self.gen.randbytes(*(1 << 1000,))\n    except OverflowError:\n        pass\n    try:\n        self.gen.randbytes(*(-1 << 1000,))\n    except (ValueError, OverflowError):\n        pass\n    try:\n        self.gen.randbytes(*(1.0,))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_mu_sigma_default_args",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.SystemRandom()\n    _SelfNS.gen = random.SystemRandom()\n    assert isinstance(self.gen.normalvariate(), float), ('assertIsInstance', self.gen.normalvariate(), float)\n    assert isinstance(self.gen.gauss(), float), ('assertIsInstance', self.gen.gauss(), float)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestRawMersenneTwister.test_bug_41052",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport pickle\n\ndef _t():\n    import _random\n    for proto in range(pickle.HIGHEST_PROTOCOL + 1):\n        r = _random.Random()\n        try:\n            pickle.dumps(*(r, proto))\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestRawMersenneTwister.test_bug_42008",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\n\ndef _t():\n    import _random\n    r1 = _random.Random()\n    r1.seed(8675309)\n    r2 = _random.Random(8675309)\n    assert r1.random() == r2.random(), ('assertEqual', r1.random(), r2.random())\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_guaranteed_stable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.seed(3456147, version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.ac362300d90d2p-1', '0x1.9d16f74365005p-1', '0x1.1ebb4352e4c4dp-1', '0x1.1a7422abf9c11p-1'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.ac362300d90d2p-1', '0x1.9d16f74365005p-1', '0x1.1ebb4352e4c4dp-1', '0x1.1a7422abf9c11p-1'])\n    self.gen.seed('the quick brown fox', version=2)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.1239ddfb11b7cp-3', '0x1.b3cbb5c51b120p-4', '0x1.8c4f55116b60fp-1', '0x1.63eb525174a27p-1'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.1239ddfb11b7cp-3', '0x1.b3cbb5c51b120p-4', '0x1.8c4f55116b60fp-1', '0x1.63eb525174a27p-1'])\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_27706",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.seed('nofar', version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.8645314505ad7p-1', '0x1.afb1f82e40a40p-5', '0x1.2a59d2285e971p-1', '0x1.56977142a7880p-6'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.8645314505ad7p-1', '0x1.afb1f82e40a40p-5', '0x1.2a59d2285e971p-1', '0x1.56977142a7880p-6'])\n    self.gen.seed('rachel', version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.0b294cc856fcdp-1', '0x1.2ad22d79e77b8p-3', '0x1.3052b9c072678p-2', '0x1.578f332106574p-3'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.0b294cc856fcdp-1', '0x1.2ad22d79e77b8p-3', '0x1.3052b9c072678p-2', '0x1.578f332106574p-3'])\n    self.gen.seed('', version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.b0580f98a7dbep-1', '0x1.84129978f9c1ap-1', '0x1.aeaa51052e978p-2', '0x1.092178fb945a6p-2'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.b0580f98a7dbep-1', '0x1.84129978f9c1ap-1', '0x1.aeaa51052e978p-2', '0x1.092178fb945a6p-2'])\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_31478",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n\n    class BadInt(int):\n\n        def __abs__(self):\n            return None\n    try:\n        self.gen.seed(BadInt())\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_31482",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.seed(b'nofar', version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.8645314505ad7p-1', '0x1.afb1f82e40a40p-5', '0x1.2a59d2285e971p-1', '0x1.56977142a7880p-6'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.8645314505ad7p-1', '0x1.afb1f82e40a40p-5', '0x1.2a59d2285e971p-1', '0x1.56977142a7880p-6'])\n    self.gen.seed(b'rachel', version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.0b294cc856fcdp-1', '0x1.2ad22d79e77b8p-3', '0x1.3052b9c072678p-2', '0x1.578f332106574p-3'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.0b294cc856fcdp-1', '0x1.2ad22d79e77b8p-3', '0x1.3052b9c072678p-2', '0x1.578f332106574p-3'])\n    self.gen.seed(b'', version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.b0580f98a7dbep-1', '0x1.84129978f9c1ap-1', '0x1.aeaa51052e978p-2', '0x1.092178fb945a6p-2'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.b0580f98a7dbep-1', '0x1.84129978f9c1ap-1', '0x1.aeaa51052e978p-2', '0x1.092178fb945a6p-2'])\n    b = b'\\x00 @`\\x80\\xa0\\xc0\\xe0\\xf0'\n    self.gen.seed(b, version=1)\n    assert [self.gen.random().hex() for i in range(4)] == ['0x1.52c2fde444d23p-1', '0x1.875174f0daea4p-2', '0x1.9e9b2c50e5cd2p-1', '0x1.fa57768bd321cp-2'], ('assertEqual', [self.gen.random().hex() for i in range(4)], ['0x1.52c2fde444d23p-1', '0x1.875174f0daea4p-2', '0x1.9e9b2c50e5cd2p-1', '0x1.fa57768bd321cp-2'])\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_setstate_first_arg",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    try:\n        self.gen.setstate(*((1, None, None),))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_setstate_middle_arg",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 33"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_referenceImplementation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    def randomlist(n):\n        \"\"\"Helper function to make a list of random numbers\"\"\"\n        return [self.gen.random() for i in range(n)]\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    expected = [0.4583980307371326, 0.8605781520197878, 0.9284833172678215, 0.3593268111978246, 0.08182349376244957, 0.1433222647016933, 0.08429782382352002, 0.5381486467183145, 0.0892150249119934, 0.7848619610537291]\n    self.gen.seed(61731 + (24903 << 32) + (614 << 64) + (42143 << 96))\n    actual = randomlist(2000)[-10:]\n    for a, e in zip(actual, expected):\n        assert round(a - e, 14) == 0, ('assertAlmostEqual', a, e)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_strong_reference_implementation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    def randomlist(n):\n        \"\"\"Helper function to make a list of random numbers\"\"\"\n        return [self.gen.random() for i in range(n)]\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    from math import ldexp\n    expected = [4128882400830239, 7751398889519013, 8363034243334166, 3236528186029503, 737000512037440, 1290932195808883, 759287295919497, 4847212089661076, 803577505899006, 7069408070677702]\n    self.gen.seed(61731 + (24903 << 32) + (614 << 64) + (42143 << 96))\n    actual = randomlist(2000)[-10:]\n    for a, e in zip(actual, expected):\n        assert int(ldexp(a, 53)) == e, ('assertEqual', int(ldexp(a, 53)), e)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_long_seed",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    seed = (1 << 10000 * 8) - 1\n    self.gen.seed(seed)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_getrandbits",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_getrandbits_2G_bits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    size = 2 ** 31\n    self.gen.seed(1234567)\n    x = self.gen.getrandbits(size)\n    assert x.bit_length() == size, ('assertEqual', x.bit_length(), size)\n    assert x & 2 ** 100 - 1 == 890186470919986886340158459475, ('assertEqual', x & 2 ** 100 - 1, 890186470919986886340158459475)\n    assert x >> size - 100 == 1226514312032729439655761284440, ('assertEqual', x >> size - 100, 1226514312032729439655761284440)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_uses_getrandbits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.seed(1234567)\n    assert self.gen.randrange(2 ** 99) == 97904845777343510404718956115, ('assertEqual', self.gen.randrange(2 ** 99), 97904845777343510404718956115)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbelow_without_getrandbits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport unittest\nimport unittest.mock\nimport random\nimport warnings\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    maxsize = 1 << random.BPF\n    with warnings.catch_warnings():\n        warnings.simplefilter('ignore', UserWarning)\n        self.gen._randbelow_without_getrandbits(maxsize + 1, maxsize=maxsize)\n    self.gen._randbelow_without_getrandbits(5640, maxsize=maxsize)\n    n = 42\n    epsilon = 0.01\n    limit = (maxsize - maxsize % n) / maxsize\n    with unittest.mock.patch.object(random.Random, 'random') as random_mock:\n        random_mock.side_effect = [limit + epsilon, limit - epsilon]\n        self.gen._randbelow_without_getrandbits(n, maxsize=maxsize)\n        assert random_mock.call_count == 2, ('assertEqual', random_mock.call_count, 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_algorithms",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    choices = self.gen.choices\n    n = 104729\n    self.gen.seed(8675309)\n    a = self.gen.choices(range(n), k=10000)\n    self.gen.seed(8675309)\n    b = self.gen.choices(range(n), [1] * n, k=10000)\n    assert a == b, ('assertEqual', a, b)\n    self.gen.seed(8675309)\n    c = self.gen.choices(range(n), cum_weights=range(1, n + 1), k=10000)\n    assert a == c, ('assertEqual', a, c)\n    population = ['Red', 'Black', 'Green']\n    weights = [18, 18, 2]\n    cum_weights = [18, 36, 38]\n    expanded_population = ['Red'] * 18 + ['Black'] * 18 + ['Green'] * 2\n    self.gen.seed(9035768)\n    a = self.gen.choices(expanded_population, k=10000)\n    self.gen.seed(9035768)\n    b = self.gen.choices(population, weights, k=10000)\n    assert a == b, ('assertEqual', a, b)\n    self.gen.seed(9035768)\n    c = self.gen.choices(population, cum_weights=cum_weights, k=10000)\n    assert a == c, ('assertEqual', a, c)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbytes",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbytes_getrandbits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    seed = 2849427419\n    gen2 = random.Random()\n    self.gen.seed(seed)\n    gen2.seed(seed)\n    for n in range(9):\n        assert self.gen.randbytes(n) == gen2.getrandbits(n * 8).to_bytes(n, 'little'), ('assertEqual', self.gen.randbytes(n), gen2.getrandbits(n * 8).to_bytes(n, 'little'))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_counts_equivalence",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    sample = self.gen.sample\n    seed = self.gen.seed\n    colors = ['red', 'green', 'blue', 'orange', 'black', 'amber']\n    counts = [500, 200, 20, 10, 5, 1]\n    k = 700\n    seed(8675309)\n    s1 = sample(colors, counts=counts, k=k)\n    seed(8675309)\n    expanded = [color for color, count in zip(colors, counts) for i in range(count)]\n    assert len(expanded) == sum(counts), ('assertEqual', len(expanded), sum(counts))\n    s2 = sample(expanded, k=k)\n    assert s1 == s2, ('assertEqual', s1, s2)\n    pop = 'abcdefghi'\n    counts = [10, 9, 8, 7, 6, 5, 4, 3, 2]\n    seed(8675309)\n    s1 = ''.join(sample(pop, counts=counts, k=30))\n    expanded = ''.join([letter for letter, count in zip(pop, counts) for i in range(count)])\n    seed(8675309)\n    s2 = ''.join(sample(expanded, k=30))\n    assert s1 == s2, ('assertEqual', s1, s2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_autoseed",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport time\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.seed()\n    state1 = self.gen.getstate()\n    time.sleep(0.1)\n    self.gen.seed()\n    state2 = self.gen.getstate()\n    assert state1 != state2, ('assertNotEqual', state1, state2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_saverestore",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    def randomlist(n):\n        \"\"\"Helper function to make a list of random numbers\"\"\"\n        return [self.gen.random() for i in range(n)]\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    N = 1000\n    self.gen.seed()\n    state = self.gen.getstate()\n    randseq = randomlist(N)\n    self.gen.setstate(state)\n    assert randseq == randomlist(N), ('assertEqual', randseq, randomlist(N))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_seedargs",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 24"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_seed_no_mutate_bug_44018",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    a = bytearray(b'1234')\n    self.gen.seed(a)\n    assert a == bytearray(b'1234'), ('assertEqual', a, bytearray(b'1234'))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_shuffle",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    shuffle = self.gen.shuffle\n    lst = []\n    shuffle(lst)\n    assert lst == [], ('assertEqual', lst, [])\n    lst = [37]\n    shuffle(lst)\n    assert lst == [37], ('assertEqual', lst, [37])\n    seqs = [list(range(n)) for n in range(10)]\n    shuffled_seqs = [list(range(n)) for n in range(10)]\n    for shuffled_seq in shuffled_seqs:\n        shuffle(shuffled_seq)\n    for seq, shuffled_seq in zip(seqs, shuffled_seqs):\n        assert len(seq) == len(shuffled_seq), ('assertEqual', len(seq), len(shuffled_seq))\n        assert set(seq) == set(shuffled_seq), ('assertEqual', set(seq), set(shuffled_seq))\n    lst = list(range(1000))\n    shuffled_lst = list(range(1000))\n    shuffle(shuffled_lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    shuffle(lst)\n    assert lst != shuffled_lst, ('assertTrue', lst != shuffled_lst)\n    try:\n        shuffle(*((1, 2, 3),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choice",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choice_with_numpy",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 23"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    N = 100\n    population = range(N)\n    for k in range(N + 1):\n        s = self.gen.sample(population, k)\n        assert len(s) == k, ('assertEqual', len(s), k)\n        uniq = set(s)\n        assert len(uniq) == k, ('assertEqual', len(uniq), k)\n        assert uniq <= set(population), ('assertTrue', uniq <= set(population))\n    assert self.gen.sample([], 0) == [], ('assertEqual', self.gen.sample([], 0), [])\n    try:\n        self.gen.sample(*(population, N + 1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*([], -1))\n    except ValueError:\n        pass\n    try:\n        self.gen.sample(*(population, 1.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_distribution",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nfrom math import log, exp, pi, fsum, sin, factorial\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    n = 5\n    pop = range(n)\n    trials = 10000\n    for k in range(n):\n        expected = factorial(n) // factorial(n - k)\n        perms = {}\n        for i in range(trials):\n            perms[tuple(self.gen.sample(pop, k))] = None\n            if len(perms) == expected:\n                break\n        else:\n            raise AssertionError('fail()')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_inputs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    self.gen.sample(range(20), 2)\n    self.gen.sample(range(20), 2)\n    self.gen.sample(str('abcdefghijklmnopqrst'), 2)\n    self.gen.sample(tuple('abcdefghijklmnopqrst'), 2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_on_dicts",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    try:\n        self.gen.sample(*(dict.fromkeys('abcdef'), 2))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_on_sets",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_on_seqsets",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport warnings\nfrom collections import abc, Counter\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n\n    class SeqSet(abc.Sequence, abc.Set):\n\n        def __init__(self, items):\n            self._items = items\n\n        def __len__(self):\n            return len(self._items)\n\n        def __getitem__(self, index):\n            return self._items[index]\n    population = SeqSet([2, 4, 1, 3])\n    with warnings.catch_warnings():\n        warnings.simplefilter('error', DeprecationWarning)\n        self.gen.sample(population, k=2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_sample_with_counts",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 37"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 34"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_subnormal",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    choices = self.gen.choices\n    choices(population=[1, 2], weights=[1e-323, 1e-323], k=5000)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_with_all_zero_weights",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_negative_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_choices_infinite_total",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_gauss",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for seed in (1, 12, 123, 1234, 12345, 123456, 654321):\n        self.gen.seed(seed)\n        x1 = self.gen.random()\n        y1 = self.gen.gauss(0, 1)\n        self.gen.seed(seed)\n        x2 = self.gen.random()\n        y2 = self.gen.gauss(0, 1)\n        assert x1 == x2, ('assertEqual', x1, x2)\n        assert y1 == y2, ('assertEqual', y1, y2)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_53_bits_per_float",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    span = 2 ** 53\n    cum = 0\n    for i in range(100):\n        cum |= int(self.gen.random() * span)\n    assert cum == span - 1, ('assertEqual', cum, span - 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bigrand",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    span = 2 ** 500\n    cum = 0\n    for i in range(100):\n        r = self.gen.randrange(span)\n        assert 0 <= r < span, ('assertTrue', 0 <= r < span)\n        cum |= r\n    assert cum == span - 1, ('assertEqual', cum, span - 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bigrand_ranges",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for i in [40, 80, 160, 200, 211, 250, 375, 512, 550]:\n        start = self.gen.randrange(2 ** (i - 2))\n        stop = self.gen.randrange(2 ** i)\n        if stop <= start:\n            continue\n        assert start <= self.gen.randrange(start, stop) < stop, ('assertTrue', start <= self.gen.randrange(start, stop) < stop)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_rangelimits",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for start, stop in [(-2, 0), (-2 ** 60 - 2, -2 ** 60), (2 ** 60, 2 ** 60 + 2)]:\n        assert set(range(start, stop)) == set([self.gen.randrange(start, stop) for i in range(100)]), ('assertEqual', set(range(start, stop)), set([self.gen.randrange(start, stop) for i in range(100)]))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_nonunit_step",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    rint = self.gen.randrange(0, 10, 2)\n    assert rint in (0, 2, 4, 6, 8), ('assertIn', rint, (0, 2, 4, 6, 8))\n    rint = self.gen.randrange(0, 2, 2)\n    assert rint == 0, ('assertEqual', rint, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_step",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 25"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_index",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    randrange = self.gen.randrange\n    assert randrange(MyIndex(5)) in range(5), ('assertIn', randrange(MyIndex(5)), range(5))\n    assert randrange(MyIndex(2), MyIndex(7)) in range(2, 7), ('assertIn', randrange(MyIndex(2), MyIndex(7)), range(2, 7))\n    assert randrange(MyIndex(5), MyIndex(15), MyIndex(2)) in range(5, 15, 2), ('assertIn', randrange(MyIndex(5), MyIndex(15), MyIndex(2)), range(5, 15, 2))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randint",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\nclass MyIndex:\n\n    def __init__(self, value):\n        self.value = value\n\n    def __index__(self):\n        return self.value\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    randint = self.gen.randint\n    assert randint(2, 5) in (2, 3, 4, 5), ('assertIn', randint(2, 5), (2, 3, 4, 5))\n    assert randint(2, 2) == 2, ('assertEqual', randint(2, 2), 2)\n    assert randint(MyIndex(2), MyIndex(5)) in (2, 3, 4, 5), ('assertIn', randint(MyIndex(2), MyIndex(5)), (2, 3, 4, 5))\n    assert randint(MyIndex(2), MyIndex(2)) == 2, ('assertEqual', randint(MyIndex(2), MyIndex(2)), 2)\n    try:\n        randint(*(5, 2))\n    except ValueError:\n        pass\n    try:\n        randint()\n    except TypeError:\n        pass\n    try:\n        randint(*(2,))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5, 1))\n    except TypeError:\n        pass\n    try:\n        randint(*(2.0, 5))\n    except TypeError:\n        pass\n    try:\n        randint(*(2, 5.0))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_pickling",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport pickle\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    for proto in range(pickle.HIGHEST_PROTOCOL + 1):\n        state = pickle.dumps(self.gen, proto)\n        origseq = [self.gen.random() for i in range(10)]\n        newgen = pickle.loads(state)\n        restoredseq = [newgen.random() for i in range(10)]\n        assert origseq == restoredseq, ('assertEqual', origseq, restoredseq)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_1727780",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport pickle\nfrom test import support\n\ndef _t():\n    files = [('randv2_32.pck', 780), ('randv2_64.pck', 866), ('randv3.pck', 343)]\n    for file, value in files:\n        with open(support.findfile(file), 'rb') as f:\n            r = pickle.load(f)\n        assert int(r.random() * 1000) == value, ('assertEqual', int(r.random() * 1000), value)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_bug_9025",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    n = 100000\n    randrange = self.gen.randrange\n    k = sum((randrange(6755399441055744) % 3 == 2 for i in range(n)))\n    assert 0.3 < k / n < 0.37, ('assertTrue', 0.3 < k / n < 0.37)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_bug_1590891",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    start = 1000000000000\n    stop = -100000000000000000000\n    step = -200\n    x = self.gen.randrange(start, stop, step)\n    assert stop < x <= start, ('assertTrue', stop < x <= start)\n    assert (x + stop) % step == 0, ('assertEqual', (x + stop) % step, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_mu_sigma_default_args",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.gen = random.Random()\n    _SelfNS.gen = random.Random()\n    assert isinstance(self.gen.normalvariate(), float), ('assertIsInstance', self.gen.normalvariate(), float)\n    assert isinstance(self.gen.gauss(), float), ('assertIsInstance', self.gen.gauss(), float)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_zeroinputs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n    g = random.Random()\n    x = [g.random() for i in range(50)] + [0.0] * 5\n    g.random = x[:].pop\n    g.uniform(1, 10)\n    g.random = x[:].pop\n    g.paretovariate(1.0)\n    g.random = x[:].pop\n    g.expovariate(1.0)\n    g.random = x[:].pop\n    g.expovariate()\n    g.random = x[:].pop\n    g.weibullvariate(1.0, 1.0)\n    g.random = x[:].pop\n    g.vonmisesvariate(1.0, 1.0)\n    g.random = x[:].pop\n    g.normalvariate(0.0, 1.0)\n    g.random = x[:].pop\n    g.gauss(0.0, 1.0)\n    g.random = x[:].pop\n    g.lognormvariate(0.0, 1.0)\n    g.random = x[:].pop\n    g.vonmisesvariate(0.0, 1.0)\n    g.random = x[:].pop\n    g.gammavariate(0.01, 1.0)\n    g.random = x[:].pop\n    g.gammavariate(1.0, 1.0)\n    g.random = x[:].pop\n    g.gammavariate(200.0, 1.0)\n    g.random = x[:].pop\n    g.betavariate(3.0, 3.0)\n    g.random = x[:].pop\n    g.triangular(0.0, 1.0, 1.0 / 3.0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_avg_std",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nfrom math import log, exp, pi, fsum, sin, factorial\n\ndef gamma(z, sqrt2pi=(2.0 * pi) ** 0.5):\n    if z < 0.5:\n        return pi / sin(pi * z) / gamma(1.0 - z)\n    az = z + (7.0 - 0.5)\n    return az ** (z - 0.5) / exp(az) * sqrt2pi * fsum([0.9999999999995183, 676.5203681218835 / z, -1259.139216722289 / (z + 1.0), 771.3234287757674 / (z + 2.0), -176.6150291498386 / (z + 3.0), 12.50734324009056 / (z + 4.0), -0.1385710331296526 / (z + 5.0), 9.934937113930748e-06 / (z + 6.0), 1.659470187408462e-07 / (z + 7.0)])\n\ndef _t():\n    g = random.Random()\n    N = 5000\n    x = [i / float(N) for i in range(1, N)]\n    for variate, args, mu, sigmasqrd in [(g.uniform, (1.0, 10.0), (10.0 + 1.0) / 2, (10.0 - 1.0) ** 2 / 12), (g.triangular, (0.0, 1.0, 1.0 / 3.0), 4.0 / 9.0, 7.0 / 9.0 / 18.0), (g.expovariate, (1.5,), 1 / 1.5, 1 / 1.5 ** 2), (g.vonmisesvariate, (1.23, 0), pi, pi ** 2 / 3), (g.paretovariate, (5.0,), 5.0 / (5.0 - 1), 5.0 / ((5.0 - 1) ** 2 * (5.0 - 2))), (g.weibullvariate, (1.0, 3.0), gamma(1 + 1 / 3.0), gamma(1 + 2 / 3.0) - gamma(1 + 1 / 3.0) ** 2)]:\n        g.random = x[:].pop\n        y = []\n        for i in range(len(x)):\n            try:\n                y.append(variate(*args))\n            except IndexError:\n                pass\n        s1 = s2 = 0\n        for e in y:\n            s1 += e\n            s2 += (e - mu) ** 2\n        N = len(y)\n        assert round(s1 / N - mu, 2) == 0, ('assertAlmostEqual', s1 / N, mu, '%s%r' % (variate.__name__, args))\n        assert round(s2 / (N - 1) - sigmasqrd, 2) == 0, ('assertAlmostEqual', s2 / (N - 1), sigmasqrd, '%s%r' % (variate.__name__, args))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_constant",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n    g = random.Random()\n    N = 100\n    for variate, args, expected in [(g.uniform, (10.0, 10.0), 10.0), (g.triangular, (10.0, 10.0), 10.0), (g.triangular, (10.0, 10.0, 10.0), 10.0), (g.expovariate, (float('inf'),), 0.0), (g.vonmisesvariate, (3.0, float('inf')), 3.0), (g.gauss, (10.0, 0.0), 10.0), (g.lognormvariate, (0.0, 0.0), 1.0), (g.lognormvariate, (-float('inf'), 0.0), 0.0), (g.normalvariate, (10.0, 0.0), 10.0), (g.binomialvariate, (0, 0.5), 0), (g.binomialvariate, (10, 0.0), 0), (g.binomialvariate, (10, 1.0), 10), (g.paretovariate, (float('inf'),), 1.0), (g.weibullvariate, (10.0, float('inf')), 10.0), (g.weibullvariate, (0.0, 10.0), 0.0)]:\n        for i in range(N):\n            assert variate(*args) == expected, ('assertEqual', variate(*args), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_binomialvariate",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 12"
+    },
+    {
+      "ident": "TestDistributions.test_von_mises_range",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n    g = random.Random()\n    N = 100\n    for mu in (0.0, 0.1, 3.1, 6.2):\n        for kappa in (0.0, 2.3, 500.0):\n            for _ in range(N):\n                sample = g.vonmisesvariate(mu, kappa)\n                assert 0 <= sample <= random.TWOPI, ('assertTrue', 0 <= sample <= random.TWOPI, 'vonmisesvariate({}, {}) produced a result {} out of range [0, 2*pi]'.format(mu, kappa, sample))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_von_mises_large_kappa",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n    random.vonmisesvariate(0, 1000000000000000.0)\n    random.vonmisesvariate(0, 1e+100)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_errors",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n    try:\n        random.gammavariate(*(-1, 3))\n    except ValueError:\n        pass\n    try:\n        random.gammavariate(*(0, 2))\n    except ValueError:\n        pass\n    try:\n        random.gammavariate(*(2, 0))\n    except ValueError:\n        pass\n    try:\n        random.gammavariate(*(1, -3))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestRandomSubclassing.test_random_subclass_with_kwargs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class Subclass(random.Random):\n\n        def __init__(self, newarg=None):\n            random.Random.__init__(self)\n    Subclass(newarg=1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestRandomSubclassing.test_subclasses_overriding_methods",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n\n    class SubClass1(random.Random):\n\n        def random(self):\n            called.add('SubClass1.random')\n            return random.Random.random(self)\n\n        def getrandbits(self, n):\n            called.add('SubClass1.getrandbits')\n            return random.Random.getrandbits(self, n)\n    called = set()\n    SubClass1().randrange(42)\n    assert called == {'SubClass1.getrandbits'}, ('assertEqual', called, {'SubClass1.getrandbits'})\n\n    class SubClass2(random.Random):\n\n        def random(self):\n            called.add('SubClass2.random')\n            return random.Random.random(self)\n    called = set()\n    SubClass2().randrange(42)\n    assert called == {'SubClass2.random'}, ('assertEqual', called, {'SubClass2.random'})\n\n    class SubClass3(SubClass2):\n\n        def getrandbits(self, n):\n            called.add('SubClass3.getrandbits')\n            return random.Random.getrandbits(self, n)\n    called = set()\n    SubClass3().randrange(42)\n    assert called == {'SubClass3.getrandbits'}, ('assertEqual', called, {'SubClass3.getrandbits'})\n\n    class SubClass4(SubClass3):\n\n        def random(self):\n            called.add('SubClass4.random')\n            return random.Random.random(self)\n    called = set()\n    SubClass4().randrange(42)\n    assert called == {'SubClass4.random'}, ('assertEqual', called, {'SubClass4.random'})\n\n    class Mixin1:\n\n        def random(self):\n            called.add('Mixin1.random')\n            return random.Random.random(self)\n\n    class Mixin2:\n\n        def getrandbits(self, n):\n            called.add('Mixin2.getrandbits')\n            return random.Random.getrandbits(self, n)\n\n    class SubClass5(Mixin1, random.Random):\n        pass\n    called = set()\n    SubClass5().randrange(42)\n    assert called == {'Mixin1.random'}, ('assertEqual', called, {'Mixin1.random'})\n\n    class SubClass6(Mixin2, random.Random):\n        pass\n    called = set()\n    SubClass6().randrange(42)\n    assert called == {'Mixin2.getrandbits'}, ('assertEqual', called, {'Mixin2.getrandbits'})\n\n    class SubClass7(Mixin1, Mixin2, random.Random):\n        pass\n    called = set()\n    SubClass7().randrange(42)\n    assert called == {'Mixin1.random'}, ('assertEqual', called, {'Mixin1.random'})\n\n    class SubClass8(Mixin2, Mixin1, random.Random):\n        pass\n    called = set()\n    SubClass8().randrange(42)\n    assert called == {'Mixin2.getrandbits'}, ('assertEqual', called, {'Mixin2.getrandbits'})\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestModule.testMagicConstants",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n    assert round(random.NV_MAGICCONST - 1.71552776992141, 7) == 0, ('assertAlmostEqual', random.NV_MAGICCONST, 1.71552776992141)\n    assert round(random.TWOPI - 6.28318530718, 7) == 0, ('assertAlmostEqual', random.TWOPI, 6.28318530718)\n    assert round(random.LOG4 - 1.38629436111989, 7) == 0, ('assertAlmostEqual', random.LOG4, 1.38629436111989)\n    assert round(random.SG_MAGICCONST - 2.50407739677627, 7) == 0, ('assertAlmostEqual', random.SG_MAGICCONST, 2.50407739677627)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestModule.test__all__",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\n\ndef _t():\n    assert set(random.__all__) <= set(dir(random)), ('assertTrue', set(random.__all__) <= set(dir(random)))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "CommandLineTest.test_main",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport random\nimport shlex\n\ndef _t():\n    for command, expected in [('--choice a b c', 'b'), ('\"a b c\"', 'b'), ('a b c', 'b'), (\"--choice 'a a' 'b b' 'c c'\", 'b b'), (\"'a a' 'b b' 'c c'\", 'b b'), ('--integer 5', 4), ('5', 4), ('--float 2.5', 2.1110546288126204), ('2.5', 2.1110546288126204)]:\n        random.seed(0)\n        assert random.main(shlex.split(command)) == expected, ('assertEqual', random.main(shlex.split(command)), expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestBasicOps.test_53_bits_per_float",
+      "reason": "decorator:support.requires_IEEE_754"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_getrandbits_4G_bits",
+      "reason": "decorator:support.bigmemtest"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbytes_256M",
+      "reason": "decorator:support.bigmemtest"
+    },
+    {
+      "ident": "TestModule.test_after_fork",
+      "reason": "decorator:.requires_fork"
+    },
+    {
+      "ident": "CommandLineTest.test_parse_args",
+      "reason": "decorator:support.force_not_colorized"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_seed_when_randomness_source_not_found",
+      "reason": "self.test_seedargs"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_seed_when_randomness_source_not_found",
+      "reason": "self.test_seedargs"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_errors",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_errors",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randbelow_logic",
+      "reason": "unresolved-name:_log"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbelow_logic",
+      "reason": "unresolved-name:_log"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_seed_when_randomness_source_not_found",
+      "reason": "self.test_seedargs"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randrange_errors",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "ident": "SystemRandom_TestBasicOps.test_randbelow_logic",
+      "reason": "unresolved-name:_log"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_seed_when_randomness_source_not_found",
+      "reason": "self.test_seedargs"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randrange_errors",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "ident": "MersenneTwister_TestBasicOps.test_randbelow_logic",
+      "reason": "unresolved-name:_log"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_greater_one",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_equal_one",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_equal_one_equals_expovariate",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_gammavariate_alpha_between_zero_and_one",
+      "reason": "unresolved-name:random_mock"
+    },
+    {
+      "ident": "TestDistributions.test_betavariate_return_zero",
+      "reason": "unresolved-name:gammavariate_mock"
+    }
+  ],
+  "counts": {
+    "extracted": 189,
+    "pinned": 120,
+    "quarantined": 69
+  }
+}
