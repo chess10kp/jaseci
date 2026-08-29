@@ -9,13 +9,13 @@ import from objects {
     PySet,
     PySlice,
     PyStr,
-    PyHostProxy,
     PyCode,
     is_error,
     py_none,
     py_error,
     expect_str,
 }
+import from ceval_defs { PyHostProxy, }
 import from ceval_exceptions { recover_exception, }
 import from ceval_api {
     to_host_coerce,

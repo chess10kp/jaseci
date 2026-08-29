@@ -10,28 +10,79 @@ import from abstract_protocol {
     PyObject_HashNotImplemented,
 }
 import from exceptions_core { exc_name_matches, }
-import from ceval_exceptions { class_is_exception, }
+import from typeobject { type_richcompare, }
+import from dictobject { dict_richcompare, }
 import from vm_dispatch { jac_frame_chain_slot_ref, }
 import from ceval_api {
+    _jac_builtin_base_name,
+    _jac_builtin_new,
+    _jac_conversion_ctor_kind,
+    _jac_host_eq,
+    _jac_host_hashkey,
+    _jac_host_same_object,
+    _jac_host_type_attr,
+    _jac_host_type_name,
+    _jac_is_complex_type,
+    _jac_is_object_type,
+    _jac_is_slice_type,
+    _jac_is_super_type,
+    _jac_is_type_type,
+    _jac_static_type_name,
+    _jac_validate_type_bases,
     as_error,
+    bind_attribute,
     builtin_sorted_min_max,
+    call_user_dunder,
+    class_full_mro,
+    class_is_exception,
+    class_lookup_attr,
+    class_mro,
+    compute_host_base,
+    construct_host_typed_base,
+    construct_native_base,
+    default_user_delattro,
+    default_user_getattro,
+    default_user_setattro,
     descriptor_get,
+    dict_from_str_map,
+    dict_lookup_value,
+    dict_subscript_missing,
     frame_clear,
+    exec_code_frame,
     format_exception_text,
     from_host,
+    func_attr_is_fixed,
     gen_close,
     gen_send,
     gen_throw,
     host_builtin,
+    host_getattr,
+    host_getitem,
     host_import,
     host_iter,
+    host_result_error,
+    host_result_ok,
+    host_setattr,
+    instance_of_class,
+    is_mutable_base,
+    is_notimplemented,
     localsplus_name,
+    metaclass_of,
+    meth_no_kwargs,
+    meth_takes_none,
+    meth_takes_one,
+    mro_hash_blocked,
     normalize_throw_args,
     obj_is_callable,
     py_attr,
     py_aiter,
     py_anext,
     py_build_class,
+    py_call_host,
+    py_compare,
+    py_convert_complex,
+    py_convert_float,
+    py_convert_int,
     py_del_attr,
     py_dir,
     py_hash,
@@ -45,10 +96,18 @@ import from ceval_api {
     py_raise_value,
     py_repr,
     py_set_attr,
+    py_slot_truth,
+    py_store_subscript,
+    py_str,
     py_type_of,
     send_into,
     stop_iteration,
+    to_host,
     to_host_coerce,
+    type_new,
+    user_binop,
+    user_compare,
+    user_has_dunder,
     user_instance_dict,
 }
 import from objects {
@@ -67,12 +126,10 @@ import from objects {
     PyList,
     PyDict,
     PySet,
+    PySlice,
     PyError,
     PyException,
     PyExceptionType,
-    PyHostProxy,
-    PyUserObj,
-    PyClass,
     PyCallableIter,
     PyIter,
     find_name,
@@ -88,6 +145,1538 @@ import from objects {
 # opcode_meta NB_OR / NB_INPLACE_OR (ceval_defs cannot import opcode_meta)
 glob _NB_OR: int = 7;
 glob _NB_INPLACE_OR: int = 20;
+
+obj PyHostProxy(PyObj) {
+    has val: any;
+
+    # Proxies follow the wrapped host object's identity/equality so dict/set
+    # bucketing by tp_hashkey (the host hash) stays consistent: same host
+    # object -> equal; distinct host objects defer to host ==. Non-proxy
+    # operands defer to the caller's fallback (PY_NOT_IMPLEMENTED).
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        if kind != 2 and kind != 3 {
+            return PY_NOT_IMPLEMENTED;
+        }
+        if isinstance(other, PyHostProxy) {
+            mine = self.val;
+            theirs = (other as PyHostProxy).val;
+            if _jac_host_same_object(mine, theirs) {
+                return PyBool(t="bool", val=kind == 2);
+            }
+            res = _jac_host_eq(mine, theirs);
+            if not ((res[0] as bool)) {
+                return host_result_error(res);
+            }
+            if (res[1] as bool) {
+                return PyBool(t="bool", val=True);
+            }
+            return PY_NOT_IMPLEMENTED;
+        }
+        return PY_NOT_IMPLEMENTED;
+    }
+
+    def tp_getattro(name: str) -> PyObj {
+        # object.__new__ builds a plain in-VM instance (so a user class's __new__
+        # that calls it produces a PyUserObj, not a host object). Narrow to the
+        # exact `object` type; every other type's __new__ stays host-routed.
+        if name == "__new__" and _jac_is_object_type(self.val) {
+            return PyNativeNew(t="native_new", base_name="object");
+        }
+        # Unbound object.__getattribute__/__setattr__/__delattr__: the canonical
+        # delegation target inside user overrides (object.__setattr__(self, n,
+        # v)). A host proxy would see to_host(instance) == None; route through
+        # PyObjectAttrSlot instead, which runs the default protocol in-VM.
+        if _jac_is_object_type(self.val)
+            and (name == "__getattribute__" or name == "__setattr__"
+                or name == "__delattr__") {
+            return PyObjectAttrSlot(t="obj_attr_slot", op=name);
+        }
+        # A subclassable builtin's __new__ (str.__new__, int.__new__, ...) builds a
+        # native subclass instance boxing that value, so `str.__new__(EnumCls, v)`
+        # (enum member creation for a str/int mixin) yields a PyUserObj tagged with
+        # the native class -- not a host str.__new__(None) on a lost to_host class.
+        if name == "__new__" {
+            builtin_name: str = str(_jac_builtin_base_name(self.val));
+            if builtin_name != "" {
+                return PyNativeNew(t="native_new", base_name=builtin_name);
+            }
+        }
+        return host_getattr(self, name);
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # CPython type___setattr__ policy, allow-on-subclass-only: a static
+        # builtin/extension type (int, str, tuple, ...) rejects every attribute
+        # write with the canonical TypeError -- enforced natively so the answer
+        # never depends on the assigned value surviving the host-boundary
+        # coercion. Heap types (Python classes, guest standin classes) keep
+        # delegating to the host, where writes stick.
+        tname: str = str(_jac_static_type_name(self.val));
+        if tname != "" {
+            return py_error(
+                "TypeError",
+                "can't set attributes of built-in/extension type '" + tname + "'"
+            );
+        }
+        return host_setattr(self, name, value);
+    }
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        # `type(x)` (one positional arg) must be answered in-VM: a native user
+        # instance's type is its own PyClass, not host type(to_host(x)) -- which
+        # was NoneType because to_host of a plain user object is None. The 3-arg
+        # `type(name, bases, ns)` class constructor and every real metaclass call
+        # stay host-routed. `type` is the exact builtin here, never a subclass.
+        if len(args) == 1 and len(kwargs) == 0 and bool(_jac_is_type_type(self.val)) {
+            return py_type_of(args[0]);
+        }
+        # 3-arg type(name, bases, ns): reject __mro_entries__ / non-class bases
+        # with CPython's messages BEFORE building. Then construct IN-VM per
+        # CPython type_call: resolve the most-derived metaclass among 'type'
+        # and the bases' metaclasses and build through it. Host routing here
+        # minted standins and lost class identity entirely (enum's
+        # _simple_enum converts classes through exactly this shape).
+        if len(args) == 3 and bool(_jac_is_type_type(self.val)) {
+            raw_bases: list[PyObj] = [];
+            if isinstance(args[1], PyTuple) {
+                for tb in (args[1] as PyTuple).items {
+                    raw_bases.append(tb);
+                }
+            } elif isinstance(args[1], PyList) {
+                for tb in (args[1] as PyList).items {
+                    raw_bases.append(tb);
+                }
+            }
+            rejected = _jac_validate_type_bases(raw_bases);
+            if rejected is not None {
+                return rejected;
+            }
+            winner: any = None;
+            conflict = False;
+            for tb3 in raw_bases {
+                if not isinstance(tb3, PyClass) {
+                    continue;
+                }
+                bm3 = metaclass_of(tb3 as PyClass);
+                if bm3 is None or not isinstance(bm3, PyClass) {
+                    continue;
+                }
+                if winner is None {
+                    winner = bm3;
+                } elif py_issubclass(bm3 as PyObj, winner as PyObj) {
+                    # current winner stays most-derived
+                } elif py_issubclass(winner as PyObj, bm3 as PyObj) {
+                    winner = bm3;
+                } else {
+                    conflict = True;
+                }
+            }
+            if conflict {
+                return py_error("TypeError", "metaclass conflict");
+            }
+            ns_obj = args[2];
+            if winner is not None {
+                made_t = py_invoke(
+                    winner as PyObj, [args[0], args[1], ns_obj], kwargs
+                );
+                if is_error(made_t) {
+                    return made_t;
+                }
+                return made_t;
+            }
+            built_t = type_new([self as PyObj, args[0], args[1], ns_obj], kwargs);
+            if is_error(built_t) {
+                return built_t;
+            }
+            return built_t;
+        }
+        # Zero-arg super() at a GENERIC call site (the proxy wraps the host
+        # super TYPE): the compiler lowers every cell-backed super().attr to
+        # LOAD_SUPER_ATTR, so this is exactly CPython's frame-without-cell case
+        # -- raise its error instead of letting the host super introspect the
+        # jaclang interpreter's own Python frame.
+        if len(args) == 0 and len(kwargs) == 0 and bool(_jac_is_super_type(self.val)) {
+            return py_error("RuntimeError", "super(): no arguments");
+        }
+        # The conversion constructors int()/float()/bool()/str() over a NATIVE
+        # operand answer through the implicit slot machinery instead of crossing
+        # the bridge: to_host of a plain user object is None, so the host
+        # constructor saw nothing (bool(obj) was literally False; int(obj),
+        # float(obj) raised; str(obj) yielded 'None'). Each native operand found
+        # converts ITSELF (never args[0]).
+        #
+        # EXCEPTION -- explicit-base int(x, base): every operand must cross,
+        # so builtin-mixin instances (an Enum-style str/int subclass) unwrap
+        # to their boxed base value and the host constructor parses with the
+        # FULL argument list. Hijacking the native operand alone dropped the
+        # base (int(str_sub('ff'), 16) failed as "base 10"). A plain user
+        # instance stays opaque; the host then reports CPython's own "can't
+        # convert non-string with explicit base" TypeError.
+        ckind = str(_jac_conversion_ctor_kind(self.val));
+        if ckind == "int" and (len(args) >= 2 or len(kwargs) > 0) {
+            unwrapped: list[PyObj] = [];
+            for a in args {
+                if isinstance(a, PyUserObj) and (a as PyUserObj)._has_base() {
+                    unwrapped.append((a as PyUserObj)._base_obj());
+                } else {
+                    unwrapped.append(a);
+                }
+            }
+            return py_call_host(self, unwrapped, kwargs);
+        }
+        if len(args) >= 1 and ckind != "" {
+            for a in args {
+                if isinstance(a, PyUserObj) {
+                    if ckind == "bool" {
+                        return py_slot_truth(a);
+                    }
+                    if ckind == "int" {
+                        return py_convert_int(a);
+                    }
+                    if ckind == "str" {
+                        return py_str(a);
+                    }
+                    return py_convert_float(a);
+                }
+            }
+        }
+        # The complex() constructor over native operands answers in-VM
+        # (string parsing, numeric promotion); shapes without a native
+        # answer fall back to the host call below, byte-exact.
+        if len(args) <= 2 and bool(_jac_is_complex_type(self.val)) {
+            cres = py_convert_complex(args);
+            if not is_notimplemented(cres) {
+                return cres;
+            }
+        }
+        # The slice() constructor answers in-VM as a native PySlice: every
+        # subscript slot gates on isinstance(PySlice), so a host proxy here
+        # would make xs[s] raise "list indices must be integers or slices"
+        # while inline xs[1:7:2] works (same rationale as from_host's slice
+        # branch). Bounds are stored raw exactly like BUILD_SLICE; CPython's
+        # arity/keyword errors are raised before any construction.
+        if bool(_jac_is_slice_type(self.val)) {
+            if len(kwargs) > 0 {
+                return py_error("TypeError", "slice() takes no keyword arguments");
+            }
+            if len(args) == 0 {
+                return py_error("TypeError", "slice expected at least 1 argument, got 0");
+            }
+            if len(args) > 3 {
+                return py_error(
+                    "TypeError",
+                    "slice expected at most 3 arguments, got " + str(len(args)),
+                );
+            }
+            if len(args) == 1 {
+                return PySlice(t="slice", start=py_none(), stop=args[0], step=py_none());
+            }
+            step_arg = py_none();
+            if len(args) == 3 {
+                step_arg = args[2];
+            }
+            return PySlice(t="slice", start=args[0], stop=args[1], step=step_arg);
+        }
+        return py_call_host(self, args, kwargs);
+    }
+
+    def tp_hashkey -> PyObj {
+        hks: str = str(_jac_host_hashkey(self.val));
+        if hks == "" {
+            return py_error("TypeError", "unhashable type");
+        }
+        return PyStr(t="str", val=hks);
+    }
+
+    def mp_subscript(index: PyObj) -> PyObj {
+        return host_getitem(self, index);
+    }
+
+    def tp_iter -> PyObj {
+        return host_iter(self);
+    }
+}
+
+# ---------------- native range (TODO item 19) --------------------------------
+# Heap-type wrapper over the lifted leaf math in rangeobject.jac: identity and
+# O(1) len/contains/index/slice arithmetic instead of materializing elements
+# across the bridge. Design: docs/RANGE_BRIDGE_DESIGN.md.
+obj PyClass(PyObj) {
+    has name: str,
+        attrs: dict[str, PyObj],
+        bases: list[PyObj] = [],
+        native_base: str = "",
+        # Non-builtin host C-type ancestor (io.BytesIO, zlib.Compress, ...)
+        # recorded by compute_host_base: the resolved host type itself. Unlike
+        # plain user classes there is live per-instance C state behind every
+        # method call, so instances must box a REAL base instance.
+        host_base: any = None,
+        # The type OF this class (its metaclass). None means the default `type`.
+        # A user metaclass (EnumType, ABCMeta) is recorded here by type.__new__ so
+        # `class Sub(Base)` can re-derive it from a base and re-run the protocol.
+        metaclass: any = None,
+        # ``PyType_Ready`` lifecycle flags (P5 heap types).
+        tp_flags: int = 0,
+        # __slots__ layout state (CPython type_new_set_attrs / type_ready setdict):
+        # slot_members is the MERGED member list (own mangled members first, then
+        # inherited), slots_declared gates enforcement (a late `Cls.__slots__ =
+        # ...` assignment must stay inert), and instance_has_dict follows the
+        # CPython inheritance rule -- no declaration means a dict; with one, only
+        # an explicit `__dict__` entry or a dict-bearing base keeps the dict.
+        # Defaults keep every non-slotted construction site permissive.
+        slot_members: list[str] = [],
+        slots_declared: bool = False,
+        instance_has_dict: bool = True;
+
+    # Attribute lookup walks the MRO (self first, then bases) so an inherited
+    # method/attr is visible on a subclass. Instance access binds via PyUserObj.
+    def tp_getattro(name: str) -> PyObj {
+        # A class's __name__ is its own name, NOT whatever the body namespace left
+        # behind: the class-body frame seeds `__name__` to the module name (correct
+        # inside the body), and that entry leaks into attrs. Answer from self.name
+        # before the attribute lookup so `Cls.__name__` isn't the module. (__module__
+        # legitimately IS that seeded module name, so it stays an attrs lookup.)
+        if name == "__name__" {
+            return PyStr(t="str", val=self.name);
+        }
+        if name == "__class__" {
+            # CPython: a class's __class__ IS its metaclass (type when none).
+            if self.metaclass is not None {
+                return self.metaclass as PyObj;
+            }
+            return host_builtin("type");
+        }
+        found = class_lookup_attr(self, name);
+        if not is_error(found) {
+            # Class-level access: a classmethod binds this class, a staticmethod
+            # unwraps, a property object is returned as-is (no instance to invoke).
+            return descriptor_get(found, py_none(), self);
+        }
+        # Standard type dunders CPython always answers: a missing docstring is
+        # None, and __name__/__qualname__ report the class name.
+        if name == "__doc__" {
+            return py_none();
+        }
+        if name == "__name__" or name == "__qualname__" {
+            return PyStr(t="str", val=self.name);
+        }
+        if name == "__dict__" {
+            return dict_from_str_map(self.attrs);
+        }
+        if name == "__mro__" {
+            return PyTuple(t="tuple", items=class_full_mro(self));
+        }
+        if name == "mro" {
+            return PyClassMroMethod(t="class_mro", cls=self);
+        }
+        if name == "__bases__" {
+            # CPython type_ready seeds a baseless class with (object,).
+            if len(self.bases) > 0 {
+                return PyTuple(t="tuple", items=self.bases);
+            }
+            return PyTuple(t="tuple", items=[host_builtin("object")]);
+        }
+        if name == "__base__" {
+            if len(self.bases) > 0 {
+                return self.bases[0];
+            }
+            return host_builtin("object");
+        }
+        # A class with no user __new__ inherits object.__new__ (or the builtin base
+        # constructor). Attribute access -- unlike class_lookup_attr, which drives
+        # construction -- exposes it so `Cls.__new__` reads and compares (enum's
+        # _find_new_ tests target against object.__new__/Enum.__new__).
+        if name == "__new__" {
+            base = self.native_base;
+            if base == "" or base == "type" {
+                base = "object";
+            }
+            return PyNativeNew(t="native_new", base_name=base);
+        }
+        # Inherited slot-wrapper surface: CPython serves `Cls.__repr__` through
+        # the metaclass channel -- type(Cls).__mro__ reaches object, whose type
+        # dict carries every slot wrapper. Guest classes store no such entries
+        # in attrs, so walk the MRO's native-base surfaces first (a dict
+        # subclass inherits dict.__repr__'s wrapper) and finish on object's.
+        for klass_obj in class_mro(self) {
+            klass = klass_obj as PyClass;
+            nb = klass.native_base;
+            if nb != "" {
+                r = _jac_host_type_attr(nb, name);
+                if host_result_ok(r) {
+                    return from_host(r[1]);
+                }
+            }
+        }
+        obj_r = _jac_host_type_attr("object", name);
+        if host_result_ok(obj_r) {
+            return from_host(obj_r[1]);
+        }
+        # A method defined on the metaclass (EnumType._add_member_, __call__) is
+        # accessible on the class itself, bound to it -- the class is an instance
+        # of its metaclass.
+        meta_found = self._meta_dunder(name);
+        if not is_error(meta_found) {
+            return meta_found;
+        }
+        return py_error("AttributeError", name);
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        self.attrs[name] = value;
+        return py_none();
+    }
+
+    # A class is hashable by identity (type-keyed dispatch tables, base_chain sets
+    # in enum's _find_data_type_). Distinct classes get distinct buckets.
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
+    # Classes compare by identity: `ReprEnum in (Enum,)` must be False so enum's
+    # ReprEnum-mixin check doesn't misfire on distinct classes.
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        return type_richcompare(kind, self as PyObj, other);
+    }
+
+    # A metaclass instance dunder: looked up on the class's metaclass MRO and bound
+    # to this class. `for m in EnumColor` dispatches EnumType.__iter__(cls); the
+    # same channel serves __getitem__/__contains__/__len__ on a class.
+    def _meta_dunder(name: str) -> PyObj {
+        if self.metaclass is not None and isinstance(self.metaclass, PyClass) {
+            found = class_lookup_attr(self.metaclass as PyClass, name);
+            if not is_error(found) {
+                return bind_attribute(found, self);
+            }
+        }
+        return py_error("AttributeError", name);
+    }
+
+    def tp_iter -> PyObj {
+        it = self._meta_dunder("__iter__");
+        if is_error(it) {
+            return py_error("TypeError", "object is not iterable");
+        }
+        return it.tp_call([], {});
+    }
+
+    def mp_subscript(index: PyObj) -> PyObj {
+        # A custom metaclass __getitem__ outranks __class_getitem__: CPython
+        # installs slot_tp_subscript on the metaclass, which intercepts before
+        # type_subscript ever consults the class MRO.
+        gi = self._meta_dunder("__getitem__");
+        if not is_error(gi) {
+            return gi.tp_call([index], {});
+        }
+        # type_subscript fallback: resolve __class_getitem__ on this class's own
+        # MRO (an explicit def or one inherited from Generic / an ABC base) and
+        # bind it to the class -- Cls[...] is sugar for
+        # Cls.__class_getitem__(index).
+        cgi = class_lookup_attr(self, "__class_getitem__");
+        if not is_error(cgi) and isinstance(cgi, PyNoneType) {
+            # CPython type_subscript: __class_getitem__ = None means the class
+            # explicitly opted out -- fall through to the not-subscriptable
+            # error naming this class.
+            cgi = py_error("AttributeError", "__class_getitem__");
+        }
+        if not is_error(cgi) {
+            return bind_attribute(cgi, self).tp_call([index], {});
+        }
+        return py_error(
+            "TypeError", "type '" + self.name + "' is not subscriptable"
+        );
+    }
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        # A python-level __new__ (common on builtin subclasses that control their
+        # boxed value, e.g. re._constants._NamedIntConstant) governs construction:
+        # call __new__(cls, *args) and use its return value. __init__ then runs
+        # only if __new__ returned an instance of this class (CPython's rule).
+        # NOTE the two shapes __new__ takes from guest namespaces: since the
+        # type_new_staticmethod replication above, guest-stored __new__ is a
+        # PyStaticMethod wrapping the real function; CPython's type_call looks
+        # through the descriptor to the underlying function.
+        user_new = class_lookup_attr(self, "__new__");
+        new_fn: any = py_none();
+        has_user_new = False;
+        if not is_error(user_new) {
+            cand: any = user_new;
+            if isinstance(user_new, PyStaticMethod) {
+                cand = (user_new as PyStaticMethod).func;
+            }
+            if isinstance(cand, PyFunction) {
+                new_fn = cand;
+                has_user_new = True;
+            }
+        }
+        if not has_user_new and self.native_base == "type"
+            and len(args) == 3
+            and isinstance(args[0], PyStr)
+            and isinstance(args[1], PyTuple)
+            and isinstance(args[2], PyDict) {
+            # CPython type_call falls back to the inherited type.__new__ slot
+            # when neither this metaclass nor its ancestors define one. The
+            # factory-shaped call (name, bases, ns) must BUILD THE CLASS tagged
+            # with metaclass=self -- degrading to a blank instance of the
+            # metaclass loses the class identity entirely ('C.__class__ is M'
+            # False, instances unconstructible).
+            factory_args: list[PyObj] = [self as PyObj];
+            for fa in args {
+                factory_args.append(fa);
+            }
+            return type_new(factory_args, kwargs);
+        }
+        if has_user_new {
+            new_args: list[PyObj] = [self];
+            for a in args {
+                new_args.append(a);
+            }
+            made = py_invoke(new_fn as PyFunction, new_args, kwargs);
+            if is_error(made) {
+                return made;
+            }
+            # CPython type_call runs __init__ iff isinstance(obj, cls). Two
+            # shapes qualify: an ordinary PyUserObj instance, AND the class
+            # object itself on the class-creation path (type.__new__ returns a
+            # PyClass tagged with THIS metaclass -- skipping its __init__ here
+            # silently drops _ProtocolMeta-style bodies).
+            made_is_meta_inst = False;
+            if isinstance(made, PyUserObj)
+                and instance_of_class(made as PyUserObj, self) {
+                made_is_meta_inst = True;
+            }
+            if isinstance(made, PyClass)
+                and (made as PyClass).metaclass is self {
+                made_is_meta_inst = True;
+            }
+            if made_is_meta_inst {
+                init2 = class_lookup_attr(self, "__init__");
+                if not is_error(init2) and isinstance(init2, PyFunction) {
+                    ir = bind_attribute(init2, made).tp_call(args, kwargs);
+                    if ir.t == "error" {
+                        return ir;
+                    }
+                } elif self.native_base == "set" and len(kwargs) > 0 {
+                    # No user __init__: CPython's type_call still runs the
+                    # MRO-resolved initializer -- set.__init__, which rejects
+                    # keywords (`subclass_with_new(x, newarg=3)` must raise).
+                    # list/tuple/frozenset resolve leniently here (their slot
+                    # inheritance drops excess args); dict consumed **kwds at
+                    # __new__ time.
+                    return py_error(
+                        "TypeError", "set() takes no keyword arguments"
+                    );
+                }
+            }
+            return made;
+        }
+        # A subclass of a builtin (native_base != "") boxes the underlying value.
+        # An immutable base (int/str/...) takes its value at __new__ time from the
+        # args. A mutable base (dict/list/set) WITH a user __init__ is created empty
+        # -- __init__ (which typically calls super().__init__(...)) fills it -- so
+        # `class D(dict): def __init__(self, name): super().__init__()` boxes an
+        # empty dict, not dict(name). Without a user __init__ the args fill it
+        # directly (MyList([1,2,3])).
+        init = class_lookup_attr(self, "__init__");
+        has_user_init = not is_error(init);
+        boxed: PyObj = py_none();
+        if self.native_base != "" {
+            if not has_user_init and len(kwargs) > 0
+                and self.native_base != "dict" {
+                # With no user __init__ the MRO-resolved initializer is the
+                # builtin base's own -- it rejects keywords exactly as the bare
+                # constructor does (`Sub(sequence=())` must TypeError).
+                return py_error(
+                    "TypeError", self.native_base + "() takes no keyword arguments"
+                );
+            }
+            box_args = args;
+            if has_user_init and is_mutable_base(self.native_base) {
+                box_args = [];
+            }
+            boxed = construct_native_base(self.native_base, box_args);
+            if is_error(boxed) {
+                return boxed;
+            }
+            if not has_user_init and self.native_base == "dict"
+                and len(kwargs) > 0 {
+                # dict is the one base whose constructor consumes **kwds.
+                upd = PyDictMethod(
+                    t="dict_method", target=(boxed as PyDict), name="update"
+                ).tp_call([], kwargs);
+                if upd.t == "error" {
+                    return upd;
+                }
+            }
+        } elif self.host_base is not None {
+            # A non-builtin host C-type base boxes a REAL instance of the host
+            # type (same empty-then-fill pattern as mutable builtins when a
+            # user __init__ will call super().__init__ itself).
+            if not has_user_init and len(kwargs) > 0 {
+                tname: str = str(_jac_host_type_name(self.host_base));
+                return py_error("TypeError", tname + "() takes no keyword arguments");
+            }
+            box_args2 = args;
+            if has_user_init {
+                box_args2 = [];
+            }
+            boxed = construct_host_typed_base(self.host_base, box_args2);
+            if is_error(boxed) {
+                return boxed;
+            }
+        }
+        instance = PyUserObj(t="instance", cls=self, attrs={}, base=boxed);
+        if class_is_exception(self) {
+            # CPython's BaseException_new records the constructor args on the
+            # instance BEFORE __init__ runs, so a user __init__ that never calls
+            # super().__init__ still leaves e.args == constructor args.
+            arg_items: list[PyObj] = [];
+            arg_items.extend(args);
+            instance.attrs["args"] = PyTuple(t="tuple", items=arg_items);
+        }
+        if has_user_init {
+            initialized = bind_attribute(init, instance).tp_call(args, kwargs);
+            if initialized.t == "error" {
+                return initialized;
+            }
+        }
+        return instance;
+    }
+}
+
+# The generic heap-type object (PLAN.md §5): one archetype for every user
+# class instance; its slots resolve through instance/class dict lookup rather
+# than a per-type vtable -- exactly the static-vs-heap line CPython draws.
+obj PyUserObj(PyObj) {
+    has cls: PyClass,
+        attrs: dict[str, PyObj],
+        base: any = None,
+        # Live instance-``__dict__`` view (PyInstanceDict) minted on first
+        # access and kept identity-stable -- CPython returns the SAME dict
+        # object every time. attrs_version mirrors attribute mutations into
+        # the view so reads through it stay current.
+        dict_cache: any = None,
+        attrs_version: int = 0;
+
+    # The boxed builtin value (int/str/...) for a builtin subclass, or a
+    # PyNoneType sentinel for a plain user class. _has_base tells them apart.
+    def _has_base -> bool {
+        return self.base is not None and not isinstance(self.base, PyNoneType);
+    }
+
+    def _base_obj -> PyObj {
+        return self.base as PyObj;
+    }
+
+    def tp_getattro(name: str) -> PyObj {
+        # CPython slot_tp_getattro: the MRO-resolved __getattribute__ IS the get
+        # protocol -- it wraps EVERYTHING (properties, instance dict, __class__,
+        # the boxed base). The lookup is a raw class-dict walk (never an
+        # attribute access), so resolving the override cannot re-enter it.
+        attr_override = class_lookup_attr(self.cls, "__getattribute__");
+        if not is_error(attr_override) {
+            res = bind_attribute(attr_override, self as PyObj).tp_call(
+                [PyStr(t="str", val=name)], {}
+            );
+        } else {
+            res = default_user_getattro(self, name);
+        }
+        # slot_tp_getattr: an AttributeError from the get protocol (user
+        # override or default) falls back to a type-level __getattr__.
+        if is_error(res)
+            and isinstance(res, PyError)
+            and (res as PyError).exception.type_name == "AttributeError" {
+            fallback = class_lookup_attr(self.cls, "__getattr__");
+            if not is_error(fallback) {
+                return bind_attribute(fallback, self as PyObj).tp_call(
+                    [PyStr(t="str", val=name)], {}
+                );
+            }
+        }
+        return res;
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        # Mirror of tp_getattro for writes: a type-level __setattr__ intercepts
+        # every assignment BEFORE data-descriptor checks (slot_tp_setattro).
+        attr_override = class_lookup_attr(self.cls, "__setattr__");
+        if not is_error(attr_override) {
+            return bind_attribute(attr_override, self as PyObj).tp_call(
+                [PyStr(t="str", val=name), value], {}
+            );
+        }
+        return default_user_setattro(self, name, value);
+    }
+
+    # ---- boxed-builtin slot delegation (subclass of int/str/list/...) --------
+    # When the class dict doesn't override a slot, a builtin subclass behaves as
+    # its boxed value: MyInt(5)+1 == 6, MyInt(5) is a valid dict key, etc. The
+    # right operand is unwrapped too so MyInt(5)+MyInt(1) works.
+    def nb_binop(kind: int, other: PyObj) -> PyObj {
+        return user_binop(kind, self, other);
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        return user_compare(kind, self, other);
+    }
+
+    def to_index -> PyObj {
+        # A user-defined __index__ IS the index slot (operator.index()).
+        if user_has_dunder(self, "__index__") {
+            res = call_user_dunder(self, "__index__", []);
+            if is_error(res) {
+                return res;
+            }
+            if isinstance(res, PyBool) {
+                return PyInt(t="int", val=1 if (res as PyBool).val else 0);
+            }
+            if isinstance(res, PyInt) {
+                return res;
+            }
+            return py_error(
+                "TypeError", "__index__ returned non-int of type '" + res.t + "'"
+            );
+        }
+        # A builtin-int subclass instance (re._constants._NamedIntConstant, an
+        # IntEnum member, ...) indexes as its boxed int.
+        if self._has_base() {
+            return self._base_obj().to_index();
+        }
+        return py_error("TypeError", "object cannot be interpreted as an integer");
+    }
+
+    def tp_hashkey -> PyObj {
+        # CPython slot machinery (Objects/typeobject.c): inherit_slots (~8372)
+        # copies tp_richcompare AND tp_hash together from the first MRO base
+        # only while this class overrides neither; otherwise a still-NULL
+        # tp_hash is resolved by type_ready_set_hash (~8773), which injects
+        # tp_dict["__hash__"] = None (update_one_slot ~11655 maps that None to
+        # PyObject_HashNotImplemented). Net rule, reproduced here without the
+        # dict mutation: walk the MRO; the NEAREST class dict defining either
+        # name decides.
+        if mro_hash_blocked(self) {
+            return py_error("TypeError", "unhashable type");
+        }
+        # A user-defined __hash__ keys the object by value; routing through
+        # py_hash keeps raised/non-int returns byte-exact with hash() itself
+        # (slot_tp_hash, typeobject.c ~10295).
+        if user_has_dunder(self, "__hash__") {
+            h = py_hash(self as PyObj);
+            if is_error(h) {
+                return h;
+            }
+            return PyStr(t="str", val="n:" + str((h as PyInt).val));
+        }
+        if self._has_base() {
+            return self._base_obj().tp_hashkey();
+        }
+        # Default object.__hash__: identity-keyed, distinct per object.
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
+    # CPython ``tp_name``: error messages quote the real class name, not the
+    # internal "instance" tag (e.g. "cannot use 'AlwaysEq' as a set element").
+    def tp_type_name -> str {
+        return self.cls.name;
+    }
+
+    def tp_bool -> bool {
+        if self._has_base() {
+            return self._base_obj().tp_bool();
+        }
+        return True;
+    }
+
+    def tp_iter -> PyObj {
+        # A user-defined __iter__ returns the iterator (driven by FOR_ITER/SEND
+        # via its __next__); fall back to a boxed builtin base, else not iterable.
+        if user_has_dunder(self, "__iter__") {
+            return call_user_dunder(self, "__iter__", []);
+        }
+        if self._has_base() {
+            return self._base_obj().tp_iter();
+        }
+        return py_error("TypeError", "object is not iterable");
+    }
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        # A user-defined __call__ makes the instance callable: bind the MRO-
+        # resolved dunder to the instance and invoke it. A raised exception
+        # propagates verbatim (same path as every other dunder slot); no result
+        # check -- any object __call__ returns is the call's value.
+        if user_has_dunder(self, "__call__") {
+            method = class_lookup_attr(self.cls, "__call__");
+            return bind_attribute(method, self).tp_call(args, kwargs);
+        }
+        if self._has_base() {
+            return self._base_obj().tp_call(args, kwargs);
+        }
+        return py_error("TypeError", "object is not callable");
+    }
+
+    def mp_subscript(index: PyObj) -> PyObj {
+        if user_has_dunder(self, "__getitem__") {
+            return call_user_dunder(self, "__getitem__", [index]);
+        }
+        if self._has_base() {
+            base = self._base_obj();
+            # A builtin-dict base with no __getitem__ override IS
+            # ``dict.__getitem__`` -- route the miss through the type-level
+            # __missing__ consult (defaultdict / user subclasses).
+            if isinstance(base, PyDict) {
+                return dict_subscript_missing(self, base as PyDict, index);
+            }
+            return base.mp_subscript(index);
+        }
+        return py_error("TypeError", "object is not subscriptable");
+    }
+
+    def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
+        if user_has_dunder(self, "__setitem__") {
+            r = call_user_dunder(self, "__setitem__", [index, value]);
+            if is_error(r) {
+                return r;
+            }
+            return py_none();
+        }
+        if self._has_base() {
+            # Route through public dispatch so builtin-subclass storage shares
+            # the slice-assignment iterable normalization (a boxed list receives
+            # values of its own Python type, not just native PyList).
+            return py_store_subscript(self._base_obj(), index, value);
+        }
+        return py_error("TypeError", "object does not support item assignment");
+    }
+
+    def mp_del_subscript(index: PyObj) -> PyObj {
+        if user_has_dunder(self, "__delitem__") {
+            r = call_user_dunder(self, "__delitem__", [index]);
+            if is_error(r) {
+                return r;
+            }
+            return py_none();
+        }
+        if self._has_base() {
+            return self._base_obj().mp_del_subscript(index);
+        }
+        return py_error("TypeError", "object does not support item deletion");
+    }
+}
+
+# The DEFAULT attribute protocol for a generic instance -- what
+# object.__getattribute__/__setattr__/__delattr__ do in CPython. Factored out of
+# PyUserObj so the slot dispatch AND the exposed object.__*attr__ slot wrappers
+# (PyObjectAttrSlot) share one implementation: calling through the wrapper runs
+# the default protocol directly, which is exactly CPython's recursion guard for
+# a user __getattribute__/__setattr__ delegating via
+# object.__getattribute__(self, n) / super().__setattr__(n, v).
+obj PyInstanceDict(PyDict) {
+    # ``owner`` is typed ``any`` because a non-default field cannot follow the
+    # inherited defaulted ``version`` field.
+    has owner: any = None,
+        overlay: dict[str, PyObj] = {};
+
+    # Single mutation entry for mirrored attribute writes. Items live under
+    # the SAME hash-key namespace as every other PyDict ("s:"-prefixed for
+    # str keys), so inherited lookups/iteration see them.
+    def view_set(name: str, value: PyObj) {
+        hk = hashkey_str((PyStr(t="str", val=name)).tp_hashkey());
+        self.items[hk] = DictEntry(key=PyStr(t="str", val=name), value=value);
+        self.version = self.version + 1;
+    }
+
+    # Single removal entry for mirrored attribute deletes.
+    def view_del(name: str) {
+        del self.items[hashkey_str((PyStr(t="str", val=name)).tp_hashkey())];
+        self.version = self.version + 1;
+    }
+
+    def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        if isinstance(index, PyStr) {
+            name = (index as PyStr).val;
+            owner_u = self.owner as PyUserObj;
+            if name in owner_u.cls.slot_members {
+                self.overlay[name] = value;
+            } else {
+                owner_u.attrs[name] = value;
+            }
+            self.view_set(name, value);
+            return py_none();
+        }
+        # Non-string key: a pure dict entry, invisible to the attribute
+        # protocol (CPython stores it in the instance dict the same way).
+        self.items[hashkey_str(hkr)] = DictEntry(key=index, value=value);
+        self.version = self.version + 1;
+        return py_none();
+    }
+
+    def mp_del_subscript(index: PyObj) -> PyObj {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        if isinstance(index, PyStr) {
+            name = (index as PyStr).val;
+            owner_u = self.owner as PyUserObj;
+            if name in self.overlay {
+                del self.overlay[name];
+                self.view_del(name);
+                return py_none();
+            }
+            if name in owner_u.attrs {
+                del owner_u.attrs[name];
+                self.view_del(name);
+                return py_none();
+            }
+            return py_error("KeyError", dict_key_repr(index));
+        }
+        hk = hashkey_str(hkr);
+        if hk in self.items {
+            del self.items[hk];
+            self.version = self.version + 1;
+            return py_none();
+        }
+        return py_error("KeyError", dict_key_repr(index));
+    }
+}
+
+obj PyClassMroMethod(PyObj) {
+    has cls: PyClass;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(kwargs) > 0 {
+            return py_error("TypeError", "mro() takes no keyword arguments");
+        }
+        if len(args) > 0 {
+            return py_error(
+                "TypeError",
+                self.cls.name + ".mro() takes no arguments (" + str(len(args)) + " given)",
+            );
+        }
+        return PyList(t="list", items=class_full_mro(self.cls));
+    }
+}
+
+
+
+# Bound __mro_entries__ callable for PyGenericAlias: CPython's _GenericAlias
+# method returns a tuple of replacement bases when __build_class__ invokes it
+# (bltinmodule.c update_bases); ours resolves to Generic itself.
+obj PyStaticMethod(PyObj) {
+    has func: PyObj;
+
+    def tp_getattro(name: str) -> PyObj {
+        if name == "__func__" {
+            return self.func;
+        }
+        # Descriptor protocol visibility (see PyGetDescriptorFn).
+        if name == "__get__" {
+            return PyGetDescriptorFn(t="get_descriptor", target=self);
+        }
+        return py_attr(self.func, name);
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        return self.func.tp_setattro(name, value);
+    }
+}
+
+obj PyObjectAttrSlot(PyObj) {
+    has op: str,
+        target: any = None;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        recv: PyObj;
+        rest: list[PyObj] = [];
+        if self.target is None {
+            if len(args) < 1 {
+                return py_error(
+                    "TypeError", "unbound attribute slot needs an instance"
+                );
+            }
+            recv = args[0];
+            for i in range(1, len(args)) {
+                rest.append(args[i]);
+            }
+        } else {
+            recv = self.target as PyObj;
+            rest.extend(args);
+        }
+        if self.op == "__getattribute__" {
+            if len(rest) != 1 {
+                return py_error(
+                    "TypeError",
+                    "__getattribute__ expected 1 argument, got " + str(len(rest)),
+                );
+            }
+            name = expect_str(rest[0]);
+            if isinstance(recv, PyUserObj) {
+                return default_user_getattro(recv as PyUserObj, name);
+            }
+            return py_attr(recv, name);
+        }
+        if self.op == "__setattr__" {
+            if len(rest) != 2 {
+                return py_error(
+                    "TypeError",
+                    "__setattr__ expected 2 arguments, got " + str(len(rest)),
+                );
+            }
+            name2 = expect_str(rest[0]);
+            if isinstance(recv, PyUserObj) {
+                return default_user_setattro(recv as PyUserObj, name2, rest[1]);
+            }
+            return py_set_attr(recv, name2, rest[1]);
+        }
+        if len(rest) != 1 {
+            return py_error(
+                "TypeError",
+                "__delattr__ expected 1 argument, got " + str(len(rest)),
+            );
+        }
+        name3 = expect_str(rest[0]);
+        if isinstance(recv, PyUserObj) {
+            return default_user_delattro(recv as PyUserObj, name3);
+        }
+        return py_del_attr(recv, name3);
+    }
+}
+
+obj PyFunction(PyObj) {
+    has code: PyCode,
+        globals: dict[str, PyObj],
+        name: str,
+        defaults: list[PyObj] = [],
+        kwdefaults: dict[str, PyObj] = {},
+        closure: list[PyCell] = [],
+        # The function's writable __dict__ + overridable dunders. functools.wraps
+        # / update_wrapper copy __module__/__name__/__qualname__/__doc__ and set
+        # __wrapped__ here, so decorators (pervasive in the unittest closure) work.
+        attrs: dict[str, PyObj] = {},
+        # Identity-stable live views minted on first read; invalidated by
+        # explicit reassignment.
+        kw_live: any = None,
+        attr_dict_live: any = None;
+
+    def _func_doc -> PyObj {
+        if len(self.code.consts) > 0 and isinstance(self.code.consts[0], PyStr) {
+            return self.code.consts[0];
+        }
+        return py_none();
+    }
+
+    def tp_getattro(name: str) -> PyObj {
+        if name in self.attrs {
+            return self.attrs[name];
+        }
+        if name == "__name__" {
+            return PyStr(t="str", val=self.name);
+        }
+        if name == "__qualname__" {
+            return PyStr(t="str", val=self.code.qualname);
+        }
+        if name == "__doc__" {
+            return self._func_doc();
+        }
+        if name == "__module__" {
+            if "__name__" in self.globals {
+                return self.globals["__name__"];
+            }
+            return py_none();
+        }
+        if name == "__defaults__" {
+            # An explicit f.__defaults__ assignment lands in attrs (checked
+            # above); this branch serves the MAKE_FUNCTION-built table.
+            if len(self.defaults) == 0 {
+                return py_none();
+            }
+            return PyTuple(t="tuple", items=self.defaults);
+        }
+        if name == "__kwdefaults__" {
+            # CPython: None when no keyword-only default exists; otherwise the
+            # SAME live dict every read, whose mutations affect later calls.
+            if len(self.kwdefaults) == 0 {
+                return py_none();
+            }
+            if self.kw_live is not None {
+                return self.kw_live as PyObj;
+            }
+            kw_view = PyFuncKwDefaults(t="dict", owner=self, items={});
+            for k in self.kwdefaults {
+                hk = hashkey_str((PyStr(t="str", val=k)).tp_hashkey());
+                kw_view.items[hk] = DictEntry(
+                    key=PyStr(t="str", val=k), value=self.kwdefaults[k]
+                );
+            }
+            self.kw_live = kw_view;
+            return kw_view as PyObj;
+        }
+        if name == "__closure__" {
+            # CPython: None for functions without free variables, else a tuple
+            # of cells (introspection surface used by inspect and functools).
+            if len(self.closure) == 0 {
+                return py_none();
+            }
+            return PyTuple(t="tuple", items=self.closure);
+        }
+        if name == "__code__" {
+            return self.code;
+        }
+        if name == "__dict__" {
+            # functools.wraps / update_wrapper reads and UPDATES a function's
+            # __dict__ (WRAPPER_UPDATES), so the snapshot-per-read copy lost
+            # every update -- CPython hands out the live attribute dict.
+            # Fixed-surface names (__name__, __code__, ...) stay out of the
+            # view exactly as they are absent from CPython's func_dict.
+            if self.attr_dict_live is not None {
+                return self.attr_dict_live as PyObj;
+            }
+            attr_view = PyFuncDictView(t="dict", owner=self, items={});
+            for k in self.attrs {
+                if not func_attr_is_fixed(k) {
+                    hk = hashkey_str((PyStr(t="str", val=k)).tp_hashkey());
+                    attr_view.items[hk] = DictEntry(
+                        key=PyStr(t="str", val=k), value=self.attrs[k]
+                    );
+                }
+            }
+            self.attr_dict_live = attr_view;
+            return attr_view as PyObj;
+        }
+        if name == "__wrapped__" {
+            return py_error("AttributeError", name);
+        }
+        # Descriptor protocol visibility: functions ARE descriptors; enum's
+        # _EnumDict and inspect/functools classify via hasattr(obj, '__get__').
+        if name == "__get__" {
+            return PyGetDescriptorFn(t="get_descriptor", target=self);
+        }
+        return py_error("AttributeError", name);
+    }
+
+    def tp_setattro(name: str, value: PyObj) -> PyObj {
+        if name == "__kwdefaults__" {
+            # Rebind: the call path resolves through attrs from now on, so the
+            # old live view would go stale -- drop it.
+            self.kw_live = None;
+        }
+        self.attrs[name] = value;
+        # Dynamic attributes join the live __dict__ view; fixed-surface names
+        # never appear in it (CPython keeps them on the type).
+        if self.attr_dict_live is not None and not func_attr_is_fixed(name) {
+            (self.attr_dict_live as PyFuncDictView).view_set(name, value);
+        }
+        return py_none();
+    }
+
+    # Effective default tables for THIS call: an explicit __defaults__ /
+    # __kwdefaults__ attribute assignment overrides the MAKE_FUNCTION tables
+    # (CPython binds those attributes to the call machinery).
+    def _effective_defaults -> list[PyObj] {
+        if "__defaults__" in self.attrs {
+            v = self.attrs["__defaults__"];
+            if v is not None and isinstance(v, PyTuple) {
+                return (v as PyTuple).items;
+            }
+            return [];
+        }
+        return self.defaults;
+    }
+
+    def _effective_kwdefaults -> dict[str, PyObj] {
+        if "__kwdefaults__" in self.attrs {
+            v = self.attrs["__kwdefaults__"];
+            if v is not None and isinstance(v, PyDict) {
+                return (v as PyDict).dict_str_map();
+            }
+            return {};
+        }
+        return self.kwdefaults;
+    }
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="obj:" + str(id(self)));
+    }
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        return exec_code_frame(
+            self.code,
+            args,
+            kwargs,
+            self.globals,
+            {},
+            self.closure,
+            self._effective_defaults(),
+            self._effective_kwdefaults()
+        );
+    }
+}
+
+obj PyFuncDictView(PyDict) {
+    # ``owner`` is typed ``any`` because a non-default field cannot follow the
+    # inherited defaulted ``version`` field.
+    has owner: any = None;
+
+    def view_set(name: str, value: PyObj) {
+        hk = hashkey_str((PyStr(t="str", val=name)).tp_hashkey());
+        self.items[hk] = DictEntry(key=PyStr(t="str", val=name), value=value);
+        self.version = self.version + 1;
+    }
+
+    def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        hk = hashkey_str(hkr);
+        if isinstance(index, PyStr) {
+            name = (index as PyStr).val;
+            self.items[hk] = DictEntry(key=index, value=value);
+            self.version = self.version + 1;
+            if not func_attr_is_fixed(name) {
+                (self.owner as PyFunction).attrs[name] = value;
+            }
+            return py_none();
+        }
+        self.items[hk] = DictEntry(key=index, value=value);
+        self.version = self.version + 1;
+        return py_none();
+    }
+
+    def mp_del_subscript(index: PyObj) -> PyObj {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        hk = hashkey_str(hkr);
+        if isinstance(index, PyStr) {
+            name = (index as PyStr).val;
+            owner_f = self.owner as PyFunction;
+            if name in owner_f.attrs {
+                del owner_f.attrs[name];
+                del self.items[hk];
+                self.version = self.version + 1;
+                return py_none();
+            }
+        }
+        if hk in self.items {
+            del self.items[hk];
+            self.version = self.version + 1;
+            return py_none();
+        }
+        return py_error("KeyError", dict_key_repr(index));
+    }
+}
+
+# Live ``__kwdefaults__`` view for a PyFunction: a real dict whose mutations
+# write straight through to the function's kw-default table (CPython hands
+# out the borrowed internal dict; later calls observe every change).
+obj PyFuncKwDefaults(PyDict) {
+    # ``owner`` is typed ``any`` because a non-default field cannot follow the
+    # inherited defaulted ``version`` field.
+    has owner: any = None;
+
+    def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        hk = hashkey_str(hkr);
+        if isinstance(index, PyStr) {
+            name = (index as PyStr).val;
+            (self.owner as PyFunction).kwdefaults[name] = value;
+        } else {
+            return py_error(
+                "TypeError", "keywords must be strings"
+            );
+        }
+        self.items[hk] = DictEntry(key=index, value=value);
+        self.version = self.version + 1;
+        return py_none();
+    }
+
+    def mp_del_subscript(index: PyObj) -> PyObj {
+        hkr = index.tp_hashkey();
+        if is_error(hkr) {
+            return _unhashable_error("a dict key", index);
+        }
+        hk = hashkey_str(hkr);
+        if isinstance(index, PyStr) {
+            name = (index as PyStr).val;
+            owner_f = self.owner as PyFunction;
+            if name in owner_f.kwdefaults {
+                del owner_f.kwdefaults[name];
+                del self.items[hk];
+                self.version = self.version + 1;
+                return py_none();
+            }
+        } elif hk in self.items {
+            del self.items[hk];
+            self.version = self.version + 1;
+            return py_none();
+        }
+        return py_error("KeyError", dict_key_repr(index));
+    }
+}
+# Cycle guard for from_host container conversion (host marshal/pickle can
+# hand back SELF-REFERENTIAL structures, e.g. marshal.loads(b'[<R>]')). Keyed
+# on host id(); list/dict/set placeholders are registered BEFORE filling so
+# re-entry returns the same guest container (identity preserved); tuples are
+# immutable so a re-entrant reference degrades to a host proxy instead of
+# recursing forever.
+obj PyNativeNew(PyObj) {
+    has base_name: str;
+
+    # Value identity by base_name so every object.__new__ producer compares equal
+    # (enum's _find_new_ does `target in {object.__new__, ...}`).
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="nativenew:" + self.base_name);
+    }
+
+    def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        same = isinstance(other, PyNativeNew)
+            and self.base_name == (other as PyNativeNew).base_name;
+        if kind == 2 {
+            return PyBool(t="bool", val=same);
+        }
+        if kind == 3 {
+            return PyBool(t="bool", val=not same);
+        }
+        return py_error("TypeError", "unsupported comparison");
+    }
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) == 0 {
+            return py_error("TypeError", "__new__() takes a class argument");
+        }
+        target_cls = args[0];
+        # type.__new__(mcls, name, bases, namespace): the class factory reached by
+        # super().__new__ inside a metaclass __new__. Builds a PyClass tagged with
+        # mcls as its metaclass so a subclass re-runs the same protocol.
+        if self.base_name == "type" {
+            return type_new(args, kwargs);
+        }
+        # object.__new__(cls): a plain instance, no boxed builtin value. This is
+        # the super().__new__(cls) / object.__new__(cls) path of a class whose
+        # only base is object (functools._PlaceholderType, most user classes).
+        if self.base_name == "object" {
+            if isinstance(target_cls, PyClass) {
+                return PyUserObj(
+                    t="instance", cls=target_cls as PyClass, attrs={}, base=py_none()
+                );
+            }
+            return py_error("TypeError", "object.__new__ requires a class");
+        }
+        box_args: list[PyObj] = [];
+        j = 1;
+        while j < len(args) {
+            box_args.append(args[j]);
+            j = j + 1;
+        }
+        # builtin.__new__ over a HOST class (namedtuple's dynamic tuple subclass)
+        # stays host-side so the host subclass instance is preserved.
+        if isinstance(target_cls, PyHostProxy) {
+            raw_box: list[any] = [];
+            for a in box_args {
+                raw_box.append(to_host(a));
+            }
+            hres = _jac_builtin_new(
+                self.base_name, (target_cls as PyHostProxy).val, raw_box
+            );
+            if host_result_ok(hres) {
+                return from_host(hres[1]);
+            }
+            return host_result_error(hres);
+        }
+        boxed = construct_native_base(self.base_name, box_args);
+        if is_error(boxed) {
+            return boxed;
+        }
+        if isinstance(target_cls, PyClass) {
+            return PyUserObj(
+                t="instance", cls=target_cls as PyClass, attrs={}, base=boxed
+            );
+        }
+        # Called with the exact builtin type (not a user subclass): plain value.
+        return boxed;
+    }
+}
+
+# super().<name> delegation when no python ancestor defines <name>: inside a
+# builtin-subclass method (dict/list/... subclass) the boxed base's own slots
+# answer -- e.g. _EnumDict(dict).__setitem__ calling super().__setitem__(k, v)
+# mutates the underlying dict -- and a BASE-LESS class falls through to the
+# object surface (object.__repr__/__str__/__init__). Bound to the instance at
+# lookup time, so the call site applies only the operands.
+obj PyDictMethod(PyObj) {
+    has target: PyDict,
+        name: str;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        n = self.name;
+        d = self.target;
+        # CPython method-descriptor arity contracts, byte-exact: fixed-arity
+        # methods raise instead of ignoring extras; only update consumes **kwds.
+        if n != "update" and len(kwargs) > 0 {
+            return meth_no_kwargs("dict", n);
+        }
+        if n == "popitem" or n == "clear" or n == "copy" {
+            if len(args) != 0 {
+                return meth_takes_none("dict", n, len(args));
+            }
+        }
+        if n == "__contains__" or n == "__getitem__" {
+            if len(args) != 1 {
+                return meth_takes_one("dict", n, len(args));
+            }
+        }
+        if n == "__setitem__" and len(args) != 2 {
+            return py_error("TypeError", "__setitem__ expected 2 arguments, got " + str(len(args)));
+        }
+        if n == "__delitem__" and len(args) != 1 {
+            return py_error("TypeError", "expected 1 argument, got " + str(len(args)));
+        }
+        if n == "get" or n == "setdefault" or n == "pop" {
+            if len(args) < 1 {
+                return py_error("TypeError", n + " expected at least 1 argument, got 0");
+            }
+            if len(args) > 2 {
+                return py_error("TypeError", n + " expected at most 2 arguments, got " + str(len(args)));
+            }
+        }
+        if n == "update" and len(args) > 1 {
+            return py_error("TypeError", "update expected at most 1 argument, got " + str(len(args)));
+        }
+        if n == "get" {
+            if d.dict_contains(args[0]) {
+                return d.mp_subscript(args[0]);
+            }
+            return args[1] if len(args) >= 2 else py_none();
+        }
+        if n == "setdefault" {
+            if d.dict_contains(args[0]) {
+                return d.mp_subscript(args[0]);
+            }
+            default_val = args[1] if len(args) >= 2 else py_none();
+            r = d.mp_ass_subscript(args[0], default_val);
+            if is_error(r) {
+                return r;
+            }
+            return default_val;
+        }
+        if n == "pop" {
+            if d.dict_contains(args[0]) {
+                v = d.mp_subscript(args[0]);
+                d.mp_del_subscript(args[0]);
+                return v;
+            }
+            if len(args) >= 2 {
+                return args[1];
+            }
+            return py_error("KeyError", dict_key_repr(args[0]));
+        }
+        if n == "popitem" {
+            # LIFO: dict.popitem() returns the LAST inserted (key, value) pair,
+            # not the first. dict_keys() yields insertion order, so take the tail.
+            last_key: PyObj = py_none();
+            has_key = False;
+            for keyobj in d.dict_keys() {
+                last_key = keyobj;
+                has_key = True;
+            }
+            if has_key {
+                v = d.mp_subscript(last_key);
+                d.mp_del_subscript(last_key);
+                return PyTuple(t="tuple", items=[last_key, v]);
+            }
+            return py_error("KeyError", "popitem(): dictionary is empty");
+        }
+        if n == "clear" {
+            for keyobj in d.dict_keys() {
+                d.mp_del_subscript(keyobj);
+            }
+            return py_none();
+        }
+        if n == "copy" {
+            nd = PyDict(t="dict", items={});
+            for keyobj in d.dict_keys() {
+                nd.dict_set(keyobj, d.mp_subscript(keyobj));
+            }
+            return nd;
+        }
+        if n == "update" {
+            if len(args) >= 1 {
+                src = args[0];
+                if isinstance(src, PyDict) {
+                    sd = src as PyDict;
+                    for keyobj in sd.dict_keys() {
+                        d.dict_set(keyobj, sd.mp_subscript(keyobj));
+                    }
+                } elif isinstance(src, PyUserObj)
+                    and (src as PyUserObj)._has_base()
+                    and isinstance((src as PyUserObj)._base_obj(), PyDict) {
+                    sd = (src as PyUserObj)._base_obj() as PyDict;
+                    for keyobj in sd.dict_keys() {
+                        d.dict_set(keyobj, sd.mp_subscript(keyobj));
+                    }
+                } else {
+                    # An iterable of (key, value) pairs.
+                    pairs: list[PyObj] = [];
+                    if isinstance(src, PyList) {
+                        pairs = (src as PyList).items;
+                    } elif isinstance(src, PyTuple) {
+                        pairs = (src as PyTuple).items;
+                    } else {
+                        seq = py_iter(src);
+                        if is_error(seq) {
+                            return seq;
+                        }
+                        if isinstance(seq, PyIter) {
+                            pairs = (seq as PyIter).items;
+                        }
+                    }
+                    for pair in pairs {
+                        if isinstance(pair, PyTuple) {
+                            pt = (pair as PyTuple).items;
+                            if len(pt) == 2 {
+                                d.dict_set(pt[0], pt[1]);
+                            }
+                        }
+                    }
+                }
+            }
+            for k in kwargs {
+                d.dict_set(PyStr(t="str", val=k), kwargs[k]);
+            }
+            return py_none();
+        }
+        if n == "__contains__" {
+            return PyBool(t="bool", val=d.dict_contains(args[0]));
+        }
+        if n == "__getitem__" {
+            return d.mp_subscript(args[0]);
+        }
+        if n == "__setitem__" {
+            return d.mp_ass_subscript(args[0], args[1]);
+        }
+        if n == "__delitem__" {
+            return d.mp_del_subscript(args[0]);
+        }
+        return py_error("AttributeError", n);
+    }
+}
+
+# ---- native dict views (.keys()/.values()/.items()) -----------------------
+# CPython dict views are lazy, set-like windows on a live dict. Native ones let
+# view comparison / set operations invoke element __eq__ (so a raising element
+# comparison propagates, unlike the by-hashkey set model) and let view iteration
+# carry the dict's mutation guard. keys/items are set-like; values is not.
+
+# Sentinel returned by dict_lookup_value when a key is absent (None is a valid
+# stored value, so it can't double as the not-found marker).
 
 obj PyBoundMethod(PyObj) {
     has function: PyObj,
@@ -259,7 +1848,7 @@ obj PyNativeBuiltin(PyObj) {
                 none3: list[PyObj] = [py_none(), py_none(), py_none()];
                 return PyTuple(t="tuple", items=none3);
             }
-            e = _handled_exc_stack[len(_handled_exc_stack) - 1];
+            e = _handled_exc_stack[len(_handled_exc_stack) - 1] as PyException;
             tbv = e.tp_getattro("__traceback__");
             if is_error(tbv) or isinstance(tbv, PyNoneType) {
                 tbv = py_none();
@@ -368,11 +1957,11 @@ obj PyNativeBuiltin(PyObj) {
             return args[0];
         }
         if self.name == "tb_format_exc" {
-            e = current_handled_exc();
-            if isinstance(e, PyNoneType) {
+            current_exc = current_handled_exc();
+            if isinstance(current_exc, PyNoneType) {
                 return PyStr(t="str", val="NoneType: None\n");
             }
-            return format_exception_text(e);
+            return format_exception_text(current_exc);
         }
         if self.name == "tb_print_exc" or self.name == "tb_print_exc_legacy" {
             # print_exc()/print_exception(): full-chain text to stderr or a
@@ -392,11 +1981,11 @@ obj PyNativeBuiltin(PyObj) {
                 no_pos = True;
             }
             if no_pos {
-                e = current_handled_exc();
-                if isinstance(e, PyNoneType) {
+                print_exc = current_handled_exc();
+                if isinstance(print_exc, PyNoneType) {
                     return py_error("RuntimeError", "No active exception to re-raise");
                 }
-                text = format_exception_text(e);
+                text = format_exception_text(print_exc);
             }
             elif self.name == "tb_print_exc_legacy" and len(args) >= 2 {
                 text = format_exception_text(args[1]);
@@ -685,14 +2274,14 @@ obj PyNsMethod(PyObj) {
                 src = args[0];
                 pairs: PyObj = py_none();
                 if isinstance(src, PyDict) {
-                    pairs = src;
+                    pairs = src as PyObj;
                 } else {
                     hsrc_r = to_host_coerce(src);
                     hsrc = hsrc_r[1];
                     if not ((hsrc_r[0] as bool)) {
                         return hsrc_r[1] as PyObj;
                     }
-                    pairs = from_host(hsrc);
+                    pairs = from_host(hsrc) as PyObj;
                 }
                 if isinstance(pairs, PyDict) {
                     smap = (pairs as PyDict).dict_str_map();

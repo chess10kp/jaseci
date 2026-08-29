@@ -12,20 +12,22 @@ import from objects {
     PyException,
     PyError,
     PyTraceback,
-    PyClass,
     PyExceptionType,
-    PyHostProxy,
     PyTuple,
     PyList,
     PyStr,
     PyExcGroup,
-    PyFunction,
-    PyNativeBuiltin,
-    PyUserObj,
     PyInt,
     is_error,
     py_none,
     py_error,
+}
+import from ceval_defs {
+    PyClass,
+    PyHostProxy,
+    PyFunction,
+    PyNativeBuiltin,
+    PyUserObj,
 }
 import from exceptions_core { exc_name_matches }
 import from ceval_api { class_mro, py_invoke }
@@ -273,7 +275,8 @@ def exception_matches(value: PyObj, target: PyObj) -> bool {
     # creation.
     raw = exception.raw;
     if raw is not None and isinstance(raw, PyUserObj) {
-        for klass in class_mro((raw as PyUserObj).cls) {
+        for klass_obj in class_mro((raw as PyUserObj).cls) {
+            klass = klass_obj as PyClass;
             if klass.name == target_name {
                 return True;
             }
@@ -313,7 +316,8 @@ def error_is_stopiteration(err: PyObj) -> bool {
     }
     raw = exc.raw;
     if raw is not None and isinstance(raw, PyUserObj) {
-        for klass in class_mro((raw as PyUserObj).cls) {
+        for klass_obj in class_mro((raw as PyUserObj).cls) {
+            klass = klass_obj as PyClass;
             for base in klass.bases {
                 if isinstance(base, PyExceptionType)
                     and (base as PyExceptionType).name == "StopIteration" {
@@ -330,7 +334,8 @@ def error_is_stopiteration(err: PyObj) -> bool {
 # `class Exc(Exception)` has native_base "" (Exception is not a subclassable
 # builtin layout), so we detect it through the recorded host base, not the layout.
 def class_is_exception(cls: PyClass) -> bool {
-    for klass in class_mro(cls) {
+    for klass_obj in class_mro(cls) {
+        klass = klass_obj as PyClass;
         for base in klass.bases {
             # Builtin exceptions resolve to a native PyExceptionType (Exception,
             # ValueError, ...); a not-yet-native one arrives as a host proxy.
@@ -370,7 +375,8 @@ def eg_target_family(target: PyObj) -> str {
         return _jac_host_class_name((target as PyHostProxy).val) as str;
     }
     if isinstance(target, PyClass) {
-        for klass in class_mro(target as PyClass) {
+        for klass_obj in class_mro(target as PyClass) {
+            klass = klass_obj as PyClass;
             for base in klass.bases {
                 if isinstance(base, PyExceptionType) {
                     return (base as PyExceptionType).name;
@@ -640,7 +646,7 @@ def eg_split_rec(gexc: PyObj, kind: str, cond: PyObj) -> tuple[PyObj, PyObj, PyO
             continue;
         }
         if kind == "all" {
-            matched = true;
+            matched = True;
         } elif kind == "match" {
             matched = eg_cond_match(m, cond);
         } else {

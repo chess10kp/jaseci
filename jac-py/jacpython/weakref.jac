@@ -39,7 +39,6 @@ import from objects {
 }
 import from ceval {
     PyModule,
-    PyHostProxy,
     PyWeakRefFn,
     PyWeakRef,
     register_shim_module,
@@ -47,6 +46,7 @@ import from ceval {
     weakref_target_rejected,
     weakref_target_error,
 }
+import from ceval_defs { PyHostProxy, }
 
 import from importlib { import_module }
 
