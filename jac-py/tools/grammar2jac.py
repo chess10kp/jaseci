@@ -81,9 +81,9 @@ JAC_TYPES: dict[str, str] = {
     "withitem_ty": "withitem",
     "AugOperator*": "operator",
     "CmpopExprPair*": "pa_cmpop_expr_pair",
-    "KeyValuePair*": "pa_key_value_pair",
-    "KeyPatternPair*": "pa_key_pattern_pair",
-    "KeywordOrStarred*": "pa_keyword_or_starred",
+    "KeyValuePair*": "kv_pair",
+    "KeyPatternPair*": "kp_pair",
+    "KeywordOrStarred*": "keyword_or_starred_node",
     "NameDefaultPair*": "pa_name_default_pair",
     "ResultTokenWithMetadata*": "peg_token",
     "SlashWithDefault*": "object",
@@ -96,10 +96,14 @@ JAC_TYPES: dict[str, str] = {
     "asdl_identifier_seq*": "list[str]",
     "asdl_int_seq*": "list[cmpop]",
     "asdl_keyword_seq*": "list[keyword]",
+    "asdl_kvpair_seq*": "list[kv_pair]",
+    "asdl_kvpattern_seq*": "list[kp_pair]",
+    "asdl_keyword_or_starred_seq*": "list[keyword_or_starred_node]",
     "asdl_pattern_seq*": "list[pattern]",
     "asdl_seq*": "list[object]",
     "asdl_stmt_seq*": "list[stmt]",
     "asdl_type_param_seq*": "list[type_param]",
+    "asdl_withitem_seq*": "list[withitem]",
 }
 
 BINOP_OPSBINOP_OPS = {
@@ -168,6 +172,17 @@ def jac_type(c_type: str | None, *, is_seq: bool = False) -> str:
         return "object"
     if c_type in JAC_TYPES:
         return JAC_TYPES[c_type]
+    if c_type.startswith("asdl_") and c_type.endswith("_seq*"):
+        inner_name = c_type[len("asdl_") : -len("_seq*")]
+        if inner_name in JAC_TYPES:
+            inner = JAC_TYPES[inner_name]
+        elif f"{inner_name}_ty" in JAC_TYPES:
+            inner = JAC_TYPES[f"{inner_name}_ty"]
+        else:
+            return "list[object]"
+        if inner.startswith("list["):
+            return inner
+        return f"list[{inner}]"
     if c_type.endswith("*"):
         inner_name = c_type[:-1]
         if inner_name in JAC_TYPES:
@@ -191,6 +206,35 @@ def jac_return_type(c_type: str | None, *, is_seq: bool = False) -> str:
     if base.endswith("| None"):
         return base
     return f"{base} | None"
+
+
+def jac_list_elem_type(c_type: str | None) -> str:
+    """Element type T for a grammar sequence typed as list[T] / asdl_*_seq*."""
+    if c_type is None:
+        return "object"
+    jac = jac_type(c_type, is_seq=True)
+    if jac.startswith("list[") and jac.endswith("]"):
+        return jac[5:-1]
+    single = jac_type(c_type, is_seq=False)
+    if single.endswith(" | None"):
+        single = single[: -len(" | None")]
+    return single
+
+
+# Gather rules call the matching typed pa_seq_insert_front_* helper.
+SEQ_INSERT_HELPERS: dict[str, str] = {
+    "expr": "pa_seq_insert_front_expr",
+    "pattern": "pa_seq_insert_front_pattern",
+    "stmt": "pa_seq_insert_front_stmt",
+    "alias": "pa_seq_insert_front_alias",
+    "type_param": "pa_seq_insert_front_type_param",
+    "withitem": "pa_seq_insert_front_withitem",
+    "arg": "pa_seq_insert_front_arg",
+    "pa_keyword_or_starred": "pa_seq_insert_front_kw_or_starred",
+    "keyword_or_starred_node": "pa_seq_insert_front_kw_or_starred",
+    "kv_pair": "pa_seq_insert_front_kvpair",
+    "kp_pair": "pa_seq_insert_front_kvpattern",
+}
 
 
 def _rule_fn(name: str) -> str:
@@ -398,6 +442,165 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         self.exact_token_map = exact
         self.callmakervisitor.exact_tokens = exact
 
+    def _item_element_c_type(self, item: Any) -> str | None:
+        if isinstance(item, Rule):
+            return item.type
+        if isinstance(item, NameLeaf):
+            if item.value == "NAME":
+                return "expr_ty"
+            ref = self.all_rules.get(item.value)
+            if ref is not None:
+                return ref.type or self._infer_artificial_rule_c_type(ref)
+            return None
+        if isinstance(item, Group):
+            return self._infer_rhs_c_type(item.rhs)
+        if isinstance(item, Rhs):
+            return self._infer_rhs_c_type(item)
+        return None
+
+    def _infer_rhs_c_type(self, rhs: Rhs) -> str | None:
+        types: list[str] = []
+        for alt in rhs.alts:
+            got = self._infer_alt_element_c_type(alt)
+            if got is not None:
+                types.append(got)
+        if not types:
+            return None
+        if len(set(types)) == 1:
+            return types[0]
+        # Alternatives that all lower to expr (e.g. slice | starred_expression).
+        jac_types = {jac_list_elem_type(t) for t in types}
+        if len(jac_types) == 1:
+            only = next(iter(jac_types))
+            if only == "expr":
+                return "expr_ty"
+        return None
+
+    def _infer_alt_element_c_type(self, alt: Alt) -> str | None:
+        if alt.action:
+            return None
+        for item in reversed(alt.items):
+            if isinstance(item, NamedItem):
+                got = self._item_element_c_type(item.item)
+                if got is not None:
+                    return got
+        if alt.items:
+            return self._item_element_c_type(alt.items[-1].item)
+        return None
+
+    def _elem_c_to_seq_c_type(self, elem_c: str | None) -> str | None:
+        if elem_c is None:
+            return "asdl_seq*"
+        custom_seq = {
+            "KeywordOrStarred*": "asdl_keyword_or_starred_seq*",
+            "KeyValuePair*": "asdl_kvpair_seq*",
+            "KeyPatternPair*": "asdl_kvpattern_seq*",
+        }
+        if elem_c in custom_seq:
+            return custom_seq[elem_c]
+        if elem_c.startswith("asdl_") and elem_c.endswith("_seq*"):
+            return elem_c
+        if elem_c.endswith("_ty"):
+            return f"asdl_{elem_c[:-3]}_seq*"
+        if elem_c.endswith("*") and elem_c in JAC_TYPES:
+            inner = JAC_TYPES[elem_c]
+            if inner.startswith("list["):
+                return elem_c
+            return "asdl_seq*"
+        return "asdl_seq*"
+
+    def _infer_artificial_rule_c_type(self, rule: Rule) -> str | None:
+        if rule.type is not None:
+            return rule.type
+        if not rule.rhs.alts:
+            return None
+        alt = rule.rhs.alts[0]
+        if rule.name.startswith("_gather_"):
+            for item in alt.items:
+                if item.name == "elem":
+                    elem_c = self._item_element_c_type(item.item)
+                    return self._elem_c_to_seq_c_type(elem_c)
+            return None
+        if rule.name.startswith("_loop"):
+            for item in alt.items:
+                if item.name == "elem":
+                    elem_c = self._item_element_c_type(item.item)
+                    return self._elem_c_to_seq_c_type(elem_c)
+            if len(alt.items) == 1:
+                elem_c = self._item_element_c_type(alt.items[0].item)
+                return self._elem_c_to_seq_c_type(elem_c)
+        if rule.name.startswith("_tmp_"):
+            return self._infer_rhs_c_type(rule.rhs)
+        return None
+
+    def _rule_list_elem_jac_type(self, rule: Rule) -> str:
+        c_type = rule.type or self._infer_artificial_rule_c_type(rule)
+        return jac_list_elem_type(c_type)
+
+    def _gather_elem_jac_type(self, rule: Rule) -> str:
+        if not rule.rhs.alts:
+            return "object"
+        alt = rule.rhs.alts[0]
+        for item in alt.items:
+            if item.name == "elem":
+                elem_c = self._item_element_c_type(item.item)
+                if elem_c is not None and elem_c in JAC_TYPES:
+                    inner = JAC_TYPES[elem_c]
+                    if not inner.startswith("list["):
+                        return inner
+                if elem_c is not None and elem_c.endswith("_ty"):
+                    return jac_type(elem_c, is_seq=False)
+        return self._rule_list_elem_jac_type(rule)
+
+    def _gather_return_type(self, rule: Rule) -> str:
+        elem_jac = self._gather_elem_jac_type(rule)
+        if elem_jac != "object":
+            return f"list[{elem_jac}] | None"
+        c_type = rule.type or self._infer_artificial_rule_c_type(rule)
+        return jac_return_type(c_type, is_seq=True)
+
+    def _seq_insert_helper(self, rule_name: str) -> str:
+        elem = self._gather_elem_jac_type(self.all_rules[rule_name])
+        return SEQ_INSERT_HELPERS.get(elem, "pa_seq_insert_front_expr")
+
+    def artificial_rule_from_rhs(self, rhs: Rhs) -> str:
+        self.counter += 1
+        name = f"_tmp_{self.counter}"
+        inferred = self._infer_rhs_c_type(rhs)
+        self.all_rules[name] = Rule(name, inferred, rhs)
+        return name
+
+    def artificial_rule_from_repeat(self, node: Plain, is_repeat1: bool) -> str:
+        self.counter += 1
+        prefix = "_loop1_" if is_repeat1 else "_loop0_"
+        name = f"{prefix}{self.counter}"
+        elem_c = self._item_element_c_type(node)
+        seq_c = self._elem_c_to_seq_c_type(elem_c)
+        self.all_rules[name] = Rule(name, seq_c, Rhs([Alt([NamedItem(None, node)])]))
+        return name
+
+    def artificial_rule_from_gather(self, node: Gather) -> str:
+        self.counter += 1
+        extra_function_name = f"_loop0_{self.counter}"
+        extra_function_alt = Alt(
+            [NamedItem(None, node.separator), NamedItem("elem", node.node)],
+            action="elem",
+        )
+        elem_c = self._item_element_c_type(node.node)
+        seq_c = self._elem_c_to_seq_c_type(elem_c)
+        self.all_rules[extra_function_name] = Rule(
+            extra_function_name,
+            seq_c,
+            Rhs([extra_function_alt]),
+        )
+        self.counter += 1
+        name = f"_gather_{self.counter}"
+        alt = Alt(
+            [NamedItem("elem", node.node), NamedItem("seq", NameLeaf(extra_function_name))],
+        )
+        self.all_rules[name] = Rule(name, seq_c, Rhs([alt]))
+        return name
+
     def collect_rules(self) -> None:
         """Collect artificial rules in stable order for deterministic output."""
         keyword_collector = KeywordCollectorVisitor(
@@ -476,7 +679,10 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("    pa_name_default_pair, pa_make_cmpop_pair, pa_name_from_token, pa_name_id, pa_number_from_token,")
         self.print("    pa_ast_expression, pa_ast_binop, pa_ast_unaryop, pa_ast_boolop, pa_ast_compare, pa_ast_call,")
         self.print("    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_from_expr, pa_singleton_seq, pa_stmt_list_or_empty,")
-        self.print("    pa_seq_insert_front, pa_seq_append_to_end, pa_get_cmpops, pa_get_exprs, pa_get_keys, pa_get_values,")
+        self.print("    pa_seq_insert_front_expr, pa_seq_insert_front_pattern, pa_seq_insert_front_stmt,")
+        self.print("    pa_seq_insert_front_alias, pa_seq_insert_front_type_param, pa_seq_insert_front_withitem,")
+        self.print("    pa_seq_insert_front_arg, pa_seq_insert_front_kw_or_starred, pa_seq_insert_front_kvpair,")
+        self.print("    pa_seq_insert_front_kvpattern, pa_seq_insert_front, pa_seq_append_to_end, pa_get_cmpops, pa_get_exprs, pa_get_keys, pa_get_values,")
         self.print("    pa_get_patterns, pa_get_pattern_keys, pa_collect_call_seqs, pa_call_from_optional_args,")
         self.print("    pa_ast_starred, pa_check, pa_make_module, pa_seq_flatten, pa_set_context, pa_map_names_to_ids,")
         self.print("    pa_ast_expr_stmt, pa_ast_assign, pa_ast_annassign, pa_ast_return, pa_ast_pass, pa_ast_break,")
@@ -646,7 +852,17 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
         rhs = node.flatten()
         if node.name == "function_def_raw":
             rhs = self._function_def_raw_rhs(rhs)
-        ret = jac_return_type(node.type, is_seq=is_loop or is_gather)
+        inferred = self._infer_artificial_rule_c_type(node)
+        if is_gather and not node.name.startswith("_loop"):
+            ret = "object | None"
+        elif node.type == "asdl_seq*":
+            elem_c = self._infer_rhs_c_type(rhs)
+            ret = jac_return_type(
+                self._elem_c_to_seq_c_type(elem_c) if elem_c else node.type,
+                is_seq=True,
+            )
+        else:
+            ret = jac_return_type(inferred or node.type, is_seq=is_loop or is_gather)
         rule_id = self.rule_ids[node.name]
         if node.left_recursive and node.leader:
             self._emit_left_rec_leader(node, rhs, ret, rule_id)
@@ -681,7 +897,8 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                     self.print("start_col_offset = t0.col_offset;")
                 self.print("}")
             if is_loop:
-                self.print("children: list[object] = [];")
+                elem_jac = self._rule_list_elem_jac_type(node)
+                self.print(f"children: list[{elem_jac}] = [];")
             self._rule_name = node.name
             self._rule_ret = ret
             self._rule_memo = memo
@@ -692,7 +909,8 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                     with self.indent():
                         self.print("return None;")
                     self.print("}")
-                self.print("return children as list[expr];")
+                cast_ty = jac_cast_type(ret)
+                self.print(f"return children as {cast_ty};")
             else:
                 if memo:
                     self.print(f"peg_insert_memo(p, mark, RULE_{node.name}, None);")
@@ -946,7 +1164,8 @@ class JacParserGenerator(ParserGenerator, GrammarVisitor):
                 raise ActionTranslationError(f"in alt {node!s}: {err}") from err
         names = list(self.local_variable_names)
         if is_gather:
-            return f"pa_seq_insert_front({names[0]}, {names[1]})"
+            helper = self._seq_insert_helper(self._rule_name)
+            return f"{helper}({names[0]}, {names[1]}) as object"
         # Trailing peg_expect_token captures (lit, lit_1, ...) are not semantic
         # values; match CPython gather/repeat element actions that return only z.
         semantic = [n for n in names if not n.startswith("lit")]
