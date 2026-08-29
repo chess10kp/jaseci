@@ -3116,13 +3116,20 @@
     {
       "stem": "hmac",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_hmac/conv_hmac_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_hmac/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_hmac/conversion.json",
+      "jacpython_results": {
+        "hmac": {
+          "passed": 0,
+          "total": 0,
+          "notes": "0/0 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "ipaddress",

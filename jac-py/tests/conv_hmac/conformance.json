@@ -1,0 +1,1473 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_hmac/conv_hmac_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:20:12",
+  "hashes": {
+    "pins_jac": "b7aeb3ae1826ec5f9913ae04bd5244bac5fadef5cd646852d484bd77d8ccd6e0",
+    "conversion_json": "cefcdef4823427aeafdf5640eff3a7dc3d3a484de4bf80a04aedae40c16806ae",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "hmac",
+  "counts": {
+    "converted": 289,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 289
+  },
+  "pins": [
+    {
+      "id": "PyModuleConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'digest'"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'digest'"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'compute_digest'"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'compute_digest'"
+    },
+    {
+      "id": "PySanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "PyUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "id": "BuiltinUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "id": "PyUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "id": "BuiltinUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "id": "PyUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "id": "PyUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'HMAC'"
+    },
+    {
+      "id": "BuiltinUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "id": "BuiltinUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'NoneType' object has no attribute 'new'"
+    },
+    {
+      "id": "PythonCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "PythonCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:NotImplementedError: "
+    },
+    {
+      "id": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_openssl_hmac'"
+    },
+    {
+      "id": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_builtin_hmac'"
+    },
+    {
+      "id": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_openssl_hmac'"
+    },
+    {
+      "id": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'HMAC' object has no attribute '_init_builtin_hmac'"
+    },
+    {
+      "id": "ConstructorTestCaseMixin.test_constructor",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "ConstructorTestCaseMixin.test_digest",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PySanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PySanityTestCase.test_methods",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PySanityTestCase.test_properties",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PySanityTestCase.test_copy",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_methods",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_properties",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_copy",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "OpenSSLUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "OpenSSLUpdateTestCase.test_update_large",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "OpenSSLUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "PythonCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PythonCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PythonCopyTestCase.test_equality",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PythonCopyTestCase.test_equality_new",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "OpenSSLCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "OpenSSLCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "BuiltinCopyTestCase.test_attributes",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_builtin_hmac"
+    },
+    {
+      "id": "BuiltinCopyTestCase.test_realcopy",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_builtin_hmac"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashlib"
+    },
+    {
+      "id": "PyMiscellaneousTests.test_hmac_constructor_uses_builtin",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_builtin_hmac"
+    },
+    {
+      "id": "PyMiscellaneousTests.test_hmac_delegated_properties",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PyMiscellaneousTests.test_legacy_block_size_warnings",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PyMiscellaneousTests.test_with_fallback",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PyMiscellaneousTests.test_hmac_digest_overflow_error_openssl_only",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_openssl_hashdigest"
+    },
+    {
+      "id": "PyMiscellaneousTests.test_hmac_digest_overflow_error_builtin_only",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_builtin_hashdigest"
+    },
+    {
+      "id": "PyMiscellaneousTests.test_hmac_digest_no_overflow_error_in_fallback",
+      "status": "quarantined",
+      "reason": "decorator:hashlib_helper.requires_hashdigest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCOpenSSLTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyRFCBuiltinTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewOpenSSLRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyDotNewBuiltinRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "helper:_test_sha2_rfc4231(helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib)))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "OpenSSLRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "helper:assert_hmac(helper:assert_hmac_common_cases(helper:hmac_new_by_name(helper:hmac_new(unresolved-name:_hashlib))))"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_md5_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha1_rfc2202",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_224_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_256_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_384_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha2_512_rfc4231",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_224_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_256_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_384_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "BuiltinRFCTestCase.test_sha3_512_nist",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "unresolved-name:sha2"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_digest"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_with_module",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_digest_with_module",
+      "status": "quarantined",
+      "reason": "unresolved-name:sha2"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "PyModuleConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_internal_types",
+      "status": "quarantined",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_internal_types",
+      "status": "quarantined",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "helper:hmac_digest(unresolved-name:_hashlib)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "status": "quarantined",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaises)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_internal_types",
+      "status": "quarantined",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "OpenSSLConstructorTestCase.test_digest",
+      "status": "quarantined",
+      "reason": "helper:hmac_digest(unresolved-name:_hashlib)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_hmac_digest_digestmod_parameter",
+      "status": "quarantined",
+      "reason": "helper:assert_raises_unknown_digestmod(uses-self.assertRaises)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_internal_types",
+      "status": "quarantined",
+      "reason": "uses-self.obj_type"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor_missing_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_missing_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor_unknown_digestmod",
+      "status": "quarantined",
+      "reason": "helper:do_test_constructor_unknown_digestmod(uses-self.subTest)"
+    },
+    {
+      "id": "BuiltinConstructorTestCase.test_constructor",
+      "status": "quarantined",
+      "reason": "uses-self.hmac_new"
+    },
+    {
+      "id": "PySanityTestCase.test_methods",
+      "status": "quarantined",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_methods",
+      "status": "quarantined",
+      "reason": "helper:hmac_new(unresolved-name:_hashlib)"
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_methods",
+      "status": "quarantined",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "id": "PySanityTestCase.test_properties",
+      "status": "quarantined",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_properties",
+      "status": "quarantined",
+      "reason": "helper:hmac_new(unresolved-name:_hashlib)"
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_properties",
+      "status": "quarantined",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "id": "PySanityTestCase.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "id": "OpenSSLSanityTestCase.test_copy",
+      "status": "quarantined",
+      "reason": "helper:hmac_new(unresolved-name:_hashlib)"
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_repr",
+      "status": "quarantined",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_methods",
+      "status": "quarantined",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_properties",
+      "status": "quarantined",
+      "reason": "uses-self.block_size"
+    },
+    {
+      "id": "BuiltinSanityTestCase.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self.digestname"
+    },
+    {
+      "id": "OpenSSLUpdateTestCase.test_update",
+      "status": "quarantined",
+      "reason": "helper:check_update(helper:HMAC(unresolved-name:_hashlib))"
+    },
+    {
+      "id": "PyUpdateTestCase.test_update_large",
+      "status": "quarantined",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "id": "OpenSSLUpdateTestCase.test_update_large",
+      "status": "quarantined",
+      "reason": "helper:check_update(helper:HMAC(unresolved-name:_hashlib))"
+    },
+    {
+      "id": "BuiltinUpdateTestCase.test_update_large",
+      "status": "quarantined",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "id": "OpenSSLUpdateTestCase.test_update_exceptions",
+      "status": "quarantined",
+      "reason": "helper:HMAC(unresolved-name:_hashlib)"
+    },
+    {
+      "id": "PyUpdateTestCase.test_update_large",
+      "status": "quarantined",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "id": "BuiltinUpdateTestCase.test_update_large",
+      "status": "quarantined",
+      "reason": "uses-self.gil_minsize"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OpenSSLCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_compare_digest_func",
+      "status": "quarantined",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "HMACCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_exceptions",
+      "status": "quarantined",
+      "reason": "uses-self.compare_digest"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_bytes",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_not_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_bytearray",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_mixed_types",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_string",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_string_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "OperatorCompareDigestTestCase.test_bytes_subclass",
+      "status": "quarantined",
+      "reason": "helper:assert_digest_equal(helper:compare_digest(decorated-helper))"
+    },
+    {
+      "id": "BuiltinMiscellaneousTests.test_compute_blake2b_32",
+      "status": "quarantined",
+      "reason": "uses-self.blake2b"
+    },
+    {
+      "id": "BuiltinMiscellaneousTests.test_compute_blake2s_32",
+      "status": "quarantined",
+      "reason": "uses-self.blake2s"
+    }
+  ]
+}

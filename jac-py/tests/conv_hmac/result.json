@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_hmac/conv_hmac_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:20:12",
+  "hashes": {
+    "pins_jac": "b7aeb3ae1826ec5f9913ae04bd5244bac5fadef5cd646852d484bd77d8ccd6e0",
+    "conversion_json": "cefcdef4823427aeafdf5640eff3a7dc3d3a484de4bf80a04aedae40c16806ae",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "hmac",
+  "status": "passed",
+  "timed_out": false,
+  "counts": {
+    "converted": 289,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 289,
+    "failed": 0,
+    "infra_failed": 0
+  },
+  "failures": []
+}
