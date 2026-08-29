@@ -58,6 +58,47 @@ EXPR_CONTEXTS = {"Load": "Load", "Store": "Store", "Del": "Del"}
 
 LOC = "start_lineno, start_col_offset, end_lineno, end_col_offset"
 
+_ASDL_NULL_AS_EMPTY_LIST = frozenset(
+    {
+        "decorator_list",
+        "patterns",
+        "kwd_attrs",
+        "kwd_patterns",
+        "keys",
+        "finalbody",
+        "ifs",
+        "bases",
+        "keywords",
+        "type_params",
+    }
+)
+
+SEQ_INSERT_TYPED: dict[str, str] = {
+    "expr": "pa_seq_insert_front_expr",
+    "pattern": "pa_seq_insert_front_pattern",
+    "stmt": "pa_seq_insert_front_stmt",
+    "alias": "pa_seq_insert_front_alias",
+    "type_param": "pa_seq_insert_front_type_param",
+    "withitem": "pa_seq_insert_front_withitem",
+    "arg": "pa_seq_insert_front_arg",
+    "keyword_or_starred_node": "pa_seq_insert_front_kw_or_starred",
+    "kv_pair": "pa_seq_insert_front_kvpair",
+    "kp_pair": "pa_seq_insert_front_kvpattern",
+}
+
+SEQ_APPEND_TYPED: dict[str, str] = {
+    "expr": "pa_seq_append_to_end_expr",
+    "pattern": "pa_seq_append_to_end_pattern",
+    "stmt": "pa_seq_append_to_end_stmt",
+    "alias": "pa_seq_append_to_end_alias",
+    "type_param": "pa_seq_append_to_end_type_param",
+    "withitem": "pa_seq_append_to_end_withitem",
+    "arg": "pa_seq_append_to_end_arg",
+    "keyword_or_starred_node": "pa_seq_append_to_end_kw_or_starred",
+    "kv_pair": "pa_seq_append_to_end_kvpair",
+    "kp_pair": "pa_seq_append_to_end_kvpattern",
+}
+
 
 class ActionTranslationError(ValueError):
   """Raised when a grammar action cannot be translated structurally."""
@@ -393,6 +434,9 @@ def _load_asdl_constructors() -> dict[str, list[str]]:
                 out[ctor.name] = fields
                 out[f"{ctor.name}__values"] = [f for f in fields if f not in LOC_FIELDS]
                 out[f"{ctor.name}__has_loc"] = any(f in LOC_FIELDS for f in fields)
+                out[f"{ctor.name}__seq_fields"] = frozenset(
+                    f.name for f in ctor.fields if f.seq
+                )
         elif isinstance(typ, asdl.Product):
             fields = [f.name for f in typ.fields]
             if typ.attributes:
@@ -400,6 +444,9 @@ def _load_asdl_constructors() -> dict[str, list[str]]:
             out[name] = fields
             out[f"{name}__values"] = [f for f in fields if f not in LOC_FIELDS]
             out[f"{name}__has_loc"] = any(f in LOC_FIELDS for f in fields)
+            out[f"{name}__seq_fields"] = frozenset(
+                f.name for f in typ.fields if f.seq
+            )
     return out
 
 
@@ -436,8 +483,10 @@ class ActionTranslator:
         self._pegen_handlers = self._build_pegen_handlers()
         self._raise_handlers = self._build_raise_handlers()
         self._ast_handlers = self._build_ast_handlers()
+        self._type_env: dict[str, str] = {}
 
-    def translate(self, action: str) -> str:
+    def translate(self, action: str, type_env: dict[str, str] | None = None) -> str:
+        self._type_env = type_env or {}
         normalized = " ".join(action.split())
         special = _SPECIAL_ACTIONS.get(normalized)
         if special is not None:
@@ -475,6 +524,14 @@ class ActionTranslator:
             cond = self._emit(node.cond)
             then = self._emit(node.then)
             else_ = self._emit(node.else_)
+            if else_ == "None" and (
+                "pa_call_args(" in then
+                or "pa_call_keywords(" in then
+                or "pa_get_patterns(" in then
+                or "pa_get_keys(" in then
+                or "pa_get_values(" in then
+            ):
+                else_ = "[]"
             if else_ == "None" and cond.startswith("pa_check_legacy_stmt("):
                 return f"({then} if {cond} else None)"
             return f"({then} if {cond} is not None else {else_})"
@@ -517,6 +574,77 @@ class ActionTranslator:
             raise ActionTranslationError(f"unsupported member access: {full}")
         raise ActionTranslationError(f"unsupported member base: {node!r}")
 
+    def _seq_elem_type_from_expr(self, node: Expr) -> str | None:
+        if not isinstance(node, Ident):
+            return None
+        bound = self._type_env.get(node.name)
+        if bound is None:
+            return None
+        base = bound.replace(" | None", "")
+        if base.startswith("list[") and base.endswith("]"):
+            return base[5:-1]
+        return base
+
+    def _infer_check_cast(self, type_node: Expr, inner_node: Expr) -> str | None:
+        cast = self._check_cast_target(type_node)
+        if cast is None:
+            return None
+        if cast != "list[object]":
+            return cast
+        c_ty = self._c_type_name(type_node)
+        if c_ty != "asdl_seq*":
+            return cast
+        if isinstance(inner_node, Ident):
+            elem = self._seq_elem_type_from_expr(inner_node)
+            if elem is not None:
+                return f"list[{elem}]"
+        if isinstance(inner_node, Call) and inner_node.func.startswith("_PyPegen_seq_append_to_end"):
+            elem = self._seq_elem_type_from_expr(inner_node.args[1])
+            if elem is None:
+                elem = self._seq_elem_type_from_expr(inner_node.args[0])
+            if elem is not None:
+                return f"list[{elem}]"
+        return cast
+
+    def _emit_seq_append_to_end(self, args: list[Expr]) -> str:
+        elem_ty = self._seq_elem_type_from_expr(args[1])
+        if elem_ty is None:
+            elem_ty = self._seq_elem_type_from_expr(args[0])
+        helper = SEQ_APPEND_TYPED.get(elem_ty or "", "pa_seq_append_to_end")
+        return f"{helper}({self._emit(args[0])}, {self._emit(args[1])})"
+
+    def _emit_seq_insert_front(self, args: list[Expr]) -> str:
+        elem_ty = self._seq_elem_type_from_expr(args[0])
+        if elem_ty is None:
+            elem_ty = self._seq_elem_type_from_expr(args[1])
+        helper = SEQ_INSERT_TYPED.get(elem_ty or "", "pa_seq_insert_front_expr")
+        return f"{helper}({self._emit(args[0])}, {self._emit(args[1])})"
+
+    def _c_type_name(self, node: Expr) -> str | None:
+        if isinstance(node, TypeStar):
+            return f"{node.name}*"
+        if isinstance(node, Ident):
+            return node.name
+        if isinstance(node, Cast):
+            return node.type_name
+        return None
+
+    def _check_cast_target(self, type_node: Expr) -> str | None:
+        from grammar2jac import GrammarTypeError, jac_type
+
+        c_ty = self._c_type_name(type_node)
+        if c_ty is None:
+            return None
+        is_seq = c_ty.startswith("asdl_") and c_ty.endswith("_seq*")
+        try:
+            return jac_type(c_ty, is_seq=is_seq).replace(" | None", "")
+        except GrammarTypeError:
+            return None
+
+    def _emit_loc_call(self, pa: str, args: list[Expr]) -> str:
+        parts = [self._emit(a) for a in args if not isinstance(a, Extra)]
+        return f"{pa}({', '.join(parts)}, {LOC})"
+
     def _pegen_args(self, args: list[Expr]) -> list[Expr]:
         if args and isinstance(args[0], Ident) and args[0].name == "p":
             return args[1:]
@@ -528,9 +656,17 @@ class ActionTranslator:
         if func.startswith("_PyPegen_"):
             args = self._pegen_args(args)
         if func == "CHECK":
-            return f"pa_check({self._emit(node.args[1])})"
+            inner = self._emit(node.args[1])
+            cast = self._infer_check_cast(node.args[0], node.args[1])
+            if cast:
+                return f"pa_check({inner}) as {cast}"
+            return f"pa_check({inner})"
         if func == "CHECK_NULL_ALLOWED":
-            return f"pa_check({self._emit(node.args[1])})"
+            inner = self._emit(node.args[1])
+            cast = self._infer_check_cast(node.args[0], node.args[1])
+            if cast:
+                return f"pa_check({inner}) as {cast}"
+            return f"pa_check({inner})"
         if func == "CHECK_VERSION":
             return self._emit(node.args[3])
         if func == "NEW_TYPE_COMMENT":
@@ -575,6 +711,8 @@ class ActionTranslator:
             raise ActionTranslationError(f"unknown AST constructor: {ctor}")
         value_fields = ASDL_CONSTRUCTORS[value_fields_key]
         has_loc = ASDL_CONSTRUCTORS.get(has_loc_key, False)
+        seq_fields_key = f"{ctor}__seq_fields"
+        seq_fields = ASDL_CONSTRUCTORS.get(seq_fields_key, frozenset())
         translated = [self._emit(a) for a in args]
         cleaned: list[str] = []
         for val in translated:
@@ -597,6 +735,13 @@ class ActionTranslator:
             field = value_fields[i]
             if field == "orelse":
                 val = f"pa_stmt_list_or_empty({val})"
+            elif field in seq_fields or field in _ASDL_NULL_AS_EMPTY_LIST:
+                if field == "patterns" and ctor == "MatchSequence":
+                    val = f"pa_pattern_list({val})"
+                elif val == "None":
+                    val = "[]"
+                else:
+                    val = f"({val} if {val} is not None else [])"
             pairs.append(f"{field}={val}")
         if has_loc:
             pairs.append(self._loc_kw())
@@ -652,9 +797,9 @@ class ActionTranslator:
 
         handlers: dict[str, Callable[[ActionTranslator, list[Expr]], str]] = {
             "_PyPegen_singleton_seq": unary("pa_singleton_seq"),
-            "_PyPegen_seq_insert_in_front": binary("pa_seq_insert_front"),
+            "_PyPegen_seq_insert_in_front": lambda self, args: self._emit_seq_insert_front(args),
             "_PyPegen_seq_append_to_end": lambda self, args: (
-                f"pa_seq_append_to_end({', '.join(self._emit(a) for a in args)})"
+                self._emit_seq_append_to_end(args)
             ),
             "_PyPegen_seq_flatten": unary("pa_seq_flatten"),
             "_PyPegen_get_cmpops": unary("pa_get_cmpops"),
@@ -697,7 +842,9 @@ class ActionTranslator:
             "_PyPegen_add_type_comment_to_arg": binary("pa_add_type_comment_to_arg"),
             "_PyPegen_seq_delete_starred_exprs": unary("pa_seq_delete_starred_exprs"),
             "_PyPegen_seq_extract_starred_exprs": unary("pa_seq_extract_starred_exprs"),
-            "_PyPegen_setup_full_format_spec": unary("pa_setup_full_format_spec"),
+            "_PyPegen_setup_full_format_spec": lambda self, args: (
+                f"pa_setup_full_format_spec(`node={self._emit(args[0])})"
+            ),
             "_PyPegen_check_fstring_conversion": binary("pa_check_fstring_conversion"),
             "_PyPegen_function_def_decorators": binary("pa_function_def_decorators"),
             "_PyPegen_class_def_decorators": binary("pa_class_def_decorators"),
@@ -732,17 +879,17 @@ class ActionTranslator:
             "_PyPegen_slash_with_default": lambda self, args: (
                 f"pa_slash_with_default({', '.join(self._emit(a) for a in args)}, {loc})"
             ),
-            "_PyPegen_joined_str": lambda self, args: (
-                f"pa_joined_str({', '.join(self._emit(a) for a in args)}, {loc})"
+            "_PyPegen_joined_str": lambda self, args: self._emit_loc_call(
+                "pa_joined_str", args
             ),
-            "_PyPegen_template_str": lambda self, args: (
-                f"pa_template_str({', '.join(self._emit(a) for a in args)}, {loc})"
+            "_PyPegen_template_str": lambda self, args: self._emit_loc_call(
+                "pa_template_str", args
             ),
-            "_PyPegen_formatted_value": lambda self, args: (
-                f"pa_formatted_value({', '.join(self._emit(a) for a in args)}, {loc})"
+            "_PyPegen_formatted_value": lambda self, args: self._emit_loc_call(
+                "pa_formatted_value", args
             ),
-            "_PyPegen_interpolation": lambda self, args: (
-                f"pa_interpolation({', '.join(self._emit(a) for a in args)}, {loc})"
+            "_PyPegen_interpolation": lambda self, args: self._emit_loc_call(
+                "pa_interpolation", args
             ),
         }
         return handlers
@@ -801,5 +948,8 @@ class ActionTranslator:
             "_PyAST_Slice": with_loc("pa_ast_slice", 0, 1, 2),
             "_PyAST_AugAssign": with_loc("pa_ast_augassign", 0, 1, 2),
             "_PyAST_Delete": with_loc("pa_ast_delete", 0),
+            "_PyAST_MatchSingleton": lambda self, args: (
+                f"pa_match_singleton({self._emit(args[0])}, {loc})"
+            ),
         }
         return handlers

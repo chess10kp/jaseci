@@ -86,6 +86,7 @@ import from ast_nodes {
     type_param,
     withitem,
     MatchOr,
+    MatchSingleton,
     ImportFrom,
 }
 import from peg_runtime { peg_parser, peg_token, peg_has_error, peg_raise_syntax_error }
@@ -544,6 +545,47 @@ def pa_constant_bool(
     );
 }
 
+def pa_match_singleton(
+    val: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> MatchSingleton {
+    pyval: PyObj;
+    if val is True {
+        pyval = PyBool(t="bool", val=True);
+    } elif val is False {
+        pyval = PyBool(t="bool", val=False);
+    } else {
+        pyval = py_none();
+    }
+    return MatchSingleton(
+        value=pyval,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def pa_pattern_list(patterns: object) -> list[pattern] {
+    if patterns is None {
+        return [];
+    }
+    src = patterns as list[pattern | None];
+    out: list[pattern] = [];
+    i = 0;
+    while i < len(src) {
+        p = src[i];
+        if p is not None {
+            out.append(p);
+        }
+        i = i + 1;
+    }
+    return out;
+}
+
 def pa_ast_expression(body: expr) -> Expression {
     return Expression(body=body);
 }
@@ -633,16 +675,17 @@ def pa_ast_compare(
 def pa_ast_call(
     func: expr,
     args: list[expr],
-    keywords: list[keyword],
+    keywords: list[keyword] | None,
     lineno: int,
     col_offset: int,
     end_lineno: int,
     end_col_offset: int
 ) -> Call {
+    kws = keywords if keywords is not None else [];
     return Call(
         func=func,
         args=args,
-        keywords=keywords,
+        keywords=kws,
         lineno=func.lineno,
         col_offset=func.col_offset,
         end_lineno=end_lineno,
@@ -964,7 +1007,7 @@ def pa_call_from_optional_args(
     );
 }
 
-def pa_check(body: expr) -> expr {
+def pa_check(body: object) -> object {
     return body;
 }
 
@@ -1152,7 +1195,7 @@ def pa_ast_pass(
 
 # tuple literal / target -> Tuple. ctx is Load (RHS) or Store (multi-target).
 def pa_ast_tuple(
-    elts: list[expr],
+    elts: list[expr] | None,
     ctx: expr_context,
     lineno: int,
     col_offset: int,
@@ -1310,6 +1353,38 @@ def pa_seq_append_to_end(head: object | None, item: object) -> list[object] {
     i = 0;
     while i < len(head_list) {
         out.append(head_list[i]);
+        i = i + 1;
+    }
+    out.append(item);
+    return out;
+}
+
+def pa_seq_append_to_end_expr(
+    head: list[expr] | None, item: expr
+) -> list[expr] {
+    if head is None {
+        return pa_singleton_seq_expr(item);
+    }
+    out: list[expr] = [];
+    i = 0;
+    while i < len(head) {
+        out.append(head[i]);
+        i = i + 1;
+    }
+    out.append(item);
+    return out;
+}
+
+def pa_seq_append_to_end_stmt(
+    head: list[stmt] | None, item: stmt
+) -> list[stmt] {
+    if head is None {
+        return pa_singleton_seq_stmt(item);
+    }
+    out: list[stmt] = [];
+    i = 0;
+    while i < len(head) {
+        out.append(head[i]);
         i = i + 1;
     }
     out.append(item);
@@ -1516,7 +1591,7 @@ def pa_call_keywords(`node: expr) -> list[keyword] {
     return [];
 }
 
-def pa_comp_field(`node: expr, field: str) -> expr {
+def pa_comp_field(`node: object, field: str) -> expr {
     pair = `node as kv_pair;
     if field == "key" {
         return pair.key;
@@ -1581,18 +1656,18 @@ def pa_raise_syntax(p: peg_parser, on_next: bool, message: str) -> None {
 }
 
 def pa_raise_syntax_known_expr(
-    p: peg_parser, on_next: bool, `node: expr, message: str
+    p: peg_parser, on_next: bool, `node: object | None, message: str
 ) -> None {
     return pa_raise_syntax(p, on_next, message);
 }
 
 def pa_raise_syntax_known_range(
-    p: peg_parser, on_next: bool, a: expr, b: expr, message: str
+    p: peg_parser, on_next: bool, a: object | None, b: object | None, message: str
 ) -> None {
     return pa_raise_syntax(p, on_next, message);
 }
 
-def pa_raise_invalid_target(p: peg_parser, kind: object, `node: expr) -> None {
+def pa_raise_invalid_target(p: peg_parser, kind: object, `node: object | None) -> None {
     return pa_raise_syntax(p, False, "invalid assignment target");
 }
 
@@ -1755,7 +1830,7 @@ def pa_seq_extract_starred_exprs(seq: list[object]) -> list[expr] {
     return out;
 }
 
-def pa_setup_full_format_spec(`node: object) -> object {
+def pa_setup_full_format_spec(`node: peg_token) -> peg_token {
     return `node;
 }
 
@@ -1822,8 +1897,8 @@ def pa_class_def_decorators(decs: list[expr], stmt: stmt) -> stmt {
 }
 
 def pa_key_value_pair(
-    key: expr,
-    value: expr,
+    key: object | None,
+    value: object,
     lineno: int,
     col_offset: int,
     end_lineno: int,
@@ -1957,7 +2032,6 @@ def pa_interpolation(
     c: object,
     d: object,
     e: object,
-    f: object,
     lineno: int,
     col_offset: int,
     end_lineno: int,
