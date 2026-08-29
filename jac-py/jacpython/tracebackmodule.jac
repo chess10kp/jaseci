@@ -58,6 +58,7 @@ import from tb_render {
     _TB_CONTEXT_MESSAGE,
 }
 import from exceptions_core { baseexception_str }
+import from ceval_api { py_attr, py_invoke, py_str }
 
 # Walk a guest tb chain into parallel (frame_code, lineno) columns.
 def _tb_collect(tb: any) -> tuple[list[PyCode], list[int]] {
@@ -527,7 +528,7 @@ obj TBExcCtorFn(PyObj) {
                 "TypeError", "Expected BaseException instance, got " + exc.t
             );
         }
-        tb = args[2];
+        tb: any = args[2];
         if isinstance(tb, PyNoneType) {
             tb = None;
         }
@@ -735,8 +736,7 @@ def _tb_exception_only_text(exc: PyObj) -> PyStr {
             body = "";
         }
     } else {
-        # user-defined exception instances: v1 renders type-less body only
-        sr = exc.tp_str();
+        sr = py_str(exc);
         if not is_error(sr) and isinstance(sr, PyStr) {
             body = (sr as PyStr).val;
         }
@@ -748,8 +748,6 @@ def _tb_exception_only_text(exc: PyObj) -> PyStr {
 }
 
 # Write text to a guest file-like via its BOUND write callable, or stderr.
-# The caller resolves target.write through ceval helpers -- importing them
-# here would create an import cycle with ceval.jac.
 def tb_write_bound(write_callable: PyObj, text: str) -> PyObj {
     if isinstance(write_callable, PyNoneType) {
         _tb_stderr_write(text);
@@ -899,7 +897,7 @@ obj TBStackLikeFn(PyObj) {
         if is_error(w) {
             return w;
         }
-        return py_invoke(w, [text], {});
+        return py_invoke(w, [PyStr(t="str", val=text)], {});
     }
 }
 
@@ -942,18 +940,17 @@ obj TBFrameSummaryCtorFn(PyObj) {
 }
 
 def traceback_module_attrs -> dict[str, PyObj] {
-    return {
-        "extract_tb": TBExtractFn(t="function"),
-        "format_tb": TBFormatTbFn(t="function"),
-        "print_tb": TBPrintTbFn(t="function"),
-        "format_exception": TBFmtExcFn(t="function"),
-        "walk_tb": TBWalkFn(t="function"),
-        "format_exception_only": TBFmtExcOnlyFn(t="function"),
-        "extract_stack": TBStackLikeFn(t="function", mode="extract"),
-        "format_stack": TBStackLikeFn(t="function", mode="format"),
-        "print_stack": TBStackLikeFn(t="function", mode="print"),
-        "TracebackException": TBExcCtorFn(t="type"),
-        "FrameSummary": TBFrameSummaryCtorFn(t="type"),
-        "__jac_shim_types__": _tb_shim_type_tags(),
-    };
+    attrs: dict[str, PyObj] = {};
+    attrs["extract_tb"] = TBExtractFn(t="function");
+    attrs["format_tb"] = TBFormatTbFn(t="function");
+    attrs["print_tb"] = TBPrintTbFn(t="function");
+    attrs["format_exception"] = TBFmtExcFn(t="function");
+    attrs["walk_tb"] = TBWalkFn(t="function");
+    attrs["format_exception_only"] = TBFmtExcOnlyFn(t="function");
+    attrs["extract_stack"] = TBStackLikeFn(t="function", mode="extract");
+    attrs["format_stack"] = TBStackLikeFn(t="function", mode="format");
+    attrs["print_stack"] = TBStackLikeFn(t="function", mode="print");
+    attrs["TracebackException"] = TBExcCtorFn(t="type");
+    attrs["FrameSummary"] = TBFrameSummaryCtorFn(t="type");
+    return attrs;
 }
