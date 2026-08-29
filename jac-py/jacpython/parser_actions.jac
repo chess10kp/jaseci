@@ -687,14 +687,15 @@ def pa_singleton_seq(item: object) -> list[object] {
     return [item];
 }
 
-def pa_seq_insert_front(head: object, tail: list[object] | None) -> list[object] {
+def pa_seq_insert_front(head: object, tail: object | None) -> list[object] {
     if tail is None {
         return pa_singleton_seq(head);
     }
+    tail_list = tail as list[object];
     out: list[object] = [head];
     i = 0;
-    while i < len(tail) {
-        out.append(tail[i]);
+    while i < len(tail_list) {
+        out.append(tail_list[i]);
         i = i + 1;
     }
     return out;
@@ -1122,14 +1123,15 @@ def pa_constant_from_expr(
     );
 }
 
-def pa_seq_append_to_end(head: list[object] | None, item: object) -> list[object] {
+def pa_seq_append_to_end(head: object | None, item: object) -> list[object] {
     if head is None {
         return pa_singleton_seq(item);
     }
+    head_list = head as list[object];
     out: list[object] = [];
     i = 0;
-    while i < len(head) {
-        out.append(head[i]);
+    while i < len(head_list) {
+        out.append(head_list[i]);
         i = i + 1;
     }
     out.append(item);
