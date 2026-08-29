@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "de7474cced606f8bb061b01378266bb88368c1f6",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_frame/conv_frame_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:07:43",
+  "hashes": {
+    "pins_jac": "067b8aed6db5e42bfd3ac167da7283996c1c43910e9fd2554bc8ab2002ccc140",
+    "conversion_json": "8c4d406f2507ba2de4adb294ce8a9cb595ac27943172a1cc113e2d9875120bdf",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "frame",
+  "counts": {
+    "converted": 47,
+    "runnable": 14,
+    "green": 0,
+    "quarantined": 33
+  },
+  "pins": [
+    {
+      "id": "ClearTest.test_clear_locals",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "ClearTest.test_clear_locals_after_f_locals_access",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "ClearTest.test_clear_does_not_clear_specials",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "ClearTest.test_clear_generator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "id": "ClearTest.test_clear_executing",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "ClearTest.test_clear_executing_generator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "id": "ClearTest.test_lineno_with_tracing",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "ClearTest.test_clear_refcycles",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "FrameAttrsTest.test_clear_locals",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FrameAttrsTest.test_locals_clear_locals",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FrameAttrsTest.test_f_lineno_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FrameAttrsTest.test_f_generator",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'frame' object has no attribute 'f_generator'"
+    },
+    {
+      "id": "TestFrameLocals.test_scope",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 1, 2)"
+    },
+    {
+      "id": "TestFrameLocals.test_closure",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 1, 2)"
+    },
+    {
+      "id": "TestFrameLocals.test_closure_with_inline_comprehension",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestFrameLocals.test_as_dict",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 2, 4)"
+    },
+    {
+      "id": "TestFrameLocals.test_as_number",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestFrameLocals.test_non_string_key",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestFrameLocals.test_write_with_hidden",
+      "status": "quarantined",
+      "reason": "host-raised:UnboundLocalError: cannot access local variable 'b' where it is not associated with a value"
+    },
+    {
+      "id": "TestFrameLocals.test_local_objects",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', <object object at 0x7fe956d78600>, 'a.b.c')"
+    },
+    {
+      "id": "TestFrameLocals.test_copy",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestFrameLocals.test_update_with_self",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestFrameLocals.test_repr",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestFrameLocals.test_delete",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "id": "TestFrameLocals.test_sizeof",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestFrameLocals.test_unsupport",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "id": "TestFrameLocals.test_proxy_key_stringlikes_overwrite",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', dict_keys(['obj', 'x']), ['obj', 'x', 'proxy'])"
+    },
+    {
+      "id": "TestFrameLocals.test_proxy_key_stringlikes_ftrst_write",
+      "status": "quarantined",
+      "reason": "host-raised:UnboundLocalError: cannot access local variable 'x' where it is not associated with a value"
+    },
+    {
+      "id": "TestFrameLocals.test_proxy_key_unhashables",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestFrameLocals.test_constructor",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 'dict', 'FrameLocalsProxy')"
+    },
+    {
+      "id": "TestFrameLocals.test_overwrite_locals",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestIncompleteFrameAreInvisible.test_entry_frames_are_invisible_during_teardown",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_constructor",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_write",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_popitem",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_pop",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_clear",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_fromkeys",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_update",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_eq",
+      "status": "quarantined",
+      "reason": "skipped-on-host"
+    },
+    {
+      "id": "TestIncompleteFrameAreInvisible.test_sneaky_frame_object_teardown",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "ReprTest.test_repr",
+      "status": "quarantined",
+      "reason": "unresolved-name:__file__"
+    },
+    {
+      "id": "TestFrameLocals.test_is_mapping",
+      "status": "quarantined",
+      "reason": "uses-self.assertEqual"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_getitem",
+      "status": "quarantined",
+      "reason": "uses-self._full_mapping"
+    },
+    {
+      "id": "FrameLocalsProxyMappingTests.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self._empty_mapping"
+    },
+    {
+      "id": "TestFrameCApi.test_basic",
+      "status": "quarantined",
+      "reason": "unresolved-name:__builtins__"
+    },
+    {
+      "id": "TestIncompleteFrameAreInvisible.test_issue95818",
+      "status": "quarantined",
+      "reason": "unsupported-import:test.support.script_helper"
+    }
+  ]
+}
