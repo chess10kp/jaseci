@@ -2796,13 +2796,20 @@
     {
       "stem": "codecmaps_hk",
       "gate_type": "oracle",
-      "status": "converted",
+      "status": "partial",
       "oracle_tests": [
         "jac-py/tests/conv_codecmaps_hk/conv_codecmaps_hk_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "0 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_codecmaps_hk/conversion.json"
+      "conversion_meta": "jac-py/tests/conv_codecmaps_hk/conversion.json",
+      "jacpython_results": {
+        "codecmaps_hk": {
+          "passed": 0,
+          "total": 0,
+          "notes": "0/0 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
+        }
+      }
     },
     {
       "stem": "platform",
