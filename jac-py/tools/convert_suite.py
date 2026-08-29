@@ -1123,12 +1123,16 @@ class _FixtureVocab:
         self.allowed_calls: set[str] = set()
         self._ok: dict[str, ast.FunctionDef] = {}
         self._failed: dict[str, Unsupported] = {}
+        self._lifting: set[str] = set()
 
     def ensure(self, attr: str) -> ast.FunctionDef:
         if attr in self._ok:
             return self._ok[attr]
         if attr in self._failed:
             raise self._failed[attr]
+        if attr in self._lifting:
+            raise Unsupported(f"recursive-helper:{attr}")
+        self._lifting.add(attr)
         try:
             fn = _resolve_method(self.cmap, self.cls_name, attr)
             if fn is None:
@@ -1138,6 +1142,8 @@ class _FixtureVocab:
             wrapped = Unsupported(f"helper:{attr}({exc})")
             self._failed[attr] = wrapped
             raise wrapped from None
+        finally:
+            self._lifting.discard(attr)
         self._ok[attr] = lifted
         self.lifted.append(lifted)
         self.needs_re = self.needs_re or needs_re

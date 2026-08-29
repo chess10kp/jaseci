@@ -1,0 +1,1309 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_ast/test_ast.py",
+    "-o",
+    "/var/tmp/worker6-401-convert-test_ast-1274696/jac-py/tests/conv_ast",
+    "--name",
+    "conv_ast"
+  ],
+  "generated_at": "2026-08-29T11:40:43",
+  "hashes": {
+    "pins_jac": "2a9be0b78b67da412a23b23f01cc4b14c3cf1991e6592f7818fa6d5f05c9e8ed"
+  },
+  "source_file": "reference/cpython/Lib/test/test_ast/test_ast.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "ast",
+  "pins_file": "conv_ast_pins.jac",
+  "pins": [
+    {
+      "ident": "LazyImportTest.test_lazy_import",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "AST_Tests.test_AST_objects",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 15"
+    },
+    {
+      "ident": "AST_Tests.test_AST_fields_NULL_check",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\n_cleanups = []\n\ndef _add_cleanup(f, *args, **kwargs):\n    _cleanups.append((f, args, kwargs))\n\ndef _run_cleanups():\n    while _cleanups:\n        f, args, kwargs = _cleanups.pop()\n        f(*args, **kwargs)\nimport ast\n\ndef _t():\n    old_value = ast.AST._fields\n\n    def cleanup():\n        ast.AST._fields = old_value\n    _add_cleanup(cleanup)\n    del ast.AST._fields\n    msg = \"type object 'ast.AST' has no attribute '_fields'\"\n    try:\n        ast.AST(arg1=123)\n    except AttributeError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    try:\n        ast.AST()\n    except AttributeError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\nfinally:\n    _run_cleanups()\n"
+    },
+    {
+      "ident": "AST_Tests.test_AST_garbage_collection",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "AST_Tests.test_parse_invalid_ast",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    for optval in (-1, 0, 1, 2):\n        try:\n            ast.parse(*(ast.Constant(42),), optimize=optval)\n        except TypeError:\n            pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_optimization_levels__debug__",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: parse() got an unexpected keyword argument 'optimize'"
+    },
+    {
+      "ident": "AST_Tests.test_invalid_position_information",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "AST_Tests.test_compilation_of_ast_nodes_with_default_end_position_values",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    tree = ast.Module(body=[ast.Import(names=[ast.alias(name='builtins', lineno=1, col_offset=0)], lineno=1, col_offset=0), ast.Import(names=[ast.alias(name='traceback', lineno=0, col_offset=0)], lineno=0, col_offset=1)], type_ignores=[])\n    compile(tree, '<string>', 'exec')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_negative_locations_for_compile",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: parse() got an unexpected keyword argument 'optimize'"
+    },
+    {
+      "ident": "AST_Tests.test_docstring_optimization_single_node",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: parse() got an unexpected keyword argument 'optimize'"
+    },
+    {
+      "ident": "AST_Tests.test_docstring_optimization_multiple_nodes",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: parse() got an unexpected keyword argument 'optimize'"
+    },
+    {
+      "ident": "AST_Tests.test_slice",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    slc = ast.parse('x[::]').body[0].value.slice\n    assert slc.upper is None, ('assertIsNone', slc.upper)\n    assert slc.lower is None, ('assertIsNone', slc.lower)\n    assert slc.step is None, ('assertIsNone', slc.step)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_from_import",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    im = ast.parse('from . import y').body[0]\n    assert im.module is None, ('assertIsNone', im.module)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_non_interned_future_from_ast",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    mod = ast.parse('from __future__ import division')\n    assert isinstance(mod.body[0], ast.ImportFrom), ('assertIsInstance', mod.body[0], ast.ImportFrom)\n    mod.body[0].module = ' __future__ '.strip()\n    compile(mod, '<test>', 'exec')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_alias",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    im = ast.parse('from bar import y').body[0]\n    assert len(im.names) == 1, ('assertEqual', len(im.names), 1)\n    alias = im.names[0]\n    assert alias.name == 'y', ('assertEqual', alias.name, 'y')\n    assert alias.asname is None, ('assertIsNone', alias.asname)\n    assert alias.lineno == 1, ('assertEqual', alias.lineno, 1)\n    assert alias.end_lineno == 1, ('assertEqual', alias.end_lineno, 1)\n    assert alias.col_offset == 16, ('assertEqual', alias.col_offset, 16)\n    assert alias.end_col_offset == 17, ('assertEqual', alias.end_col_offset, 17)\n    im = ast.parse('from bar import *').body[0]\n    alias = im.names[0]\n    assert alias.name == '*', ('assertEqual', alias.name, '*')\n    assert alias.asname is None, ('assertIsNone', alias.asname)\n    assert alias.lineno == 1, ('assertEqual', alias.lineno, 1)\n    assert alias.end_lineno == 1, ('assertEqual', alias.end_lineno, 1)\n    assert alias.col_offset == 16, ('assertEqual', alias.col_offset, 16)\n    assert alias.end_col_offset == 17, ('assertEqual', alias.end_col_offset, 17)\n    im = ast.parse('from bar import y as z').body[0]\n    alias = im.names[0]\n    assert alias.name == 'y', ('assertEqual', alias.name, 'y')\n    assert alias.asname == 'z', ('assertEqual', alias.asname, 'z')\n    assert alias.lineno == 1, ('assertEqual', alias.lineno, 1)\n    assert alias.end_lineno == 1, ('assertEqual', alias.end_lineno, 1)\n    assert alias.col_offset == 16, ('assertEqual', alias.col_offset, 16)\n    assert alias.end_col_offset == 22, ('assertEqual', alias.end_col_offset, 22)\n    im = ast.parse('import bar as foo').body[0]\n    alias = im.names[0]\n    assert alias.name == 'bar', ('assertEqual', alias.name, 'bar')\n    assert alias.asname == 'foo', ('assertEqual', alias.asname, 'foo')\n    assert alias.lineno == 1, ('assertEqual', alias.lineno, 1)\n    assert alias.end_lineno == 1, ('assertEqual', alias.end_lineno, 1)\n    assert alias.col_offset == 7, ('assertEqual', alias.col_offset, 7)\n    assert alias.end_col_offset == 17, ('assertEqual', alias.end_col_offset, 17)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_base_classes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    assert issubclass(ast.For, ast.stmt), ('assertIsSubclass', ast.For, ast.stmt)\n    assert issubclass(ast.Name, ast.expr), ('assertIsSubclass', ast.Name, ast.expr)\n    assert issubclass(ast.stmt, ast.AST), ('assertIsSubclass', ast.stmt, ast.AST)\n    assert issubclass(ast.expr, ast.AST), ('assertIsSubclass', ast.expr, ast.AST)\n    assert issubclass(ast.comprehension, ast.AST), ('assertIsSubclass', ast.comprehension, ast.AST)\n    assert issubclass(ast.Gt, ast.AST), ('assertIsSubclass', ast.Gt, ast.AST)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_arguments",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', {}, {'posonlyargs': list[ast.arg], 'args': list[ast.arg], 'vararg': ast.arg | None, 'kwonlyargs': list[a"
+    },
+    {
+      "ident": "AST_Tests.test_field_attr_writable",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    x = ast.Constant(1)\n    x._fields = 666\n    assert x._fields == 666, ('assertEqual', x._fields, 666)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_constant_subclasses",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.maxDiff = None\n    _SelfNS.maxDiff = None\n\n    class N(ast.Constant):\n\n        def __init__(self, *args, **kwargs):\n            super().__init__(*args, **kwargs)\n            self.z = 'spam'\n\n    class N2(ast.Constant):\n        pass\n    n = N(42)\n    assert n.value == 42, ('assertEqual', n.value, 42)\n    assert n.z == 'spam', ('assertEqual', n.z, 'spam')\n    assert type(n) == N, ('assertEqual', type(n), N)\n    assert isinstance(n, N), ('assertTrue', isinstance(n, N))\n    assert isinstance(n, ast.Constant), ('assertTrue', isinstance(n, ast.Constant))\n    assert not isinstance(n, N2), ('assertFalse', isinstance(n, N2))\n    assert not isinstance(ast.Constant(42), N), ('assertFalse', isinstance(ast.Constant(42), N))\n    n = N(value=42)\n    assert n.value == 42, ('assertEqual', n.value, 42)\n    assert type(n) == N, ('assertEqual', type(n), N)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    body = [ast.Constant(42)]\n    x = ast.Module(body, [])\n    assert x.body == body, ('assertEqual', x.body, body)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_no_fields",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    x = ast.Sub()\n    assert x._fields == (), ('assertEqual', x._fields, ())\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_invalid_sum",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertIn', 'but got expr()', 'expected some sort of expr, but got <ast.expr object at 0x7f8001e232d0>')"
+    },
+    {
+      "ident": "AST_Tests.test_invalid_identifier",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    m = ast.Module([ast.Expr(ast.Name(42, ast.Load()))], [])\n    ast.fix_missing_locations(m)\n    try:\n        compile(m, '<test>', 'exec')\n    except TypeError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert 'identifier must be of type str' in str(cm), ('assertIn', 'identifier must be of type str', str(cm))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_invalid_constant",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\nimport ast\n\ndef _t():\n    for invalid_constant in (int, (1, 2, int), frozenset((1, 2, int))):\n        e = ast.Expression(body=ast.Constant(invalid_constant))\n        ast.fix_missing_locations(e)\n        try:\n            compile(e, '<test>', 'eval')\n        except TypeError as _exc:\n            assert _re.search('invalid type in Constant: type', str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_empty_yield_from",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    empty_yield_from = ast.parse('def f():\\n yield from g()')\n    empty_yield_from.body[0].body[0].value.value = None\n    try:\n        compile(empty_yield_from, '<test>', 'exec')\n    except ValueError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert \"field 'value' is required\" in str(cm), ('assertIn', \"field 'value' is required\", str(cm))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_issue31592",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "AST_Tests.test_issue18374_binop_col_offset",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    tree = ast.parse('4+5+6+7')\n    parent_binop = tree.body[0].value\n    child_binop = parent_binop.left\n    grandchild_binop = child_binop.left\n    assert parent_binop.col_offset == 0, ('assertEqual', parent_binop.col_offset, 0)\n    assert parent_binop.end_col_offset == 7, ('assertEqual', parent_binop.end_col_offset, 7)\n    assert child_binop.col_offset == 0, ('assertEqual', child_binop.col_offset, 0)\n    assert child_binop.end_col_offset == 5, ('assertEqual', child_binop.end_col_offset, 5)\n    assert grandchild_binop.col_offset == 0, ('assertEqual', grandchild_binop.col_offset, 0)\n    assert grandchild_binop.end_col_offset == 3, ('assertEqual', grandchild_binop.end_col_offset, 3)\n    tree = ast.parse('4+5-\\\\\\n 6-7')\n    parent_binop = tree.body[0].value\n    child_binop = parent_binop.left\n    grandchild_binop = child_binop.left\n    assert parent_binop.col_offset == 0, ('assertEqual', parent_binop.col_offset, 0)\n    assert parent_binop.lineno == 1, ('assertEqual', parent_binop.lineno, 1)\n    assert parent_binop.end_col_offset == 4, ('assertEqual', parent_binop.end_col_offset, 4)\n    assert parent_binop.end_lineno == 2, ('assertEqual', parent_binop.end_lineno, 2)\n    assert child_binop.col_offset == 0, ('assertEqual', child_binop.col_offset, 0)\n    assert child_binop.lineno == 1, ('assertEqual', child_binop.lineno, 1)\n    assert child_binop.end_col_offset == 2, ('assertEqual', child_binop.end_col_offset, 2)\n    assert child_binop.end_lineno == 2, ('assertEqual', child_binop.end_lineno, 2)\n    assert grandchild_binop.col_offset == 0, ('assertEqual', grandchild_binop.col_offset, 0)\n    assert grandchild_binop.lineno == 1, ('assertEqual', grandchild_binop.lineno, 1)\n    assert grandchild_binop.end_col_offset == 3, ('assertEqual', grandchild_binop.end_col_offset, 3)\n    assert grandchild_binop.end_lineno == 1, ('assertEqual', grandchild_binop.end_lineno, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_issue39579_dotted_name_end_col_offset",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    tree = ast.parse('@a.b.c\\ndef f(): pass')\n    attr_b = tree.body[0].decorator_list[0].value\n    assert attr_b.end_col_offset == 4, ('assertEqual', attr_b.end_col_offset, 4)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_ast_asdl_signature",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    assert ast.withitem.__doc__ == 'withitem(expr context_expr, expr? optional_vars)', ('assertEqual', ast.withitem.__doc__, 'withitem(expr context_expr, expr? optional_vars)')\n    assert ast.GtE.__doc__ == 'GtE', ('assertEqual', ast.GtE.__doc__, 'GtE')\n    assert ast.Name.__doc__ == 'Name(identifier id, expr_context ctx)', ('assertEqual', ast.Name.__doc__, 'Name(identifier id, expr_context ctx)')\n    assert ast.cmpop.__doc__ == 'cmpop = Eq | NotEq | Lt | LtE | Gt | GtE | Is | IsNot | In | NotIn', ('assertEqual', ast.cmpop.__doc__, 'cmpop = Eq | NotEq | Lt | LtE | Gt | GtE | Is | IsNot | In | NotIn')\n    expressions = [f'     | {node.__doc__}' for node in ast.expr.__subclasses__()]\n    expressions[0] = f'expr = {ast.expr.__subclasses__()[0].__doc__}'\n    assert sorted(ast.expr.__doc__.split('\\n'), key=repr) == sorted(expressions, key=repr), ('assertCountEqual', ast.expr.__doc__.split('\\n'), expressions)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_compare_basics",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'ast' has no attribute 'compare'"
+    },
+    {
+      "ident": "AST_Tests.test_compare_modified_ast",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'ast' has no attribute 'compare'"
+    },
+    {
+      "ident": "AST_Tests.test_compare_literals",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'ast' has no attribute 'compare'"
+    },
+    {
+      "ident": "AST_Tests.test_compare_fieldless",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'ast' has no attribute 'compare'"
+    },
+    {
+      "ident": "AST_Tests.test_compare_attributes_option",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'ast' has no attribute 'compare'"
+    },
+    {
+      "ident": "AST_Tests.test_compare_attributes_option_missing_attribute",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'ast' has no attribute 'compare'"
+    },
+    {
+      "ident": "AST_Tests.test_positional_only_feature_version",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 12"
+    },
+    {
+      "ident": "AST_Tests.test_assignment_expression_feature_version",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 11"
+    },
+    {
+      "ident": "AST_Tests.test_pep750_tstring",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 12"
+    },
+    {
+      "ident": "AST_Tests.test_pep758_except_without_parens",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 13"
+    },
+    {
+      "ident": "AST_Tests.test_pep758_except_with_single_expr",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nimport textwrap\n\ndef _t():\n    single_expr = textwrap.dedent('\\n            try:\\n                ...\\n            except{0} TypeError:\\n                ...\\n        ')\n    single_expr_with_as = textwrap.dedent('\\n            try:\\n                ...\\n            except{0} TypeError as exc:\\n                ...\\n        ')\n    single_tuple_expr = textwrap.dedent('\\n            try:\\n                ...\\n            except{0} (TypeError,):\\n                ...\\n        ')\n    single_tuple_expr_with_as = textwrap.dedent('\\n            try:\\n                ...\\n            except{0} (TypeError,) as exc:\\n                ...\\n        ')\n    single_parens_expr = textwrap.dedent('\\n            try:\\n                ...\\n            except{0} (TypeError):\\n                ...\\n        ')\n    single_parens_expr_with_as = textwrap.dedent('\\n            try:\\n                ...\\n            except{0} (TypeError) as exc:\\n                ...\\n        ')\n    for code in [single_expr, single_expr_with_as, single_tuple_expr, single_tuple_expr_with_as, single_parens_expr, single_parens_expr_with_as]:\n        for star in [True, False]:\n            code = code.format('*' if star else '')\n            ast.parse(code, feature_version=(3, 14))\n            ast.parse(code, feature_version=(3, 13))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_pep758_except_star_without_parens",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 13"
+    },
+    {
+      "ident": "AST_Tests.test_conditional_context_managers_parse_with_low_feature_version",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    ast.parse('with (x() if y else z()): ...', feature_version=(3, 8))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_exception_groups_feature_version",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 13"
+    },
+    {
+      "ident": "AST_Tests.test_type_params_feature_version",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 13"
+    },
+    {
+      "ident": "AST_Tests.test_type_params_default_feature_version",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 13"
+    },
+    {
+      "ident": "AST_Tests.test_invalid_major_feature_version",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 10"
+    },
+    {
+      "ident": "AST_Tests.test_constant_as_name",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\nimport ast\n\ndef _t():\n    for constant in ('True', 'False', 'None'):\n        expr = ast.Expression(ast.Name(constant, ast.Load()))\n        ast.fix_missing_locations(expr)\n        try:\n            compile(expr, '<test>', 'eval')\n        except ValueError as _exc:\n            assert _re.search(f\"identifier field can't represent '{constant}' constant\", str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_constant_as_unicode_name",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "ident": "AST_Tests.test_null_bytes",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 10"
+    },
+    {
+      "ident": "AST_Tests.test_none_checks",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\nimport ast\nimport re\n\ndef _t():\n\n    def assert_none_check(node: type[ast.AST], attr: str, source: str):\n        tree = ast.parse(source)\n        found = 0\n        for child in ast.walk(tree):\n            if isinstance(child, node):\n                setattr(child, attr, None)\n                found += 1\n        assert found == 1, ('assertEqual', found, 1)\n        e = re.escape(f\"field '{attr}' is required for {node.__name__}\")\n        try:\n            compile(tree, '<test>', 'exec')\n        except ValueError as _exc:\n            assert _re.search(f'^{e}$', str(_exc)), 'assertRaisesRegex: message mismatch'\n        else:\n            raise AssertionError('assertRaises: did not raise')\n    tests = [(ast.alias, 'name', 'import spam as SPAM'), (ast.arg, 'arg', 'def spam(SPAM): spam'), (ast.comprehension, 'target', '[spam for SPAM in spam]'), (ast.comprehension, 'iter', '[spam for spam in SPAM]'), (ast.keyword, 'value', 'spam(**SPAM)'), (ast.match_case, 'pattern', 'match spam:\\n case SPAM: spam'), (ast.withitem, 'context_expr', 'with SPAM: spam')]\n    for node, attr, source in tests:\n        assert_none_check(node, attr, source)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "AST_Tests.test_repr_large_input_crash",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "ident": "AST_Tests.test_tstring",
+      "status": "quarantined",
+      "reason": "host-raised:SyntaxError: invalid syntax (<unknown>, line 1)"
+    },
+    {
+      "ident": "CopyTests.test_replace_accept_known_class_fields",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_accept_known_class_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_accept_known_custom_class_fields",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_accept_known_custom_class_attributes",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_ignore_known_custom_instance_fields",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_reject_missing_field",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_accept_missing_field_with_default",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'FunctionDef' object has no attribute 'decorator_list'"
+    },
+    {
+      "ident": "CopyTests.test_replace_reject_known_custom_instance_fields_commits",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_reject_unknown_instance_fields",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'copy' has no attribute 'replace'"
+    },
+    {
+      "ident": "CopyTests.test_replace_non_str_kwarg",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'Name' object has no attribute '__replace__'"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_parse",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    a = ast.parse('foo(1 + 1)')\n    b = compile('foo(1 + 1)', '<unknown>', 'exec', ast.PyCF_ONLY_AST)\n    assert ast.dump(a) == ast.dump(b), ('assertEqual', ast.dump(a), ast.dump(b))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_parse_in_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    try:\n        1 / 0\n    except Exception:\n        try:\n            ast.literal_eval(\"'\\\\U'\")\n        except SyntaxError as _exc:\n            e = _exc\n        else:\n            raise AssertionError('assertRaises: did not raise')\n        assert e.__context__ is not None, ('assertIsNotNone', e.__context__)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_dump",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \"Module(body=[Expr(value=Call(func=Name(id='spam', ctx=Load()), args=[Name(id='eggs', ctx=Load()), Const"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_dump_indent",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \"Module(\\n   body=[\\n      Expr(\\n         value=Call(\\n            func=Name(id='spam', ctx=Load()),\\n "
+    },
+    {
+      "ident": "ASTHelpers_Test.test_dump_incomplete",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \"arguments(args=[arg('x')])\", \"arguments([], [arg('x')])\")"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_dump_show_empty",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dump() got an unexpected keyword argument 'show_empty'"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_copy_location",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    src = ast.parse('1 + 1', mode='eval')\n    src.body.right = ast.copy_location(ast.Constant(2), src.body.right)\n    assert ast.dump(src, include_attributes=True) == 'Expression(body=BinOp(left=Constant(value=1, lineno=1, col_offset=0, end_lineno=1, end_col_offset=1), op=Add(), right=Constant(value=2, lineno=1, col_offset=4, end_lineno=1, end_col_offset=5), lineno=1, col_offset=0, end_lineno=1, end_col_offset=5))', ('assertEqual', ast.dump(src, include_attributes=True), 'Expression(body=BinOp(left=Constant(value=1, lineno=1, col_offset=0, end_lineno=1, end_col_offset=1), op=Add(), right=Constant(value=2, lineno=1, col_offset=4, end_lineno=1, end_col_offset=5), lineno=1, col_offset=0, end_lineno=1, end_col_offset=5))')\n    func = ast.Name('spam', ast.Load())\n    src = ast.Call(col_offset=1, lineno=1, end_lineno=1, end_col_offset=1, func=func)\n    new = ast.copy_location(src, ast.Call(col_offset=None, lineno=None, func=func))\n    assert new.end_lineno is None, ('assertIsNone', new.end_lineno)\n    assert new.end_col_offset is None, ('assertIsNone', new.end_col_offset)\n    assert new.lineno == 1, ('assertEqual', new.lineno, 1)\n    assert new.col_offset == 1, ('assertEqual', new.col_offset, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_fix_missing_locations",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \"Module(body=[Expr(value=Call(func=Name(id='write', ctx=Load(), lineno=1, col_offset=0, end_lineno=1, en"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_increment_lineno",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    src = ast.parse('1 + 1', mode='eval')\n    assert ast.increment_lineno(src, n=3) == src, ('assertEqual', ast.increment_lineno(src, n=3), src)\n    assert ast.dump(src, include_attributes=True) == 'Expression(body=BinOp(left=Constant(value=1, lineno=4, col_offset=0, end_lineno=4, end_col_offset=1), op=Add(), right=Constant(value=1, lineno=4, col_offset=4, end_lineno=4, end_col_offset=5), lineno=4, col_offset=0, end_lineno=4, end_col_offset=5))', ('assertEqual', ast.dump(src, include_attributes=True), 'Expression(body=BinOp(left=Constant(value=1, lineno=4, col_offset=0, end_lineno=4, end_col_offset=1), op=Add(), right=Constant(value=1, lineno=4, col_offset=4, end_lineno=4, end_col_offset=5), lineno=4, col_offset=0, end_lineno=4, end_col_offset=5))')\n    src = ast.parse('1 + 1', mode='eval')\n    assert ast.increment_lineno(src.body, n=3) == src.body, ('assertEqual', ast.increment_lineno(src.body, n=3), src.body)\n    assert ast.dump(src, include_attributes=True) == 'Expression(body=BinOp(left=Constant(value=1, lineno=4, col_offset=0, end_lineno=4, end_col_offset=1), op=Add(), right=Constant(value=1, lineno=4, col_offset=4, end_lineno=4, end_col_offset=5), lineno=4, col_offset=0, end_lineno=4, end_col_offset=5))', ('assertEqual', ast.dump(src, include_attributes=True), 'Expression(body=BinOp(left=Constant(value=1, lineno=4, col_offset=0, end_lineno=4, end_col_offset=1), op=Add(), right=Constant(value=1, lineno=4, col_offset=4, end_lineno=4, end_col_offset=5), lineno=4, col_offset=0, end_lineno=4, end_col_offset=5))')\n    src = ast.Call(func=ast.Name('test', ast.Load()), args=[], keywords=[], lineno=1)\n    assert ast.increment_lineno(src).lineno == 2, ('assertEqual', ast.increment_lineno(src).lineno, 2)\n    assert ast.increment_lineno(src).end_lineno is None, ('assertIsNone', ast.increment_lineno(src).end_lineno)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_increment_lineno_on_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n    src = ast.parse(dedent('        a = 1\\n        b = 2 # type: ignore\\n        c = 3\\n        d = 4 # type: ignore@tag\\n        '), type_comments=True)\n    ast.increment_lineno(src, n=5)\n    assert src.type_ignores[0].lineno == 7, ('assertEqual', src.type_ignores[0].lineno, 7)\n    assert src.type_ignores[1].lineno == 9, ('assertEqual', src.type_ignores[1].lineno, 9)\n    assert src.type_ignores[1].tag == '@tag', ('assertEqual', src.type_ignores[1].tag, '@tag')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_iter_fields",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    node = ast.parse('foo()', mode='eval')\n    d = dict(ast.iter_fields(node.body))\n    assert d.pop('func').id == 'foo', ('assertEqual', d.pop('func').id, 'foo')\n    assert d == {'keywords': [], 'args': []}, ('assertEqual', d, {'keywords': [], 'args': []})\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_iter_child_nodes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    node = ast.parse(\"spam(23, 42, eggs='leek')\", mode='eval')\n    assert len(list(ast.iter_child_nodes(node.body))) == 4, ('assertEqual', len(list(ast.iter_child_nodes(node.body))), 4)\n    iterator = ast.iter_child_nodes(node.body)\n    assert next(iterator).id == 'spam', ('assertEqual', next(iterator).id, 'spam')\n    assert next(iterator).value == 23, ('assertEqual', next(iterator).value, 23)\n    assert next(iterator).value == 42, ('assertEqual', next(iterator).value, 42)\n    assert ast.dump(next(iterator)) == \"keyword(arg='eggs', value=Constant(value='leek'))\", ('assertEqual', ast.dump(next(iterator)), \"keyword(arg='eggs', value=Constant(value='leek'))\")\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_get_docstring",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    node = ast.parse('\"\"\"line one\\n  line two\"\"\"')\n    assert ast.get_docstring(node) == 'line one\\nline two', ('assertEqual', ast.get_docstring(node), 'line one\\nline two')\n    node = ast.parse('class foo:\\n  \"\"\"line one\\n  line two\"\"\"')\n    assert ast.get_docstring(node.body[0]) == 'line one\\nline two', ('assertEqual', ast.get_docstring(node.body[0]), 'line one\\nline two')\n    node = ast.parse('def foo():\\n  \"\"\"line one\\n  line two\"\"\"')\n    assert ast.get_docstring(node.body[0]) == 'line one\\nline two', ('assertEqual', ast.get_docstring(node.body[0]), 'line one\\nline two')\n    node = ast.parse('async def foo():\\n  \"\"\"spam\\n  ham\"\"\"')\n    assert ast.get_docstring(node.body[0]) == 'spam\\nham', ('assertEqual', ast.get_docstring(node.body[0]), 'spam\\nham')\n    node = ast.parse('async def foo():\\n  \"\"\"spam\\n  ham\"\"\"')\n    assert ast.get_docstring(node.body[0], clean=False) == 'spam\\n  ham', ('assertEqual', ast.get_docstring(node.body[0], clean=False), 'spam\\n  ham')\n    node = ast.parse('x')\n    try:\n        ast.get_docstring(*(node.body[0],))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_get_docstring_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    assert ast.get_docstring(ast.parse('')) is None, ('assertIsNone', ast.get_docstring(ast.parse('')))\n    node = ast.parse('x = \"not docstring\"')\n    assert ast.get_docstring(node) is None, ('assertIsNone', ast.get_docstring(node))\n    node = ast.parse('def foo():\\n  pass')\n    assert ast.get_docstring(node) is None, ('assertIsNone', ast.get_docstring(node))\n    node = ast.parse('class foo:\\n  pass')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\n    node = ast.parse('class foo:\\n  x = \"not docstring\"')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\n    node = ast.parse('class foo:\\n  def bar(self): pass')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\n    node = ast.parse('def foo():\\n  pass')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\n    node = ast.parse('def foo():\\n  x = \"not docstring\"')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\n    node = ast.parse('async def foo():\\n  pass')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\n    node = ast.parse('async def foo():\\n  x = \"not docstring\"')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\n    node = ast.parse('async def foo():\\n  42')\n    assert ast.get_docstring(node.body[0]) is None, ('assertIsNone', ast.get_docstring(node.body[0]))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_multi_line_docstring_col_offset_and_lineno_issue16806",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    node = ast.parse('\"\"\"line one\\nline two\"\"\"\\n\\ndef foo():\\n  \"\"\"line one\\n  line two\"\"\"\\n\\n  def bar():\\n    \"\"\"line one\\n    line two\"\"\"\\n  \"\"\"line one\\n  line two\"\"\"\\n\"\"\"line one\\nline two\"\"\"\\n\\n')\n    assert node.body[0].col_offset == 0, ('assertEqual', node.body[0].col_offset, 0)\n    assert node.body[0].lineno == 1, ('assertEqual', node.body[0].lineno, 1)\n    assert node.body[1].body[0].col_offset == 2, ('assertEqual', node.body[1].body[0].col_offset, 2)\n    assert node.body[1].body[0].lineno == 5, ('assertEqual', node.body[1].body[0].lineno, 5)\n    assert node.body[1].body[1].body[0].col_offset == 4, ('assertEqual', node.body[1].body[1].body[0].col_offset, 4)\n    assert node.body[1].body[1].body[0].lineno == 9, ('assertEqual', node.body[1].body[1].body[0].lineno, 9)\n    assert node.body[1].body[2].col_offset == 2, ('assertEqual', node.body[1].body[2].col_offset, 2)\n    assert node.body[1].body[2].lineno == 11, ('assertEqual', node.body[1].body[2].lineno, 11)\n    assert node.body[2].col_offset == 0, ('assertEqual', node.body[2].col_offset, 0)\n    assert node.body[2].lineno == 13, ('assertEqual', node.body[2].lineno, 13)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_elif_stmt_start_position",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    node = ast.parse('if a:\\n    pass\\nelif b:\\n    pass\\n')\n    elif_stmt = node.body[0].orelse[0]\n    assert elif_stmt.lineno == 3, ('assertEqual', elif_stmt.lineno, 3)\n    assert elif_stmt.col_offset == 0, ('assertEqual', elif_stmt.col_offset, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_elif_stmt_start_position_with_else",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    node = ast.parse('if a:\\n    pass\\nelif b:\\n    pass\\nelse:\\n    pass\\n')\n    elif_stmt = node.body[0].orelse[0]\n    assert elif_stmt.lineno == 3, ('assertEqual', elif_stmt.lineno, 3)\n    assert elif_stmt.col_offset == 0, ('assertEqual', elif_stmt.col_offset, 0)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_starred_expr_end_position_within_call",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    node = ast.parse('f(*[0, 1])')\n    starred_expr = node.body[0].value.args[0]\n    assert starred_expr.end_lineno == 1, ('assertEqual', starred_expr.end_lineno, 1)\n    assert starred_expr.end_col_offset == 9, ('assertEqual', starred_expr.end_col_offset, 9)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_literal_eval",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    assert ast.literal_eval('[1, 2, 3]') == [1, 2, 3], ('assertEqual', ast.literal_eval('[1, 2, 3]'), [1, 2, 3])\n    assert ast.literal_eval('{\"foo\": 42}') == {'foo': 42}, ('assertEqual', ast.literal_eval('{\"foo\": 42}'), {'foo': 42})\n    assert ast.literal_eval('(True, False, None)') == (True, False, None), ('assertEqual', ast.literal_eval('(True, False, None)'), (True, False, None))\n    assert ast.literal_eval('{1, 2, 3}') == {1, 2, 3}, ('assertEqual', ast.literal_eval('{1, 2, 3}'), {1, 2, 3})\n    assert ast.literal_eval('b\"hi\"') == b'hi', ('assertEqual', ast.literal_eval('b\"hi\"'), b'hi')\n    assert ast.literal_eval('set()') == set(), ('assertEqual', ast.literal_eval('set()'), set())\n    try:\n        ast.literal_eval(*('foo()',))\n    except ValueError:\n        pass\n    assert ast.literal_eval('6') == 6, ('assertEqual', ast.literal_eval('6'), 6)\n    assert ast.literal_eval('+6') == 6, ('assertEqual', ast.literal_eval('+6'), 6)\n    assert ast.literal_eval('-6') == -6, ('assertEqual', ast.literal_eval('-6'), -6)\n    assert ast.literal_eval('3.25') == 3.25, ('assertEqual', ast.literal_eval('3.25'), 3.25)\n    assert ast.literal_eval('+3.25') == 3.25, ('assertEqual', ast.literal_eval('+3.25'), 3.25)\n    assert ast.literal_eval('-3.25') == -3.25, ('assertEqual', ast.literal_eval('-3.25'), -3.25)\n    assert repr(ast.literal_eval('-0.0')) == '-0.0', ('assertEqual', repr(ast.literal_eval('-0.0')), '-0.0')\n    try:\n        ast.literal_eval(*('++6',))\n    except ValueError:\n        pass\n    try:\n        ast.literal_eval(*('+True',))\n    except ValueError:\n        pass\n    try:\n        ast.literal_eval(*('2+3',))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_literal_eval_str_int_limit",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_literal_eval_complex",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    assert ast.literal_eval('6j') == 6j, ('assertEqual', ast.literal_eval('6j'), 6j)\n    assert ast.literal_eval('-6j') == -6j, ('assertEqual', ast.literal_eval('-6j'), -6j)\n    assert ast.literal_eval('6.75j') == 6.75j, ('assertEqual', ast.literal_eval('6.75j'), 6.75j)\n    assert ast.literal_eval('-6.75j') == -6.75j, ('assertEqual', ast.literal_eval('-6.75j'), -6.75j)\n    assert ast.literal_eval('3+6j') == 3 + 6j, ('assertEqual', ast.literal_eval('3+6j'), 3 + 6j)\n    assert ast.literal_eval('-3+6j') == -3 + 6j, ('assertEqual', ast.literal_eval('-3+6j'), -3 + 6j)\n    assert ast.literal_eval('3-6j') == 3 - 6j, ('assertEqual', ast.literal_eval('3-6j'), 3 - 6j)\n    assert ast.literal_eval('-3-6j') == -3 - 6j, ('assertEqual', ast.literal_eval('-3-6j'), -3 - 6j)\n    assert ast.literal_eval('3.25+6.75j') == 3.25 + 6.75j, ('assertEqual', ast.literal_eval('3.25+6.75j'), 3.25 + 6.75j)\n    assert ast.literal_eval('-3.25+6.75j') == -3.25 + 6.75j, ('assertEqual', ast.literal_eval('-3.25+6.75j'), -3.25 + 6.75j)\n    assert ast.literal_eval('3.25-6.75j') == 3.25 - 6.75j, ('assertEqual', ast.literal_eval('3.25-6.75j'), 3.25 - 6.75j)\n    assert ast.literal_eval('-3.25-6.75j') == -3.25 - 6.75j, ('assertEqual', ast.literal_eval('-3.25-6.75j'), -3.25 - 6.75j)\n    assert ast.literal_eval('(3+6j)') == 3 + 6j, ('assertEqual', ast.literal_eval('(3+6j)'), 3 + 6j)\n    try:\n        ast.literal_eval(*('-6j+3',))\n    except ValueError:\n        pass\n    try:\n        ast.literal_eval(*('-6j+3j',))\n    except ValueError:\n        pass\n    try:\n        ast.literal_eval(*('3+-6j',))\n    except ValueError:\n        pass\n    try:\n        ast.literal_eval(*('3+(0+6j)',))\n    except ValueError:\n        pass\n    try:\n        ast.literal_eval(*('-(3+6j)',))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_literal_eval_malformed_dict_nodes",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    malformed = ast.Dict(keys=[ast.Constant(1), ast.Constant(2)], values=[ast.Constant(3)])\n    try:\n        ast.literal_eval(*(malformed,))\n    except ValueError:\n        pass\n    malformed = ast.Dict(keys=[ast.Constant(1)], values=[ast.Constant(2), ast.Constant(3)])\n    try:\n        ast.literal_eval(*(malformed,))\n    except ValueError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_literal_eval_trailing_ws",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    assert ast.literal_eval('    -1') == -1, ('assertEqual', ast.literal_eval('    -1'), -1)\n    assert ast.literal_eval('\\t\\t-1') == -1, ('assertEqual', ast.literal_eval('\\t\\t-1'), -1)\n    assert ast.literal_eval(' \\t -1') == -1, ('assertEqual', ast.literal_eval(' \\t -1'), -1)\n    try:\n        ast.literal_eval(*('\\n -1',))\n    except IndentationError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_literal_eval_malformed_lineno",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\nimport ast\n\ndef _t():\n    msg = 'malformed node or string on line 3:'\n    try:\n        ast.literal_eval(\"{'a': 1,\\n'b':2,\\n'c':++3,\\n'd':4}\")\n    except ValueError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    node = ast.UnaryOp(ast.UAdd(), ast.UnaryOp(ast.UAdd(), ast.Constant(6)))\n    assert getattr(node, 'lineno', None) is None, ('assertIsNone', getattr(node, 'lineno', None))\n    msg = 'malformed node or string:'\n    try:\n        ast.literal_eval(node)\n    except ValueError as _exc:\n        assert _re.search(msg, str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_literal_eval_syntax_errors",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport re as _re\nimport ast\n\ndef _t():\n    try:\n        ast.literal_eval('\\n                \\\\\\n                (\\\\\\n            \\\\ ')\n    except SyntaxError as _exc:\n        assert _re.search('unexpected indent', str(_exc)), 'assertRaisesRegex: message mismatch'\n    else:\n        raise AssertionError('assertRaises: did not raise')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_bad_integer",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    body = [ast.ImportFrom(module='time', names=[ast.alias(name='sleep')], level=None, lineno=None, col_offset=None)]\n    mod = ast.Module(body, [])\n    try:\n        compile(mod, 'test', 'exec')\n    except ValueError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert 'invalid integer value: None' in str(cm), ('assertIn', 'invalid integer value: None', str(cm))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_level_as_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    body = [ast.ImportFrom(module='time', names=[ast.alias(name='sleep', lineno=0, col_offset=0)], level=None, lineno=0, col_offset=0)]\n    mod = ast.Module(body, [])\n    code = compile(mod, 'test', 'exec')\n    ns = {}\n    exec(code, ns)\n    assert 'sleep' in ns, ('assertIn', 'sleep', ns)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_recursion_direct",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 14"
+    },
+    {
+      "ident": "ASTHelpers_Test.test_recursion_indirect",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "ASTValidatorTests.test_module",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def mod(mod, msg=None, mode='exec', *, exc=ValueError):\n        mod.lineno = mod.col_offset = 0\n        ast.fix_missing_locations(mod)\n        if msg is None:\n            compile(mod, '<test>', mode)\n        else:\n            try:\n                compile(mod, '<test>', mode)\n            except exc as _exc:\n                cm = _exc\n            else:\n                raise AssertionError('assertRaises: did not raise')\n            assert msg in str(cm), ('assertIn', msg, str(cm))\n    m = ast.Interactive([ast.Expr(ast.Name('x', ast.Store()))])\n    mod(m, 'must have Load context', 'single')\n    m = ast.Expression(ast.Name('x', ast.Store()))\n    mod(m, 'must have Load context', 'eval')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTValidatorTests.test_funcdef_pattern_matching",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nimport textwrap\n\ndef _t():\n\n    def matcher(node):\n        match node:\n            case ast.FunctionDef('foo', ast.arguments(args=[ast.arg('bar')]), [ast.Pass()], [ast.Name('capybara', ast.Load())], ast.Name('pacarana', ast.Load())):\n                return True\n            case _:\n                return False\n    code = '\\n            @capybara\\n            def foo(bar) -> pacarana:\\n                pass\\n        '\n    source = ast.parse(textwrap.dedent(code))\n    funcdef = source.body[0]\n    assert isinstance(funcdef, ast.FunctionDef), ('assertIsInstance', funcdef, ast.FunctionDef)\n    assert matcher(funcdef), ('assertTrue', matcher(funcdef))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTValidatorTests.test_classdef",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_delete",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_assign",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_augassign",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_for",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_while",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_if",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_with",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_raise",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_try",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_try_star",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_assert",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_import",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_importfrom",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_global",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_nonlocal",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_expr",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_boolop",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_unaryop",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_ifexp",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_dict",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_set",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_listcomp",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_setcomp",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_generatorexp",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_dictcomp",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_yield",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_compare",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_call",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_attribute",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_subscript",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_starred",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_list",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_tuple",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: 'Module' object is not callable"
+    },
+    {
+      "ident": "ASTValidatorTests.test_stdlib_validates",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'ast' has no attribute 'compare'"
+    },
+    {
+      "ident": "ConstantTests.test_validation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def compile_constant(value):\n        tree = ast.parse('x = 123')\n        node = tree.body[0].value\n        new_node = ast.Constant(value=value)\n        ast.copy_location(new_node, node)\n        tree.body[0].value = new_node\n        code = compile(tree, '<string>', 'exec')\n        ns = {}\n        exec(code, ns)\n        return ns['x']\n    try:\n        compile_constant([1, 2, 3])\n    except TypeError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert str(cm) == 'got an invalid type in Constant: list', ('assertEqual', str(cm), 'got an invalid type in Constant: list')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ConstantTests.test_singletons",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def compile_constant(value):\n        tree = ast.parse('x = 123')\n        node = tree.body[0].value\n        new_node = ast.Constant(value=value)\n        ast.copy_location(new_node, node)\n        tree.body[0].value = new_node\n        code = compile(tree, '<string>', 'exec')\n        ns = {}\n        exec(code, ns)\n        return ns['x']\n    for const in (None, False, True, Ellipsis, b''):\n        value = compile_constant(const)\n        assert value is const, ('assertIs', value, const)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ConstantTests.test_values",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def compile_constant(value):\n        tree = ast.parse('x = 123')\n        node = tree.body[0].value\n        new_node = ast.Constant(value=value)\n        ast.copy_location(new_node, node)\n        tree.body[0].value = new_node\n        code = compile(tree, '<string>', 'exec')\n        ns = {}\n        exec(code, ns)\n        return ns['x']\n    nested_tuple = (1,)\n    nested_frozenset = frozenset({1})\n    for level in range(3):\n        nested_tuple = (nested_tuple, 2)\n        nested_frozenset = frozenset({nested_frozenset, 2})\n    values = (123, 123.0, 123j, 'unicode', b'bytes', tuple('tuple'), frozenset('frozenset'), nested_tuple, nested_frozenset)\n    for value in values:\n        result = compile_constant(value)\n        assert result == value, ('assertEqual', result, value)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ConstantTests.test_assign_to_constant",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    tree = ast.parse('x = 1')\n    target = tree.body[0].targets[0]\n    new_target = ast.Constant(value=1)\n    ast.copy_location(new_target, target)\n    tree.body[0].targets[0] = new_target\n    try:\n        compile(tree, 'string', 'exec')\n    except ValueError as _exc:\n        cm = _exc\n    else:\n        raise AssertionError('assertRaises: did not raise')\n    assert str(cm) == \"expression which can't be assigned to in Store context\", ('assertEqual', str(cm), \"expression which can't be assigned to in Store context\")\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ConstantTests.test_get_docstring",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    tree = ast.parse(\"'docstring'\\nx = 1\")\n    assert ast.get_docstring(tree) == 'docstring', ('assertEqual', ast.get_docstring(tree), 'docstring')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ConstantTests.test_load_const",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nimport dis\n\ndef _t():\n\n    def get_load_const(tree):\n        co = compile(tree, '<string>', 'exec')\n        consts = []\n        for instr in dis.get_instructions(co):\n            if instr.opcode in dis.hasconst:\n                consts.append(instr.argval)\n        return consts\n    consts = [None, True, False, 1000, 2.0, 3j, 'unicode', b'bytes', (1, 2, 3)]\n    code = '\\n'.join(['x={!r}'.format(const) for const in consts])\n    code += '\\nx = ...'\n    consts.extend((Ellipsis, None))\n    tree = ast.parse(code)\n    assert get_load_const(tree) == consts, ('assertEqual', get_load_const(tree), consts)\n    for assign, const in zip(tree.body, consts):\n        assert isinstance(assign, ast.Assign), ast.dump(assign)\n        new_node = ast.Constant(value=const)\n        ast.copy_location(new_node, assign.value)\n        assign.value = new_node\n    assert get_load_const(tree) == consts, ('assertEqual', get_load_const(tree), consts)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ConstantTests.test_literal_eval",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    tree = ast.parse('1 + 2')\n    binop = tree.body[0].value\n    new_left = ast.Constant(value=10)\n    ast.copy_location(new_left, binop.left)\n    binop.left = new_left\n    new_right = ast.Constant(value=20j)\n    ast.copy_location(new_right, binop.right)\n    binop.right = new_right\n    assert ast.literal_eval(binop) == 10 + 20j, ('assertEqual', ast.literal_eval(binop), 10 + 20j)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ConstantTests.test_string_kind",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    c = ast.parse('\"x\"', mode='eval').body\n    assert c.value == 'x', ('assertEqual', c.value, 'x')\n    assert c.kind == None, ('assertEqual', c.kind, None)\n    c = ast.parse('u\"x\"', mode='eval').body\n    assert c.value == 'x', ('assertEqual', c.value, 'x')\n    assert c.kind == 'u', ('assertEqual', c.kind, 'u')\n    c = ast.parse('r\"x\"', mode='eval').body\n    assert c.value == 'x', ('assertEqual', c.value, 'x')\n    assert c.kind == None, ('assertEqual', c.kind, None)\n    c = ast.parse('b\"x\"', mode='eval').body\n    assert c.value == b'x', ('assertEqual', c.value, b'x')\n    assert c.kind == None, ('assertEqual', c.kind, None)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_lambda",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = 'lambda x, *y: None'\n    lam = _parse_value(s)\n    _check_content(s, lam.body, 'None')\n    _check_content(s, lam.args.args[0], 'x')\n    _check_content(s, lam.args.vararg, 'y')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_func_def",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            def func(x: int,\\n                     *args: str,\\n                     z: float = 0,\\n                     **kwargs: Any) -> bool:\\n                return True\\n            ').strip()\n    fdef = ast.parse(s).body[0]\n    _check_end_pos(fdef, 5, 15)\n    _check_content(s, fdef.body[0], 'return True')\n    _check_content(s, fdef.args.args[0], 'x: int')\n    _check_content(s, fdef.args.args[0].annotation, 'int')\n    _check_content(s, fdef.args.kwarg, 'kwargs: Any')\n    _check_content(s, fdef.args.kwarg.annotation, 'Any')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_call",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = 'func(x, y=2, **kw)'\n    call = _parse_value(s)\n    _check_content(s, call.func, 'func')\n    _check_content(s, call.keywords[0].value, '2')\n    _check_content(s, call.keywords[1].value, 'kw')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_call_noargs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n    s = 'x[0]()'\n    call = _parse_value(s)\n    _check_content(s, call.func, 'x[0]')\n    _check_end_pos(call, 1, 6)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_class_def",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            class C(A, B):\\n                x: int = 0\\n        ').strip()\n    cdef = ast.parse(s).body[0]\n    _check_end_pos(cdef, 2, 14)\n    _check_content(s, cdef.bases[1], 'B')\n    _check_content(s, cdef.body[0], 'x: int = 0')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_class_kw",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = 'class S(metaclass=abc.ABCMeta): pass'\n    cdef = ast.parse(s).body[0]\n    _check_content(s, cdef.keywords[0].value, 'abc.ABCMeta')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_multi_line_str",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n    s = dedent('\\n            x = \"\"\"Some multi-line text.\\n\\n            It goes on starting from same indent.\"\"\"\\n        ').strip()\n    assign = ast.parse(s).body[0]\n    _check_end_pos(assign, 3, 40)\n    _check_end_pos(assign.value, 3, 40)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_continued_str",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n    s = dedent('\\n            x = \"first part\" \\\\\\n            \"second part\"\\n        ').strip()\n    assign = ast.parse(s).body[0]\n    _check_end_pos(assign, 2, 13)\n    _check_end_pos(assign.value, 2, 13)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_suites",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            while True:\\n                pass\\n\\n            if one():\\n                x = None\\n            elif other():\\n                y = None\\n            else:\\n                z = None\\n\\n            for x, y in stuff:\\n                assert True\\n\\n            try:\\n                raise RuntimeError\\n            except TypeError as e:\\n                pass\\n\\n            pass\\n        ').strip()\n    mod = ast.parse(s)\n    while_loop = mod.body[0]\n    if_stmt = mod.body[1]\n    for_loop = mod.body[2]\n    try_stmt = mod.body[3]\n    pass_stmt = mod.body[4]\n    _check_end_pos(while_loop, 2, 8)\n    _check_end_pos(if_stmt, 9, 12)\n    _check_end_pos(for_loop, 12, 15)\n    _check_end_pos(try_stmt, 17, 8)\n    _check_end_pos(pass_stmt, 19, 4)\n    _check_content(s, while_loop.test, 'True')\n    _check_content(s, if_stmt.body[0], 'x = None')\n    _check_content(s, if_stmt.orelse[0].test, 'other()')\n    _check_content(s, for_loop.target, 'x, y')\n    _check_content(s, try_stmt.body[0], 'raise RuntimeError')\n    _check_content(s, try_stmt.handlers[0].type, 'TypeError')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_fstring",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = 'x = f\"abc {x + y} abc\"'\n    fstr = _parse_value(s)\n    binop = fstr.values[1].value\n    _check_content(s, binop, 'x + y')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_fstring_multi_line",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            f\"\"\"Some multi-line text.\\n            {\\n            arg_one\\n            +\\n            arg_two\\n            }\\n            It goes on...\"\"\"\\n        ').strip()\n    fstr = _parse_value(s)\n    binop = fstr.values[1].value\n    _check_end_pos(binop, 5, 7)\n    _check_content(s, binop.left, 'arg_one')\n    _check_content(s, binop.right, 'arg_two')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_import_from_multi_line",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n    s = dedent('\\n            from x.y.z import (\\n                a, b, c as c\\n            )\\n        ').strip()\n    imp = ast.parse(s).body[0]\n    _check_end_pos(imp, 3, 1)\n    _check_end_pos(imp.names[2], 2, 16)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_binop",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            (1 * 2 + (3 ) +\\n                 4\\n            )\\n        ').strip()\n    binop = _parse_value(s)\n    _check_end_pos(binop, 2, 6)\n    _check_content(s, binop.right, '4')\n    _check_content(s, binop.left, '1 * 2 + (3 )')\n    _check_content(s, binop.left.right, '3')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_boolop",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            if (one_condition and\\n                    (other_condition or yet_another_one)):\\n                pass\\n        ').strip()\n    bop = ast.parse(s).body[0].test\n    _check_end_pos(bop, 2, 44)\n    _check_content(s, bop.values[1], 'other_condition or yet_another_one')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_attribute_spaces",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = 'func(x. y .z)'\n    call = _parse_value(s)\n    _check_content(s, call, s)\n    _check_content(s, call.args[0], 'x. y .z')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_redundant_parenthesis",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = '( ( ( a + b ) ) )'\n    v = ast.parse(s).body[0].value\n    assert type(v).__name__ == 'BinOp', ('assertEqual', type(v).__name__, 'BinOp')\n    _check_content(s, v, 'a + b')\n    s2 = 'await ' + s\n    v = ast.parse(s2).body[0].value.value\n    assert type(v).__name__ == 'BinOp', ('assertEqual', type(v).__name__, 'BinOp')\n    _check_content(s2, v, 'a + b')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_trailers_with_redundant_parenthesis",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    tests = (('( ( ( a ) ) ) ( )', 'Call'), ('( ( ( a ) ) ) ( b )', 'Call'), ('( ( ( a ) ) ) [ b ]', 'Subscript'), ('( ( ( a ) ) ) . b', 'Attribute'))\n    for s, t in tests:\n        v = ast.parse(s).body[0].value\n        assert type(v).__name__ == t, ('assertEqual', type(v).__name__, t)\n        _check_content(s, v, s)\n        s2 = 'await ' + s\n        v = ast.parse(s2).body[0].value.value\n        assert type(v).__name__ == t, ('assertEqual', type(v).__name__, t)\n        _check_content(s2, v, s)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_displays",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s1 = '[{}, {1, }, {1, 2,} ]'\n    s2 = '{a: b, f (): g () ,}'\n    c1 = _parse_value(s1)\n    c2 = _parse_value(s2)\n    _check_content(s1, c1.elts[0], '{}')\n    _check_content(s1, c1.elts[1], '{1, }')\n    _check_content(s1, c1.elts[2], '{1, 2,}')\n    _check_content(s2, c2.keys[1], 'f ()')\n    _check_content(s2, c2.values[1], 'g ()')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_comprehensions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n\n    def _check_end_pos(ast_node, end_lineno, end_col_offset):\n        assert ast_node.end_lineno == end_lineno, ('assertEqual', ast_node.end_lineno, end_lineno)\n        assert ast_node.end_col_offset == end_col_offset, ('assertEqual', ast_node.end_col_offset, end_col_offset)\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            x = [{x for x, y in stuff\\n                  if cond.x} for stuff in things]\\n        ').strip()\n    cmp = _parse_value(s)\n    _check_end_pos(cmp, 2, 37)\n    _check_content(s, cmp.generators[0].iter, 'things')\n    _check_content(s, cmp.elt.generators[0].iter, 'stuff')\n    _check_content(s, cmp.elt.generators[0].ifs[0], 'cond.x')\n    _check_content(s, cmp.elt.generators[0].target, 'x, y')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_yield_await",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = dedent('\\n            async def f():\\n                yield x\\n                await y\\n        ').strip()\n    fdef = ast.parse(s).body[0]\n    _check_content(s, fdef.body[0].value, 'yield x')\n    _check_content(s, fdef.body[1].value, 'await y')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_source_segment_multi",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n\n    def _parse_value(s):\n        return ast.parse(s).body[0].value\n    s_orig = dedent('\\n            x = (\\n                a, b,\\n            ) + ()\\n        ').strip()\n    s_tuple = dedent('\\n            (\\n                a, b,\\n            )\\n        ').strip()\n    binop = _parse_value(s_orig)\n    assert ast.get_source_segment(s_orig, binop.left) == s_tuple, ('assertEqual', ast.get_source_segment(s_orig, binop.left), s_tuple)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_source_segment_padded",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n    s_orig = dedent('\\n            class C:\\n                def fun(self) -> None:\\n                    \"\u0416\u0416\u0416\u0416\u0416\"\\n        ').strip()\n    s_method = '    def fun(self) -> None:\\n        \"\u0416\u0416\u0416\u0416\u0416\"'\n    cdef = ast.parse(s_orig).body[0]\n    assert ast.get_source_segment(s_orig, cdef.body[0], padded=True) == s_method, ('assertEqual', ast.get_source_segment(s_orig, cdef.body[0], padded=True), s_method)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_source_segment_endings",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = 'v = 1\\r\\nw = 1\\nx = 1\\n\\ry = 1\\rz = 1\\r\\n'\n    v, w, x, y, z = ast.parse(s).body\n    _check_content(s, v, 'v = 1')\n    _check_content(s, w, 'w = 1')\n    _check_content(s, x, 'x = 1')\n    _check_content(s, y, 'y = 1')\n    _check_content(s, z, 'z = 1')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_source_segment_tabs",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\nfrom textwrap import dedent\n\ndef _t():\n    s = dedent('\\n            class C:\\n              \\t\\x0c  def fun(self) -> None:\\n              \\t\\x0c      pass\\n        ').strip()\n    s_method = '  \\t\\x0c  def fun(self) -> None:\\n  \\t\\x0c      pass'\n    cdef = ast.parse(s).body[0]\n    assert ast.get_source_segment(s, cdef.body[0], padded=True) == s_method, ('assertEqual', ast.get_source_segment(s, cdef.body[0], padded=True), s_method)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_source_segment_newlines",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    def _check_content(source, ast_node, content):\n        assert ast.get_source_segment(source, ast_node) == content, ('assertEqual', ast.get_source_segment(source, ast_node), content)\n    s = 'def f():\\n  pass\\ndef g():\\r  pass\\r\\ndef h():\\r\\n  pass\\r\\n'\n    f, g, h = ast.parse(s).body\n    _check_content(s, f, 'def f():\\n  pass')\n    _check_content(s, g, 'def g():\\r  pass')\n    _check_content(s, h, 'def h():\\r\\n  pass')\n    s = 'def f():\\n  a = 1\\r  b = 2\\r\\n  c = 3\\n'\n    f = ast.parse(s).body[0]\n    _check_content(s, f, s.rstrip())\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "EndPositionTests.test_source_segment_missing_info",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n    s = 'v = 1\\r\\nw = 1\\nx = 1\\n\\ry = 1\\r\\n'\n    v, w, x, y = ast.parse(s).body\n    del v.lineno\n    del w.end_lineno\n    del x.col_offset\n    del y.end_col_offset\n    assert ast.get_source_segment(s, v) is None, ('assertIsNone', ast.get_source_segment(s, v))\n    assert ast.get_source_segment(s, w) is None, ('assertIsNone', ast.get_source_segment(s, w))\n    assert ast.get_source_segment(s, x) is None, ('assertIsNone', ast.get_source_segment(s, x))\n    assert ast.get_source_segment(s, y) is None, ('assertIsNone', ast.get_source_segment(s, y))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTConstructorTests.test_custom_subclass_with_no_fields",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    class NoInit(ast.AST):\n        pass\n    obj = NoInit()\n    assert isinstance(obj, NoInit), ('assertIsInstance', obj, NoInit)\n    assert obj.__dict__ == {}, ('assertEqual', obj.__dict__, {})\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTConstructorTests.test_fields_but_no_field_types",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 14"
+    },
+    {
+      "ident": "ASTConstructorTests.test_fields_and_types",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport ast\n\ndef _t():\n\n    class FieldsAndTypes(ast.AST):\n        _fields = ('a',)\n        _field_types = {'a': int | None}\n        a: int | None = None\n    obj = FieldsAndTypes()\n    assert obj.a is None, ('assertIs', obj.a, None)\n    obj = FieldsAndTypes(a=1)\n    assert obj.a == 1, ('assertEqual', obj.a, 1)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "ASTConstructorTests.test_complete_field_types",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: '_AllFieldTypes' object has no attribute 'b'"
+    },
+    {
+      "ident": "ModuleStateTests.test_reload_module",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "ModuleStateTests.test_sys_modules",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "ModuleStateTests.test_subinterpreter",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "ASTOptimizationTests.test_folding_format",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: parse() got an unexpected keyword argument 'optimize'"
+    },
+    {
+      "ident": "ASTOptimizationTests.test_folding_match_case_allowed_expressions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: parse() got an unexpected keyword argument 'optimize'"
+    },
+    {
+      "ident": "ASTOptimizationTests.test_match_case_not_folded_in_unoptimized_ast",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: parse() got an unexpected keyword argument 'optimize'"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "CommandLineTests.test_help_message",
+      "reason": "decorator:support.force_not_colorized"
+    },
+    {
+      "ident": "AST_Tests.test_snippets",
+      "reason": "helper:_assertTrueorder(recursive-helper:_assertTrueorder)"
+    },
+    {
+      "ident": "AST_Tests.test_ast_validation",
+      "reason": "unsupported-import:test.test_ast.snippets"
+    },
+    {
+      "ident": "AST_Tests.test_field_attr_existence",
+      "reason": "helper:_construct_ast_class(recursive-helper:_construct_ast_class)"
+    },
+    {
+      "ident": "AST_Tests.test_classattrs",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "ident": "AST_Tests.test_nodeclasses",
+      "reason": "uses-self.assertWarns"
+    },
+    {
+      "ident": "AST_Tests.test_compare_modes",
+      "reason": "unsupported-import:test.test_ast.snippets"
+    },
+    {
+      "ident": "AST_Tests.test_precedence_enum",
+      "reason": "uses-self.__class__"
+    },
+    {
+      "ident": "AST_Tests.test_ast_recursion_limit",
+      "reason": "unresolved-name:_testinternalcapi"
+    },
+    {
+      "ident": "AST_Tests.test_repr",
+      "reason": "unsupported-import:test.test_ast.snippets"
+    },
+    {
+      "ident": "CopyTests.test_pickling",
+      "reason": "unsupported-import:test.test_ast.utils"
+    },
+    {
+      "ident": "CopyTests.test_copy_with_parents",
+      "reason": "unsupported-import:test.test_ast.utils"
+    },
+    {
+      "ident": "CopyTests.test_replace_interface",
+      "reason": "helper:iter_ast_classes(decorated-helper)"
+    },
+    {
+      "ident": "CopyTests.test_replace_native",
+      "reason": "helper:iter_ast_classes(decorated-helper)"
+    },
+    {
+      "ident": "ASTValidatorTests.test_funcdef",
+      "reason": "uses-self.stmt"
+    },
+    {
+      "ident": "ASTValidatorTests.test_lambda",
+      "reason": "uses-self.expr"
+    },
+    {
+      "ident": "ASTValidatorTests.test_match_validation_pattern",
+      "reason": "unresolved-name:constant_1"
+    },
+    {
+      "ident": "EndPositionTests.test_slices",
+      "reason": "uses-self._parse_value"
+    },
+    {
+      "ident": "EndPositionTests.test_tuples",
+      "reason": "uses-self._parse_value"
+    },
+    {
+      "ident": "NodeTransformerTests.test_node_remove_single",
+      "reason": "helper:assertASTTransformation(self.assertASTEqual)"
+    },
+    {
+      "ident": "NodeTransformerTests.test_node_remove_from_list",
+      "reason": "helper:assertASTTransformation(self.assertASTEqual)"
+    },
+    {
+      "ident": "NodeTransformerTests.test_node_return_list",
+      "reason": "helper:assertASTTransformation(self.assertASTEqual)"
+    },
+    {
+      "ident": "NodeTransformerTests.test_node_mutate",
+      "reason": "helper:assertASTTransformation(self.assertASTEqual)"
+    },
+    {
+      "ident": "NodeTransformerTests.test_node_replace",
+      "reason": "helper:assertASTTransformation(self.assertASTEqual)"
+    },
+    {
+      "ident": "ASTConstructorTests.test_FunctionDef",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "ASTConstructorTests.test_expr_context",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "ASTConstructorTests.test_custom_attributes",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "ASTConstructorTests.test_fields_and_types_no_default",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "ASTConstructorTests.test_incomplete_field_types",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "ASTConstructorTests.test_malformed_fields_with_bytes",
+      "reason": "uses-self.assertWarnsRegex"
+    },
+    {
+      "ident": "ASTConstructorTests.test_non_str_kwarg",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "ident": "CommandLineTests.test_invocation",
+      "reason": "helper:set_source(helper:text_normalize(decorated-helper))"
+    },
+    {
+      "ident": "CommandLineTests.test_exec_mode_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_single_mode_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_eval_mode_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_func_type_mode_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_no_type_comments_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_include_attributes_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_indent_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_feature_version_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_no_optimize_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_optimize_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "CommandLineTests.test_show_empty_flag",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    }
+  ],
+  "counts": {
+    "extracted": 215,
+    "pinned": 81,
+    "quarantined": 134
+  }
+}
