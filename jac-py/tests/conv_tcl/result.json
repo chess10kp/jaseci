@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_tcl/conv_tcl_pins.jac"
+  ],
+  "generated_at": "2026-08-28T22:45:15",
+  "hashes": {
+    "pins_jac": "933ffc9394e3370366b80a88e111b9633e6b9f5557198f71db3e0b9834b5608d",
+    "conversion_json": "4ffb801b9cdcbe0b8355febb95ac3d0eb632bba0258c4b206edc8a3c47bc1756",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "tcl",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 49,
+    "runnable": 35,
+    "green": 0,
+    "quarantined": 14,
+    "failed": 35,
+    "infra_failed": 35
+  },
+  "failures": [
+    {
+      "id": "TclTest.testEval",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_eval_null_in_result",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_eval_surrogates_in_result",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testEvalException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testEvalException2",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_eval_returns_tcl_obj",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testCall",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_call_passing_null",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testCallException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testCallException2",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_call_returns_tcl_obj",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testSetVar",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_setvar_passing_null",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testSetVarArray",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testGetVar",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testGetVarArray",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testGetVarException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testGetVarArrayException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_getvar_returns_tcl_obj",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testUnsetVar",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testUnsetVarArray",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testUnsetVarException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_getdouble",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_getboolean",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testEvalFileException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.testPackageRequireException",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_exprstring",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_exprdouble",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_exprlong",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_exprboolean",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_booleans",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_expr_bignum",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_passing_tcl_obj",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_splitdict",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    },
+    {
+      "id": "TclTest.test_join",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "runtime unverified locally \u2014 CI gates diff_runner"
+    }
+  ]
+}
