@@ -7,6 +7,12 @@
 # CPython's open-addressing table is not modeled. The c2jac reference lives in
 # ``Objects/_lifted/dictobject_core.jac`` if a native table lands later.
 import from objects { PyObj, PyDict, PyStr, is_error, py_error, expect_str, Py_EQ, Py_NE, }
+import from abstract_protocol { _richcompare_truth, }
+
+# Pure alias kept for lifted dictobject_core callers (PR#6973 B.2).
+def _richcompare_true(res: PyObj) -> int {
+    return _richcompare_truth(res);
+}
 
 # Thin wrappers kept for callers that import by name (the ``compare_fn``
 # parameter is obsolete): the implementation lives on the PyDict.tp_richcompare
