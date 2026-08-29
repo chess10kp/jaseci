@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "5a5dcec58ba878be78331103df5f661a6b87848a",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_atexit/conv_atexit_pins.jac"
+  ],
+  "generated_at": "2026-08-28T21:23:02",
+  "hashes": {
+    "pins_jac": "546cb8150eec160a9c72d68f21c0e8007692470d89d762f2fdfee1b0c90bb7d1",
+    "conversion_json": "f9f60ba5120ef2fec72af623284aa9083d1235260b771fbe1c9cbfbe49e1c916",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "atexit",
+  "status": "failed",
+  "timed_out": false,
+  "counts": {
+    "converted": 8,
+    "runnable": 3,
+    "green": 0,
+    "quarantined": 5,
+    "failed": 3,
+    "infra_failed": 3
+  },
+  "failures": [
+    {
+      "id": "GeneralTest.test_general",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FunctionalTest.test_shutdown",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "FunctionalTest.test_atexit_instances",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    }
+  ]
+}
