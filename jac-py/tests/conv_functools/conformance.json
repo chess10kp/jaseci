@@ -1,0 +1,1353 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_functools/conv_functools_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:38:15",
+  "hashes": {
+    "pins_jac": "a9fdc61f33b196f82ff82325215767ab3a5ca4559f30b90800bcd51a8b07c537",
+    "conversion_json": "0ceb67f7130df20a3fd655becbdd7247ae0e414cb5bc604d29bf440c0dbddc70",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "functools",
+  "counts": {
+    "converted": 244,
+    "runnable": 105,
+    "green": 0,
+    "quarantined": 139
+  },
+  "pins": [
+    {
+      "id": "TestImportTime.test_lazy_import",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialCSubclass.test_nested_optimization",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialPySubclass.test_nested_optimization",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialCSubclass.test_nested_optimization_bug",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialPySubclass.test_nested_optimization_bug",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialCSubclass.test_nested_partial_with_attribute",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialPySubclass.test_nested_partial_with_attribute",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialCSubclass.test_construct_placeholder_singleton",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialPySubclass.test_construct_placeholder_singleton",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialCSubclass.test_partial_genericalias",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialPySubclass.test_partial_genericalias",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialCSubclass.test_repr_safety_against_reentrant_mutation",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialPySubclass.test_repr_safety_against_reentrant_mutation",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialMethod.test_invalid_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialMethod.test_positional_only",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartialMethod.test_subclass_optimization",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_default_update",
+      "status": "quarantined",
+      "reason": "host-raised:ValueError: not enough values to unpack (expected 1, got 0)"
+    },
+    {
+      "id": "TestWraps.test_no_update",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_selective_update",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_missing_attributes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_update_type_wrapper",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_update_wrapper_annotations",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_default_update",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_no_update",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestWraps.test_selective_update",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_total_ordering_lt",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_total_ordering_le",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_total_ordering_gt",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_total_ordering_ge",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_total_ordering_no_overwrite",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_no_operations_defined",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_notimplemented",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_pickle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestTotalOrdering.test_total_ordering_for_metaclasses_issue_44605",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachePy.test_cache",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCacheC.test_cache",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_no_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_bug_35780",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_bug_36650",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_hash_only_once",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_reentrancy_with_len",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_star_arg_handling",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_type_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_with_maxsize_none",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_with_maxsize_negative",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_with_types",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_cache_typed_is_not_recursive",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_with_keyword_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_with_keyword_args_maxsize_none",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_kwargs_order",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_cache_decoration",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_need_for_rlock",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_method",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_pickle",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: type object '_SelfNS' has no attribute 'cached_meth'"
+    },
+    {
+      "id": "TestLRUPy.test_copy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: type object '_SelfNS' has no attribute 'cached_meth'"
+    },
+    {
+      "id": "TestLRUPy.test_deepcopy",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: type object '_SelfNS' has no attribute 'cached_meth'"
+    },
+    {
+      "id": "TestLRUPy.test_lru_cache_parameters",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_lru_cache_weakrefable",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_common_signatures",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestLRUPy.test_get_annotations",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_simple_overloads",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_mro",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_register_decorator",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_wrapping_attributes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_compose_mro",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_register_abc",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_c3_abc",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_false_meta",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_cache_invalidation",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_annotations",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_method_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_staticmethod_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_slotted_class",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_classmethod_slotted_class",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_staticmethod_slotted_class",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_assignment_behavior",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_classmethod_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_callable_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_abstractmethod_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_type_ann_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_staticmethod_type_ann_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_classmethod_type_ann_register",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_method_wrapping_attributes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_method_repr",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_double_wrapped_methods",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_invalid_positional_argument",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_invalid_positional_argument_singledispatchmethod",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_union",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_union_conflict",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_union_None",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_register_genericalias",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_register_genericalias_decorator",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_register_genericalias_annotation",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_method_equal_instances",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_method_bad_hash",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_method_no_reference_loops",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_signatures",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestSingleDispatch.test_method_signatures",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_cached",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_cached_attribute_name_differs_from_func_name",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_object_with_slots",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_immutable_dict",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_reuse_same_name",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_set_name_not_called",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_access_from_class",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_doc",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_module",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestCachedProperty.test_subclass_with___set__",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestPartial.test_recursive_pickle",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_if_sanitizer"
+    },
+    {
+      "id": "TestPartialC.test_attributes_unwritable",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestPartialC.test_manually_adding_non_string_keyword",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestPartialC.test_keystr_replaces_value",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestPartialC.test_placeholders_refcount_smoke",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestUpdateWrapper.test_default_update_doc",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "TestUpdateWrapper.test_builtin_update",
+      "status": "quarantined",
+      "reason": "decorator:support.requires_docstrings"
+    },
+    {
+      "id": "TestWraps.test_default_update_doc",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "TestCmpToKey.test_cmp_to_signature",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    },
+    {
+      "id": "TestCmpToKeyC.test_disallow_instantiation",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestLRU.test_lru_cache_threaded",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "TestLRU.test_lru_cache_threaded2",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "TestLRU.test_lru_cache_threaded3",
+      "status": "quarantined",
+      "reason": "decorator:threading_helper.requires_working_threading"
+    },
+    {
+      "id": "TestLRU.test_lru_recursion",
+      "status": "quarantined",
+      "reason": "decorator:support.skip_on_s390x"
+    },
+    {
+      "id": "TestSingleDispatch.test_c_classes",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipUnless"
+    },
+    {
+      "id": "TestPartialCSubclass.test_basic_examples",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_basic_examples",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_attributes",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_attributes",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_argument_checking",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_argument_checking",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_protection_of_callers_dict_argument",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_protection_of_callers_dict_argument",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_kwargs_copy",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_kwargs_copy",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_arg_combinations",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_arg_combinations",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_kw_combinations",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_kw_combinations",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_positional",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_positional",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_keyword",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_keyword",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_no_side_effects",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_no_side_effects",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_error_propagation",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_error_propagation",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_weakref",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_weakref",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_with_bound_and_unbound_methods",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_with_bound_and_unbound_methods",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_placeholders_trailing_raise",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_placeholders_trailing_raise",
+      "status": "quarantined",
+      "reason": "self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_placeholders",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_placeholders",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_placeholders_optimization",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_placeholders_optimization",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_placeholders_kw_restriction",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_placeholders_kw_restriction",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_repr",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_repr",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_recursive_repr",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_recursive_repr",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_pickle",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_pickle",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_copy",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_deepcopy",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_deepcopy",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_setstate",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_setstate",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_setstate_errors",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_setstate_errors",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_setstate_subclasses",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_setstate_subclasses",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_setstate_refcount",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_setstate_refcount",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialCSubclass.test_partial_as_method",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_partial_as_method",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialPySubclass.test_subclass_optimization",
+      "status": "quarantined",
+      "reason": "uses-self.partial"
+    },
+    {
+      "id": "TestPartialMethod.test_arg_combinations",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_nested",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_over_partial",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_bound_method_introspection",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_unbound_method_retrieval",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_descriptors",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_overriding_keywords",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_repr",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestPartialMethod.test_abstract",
+      "status": "quarantined",
+      "reason": "unresolved-name:A"
+    },
+    {
+      "id": "TestReduceC.test_reduce",
+      "status": "quarantined",
+      "reason": "uses-self.reduce"
+    },
+    {
+      "id": "TestReducePy.test_reduce",
+      "status": "quarantined",
+      "reason": "uses-self.reduce"
+    },
+    {
+      "id": "TestReduceC.test_iterator_usage",
+      "status": "quarantined",
+      "reason": "uses-self.reduce"
+    },
+    {
+      "id": "TestReducePy.test_iterator_usage",
+      "status": "quarantined",
+      "reason": "uses-self.reduce"
+    },
+    {
+      "id": "TestReduceC.test_initial_keyword",
+      "status": "quarantined",
+      "reason": "uses-self.reduce"
+    },
+    {
+      "id": "TestReducePy.test_initial_keyword",
+      "status": "quarantined",
+      "reason": "uses-self.reduce"
+    },
+    {
+      "id": "TestReducePy.test_reduce_with_kwargs",
+      "status": "quarantined",
+      "reason": "self.reduce"
+    },
+    {
+      "id": "TestCmpToKeyC.test_cmp_to_key",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyPy.test_cmp_to_key",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyC.test_cmp_to_key_arguments",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyPy.test_cmp_to_key_arguments",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyC.test_bad_cmp",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyPy.test_bad_cmp",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyC.test_obj_field",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyPy.test_obj_field",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyC.test_sort_int",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyPy.test_sort_int",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyC.test_sort_int_str",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyPy.test_sort_int_str",
+      "status": "quarantined",
+      "reason": "uses-self.cmp_to_key"
+    },
+    {
+      "id": "TestCmpToKeyC.test_hash",
+      "status": "quarantined",
+      "reason": "self.assertNotIsInstance"
+    },
+    {
+      "id": "TestCmpToKeyPy.test_hash",
+      "status": "quarantined",
+      "reason": "self.assertNotIsInstance"
+    },
+    {
+      "id": "TestTotalOrdering.test_type_error_when_not_implemented",
+      "status": "quarantined",
+      "reason": "uses-self.assertRaises"
+    },
+    {
+      "id": "TestLRUC.test_lru",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_no_args",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_bug_35780",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_bug_36650",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_hash_only_once",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_reentrancy_with_len",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_star_arg_handling",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_type_error",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_with_maxsize_none",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_with_maxsize_negative",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUPy.test_lru_with_exceptions",
+      "status": "quarantined",
+      "reason": "unresolved-name:cm"
+    },
+    {
+      "id": "TestLRUC.test_lru_with_exceptions",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_with_types",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_cache_typed_is_not_recursive",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_with_keyword_args",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_with_keyword_args_maxsize_none",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_kwargs_order",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_cache_decoration",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_need_for_rlock",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_method",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_pickle",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_copy",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_deepcopy",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_cache_parameters",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_lru_cache_weakrefable",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_common_signatures",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUC.test_get_annotations",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestLRUPy.test_get_annotations_with_forwardref",
+      "status": "quarantined",
+      "reason": "unresolved-name:nonexistent"
+    },
+    {
+      "id": "TestLRUC.test_get_annotations_with_forwardref",
+      "status": "quarantined",
+      "reason": "unresolved-name:c_cached_func"
+    },
+    {
+      "id": "TestSingleDispatch.test_mro_conflicts",
+      "status": "quarantined",
+      "reason": "unresolved-name:re_one"
+    },
+    {
+      "id": "TestSingleDispatch.test_invalid_registrations",
+      "status": "quarantined",
+      "reason": "self.assertStartsWith"
+    },
+    {
+      "id": "TestSingleDispatch.test_forward_reference",
+      "status": "quarantined",
+      "reason": "unresolved-name:undefined"
+    },
+    {
+      "id": "TestSingleDispatch.test_unresolved_forward_reference",
+      "status": "quarantined",
+      "reason": "unresolved-name:undefined"
+    },
+    {
+      "id": "TestCachedProperty.test_reuse_different_names",
+      "status": "quarantined",
+      "reason": "unresolved-name:ctx"
+    }
+  ]
+}
