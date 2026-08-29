@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "5a5dcec58ba878be78331103df5f661a6b87848a",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_bdb/conv_bdb_pins.jac"
+  ],
+  "generated_at": "2026-08-28T21:26:28",
+  "hashes": {
+    "pins_jac": "cf2841c5d81121dc313f6be6e257dc8498b92baa124bfec2c088618eca9a2a60",
+    "conversion_json": "7da61ae0efd92f8a05cf3e4314146d7fb0defaa35c344729cfd8a801cde52947",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "bdb",
+  "status": "passed",
+  "timed_out": false,
+  "counts": {
+    "converted": 36,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 36,
+    "failed": 0,
+    "infra_failed": 0
+  },
+  "failures": []
+}
