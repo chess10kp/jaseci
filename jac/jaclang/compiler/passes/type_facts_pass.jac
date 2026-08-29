@@ -2,7 +2,7 @@ import jaclang.compiler.frontend.unitree as uni;
 import from jaclang.compiler.passes.transform { Transform }
 import from jaclang.compiler.driver.program { JacProgram }
 import from jaclang.compiler.frontend.constant { VALUE_ARCH_DECORATOR }
-import from jaclang.compiler.type_system.types { TypeBase }
+import from jaclang.compiler.types.types { TypeBase }
 
 def is_ref_arch(arch: uni.Archetype) -> bool;
 

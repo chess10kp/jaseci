@@ -39,8 +39,8 @@ impl TypeFacts.type_of_via_checker(e: uni.Expr) -> str {
 }
 
 impl TypeFacts.typebase_to_typename(ty: TypeBase | None) -> str {
-    import from jaclang.compiler.type_system.type_utils { primitive_type_name_of }
-    import from jaclang.compiler.type_system.types { ClassType }
+    import from jaclang.compiler.types.type_utils { primitive_type_name_of }
+    import from jaclang.compiler.types.types { ClassType }
     if ty is None {
         return "";
     }
