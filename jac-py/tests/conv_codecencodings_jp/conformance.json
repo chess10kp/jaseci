@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.1",
+  "jac_sha": "9f0ade47bf933636fc0025a06cb2a8d4641b187e",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "diff_runner.py",
+    "/opt/jacpy/work/test_codecencodings_jp-i-0d3cafffb0791b07e/output/conv_codecencodings_jp_pins.jac"
+  ],
+  "generated_at": "2026-08-25T22:52:25",
+  "hashes": {
+    "pins_jac": "a3faed1fc28044708b0d9ee604fda1e85e93a3b8d51cfc64735bd6594c7ff2a8",
+    "conversion_json": "a8ab4cd2606b9bceede3d85f670c96b897281347b43f45be9c379cbe4a5546c0",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "codecencodings_jp",
+  "counts": {
+    "converted": 0,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 0
+  },
+  "pins": []
+}
