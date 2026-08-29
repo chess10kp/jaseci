@@ -88,15 +88,28 @@ SEQ_INSERT_TYPED: dict[str, str] = {
 
 SEQ_APPEND_TYPED: dict[str, str] = {
     "expr": "pa_seq_append_to_end_expr",
-    "pattern": "pa_seq_append_to_end_pattern",
     "stmt": "pa_seq_append_to_end_stmt",
-    "alias": "pa_seq_append_to_end_alias",
-    "type_param": "pa_seq_append_to_end_type_param",
-    "withitem": "pa_seq_append_to_end_withitem",
-    "arg": "pa_seq_append_to_end_arg",
-    "keyword_or_starred_node": "pa_seq_append_to_end_kw_or_starred",
-    "kv_pair": "pa_seq_append_to_end_kvpair",
-    "kp_pair": "pa_seq_append_to_end_kvpattern",
+}
+
+SINGLETON_TYPED: dict[str, str] = {
+    "expr": "pa_singleton_seq_expr",
+    "pattern": "pa_singleton_seq_pattern",
+    "stmt": "pa_singleton_seq_stmt",
+    "alias": "pa_singleton_seq_alias",
+    "type_param": "pa_singleton_seq_type_param",
+    "withitem": "pa_singleton_seq_withitem",
+    "arg": "pa_singleton_seq_arg",
+    "keyword_or_starred_node": "pa_singleton_seq_kw_or_starred",
+    "kv_pair": "pa_singleton_seq_kvpair",
+    "kp_pair": "pa_singleton_seq_kvpattern",
+}
+
+JOIN_TYPED: dict[str, str] = {
+    "keyword_or_starred_node": "pa_join_sequences_kw_or_starred",
+    "expr": "pa_join_sequences_expr",
+    "stmt": "pa_join_sequences_stmt",
+    "alias": "pa_join_sequences_alias",
+    "pattern": "pa_join_sequences_pattern",
 }
 
 
@@ -575,15 +588,33 @@ class ActionTranslator:
         raise ActionTranslationError(f"unsupported member base: {node!r}")
 
     def _seq_elem_type_from_expr(self, node: Expr) -> str | None:
-        if not isinstance(node, Ident):
-            return None
-        bound = self._type_env.get(node.name)
-        if bound is None:
-            return None
-        base = bound.replace(" | None", "")
-        if base.startswith("list[") and base.endswith("]"):
-            return base[5:-1]
-        return base
+        if isinstance(node, Cast):
+            base = node.type_name.replace(" | None", "")
+            if base.startswith("list[") and base.endswith("]"):
+                return base[5:-1]
+            return base
+        if isinstance(node, Call):
+            if node.func == "CHECK" and node.args:
+                cast = self._check_cast_target(node.args[0])
+                if cast and cast != "object" and not cast.startswith("list["):
+                    return cast
+                if len(node.args) > 1:
+                    inner_ty = self._seq_elem_type_from_expr(node.args[1])
+                    if inner_ty is not None:
+                        return inner_ty
+            if node.func == "_PyPegen_singleton_seq" and node.args:
+                pegen_args = self._pegen_args(node.args)
+                if pegen_args:
+                    return self._seq_elem_type_from_expr(pegen_args[0])
+        if isinstance(node, Ident):
+            bound = self._type_env.get(node.name)
+            if bound is None:
+                return None
+            base = bound.replace(" | None", "")
+            if base.startswith("list[") and base.endswith("]"):
+                return base[5:-1]
+            return base
+        return None
 
     def _infer_check_cast(self, type_node: Expr, inner_node: Expr) -> str | None:
         cast = self._check_cast_target(type_node)
@@ -604,6 +635,12 @@ class ActionTranslator:
                 elem = self._seq_elem_type_from_expr(inner_node.args[0])
             if elem is not None:
                 return f"list[{elem}]"
+        if isinstance(inner_node, Call) and inner_node.func.startswith("_PyPegen_singleton_seq"):
+            pegen_args = self._pegen_args(inner_node.args)
+            if pegen_args:
+                elem = self._seq_elem_type_from_expr(pegen_args[0])
+                if elem is not None:
+                    return f"list[{elem}]"
         return cast
 
     def _emit_seq_append_to_end(self, args: list[Expr]) -> str:
@@ -618,6 +655,21 @@ class ActionTranslator:
         if elem_ty is None:
             elem_ty = self._seq_elem_type_from_expr(args[1])
         helper = SEQ_INSERT_TYPED.get(elem_ty or "", "pa_seq_insert_front_expr")
+        result = f"{helper}({self._emit(args[0])}, {self._emit(args[1])})"
+        if helper == "pa_seq_insert_front_pattern":
+            result = f"pa_pattern_list({result})"
+        return result
+
+    def _emit_singleton_seq(self, args: list[Expr]) -> str:
+        elem_ty = self._seq_elem_type_from_expr(args[0])
+        helper = SINGLETON_TYPED.get(elem_ty or "", "pa_singleton_seq")
+        return f"{helper}({self._emit(args[0])})"
+
+    def _emit_join_sequences(self, args: list[Expr]) -> str:
+        elem_ty = self._seq_elem_type_from_expr(args[0])
+        if elem_ty is None:
+            elem_ty = self._seq_elem_type_from_expr(args[1])
+        helper = JOIN_TYPED.get(elem_ty or "", "pa_join_sequences")
         return f"{helper}({self._emit(args[0])}, {self._emit(args[1])})"
 
     def _c_type_name(self, node: Expr) -> str | None:
@@ -796,7 +848,7 @@ class ActionTranslator:
             )
 
         handlers: dict[str, Callable[[ActionTranslator, list[Expr]], str]] = {
-            "_PyPegen_singleton_seq": unary("pa_singleton_seq"),
+            "_PyPegen_singleton_seq": lambda self, args: self._emit_singleton_seq(args),
             "_PyPegen_seq_insert_in_front": lambda self, args: self._emit_seq_insert_front(args),
             "_PyPegen_seq_append_to_end": lambda self, args: (
                 self._emit_seq_append_to_end(args)
@@ -837,7 +889,7 @@ class ActionTranslator:
             ),
             "_PyPegen_get_last_comprehension_item": unary("pa_get_last_comprehension_item"),
             "_PyPegen_join_names_with_dot": binary("pa_join_names_with_dot"),
-            "_PyPegen_join_sequences": binary("pa_join_sequences"),
+            "_PyPegen_join_sequences": lambda self, args: self._emit_join_sequences(args),
             "_PyPegen_alias_for_star": unary("pa_alias_for_star"),
             "_PyPegen_add_type_comment_to_arg": binary("pa_add_type_comment_to_arg"),
             "_PyPegen_seq_delete_starred_exprs": unary("pa_seq_delete_starred_exprs"),
@@ -911,7 +963,7 @@ class ActionTranslator:
             "_PyAST_Expression": lambda self, args: f"pa_ast_expression({self._emit(args[0])})",
             "_PyAST_Interactive": lambda self, args: f"Interactive(body={self._emit(args[0])})",
             "_PyAST_FunctionType": lambda self, args: (
-                f"FunctionType(argtypes={self._emit(args[0])}, returns={self._emit(args[1])})"
+                f"FunctionType(argtypes=({self._emit(args[0])} if {self._emit(args[0])} is not None else []), returns={self._emit(args[1])})"
             ),
             "_PyAST_BinOp": with_loc("pa_ast_binop", 0, 1, 2),
             "_PyAST_UnaryOp": with_loc("pa_ast_unaryop", 0, 1),

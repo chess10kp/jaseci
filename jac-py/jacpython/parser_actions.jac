@@ -1447,7 +1447,7 @@ def pa_map_names_to_ids(names: list[expr]) -> list[str] {
     return out;
 }
 
-def pa_seq_count_dots(name: expr) -> int {
+def pa_seq_count_dots(seq: object) -> int {
     return 0;
 }
 
@@ -1566,8 +1566,8 @@ def pa_interactive_exit(p: peg_parser) -> list[stmt] {
     return [];
 }
 
-def pa_aug_op(target: expr) -> operator {
-    return Add();
+def pa_aug_op(op: operator) -> operator {
+    return op;
 }
 
 # arguments rule returns a dummy Call from pa_collect_call_seqs; peel args/keywords.
@@ -1766,6 +1766,83 @@ def pa_join_sequences(a: list[object], b: list[object]) -> list[object] {
     return out;
 }
 
+def pa_join_sequences_kw_or_starred(
+    a: list[keyword_or_starred_node], b: list[keyword_or_starred_node]
+) -> list[keyword_or_starred_node] {
+    out: list[keyword_or_starred_node] = [];
+    i = 0;
+    while i < len(a) {
+        out.append(a[i]);
+        i = i + 1;
+    }
+    i = 0;
+    while i < len(b) {
+        out.append(b[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_join_sequences_expr(a: list[expr], b: list[expr]) -> list[expr] {
+    out: list[expr] = [];
+    i = 0;
+    while i < len(a) {
+        out.append(a[i]);
+        i = i + 1;
+    }
+    i = 0;
+    while i < len(b) {
+        out.append(b[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_join_sequences_stmt(a: list[stmt], b: list[stmt]) -> list[stmt] {
+    out: list[stmt] = [];
+    i = 0;
+    while i < len(a) {
+        out.append(a[i]);
+        i = i + 1;
+    }
+    i = 0;
+    while i < len(b) {
+        out.append(b[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_join_sequences_alias(a: list[alias], b: list[alias]) -> list[alias] {
+    out: list[alias] = [];
+    i = 0;
+    while i < len(a) {
+        out.append(a[i]);
+        i = i + 1;
+    }
+    i = 0;
+    while i < len(b) {
+        out.append(b[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_join_sequences_pattern(a: list[pattern], b: list[pattern]) -> list[pattern] {
+    out: list[pattern] = [];
+    i = 0;
+    while i < len(a) {
+        out.append(a[i]);
+        i = i + 1;
+    }
+    i = 0;
+    while i < len(b) {
+        out.append(b[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
 def pa_alias_for_star(
     lineno: int, col_offset: int, end_lineno: int | None, end_col_offset: int | None
 ) -> alias | None {
@@ -1834,8 +1911,8 @@ def pa_setup_full_format_spec(`node: peg_token) -> peg_token {
     return `node;
 }
 
-def pa_check_fstring_conversion(a: object, b: object) -> object {
-    return a;
+def pa_check_fstring_conversion(a: object, b: object) -> peg_token {
+    return a as peg_token;
 }
 
 def pa_function_def_decorators(decs: list[expr], stmt: stmt) -> stmt {
