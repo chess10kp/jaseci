@@ -701,6 +701,184 @@ def pa_seq_insert_front(head: object, tail: object | None) -> list[object] {
     return out;
 }
 
+
+def pa_singleton_seq_expr(item: expr) -> list[expr] {
+    return [item];
+}
+
+def pa_seq_insert_front_expr(head: expr, tail: list[expr] | None) -> list[expr] {
+    if tail is None {
+        return pa_singleton_seq_expr(head);
+    }
+    out: list[expr] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_pattern(item: pattern) -> list[pattern] {
+    return [item];
+}
+
+def pa_seq_insert_front_pattern(head: pattern, tail: list[pattern] | None) -> list[pattern] {
+    if tail is None {
+        return pa_singleton_seq_pattern(head);
+    }
+    out: list[pattern] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_stmt(item: stmt) -> list[stmt] {
+    return [item];
+}
+
+def pa_seq_insert_front_stmt(head: stmt, tail: list[stmt] | None) -> list[stmt] {
+    if tail is None {
+        return pa_singleton_seq_stmt(head);
+    }
+    out: list[stmt] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_alias(item: alias) -> list[alias] {
+    return [item];
+}
+
+def pa_seq_insert_front_alias(head: alias, tail: list[alias] | None) -> list[alias] {
+    if tail is None {
+        return pa_singleton_seq_alias(head);
+    }
+    out: list[alias] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_type_param(item: type_param) -> list[type_param] {
+    return [item];
+}
+
+def pa_seq_insert_front_type_param(head: type_param, tail: list[type_param] | None) -> list[type_param] {
+    if tail is None {
+        return pa_singleton_seq_type_param(head);
+    }
+    out: list[type_param] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_withitem(item: withitem) -> list[withitem] {
+    return [item];
+}
+
+def pa_seq_insert_front_withitem(head: withitem, tail: list[withitem] | None) -> list[withitem] {
+    if tail is None {
+        return pa_singleton_seq_withitem(head);
+    }
+    out: list[withitem] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_arg(item: arg) -> list[arg] {
+    return [item];
+}
+
+def pa_seq_insert_front_arg(head: arg, tail: list[arg] | None) -> list[arg] {
+    if tail is None {
+        return pa_singleton_seq_arg(head);
+    }
+    out: list[arg] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_kw_or_starred(item: keyword_or_starred_node) -> list[keyword_or_starred_node] {
+    return [item];
+}
+
+def pa_seq_insert_front_kw_or_starred(
+    head: keyword_or_starred_node, tail: list[keyword_or_starred_node] | None
+) -> list[keyword_or_starred_node] {
+    if tail is None {
+        return pa_singleton_seq_kw_or_starred(head);
+    }
+    out: list[keyword_or_starred_node] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_kvpair(item: kv_pair) -> list[kv_pair] {
+    return [item];
+}
+
+def pa_seq_insert_front_kvpair(
+    head: kv_pair, tail: list[kv_pair] | None
+) -> list[kv_pair] {
+    if tail is None {
+        return pa_singleton_seq_kvpair(head);
+    }
+    out: list[kv_pair] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_singleton_seq_kvpattern(item: kp_pair) -> list[kp_pair] {
+    return [item];
+}
+
+def pa_seq_insert_front_kvpattern(
+    head: kp_pair, tail: list[kp_pair] | None
+) -> list[kp_pair] {
+    if tail is None {
+        return pa_singleton_seq_kvpattern(head);
+    }
+    out: list[kp_pair] = [head];
+    i = 0;
+    while i < len(tail) {
+        out.append(tail[i]);
+        i = i + 1;
+    }
+    return out;
+}
+
+
 def pa_make_cmpop_pair(op: cmpop, rhs: expr) -> pa_cmpop_expr_pair {
     return pa_cmpop_expr_pair(cmpop=op, expr=rhs);
 }
