@@ -1643,7 +1643,7 @@ impl EsastGenPass._try_primitive_op(
     import from jaclang.compiler.backends.es.es_unparse { JSCodeGenerator }
 
     import from jaclang.compiler.types.type_utils { expr_primitive_name }
-    _type_name = expr_primitive_name(self.prog, expr_node);
+    _type_name = expr_primitive_name(expr_node);
     if not _type_name {
         return None;
     }
@@ -1684,7 +1684,7 @@ impl EsastGenPass._operand_str(unparser: object, es_node: es.Expression) -> str 
 
 impl EsastGenPass._expr_type_name(expr_node: uni.UniNode) -> str {
     import from jaclang.compiler.types.type_utils { expr_primitive_name }
-    return expr_primitive_name(self.prog, expr_node);
+    return expr_primitive_name(expr_node);
 }
 
 impl EsastGenPass._is_collection_expr(expr_node: uni.UniNode) -> bool {
