@@ -1,0 +1,808 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_codecencodings_jp/conv_codecencodings_jp_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:46:25",
+  "hashes": {
+    "pins_jac": "f9bee0afb4daf57a9df87b778de1a2e65ff9a255e207a6d6703373ce6fe46c0c",
+    "conversion_json": "35fecca3b051da5a125e8ff12fc72135a9850b81553c0f8458970c532f2bcdf4",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "codecencodings_jp",
+  "counts": {
+    "converted": 133,
+    "runnable": 115,
+    "green": 0,
+    "quarantined": 18
+  },
+  "pins": [
+    {
+      "id": "Test_CP932.test_chunkcoding",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_errorhandle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_callback_returns_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_callback_wrong_objects",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_callback_long_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_callback_None_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_callback_backward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_callback_forward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_callback_index_outofbound",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_incrementalencoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_incrementaldecoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_incrementalencoder_error_callback",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_streamreader",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_streamwriter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_streamwriter_reset_no_pending",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_incrementalencoder_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_CP932.test_null_terminator",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_chunkcoding",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_errorhandle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_callback_returns_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_callback_wrong_objects",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_callback_long_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_callback_None_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_callback_backward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_callback_forward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_callback_index_outofbound",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_incrementalencoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_incrementaldecoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_incrementalencoder_error_callback",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_streamreader",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_streamwriter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_streamwriter_reset_no_pending",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_incrementalencoder_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_null_terminator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertTrue', False)"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_chunkcoding",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_errorhandle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_callback_returns_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_callback_wrong_objects",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_callback_long_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_callback_None_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_callback_backward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_callback_forward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_callback_index_outofbound",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_incrementalencoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_incrementaldecoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_incrementalencoder_error_callback",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_streamreader",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_streamwriter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_streamwriter_reset_no_pending",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_incrementalencoder_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_null_terminator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertTrue', False)"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_chunkcoding",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_errorhandle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_callback_returns_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_callback_wrong_objects",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_callback_long_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_callback_None_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_callback_backward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_callback_forward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_callback_index_outofbound",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_incrementalencoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_incrementaldecoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_incrementalencoder_error_callback",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_streamreader",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_streamwriter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_streamwriter_reset_no_pending",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_incrementalencoder_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_null_terminator",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_chunkcoding",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_errorhandle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_callback_returns_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_callback_wrong_objects",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_callback_long_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_callback_None_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_callback_backward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_callback_forward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_callback_index_outofbound",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_incrementalencoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_incrementaldecoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_incrementalencoder_error_callback",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_streamreader",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_streamwriter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_streamwriter_reset_no_pending",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_incrementalencoder_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_null_terminator",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_chunkcoding",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_errorhandle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_callback_returns_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_callback_wrong_objects",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_callback_long_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_callback_None_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_callback_backward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_callback_forward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_callback_index_outofbound",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_incrementalencoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_incrementaldecoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_incrementalencoder_error_callback",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_streamreader",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_streamwriter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_streamwriter_reset_no_pending",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_incrementalencoder_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJIS_2004.test_null_terminator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertTrue', False)"
+    },
+    {
+      "id": "Test_SJISX0213.test_chunkcoding",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_errorhandle",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_callback_returns_bytes",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_callback_wrong_objects",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_callback_long_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_callback_None_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_callback_backward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_callback_forward_index",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_callback_index_outofbound",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_incrementalencoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_incrementaldecoder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_incrementalencoder_error_callback",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_streamreader",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_streamwriter",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_streamwriter_reset_no_pending",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_incrementalencoder_del_segfault",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "Test_SJISX0213.test_null_terminator",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertTrue', False)"
+    },
+    {
+      "id": "Test_CP932.test_xmlcharrefreplace",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_CP932.test_customreplace_encode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_xmlcharrefreplace",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_EUC_JIS_2004.test_customreplace_encode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_xmlcharrefreplace",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_EUC_JISX0213.test_customreplace_encode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_xmlcharrefreplace",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_EUC_JP_COMPAT.test_customreplace_encode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_xmlcharrefreplace",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_SJIS_COMPAT.test_customreplace_encode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_SJIS_2004.test_xmlcharrefreplace",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_SJIS_2004.test_customreplace_encode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_SJISX0213.test_xmlcharrefreplace",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    },
+    {
+      "id": "Test_SJISX0213.test_customreplace_encode",
+      "status": "quarantined",
+      "reason": "self.skipTest"
+    }
+  ]
+}
