@@ -1,0 +1,2573 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "a2b1169c3261d3808059ee5df0740f33e6d0e7c9",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_argparse/conv_argparse_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:14:16",
+  "hashes": {
+    "pins_jac": "687cee2dda8a2ae46082e5031eaa77c0cc1d086da90ab03a99e00264c8f06b58",
+    "conversion_json": "abdc2361a740fe4c8a60c635cedadc92e22869b4f03d7075551c569323cb2734",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "argparse",
+  "counts": {
+    "converted": 505,
+    "runnable": 20,
+    "green": 0,
+    "quarantined": 485
+  },
+  "pins": [
+    {
+      "id": "StdStreamTest.test_skip_invalid_stderr",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestArgumentParserPickleable.test_pickle_roundtrip",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: Can't get local object 'ArgumentParser.__init__.<locals>.identity'"
+    },
+    {
+      "id": "TestBooleanOptionalAction.test_const",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestBooleanOptionalAction.test_invalid_name",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: assertRaises: did not raise"
+    },
+    {
+      "id": "TestAddSubparsers.test_parse_args_failures",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestAddSubparsers.test_parse_args_failures_details",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_parse_args_failures_details_custom_usage",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_parse_args",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_parse_known_args",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_parse_known_args_to_class_namespace",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_abbreviation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestAddSubparsers.test_parse_known_args_with_single_dash_option",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestAddSubparsers.test_dest",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_required_subparsers_via_attribute",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestAddSubparsers.test_required_subparsers_via_kwarg",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestAddSubparsers.test_required_subparsers_default",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_required_subparsers_no_destination_error",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_optional_subparsers",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_help_extra_prefix_chars",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_help_non_breaking_spaces",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_help_blank",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_help_alternate_prefix_chars",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_parser_command_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_invalid_subparsers_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_invalid_subparser_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_subparser_title_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_subparser1_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_subparser2_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_alias_invocation",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestAddSubparsers.test_error_alias_invocation",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestAddSubparsers.test_alias_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_single_parent",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_single_parent_mutex",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestParentParsers.test_single_grandparent_mutex",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestParentParsers.test_multiple_parents",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_multiple_parents_mutex",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestParentParsers.test_conflicting_parents",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_conflicting_parents_mutex",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_same_argument_name_parents",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_subparser_parents",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_subparser_parents_mutex",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: can't use starred expression here"
+    },
+    {
+      "id": "TestParentParsers.test_parent_help",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_groups_parents",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_wrong_type_parents",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestParentParsers.test_mutex_groups_parents",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestWrappingMetavar.test_help_with_metavar",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "id": "TestExitOnError.test_exit_on_error_with_good_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_exit_on_error_with_bad_args",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 20"
+    },
+    {
+      "id": "TestExitOnError.test_unrecognized_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_unrecognized_intermixed_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_with_metavar",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_n",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_n_with_metavar",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_optional",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_zero_or_more",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_one_or_more",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_one_or_more_with_metavar",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_args_remainder",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_required_mutually_exclusive_args",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_conflicting_mutually_exclusive_args_optional_with_metavar",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_conflicting_mutually_exclusive_args_zero_or_more_with_metavar1",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_conflicting_mutually_exclusive_args_zero_or_more_with_metavar2",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_ambiguous_option",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestExitOnError.test_os_error",
+      "status": "fail",
+      "classification": "VM-CRASH",
+      "detail": "jaclang/compiler/backends/native/na_ir_gen/gc_debug.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/generics.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/globals.jac...\n  Compiling jaclang/compiler/backends/native/na_ir_gen/hash_core.jac...\n  Compiling jaclang/compiler"
+    },
+    {
+      "id": "TestProgName.test_script",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestProgName.test_directory",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestProgName.test_module",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestProgName.test_package",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestProgName.test_zipfile",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "TestProgName.test_directory_in_zipfile",
+      "status": "quarantined",
+      "reason": "harness-error:SyntaxError: invalid syntax"
+    },
+    {
+      "id": "StdStreamTest.test_skip_invalid_stdout",
+      "status": "quarantined",
+      "reason": "uses-self.subTest"
+    },
+    {
+      "id": "TestStrEnumChoices.test_parse_enum_value",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrEnumChoices.test_help_message_contains_enum_choices",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrEnumChoices.test_invalid_enum_value_raises_error",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeDeprecation.test",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeRepr.test_r",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeRepr.test_wb_1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeRepr.test_r_latin",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeRepr.test_w_big5_ignore",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeRepr.test_r_1_replace",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeOpenArgs.test_open_args",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeOpenArgs.test_invalid_file_type",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestFileTypeMissingInitialization.test",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestTypeRegistration.test",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestActionRegistration.test",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_wrong_argument_error_with_suggestions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_wrong_argument_error_no_suggestions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_wrong_argument_subparsers_with_suggestions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_wrong_argument_subparsers_no_suggestions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_wrong_argument_no_suggestion_implicit",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_suggestions_choices_empty",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_suggestions_choices_int",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentAndSubparserSuggestions.test_suggestions_choices_mixed_types",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidAction.test_invalid_type",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidAction.test_modified_invalid_action",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestPositionalsGroups.test_nongroup_first",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestPositionalsGroups.test_group_first",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestPositionalsGroups.test_interleaved_groups",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestGroupConstructor.test_group_prefix_chars",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestGroupConstructor.test_group_prefix_chars_default",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestGroupConstructor.test_nested_argument_group",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_invalid_add_argument_group",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_invalid_add_argument",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_help",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_optional_order",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_help_subparser_all_mutually_exclusive_group_members_suppressed",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_usage_empty_group",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_nested_mutex_groups",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveInGroup.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalOptional.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalWithDefault.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusivePositionalWithDefault.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_invalid_add_argument_group",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_invalid_add_argument",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_help",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_optional_order",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_help_subparser_all_mutually_exclusive_group_members_suppressed",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_usage_empty_group",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveGroupErrorsParent.test_nested_mutex_groups",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveSimpleParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveLongParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveFirstSuppressedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveManySuppressedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalAndPositionalParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsMixedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_failures_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_failures_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_successes_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_successes_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_usage_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_usage_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_help_when_not_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMutuallyExclusiveOptionalsAndPositionalsMixedParent.test_help_when_required",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestSetDefaults.test_set_defaults_no_args",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestSetDefaults.test_set_defaults_with_args",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestSetDefaults.test_set_defaults_subparsers",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestSetDefaults.test_set_defaults_parents",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestSetDefaults.test_set_defaults_on_parent_and_subparser",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestSetDefaults.test_set_defaults_same_as_add_argument",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestSetDefaults.test_set_defaults_same_as_add_argument_group",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestGetDefault.test_get_default",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestNamespaceContainsSimple.test_empty",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestNamespaceContainsSimple.test_non_empty",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpUsageNoWhitespaceCrash.test_all_suppressed_mutex_followed_by_long_arg",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpUsageNoWhitespaceCrash.test_newline_in_metavar",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpUsageNoWhitespaceCrash.test_empty_metavar_required_arg",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpUsageNoWhitespaceCrash.test_all_suppressed_mutex_with_optional_nargs",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpUsageNoWhitespaceCrash.test_long_mutex_groups_wrap",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpUsageNoWhitespaceCrash.test_mutex_groups_with_mixed_optionals_positionals_wrap",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpCustomHelpFormatter.test_custom_formatter_function",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpCustomHelpFormatter.test_custom_formatter_class",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestHelpCustomHelpFormatter.test_usage_long_subparser_command",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_invalid_keyword_arguments",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_missing_destination",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_invalid_option_strings",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_invalid_prefix",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_invalid_type",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_invalid_action",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_invalid_help",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_multiple_dest",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_no_argument_actions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_no_argument_no_const_actions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_more_than_one_argument_actions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_required_const_actions",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_parsers_action_missing_params",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_version_missing_params",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_required_positional",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidArgumentConstructors.test_user_defined_action",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestActionsReturned.test_dest",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestActionsReturned.test_misc",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestConflictHandling.test_bad_type",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestConflictHandling.test_conflict_error",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestConflictHandling.test_resolve_error",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestConflictHandling.test_subparser_conflict",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestOptionalsHelpVersionActions.test_version",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestOptionalsHelpVersionActions.test_version_format",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestOptionalsHelpVersionActions.test_version_no_help",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestOptionalsHelpVersionActions.test_version_action",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestOptionalsHelpVersionActions.test_no_help",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestOptionalsHelpVersionActions.test_alternate_help_version",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestOptionalsHelpVersionActions.test_help_version_extra_arguments",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrings.test_optional",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrings.test_argument",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrings.test_namespace",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrings.test_namespace_starkwargs_notidentifier",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrings.test_namespace_kwargs_and_starkwargs_notidentifier",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrings.test_namespace_starkwargs_identifier",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestStrings.test_parser",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestNamespace.test_constructor",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestNamespace.test_equality",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestNamespace.test_equality_returns_notimplemented",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestEncoding.test_argparse_module_encoding",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestEncoding.test_test_argparse_module_encoding",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentError.test_argument_error",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestArgumentTypeError.test_argument_type_error",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMessageContentError.test_missing_argument_name_in_message",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMessageContentError.test_optional_optional_not_in_message",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestMessageContentError.test_optional_positional_not_in_message",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestTypeFunctionCallOnlyOnce.test_type_function_call_only_once",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDeprecatedArguments.test_deprecated_option",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDeprecatedArguments.test_deprecated_boolean_option",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDeprecatedArguments.test_deprecated_arguments",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDeprecatedArguments.test_deprecated_varargument",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDeprecatedArguments.test_deprecated_subparser",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestTypeFunctionCalledOnDefault.test_type_function_call_with_non_string_default",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestTypeFunctionCalledOnDefault.test_type_function_call_with_string_default",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestTypeFunctionCalledOnDefault.test_no_double_type_conversion_of_default",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestTypeFunctionCalledOnDefault.test_issue_15906",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestParseKnownArgs.test_arguments_tuple",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestParseKnownArgs.test_arguments_list",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestParseKnownArgs.test_arguments_tuple_positional",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestParseKnownArgs.test_arguments_list_positional",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestParseKnownArgs.test_optionals",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestParseKnownArgs.test_mixed",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestParseKnownArgs.test_zero_or_more_optional",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDoubleDash.test_single_argument_option",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDoubleDash.test_multiple_argument_option",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDoubleDash.test_multiple_double_dashes",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDoubleDash.test_remainder",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDoubleDash.test_subparser",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestDoubleDash.test_subparser_after_multiple_argument_option",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestIntermixedArgs.test_basic",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestIntermixedArgs.test_remainder",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestIntermixedArgs.test_required_exclusive",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestIntermixedArgs.test_required_exclusive_with_positional",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestIntermixedArgs.test_invalid_args",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestIntermixedMessageContentError.test_missing_argument_name_in_message",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_None_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_None_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_None_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_None_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_None_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_optional_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_optional_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_optional_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_optional_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_optional_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_zeroormore_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_zeroormore_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_zeroormore_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_zeroormore_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_zeroormore_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_oneormore_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_oneormore_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_oneormore_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_oneormore_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_oneormore_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_remainder_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_remainder_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_remainder_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_remainder_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_remainder_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_parser_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_parser_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_parser_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_parser_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_parser_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_1_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_1_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_1_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_1_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_1_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_2_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_2_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_2_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_2_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_2_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_3_metavar_string",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_3_metavar_length0",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_3_metavar_length1",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_3_metavar_length2",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestAddArgumentMetavar.test_nargs_3_metavar_length3",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidNargs.test_nargs_alphabetic",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestInvalidNargs.test_nargs_zero",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestImportStar.test",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestImportStar.test_all_exports_everything_but_modules",
+      "status": "quarantined",
+      "reason": "helper:setUp(uses-self.enterContext)"
+    },
+    {
+      "id": "TestProgName.test_script_compiled",
+      "status": "quarantined",
+      "reason": "self.test_script"
+    },
+    {
+      "id": "TestProgName.test_directory_compiled",
+      "status": "quarantined",
+      "reason": "self.test_directory"
+    },
+    {
+      "id": "TestProgName.test_module_compiled",
+      "status": "quarantined",
+      "reason": "self.test_module"
+    },
+    {
+      "id": "TestProgName.test_package_compiled",
+      "status": "quarantined",
+      "reason": "self.test_package"
+    },
+    {
+      "id": "TestProgName.test_zipfile_compiled",
+      "status": "quarantined",
+      "reason": "self.test_zipfile"
+    },
+    {
+      "id": "TestProgName.test_directory_in_zipfile_compiled",
+      "status": "quarantined",
+      "reason": "self.test_directory_in_zipfile"
+    },
+    {
+      "id": "TestTranslations.test_translations",
+      "status": "quarantined",
+      "reason": "self.assertMsgidsEqual"
+    },
+    {
+      "id": "TestColorized.test_argparse_color",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "id": "TestColorized.test_argparse_color_mutually_exclusive_group_usage",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "id": "TestColorized.test_argparse_color_custom_usage",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "id": "TestColorized.test_custom_formatter_function",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "id": "TestColorized.test_custom_formatter_class",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.enterContext)"
+    },
+    {
+      "id": "TestColorized.test_subparser_prog_is_stored_without_color",
+      "status": "quarantined",
+      "reason": "helper:setUp(self.enterContext)"
+    }
+  ]
+}
