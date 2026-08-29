@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "tool_version": "diff_runner-0.2.2",
+  "jac_sha": "0b978d1301c07612b58ab280a6e6754ce86afb41",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "diff_runner.py",
+    "jac-py/tests/conv_pkg/conv_pkg_pins.jac"
+  ],
+  "generated_at": "2026-08-28T20:22:00",
+  "hashes": {
+    "pins_jac": "c5614036f6fab10e979a90df65f330ebb67f950fb583bfae719f85dc7a47787e",
+    "conversion_json": "fd1a67ff490bedbf1a500f9e921a0b3ff926bd696ce9c2f5732f2d871f3ebf83",
+    "guest_jac_sha_note": "jac_sha is the repo HEAD driving .venv/bin/jac"
+  },
+  "module_stem": "pkg",
+  "counts": {
+    "converted": 8,
+    "runnable": 0,
+    "green": 0,
+    "quarantined": 8
+  },
+  "pins": [
+    {
+      "id": "TestPkg.test_1",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "TestPkg.test_2",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "TestPkg.test_3",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "TestPkg.test_4",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "TestPkg.test_5",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "TestPkg.test_6",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "TestPkg.test_7",
+      "status": "quarantined",
+      "reason": "host-raised:NameError: name 'self' is not defined"
+    },
+    {
+      "id": "TestPkg.test_8",
+      "status": "quarantined",
+      "reason": "decorator:unittest.skipIf"
+    }
+  ]
+}
