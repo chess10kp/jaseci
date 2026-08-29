@@ -16,6 +16,16 @@ import from objects {
     hashkey_str,
     py_error,
     _signed_hash,
+    _richcompare_truth,
+}
+
+# Back-compat aliases for the consolidated tri-state truth helper (PR#6973 B.2).
+def _richcompare_to_bool(res: PyObj) -> int {
+    return _richcompare_truth(res);
+}
+
+def _object_is_true(res: PyObj) -> bool {
+    return _richcompare_truth(res) == 1;
 }
 
 # Deterministic digest of ``tp_hashkey()`` for dict/set keying only — not the
