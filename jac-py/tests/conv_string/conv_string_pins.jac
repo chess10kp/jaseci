@@ -7,6 +7,12 @@ import from layer_p2_libtest { p2_libtest_run_snippet }
 
 # Source: test_string.py
 
+test "LazyImportTest.test_lazy_import" {
+    (ok, detail) = p2_libtest_run_snippet("import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nfrom test.support.import_helper import ensure_lazy_imports\n\ndef _t():\n    ensure_lazy_imports('base64', {'re', 'collections'})\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
 test "ModuleTest.test_attrs" {
     (ok, detail) = p2_libtest_run_snippet("import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport string\n\ndef _t():\n    assert string.whitespace == ' \\t\\n\\r\\x0b\\x0c', ('assertEqual', string.whitespace, ' \\t\\n\\r\\x0b\\x0c')\n    assert string.ascii_lowercase == 'abcdefghijklmnopqrstuvwxyz', ('assertEqual', string.ascii_lowercase, 'abcdefghijklmnopqrstuvwxyz')\n    assert string.ascii_uppercase == 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ('assertEqual', string.ascii_uppercase, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')\n    assert string.ascii_letters == string.ascii_lowercase + string.ascii_uppercase, ('assertEqual', string.ascii_letters, string.ascii_lowercase + string.ascii_uppercase)\n    assert string.digits == '0123456789', ('assertEqual', string.digits, '0123456789')\n    assert string.hexdigits == string.digits + 'abcdefABCDEF', ('assertEqual', string.hexdigits, string.digits + 'abcdefABCDEF')\n    assert string.octdigits == '01234567', ('assertEqual', string.octdigits, '01234567')\n    assert string.punctuation == '!\"#$%&\\'()*+,-./:;<=>?@[\\\\]^_`{|}~', ('assertEqual', string.punctuation, '!\"#$%&\\'()*+,-./:;<=>?@[\\\\]^_`{|}~')\n    assert string.printable == string.digits + string.ascii_lowercase + string.ascii_uppercase + string.punctuation + string.whitespace, ('assertEqual', string.printable, string.digits + string.ascii_lowercase + string.ascii_uppercase + string.punctuation + string.whitespace)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n");
     assert ok , "RUN<" + detail + ">";
@@ -33,6 +39,12 @@ test "ModuleTest.test_format_keyword_arguments" {
 
 test "ModuleTest.test_conversion_specifiers" {
     (ok, detail) = p2_libtest_run_snippet("import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport string\n\ndef _t():\n    fmt = string.Formatter()\n    assert fmt.format('-{arg!r}-', arg='test') == \"-'test'-\", ('assertEqual', fmt.format('-{arg!r}-', arg='test'), \"-'test'-\")\n    assert fmt.format('{0!s}', 'test') == 'test', ('assertEqual', fmt.format('{0!s}', 'test'), 'test')\n    try:\n        fmt.format(*('{0!h}', 'test'))\n    except ValueError:\n        pass\n    assert fmt.format('{0!a}', 42) == '42', ('assertEqual', fmt.format('{0!a}', 42), '42')\n    assert fmt.format('{0!a}', string.ascii_letters) == \"'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\", ('assertEqual', fmt.format('{0!a}', string.ascii_letters), \"'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\")\n    assert fmt.format('{0!a}', chr(255)) == \"'\\\\xff'\", ('assertEqual', fmt.format('{0!a}', chr(255)), \"'\\\\xff'\")\n    assert fmt.format('{0!a}', chr(256)) == \"'\\\\u0100'\", ('assertEqual', fmt.format('{0!a}', chr(256)), \"'\\\\u0100'\")\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n");
+    assert ok , "RUN<" + detail + ">";
+    assert detail == "ok" , "GOT<" + detail + ">";
+}
+
+test "ModuleTest.test_auto_numbering_lookup" {
+    (ok, detail) = p2_libtest_run_snippet("import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport string\nimport types\n\ndef _t():\n    fmt = string.Formatter()\n    namespace = types.SimpleNamespace(foo=types.SimpleNamespace(bar='baz'))\n    widths = [None, types.SimpleNamespace(qux=4)]\n    assert fmt.format('{.foo.bar:{[1].qux}}', namespace, widths) == 'baz ', ('assertEqual', fmt.format('{.foo.bar:{[1].qux}}', namespace, widths), 'baz ')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n");
     assert ok , "RUN<" + detail + ">";
     assert detail == "ok" , "GOT<" + detail + ">";
 }

@@ -1838,7 +1838,7 @@
         "jac-py/tests/conv_string/conv_string_pins.jac"
       ],
       "libtest_snippets": [],
-      "notes": "24 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
+      "notes": "26 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
       "conversion_meta": "jac-py/tests/conv_string/conversion.json"
     },
     {

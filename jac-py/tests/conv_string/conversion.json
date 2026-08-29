@@ -10,13 +10,13 @@
     "convert_suite.py",
     "reference/cpython/Lib/test/test_string/test_string.py",
     "-o",
-    "/var/tmp/worker6-401-convert-test_string-1410923/jac-py/tests/conv_string",
+    "/var/tmp/worker6-401-convert-test_string-1462856/jac-py/tests/conv_string",
     "--name",
     "conv_string"
   ],
-  "generated_at": "2026-08-29T11:57:29",
+  "generated_at": "2026-08-29T12:03:33",
   "hashes": {
-    "pins_jac": "8758baced646d527c1abddb2d45cff802426e5ef7693d8704e1b4d2556e4dd03"
+    "pins_jac": "d7f866725e9dc88e76dce7fb4e2db77abb50f07cf3dcce882690a48b4d1a37ec"
   },
   "source_file": "reference/cpython/Lib/test/test_string/test_string.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -25,8 +25,11 @@
   "pins": [
     {
       "ident": "LazyImportTest.test_lazy_import",
-      "status": "quarantined",
-      "reason": "harness-error:SyntaxError: invalid syntax"
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nfrom test.support.import_helper import ensure_lazy_imports\n\ndef _t():\n    ensure_lazy_imports('base64', {'re', 'collections'})\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "ModuleTest.test_attrs",
@@ -85,8 +88,11 @@
     },
     {
       "ident": "ModuleTest.test_auto_numbering_lookup",
-      "status": "quarantined",
-      "reason": "host-raised:KeyError: ''"
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport string\nimport types\n\ndef _t():\n    fmt = string.Formatter()\n    namespace = types.SimpleNamespace(foo=types.SimpleNamespace(bar='baz'))\n    widths = [None, types.SimpleNamespace(qux=4)]\n    assert fmt.format('{.foo.bar:{[1].qux}}', namespace, widths) == 'baz ', ('assertEqual', fmt.format('{.foo.bar:{[1].qux}}', namespace, widths), 'baz ')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "ModuleTest.test_override_get_value",
@@ -293,7 +299,7 @@
   ],
   "counts": {
     "extracted": 41,
-    "pinned": 24,
-    "quarantined": 17
+    "pinned": 26,
+    "quarantined": 15
   }
 }
