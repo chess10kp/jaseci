@@ -16,8 +16,8 @@ import from objects {
     py_error,
     expect_str,
 }
-import from ceval {
-    recover_exception,
+import from ceval_exceptions { recover_exception, }
+import from ceval_api {
     to_host_coerce,
     iter_drain,
     append_to_list,

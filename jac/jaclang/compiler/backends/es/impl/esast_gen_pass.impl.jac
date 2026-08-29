@@ -1628,7 +1628,7 @@ impl EsastGenPass._ensure_emitters -> None {
 }
 
 impl EsastGenPass._resolve_primitive_type_name(_obj_type: object) -> str {
-    import from jaclang.compiler.type_system.type_utils { primitive_type_name_of }
+    import from jaclang.compiler.types.type_utils { primitive_type_name_of }
     self._ensure_emitters();
     return primitive_type_name_of(_obj_type) or "";
 }
@@ -1642,8 +1642,8 @@ impl EsastGenPass._try_primitive_op(
 ) -> (es.Expression | None) {
     import from jaclang.compiler.backends.es.es_unparse { JSCodeGenerator }
 
-    import from jaclang.compiler.type_system.type_utils { expr_primitive_name }
-    _type_name = expr_primitive_name(self.prog, expr_node);
+    import from jaclang.compiler.types.type_utils { expr_primitive_name }
+    _type_name = expr_primitive_name(expr_node);
     if not _type_name {
         return None;
     }
@@ -1683,8 +1683,8 @@ impl EsastGenPass._operand_str(unparser: object, es_node: es.Expression) -> str 
 }
 
 impl EsastGenPass._expr_type_name(expr_node: uni.UniNode) -> str {
-    import from jaclang.compiler.type_system.type_utils { expr_primitive_name }
-    return expr_primitive_name(self.prog, expr_node);
+    import from jaclang.compiler.types.type_utils { expr_primitive_name }
+    return expr_primitive_name(expr_node);
 }
 
 impl EsastGenPass._is_collection_expr(expr_node: uni.UniNode) -> bool {
@@ -3434,7 +3434,7 @@ impl EsastGenPass._osp_arch_set -> set[str] {
 }
 
 impl EsastGenPass._osp_expr_arch_name(expr: (uni.UniNode | None)) -> (str | None) {
-    import from jaclang.compiler.type_system.types { ClassType }
+    import from jaclang.compiler.types.types { ClassType }
     if not isinstance(expr, uni.Expr) {
         return None;
     }
@@ -3450,7 +3450,7 @@ impl EsastGenPass._osp_expr_arch_name(expr: (uni.UniNode | None)) -> (str | None
 }
 
 impl EsastGenPass._arch_kind_of_type(ty: object) -> (str | None) {
-    import from jaclang.compiler.type_system.types { ClassType }
+    import from jaclang.compiler.types.types { ClassType }
     if not isinstance(ty, ClassType) {
         return None;
     }

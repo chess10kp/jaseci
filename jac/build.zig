@@ -163,12 +163,20 @@ pub fn build(b: *std.Build) void {
     // Standalone: fetch the pinned LLVM subset the jacllvm shim needs into
     // .llvm-build/ (one-time, ~84 MB range-fetched from the llvm-slice zip). After
     // this, a plain `zig build` picks it up via llvmCacheDir and ships the
-    // wheel-free binary.
+    // wheel-free binary. Pure-Zig bootstrap (no pbs CPython needed).
     {
-        const fetch_llvm = tool.run("payload", &.{ "fetch-llvm", b.pathFromRoot(LLVM_CACHE_BASE) });
-        fetch_llvm.has_side_effects = true;
+        const llvm_seed_mod = b.createModule(.{
+            .root_source_file = b.path("bootstrap/fetch_llvm.zig"),
+            .target = b.graph.host,
+            .optimize = .ReleaseSafe,
+            .link_libc = true,
+        });
+        const llvm_seed = b.addExecutable(.{ .name = "fetch_llvm", .root_module = llvm_seed_mod });
+        const fetch_llvm_run = b.addRunArtifact(llvm_seed);
+        fetch_llvm_run.addArgs(&.{ host_osarch, b.pathFromRoot(LLVM_CACHE_BASE), pins_path });
+        fetch_llvm_run.has_side_effects = true;
         b.step("fetch-llvm", "Range-fetch the pinned LLVM subset for the wheel-free jacllvm shim")
-            .dependOn(&fetch_llvm.step);
+            .dependOn(&fetch_llvm_run.step);
     }
 
     // Standalone: place the pinned, contained bun runtime into the source tree at
@@ -439,6 +447,14 @@ fn addTests(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.built
     });
     const seed_tests = b.addTest(.{ .name = "fetch-pbs-tests", .root_module = seed_mod });
     test_step.dependOn(&b.addRunArtifact(seed_tests).step);
+    const llvm_mod = b.createModule(.{
+        .root_source_file = b.path("bootstrap/fetch_llvm.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    const llvm_tests = b.addTest(.{ .name = "fetch-llvm-tests", .root_module = llvm_mod });
+    test_step.dependOn(&b.addRunArtifact(llvm_tests).step);
 }
 
 /// Map a target to the os-arch token the fetch-pbs subcommand understands,
