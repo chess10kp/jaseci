@@ -1547,7 +1547,16 @@ def load_token_sets() -> tuple[set[str], dict[str, int]]:
 
 
 def _reorder_simple_stmt(rule: Rule) -> Rule:
-    order = ("assignment", "return_stmt", "pass_stmt", "del_stmt", "star_expressions")
+    # type_alias before del_stmt and star_expressions: otherwise `type X = int`
+    # is misparsed as an expression statement.
+    order = (
+        "assignment",
+        "return_stmt",
+        "pass_stmt",
+        "type_alias",
+        "del_stmt",
+        "star_expressions",
+    )
     buckets: dict[str, list[Alt]] = {name: [] for name in order}
     other: list[Alt] = []
     for alt in rule.rhs.alts:
@@ -1582,14 +1591,36 @@ def generate_text() -> str:
     gen = JacParserGenerator(grammar, tokens, buf, allowed_rules=None)
     gen.set_exact_tokens(exact)
     gen.generate(OUT_PATH)
-    return _patch_store_target_rules(buf.getvalue())
+    return _patch_parser_rules(buf.getvalue())
+
+
+def _patch_patterns_rule(source: str) -> str:
+    """open_sequence_pattern must be null-checked before pa_pattern_list.
+
+    pa_pattern_list(None) returns [] which is truthy for `is not None`, so
+    inlining pa_pattern_list(rule_open_sequence_pattern(p)) breaks the
+    patterns-rule fallback to rule_pattern.
+    """
+    old = (
+        "    patterns = pa_pattern_list(rule_open_sequence_pattern(p));\n"
+        "    if patterns is not None {"
+    )
+    new = (
+        "    open_patterns = rule_open_sequence_pattern(p);\n"
+        "    if open_patterns is not None {\n"
+        "        patterns = pa_pattern_list(open_patterns);"
+    )
+    if old not in source:
+        raise RuntimeError("patterns-rule patch anchor missing in generated parser")
+    return source.replace(old, new, 1)
 
 
 def _patch_store_target_rules(source: str) -> str:
-    """Store targets use atom, not t_primary: t_primary consumes .attr for loads."""
+    """Store/delete targets use atom, not t_primary: t_primary consumes .attr for loads."""
     rules = (
         "def rule_target_with_star_atom",
         "def rule_single_subscript_attribute_target",
+        "def rule_del_target",
     )
     out: list[str] = []
     in_rule = False
@@ -1602,6 +1633,40 @@ def _patch_store_target_rules(source: str) -> str:
             line = line.replace("a = rule_t_primary(p)", "a = rule_atom(p)")
         out.append(line)
     return "".join(out)
+
+
+def _patch_type_alias_simple_stmt(source: str) -> str:
+    """rule_type_alias already expects the soft keyword; duplicating it at
+    simple_stmt breaks nested aliases and multi-line suites."""
+    old = (
+        "    if ((peg_expect_soft_keyword(p, \"type\") is not None)) {\n"
+        "        type_alias = rule_type_alias(p);\n"
+        "        if type_alias is not None {\n"
+        "            res = type_alias;\n"
+        "            peg_insert_memo(p, mark, RULE_simple_stmt, res);\n"
+        "            return res;\n"
+        "        }\n"
+        "    }\n"
+        "    peg_reset(p, mark);"
+    )
+    new = (
+        "    type_alias = rule_type_alias(p);\n"
+        "    if type_alias is not None {\n"
+        "        res = type_alias;\n"
+        "        peg_insert_memo(p, mark, RULE_simple_stmt, res);\n"
+        "        return res;\n"
+        "    }\n"
+        "    peg_reset(p, mark);"
+    )
+    if old not in source:
+        raise RuntimeError("type_alias simple_stmt patch anchor missing")
+    return source.replace(old, new, 1)
+
+
+def _patch_parser_rules(source: str) -> str:
+    source = _patch_patterns_rule(source)
+    source = _patch_type_alias_simple_stmt(source)
+    return _patch_store_target_rules(source)
 
 
 def main(argv: list[str]) -> int:

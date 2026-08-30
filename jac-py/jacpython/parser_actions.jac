@@ -4,7 +4,7 @@
 # objects. Generated parser rules call these helpers; this file is hand-written
 # and grows with each grammar profile.
 
-import from objects { PyObj, PyInt, PyBool, PyStr, PyFloat, PyComplex, py_none }
+import from objects { PyObj, PyInt, PyBool, PyStr, PyBytes, PyFloat, PyComplex, py_none }
 import from ast_nodes {
     ast_node,
     expr,
@@ -276,13 +276,26 @@ def pa_decode_escape_body(body: str) -> str {
             i = i + 1;
             continue;
         }
-        if e == "x" and i + 2 < len(body) {
-            h1 = _pa_hex_digit_val(body[i + 1]);
-            h2 = _pa_hex_digit_val(body[i + 2]);
-            if h1 >= 0 and h2 >= 0 {
-                out = out + chr(h1 * 16 + h2);
-                i = i + 3;
-                continue;
+        if e == "x" or e == "u" or e == "U" {
+            width = 2 if e == "x" else (4 if e == "u" else 8);
+            if i + width < len(body) {
+                value = 0;
+                valid = True;
+                j = i + 1;
+                while j <= i + width {
+                    digit = _pa_hex_digit_val(body[j]);
+                    if digit < 0 {
+                        valid = False;
+                        break;
+                    }
+                    value = value * 16 + digit;
+                    j = j + 1;
+                }
+                if valid {
+                    out = out + chr(value);
+                    i = i + width + 1;
+                    continue;
+                }
             }
         }
         out = out + e;
@@ -291,12 +304,96 @@ def pa_decode_escape_body(body: str) -> str {
     return out;
 }
 
-def pa_decode_string_literal_spelling(spelling: str) -> str | None {
+def pa_decode_bytes_escape_body(body: str, raw: bool) -> list[int] {
+    out: list[int] = [];
+    i = 0;
+    while i < len(body) {
+        c = body[i];
+        if raw or c != "\\" or i + 1 >= len(body) {
+            out.append(ord(c));
+            i = i + 1;
+            continue;
+        }
+        e = body[i + 1];
+        if e == "n" {
+            out.append(10);
+            i = i + 2;
+            continue;
+        }
+        if e == "t" {
+            out.append(9);
+            i = i + 2;
+            continue;
+        }
+        if e == "r" {
+            out.append(13);
+            i = i + 2;
+            continue;
+        }
+        if e == "b" {
+            out.append(8);
+            i = i + 2;
+            continue;
+        }
+        if e == "f" {
+            out.append(12);
+            i = i + 2;
+            continue;
+        }
+        if e == "v" {
+            out.append(11);
+            i = i + 2;
+            continue;
+        }
+        if e == "a" {
+            out.append(7);
+            i = i + 2;
+            continue;
+        }
+        if e == "\\" or e == "'" or e == "\"" {
+            out.append(ord(e));
+            i = i + 2;
+            continue;
+        }
+        if e >= "0" and e <= "7" {
+            j = i + 1;
+            limit = i + 4 if i + 4 <= len(body) else len(body);
+            while j < limit and body[j] >= "0" and body[j] <= "7" {
+                j = j + 1;
+            }
+            value = 0;
+            k = i + 1;
+            while k < j {
+                value = value * 8 + ord(body[k]) - ord("0");
+                k = k + 1;
+            }
+            out.append(value % 256);
+            i = j;
+            continue;
+        }
+        if e == "x" and i + 3 < len(body) {
+            h1 = _pa_hex_digit_val(body[i + 2]);
+            h2 = _pa_hex_digit_val(body[i + 3]);
+            if h1 >= 0 and h2 >= 0 {
+                out.append(h1 * 16 + h2);
+                i = i + 4;
+                continue;
+            }
+        }
+        out.append(92);
+        out.append(ord(e));
+        i = i + 2;
+    }
+    return out;
+}
+
+def pa_decode_string_literal_spelling(spelling: str) -> str | list[int] | None {
     if len(spelling) == 0 {
         return None;
     }
     i = 0;
     raw = False;
+    is_bytes = False;
     while i < len(spelling) {
         c = spelling[i];
         if c == "r" or c == "R" {
@@ -304,7 +401,12 @@ def pa_decode_string_literal_spelling(spelling: str) -> str | None {
             i = i + 1;
             continue;
         }
-        if c == "b" or c == "B" or c == "u" or c == "U" or c == "f" or c == "F" {
+        if c == "b" or c == "B" {
+            is_bytes = True;
+            i = i + 1;
+            continue;
+        }
+        if c == "u" or c == "U" or c == "f" or c == "F" {
             i = i + 1;
             continue;
         }
@@ -331,6 +433,9 @@ def pa_decode_string_literal_spelling(spelling: str) -> str | None {
         return None;
     }
     body = spelling[start:end];
+    if is_bytes {
+        return pa_decode_bytes_escape_body(body, raw);
+    }
     if raw {
         return body;
     }
@@ -345,8 +450,14 @@ def pa_constant_from_string(tok: peg_token | None) -> Constant | None {
     if decoded is None {
         return None;
     }
+    value: PyObj;
+    if isinstance(decoded, list) {
+        value = PyBytes(t="bytes", val=decoded);
+    } else {
+        value = PyStr(t="str", val=decoded);
+    }
     return Constant(
-        value=PyStr(t="str", val=decoded),
+        value=value,
         kind=None,
         lineno=tok.lineno,
         col_offset=tok.col_offset,
@@ -1525,8 +1636,15 @@ def pa_make_arguments(
     end_col_offset: int
 ) -> arguments {
     posonlyargs = pa_args_from_list(slash_no_default);
-    args = pa_args_from_list(plain_names);
     defaults: list[expr] = [];
+    if slash_with_default is not None {
+        split = slash_with_default as tuple;
+        posonlyargs = pa_args_from_list(split[0]);
+        (posonlyargs, defaults) = pa_append_args_from_pairs(
+            posonlyargs, defaults, split[1]
+        );
+    }
+    args = pa_args_from_list(plain_names);
     (args, defaults) = pa_append_args_from_pairs(args, defaults, names_with_default);
     vararg: arg | None = None;
     kwonlyargs: list[arg] = [];
@@ -2071,7 +2189,7 @@ def pa_slash_with_default(
     end_lineno: int,
     end_col_offset: int
 ) -> object {
-    return None;
+    return (a, b);
 }
 
 def pa_joined_str(

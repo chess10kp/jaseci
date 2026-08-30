@@ -4996,7 +4996,7 @@ def rule_del_targets(p: peg_parser) -> list[expr] | None {
     res: list[expr] | None = None;
     a = rule__gather_17(p);
     if a is not None {
-        peg_expect_token(p, 12);
+        lit = peg_expect_token(p, 12);
         res = a;
         return res;
     }
@@ -7456,7 +7456,7 @@ def rule_invalid_del_stmt(p: peg_parser) -> object | None {
     if kw is not None {
         a = rule_star_expressions(p);
         if a is not None {
-            res = pa_raise_syntax(p, False, "cannot delete here");
+            res = pa_raise_invalid_target(p, DEL_TARGETS, a);
             return res;
         }
     }
