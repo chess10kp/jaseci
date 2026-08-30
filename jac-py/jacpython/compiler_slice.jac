@@ -1816,6 +1816,22 @@ test "compiler_slice: band6 bare except no-exception executes in ceval" {
     assert expect_int(ns["result"]) == 5;
 }
 
+test "compiler_slice: band6 try except else distinct orelse handler names match oracle co_names" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except ValueError as e:\n"
+        + "    h = 2\n"
+        + "else:\n"
+        + "    o = 3\n"
+    );
+    actual = compile_parsed_exec(src, "<m>");
+    expected = oracle_exec(src, "<m>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.names == exp.names;
+}
+
 test "compiler_slice: band6 try except else parsed matches oracle co_code" {
     src = (
         "try:\n"
@@ -3998,9 +4014,6 @@ test "compiler_slice: band-11 call-site star unpacking matches oracle bytes" {
 #  - any `try` followed by unconsumed module/function code: verify_cfg rejects
 #    with "instructions after terminator" -- pre-existing on HEAD for plain
 #    try too (flip these on when unblocked).
-#  - fresh names bound in an `else` clause get co_names indices allocated at
-#    orelse emit time (before the handler section) instead of CPython's AST
-#    order; reuse existing names in else bodies until that ordering moves.
 
 test "compiler_slice: band11 except* bare handler matches oracle PyCode" {
     src = (

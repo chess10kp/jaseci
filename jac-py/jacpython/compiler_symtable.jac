@@ -35,6 +35,8 @@ import from ast_nodes {
     While,
     If,
     Try,
+    TryStar,
+    ExceptHandler,
     With,
     FunctionDef,
     ClassDef,
@@ -1068,7 +1070,8 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         or isinstance(s, AsyncFor)
         or isinstance(s, While)
         or isinstance(s, If)
-        or isinstance(s, Try) {
+        or isinstance(s, Try)
+        or isinstance(s, TryStar) {
         body: list[stmt];
         orelse: list[stmt] = [];
         if isinstance(s, For) {
@@ -1106,13 +1109,46 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             body = iff.body;
             orelse = iff.orelse;
         } else {
-            tr = s as Try;
-            body = tr.body;
-            orelse = tr.orelse;
-            if tr.handlers is not None {
+            # Try/TryStar: visit body, orelse, handlers, finalbody in codegen
+            # registration order (CPython co_names / co_varnames first-use order),
+            # not the AST child order (body, handlers, orelse).
+            tr_body: list[stmt];
+            tr_orelse: list[stmt];
+            tr_handlers: list[ExceptHandler] | None = None;
+            tr_finalbody: list[stmt] | None = None;
+            if isinstance(s, TryStar) {
+                ts = s as TryStar;
+                tr_body = ts.body;
+                tr_orelse = ts.orelse;
+                tr_handlers = ts.handlers;
+                tr_finalbody = ts.finalbody;
+            } else {
+                tr = s as Try;
+                tr_body = tr.body;
+                tr_orelse = tr.orelse;
+                tr_handlers = tr.handlers;
+                tr_finalbody = tr.finalbody;
+            }
+            bi = 0;
+            while bi < len(tr_body) {
+                if not sym_visit_stmt(b, tr_body[bi]) {
+                    return False;
+                }
+                bi = bi + 1;
+            }
+            oi = 0;
+            if tr_orelse is not None {
+                while oi < len(tr_orelse) {
+                    if not sym_visit_stmt(b, tr_orelse[oi]) {
+                        return False;
+                    }
+                    oi = oi + 1;
+                }
+            }
+            if tr_handlers is not None {
                 hi = 0;
-                while hi < len(tr.handlers) {
-                    h = tr.handlers[hi];
+                while hi < len(tr_handlers) {
+                    h = tr_handlers[hi];
                     if h.type is not None {
                         if not sym_visit_load_expr(b, h.type) {
                             return False;
@@ -1123,25 +1159,26 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
                             return False;
                         }
                     }
-                    bi = 0;
-                    while bi < len(h.body) {
-                        if not sym_visit_stmt(b, h.body[bi]) {
+                    hbi = 0;
+                    while hbi < len(h.body) {
+                        if not sym_visit_stmt(b, h.body[hbi]) {
                             return False;
                         }
-                        bi = bi + 1;
+                        hbi = hbi + 1;
                     }
                     hi = hi + 1;
                 }
             }
             fi = 0;
-            if tr.finalbody is not None {
-                while fi < len(tr.finalbody) {
-                    if not sym_visit_stmt(b, tr.finalbody[fi]) {
+            if tr_finalbody is not None {
+                while fi < len(tr_finalbody) {
+                    if not sym_visit_stmt(b, tr_finalbody[fi]) {
                         return False;
                     }
                     fi = fi + 1;
                 }
             }
+            return True;
         }
         bi = 0;
         while bi < len(body) {
