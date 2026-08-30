@@ -339,7 +339,7 @@ def _dt_at(s: str, i: int) -> str {
     return s[i];
 }
 
-def _is_digit(c: str) -> bool {
+def:priv _is_digit(c: str) -> bool {
     return ("0" <= c) and (c <= "9");
 }
 

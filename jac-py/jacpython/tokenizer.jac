@@ -264,7 +264,7 @@ def _is_id_continue(ch: str) -> bool {
     return False;
 }
 
-def _is_digit(ch: str) -> bool {
+def:priv _is_digit(ch: str) -> bool {
     return ch >= "0" and ch <= "9";
 }
 

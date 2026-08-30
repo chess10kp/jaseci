@@ -3793,7 +3793,7 @@ def _digit_val(c: str) -> int {
     return -1;
 }
 
-def _is_digit(c: str) -> bool {
+def:priv _is_digit(c: str) -> bool {
     return _digit_val(c) >= 0;
 }
 
