@@ -252,7 +252,8 @@ def emit_class_build_call(g: cfg_builder, cd: ClassDef, cloc: cloc) {
     names: list[PyObj] = [];
     ki = 0;
     while ki < len(kws) {
-        names.append(PyStr(t="str", val=kws[ki].arg));
+        kw_name = kws[ki].arg as str;
+        names.append(PyStr(t="str", val=kw_name));
         ki = ki + 1;
     }
     tup = PyTuple(t="tuple", items=names);
