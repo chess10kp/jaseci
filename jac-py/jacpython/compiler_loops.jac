@@ -307,7 +307,7 @@ def finish_break_sites(
         prev_idx = site.instr_idx;
         si = si - 1;
     }
-    first_loc = copies[0].loc;
+    first_loc = copies[0].loc as cloc;
     si = len(frame.break_sites) - 1;
     while si >= 0 {
         site = frame.break_sites[si];
@@ -403,9 +403,10 @@ def visit_if(
             g.use(join);
             return stmt_cont(loc=iloc);
         }
-        join = tail_join;
         owns_tail = False;
-        if join is None {
+        if tail_join is not None {
+            join = tail_join as basicblock;
+        } else {
             join = g.new_block();
             owns_tail = True;
         }
@@ -453,18 +454,18 @@ def visit_if(
             return stmt_cont(loc=body_cont.loc);
         }
         if has_else {
-            join = None;
+            else_join: basicblock | None = None;
             if not body_cont.terminated {
-                join = g.new_block();
-                g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
+                else_join = g.new_block();
+                g.emit_jump(OP_JUMP_FORWARD, else_join.id, iloc);
             }
             g.use(false_blk);
             else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, None, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=else_cont.loc);
             }
-            if join is not None {
-                g.use(join);
+            if else_join is not None {
+                g.use(else_join);
                 return stmt_cont(loc=iloc, terminated=False);
             }
             return stmt_cont(loc=iloc, terminated=else_cont.terminated);
@@ -525,7 +526,7 @@ def visit_while(
         if has_break {
             join = g.new_deferred_block();
             g.push_loop(head, join, True);
-            break_frame = g.current_loop();
+            break_frame = g.current_loop() as loop_frame;
         } else {
             g.push_loop(head, exit_blk, False);
         }
@@ -618,7 +619,7 @@ def visit_while(
         branch_idx = len(g.cur.instrs) - 1;
         if has_break {
             g.push_loop(head, after_body, True);
-            break_frame = g.current_loop();
+            break_frame = g.current_loop() as loop_frame;
         } else {
             g.push_loop(head, after_body, False);
         }
@@ -710,7 +711,7 @@ def visit_for(
         if has_break {
             join = g.new_block();
             g.push_loop(loop_hdr, join, True);
-            break_frame = g.current_loop();
+            break_frame = g.current_loop() as loop_frame;
             break_frame.pops_iter = True;
         } else {
             g.push_loop(loop_hdr, after, False);
@@ -802,7 +803,7 @@ def visit_for(
         if has_break {
             join = g.new_deferred_block();
             g.push_loop(loop_hdr, join, True);
-            break_frame = g.current_loop();
+            break_frame = g.current_loop() as loop_frame;
             break_frame.pops_iter = True;
         } else {
             g.push_loop(loop_hdr, after, False);
@@ -846,7 +847,7 @@ def visit_for(
     if has_break {
         join = g.new_deferred_block();
         g.push_loop(loop_hdr, join, True);
-        break_frame = g.current_loop();
+        break_frame = g.current_loop() as loop_frame;
         break_frame.pops_iter = True;
     } else {
         g.push_loop(loop_hdr, after, False);
@@ -923,7 +924,7 @@ def visit_async_for(
         g.push_loop(loop_hdr, break_tgt, has_break);
         if has_break {
             # Break sites emit the iterator POP_TOP themselves (CPython unwind).
-            af_frame = g.current_loop();
+            af_frame = g.current_loop() as loop_frame;
             af_frame.pops_iter = True;
         }
         store = visit_store_target_tos(g, af.target);
@@ -1009,7 +1010,7 @@ def visit_async_for(
     g.push_loop(loop_hdr, break_tgt, needs_break_stub);
     if needs_break_stub {
         # Break sites emit the iterator POP_TOP themselves (CPython unwind).
-        af_frame = g.current_loop();
+        af_frame = g.current_loop() as loop_frame;
         af_frame.pops_iter = True;
     }
     store = visit_store_target_tos(g, af.target);

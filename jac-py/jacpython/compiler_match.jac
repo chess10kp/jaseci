@@ -498,8 +498,8 @@ def match_emit_sequence_capture_stores(
 ) {
     n = len(patterns);
     if n == 2 {
-        na = codegen_mangle(g, (match_pattern_unwrap_or(patterns[0]) as MatchAs).name);
-        nb = codegen_mangle(g, (match_pattern_unwrap_or(patterns[1]) as MatchAs).name);
+        na = codegen_mangle(g, (match_pattern_unwrap_or(patterns[0]) as MatchAs).name as str);
+        nb = codegen_mangle(g, (match_pattern_unwrap_or(patterns[1]) as MatchAs).name as str);
         fa = fast_local_index(g, na);
         fb = fast_local_index(g, nb);
         if fa >= 0 and fb >= 0 {
@@ -511,7 +511,7 @@ def match_emit_sequence_capture_stores(
     pi = n - 1;
     while pi >= 0 {
         ma = match_pattern_unwrap_or(patterns[pi]) as MatchAs;
-        emit_name_store(g, ma.name, ploc);
+        emit_name_store(g, ma.name as str, ploc);
         pi = pi - 1;
     }
 }
@@ -559,8 +559,8 @@ def match_emit_star_capture_stores(
 ) {
     n = len(patterns);
     if n == 2 {
-        na = codegen_mangle(g, match_star_capture_name(patterns, 0, star_idx));
-        nb = codegen_mangle(g, match_star_capture_name(patterns, 1, star_idx));
+        na = codegen_mangle(g, match_star_capture_name(patterns, 0, star_idx) as str);
+        nb = codegen_mangle(g, match_star_capture_name(patterns, 1, star_idx) as str);
         fa = fast_local_index(g, na);
         fb = fast_local_index(g, nb);
         if fa >= 0 and fb >= 0 {
@@ -573,7 +573,7 @@ def match_emit_star_capture_stores(
     # STORE_FAST_STORE_FAST peephole, e.g. `[a,*mid,b]` -> (a,mid) + b).
     pi = 0;
     while pi < n {
-        emit_name_store(g, match_star_capture_name(patterns, pi, star_idx), ploc);
+        emit_name_store(g, match_star_capture_name(patterns, pi, star_idx) as str, ploc);
         pi = pi + 1;
     }
 }
@@ -619,7 +619,7 @@ def emit_match_sequence_subscr(
         # rotate); nested sub-patterns fall back to the general on-stack path.
         up = match_pattern_unwrap_or(pat);
         if isinstance(up, MatchAs) and (up as MatchAs).pattern is None {
-            emit_name_store(g, (up as MatchAs).name, ploc);
+            emit_name_store(g, (up as MatchAs).name as str, ploc);
         } else {
             ctx.on_top = ctx.on_top + 1;
             if not emit_match_pattern_sub(g, pat, ctx, next_arm, ploc) {
@@ -1170,13 +1170,13 @@ def visit_match(
             terminated = True;
         }
     }
-    if owns_join and join_blk is not None {
+    if owns_join and join_blk is not None and tail is not None {
         g.use(join_blk);
         tail_more = exec_tail_emits_code(tail, tail_idx);
         tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
         return stmt_cont(
             loc=tail_cont.loc,
-            next_si=len(tail),
+            next_si=len(tail as list[stmt]),
             terminated=terminated or tail_cont.terminated
         );
     }
