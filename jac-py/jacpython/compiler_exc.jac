@@ -355,7 +355,9 @@ def visit_try_finally(
     } elif try_follows {
         fallthrough_blk = g.cur;
     } else {
-        emit_module_return(g, finally_cont.loc);
+        if not body_cont.terminated and not finally_cont.terminated {
+            emit_module_return(g, finally_cont.loc);
+        }
     }
     g.u.nested_try_finally_success_end = after_protected.id;
     noloc = no_loc();
@@ -365,7 +367,9 @@ def visit_try_finally(
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
-    g.emit_op(OP_RERAISE, 0, finally_except_cont.loc);
+    if not finally_except_cont.terminated {
+        g.emit_op(OP_RERAISE, 0, finally_except_cont.loc);
+    }
     g.u.except_regions.append(
         except_region(
             start_block=protect_start,
@@ -463,7 +467,9 @@ def emit_finally_inline_block(
             emit_module_return(g, tc.loc);
         }
     } else {
-        emit_module_return(g, fc.loc);
+        if not fc.terminated {
+            emit_module_return(g, fc.loc);
+        }
     }
 }
 

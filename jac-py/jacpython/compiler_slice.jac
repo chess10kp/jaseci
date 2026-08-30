@@ -2047,6 +2047,41 @@ test "compiler_slice: band6 try finally runs on exception path in ceval" {
     assert expect_int(ns["result"]) == 10;
 }
 
+test "compiler_slice: band6 try finally return in body parsed matches oracle co_code" {
+    src = "def f():\n    try:\n        return 1\n    finally:\n        x = 0\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    act = first_nested_code(actual as PyCode);
+    exp = first_nested_code(expected as PyCode);
+    assert act.co_code == exp.co_code;
+    assert act.exceptiontable == exp.exceptiontable;
+    assert act.stacksize == exp.stacksize;
+}
+
+test "compiler_slice: band6 try finally return in finally parsed matches oracle co_code" {
+    src = "def f():\n    try:\n        return 1\n    finally:\n        return 2\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    act = first_nested_code(actual as PyCode);
+    exp = first_nested_code(expected as PyCode);
+    assert act.co_code == exp.co_code;
+    assert act.exceptiontable == exp.exceptiontable;
+    assert act.stacksize == exp.stacksize;
+}
+
+test "compiler_slice: band6 module try finally parsed matches oracle co_code" {
+    src = "try:\n    x = 1\nfinally:\n    y = 0\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.stacksize == exp.stacksize;
+}
+
 # -------- Band 6 slice 6: try/except[/else]/finally (flat) --------
 
 test "compiler_slice: band6 try except finally normal parsed matches oracle co_code" {
