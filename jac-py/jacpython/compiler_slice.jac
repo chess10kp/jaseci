@@ -651,6 +651,26 @@ test "compiler_slice: loop-else that terminates drops unreachable trailing code"
     }
 }
 
+# for/while `else` followed by more module or function code: the tail must be
+# threaded once on the normal-exit path without an extra module return (which
+# produced verify_cfg "instructions after terminator"). Structure parity first.
+test "compiler_slice: loop-else then trailing statements compile with sound structure" {
+    for src in [
+        "while x: pass\nelse: z = 1\na = 2\n",
+        "for x in y: pass\nelse: z = 1\na = 2\n",
+        "def f(x):\n    while x:\n        pass\n    else:\n        z = 1\n    a = 2\n",
+        "def f(y):\n    for x in y:\n        pass\n    else:\n        z = 1\n    a = 2\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert len(actual.co_code) == len(exp.co_code);
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+    }
+}
+
 # Conditional expression (ternary) in embedded position -- value consumed by a
 # surrounding operation -- uses CPython's branch+join shape and is byte-exact.
 # (A statement-tail `x = a if c else b` is duplicated by CPython and is a separate
