@@ -792,8 +792,8 @@ def emit_function_kwdefaults(g: cfg_builder, args: arguments, tloc: cloc) -> boo
             kd = args.kw_defaults[ki];
         }
         if kd is not None {
-            a = args.kwonlyargs[ki] as arg;
-            key_idx = g.u.add_const(PyStr(t="str", val=a.arg));
+            kwonly_arg = args.kwonlyargs[ki];
+            key_idx = g.u.add_const(PyStr(t="str", val=kwonly_arg.arg));
             g.emit_op(OP_LOAD_CONST, key_idx, tloc);
             visit_expr(g, kd);
             if codegen_busy(g) {
@@ -822,12 +822,14 @@ def emit_make_function_with_closure(
     # CPython adds the code object const at MAKE_FUNCTION emission time, i.e.
     # AFTER the defaults/kwdefaults visitors interned their consts.
     if has_defaults {
-        if not emit_function_defaults(g, args.defaults, tloc) {
+        fn_args = args as arguments;
+        if not emit_function_defaults(g, fn_args.defaults, tloc) {
             return;
         }
     }
     if has_kwdefaults {
-        if not emit_function_kwdefaults(g, args, tloc) {
+        fn_args = args as arguments;
+        if not emit_function_kwdefaults(g, fn_args, tloc) {
             return;
         }
     }
@@ -1118,7 +1120,7 @@ def visit_compare(
             g.emit_op(OP_SWAP, 2, cloc_cmp);
             g.emit_op(OP_COPY, 2, cloc_cmp);
         }
-        if not emit_cmp_link(g, c.ops[ei], cloc_cmp, False) {
+        if not emit_cmp_link(g, c.ops[ei] as PyObj, cloc_cmp, False) {
             codegen_fail(g, "NotImplementedError", "unsupported comparison operator");
             return None;
         }
@@ -1234,9 +1236,11 @@ def visit_boolop(
         g.emit_op(OP_COPY, 1, bl);
         g.emit_op(OP_TO_BOOL, 0, bl);
         if false_shortcircuit_returns {
-            false_target = false_exit.id;
+            fe_blk = false_exit as basicblock;
+            false_target = fe_blk.id;
         } else {
-            false_target = join.id;
+            join_blk = join as basicblock;
+            false_target = join_blk.id;
         }
         g.emit_jump(jump_op, false_target, bl);
         g.emit_op(OP_POP_TOP, 0, bl);
@@ -1371,7 +1375,7 @@ def visit_expr(
     if isinstance(e, BinOp) {
         b = e as BinOp;
         bl = nloc(b.lineno, b.end_lineno, b.col_offset, b.end_col_offset);
-        folded = try_fold_binop(b.left, b.op, b.right);
+        folded = try_fold_binop(b.left, b.op as PyObj, b.right);
         if folded is not None and isinstance(folded, PyInt) {
             register_int_literal_const(g, b.left, register_int_const);
             register_int_literal_const(g, b.right, register_int_const);
@@ -1419,7 +1423,7 @@ def visit_expr(
             }
         }
         visit_expr(g, un.operand);
-        opc = unary_opcode(un.op);
+        opc = unary_opcode(un.op as PyObj);
         if opc < 0 {
             codegen_fail(g, "NotImplementedError", "unsupported unary operator");
             return None;
@@ -1639,9 +1643,14 @@ def visit_expr(
         return None;
     }
     if isinstance(e, Await) {
-        a = e as Await;
-        aloc = nloc(a.lineno, a.end_lineno, a.col_offset, a.end_col_offset);
-        visit_expr(g, a.value);
+        await_expr = e as Await;
+        aloc = nloc(
+            await_expr.lineno,
+            await_expr.end_lineno,
+            await_expr.col_offset,
+            await_expr.end_col_offset
+        );
+        visit_expr(g, await_expr.value);
         if codegen_busy(g) {
             return None;
         }
@@ -1797,7 +1806,7 @@ def visit_expr(
         if not has_star {
             di = 0;
             while di < len(dkeys) {
-                visit_expr(g, dkeys[di]);
+                visit_expr(g, dkeys[di] as expr);
                 visit_expr(g, dvals[di]);
                 di = di + 1;
             }
@@ -1812,31 +1821,31 @@ def visit_expr(
         # (key None) is reached, flush any pending pairs as BUILD_MAP n (which
         # DICT_UPDATEs onto the running base once one exists), then merge x with
         # DICT_UPDATE 1. Mirrors CPython 3.14 codegen_dict.
-        n = 0;
+        map_pairs = 0;
         have_dict = False;
         di = 0;
         while di < len(dkeys) {
             k = dkeys[di];
             if k is None {
-                if n > 0 or (not have_dict) {
-                    g.emit_op(OP_BUILD_MAP, n, dloc);
+                if map_pairs > 0 or (not have_dict) {
+                    g.emit_op(OP_BUILD_MAP, map_pairs, dloc);
                     if have_dict {
                         g.emit_op(OP_DICT_UPDATE, 1, dloc);
                     }
                     have_dict = True;
-                    n = 0;
+                    map_pairs = 0;
                 }
                 visit_expr(g, dvals[di]);
                 g.emit_op(OP_DICT_UPDATE, 1, dloc);
             } else {
                 visit_expr(g, k);
                 visit_expr(g, dvals[di]);
-                n = n + 1;
+                map_pairs = map_pairs + 1;
             }
             di = di + 1;
         }
-        if n > 0 or (not have_dict) {
-            g.emit_op(OP_BUILD_MAP, n, dloc);
+        if map_pairs > 0 or (not have_dict) {
+            g.emit_op(OP_BUILD_MAP, map_pairs, dloc);
             if have_dict {
                 g.emit_op(OP_DICT_UPDATE, 1, dloc);
             }
@@ -1875,7 +1884,8 @@ def emit_call_keyword_values(
         ki = 0;
         while ki < len(kws) and kws[ki].arg is not None {
             kwl = kws[ki];
-            name_idx = g.u.add_const(PyStr(t="str", val=kwl.arg));
+            kw_name = kwl.arg as str;
+            name_idx = g.u.add_const(PyStr(t="str", val=kw_name));
             g.emit_op(OP_LOAD_CONST, name_idx, cloc_call);
             if comp_mode {
                 visit_comp_elt(g, kwl.value, [], False);
@@ -1904,7 +1914,8 @@ def emit_call_keyword_values(
                 run_start = ki;
                 while ki < len(kws) and kws[ki].arg is not None {
                     kwr = kws[ki];
-                    name_idx = g.u.add_const(PyStr(t="str", val=kwr.arg));
+                    kw_name = kwr.arg as str;
+                    name_idx = g.u.add_const(PyStr(t="str", val=kw_name));
                     g.emit_op(OP_LOAD_CONST, name_idx, cloc_call);
                     if comp_mode {
                         visit_comp_elt(g, kwr.value, [], False);
@@ -1949,7 +1960,8 @@ def emit_call_keyword_values(
     names: list[PyObj] = [];
     ki = 0;
     while ki < len(kws) {
-        names.append(PyStr(t="str", val=kws[ki].arg));
+        kw_name = kws[ki].arg as str;
+        names.append(PyStr(t="str", val=kw_name));
         ki = ki + 1;
     }
     tup = PyTuple(t="tuple", items=names);
@@ -2182,24 +2194,6 @@ def emit_starred_list_build(g: cfg_builder, elts: list[expr], dloc: cloc) -> Non
     return None;
 }
 
-# Store `value` into a target. CPython elides the sequence round-trip when both
-# sides are same-arity sequence literals with no starred target: evaluate the
-# RHS elements in order, reorder (SWAP for n<=3, BUILD_TUPLE+UNPACK_SEQUENCE for
-# n>=4), then store each target left-to-right.
-def visit_store_target(g: cfg_builder, t: expr, value: expr) -> stmt_cont {
-    if is_seq_literal(t) and is_seq_literal(value) {
-        telts = seq_target_elts(t);
-        velts = seq_target_elts(value);
-        if len(telts) == len(velts)
-            and starred_target_index(telts) < 0
-            and starred_target_index(velts) < 0 {
-            return visit_store_seq_literal(g, telts, velts, expr_loc(t));
-        }
-    }
-    visit_expr(g, value);
-    return visit_store_target_tos(g, t);
-}
-
 def fast_local_index(g: cfg_builder, name: str) -> int {
     vi = 0;
     while vi < len(g.u.varnames) {
@@ -2416,7 +2410,8 @@ def visit_comp_elt(
         }
         ci = 0;
         while ci < len(c.comparators) {
-            if filter_compare and is_none_identity_test(c.ops[ci], c.comparators[ci]) {
+            if filter_compare
+                and is_none_identity_test(c.ops[ci] as PyObj, c.comparators[ci]) {
                 codegen_fail(
                     g, "NotImplementedError", "is-None jump peephole not supported"
                 );
@@ -2426,7 +2421,7 @@ def visit_comp_elt(
             if codegen_busy(g) {
                 return;
             }
-            if not emit_cmp_link(g, c.ops[ci], cloc_cmp, filter_compare) {
+            if not emit_cmp_link(g, c.ops[ci] as PyObj, cloc_cmp, filter_compare) {
                 codegen_fail(
                     g, "NotImplementedError", "unsupported comparison operator"
                 );
@@ -2512,7 +2507,7 @@ def visit_comp_elt(
         if codegen_busy(g) {
             return;
         }
-        opc = unary_opcode(un.op);
+        opc = unary_opcode(un.op as PyObj);
         if opc < 0 {
             codegen_fail(g, "NotImplementedError", "unsupported unary operator");
             return;
@@ -3529,7 +3524,7 @@ def visit_test_expr(
         c = e as Compare;
         if len(c.ops) == 1 {
             cloc_cmp = nloc(c.lineno, c.end_lineno, c.col_offset, c.end_col_offset);
-            if is_none_identity_test(c.ops[0], c.comparators[0]) {
+            if is_none_identity_test(c.ops[0] as PyObj, c.comparators[0]) {
                 if allow_none_peephole {
                     # Emit only the left operand; the branch site folds the
                     # identity + jump into POP_JUMP_IF_NONE / _NOT_NONE.
@@ -3552,7 +3547,7 @@ def visit_test_expr(
             }
             visit_expr(g, c.left);
             visit_expr(g, c.comparators[0]);
-            if not emit_cmp_link(g, c.ops[0], cloc_cmp, True) {
+            if not emit_cmp_link(g, c.ops[0] as PyObj, cloc_cmp, True) {
                 codegen_fail(
                     g, "NotImplementedError", "unsupported comparison operator"
                 );

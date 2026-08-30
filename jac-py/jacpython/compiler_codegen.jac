@@ -373,7 +373,6 @@ import from compiler_emit {
     visit_list_comp_async,
     visit_set_comp,
     visit_set_comp_async,
-    visit_store_target,
     visit_subscript_index,
     visit_test_expr,
 }
@@ -626,6 +625,26 @@ def compile_eval(
 # location, so compile_exec uses this return value for the epilogue. A statement
 # that emits no instructions (Pass) returns its own location so the epilogue
 # still lands on the statement's span (matches CPython's location fixup).
+
+# Store `value` into a target. CPython elides the sequence round-trip when both
+# sides are same-arity sequence literals with no starred target: evaluate the
+# RHS elements in order, reorder (SWAP for n<=3, BUILD_TUPLE+UNPACK_SEQUENCE for
+# n>=4), then store each target left-to-right.
+def visit_store_target(g: cfg_builder, t: expr, value: expr) -> stmt_cont {
+    if is_seq_literal(t) and is_seq_literal(value) {
+        telts = seq_target_elts(t);
+        velts = seq_target_elts(value);
+        if len(telts) == len(velts)
+            and starred_target_index(telts) < 0
+            and starred_target_index(velts) < 0 {
+            return visit_store_seq_literal(
+                g, telts, velts, expr_loc(t), expr_loc(value)
+            );
+        }
+    }
+    visit_expr(g, value);
+    return visit_store_target_tos(g, t);
+}
 
 # Store value already on the stack into an assignment target (name / attribute /
 # subscript). CPython stack layout before STORE_ATTR / STORE_SUBSCR: value below
