@@ -42,10 +42,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up pinned CPython for jac-py gates
+      - name: Set up pinned CPython 3.14.6 (oracle pin)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.14.6"
 
       - name: Pin CPython reference checkout
         run: python3 jac-py/tools/fetch_cpython_reference.py
@@ -69,6 +69,11 @@ jobs:
           # jac-python is a trusted, long-lived campaign branch. Let completed
           # dispatches seed content-keyed build caches for the next checkpoint.
           write-caches: "true"
+
+      # Host oracle bridges (layer4, symtable, P3 replay) require the pinned
+      # CPython 3.14.6 interpreter, not setup-python's rolling 3.14.x patch.
+      - name: Resolve CPython oracle for host bridges
+        run: echo "JACPYTHON_CPYTHON=$(command -v python3)" >> "$GITHUB_ENV"
 
       # The suite hung with ZERO test marks across four consecutive dispatches
       # on three branches (32922677661, 32935764002, 32935801136, 32937299321):

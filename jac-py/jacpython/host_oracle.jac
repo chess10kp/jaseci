@@ -13,6 +13,7 @@
 # Allowed importers: layer4_compile.jac plus bootstrap allowlist in
 # jac-py/tools/p4_import_gate.py.
 
+import os;
 import shutil;
 import subprocess;
 import sys;
@@ -20,6 +21,10 @@ import from pathlib { Path }
 
 
 def _runner_python() -> str {
+    env = os.environ.get("JACPYTHON_CPYTHON", "");
+    if env {
+        return env;
+    }
     for name in ("python3.14", "python3", "python") {
         found = shutil.which(name);
         if found {

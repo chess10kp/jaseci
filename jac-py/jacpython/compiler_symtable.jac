@@ -1809,6 +1809,7 @@ import from ast_nodes { Constant, Assign, USub }
 
 # Host oracle uses a subprocess bridge (jac-py/tools/host_sym_normalize_bridge.py)
 # so differential tests do not rely on ::py:: inside the sealed jac runtime.
+import os;
 import shutil;
 import subprocess;
 import sys;
@@ -1817,6 +1818,10 @@ import from pathlib { Path }
 
 
 def _sym_oracle_runner_python() -> str {
+    env = os.environ.get("JACPYTHON_CPYTHON", "");
+    if env {
+        return env;
+    }
     for name in ("python3.14", "python3", "python") {
         found = shutil.which(name);
         if found {
