@@ -8,6 +8,7 @@ Static checks on ``jac-py/jacpython/*.jac`` import graph:
   - ``pyc_first.jac`` may import ceval + objects (top bootstrap driver).
   - Object helper modules (*object.jac except objects) must not import ceval/pyc_first.
   - Shared ceval runtime archetypes have one canonical definition in ceval_defs.
+    PyHostProxy also has a na-clean stub in objects.jac (cross-module inheritance).
 
 Run from repo root:
     python3 jac-py/tools/p3_import_cycle_gate.py
@@ -47,6 +48,9 @@ CANONICAL_CEVAL_TYPES = frozenset(
         "PyAsyncGenWrappedValue",
     }
 )
+# na-clean stub in objects.jac + slot overrides in ceval_defs.jac (cross-module
+# inheritance). Spokes can isinstance against the stub without importing ceval.
+CEVAL_TYPE_OBJECT_STUBS = frozenset({"PyHostProxy"})
 TYPE_IMPORT = re.compile(
     r"^\s*import\s+from\s+(objects|ceval)\s*\{([^}]*)\}",
     re.MULTILINE | re.DOTALL,
@@ -157,10 +161,14 @@ def _check_type_ownership(jac_dir: Path) -> list[str]:
                 )
 
     for name, modules in sorted(owners.items()):
-        if modules != ["ceval_defs"]:
+        allowed = {"ceval_defs"}
+        if name in CEVAL_TYPE_OBJECT_STUBS:
+            allowed |= {"objects"}
+        if set(modules) != allowed:
             found = ", ".join(sorted(modules)) or "nowhere"
+            expect = ", ".join(sorted(allowed))
             errors.append(
-                f"{name} must be defined exactly once in ceval_defs.jac; found in {found}"
+                f"{name} must be defined in {expect}; found in {found}"
             )
     return errors
 
