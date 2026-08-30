@@ -23,7 +23,7 @@ import from token_model {
     is_whitespace_token,
     tok_diag,
     mk_diag,
-    tok_loc_span,
+    tok_loc,
     tok_no_loc,
     tok_token,
 }
@@ -91,7 +91,12 @@ def peg_token_from_tok(tok: tok_token) -> peg_token {
 }
 
 def peg_token_loc(tok: peg_token) -> tok_loc {
-    return tok_loc_span(tok.lineno, tok.end_lineno, tok.col_offset, tok.end_col_offset);
+    return tok_loc(
+        lineno=tok.lineno,
+        end_lineno=tok.end_lineno,
+        col_offset=tok.col_offset,
+        end_col_offset=tok.end_col_offset
+    );
 }
 
 def _keyword_type_for(p: peg_parser, spelling: str) -> int {
