@@ -1836,6 +1836,22 @@ test "compiler_slice: band6 bare except no-exception executes in ceval" {
     assert expect_int(ns["result"]) == 5;
 }
 
+test "compiler_slice: band6 try except else distinct orelse handler names match oracle co_names" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except ValueError as e:\n"
+        + "    h = 2\n"
+        + "else:\n"
+        + "    o = 3\n"
+    );
+    actual = compile_parsed_exec(src, "<m>");
+    expected = oracle_exec(src, "<m>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.names == exp.names;
+}
+
 test "compiler_slice: band6 try except else parsed matches oracle co_code" {
     src = (
         "try:\n"
@@ -4057,6 +4073,11 @@ test "compiler_slice: except* then trailing statements compile with sound struct
 # recombines it. Byte-exact against the host oracle including co_names and
 # linetable for the shapes below.
 #
+# Known-blocked shapes (NOT TryStar-lowering bugs):
+#  - any `try` followed by unconsumed module/function code: verify_cfg rejects
+#    with "instructions after terminator" -- pre-existing on HEAD for plain
+#    try too (flip these on when unblocked).
+
 test "compiler_slice: band11 except* bare handler matches oracle PyCode" {
     src = (
         "try:\n"
