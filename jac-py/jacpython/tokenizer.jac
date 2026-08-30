@@ -23,6 +23,9 @@ import from token_model {
     LBRACE,
     RBRACE,
     COMMA,
+    FSTRING_START,
+    FSTRING_MIDDLE,
+    FSTRING_END,
     TOK_NO_COLUMN,
     EXACT_TOKEN_TYPES,
     exact_token_type,
@@ -51,7 +54,13 @@ obj tok_state {
         indent: int = 0,
         indstack: list[int] = [0],
         pending: int = 0,
-        paren_level: int = 0;
+        paren_level: int = 0,
+        fstring_active: bool = False,
+        fstring_quote: str = "",
+        fstring_qlen: int = 1,
+        fstring_raw: bool = False,
+        fstring_expr_depth: int = 0,
+        fstring_resume: bool = False;
 }
 
 def _indent_error(st: tok_state, msg: str) -> tok_diag {
@@ -520,14 +529,166 @@ def _string_syntax_error(st: tok_state, msg: str, start_col: int) -> tok_diag {
     return bad;
 }
 
+def _fstring_emit_middle(
+    st: tok_state,
+    text: str,
+    lineno: int,
+    col_offset: int,
+    end_col_offset: int
+) -> tok_token {
+    return tok_token(
+        tok_type=FSTRING_MIDDLE,
+        spelling=text,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def _fstring_emit_end(st: tok_state, spelling: str, lineno: int, col_offset: int) -> tok_token {
+    st.fstring_active = False;
+    st.fstring_quote = "";
+    st.fstring_qlen = 1;
+    st.fstring_raw = False;
+    st.fstring_expr_depth = 0;
+    st.fstring_resume = False;
+    tok = tok_token(
+        tok_type=FSTRING_END,
+        spelling=spelling,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=st.lineno,
+        end_col_offset=st.col_offset
+    );
+    st.paren_level = st.paren_level + _track_paren_delta(FSTRING_END);
+    return tok;
+}
+
+def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
+    st.fstring_resume = False;
+    if st.fstring_expr_depth > 0 {
+        col = st.col_offset;
+        return _fstring_emit_middle(st, "", st.lineno, col, col);
+    }
+    quote = st.fstring_quote;
+    qlen = st.fstring_qlen;
+    raw = st.fstring_raw;
+    start_lineno = st.lineno;
+    start_col = st.col_offset;
+    buf = "";
+    while st.pos < len(st.source) {
+        ch = _peek(st);
+        if qlen == 1 {
+            if ch == quote {
+                end_col = st.col_offset;
+                if len(buf) > 0 {
+                    st.fstring_resume = True;
+                    return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+                }
+                _advance(st);
+                return _fstring_emit_end(st, quote, start_lineno, start_col);
+            }
+            if ch == "\n" or ch == "\r" {
+                return _string_syntax_error(
+                    st, "EOL while scanning string literal", start_col
+                );
+            }
+        } else {
+            if ch == quote
+                and st.pos + 1 < len(st.source)
+                and st.source[st.pos + 1] == quote
+                and st.pos + 2 < len(st.source)
+                and st.source[st.pos + 2] == quote {
+                end_col = st.col_offset;
+                if len(buf) > 0 {
+                    st.fstring_resume = True;
+                    return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+                }
+                j = 0;
+                while j < qlen {
+                    _advance(st);
+                    j = j + 1;
+                }
+                triple = quote + quote + quote;
+                return _fstring_emit_end(st, triple, start_lineno, start_col);
+            }
+        }
+        if ch == "{" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "{" {
+            buf = buf + "{";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "}" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "}" {
+            buf = buf + "}";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "{" {
+            if len(buf) > 0 {
+                end_col = st.col_offset;
+                return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+            }
+            return None;
+        }
+        if ch == "\\" and not raw {
+            buf = buf + ch;
+            _advance(st);
+            if st.pos < len(st.source) {
+                buf = buf + st.source[st.pos];
+                _advance(st);
+            }
+            continue;
+        }
+        buf = buf + ch;
+        _advance(st);
+    }
+    return _string_syntax_error(st, "EOL while scanning string literal", start_col);
+}
+
+def _read_fstring_start(
+    st: tok_state,
+    start: int,
+    start_col: int,
+    raw: bool,
+    quote: str,
+    qlen: int
+) -> tok_token | tok_diag {
+    spell = st.source[start:st.pos];
+    st.fstring_active = True;
+    st.fstring_quote = quote;
+    st.fstring_qlen = qlen;
+    st.fstring_raw = raw;
+    st.fstring_expr_depth = 0;
+    st.fstring_resume = True;
+    tok = tok_token(
+        tok_type=FSTRING_START,
+        spelling=spell,
+        lineno=st.lineno,
+        col_offset=start_col,
+        end_lineno=st.lineno,
+        end_col_offset=st.col_offset
+    );
+    st.paren_level = st.paren_level + _track_paren_delta(FSTRING_START);
+    return tok;
+}
+
 def _read_string(st: tok_state) -> tok_token | tok_diag {
     start = st.pos;
     start_col = st.col_offset;
     raw = False;
+    has_f = False;
     while st.pos < len(st.source) {
         c = _peek(st);
         if c == "r" or c == "R" {
             raw = True;
+            _advance(st);
+            continue;
+        }
+        if c == "f" or c == "F" {
+            has_f = True;
             _advance(st);
             continue;
         }
@@ -552,6 +713,9 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
         _advance(st);
         _advance(st);
         qlen = 3;
+    }
+    if has_f {
+        return _read_fstring_start(st, start, start_col, raw, quote, qlen);
     }
     while st.pos < len(st.source) {
         ch = _peek(st);
@@ -666,6 +830,15 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     pending = _flush_pending_indent(st);
     if pending is not None {
         return pending;
+    }
+    if st.fstring_active and st.fstring_resume {
+        fseg = _fstring_next_segment(st);
+        if fseg is not None {
+            if isinstance(fseg, tok_diag) {
+                return fseg;
+            }
+            return fseg as tok_token;
+        }
     }
     while st.pos < len(st.source) {
         if st.at_bol {
@@ -792,6 +965,17 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         }
         op = _match_operator(st);
         if op is not None {
+            if st.fstring_active {
+                if op.tok_type == LBRACE {
+                    st.fstring_expr_depth = st.fstring_expr_depth + 1;
+                }
+                if op.tok_type == RBRACE and st.fstring_expr_depth > 0 {
+                    st.fstring_expr_depth = st.fstring_expr_depth - 1;
+                    if st.fstring_expr_depth == 0 {
+                        st.fstring_resume = True;
+                    }
+                }
+            }
             st.paren_level = st.paren_level + _track_paren_delta(op.tok_type);
             return op;
         }

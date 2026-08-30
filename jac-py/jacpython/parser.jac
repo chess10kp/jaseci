@@ -39,7 +39,7 @@ import from parser_actions {
     pa_seq_last, pa_seq_len, pa_seq_get, pa_or_pattern_singleton, pa_check_legacy_stmt_or_raise,
     pa_raise_type_param_error, pa_raise_kvpair_error, pa_checked_future_import, pa_nonparen_genexp_in_call,
     pa_arguments_parsing_error, pa_check_legacy_stmt, pa_concatenate_strings, pa_concatenate_tstrings,
-    pa_constant_from_string, pa_constant_from_token, pa_decoded_constant_from_token, pa_ensure_imaginary,
+    pa_constant_from_string, pa_constant_from_token, pa_constant_from_fstring_middle, pa_decoded_constant_from_token, pa_ensure_imaginary,
     pa_ensure_real, pa_get_expr_name, pa_get_last_comprehension_item, pa_join_names_with_dot,
     pa_join_sequences, pa_join_sequences_kw_or_starred, pa_alias_for_star, pa_add_type_comment_to_arg, pa_seq_delete_starred_exprs,
     pa_seq_extract_starred_exprs, pa_setup_full_format_spec, pa_check_fstring_conversion,
@@ -6138,7 +6138,10 @@ def rule_fstring(p: peg_parser) -> expr | None {
         if b is not None {
             c = peg_expect_token(p, FSTRING_END);
             if c is not None {
-                res = pa_joined_str(a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                end_tok = c as peg_token;
+                res = pa_joined_str(
+                    a, b, c, start_lineno, start_col_offset, end_tok.end_lineno, end_tok.end_col_offset
+                );
                 return res;
             }
         }
@@ -6147,9 +6150,9 @@ def rule_fstring(p: peg_parser) -> expr | None {
     return None;
 }
 
-def rule_fstring_conversion(p: peg_parser) -> peg_token | None {
+def rule_fstring_conversion(p: peg_parser) -> Name | None {
     mark = peg_mark(p);
-    res: peg_token | None = None;
+    res: Name | None = None;
     conv_token = peg_expect_token(p, 54);
     if conv_token is not None {
         conv = pa_name_from_token(peg_expect_token(p, NAME));
@@ -6180,7 +6183,7 @@ def rule_fstring_format_spec(p: peg_parser) -> expr | None {
     return None;
 }
 
-def rule_fstring_full_format_spec(p: peg_parser) -> peg_token | None {
+def rule_fstring_full_format_spec(p: peg_parser) -> expr | None {
     mark = peg_mark(p);
     start_lineno = 1;
     start_col_offset = 0;
@@ -6191,7 +6194,7 @@ def rule_fstring_full_format_spec(p: peg_parser) -> peg_token | None {
         start_lineno = t0.lineno;
         start_col_offset = t0.col_offset;
     }
-    res: peg_token | None = None;
+    res: expr | None = None;
     colon = peg_expect_token(p, 11);
     if colon is not None {
         spec = rule__loop0_29(p);
@@ -6204,7 +6207,9 @@ def rule_fstring_full_format_spec(p: peg_parser) -> peg_token | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_setup_full_format_spec(`node=colon);
+            res = pa_setup_full_format_spec(
+                colon, spec, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -6223,7 +6228,7 @@ def rule_fstring_middle(p: peg_parser) -> expr | None {
     peg_reset(p, mark);
     t = peg_expect_token(p, FSTRING_MIDDLE);
     if t is not None {
-        res = pa_constant_from_token(t);
+        res = pa_constant_from_fstring_middle(t, False);
         return res;
     }
     peg_reset(p, mark);
@@ -13580,7 +13585,7 @@ def rule_tstring_format_spec_replacement_field(p: peg_parser) -> expr | None {
     return None;
 }
 
-def rule_tstring_full_format_spec(p: peg_parser) -> peg_token | None {
+def rule_tstring_full_format_spec(p: peg_parser) -> expr | None {
     mark = peg_mark(p);
     start_lineno = 1;
     start_col_offset = 0;
@@ -13591,7 +13596,7 @@ def rule_tstring_full_format_spec(p: peg_parser) -> peg_token | None {
         start_lineno = t0.lineno;
         start_col_offset = t0.col_offset;
     }
-    res: peg_token | None = None;
+    res: expr | None = None;
     colon = peg_expect_token(p, 11);
     if colon is not None {
         spec = rule__loop0_135(p);
@@ -13604,7 +13609,9 @@ def rule_tstring_full_format_spec(p: peg_parser) -> peg_token | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_setup_full_format_spec(`node=colon);
+            res = pa_setup_full_format_spec(
+                colon, spec, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
