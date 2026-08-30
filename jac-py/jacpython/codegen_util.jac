@@ -657,8 +657,8 @@ def expr_loc(e: expr) -> cloc {
         return nloc(ca.lineno, ca.end_lineno, ca.col_offset, ca.end_col_offset);
     }
     if isinstance(e, Compare) {
-        c = e as Compare;
-        return nloc(c.lineno, c.end_lineno, c.col_offset, c.end_col_offset);
+        cmp = e as Compare;
+        return nloc(cmp.lineno, cmp.end_lineno, cmp.col_offset, cmp.end_col_offset);
     }
     if isinstance(e, ListComp) {
         lc = e as ListComp;
