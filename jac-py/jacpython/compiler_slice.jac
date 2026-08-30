@@ -3988,6 +3988,42 @@ test "compiler_slice: band-11 call-site star unpacking matches oracle bytes" {
     }
 }
 
+# try/except[/except*] followed by more module or function code: the tail must
+# be threaded once on the normal path and handler success must converge there
+# without an extra module return (which produced verify_cfg "instructions after
+# terminator"). Structure parity first; exact co_code awaits borrow upgrades.
+test "compiler_slice: try then trailing statements compile with sound structure" {
+    for src in [
+        "try:\n    x = 1\nexcept ValueError:\n    a = 1\nprint(x)\n",
+        "def f():\n    try:\n        x = 1\n    except ValueError:\n        a = 1\n    print(x)\n",
+        "def f():\n    try:\n        x = 1\n    except ValueError:\n        a = 1\n    return x\n",
+        "try:\n    pass\nexcept ValueError:\n    pass\ny = 1\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert len(actual.co_code) == len(exp.co_code);
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+    }
+}
+
+test "compiler_slice: except* then trailing statements compile with sound structure" {
+    for src in [
+        "try:\n    x = 1\nexcept* ValueError:\n    a = 1\nprint(x)\n",
+        "def f():\n    try:\n        x = 1\n    except* ValueError:\n        a = 1\n    print(x)\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        assert len(actual.co_code) == len(exp.co_code);
+        assert actual.exceptiontable == exp.exceptiontable;
+        assert actual.stacksize == exp.stacksize;
+    }
+}
+
 # ---------------- Band 11 slice: try/except* (TryStar) ----------------
 # except* lowers to CPython 3.14's ExceptionGroup walk: a results list
 # accumulates each CHECK_EG_MATCH remainder, then INTRINSIC_PREP_RERAISE_STAR
@@ -3995,9 +4031,6 @@ test "compiler_slice: band-11 call-site star unpacking matches oracle bytes" {
 # linetable for the shapes below.
 #
 # Known-blocked shapes (NOT TryStar-lowering bugs):
-#  - any `try` followed by unconsumed module/function code: verify_cfg rejects
-#    with "instructions after terminator" -- pre-existing on HEAD for plain
-#    try too (flip these on when unblocked).
 #  - fresh names bound in an `else` clause get co_names indices allocated at
 #    orelse emit time (before the handler section) instead of CPython's AST
 #    order; reuse existing names in else bodies until that ordering moves.

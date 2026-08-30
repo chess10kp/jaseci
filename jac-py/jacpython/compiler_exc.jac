@@ -1225,6 +1225,10 @@ def visit_try(
         }
     }
     body_fini_region_start: int = -1;
+    tail_done = False;
+    tail_terminated = False;
+    tail_end_blk: basicblock | None = None;
+    fallthrough_blk: basicblock | None = None;
     if try_follows or g.handler_fallthrough_fin is not None {
         if g.handler_fallthrough_fin is not None
             and not normal_terminated
@@ -1248,7 +1252,7 @@ def visit_try(
             } else {
                 g.emit_jump(OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, body_cont.loc);
             }
-        } elif try_follows and tail is not None {
+        } elif try_follows and tail is not None and tail_idx < len(tail) {
             tail_more = False;
             if tail_idx + 1 < len(tail) {
                 tail_more = exec_tail_emits_code(tail, tail_idx + 1);
@@ -1257,9 +1261,14 @@ def visit_try(
             if codegen_busy(g) {
                 return stmt_cont(loc=body_cont.loc);
             }
-            if not tail_cont.terminated and not normal_terminated {
+            tail_done = True;
+            tail_terminated = tail_cont.terminated;
+            tail_end_blk = g.cur;
+            if tail_cont.terminated {
                 emit_module_return(g, tail_cont.loc);
             }
+        } elif try_follows {
+            fallthrough_blk = g.cur;
         }
     } else {
         if not normal_terminated {
@@ -1507,6 +1516,8 @@ def visit_try(
                         OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, hbody.loc
                     );
                 }
+            } elif try_follows and (tail_done or fallthrough_blk is not None) {
+                g.emit_jump(OP_JUMP_FORWARD, after_try_epilogue.id, hbody.loc);
             } else {
                 emit_module_return(g, hbody.loc);
             }
@@ -1772,6 +1783,18 @@ def visit_try(
     # Publish this statement's last block for an enclosing try whose body is
     # exactly this try/except, so its body span starts after our regions.
     g.u.nested_try_except_end = unwind_blk.id;
+    if fallthrough_blk is not None {
+        g.use(fallthrough_blk);
+        return stmt_cont(loc=tloc, terminated=False);
+    }
+    if tail_done {
+        if tail_end_blk is not None {
+            g.use(tail_end_blk);
+        }
+        return stmt_cont(
+            loc=tloc, next_si=len(tail as list[stmt]), terminated=tail_terminated
+        );
+    }
     return stmt_cont(loc=tloc, terminated=True);
 }
 
@@ -1942,7 +1965,11 @@ def visit_try_star_except(
     }
     has_fin = t.finalbody is not None and len(t.finalbody) > 0;
     join_blk: basicblock | None = None;
-    if not has_fin and try_follows and tail is not None {
+    tail_done = False;
+    tail_terminated = False;
+    tail_end_blk: basicblock | None = None;
+    fallthrough_blk: basicblock | None = None;
+    if not has_fin and try_follows and tail is not None and tail_idx < len(tail) {
         # Own block so the nothing-to-reraise path can jump back to it.
         join_blk = g.new_block();
         g.use(join_blk);
@@ -1954,9 +1981,14 @@ def visit_try_star_except(
         if codegen_busy(g) {
             return stmt_cont(loc=body_cont.loc);
         }
-        if not tail_cont.terminated and not normal_terminated {
+        tail_done = True;
+        tail_terminated = tail_cont.terminated;
+        tail_end_blk = g.cur;
+        if tail_cont.terminated {
             emit_module_return(g, tail_cont.loc);
         }
+    } elif not has_fin and try_follows {
+        fallthrough_blk = g.cur;
     } else {
         if not has_fin and not normal_terminated {
             if g.handler_fallthrough_fin is not None and not try_follows {
@@ -2363,6 +2395,18 @@ def visit_try_star_except(
     while mi < len(merged) {
         g.u.except_regions.append(merged[mi]);
         mi = mi + 1;
+    }
+    if fallthrough_blk is not None {
+        g.use(fallthrough_blk);
+        return stmt_cont(loc=tloc, terminated=False);
+    }
+    if tail_done {
+        if tail_end_blk is not None {
+            g.use(tail_end_blk);
+        }
+        return stmt_cont(
+            loc=tloc, next_si=len(tail as list[stmt]), terminated=tail_terminated
+        );
     }
     return stmt_cont(loc=tloc, terminated=True);
 }
