@@ -8,13 +8,6 @@
 # Product module: imports flowgraph + compiler_ir + opcode_meta + objects only.
 
 import from objects { PyCode }
-import from opcode_meta {
-    OP_CACHE,
-    OP_EXTENDED_ARG,
-    opcode_cache_count,
-    opcode_has_jump,
-    is_scope_exit_opcode,
-}
 import from compiler_ir {
     cinstr,
     cloc,
@@ -24,8 +17,23 @@ import from compiler_ir {
     NO_LINE,
     instr_size_codeunits,
     except_region,
+    unverified_cfg,
 }
-import from flowgraph { verified_cfg, flatten_blocks }
+import from flowgraph {
+    verified_cfg,
+    flatten_blocks,
+    block_has_fallthrough,
+    block_last_instr,
+    find_block,
+    layout_next_block,
+}
+import from opcode_meta {
+    OP_CACHE,
+    OP_EXTENDED_ARG,
+    opcode_cache_count,
+    opcode_has_jump,
+    is_scope_exit_opcode,
+}
 
 glob CONTINUATION_BIT: int = 64;
 
@@ -154,6 +162,87 @@ def emit_instr(code: list[int], ins: cinstr) {
 }
 
 # ---------------- PEP 626 line table (ported from Python/assemble.c) ----------------
+# CPython flowgraph.c:resolve_line_numbers runs propagate_line_numbers before
+# assemble encodes co_linetable. Codegen emits NO_LOCATION on artificial edges
+# (loop back-edges, END_FOR/POP_ITER, if/else jumps); propagation copies the
+# preceding real location so the linetable matches the host oracle.
+def loc_is_none(lc: cloc) -> bool {
+    return lc.lineno == NO_LINE;
+}
+
+def copy_loc(lc: cloc) -> cloc {
+    return loc(lc.lineno, lc.end_lineno, lc.col_offset, lc.end_col_offset);
+}
+
+def build_block_pred_counts(u: unverified_cfg) -> dict[int, int] {
+    counts: dict[int, int] = {};
+    bi = 0;
+    while bi < len(u.blocks) {
+        counts[u.blocks[bi].id] = 0;
+        bi = bi + 1;
+    }
+    bi = 0;
+    while bi < len(u.blocks) {
+        b = u.blocks[bi];
+        if block_has_fallthrough(b) {
+            nb = layout_next_block(u, bi);
+            if nb is not None {
+                counts[nb.id] = counts[nb.id] + 1;
+            }
+        }
+        last = block_last_instr(b);
+        if last is not None and opcode_has_jump(last.opcode) and last.target_block >= 0 {
+            tid = last.target_block;
+            if tid in counts {
+                counts[tid] = counts[tid] + 1;
+            }
+        }
+        bi = bi + 1;
+    }
+    return counts;
+}
+
+def propagate_line_numbers(u: unverified_cfg) {
+    pred = build_block_pred_counts(u);
+    bi = 0;
+    while bi < len(u.blocks) {
+        b = u.blocks[bi];
+        last = block_last_instr(b);
+        if last is None {
+            bi = bi + 1;
+            continue;
+        }
+        prev = no_loc();
+        ii = 0;
+        while ii < len(b.instrs) {
+            ins = b.instrs[ii];
+            if loc_is_none(ins.loc) {
+                ins.loc = copy_loc(prev);
+            } else {
+                prev = ins.loc;
+            }
+            ii = ii + 1;
+        }
+        if block_has_fallthrough(b) {
+            nb = layout_next_block(u, bi);
+            if nb is not None and pred[nb.id] == 1 and len(nb.instrs) > 0 {
+                if loc_is_none(nb.instrs[0].loc) {
+                    nb.instrs[0].loc = copy_loc(prev);
+                }
+            }
+        }
+        if opcode_has_jump(last.opcode) and last.target_block >= 0 {
+            tgt = find_block(u, last.target_block);
+            if tgt is not None and pred[tgt.id] == 1 and len(tgt.instrs) > 0 {
+                if loc_is_none(tgt.instrs[0].loc) {
+                    tgt.instrs[0].loc = copy_loc(prev);
+                }
+            }
+        }
+        bi = bi + 1;
+    }
+}
+
 # Linetable location-entry kind codes (Include/cpython/code.h).
 glob LI_SHORT0: int = 0,
      LI_ONE_LINE0: int = 10,
@@ -318,7 +407,9 @@ def assemble(cfg: verified_cfg) -> PyCode {
         emit_instr(code, flat[i]);
         i = i + 1;
     }
-    linetable = assemble_linetable(flat, u.firstlineno);
+    propagate_line_numbers(u);
+    lt_flat = flatten_blocks(u).flat;
+    linetable = assemble_linetable(lt_flat, u.firstlineno);
     block_starts = cfg.block_starts;
     if len(block_starts) == 0 {
         fr = flatten_blocks(u);
