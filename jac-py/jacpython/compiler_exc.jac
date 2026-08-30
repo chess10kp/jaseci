@@ -1210,10 +1210,18 @@ def visit_try(
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
-    protect_end = g.new_block();
-    after_try_epilogue = g.new_block();
-    g.use(protect_end);
-    g.use(after_try_epilogue);
+    # When break/continue/return terminates the body, CPython ends the protected
+    # span on that exit block; laying out empty protect_end / after_try blocks
+    # before the handler would fall through into PUSH_EXC_INFO at the wrong
+    # stack depth (BAND12 #5 stackdepth crash).
+    protect_end_blk: basicblock;
+    if body_cont.terminated {
+        protect_end_blk = g.cur;
+    } else {
+        protect_end_blk = g.new_block();
+        g.use(protect_end_blk);
+        g.use(g.new_block());
+    }
     normal_terminated = body_cont.terminated;
     if t.orelse is not None and len(t.orelse) > 0 and not body_cont.terminated {
         else_cont = visit_stmts(g, t.orelse, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
@@ -1339,7 +1347,7 @@ def visit_try(
         g.u.except_regions.append(
             except_region(
                 start_block=g.u.nested_try_except_end,
-                end_block=protect_end.id,
+                end_block=protect_end_blk.id,
                 handler_block=handler_entry.id,
                 stack_depth=1
             )
@@ -1361,7 +1369,7 @@ def visit_try(
         g.u.except_regions.append(
             except_region(
                 start_block=protect_start,
-                end_block=protect_end.id,
+                end_block=protect_end_blk.id,
                 handler_block=handler_entry.id,
                 stack_depth=1 + g.handler_nest_depth
             )

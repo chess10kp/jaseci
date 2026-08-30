@@ -117,6 +117,24 @@ test "layer10: while body break matches oracle" {
     assert_matches_oracle("while x:\n    break\n");
 }
 
+test "layer10: while break inside try matches oracle" {
+    assert_matches_oracle(
+        "while x:\n    try:\n        break\n    except Exception:\n        y = 1\n"
+    );
+}
+
+test "layer10: while continue inside try matches oracle" {
+    assert_matches_oracle(
+        "while x:\n    try:\n        continue\n    except Exception:\n        y = 1\n"
+    );
+}
+
+test "layer10: for break inside try matches oracle" {
+    assert_matches_oracle(
+        "for x in y:\n    try:\n        break\n    except Exception:\n        z = 1\n"
+    );
+}
+
 test "layer10: nested if then following stmt matches oracle" {
     assert_matches_oracle("if x:\n    if y: a = 1\nb = 2\n");
 }
