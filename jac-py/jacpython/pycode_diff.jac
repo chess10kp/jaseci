@@ -282,6 +282,28 @@ def verify_code_layout(co: PyCode, path: str) -> PyCodeDiff {
     return diff_ok();
 }
 
+# CPython co_exceptiontable varint (dis._parse_varint): low 6 bits of the first
+# byte, then while bit 0x40 is set shift accumulated value left 6 and OR the
+# next byte's low 6 bits (not a fixed per-byte shift from zero).
+def parse_except_varint(data: list[int], pos: int) -> tuple[int, int] {
+    if pos >= len(data) {
+        return (-1, pos);
+    }
+    b = data[pos];
+    pos = pos + 1;
+    v = b & 63;
+    while (b & 64) != 0 {
+        if pos >= len(data) {
+            return (-1, pos);
+        }
+        v = v << 6;
+        b = data[pos];
+        pos = pos + 1;
+        v = v | (b & 63);
+    }
+    return (v, pos);
+}
+
 # C3.1-C3.4: exception-table entry format, varint7 encoding, ordering,
 # and range checks against the bytecode length in code units.
 def verify_exception_table(co: PyCode, path: str) -> PyCodeDiff {
@@ -303,26 +325,17 @@ def verify_exception_table(co: PyCode, path: str) -> PyCodeDiff {
         vals: list[int] = [];
         item = 0;
         while item < 4 {
-            v = 0;
-            shift = 0;
-            more = True;
-            while more {
-                if pos >= len(data) {
-                    return diff_fail(
-                        path + ".exceptiontable",
-                        "C3.2 truncated varint7 in entry "
-                            + str(ei)
-                            + " at byte "
-                            + str(pos)
-                    );
-                }
-                b = data[pos];
-                pos = pos + 1;
-                v = v | ((b & 63) << shift);
-                shift = shift + 6;
-                if (b & 0x40) == 0 {
-                    more = False;
-                }
+            parsed = parse_except_varint(data, pos);
+            v = parsed[0];
+            pos = parsed[1];
+            if v < 0 {
+                return diff_fail(
+                    path + ".exceptiontable",
+                    "C3.2 truncated varint7 in entry "
+                        + str(ei)
+                        + " at byte "
+                        + str(pos)
+                );
             }
             if v >= (1 << 30) {
                 return diff_fail(

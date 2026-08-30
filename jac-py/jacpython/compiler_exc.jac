@@ -1282,6 +1282,8 @@ def visit_try(
     handler_tails: list[tuple[basicblock, basicblock]] = [];
     as_unwind_tails: list[tuple[basicblock, basicblock]] = [];
     next_handlers: list[basicblock] = [];
+    reraise_blk = g.new_deferred_block();
+    unwind_blk = g.new_deferred_block();
     hi = 0;
     while hi < len(t.handlers) {
         if hi > 0 {
@@ -1388,6 +1390,7 @@ def visit_try(
     bound_tail_segs: list[tuple[int, int]] = [];
     nested_fini_starts: list[int] = [];
     nested_fini_ends: list[int] = [];
+    any_try_star_ret: bool = False;
     hi = 0;
     handler_nt_blk: basicblock | None = None;
     while hi < len(t.handlers) {
@@ -1445,7 +1448,22 @@ def visit_try(
                 g.use(handler_body_entries[hi]);
             }
         }
+        saved_hbd = g.handler_body_depth;
+        saved_nd = g.handler_nest_depth;
+        saved_feu = g.handler_enclosing_unwind;
+        g.handler_body_depth = saved_hbd + 1;
+        g.handler_nest_depth = saved_nd + 1;
+        g.handler_enclosing_unwind = unwind_blk.id;
+        g.handler_body_try_star_return = False;
         hbody = visit_stmts(g, h.body, 0, False, None, 0, None, ann_ctx);
+        g.handler_body_depth = saved_hbd;
+        g.handler_nest_depth = saved_nd;
+        g.handler_enclosing_unwind = saved_feu;
+        try_star_ret = g.handler_body_try_star_return;
+        g.handler_body_try_star_return = False;
+        if try_star_ret {
+            any_try_star_ret = True;
+        }
         if codegen_busy(g) {
             return stmt_cont(loc=tloc);
         }
@@ -1493,7 +1511,7 @@ def visit_try(
                 emit_module_return(g, hbody.loc);
             }
         } else {
-            if merged_handler_unwind_start < 0 {
+            if not try_star_ret and merged_handler_unwind_start < 0 {
                 merged_handler_unwind_start = handler_region_start;
             }
         }
@@ -1634,6 +1652,22 @@ def visit_try(
                         );
                     }
                 }
+            } else {
+                if try_star_ret {
+                    # Body ended via nested try* POP_EXCEPT+return: match span stops
+                    # at the body entry; the inner try* owns the rest.
+                    append_try_unwind_region(
+                        g,
+                        ownidx,
+                        except_region(
+                            start_block=handler_region_start,
+                            end_block=handler_body_start,
+                            handler_block=-1,
+                            stack_depth=3 + g.handler_nest_depth,
+                            preserve_lasti=True
+                        )
+                    );
+                }
             }
         }
         hi = hi + 1;
@@ -1644,7 +1678,6 @@ def visit_try(
         g.emit_op(OP_RERAISE, 0, hloc);
     }
     reraise_end = g.new_block();
-    unwind_blk = g.new_block();
     nfi = 0;
     while nfi < len(nested_fini_starts) {
         fini_end = nested_fini_ends[nfi];
@@ -1717,17 +1750,19 @@ def visit_try(
             );
         }
     } else {
-        append_try_unwind_region(
-            g,
-            ownidx,
-            except_region(
-                start_block=merged_handler_unwind_start,
-                end_block=unwind_blk.id,
-                handler_block=-1,
-                stack_depth=3 + g.handler_nest_depth,
-                preserve_lasti=True
-            )
-        );
+        if not any_try_star_ret {
+            append_try_unwind_region(
+                g,
+                ownidx,
+                except_region(
+                    start_block=merged_handler_unwind_start,
+                    end_block=unwind_blk.id,
+                    handler_block=-1,
+                    stack_depth=3 + g.handler_nest_depth,
+                    preserve_lasti=True
+                )
+            );
+        }
     }
     bind_try_unwind_handlers(g, unwind_blk.id, ownidx);
     g.use(unwind_blk);
@@ -1828,14 +1863,6 @@ def visit_try_star(
         codegen_fail(g, "NotImplementedError", "try* without except*");
         return stmt_cont(loc=tloc);
     }
-    if g.handler_fallthrough_fin is not None {
-        # Plain-except handlers duplicate their epilogue on each nested success
-        # path (handler_fallthrough_* machinery); except* bodies are instead
-        # wrapped per-handler by SETUP_CLEANUP regions. Bridging the two
-        # conventions is its own slice.
-        codegen_fail(g, "NotImplementedError", "except* inside except handler");
-        return stmt_cont(loc=tloc);
-    }
     return visit_try_star_except(g, t, more_code_follows, tail, tail_idx, tail_join, ann_ctx, t.finalbody);
 }
 
@@ -1899,6 +1926,7 @@ def visit_try_star_except(
     protect_end = g.new_block();
     g.use(protect_end);
     normal_terminated = body_cont.terminated;
+    else_cont: stmt_cont | None = None;
     if t.orelse is not None and len(t.orelse) > 0 and not body_cont.terminated {
         else_cont = visit_stmts(g, t.orelse, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
         if codegen_busy(g) {
@@ -1907,6 +1935,10 @@ def visit_try_star_except(
         if else_cont.terminated {
             normal_terminated = True;
         }
+    }
+    norm_exit_loc = body_cont.loc;
+    if else_cont is not None {
+        norm_exit_loc = else_cont.loc;
     }
     has_fin = t.finalbody is not None and len(t.finalbody) > 0;
     join_blk: basicblock | None = None;
@@ -1927,7 +1959,36 @@ def visit_try_star_except(
         }
     } else {
         if not has_fin and not normal_terminated {
-            emit_module_return(g, body_cont.loc);
+            if g.handler_fallthrough_fin is not None and not try_follows {
+                g.handler_fell_through = True;
+                g.emit_op(OP_POP_EXCEPT, 0, body_cont.loc);
+                if g.handler_fallthrough_bind is not None {
+                    emit_except_as_cleanup(
+                        g, g.handler_fallthrough_bind as str, body_cont.loc
+                    );
+                }
+                if g.handler_fallthrough_backward {
+                    g.emit_jump(
+                        OP_JUMP_BACKWARD_NO_INTERRUPT,
+                        g.handler_fallthrough_fin.id,
+                        body_cont.loc
+                    );
+                } else {
+                    g.emit_jump(
+                        OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, body_cont.loc
+                    );
+                }
+                normal_terminated = True;
+            } else {
+                if g.handler_body_depth > 0 and not try_follows {
+                    g.handler_body_try_star_return = True;
+                    g.emit_op(OP_POP_EXCEPT, 0, norm_exit_loc);
+                    emit_module_return(g, norm_exit_loc);
+                    normal_terminated = True;
+                } else {
+                    emit_module_return(g, norm_exit_loc);
+                }
+            }
         }
     }
 
@@ -1958,6 +2019,7 @@ def visit_try_star_except(
     rr_nt = g.new_deferred_block();
     rr_pt = g.new_deferred_block();
     rr_pe = g.new_deferred_block();
+    rr_after_first_pe = g.new_deferred_block();
     reraise_blk = g.new_deferred_block();
     unwind_blk = g.new_deferred_block();
     fin_inline = g.new_deferred_block();
@@ -2112,6 +2174,10 @@ def visit_try_star_except(
     g.emit_op(OP_POP_TOP, 0, noloc);
     g.use(rr_pe);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
+    if g.handler_body_depth > 0 {
+        g.use(rr_after_first_pe);
+        g.emit_op(OP_POP_EXCEPT, 0, noloc);
+    }
     if has_fin {
         # Nothing to reraise: run the inline finally copy. Early copy sits
         # before the walk (backward hop), late copy after the unwind chain
@@ -2244,6 +2310,27 @@ def visit_try_star_except(
             preserve_lasti=True
         )
     );
+    if g.handler_body_depth > 0 and g.handler_enclosing_unwind >= 0 {
+        outer_uw = g.handler_enclosing_unwind;
+        spans.append(
+            except_region(
+                start_block=rr_pe.id,
+                end_block=rr_after_first_pe.id,
+                handler_block=outer_uw,
+                stack_depth=3,
+                preserve_lasti=True
+            )
+        );
+        spans.append(
+            except_region(
+                start_block=reraise_blk.id,
+                end_block=outer_uw,
+                handler_block=outer_uw,
+                stack_depth=3,
+                preserve_lasti=True
+            )
+        );
+    }
     if has_fin {
         # Post-walk coverage: from the nothing-to-reraise POP_EXCEPT through
         # the reraise/unwind chain, failures reach the exceptional finally

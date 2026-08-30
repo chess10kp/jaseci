@@ -156,7 +156,15 @@ obj cfg_builder {
         handler_fallthrough_bind: str | None = None,
         handler_enclosing_unwind: int = -1,
         handler_fell_through: bool = False,
-        handler_nest_depth: int = 0;
+        handler_nest_depth: int = 0,
+        # >0 while emitting a plain-except handler body (not finally-wrapped):
+        # drives try* success exits (POP_EXCEPT + return) without bumping
+        # handler_nest_depth, which would widen outer handler-table spans.
+        handler_body_depth: int = 0,
+        # Set when a try* body inside a plain-except handler ends with
+        # POP_EXCEPT + return (not raise): outer handler match spans stop at
+        # the body entry label.
+        handler_body_try_star_return: bool = False;
 
     def emit(ins: cinstr) {
         self.cur.instrs.append(ins);

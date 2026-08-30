@@ -1466,6 +1466,13 @@ def compile_exec(
             # index 0, exactly like the host. Deferred comp cleanup handlers
             # are emitted here too -- CPython lays them out after the (dead)
             # epilogue regardless of how the body ended.
+            if len(ann_plan.entries) > 0 {
+                finish_module_annotations(g, ann_plan);
+                if codegen_busy(g) {
+                    u.flush_late_consts();
+                    return u;
+                }
+            }
             u.add_const(py_none());
             stmt_handlers["deferred_comp_handlers"](g);
             u.flush_late_consts();

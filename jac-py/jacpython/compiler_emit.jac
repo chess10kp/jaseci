@@ -2487,11 +2487,19 @@ def visit_comp_elt(
     if isinstance(e, Call) {
         ca = e as Call;
         floc = call_func_loc(ca.func);
-        visit_comp_elt(g, ca.func, bound_names, filter_compare);
-        if codegen_busy(g) {
-            return;
+        if isinstance(ca.func, Name) {
+            n = ca.func as Name;
+            emit_name_load(g, n.id, floc, True);
+            if codegen_busy(g) {
+                return;
+            }
+        } else {
+            visit_comp_elt(g, ca.func, bound_names, filter_compare);
+            if codegen_busy(g) {
+                return;
+            }
+            g.emit_op(OP_PUSH_NULL, 0, floc);
         }
-        g.emit_op(OP_PUSH_NULL, 0, floc);
         call_args = call_effective_args(ca);
         ai = 0;
         while ai < len(call_args) {
