@@ -4931,7 +4931,7 @@ def rule_del_target(p: peg_parser) -> expr | None {
         start_col_offset = t0.col_offset;
     }
     res: expr | None = None;
-    a = rule_t_primary(p);
+    a = rule_atom(p);
     if a is not None {
         lit = peg_expect_token(p, 23);
         if lit is not None {
@@ -4954,7 +4954,7 @@ def rule_del_target(p: peg_parser) -> expr | None {
         }
     }
     peg_reset(p, mark);
-    a = rule_t_primary(p);
+    a = rule_atom(p);
     if a is not None {
         lit = peg_expect_token(p, 9);
         if lit is not None {
@@ -4996,7 +4996,7 @@ def rule_del_targets(p: peg_parser) -> list[expr] | None {
     res: list[expr] | None = None;
     a = rule__gather_17(p);
     if a is not None {
-        lit = peg_expect_token(p, 12);
+        peg_expect_token(p, 12);
         res = a;
         return res;
     }
@@ -7456,7 +7456,7 @@ def rule_invalid_del_stmt(p: peg_parser) -> object | None {
     if kw is not None {
         a = rule_star_expressions(p);
         if a is not None {
-            res = pa_raise_invalid_target(p, DEL_TARGETS, a);
+            res = pa_raise_syntax(p, False, "cannot delete here");
             return res;
         }
     }
@@ -11188,8 +11188,9 @@ def rule_patterns(p: peg_parser) -> pattern | None {
         start_col_offset = t0.col_offset;
     }
     res: pattern | None = None;
-    patterns = pa_pattern_list(rule_open_sequence_pattern(p));
-    if patterns is not None {
+    open_patterns = rule_open_sequence_pattern(p);
+    if open_patterns is not None {
+        patterns = pa_pattern_list(open_patterns);
         end_tok = peg_get_last_nonnwhitespace_token(p);
         if end_tok is None {
             p.error_indicator = True;
@@ -11817,6 +11818,13 @@ def rule_simple_stmt(p: peg_parser) -> stmt | None {
         }
     }
     peg_reset(p, mark);
+    type_alias = rule_type_alias(p);
+    if type_alias is not None {
+        res = type_alias;
+        peg_insert_memo(p, mark, RULE_simple_stmt, res);
+        return res;
+    }
+    peg_reset(p, mark);
     if (peg_positive_lookahead_token(p, 680)) {
         del_stmt = rule_del_stmt(p);
         if del_stmt is not None {
@@ -11839,15 +11847,6 @@ def rule_simple_stmt(p: peg_parser) -> stmt | None {
         res = pa_ast_expr_stmt(e, start_lineno, start_col_offset, end_lineno, end_col_offset);
         peg_insert_memo(p, mark, RULE_simple_stmt, res);
         return res;
-    }
-    peg_reset(p, mark);
-    if ((peg_expect_soft_keyword(p, "type") is not None)) {
-        type_alias = rule_type_alias(p);
-        if type_alias is not None {
-            res = type_alias;
-            peg_insert_memo(p, mark, RULE_simple_stmt, res);
-            return res;
-        }
     }
     peg_reset(p, mark);
     if ((peg_positive_lookahead_token(p, 681) or peg_positive_lookahead_token(p, 702))) {

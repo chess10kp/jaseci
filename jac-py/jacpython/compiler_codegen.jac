@@ -334,6 +334,7 @@ import from compiler_emit {
     emit_await_send_except_regions,
     emit_await_send_loop_footer,
     emit_await_send_loop_header,
+    emit_with_return_unwind,
     emit_branch_if_test_false,
     emit_branch_if_test_true,
     emit_call_instruction,
@@ -1345,6 +1346,7 @@ def visit_return_stmt(
     # pins BOTH the load and RETURN_VALUE to the value's span. Fast-local loads
     # keep the Name node's own span.
     rloc = nloc(r.lineno, r.end_lineno, r.col_offset, r.end_col_offset);
+    has_fblocks = len(g.with_fblocks) > 0;
     if r.value is not None {
         if isinstance(r.value, Name) {
             n = r.value as Name;
@@ -1359,6 +1361,9 @@ def visit_return_stmt(
                 } else {
                     g.emit_op(OP_LOAD_FAST, fi, nloc_name);
                 }
+                if has_fblocks {
+                    emit_with_return_unwind(g, rloc);
+                }
                 g.emit_op(OP_RETURN_VALUE, 0, rloc);
                 return;
             }
@@ -1368,11 +1373,17 @@ def visit_return_stmt(
         if isinstance(r.value, Constant) {
             ret_loc = expr_loc(r.value);
         }
+        if has_fblocks {
+            emit_with_return_unwind(g, rloc);
+        }
         g.emit_op(OP_RETURN_VALUE, 0, ret_loc);
         return;
     }
     none_idx = g.u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, rloc);
+    if has_fblocks {
+        emit_with_return_unwind(g, rloc);
+    }
     g.emit_op(OP_RETURN_VALUE, 0, rloc);
 }
 

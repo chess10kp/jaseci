@@ -691,6 +691,7 @@ def compile_fn_cfg(
     u.argcount = argcount;
     u.posonlyargcount = posonly;
     u.kwonlyargcount = kwonly;
+    u.param_count = len(sym_fn.varnames);
     is_suspendable = sym_fn.generator or sym_fn.coroutine;
     u.flags = function_code_flags(args);
     if sym_fn.generator and sym_fn.coroutine {
@@ -722,6 +723,9 @@ def compile_fn_cfg(
             # epilogue regardless of how the body ended.
             u.add_const(py_none());
             emit_deferred_comp_handlers(g);
+            if is_suspendable {
+                emit_generator_except_handler(g, protect_start);
+            }
             u.flush_late_consts();
             return u;
         }
@@ -793,6 +797,7 @@ def typealias_value_cfg(
     );
     u.argcount = 1;
     u.posonlyargcount = 1;
+    u.param_count = 1;
     u.flags = CO_OPTIMIZED | CO_NEWLOCALS;
     if sym_v.nested {
         u.flags = u.flags | CO_NESTED;

@@ -295,6 +295,8 @@ import from compiler_ir {
     loop_frame,
     except_region,
     comp_handler,
+    with_fblock,
+    with_unwind_rec,
 }
 import from compiler_symtable {
     sym_block,
@@ -681,6 +683,44 @@ def emit_await_send_except_regions(
     );
     if after_resume_handler < 0 {
         g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+    }
+}
+
+def emit_with_return_unwind(g: cfg_builder, wloc: cloc) {
+    g.with_unwind_used = True;
+    while len(g.with_fblocks) > 0 {
+        fb = g.with_fblocks[len(g.with_fblocks) - 1];
+        g.with_fblocks = g.with_fblocks[0 : len(g.with_fblocks) - 1];
+        boundary = g.new_block();
+        g.use(boundary);
+        if fb.protect_region >= 0 and g.u.except_regions[fb.protect_region].end_block < 0 {
+            g.u.except_regions[fb.protect_region].end_block = boundary.id;
+        }
+        g.emit_op(OP_SWAP, 3, wloc);
+        g.emit_op(OP_SWAP, 2, wloc);
+        none_idx = g.u.add_const(py_none());
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        g.emit_op(OP_CALL, 3, wloc);
+        if fb.is_async {
+            als = emit_await_send_loop_header(g, OP_GET_AWAITABLE, 2, 3, wloc);
+            ct = g.new_deferred_block();
+            cj = g.new_deferred_block();
+            g.with_unwind_recs.append(
+                with_unwind_rec(
+                    send_blk=als.send_blk.id,
+                    yield_blk=als.yield_blk.id,
+                    after_resume_blk=als.after_resume_blk.id,
+                    end_send_blk=als.end_send_blk.id,
+                    boundary=boundary.id,
+                    depth=4 + 2 * fb.frame_idx,
+                    ct=ct,
+                    cj=cj
+                )
+            );
+        }
+        g.emit_op(OP_POP_TOP, 0, wloc);
     }
 }
 
@@ -1423,6 +1463,19 @@ def visit_expr(
             }
         }
         visit_expr(g, un.operand);
+        if isinstance(un.op, Not) {
+            need_to_bool = True;
+            if isinstance(un.operand, Compare)
+                and len((un.operand as Compare).ops) == 1 {
+                need_to_bool = False;
+            }
+            if need_to_bool {
+                g.emit_op(
+                    OP_TO_BOOL, 0,
+                    nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset)
+                );
+            }
+        }
         opc = unary_opcode(un.op as PyObj);
         if opc < 0 {
             codegen_fail(g, "NotImplementedError", "unsupported unary operator");
@@ -3630,6 +3683,7 @@ def compile_lambda_cfg(
     u.argcount = argcount;
     u.posonlyargcount = posonly;
     u.kwonlyargcount = kwonly;
+    u.param_count = len(sym_fn.varnames);
     u.flags = function_code_flags(lam.args);
     u.varnames = fast_varnames_from_sym(sym_fn);
     entry_blk = u.add_block();
@@ -3725,6 +3779,7 @@ def compile_genexp_cfg(
         filename=filename, name="<genexpr>", qualname="<genexpr>", firstlineno=ge.lineno
     );
     u.argcount = 1;
+    u.param_count = 1;
     u.flags = CO_OPTIMIZED | CO_NEWLOCALS | CO_GENERATOR;
     if sym_fn.nested {
         u.flags = u.flags | CO_NESTED;

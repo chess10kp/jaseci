@@ -800,6 +800,7 @@ def build_annotate_fn_cfg(
     );
     u.argcount = 1;
     u.posonlyargcount = 1;
+    u.param_count = 1;
     u.flags = CO_OPTIMIZED | CO_NEWLOCALS;
     if class_mode {
         if plan.nested_class {
