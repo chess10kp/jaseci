@@ -1215,12 +1215,14 @@ def visit_try(
     # before the handler would fall through into PUSH_EXC_INFO at the wrong
     # stack depth (BAND12 #5 stackdepth crash).
     protect_end_blk: basicblock;
+    after_try_epilogue: basicblock | None = None;
     if body_cont.terminated {
         protect_end_blk = g.cur;
     } else {
         protect_end_blk = g.new_block();
         g.use(protect_end_blk);
-        g.use(g.new_block());
+        after_try_epilogue = g.new_block();
+        g.use(after_try_epilogue);
     }
     normal_terminated = body_cont.terminated;
     if t.orelse is not None and len(t.orelse) > 0 and not body_cont.terminated {
@@ -1237,6 +1239,7 @@ def visit_try(
     tail_terminated = False;
     tail_end_blk: basicblock | None = None;
     fallthrough_blk: basicblock | None = None;
+    post_try_join: basicblock | None = None;
     if try_follows or g.handler_fallthrough_fin is not None {
         if g.handler_fallthrough_fin is not None
             and not normal_terminated
@@ -1274,6 +1277,9 @@ def visit_try(
             tail_end_blk = g.cur;
             if tail_cont.terminated {
                 emit_module_return(g, tail_cont.loc);
+            } else {
+                post_try_join = g.new_deferred_block();
+                g.emit_jump(OP_JUMP_FORWARD, post_try_join.id, tail_cont.loc);
             }
         } elif try_follows {
             fallthrough_blk = g.cur;
@@ -1524,8 +1530,12 @@ def visit_try(
                         OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, hbody.loc
                     );
                 }
-            } elif try_follows and (tail_done or fallthrough_blk is not None) {
-                g.emit_jump(OP_JUMP_FORWARD, after_try_epilogue.id, hbody.loc);
+            } elif try_follows
+                and (tail_done or fallthrough_blk is not None)
+                and after_try_epilogue is not None {
+                g.emit_jump(
+                    OP_JUMP_FORWARD, after_try_epilogue.id, hbody.loc
+                );
             } else {
                 emit_module_return(g, hbody.loc);
             }
@@ -1796,7 +1806,9 @@ def visit_try(
         return stmt_cont(loc=tloc, terminated=False);
     }
     if tail_done {
-        if tail_end_blk is not None {
+        if post_try_join is not None {
+            g.use(post_try_join);
+        } elif tail_end_blk is not None {
             g.use(tail_end_blk);
         }
         return stmt_cont(
@@ -1977,6 +1989,7 @@ def visit_try_star_except(
     tail_terminated = False;
     tail_end_blk: basicblock | None = None;
     fallthrough_blk: basicblock | None = None;
+    post_try_join: basicblock | None = None;
     if not has_fin and try_follows and tail is not None and tail_idx < len(tail) {
         # Own block so the nothing-to-reraise path can jump back to it.
         join_blk = g.new_block();
@@ -1994,6 +2007,9 @@ def visit_try_star_except(
         tail_end_blk = g.cur;
         if tail_cont.terminated {
             emit_module_return(g, tail_cont.loc);
+        } else {
+            post_try_join = g.new_deferred_block();
+            g.emit_jump(OP_JUMP_FORWARD, post_try_join.id, tail_cont.loc);
         }
     } elif not has_fin and try_follows {
         fallthrough_blk = g.cur;
@@ -2409,7 +2425,9 @@ def visit_try_star_except(
         return stmt_cont(loc=tloc, terminated=False);
     }
     if tail_done {
-        if tail_end_blk is not None {
+        if post_try_join is not None {
+            g.use(post_try_join);
+        } elif tail_end_blk is not None {
             g.use(tail_end_blk);
         }
         return stmt_cont(
