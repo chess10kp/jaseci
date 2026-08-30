@@ -673,7 +673,15 @@ obj comprehension(ast_node) {
 }
 
 # --- excepthandler ---
-obj excepthandler(ast_node) {}
+obj excepthandler(ast_node) {
+    has type: expr | None,
+        name: str | None,
+        body: list[stmt],
+        lineno: int,
+        col_offset: int,
+        end_lineno: int | None,
+        end_col_offset: int | None;
+}
 
 obj ExceptHandler(excepthandler) {
     has type: expr | None,

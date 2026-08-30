@@ -151,7 +151,7 @@ def pa_name_from_token(tok: peg_token | None) -> Name | None {
     );
 }
 
-def _digit_val(c: str) -> int {
+def _pa_digit_val(c: str) -> int {
     if c >= "0" and c <= "9" {
         return ord(c) - ord("0");
     }
@@ -170,7 +170,7 @@ def _strip_underscores(spelling: str) -> str {
     return out;
 }
 
-def _digit_val_base(c: str, base: int) -> int {
+def _pa_digit_val_base(c: str, base: int) -> int {
     d = -1;
     if c >= "0" and c <= "9" {
         d = ord(c) - ord("0");
@@ -192,7 +192,7 @@ def _fold_radix(s: str, start: int, base: int) -> int {
     n = 0;
     i = start;
     while i < len(s) {
-        d = _digit_val_base(s[i], base);
+        d = _pa_digit_val_base(s[i], base);
         if d < 0 {
             return -1;
         }
@@ -216,8 +216,8 @@ def pa_parse_int_spelling(spelling: str) -> int {
     return _fold_radix(s, 0, 10);
 }
 
-def _hex_digit_val(c: str) -> int {
-    d = _digit_val(c);
+def _pa_hex_digit_val(c: str) -> int {
+    d = _pa_digit_val(c);
     if d >= 0 {
         return d;
     }
@@ -277,8 +277,8 @@ def pa_decode_escape_body(body: str) -> str {
             continue;
         }
         if e == "x" and i + 2 < len(body) {
-            h1 = _hex_digit_val(body[i + 1]);
-            h2 = _hex_digit_val(body[i + 2]);
+            h1 = _pa_hex_digit_val(body[i + 1]);
+            h2 = _pa_hex_digit_val(body[i + 2]);
             if h1 >= 0 and h2 >= 0 {
                 out = out + chr(h1 * 16 + h2);
                 i = i + 3;
