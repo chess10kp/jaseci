@@ -8,12 +8,19 @@
 # Product module: imports flowgraph + compiler_ir + opcode_meta + objects only.
 
 import from objects { PyCode }
-import from opcode_meta { OP_CACHE, OP_EXTENDED_ARG, opcode_cache_count, }
+import from opcode_meta {
+    OP_CACHE,
+    OP_EXTENDED_ARG,
+    opcode_cache_count,
+    opcode_has_jump,
+    is_scope_exit_opcode,
+}
 import from compiler_ir {
     cinstr,
     cloc,
     loc,
     same_loc,
+    no_loc,
     NO_LINE,
     instr_size_codeunits,
     except_region,
@@ -154,6 +161,35 @@ glob LI_SHORT0: int = 0,
      LI_LONG: int = 14,
      LI_NONE: int = 15;
 
+# CPython NEXT_LOCATION sentinel (Include/internal/pycore_symtable.h).
+glob NEXT_LINE: int = -2;
+
+def is_next_loc(lc: cloc) -> bool {
+    return (
+        lc.lineno == NEXT_LINE
+        and lc.end_lineno == NEXT_LINE
+        and lc.col_offset == NEXT_LINE
+        and lc.end_col_offset == NEXT_LINE
+    );
+}
+
+# CPython assemble_location_info: backward pass resolves NEXT_LOCATION to the
+# following instruction's location (or NO_LOCATION on terminators).
+def resolve_next_locations(flat: list[cinstr]) -> None {
+    i = len(flat) - 1;
+    while i >= 0 {
+        ins = flat[i];
+        if is_next_loc(ins.loc) {
+            if opcode_has_jump(ins.opcode) or is_scope_exit_opcode(ins.opcode) {
+                ins.loc = no_loc();
+            } else {
+                ins.loc = flat[i + 1].loc;
+            }
+        }
+        i = i - 1;
+    }
+}
+
 def write_varint(out: list[int], val: int) {
     v = val;
     while v >= 64 {
@@ -178,7 +214,7 @@ def write_entry_start(out: list[int], code: int, length: int) {
 }
 
 def write_location_info_entry(out: list[int], st: lintable_state, lc: cloc) -> None {
-    if lc.lineno == NO_LINE {
+    if lc.lineno == NO_LINE or is_next_loc(lc) {
         write_entry_start(out, LI_NONE, st.length);
         return;
     }
@@ -251,6 +287,7 @@ def emit_location_run(
 # Port of assemble_location_info: group consecutive same-location instructions,
 # summing code-unit sizes, and emit one entry per group (chunked at 8).
 def assemble_linetable(flat: list[cinstr], firstlineno: int) -> list[int] {
+    resolve_next_locations(flat);
     out: list[int] = [];
     st = lintable_state(a_lineno=firstlineno, length=0);
     cur: cloc = loc(NO_LINE, NO_LINE, -1, -1);
