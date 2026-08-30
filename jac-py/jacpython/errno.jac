@@ -1,4 +1,4 @@
-# Native errno module facade (lift of reference/cpython/Modules/errnomodule.c).
+# Native errno module (lift of reference/cpython/Modules/errnomodule.c).
 #
 # errnomodule.c is a pure-data module: at multi-phase init (errno_exec) it
 # inserts every platform errno constant into the module dict and the inverse

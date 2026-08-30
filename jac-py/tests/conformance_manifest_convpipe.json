@@ -416,20 +416,13 @@
     {
       "stem": "errno",
       "gate_type": "oracle",
-      "status": "gated",
+      "status": "converted",
       "oracle_tests": [
-        "jac-py/tests/conv_errno/conv_errno_pins.jac"
+        "conv_errno_pins.jac"
       ],
       "libtest_snippets": [],
       "notes": "3 output-oracle pins generated from CPython Lib/test; run diff_runner to gate.",
-      "conversion_meta": "jac-py/tests/conv_errno/errno.conv.json",
-      "jacpython_results": {
-        "errno": {
-          "passed": 3,
-          "total": 3,
-          "notes": "3/3 output-oracle pins pass on jacpython (diff_runner); lanes fix VM gaps from the triage report."
-        }
-      }
+      "conversion_meta": "conversion.json"
     },
     {
       "stem": "float",

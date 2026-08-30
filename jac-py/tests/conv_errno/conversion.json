@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "tool_version": "conv_suite-0.4.0",
-  "jac_sha": "2c8357127eb79e5ddb6fe029f35111ccf11f390f",
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
   "cpython": {
     "version": "3.14.6",
     "sha": "unknown"
@@ -10,13 +10,13 @@
     "convert_suite.py",
     "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_errno.py",
     "-o",
-    "/var/tmp/lane8/jac-py/tests/conv_errno",
+    "jac-py/tests/conv_errno",
     "--name",
     "conv_errno"
   ],
-  "generated_at": "2026-08-24T23:14:43",
+  "generated_at": "2026-08-29T21:22:32",
   "hashes": {
-    "pins_jac": "13c6c65a637e32c430f5236961964d20e49c17595b8ec85b39fd1220f8e3ad33"
+    "pins_jac": "f3df71c012fb712260dde67f84b28447aeb4626e07fb4f1b950e17ed2b131818"
   },
   "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_errno.py",
   "generator": "jac-py/tools/convert_suite.py",
@@ -29,7 +29,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import errno\nstd_c_errors = frozenset(['EDOM', 'ERANGE'])\n\ndef _t():\n    for error_code in std_c_errors:\n        assert hasattr(errno, error_code), ('assertHasAttr', errno, error_code)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport errno\nstd_c_errors = frozenset(['EDOM', 'ERANGE'])\n\ndef _t():\n    for error_code in std_c_errors:\n        assert hasattr(errno, error_code), ('assertHasAttr', errno, error_code)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "ErrnoAttributeTests.test_using_errorcode",
@@ -37,7 +37,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import errno\n\ndef _t():\n    for value in errno.errorcode.values():\n        assert hasattr(errno, value), ('assertHasAttr', errno, value)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport errno\n\ndef _t():\n    for value in errno.errorcode.values():\n        assert hasattr(errno, value), ('assertHasAttr', errno, value)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     },
     {
       "ident": "ErrorcodeTests.test_attributes_in_errorcode",
@@ -45,7 +45,7 @@
       "oracle": {
         "status": "ok"
       },
-      "snippet": "import errno\n\ndef _t():\n    for attribute in errno.__dict__.keys():\n        if attribute.isupper():\n            assert getattr(errno, attribute) in errno.errorcode, ('assertIn', getattr(errno, attribute), errno.errorcode)\ntry:\n    _t()\nexcept BaseException as _e:\n    print('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    print('ok')\n"
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport errno\n\ndef _t():\n    for attribute in errno.__dict__.keys():\n        if attribute.isupper():\n            assert getattr(errno, attribute) in errno.errorcode, ('assertIn', getattr(errno, attribute), errno.errorcode)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
     }
   ],
   "quarantined": [],
