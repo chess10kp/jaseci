@@ -1,4 +1,4 @@
-# Native signal module facade (lift of reference/cpython/Modules/signalmodule.c).
+# Product-path signal module facade (lift of reference/cpython/Modules/signalmodule.c).
 #
 # signalmodule.c is OS-coupled end to end: real delivery needs kernel signal
 # disposition on the HOST process, which no guest VM state can influence. This
