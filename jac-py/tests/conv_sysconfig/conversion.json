@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_sysconfig.py",
+    "-o",
+    "jac-py/tests/conv_sysconfig",
+    "--name",
+    "conv_sysconfig"
+  ],
+  "generated_at": "2026-08-29T21:23:13",
+  "hashes": {
+    "pins_jac": "7a7bf53679e82813529aeeb69ac750bf8b2bc28a40a8994f52757137c7773dfa"
+  },
+  "source_file": "reference/cpython/Lib/test/test_sysconfig.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "sysconfig",
+  "pins_file": "conv_sysconfig_pins.jac",
+  "pins": [
+    {
+      "ident": "MakefileTests.test_get_makefile_filename",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport os\nimport sysconfig\n\ndef _t():\n    makefile = sysconfig.get_makefile_filename()\n    assert os.path.isfile(makefile), ('assertTrue', os.path.isfile(makefile))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "MakefileTests.test_parse_makefile",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "TestSysConfig.test_platform_in_subprocess",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestSysConfig.test_android_ext_suffix",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestSysConfig.test_osx_ext_suffix",
+      "reason": "skipped-on-host"
+    },
+    {
+      "ident": "TestSysConfig.test_get_path_names",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_paths",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_path",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_default_scheme",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_preferred_schemes",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_posix_venv_scheme",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_nt_venv_scheme",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_venv_scheme",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_config_vars",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_platform",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_config_h_filename",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_get_scheme_names",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_symlink",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_user_similar",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_main",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_ldshared_value",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_soabi",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_library",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_srcdir",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_srcdir_independent_of_cwd",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_EXT_SUFFIX_in_vars",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_linux_ext_suffix",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_always_set_py_debug",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_always_set_py_gil_disabled",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_abiflags",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_abi_debug",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_abi_thread",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_makefile_overwrites_config_vars",
+      "reason": "uses-self.venv"
+    },
+    {
+      "ident": "TestSysConfig.test_sysconfigdata_json",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "TestSysConfig.test_sysconfig_config_vars_no_prefix_cache",
+      "reason": "uses-self._get_uname"
+    },
+    {
+      "ident": "DeprecationTests.test_expand_makefile_vars",
+      "reason": "helper:deprecated(uses-self.assertRaises)"
+    },
+    {
+      "ident": "DeprecationTests.test_is_python_build_check_home",
+      "reason": "helper:deprecated(uses-self.assertRaises)"
+    }
+  ],
+  "counts": {
+    "extracted": 37,
+    "pinned": 1,
+    "quarantined": 36
+  }
+}
