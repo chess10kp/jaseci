@@ -14,6 +14,7 @@ import from opcode_meta {
     OP_COPY,
     OP_END_SEND,
     OP_GET_AWAITABLE,
+    OP_JUMP_BACKWARD,
     OP_JUMP_BACKWARD_NO_INTERRUPT,
     OP_JUMP_FORWARD,
     OP_LIST_APPEND,
@@ -41,6 +42,7 @@ import from opcode_meta {
 import from ast_nodes {
     AsyncWith,
     ExceptHandler,
+    Pass,
     Raise,
     Return,
     Try,
@@ -84,6 +86,14 @@ import from codegen_util {
 import from compiler_annotations { ann_scope_plan }
 import from compiler_codegen { emit_module_return, emit_name_delete, emit_name_store, visit_return_stmt, visit_stmt_tail, visit_stmts, visit_store_target_tos }
 import from compiler_dispatch { stmt_handlers }
+
+def handler_is_pass_only(h: ExceptHandler) -> bool {
+    if h.body is None or len(h.body) != 1 {
+        return False;
+    }
+    return isinstance(h.body[0], Pass);
+}
+
 # Suspendable functions: PEP 479 StopIteration handler at end of co_code.
 def emit_generator_except_handler(g: cfg_builder, protect_start: int) {
     if protect_start < 0 {
@@ -1210,13 +1220,23 @@ def visit_try(
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
-    # When break/continue/return terminates the body, CPython ends the protected
-    # span on that exit block; laying out empty protect_end / after_try blocks
-    # before the handler would fall through into PUSH_EXC_INFO at the wrong
-    # stack depth (BAND12 #5 stackdepth crash).
+    # When break/continue terminates the body, CPython ends the protected span on
+    # that exit block; laying out empty protect_end / after_try blocks before the
+    # handler would fall through into PUSH_EXC_INFO at the wrong stack depth
+    # (BAND12 #5). Raise/return-terminated bodies keep the empty successor
+    # blocks so exception-table spans stay byte-exact with CPython.
     protect_end_blk: basicblock;
     after_try_epilogue: basicblock | None = None;
-    if body_cont.terminated {
+    skip_protect_succ = False;
+    if body_cont.terminated and len(g.cur.instrs) > 0 {
+        last_op = g.cur.instrs[len(g.cur.instrs) - 1].opcode;
+        if last_op == OP_JUMP_FORWARD
+            or last_op == OP_JUMP_BACKWARD
+            or last_op == OP_JUMP_BACKWARD_NO_INTERRUPT {
+            skip_protect_succ = True;
+        }
+    }
+    if skip_protect_succ {
         protect_end_blk = g.cur;
     } else {
         protect_end_blk = g.new_block();
@@ -1235,11 +1255,7 @@ def visit_try(
         }
     }
     body_fini_region_start: int = -1;
-    tail_done = False;
-    tail_terminated = False;
-    tail_end_blk: basicblock | None = None;
     fallthrough_blk: basicblock | None = None;
-    post_try_join: basicblock | None = None;
     if try_follows or g.handler_fallthrough_fin is not None {
         if g.handler_fallthrough_fin is not None
             and not normal_terminated
@@ -1264,25 +1280,11 @@ def visit_try(
                 g.emit_jump(OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, body_cont.loc);
             }
         } elif try_follows and tail is not None and tail_idx < len(tail) {
-            tail_more = False;
-            if tail_idx + 1 < len(tail) {
-                tail_more = exec_tail_emits_code(tail, tail_idx + 1);
-            }
-            tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=body_cont.loc);
-            }
-            tail_done = True;
-            tail_terminated = tail_cont.terminated;
-            tail_end_blk = g.cur;
-            if tail_cont.terminated {
-                emit_module_return(g, tail_cont.loc);
+            if after_try_epilogue is not None {
+                fallthrough_blk = after_try_epilogue;
             } else {
-                post_try_join = g.new_deferred_block();
-                g.emit_jump(OP_JUMP_FORWARD, post_try_join.id, tail_cont.loc);
+                fallthrough_blk = g.cur;
             }
-        } elif try_follows {
-            fallthrough_blk = g.cur;
         }
     } else {
         if not normal_terminated {
@@ -1500,7 +1502,12 @@ def visit_try(
                 emit_except_as_cleanup(g, bind_name, hbody.loc);
             }
             g.use(handler_success);
-            if not (g.handler_fallthrough_fin is not None and not try_follows) {
+            skip_epi_span = try_follows
+                and tail is not None
+                and tail_idx < len(tail)
+                and handler_is_pass_only(h);
+            if not (g.handler_fallthrough_fin is not None and not try_follows)
+                and not skip_epi_span {
                 # Publish this handler's success-epilogue span (POP_EXCEPT
                 # through binding cleanup). An enclosing try in carve-out mode
                 # emits a region over it targeting its own handlers, matching
@@ -1530,12 +1537,22 @@ def visit_try(
                         OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, hbody.loc
                     );
                 }
-            } elif try_follows
-                and (tail_done or fallthrough_blk is not None)
-                and after_try_epilogue is not None {
-                g.emit_jump(
-                    OP_JUMP_FORWARD, after_try_epilogue.id, hbody.loc
-                );
+            } elif try_follows and tail is not None and tail_idx < len(tail) {
+                if handler_is_pass_only(h) {
+                    tail_more = exec_tail_emits_code(tail, tail_idx + 1);
+                    tail_cont = visit_stmt_tail(
+                        g, tail, tail_idx, tail_more, ann_ctx
+                    );
+                    if not tail_cont.terminated {
+                        emit_module_return(g, tail_cont.loc);
+                    }
+                } elif after_try_epilogue is not None {
+                    g.emit_jump(
+                        OP_JUMP_FORWARD, after_try_epilogue.id, hbody.loc
+                    );
+                } else {
+                    emit_module_return(g, hbody.loc);
+                }
             } else {
                 emit_module_return(g, hbody.loc);
             }
@@ -1805,16 +1822,6 @@ def visit_try(
         g.use(fallthrough_blk);
         return stmt_cont(loc=tloc, terminated=False);
     }
-    if tail_done {
-        if post_try_join is not None {
-            g.use(post_try_join);
-        } elif tail_end_blk is not None {
-            g.use(tail_end_blk);
-        }
-        return stmt_cont(
-            loc=tloc, next_si=len(tail as list[stmt]), terminated=tail_terminated
-        );
-    }
     return stmt_cont(loc=tloc, terminated=True);
 }
 
@@ -1985,34 +1992,11 @@ def visit_try_star_except(
     }
     has_fin = t.finalbody is not None and len(t.finalbody) > 0;
     join_blk: basicblock | None = None;
-    tail_done = False;
-    tail_terminated = False;
-    tail_end_blk: basicblock | None = None;
     fallthrough_blk: basicblock | None = None;
-    post_try_join: basicblock | None = None;
     if not has_fin and try_follows and tail is not None and tail_idx < len(tail) {
-        # Own block so the nothing-to-reraise path can jump back to it.
         join_blk = g.new_block();
         g.use(join_blk);
-        tail_more = False;
-        if tail_idx + 1 < len(tail) {
-            tail_more = exec_tail_emits_code(tail, tail_idx + 1);
-        }
-        tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=body_cont.loc);
-        }
-        tail_done = True;
-        tail_terminated = tail_cont.terminated;
-        tail_end_blk = g.cur;
-        if tail_cont.terminated {
-            emit_module_return(g, tail_cont.loc);
-        } else {
-            post_try_join = g.new_deferred_block();
-            g.emit_jump(OP_JUMP_FORWARD, post_try_join.id, tail_cont.loc);
-        }
-    } elif not has_fin and try_follows {
-        fallthrough_blk = g.cur;
+        fallthrough_blk = join_blk;
     } else {
         if not has_fin and not normal_terminated {
             if g.handler_fallthrough_fin is not None and not try_follows {
@@ -2423,16 +2407,6 @@ def visit_try_star_except(
     if fallthrough_blk is not None {
         g.use(fallthrough_blk);
         return stmt_cont(loc=tloc, terminated=False);
-    }
-    if tail_done {
-        if post_try_join is not None {
-            g.use(post_try_join);
-        } elif tail_end_blk is not None {
-            g.use(tail_end_blk);
-        }
-        return stmt_cont(
-            loc=tloc, next_si=len(tail as list[stmt]), terminated=tail_terminated
-        );
     }
     return stmt_cont(loc=tloc, terminated=True);
 }
