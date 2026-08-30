@@ -1807,57 +1807,51 @@ import from compiler_diagnostics { compiler_diag_message }
 import from objects { PyInt }
 import from ast_nodes { Constant, Assign, USub }
 
-# Host oracle uses CPython stdlib symtable via ::py:: so this module does
-# not import symtable.jac (which would cycle: symtable -> compiler_symtable).
-::py::
-def _host_sym_normalize_py(source, mode="exec"):
-    _host_symtable = __import__("symtable")
-    st = _host_symtable.symtable(source, "<t>", mode)
+# Host oracle uses a subprocess bridge (jac-py/tools/host_sym_normalize_bridge.py)
+# so differential tests do not rely on ::py:: inside the sealed jac runtime.
+import shutil;
+import subprocess;
+import sys;
+import json;
+import from pathlib { Path }
 
-    def block_info(st):
-        children = []
-        d = {
-            "name": st.get_name(),
-            "type": st.get_type().value,
-            "lineno": st.get_lineno(),
-            "nested": st.is_nested(),
-            "symbols": {},
-            "children": children,
+
+def _sym_oracle_runner_python() -> str {
+    for name in ("python3.14", "python3", "python") {
+        found = shutil.which(name);
+        if found {
+            return found;
         }
-        if hasattr(st, "get_parameters"):
-            d["parameters"] = list(st.get_parameters())
-            d["locals"] = list(st.get_locals())
-            d["globals"] = list(st.get_globals())
-            d["nonlocals"] = list(st.get_nonlocals())
-            d["frees"] = list(st.get_frees())
-        for name in sorted(st.get_identifiers()):
-            sym = st.lookup(name)
-            d["symbols"][name] = {
-                "local": sym.is_local(),
-                "global": sym.is_global(),
-                "free": sym.is_free(),
-                "parameter": sym.is_parameter(),
-                "nonlocal": sym.is_nonlocal(),
-                "declared_global": sym.is_declared_global(),
-                "referenced": sym.is_referenced(),
-                "assigned": sym.is_assigned(),
-            }
-        for ch in st.get_children():
-            if ch.get_type().value == "annotation":
-                continue
-            children.append(block_info(ch))
-        return d
+    }
+    return sys.executable;
+}
 
-    return block_info(st)
-::py::
 
+def _sym_normalize_bridge_path() -> str {
+    roots = [Path.cwd()];
+    walk = Path.cwd();
+    for _ in range(6) {
+        if walk not in roots {
+            roots.append(walk);
+        }
+        if walk.parent == walk {
+            break;
+        }
+        walk = walk.parent;
+    }
+    for base in roots {
+        script = Path(base, "jac-py", "tools", "host_sym_normalize_bridge.py");
+        if script.is_file() {
+            return str(script);
+        }
+    }
+    raise RuntimeError("host_sym_normalize_bridge.py not found");
+}
 
 
 def _sym_oracle_equal_py(native: any, expected: any) -> bool {
     return _sym_oracle_equal(native, expected) as bool;
 }
-
-import json;
 
 
 def _sym_oracle_equal(native: any, expected: any) -> bool {
@@ -1869,7 +1863,13 @@ def _sym_oracle_equal(native: any, expected: any) -> bool {
 
 
 def host_sym_normalize(source: str, mode: str = "exec") -> dict[str, any] {
-    return _host_sym_normalize_py(source, mode) as dict[str, any];
+    proc = subprocess.run(
+        [_sym_oracle_runner_python(), _sym_normalize_bridge_path(), mode],
+        input=source.encode("utf-8"),
+        capture_output=True,
+        check=True,
+    );
+    return json.loads(proc.stdout.decode("utf-8")) as dict[str, any];
 }
 
 def sym_dicts_equal(a: dict[str, any], b: dict[str, any]) -> bool {
