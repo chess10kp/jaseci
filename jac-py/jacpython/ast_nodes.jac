@@ -30,7 +30,12 @@ obj FunctionType(mod) {
 }
 
 # --- stmt ---
-obj stmt(ast_node) {}
+obj stmt(ast_node) {
+    has lineno: int,
+        col_offset: int,
+        end_lineno: int | None,
+        end_col_offset: int | None;
+}
 
 obj FunctionDef(stmt) {
     has name: str,
@@ -307,7 +312,12 @@ obj Continue(stmt) {
 }
 
 # --- expr ---
-obj expr(ast_node) {}
+obj expr(ast_node) {
+    has lineno: int,
+        col_offset: int,
+        end_lineno: int | None,
+        end_col_offset: int | None;
+}
 
 obj BoolOp(expr) {
     has op: boolop,

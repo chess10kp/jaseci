@@ -1337,6 +1337,7 @@ def pa_constant_from_expr(
 ) -> Constant {
     return Constant(
         value=py_none(),
+        kind=None,
         lineno=lineno,
         col_offset=col_offset,
         end_lineno=end_lineno,
@@ -1453,13 +1454,13 @@ def pa_seq_count_dots(seq: object) -> int {
 
 def pa_body_end_span(body: list[stmt]) -> tuple[int, int] {
     last = body[len(body) - 1];
-    end_lineno = last.lineno;
-    end_col_offset = last.col_offset;
+    end_lineno: int = last.lineno;
+    end_col_offset: int = last.col_offset;
     if last.end_lineno is not None {
-        end_lineno = last.end_lineno;
+        end_lineno = last.end_lineno as int;
     }
     if last.end_col_offset is not None {
-        end_col_offset = last.end_col_offset;
+        end_col_offset = last.end_col_offset as int;
     }
     return (end_lineno, end_col_offset);
 }
@@ -1640,11 +1641,19 @@ def pa_expr_lineno(`node: expr) -> int {
 }
 
 def pa_expr_end_col_offset(`node: expr) -> int {
-    return `node.end_col_offset;
+    v = `node.end_col_offset;
+    if v is not None {
+        return v as int;
+    }
+    return `node.col_offset;
 }
 
 def pa_expr_end_lineno(`node: expr) -> int {
-    return `node.end_lineno;
+    v = `node.end_lineno;
+    if v is not None {
+        return v as int;
+    }
+    return `node.lineno;
 }
 
 def pa_raise_syntax(p: peg_parser, on_next: bool, message: str) -> None {
@@ -1981,7 +1990,7 @@ def pa_key_value_pair(
     end_lineno: int,
     end_col_offset: int
 ) -> kv_pair {
-    return kv_pair(key=key, value=value);
+    return kv_pair(key=key as expr, value=value as expr);
 }
 
 def pa_key_pattern_pair(
