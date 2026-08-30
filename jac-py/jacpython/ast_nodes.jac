@@ -749,7 +749,12 @@ obj match_case(ast_node) {
 }
 
 # --- pattern ---
-obj pattern(ast_node) {}
+obj pattern(ast_node) {
+    has lineno: int,
+        col_offset: int,
+        end_lineno: int | None,
+        end_col_offset: int | None;
+}
 
 obj MatchValue(pattern) {
     has value: expr,
@@ -830,7 +835,13 @@ obj TypeIgnore(type_ignore) {
 }
 
 # --- type_param ---
-obj type_param(ast_node) {}
+obj type_param(ast_node) {
+    has name: str,
+        lineno: int,
+        col_offset: int,
+        end_lineno: int | None,
+        end_col_offset: int | None;
+}
 
 obj TypeVar(type_param) {
     has name: str,

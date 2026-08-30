@@ -1009,26 +1009,26 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         return True;
     }
     if isinstance(s, Raise) {
-        r = s as Raise;
-        if r.exc is not None {
-            if not sym_visit_load_expr(b, r.exc) {
+        raise_stmt = s as Raise;
+        if raise_stmt.exc is not None {
+            if not sym_visit_load_expr(b, raise_stmt.exc) {
                 return False;
             }
         }
-        if r.cause is not None {
-            if not sym_visit_load_expr(b, r.cause) {
+        if raise_stmt.cause is not None {
+            if not sym_visit_load_expr(b, raise_stmt.cause) {
                 return False;
             }
         }
         return True;
     }
     if isinstance(s, Assert) {
-        a = s as Assert;
-        if not sym_visit_load_expr(b, a.`test) {
+        assert_stmt = s as Assert;
+        if not sym_visit_load_expr(b, assert_stmt.`test) {
             return False;
         }
-        if a.msg is not None {
-            if not sym_visit_load_expr(b, a.msg) {
+        if assert_stmt.msg is not None {
+            if not sym_visit_load_expr(b, assert_stmt.msg) {
                 return False;
             }
         }
@@ -1186,10 +1186,10 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         return True;
     }
     if isinstance(s, AsyncWith) {
-        wi = s as AsyncWith;
+        async_with_stmt = s as AsyncWith;
         ii = 0;
-        while ii < len(wi.items) {
-            item = wi.items[ii];
+        while ii < len(async_with_stmt.items) {
+            item = async_with_stmt.items[ii];
             if not sym_visit_load_expr(b, item.context_expr) {
                 return False;
             }
@@ -1201,8 +1201,8 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             ii = ii + 1;
         }
         bi = 0;
-        while bi < len(wi.body) {
-            if not sym_visit_stmt(b, wi.body[bi]) {
+        while bi < len(async_with_stmt.body) {
+            if not sym_visit_stmt(b, async_with_stmt.body[bi]) {
                 return False;
             }
             bi = bi + 1;
@@ -1324,26 +1324,25 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
                 "SyntaxError", "invalid type alias target", ta.lineno, ta.col_offset
             );
         }
-        an = ta.name as Name;
-        tps: list[type_param] = [];
-        if ta.type_params is not None {
-            tps = ta.type_params;
+        type_alias_name = ta.name as Name;
+        tps = ta.type_params;
+        if tps is None {
+            tps = [];
         }
-        if not b.add_def(an.id, DEF_LOCAL, ta.lineno, ta.col_offset) {
+        if not b.add_def(type_alias_name.id, DEF_LOCAL, ta.lineno, ta.col_offset) {
             return False;
         }
         pi = 0;
         while pi < len(tps) {
-            tp = tps[pi];
-            if not isinstance(tp, TypeVar)
-                or (tp as TypeVar).bound is not None
-                or (tp as TypeVar).default_value is not None {
+            if not isinstance(tps[pi], TypeVar)
+                or (tps[pi] as TypeVar).bound is not None
+                or (tps[pi] as TypeVar).default_value is not None {
                 return b.fail(
                     "NotImplementedError",
                     "type parameter bounds/defaults/ParamSpec/TypeVarTuple "
                         + "are not supported in type aliases yet",
-                    tp.lineno,
-                    tp.col_offset
+                    ta.lineno,
+                    ta.col_offset
                 );
             }
             pi = pi + 1;
@@ -1355,7 +1354,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             # type var as a cell; the lazy value function closes over them.
             if not b.push_block(
                 "function",
-                "<generic parameters of " + an.id + ">",
+                "<generic parameters of " + type_alias_name.id + ">",
                 ta.lineno,
                 nested,
                 in_class,
@@ -1372,7 +1371,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
                 pi = pi + 1;
             }
             if not b.push_block(
-                "function", an.id, ta.lineno, True, in_class, ta.col_offset
+                "function", type_alias_name.id, ta.lineno, True, in_class, ta.col_offset
             ) {
                 return False;
             }
@@ -1386,7 +1385,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         }
         # Non-generic: the lazy value scope's only parameter is .format.
         if not b.push_block(
-            "function", an.id, ta.lineno, nested, in_class, ta.col_offset
+            "function", type_alias_name.id, ta.lineno, nested, in_class, ta.col_offset
         ) {
             return False;
         }
@@ -1411,11 +1410,11 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         return True;
     }
     if isinstance(s, ImportFrom) {
-        imp = s as ImportFrom;
+        imp_from = s as ImportFrom;
         ni = 0;
-        while ni < len(imp.names) {
-            bind = sym_import_bind_name(imp.names[ni]);
-            if not b.add_def(bind, DEF_LOCAL, imp.lineno, imp.col_offset) {
+        while ni < len(imp_from.names) {
+            bind = sym_import_bind_name(imp_from.names[ni]);
+            if not b.add_def(bind, DEF_LOCAL, imp_from.lineno, imp_from.col_offset) {
                 return False;
             }
             ni = ni + 1;
@@ -1913,7 +1912,7 @@ def assert_sym_matches_oracle(source: str, body: list[stmt]) {
     sr = build_module_symtable(body);
     assert sr.diag is None;
     assert sr.top is not None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize(source, "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
@@ -2302,7 +2301,7 @@ test "compiler_symtable: recursive function self-call matches oracle" {
     assert m is not None;
     sr = build_module_symtable((m as Module).body);
     assert sr.diag is None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize(src, "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
@@ -2313,7 +2312,7 @@ test "compiler_symtable: lambda assign matches oracle" {
     assert m is not None;
     sr = build_module_symtable((m as Module).body);
     assert sr.diag is None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize(src, "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
@@ -2330,7 +2329,7 @@ test "compiler_symtable: closure capture parsed matches oracle" {
     assert m is not None;
     sr = build_module_symtable((m as Module).body);
     assert sr.diag is None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize(src, "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
@@ -2348,7 +2347,7 @@ test "compiler_symtable: decorator parsed matches oracle" {
     assert m is not None;
     sr = build_module_symtable((m as Module).body);
     assert sr.diag is None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize(src, "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
@@ -2447,7 +2446,7 @@ test "compiler_symtable: genexpr matches oracle" {
     assert m is not None;
     sr = build_module_symtable((m as Module).body);
     assert sr.diag is None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize("x = (y for y in range(3))\n", "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
@@ -2457,7 +2456,7 @@ test "compiler_symtable: listcomp inlined at module matches oracle" {
     assert m is not None;
     sr = build_module_symtable((m as Module).body);
     assert sr.diag is None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize("x = [y for y in range(3)]\n", "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
@@ -2467,7 +2466,7 @@ test "compiler_symtable: setcomp inlined at module matches oracle" {
     assert m is not None;
     sr = build_module_symtable((m as Module).body);
     assert sr.diag is None;
-    native = sym_normalize(sr.top);
+    native = sym_normalize(sr.top as sym_block);
     expected = host_sym_normalize("x = {y for y in range(3)}\n", "exec");
     assert _sym_oracle_equal_py(native, expected);
 }
