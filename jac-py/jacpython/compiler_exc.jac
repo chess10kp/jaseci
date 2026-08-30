@@ -46,6 +46,7 @@ import from ast_nodes {
     Try,
     TryStar,
     With,
+    expr,
     stmt,
 }
 import from compiler_ir {
@@ -58,6 +59,8 @@ import from compiler_ir {
     stmt_cont,
 }
 import from compiler_emit {
+    anext_send_loop,
+    await_send_loop,
     codegen_busy,
     codegen_fail,
     emit_await_send_except_regions,
@@ -389,7 +392,7 @@ def visit_try_finally(
         if tail_end_blk is not None {
             g.use(tail_end_blk);
         }
-        return stmt_cont(loc=tloc, next_si=len(tail), terminated=tail_terminated);
+        return stmt_cont(loc=tloc, next_si=len(tail as list[stmt]), terminated=tail_terminated);
     }
     return stmt_cont(loc=tloc, terminated=True);
 }
@@ -443,9 +446,9 @@ def emit_finally_inline_block(
     if not fin_follows and tail is not None and tail_idx < len(tail) {
         fin_follows = True;
     }
-    if fin_follows {
+    if fin_follows and tail is not None {
         tail_more = False;
-        if tail is not None and tail_idx + 1 < len(tail) {
+        if tail_idx + 1 < len(tail) {
             tail_more = exec_tail_emits_code(tail, tail_idx + 1);
         }
         tc = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
@@ -816,7 +819,7 @@ def visit_try_except_finally(
     }
     if not last_is_bare {
         g.use(reraise_blk);
-        g.emit_op(OP_RERAISE, 0, try_handler_span(t.handlers[nh - 1]));
+        g.emit_op(OP_RERAISE, 0, try_handler_span(t.handlers[nh - 1] as ExceptHandler));
     }
     g.use(inner_unwind);
     g.emit_op(OP_COPY, 3, noloc);
@@ -1241,9 +1244,9 @@ def visit_try(
             } else {
                 g.emit_jump(OP_JUMP_FORWARD, g.handler_fallthrough_fin.id, body_cont.loc);
             }
-        } elif try_follows {
+        } elif try_follows and tail is not None {
             tail_more = False;
-            if tail is not None and tail_idx + 1 < len(tail) {
+            if tail_idx + 1 < len(tail) {
                 tail_more = exec_tail_emits_code(tail, tail_idx + 1);
             }
             tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
@@ -1375,7 +1378,7 @@ def visit_try(
             )
         );
     }
-    hloc = try_handler_span(t.handlers[0]);
+    hloc = try_handler_span(t.handlers[0] as ExceptHandler);
     need_reraise_except_region = False;
     merged_handler_unwind_start = -1;
     bound_tail_segs: list[tuple[int, int]] = [];
@@ -1384,7 +1387,7 @@ def visit_try(
     hi = 0;
     handler_nt_blk: basicblock | None = None;
     while hi < len(t.handlers) {
-        h = t.handlers[hi];
+        h = t.handlers[hi] as ExceptHandler;
         if hi > 0 {
             g.use(next_handlers[hi - 1]);
             handler_region_start = g.cur.id;
@@ -1903,12 +1906,12 @@ def visit_try_star_except(
     }
     has_fin = t.finalbody is not None and len(t.finalbody) > 0;
     join_blk: basicblock | None = None;
-    if not has_fin and try_follows {
+    if not has_fin and try_follows and tail is not None {
         # Own block so the nothing-to-reraise path can jump back to it.
         join_blk = g.new_block();
         g.use(join_blk);
         tail_more = False;
-        if tail is not None and tail_idx + 1 < len(tail) {
+        if tail_idx + 1 < len(tail) {
             tail_more = exec_tail_emits_code(tail, tail_idx + 1);
         }
         tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
@@ -2024,7 +2027,7 @@ def visit_try_star_except(
         if hi > 0 {
             g.use(match_blks[hi - 1]);
         }
-        visit_expr(g, h.type);
+        visit_expr(g, h.type as expr);
         if codegen_busy(g) {
             return stmt_cont(loc=tloc);
         }
@@ -2350,9 +2353,9 @@ def visit_with(
         k = k + 1;
     }
     # normal-path continuation (after outermost inline exit)
-    if with_follows {
+    if with_follows and tail is not None {
         tail_more = False;
-        if tail is not None and tail_idx + 1 < len(tail) {
+        if tail_idx + 1 < len(tail) {
             tail_more = exec_tail_emits_code(tail, tail_idx + 1);
         }
         tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
@@ -2554,12 +2557,14 @@ def visit_async_with(
                 }
             }
         } else {
-            tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=body_cont.loc);
-            }
-            if not tail_cont.terminated {
-                emit_module_return(g, tail_cont.loc);
+            if tail is not None {
+                tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+                if codegen_busy(g) {
+                    return stmt_cont(loc=body_cont.loc);
+                }
+                if not tail_cont.terminated {
+                    emit_module_return(g, tail_cont.loc);
+                }
             }
         }
     } else {
@@ -2681,7 +2686,7 @@ def visit_async_with(
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
     g.emit_op(OP_RERAISE, 1, noloc);
     if with_follows {
-        return stmt_cont(loc=wloc, next_si=len(tail), terminated=True);
+        return stmt_cont(loc=wloc, next_si=len(tail as list[stmt]), terminated=True);
     }
     return stmt_cont(loc=wloc, terminated=True);
 }
