@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "unknown"
+  },
+  "command": [
+    "convert_suite.py",
+    "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_winapi.py",
+    "-o",
+    "jac-py/tests/conv_winapi",
+    "--name",
+    "conv_winapi"
+  ],
+  "generated_at": "2026-08-29T21:26:55",
+  "hashes": {
+    "pins_jac": "5f2df8d46f0637277fcda416254f8e2005fa997ee55c0a73162b2f3b0e23e18a"
+  },
+  "source_file": "/home/jac/repos/jac-python/reference/cpython/Lib/test/test_winapi.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "winapi",
+  "pins_file": "conv_winapi_pins.jac",
+  "pins": [
+    {
+      "ident": "WinAPIBatchedWaitForMultipleObjectsTests.test_few_events_waitall",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 14"
+    },
+    {
+      "ident": "WinAPIBatchedWaitForMultipleObjectsTests.test_many_events_waitall",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 14"
+    },
+    {
+      "ident": "WinAPIBatchedWaitForMultipleObjectsTests.test_max_events_waitall",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "WinAPIBatchedWaitForMultipleObjectsTests.test_few_events_waitany",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 14"
+    },
+    {
+      "ident": "WinAPIBatchedWaitForMultipleObjectsTests.test_many_events_waitany",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 14"
+    },
+    {
+      "ident": "WinAPIBatchedWaitForMultipleObjectsTests.test_max_events_waitany",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 16"
+    },
+    {
+      "ident": "WinAPITests.test_getlongpathname",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 17"
+    },
+    {
+      "ident": "WinAPITests.test_getshortpathname",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 18"
+    },
+    {
+      "ident": "WinAPITests.test_namedpipe",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 21"
+    }
+  ],
+  "quarantined": [],
+  "counts": {
+    "extracted": 9,
+    "pinned": 0,
+    "quarantined": 9
+  }
+}

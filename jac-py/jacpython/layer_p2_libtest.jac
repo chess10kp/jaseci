@@ -21,6 +21,7 @@ import from _warningsmodule {
     _p2_warn_state_reset,
 }
 import from fcntl { fcntl_module_attrs }
+import from winapi { winapi_module_attrs, winapi_host_available }
 import from ceval {
     _sys3_forget,
     set_layer3_active,
@@ -982,6 +983,14 @@ def p2_libtest_reset {
     register_shim_module(
         "fcntl", PyModule(t="module", name="fcntl", attrs=fcntl_module_attrs())
     );
+    # _winapi.c lift: Windows-only; keep ModuleNotFoundError on non-Win hosts
+    # so import_helper required_on=['win'] still skips these suites on Linux.
+    if winapi_host_available() {
+        register_shim_module(
+            "_winapi",
+            PyModule(t="module", name="_winapi", attrs=winapi_module_attrs())
+        );
+    }
 }
 
 
