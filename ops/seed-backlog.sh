@@ -32,6 +32,49 @@ e.__cause__.__class__.__name__ raises AttributeError. Route __cause__/__context_
 (audit all exc attrs) through PyExceptionType synthesis. Unblocks pin-ok-exc-chaining.
 EOF
 
+enqueue exceptions 060-cfg-try-trailing-code <<'EOF'
+family: exceptions | ref: BAND11 learnings #2, BAND12 #6 family
+visit_try/visit_try_star tail: try/except followed by more module or fn-level code
+crashes verify_cfg ("instructions after terminator").
+Repro: compile_parsed_exec("try:\n    x = 1\nexcept ValueError:\n    a = 1\nprint(x)\n")
+Gate: jac test jac-py/jacpython/compiler_slice.jac (band11 else/trailing shapes when added)
+      + jac test jac-py/jacpython/layer_flowgraph_verify.jac
+EOF
+
+enqueue exceptions 070-try-finally-return-crash <<'EOF'
+family: exceptions | ref: BAND12 #3-#4
+try/finally with return in body (fn scope) crashes codegen ("list index out of range").
+Module-scope try/finally can crash post-assemble ("NoneType has no len()").
+Gate: jac test jac-py/jacpython/layer10_product_controlflow.jac
+      jac test jac-py/jacpython/compiler_slice.jac
+EOF
+
+enqueue exceptions 075-break-continue-in-try <<'EOF'
+family: exceptions | ref: BAND12 #5
+break/continue inside try within a loop: "inconsistent stackdepth at block via fallthrough".
+Gate: jac test jac-py/jacpython/layer10_product_controlflow.jac
+EOF
+
+enqueue exceptions 080-loop-else-cfg-tail <<'EOF'
+family: exceptions | ref: BAND12 #6
+for/else and while/else followed by more code: CFG terminator crash (generalizes try-tail bug).
+Gate: jac test jac-py/jacpython/layer10_product_controlflow.jac
+EOF
+
+enqueue exceptions 085-co-names-else-order <<'EOF'
+family: exceptions | ref: BAND11 learnings #3
+try/else binding fresh names: co_names order is body->orelse->handlers; CPython uses AST order.
+Add a compiler_slice pin with distinct orelse vs handler names; match oracle co_names.
+Gate: jac test jac-py/jacpython/compiler_slice.jac
+EOF
+
+enqueue exceptions 090-async-with-import <<'EOF'
+family: exceptions | ref: BAND12 #7
+async-with: NameError await_send_loop used at compiler_exc.jac without import from compiler_emit.jac.
+Land the one-line import first; then align async-with co_code vs oracle.
+Gate: jchk jac-py/jacpython/compiler_exc.jac ; jac test jac-py/jacpython/layer10_product_controlflow.jac
+EOF
+
 # ---- mech lane (worker4: runtime-gap / bridge-policy) ----------------------
 enqueue mech 030-range-bridge <<'EOF'
 family: mech (bridge-policy) | DESIGN-FIRST
@@ -42,6 +85,26 @@ EOF
 enqueue mech 120-pr6973-deadcode <<'EOF'
 family: mech (cleanup) | ref: PR#6973 C
 Strip dead code shipped as runtime bloat (detail: logs/runtime-lane-brief.md).
+EOF
+
+enqueue mech 140-assembler-nested-linetable <<'EOF'
+family: mech | ref: BAND12 #2
+Nested def/class scopes: co_code exact vs oracle but linetable diverges (~35 shapes).
+Fix assembler.jac PEP 626 location-table writer (single root cause).
+Gate: jac test jac-py/jacpython/compiler_slice.jac ; spot-check layer8/layer9 nested fns
+EOF
+
+enqueue mech 150-ceval-check-eg-match <<'EOF'
+family: mech | ref: BAND11 learnings #4
+Implement CHECK_EG_MATCH in ceval.jac so except* (ExceptionGroup) runs after compile parity.
+Gate: jac test jac-py/jacpython/test_p1exc_prep_reraise.jac ; runtime except* probe
+EOF
+
+enqueue mech 160-fstring-end-to-end <<'EOF'
+family: mech | ref: BAND12 #1
+f-strings: tokenizer still plain STRING; need parse -> JoinedStr -> FORMAT_VALUE/BUILD_STRING
+lowering + ceval. Hand-built AST band12 tests in compiler_slice.jac are the oracle pins.
+Gate: jac test jac-py/jacpython/compiler_slice.jac (band 12 f-string tests) + native f'...' exec
 EOF
 
 # ---- converter lane (worker6: converter throughput, jac-py/tools) ---------
@@ -70,6 +133,6 @@ family: census | ref: PR#6973 D
 Corpus/gates integrity check (detail: logs/runtime-lane-brief.md).
 EOF
 
-# Note: parser #8473 (trailing **d after named kwargs) has NO family owner and is
-# parked "separate branch only" — kept in BACKLOG.md, not auto-seeded.
+# Note: parser items (#8473 trailing **d, try/except span ends, posonly-after-default,
+# string escapes, bytes literal tags) have NO family owner — kept in BACKLOG.md only.
 echo "--- seeded family lanes ---"; snapshot | sed -n '/== pending ==/,/== in-flight ==/p'
