@@ -158,9 +158,15 @@ jobs:
         run: python3 -m unittest jac-py/tools/test_p1_corpus_gate.py
 
       - name: P1 rotatingtree differential oracle
+        # lift_oracle imports jaclang.compiler.cfront (not in the sealed image).
+        env:
+          JACPATH: jac
+          JAC_NO_DEV_SOURCE: ""
         run: jac test jac-py/tests/test_rotatingtree_oracle.jac
 
       - name: P1 corpus density ratchet (committed lift output)
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/test_p1_corpus_density.jac
 
       - name: T8 acceptance validation unit tests
@@ -170,24 +176,35 @@ jobs:
         run: python3 -m unittest jac-py/tools/test_p2_corpus_gate.py
 
       - name: P2 module differential oracles
+        env:
+          JACPATH: jac
+          JAC_NO_DEV_SOURCE: ""
         run: jac test jac-py/tests/test_p2_module_oracles.jac
 
       - name: P2 staged vs lifted drift gate
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/test_p2_staged_sync.jac
 
       - name: P2 conformance harness (T6 skeleton)
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/run_conformance.jac
 
       - name: P2 conformance manifest drift check
         run: git diff --exit-code jac-py/tests/conformance_manifest.json
 
       - name: P2 libtest partial (bisect/heapq/platform)
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/test_p2_libtest_partial.jac
 
       - name: P2 conformance manifest gate
         run: python3 -m unittest jac-py/tools/p2_conformance_gate.py
 
       - name: P2 corpus density ratchet (committed lift output)
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/test_p2_corpus_density.jac
 
       - name: P2 waves 2-11 c2jac corpus lifts + Tier-B density gates
@@ -197,18 +214,27 @@ jobs:
         run: python3 -m unittest jac-py/tools/p2_conformance_waves_gate
 
       - name: P2 waves 2-11 module oracles
+        env:
+          JACPATH: jac
+          JAC_NO_DEV_SOURCE: ""
         run: jac test jac-py/tests/test_p2_waves_module_oracles.jac
 
       - name: P2 waves 2-11 staged vs lifted drift gates
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/test_p2_waves_staged_sync.jac
 
       - name: P2 waves 2-11 corpus density ratchets
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/test_p2_waves_corpus_density.jac
 
       - name: P2 JacPython libtest harness
         run: jac test jac-py/jacpython/layer_p2_libtest.jac
 
       - name: P3 object core manifest gate (P3.1a/P3.1b)
+        env:
+          JACPATH: jac
         run: jac test jac-py/tests/test_p3_object_core_gate.jac
 
       - name: P3 standalone SipHash secret bootstrap

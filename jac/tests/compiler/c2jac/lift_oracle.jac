@@ -20,6 +20,7 @@ import tempfile;
 import unittest;
 import from tests.support { JAC_ROOT }
 import from jaclang.compiler.cfront.lift { lift_c_file }
+import from jaclang.compiler.tools.unparse_pass { unparse_module }
 
 glob FIXTURES: str = os.path.join(
          JAC_ROOT, "tests", "compiler", "c2jac", "fixtures"
@@ -186,7 +187,7 @@ def run_c(
 def lift_to_jac(c_path: str, include_dirs: list[str] | None = None) -> str {
     res = lift_c_file(c_path, include_dirs=include_dirs);
     assert not any([d[0].startswith("E") for d in res.diags]) , f"lift errors: {res.diags}";
-    return res.module.unparse(requires_format=True);
+    return unparse_module(res.module, requires_format=True);
 }
 
 
@@ -331,7 +332,7 @@ def assert_lift_matches_c_or_traps(
     if any([d[0].startswith("E") for d in res.diags]) {
         return ("mismatch", f"lift errors: {res.diags}");
     }
-    jac_src = res.module.unparse(requires_format=True);
+    jac_src = unparse_module(res.module, requires_format=True);
     expect_trap = entry_fn in res.quarantined_functions;
 
     try {
