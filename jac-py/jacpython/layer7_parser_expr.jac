@@ -14,6 +14,7 @@ import from ast_nodes {
     Call,
     Compare,
     Tuple,
+    keyword,
     Add,
     Mult,
     USub,
@@ -120,22 +121,22 @@ def same_expr(a: expr, b: expr) -> bool {
         return ca.lineno == cb.lineno and ca.col_offset == cb.col_offset;
     }
     if isinstance(a, Compare) and isinstance(b, Compare) {
-        ca = a as Compare;
-        cb = b as Compare;
-        if len(ca.ops) != len(cb.ops) or len(ca.comparators) != len(cb.comparators) {
+        cmp_a = a as Compare;
+        cmp_b = b as Compare;
+        if len(cmp_a.ops) != len(cmp_b.ops) or len(cmp_a.comparators) != len(cmp_b.comparators) {
             return False;
         }
-        if not same_name(ca.left as Name, cb.left as Name) {
+        if not same_name(cmp_a.left as Name, cmp_b.left as Name) {
             return False;
         }
         i = 0;
-        while i < len(ca.comparators) {
-            if not same_name(ca.comparators[i] as Name, cb.comparators[i] as Name) {
+        while i < len(cmp_a.comparators) {
+            if not same_name(cmp_a.comparators[i] as Name, cmp_b.comparators[i] as Name) {
                 return False;
             }
             i = i + 1;
         }
-        return ca.lineno == cb.lineno and ca.col_offset == cb.col_offset;
+        return cmp_a.lineno == cmp_b.lineno and cmp_a.col_offset == cmp_b.col_offset;
     }
     return False;
 }
