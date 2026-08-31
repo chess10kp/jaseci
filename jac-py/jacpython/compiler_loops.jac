@@ -40,6 +40,7 @@ import from compiler_ir {
     loop_frame,
     mk_instr,
     no_loc,
+    same_loc,
     stmt_cont,
 }
 import from objects { py_none }
@@ -58,6 +59,7 @@ import from codegen_util {
     exec_tail_emits_code,
     expr_loc,
     loop_body_has_break,
+    loop_body_has_try,
     nloc,
 }
 import from compiler_annotations { ann_scope_plan }
@@ -308,6 +310,17 @@ def finish_break_sites(
         si = si - 1;
     }
     first_loc = copies[0].loc as cloc;
+    uniform_copy_locs = len(copies) > 0;
+    if uniform_copy_locs {
+        ci = 1;
+        while ci < len(copies) {
+            if not same_loc(copies[0].loc as cloc, copies[ci].loc as cloc) {
+                uniform_copy_locs = False;
+                break;
+            }
+            ci = ci + 1;
+        }
+    }
     si = len(frame.break_sites) - 1;
     while si >= 0 {
         site = frame.break_sites[si];
@@ -315,7 +328,11 @@ def finish_break_sites(
         new_instrs: list[cinstr] = old[0:site.instr_idx];
         ci = 0;
         while ci < len(copies) {
-            new_instrs.append(copy_cinstr(copies[ci]));
+            c = copy_cinstr(copies[ci]);
+            if uniform_copy_locs and site.loc.lineno >= 0 {
+                c.loc = site.loc;
+            }
+            new_instrs.append(c);
             ci = ci + 1;
         }
         ki = site.instr_idx + 1;
@@ -656,7 +673,23 @@ def visit_while(
     }
     emit_branch_if_test_false(g, kind, 0, test_loc);
     pop_false_ins = g.cur.instrs[len(g.cur.instrs) - 1];
-    g.push_loop(head, head, False);
+    exit_blk = g.new_deferred_block();
+    try_in_body = loop_body_has_try(w.body);
+    if try_in_body {
+        g.loop_exit_before_try_handlers = exit_blk;
+        g.loop_exit_return_loc = test_loc;
+        g.loop_exit_emits_end_for = False;
+        g.loop_except_depth_bump = 0;
+    }
+    pop_false_ins.target_block = exit_blk.id;
+    if has_break and try_in_body {
+        g.push_loop(head, exit_blk, True);
+        break_frame = g.current_loop() as loop_frame;
+    } elif has_break {
+        g.push_loop(head, head, False);
+    } else {
+        g.push_loop(head, exit_blk, False);
+    }
     body_snap = len(pending_break_finishes);
     body_cont = visit_stmts(g, w.body, 0, False, None, 0, None, ann_ctx);
     if codegen_busy(g) {
@@ -668,19 +701,39 @@ def visit_while(
     }
     g.pop_loop();
     flush_pending_break_finishes(g, body_snap);
-    exit_blk = g.new_block();
-    pop_false_ins.target_block = exit_blk.id;
-    g.use(exit_blk);
-    if len(w.orelse) > 0 {
-        else_snap = len(pending_break_finishes);
-        else_cont = visit_stmts(g, w.orelse, 0, False, None, 0, None, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=else_cont.loc);
+    if try_in_body {
+        g.loop_exit_before_try_handlers = None;
+        g.loop_exit_return_loc = None;
+        g.loop_exit_emits_end_for = False;
+        g.loop_except_depth_bump = 0;
+    }
+    epilogue_done = g.loop_exit_epilogue_complete;
+    g.loop_exit_epilogue_complete = False;
+    exit_epilogue_emitted = False;
+    if not exit_blk.placed {
+        g.use(exit_blk);
+        if len(w.orelse) > 0 {
+            else_snap = len(pending_break_finishes);
+            else_cont = visit_stmts(g, w.orelse, 0, False, None, 0, None, ann_ctx);
+            if codegen_busy(g) {
+                return stmt_cont(loc=else_cont.loc);
+            }
+            flush_pending_break_finishes(g, else_snap);
+            emit_module_return(g, else_cont.loc);
+        } else {
+            emit_module_return(g, test_loc);
         }
-        flush_pending_break_finishes(g, else_snap);
-        emit_module_return(g, else_cont.loc);
-    } else {
-        emit_module_return(g, test_loc);
+        exit_epilogue_emitted = True;
+    }
+    if has_break and try_in_body {
+        finish_break_sites(
+            g,
+            break_frame,
+            exit_blk,
+            test_loc,
+            epilogue_done or exit_epilogue_emitted,
+            False
+        );
     }
     return stmt_cont(loc=wloc, terminated=True);
 }
@@ -844,6 +897,13 @@ def visit_for(
     # return into the continuation for the natural path; finish_break_sites
     # synthesizes that epilogue over each break edge now.
     after = g.new_deferred_block();
+    try_in_body = loop_body_has_try(f.body);
+    if try_in_body {
+        g.loop_exit_before_try_handlers = after;
+        g.loop_exit_return_loc = iter_loc;
+        g.loop_exit_emits_end_for = True;
+        g.loop_except_depth_bump = 1;
+    }
     if has_break {
         join = g.new_deferred_block();
         g.push_loop(loop_hdr, join, True);
@@ -866,15 +926,25 @@ def visit_for(
         return stmt_cont(loc=body_cont.loc);
     }
     if not body_cont.terminated {
-        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, no_loc());
+        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, body_cont.loc);
     }
     g.pop_loop();
     flush_pending_break_finishes(g, body_snap);
-    g.use(after);
-    g.emit_op(OP_END_FOR, 0, iter_loc);
-    g.emit_op(OP_POP_ITER, 0, iter_loc);
+    if try_in_body {
+        g.loop_exit_before_try_handlers = None;
+        g.loop_exit_return_loc = None;
+        g.loop_exit_emits_end_for = False;
+        g.loop_except_depth_bump = 0;
+    }
+    epilogue_done = g.loop_exit_epilogue_complete;
+    g.loop_exit_epilogue_complete = False;
+    if not after.placed {
+        g.use(after);
+        g.emit_op(OP_END_FOR, 0, iter_loc);
+        g.emit_op(OP_POP_ITER, 0, iter_loc);
+    }
     else_terminated = False;
-    if len(f.orelse) > 0 {
+    if len(f.orelse) > 0 and not epilogue_done {
         else_snap = len(pending_break_finishes);
         else_cont = visit_stmts(g, f.orelse, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
@@ -885,13 +955,22 @@ def visit_for(
     }
     if has_break {
         g.use(join);
-        finish_break_sites(g, break_frame, join, floc, else_terminated, False);
-        return stmt_cont(loc=floc, terminated=else_terminated);
+        join_epilogue = epilogue_done;
+        if not join.placed or not block_is_terminated(join) {
+            join_epilogue = False;
+        }
+        finish_break_sites(
+            g, break_frame, join, iter_loc, join_epilogue, False
+        );
+        return stmt_cont(loc=iter_loc, terminated=else_terminated or epilogue_done);
+    }
+    if epilogue_done {
+        return stmt_cont(loc=iter_loc, terminated=True);
     }
     if else_terminated {
-        return stmt_cont(loc=floc, terminated=True);
+        return stmt_cont(loc=iter_loc, terminated=True);
     }
-    return stmt_cont(loc=floc, terminated=False);
+    return stmt_cont(loc=iter_loc, terminated=False);
 }
 
 

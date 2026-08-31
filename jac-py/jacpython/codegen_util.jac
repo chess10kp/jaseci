@@ -1105,6 +1105,77 @@ def match_pattern_wildcard(p: pattern) -> bool {
     return ma.pattern is None and ma.name is None;
 }
 
+def loop_body_has_try(stmts: list[stmt]) -> bool {
+    si = 0;
+    while si < len(stmts) {
+        s = stmts[si];
+        if isinstance(s, Try) or isinstance(s, TryStar) {
+            return True;
+        }
+        if isinstance(s, If) {
+            iff = s as If;
+            if loop_body_has_try(iff.body) {
+                return True;
+            }
+            if loop_body_has_try(iff.orelse) {
+                return True;
+            }
+        }
+        if isinstance(s, While) {
+            wh = s as While;
+            if loop_body_has_try(wh.body) {
+                return True;
+            }
+            if loop_body_has_try(wh.orelse) {
+                return True;
+            }
+        }
+        if isinstance(s, For) {
+            fo = s as For;
+            if loop_body_has_try(fo.body) {
+                return True;
+            }
+            if loop_body_has_try(fo.orelse) {
+                return True;
+            }
+        }
+        if isinstance(s, AsyncFor) {
+            afo = s as AsyncFor;
+            if loop_body_has_try(afo.body) {
+                return True;
+            }
+            if loop_body_has_try(afo.orelse) {
+                return True;
+            }
+        }
+        if isinstance(s, With) {
+            wi = s as With;
+            if loop_body_has_try(wi.body) {
+                return True;
+            }
+        }
+        if isinstance(s, AsyncWith) {
+            aw = s as AsyncWith;
+            if loop_body_has_try(aw.body) {
+                return True;
+            }
+        }
+        if isinstance(s, Match) {
+            ma = s as Match;
+            ci = 0;
+            while ci < len(ma.cases) {
+                mc = ma.cases[ci];
+                if loop_body_has_try(mc.body) {
+                    return True;
+                }
+                ci = ci + 1;
+            }
+        }
+        si = si + 1;
+    }
+    return False;
+}
+
 def loop_body_has_break(stmts: list[stmt]) -> bool {
     si = 0;
     while si < len(stmts) {
@@ -1119,6 +1190,80 @@ def loop_body_has_break(stmts: list[stmt]) -> bool {
             }
             if loop_body_has_break(iff.orelse) {
                 return True;
+            }
+        }
+        if isinstance(s, While) {
+            wh = s as While;
+            if loop_body_has_break(wh.body) {
+                return True;
+            }
+            if loop_body_has_break(wh.orelse) {
+                return True;
+            }
+        }
+        if isinstance(s, For) {
+            fo = s as For;
+            if loop_body_has_break(fo.body) {
+                return True;
+            }
+            if loop_body_has_break(fo.orelse) {
+                return True;
+            }
+        }
+        if isinstance(s, AsyncFor) {
+            afo = s as AsyncFor;
+            if loop_body_has_break(afo.body) {
+                return True;
+            }
+            if loop_body_has_break(afo.orelse) {
+                return True;
+            }
+        }
+        if isinstance(s, Try) {
+            tr = s as Try;
+            if loop_body_has_break(tr.body) {
+                return True;
+            }
+            if tr.orelse is not None and loop_body_has_break(tr.orelse) {
+                return True;
+            }
+            if tr.finalbody is not None and loop_body_has_break(tr.finalbody) {
+                return True;
+            }
+        }
+        if isinstance(s, TryStar) {
+            ts = s as TryStar;
+            if loop_body_has_break(ts.body) {
+                return True;
+            }
+            if ts.orelse is not None and loop_body_has_break(ts.orelse) {
+                return True;
+            }
+            if ts.finalbody is not None and loop_body_has_break(ts.finalbody) {
+                return True;
+            }
+        }
+        if isinstance(s, With) {
+            wi = s as With;
+            if loop_body_has_break(wi.body) {
+                return True;
+            }
+        }
+        if isinstance(s, AsyncWith) {
+            aw = s as AsyncWith;
+            if loop_body_has_break(aw.body) {
+                return True;
+            }
+        }
+        if isinstance(s, Match) {
+            ma = s as Match;
+            ci = 0;
+            while ci < len(ma.cases) {
+                mc = ma.cases[ci];
+                if loop_body_has_break(mc.body) {
+                    return True;
+                }
+                ci = ci + 1;
             }
         }
         si = si + 1;

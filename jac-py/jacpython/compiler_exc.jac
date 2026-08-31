@@ -32,6 +32,7 @@ import from opcode_meta {
     OP_RAISE_VARARGS,
     OP_RERAISE,
     OP_RESUME,
+    OP_RETURN_VALUE,
     OP_SEND,
     OP_STORE_FAST,
     OP_SWAP,
@@ -84,7 +85,7 @@ import from codegen_util {
     try_handler_span,
 }
 import from compiler_annotations { ann_scope_plan }
-import from compiler_codegen { emit_module_return, emit_name_delete, emit_name_store, visit_return_stmt, visit_stmt_tail, visit_stmts, visit_store_target_tos }
+import from compiler_codegen { emit_module_return, emit_name_delete, emit_name_store, emit_unit_loop_exit_epilogue, visit_return_stmt, visit_stmt_tail, visit_stmts, visit_store_target_tos }
 import from compiler_dispatch { stmt_handlers }
 
 def handler_is_pass_only(h: ExceptHandler) -> bool {
@@ -92,6 +93,18 @@ def handler_is_pass_only(h: ExceptHandler) -> bool {
         return False;
     }
     return isinstance(h.body[0], Pass);
+}
+
+def loop_protect_except_bump(g: cfg_builder) -> int {
+    return g.loop_except_depth_bump;
+}
+
+def try_protect_stack_depth(g: cfg_builder) -> int {
+    return 1 + g.handler_nest_depth + loop_protect_except_bump(g);
+}
+
+def try_unwind_stack_depth(g: cfg_builder) -> int {
+    return 3 + g.handler_nest_depth + loop_protect_except_bump(g);
 }
 
 # Suspendable functions: PEP 479 StopIteration handler at end of co_code.
@@ -1228,16 +1241,29 @@ def visit_try(
     protect_end_blk: basicblock;
     after_try_epilogue: basicblock | None = None;
     skip_protect_succ = False;
-    if body_cont.terminated and len(g.cur.instrs) > 0 {
-        last_op = g.cur.instrs[len(g.cur.instrs) - 1].opcode;
+    body_exit_blk = g.cur;
+    if body_cont.terminated and len(g.cur.instrs) == 0 {
+        bi = len(g.u.blocks) - 1;
+        while bi >= 0 {
+            cand = g.u.blocks[bi];
+            if len(cand.instrs) > 0 {
+                body_exit_blk = cand;
+                break;
+            }
+            bi = bi - 1;
+        }
+    }
+    if body_cont.terminated and len(body_exit_blk.instrs) > 0 {
+        last_op = body_exit_blk.instrs[len(body_exit_blk.instrs) - 1].opcode;
         if last_op == OP_JUMP_FORWARD
             or last_op == OP_JUMP_BACKWARD
-            or last_op == OP_JUMP_BACKWARD_NO_INTERRUPT {
+            or last_op == OP_JUMP_BACKWARD_NO_INTERRUPT
+            or last_op == OP_RETURN_VALUE {
             skip_protect_succ = True;
         }
     }
     if skip_protect_succ {
-        protect_end_blk = g.cur;
+        protect_end_blk = body_exit_blk;
     } else {
         protect_end_blk = g.new_block();
         g.use(protect_end_blk);
@@ -1300,7 +1326,7 @@ def visit_try(
     # RERAISE epilogue instead of staying within the body. First-use order
     # matches the allocation order below, so relative layout of the machinery
     # itself is unchanged.
-    handler_entry = g.new_block();
+    handler_entry = g.new_deferred_block();
     handler_nt_blks: list[basicblock] = [];
     handler_store_blks: list[basicblock] = [];
     handler_body_entries: list[basicblock] = [];
@@ -1388,11 +1414,24 @@ def visit_try(
                 start_block=protect_start,
                 end_block=protect_end_blk.id,
                 handler_block=handler_entry.id,
-                stack_depth=1 + g.handler_nest_depth
+                stack_depth=try_protect_stack_depth(g)
             )
         );
     }
     noloc = no_loc();
+    if skip_protect_succ
+        and g.loop_exit_before_try_handlers is not None
+        and not g.loop_exit_before_try_handlers.placed {
+        g.use(g.loop_exit_before_try_handlers);
+        eloc = g.loop_exit_return_loc;
+        if eloc is None {
+            eloc = tloc;
+        }
+        emit_unit_loop_exit_epilogue(
+            g, eloc, g.loop_exit_emits_end_for
+        );
+        g.loop_exit_epilogue_complete = True;
+    }
     g.use(handler_entry);
     handler_region_start = handler_entry.id;
     g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
@@ -1554,7 +1593,14 @@ def visit_try(
                     emit_module_return(g, hbody.loc);
                 }
             } else {
-                emit_module_return(g, hbody.loc);
+                frame = g.current_loop();
+                if frame is not None {
+                    g.emit_jump(
+                        OP_JUMP_BACKWARD, frame.continue_blk.id, hbody.loc
+                    );
+                } else {
+                    emit_module_return(g, hbody.loc);
+                }
             }
         } else {
             if not try_star_ret and merged_handler_unwind_start < 0 {
@@ -1571,7 +1617,7 @@ def visit_try(
                             start_block=handler_region_start,
                             end_block=handler_nt_blk.id,
                             handler_block=-1,
-                            stack_depth=3 + g.handler_nest_depth,
+                            stack_depth=try_unwind_stack_depth(g),
                             preserve_lasti=True
                         )
                     );
@@ -1583,7 +1629,7 @@ def visit_try(
                         start_block=handler_store_blks[hi - 1].id,
                         end_block=handler_body_start,
                         handler_block=-1,
-                        stack_depth=3 + g.handler_nest_depth,
+                        stack_depth=try_unwind_stack_depth(g),
                         preserve_lasti=True
                     )
                 );
@@ -1595,7 +1641,7 @@ def visit_try(
                     start_block=handler_region_start,
                     end_block=handler_body_start,
                     handler_block=-1,
-                    stack_depth=3 + g.handler_nest_depth,
+                    stack_depth=try_unwind_stack_depth(g),
                     preserve_lasti=True
                 )
             );
@@ -1616,7 +1662,7 @@ def visit_try(
                     start_block=handler_body_start,
                     end_block=handler_region_end.id,
                     handler_block=as_unwind.id,
-                    stack_depth=3 + g.handler_nest_depth,
+                    stack_depth=try_unwind_stack_depth(g),
                     preserve_lasti=True
                 )
             );
@@ -1636,7 +1682,7 @@ def visit_try(
                             start_block=handler_region_start,
                             end_block=handler_region_end.id,
                             handler_block=-1,
-                            stack_depth=3 + g.handler_nest_depth,
+                            stack_depth=try_unwind_stack_depth(g),
                             preserve_lasti=True
                         )
                     );
@@ -1668,7 +1714,7 @@ def visit_try(
                                     start_block=handler_region_start,
                                     end_block=handler_nt_blk.id,
                                     handler_block=-1,
-                                    stack_depth=3 + g.handler_nest_depth,
+                                    stack_depth=try_unwind_stack_depth(g),
                                     preserve_lasti=True
                                 )
                             );
@@ -1680,7 +1726,7 @@ def visit_try(
                                 start_block=handler_body_start,
                                 end_block=handler_region_end.id,
                                 handler_block=-1,
-                                stack_depth=3 + g.handler_nest_depth,
+                                stack_depth=try_unwind_stack_depth(g),
                                 preserve_lasti=True
                             )
                         );
@@ -1692,7 +1738,7 @@ def visit_try(
                                 start_block=handler_region_start,
                                 end_block=handler_region_end.id,
                                 handler_block=-1,
-                                stack_depth=3 + g.handler_nest_depth,
+                                stack_depth=try_unwind_stack_depth(g),
                                 preserve_lasti=True
                             )
                         );
@@ -1709,7 +1755,7 @@ def visit_try(
                             start_block=handler_region_start,
                             end_block=handler_body_start,
                             handler_block=-1,
-                            stack_depth=3 + g.handler_nest_depth,
+                            stack_depth=try_unwind_stack_depth(g),
                             preserve_lasti=True
                         )
                     );
@@ -1774,7 +1820,7 @@ def visit_try(
                 start_block=seg_start,
                 end_block=seg_end,
                 handler_block=-1,
-                stack_depth=3 + g.handler_nest_depth,
+                stack_depth=try_unwind_stack_depth(g),
                 preserve_lasti=True
             )
         );
@@ -1790,7 +1836,7 @@ def visit_try(
                     start_block=reraise_blk.id,
                     end_block=reraise_end.id,
                     handler_block=-1,
-                    stack_depth=3 + g.handler_nest_depth,
+                    stack_depth=try_unwind_stack_depth(g),
                     preserve_lasti=True
                 )
             );
@@ -1804,7 +1850,7 @@ def visit_try(
                     start_block=merged_handler_unwind_start,
                     end_block=unwind_blk.id,
                     handler_block=-1,
-                    stack_depth=3 + g.handler_nest_depth,
+                    stack_depth=try_unwind_stack_depth(g),
                     preserve_lasti=True
                 )
             );

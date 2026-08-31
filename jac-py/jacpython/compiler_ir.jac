@@ -164,7 +164,21 @@ obj cfg_builder {
         # Set when a try* body inside a plain-except handler ends with
         # POP_EXCEPT + return (not raise): outer handler match spans stop at
         # the body entry label.
-        handler_body_try_star_return: bool = False;
+        handler_body_try_star_return: bool = False,
+        # Unit-final loop containing try: when the try body exits via
+        # break/continue, CPython lays out the loop's natural exit block
+        # (while return or for END_FOR/POP_ITER/return) before PUSH_EXC_INFO.
+        # visit_while/visit_for set these before visiting the body; visit_try
+        # materializes the deferred block when skip_protect_succ fires.
+        loop_exit_before_try_handlers: basicblock | None = None,
+        loop_exit_return_loc: cloc | None = None,
+        loop_exit_emits_end_for: bool = False,
+        # Set when visit_try materializes loop_exit_before_try_handlers with
+        # the full natural-exit epilogue (including RETURN_VALUE).
+        loop_exit_epilogue_complete: bool = False,
+        # Protect-span depth bump for try/except registered while emitting a
+        # loop body (while +2, for +4). Set by visit_while/visit_for.
+        loop_except_depth_bump: int = 0;
 
     def emit(ins: cinstr) {
         self.cur.instrs.append(ins);

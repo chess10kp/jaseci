@@ -840,9 +840,23 @@ def visit_delete_target(g: cfg_builder, t: expr) -> stmt_cont {
 
 # Module-level epilogue (LOAD_CONST None; RETURN_VALUE).
 def emit_module_return(g: cfg_builder, lc: cloc) {
-    none_idx = g.u.add_const(py_none());
+    none_idx = g.u.stage_late_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, lc);
     g.emit_op(OP_RETURN_VALUE, 0, lc);
+}
+
+# Natural exit for a unit-final loop whose body contains try/except: lay out
+# before handler machinery when break/continue ends the protected span.
+def emit_unit_loop_exit_epilogue(
+    g: cfg_builder,
+    lc: cloc,
+    with_end_for: bool
+) {
+    if with_end_for {
+        g.emit_op(OP_END_FOR, 0, lc);
+        g.emit_op(OP_POP_ITER, 0, lc);
+    }
+    emit_module_return(g, lc);
 }
 
 
