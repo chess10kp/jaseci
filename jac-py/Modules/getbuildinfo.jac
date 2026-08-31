@@ -88,8 +88,8 @@ def _Py_gitversion -> str {
 }
 
 def _Py_gitidentifier -> str {
-    gittag: str = str();
-    gitid: str = str();
+    gittag: str = "";
+    gitid: str = "";
     gittag = "";
     if (
         ((ord(gittag[0]) if gittag else 0) != 0)

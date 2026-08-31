@@ -10,11 +10,11 @@ def PyOS_vsnprintf(`str: str, size: int, format: str, va: va_list) -> int {
     if (size > 2147483646) {
         len = -666;
     } else {
-        len = vsnprintf(`str, size, format, va);
+        len = vsnprintf(`str, size, format, va);  # jac:ignore[E1001]
     }
 
     if (size > 0 and size <= 2147483646) {
-        `str[(size - 1)] = 0;
+        `str[(size - 1)] = 0;  # jac:ignore[E1001]
     }
 
     return len;

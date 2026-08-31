@@ -5462,16 +5462,16 @@ def py_len(value: PyObj) -> PyObj {
 glob _TPFLAGS_SEQUENCE: int = 32,
      _TPFLAGS_MAPPING: int = 64,
      _TPFLAGS_MATCH_SELF: int = 4194304,
-     _match_keys_dummy: PyObj = py_none();
+     _match_keys_dummy_slot: list[PyObj] = [py_none()];
 
 def match_keys_dummy -> PyObj {
-    if _match_keys_dummy.t == "none" {
+    if _match_keys_dummy_slot[0].t == "none" {
         built = _jac_construct_builtin("object", []);
         if host_result_ok(built) {
-            _match_keys_dummy = from_host(built[1]);
+            _match_keys_dummy_slot[0] = from_host(built[1]);
         }
     }
-    return _match_keys_dummy;
+    return _match_keys_dummy_slot[0];
 }
 
 def py_type_has_sequence_flag(value: PyObj) -> bool {

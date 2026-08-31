@@ -3,8 +3,8 @@ def py_tolower(c: int) -> int {
 }
 
 def PyOS_mystrnicmp(s1: str, s2: str, size: int) -> int {
-    p1: str = str();
-    p2: str = str();
+    p1: str = "";
+    p2: str = "";
     if (size == 0) {
         return 0;
     }

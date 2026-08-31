@@ -4,12 +4,11 @@ Each test compares system ``cc`` on the pinned ``.c`` source against ``jac run``
 on the checked-in ``.jac`` lift. Int-line protocol from ``lift_oracle``.
 
 Oracle regime by module (see ``_oracle`` / ``_staged_oracle`` / ``_staged_oracle_with_py_stubs``):
-  - Fresh lift (``assert_lift_matches_c``): pystrcmp, getplatform, getcompiler,
-    getcopyright, pyfpe
+  - Fresh lift (``assert_lift_matches_c``): getplatform, getcompiler, pyfpe
   - Fresh lift + TRAP check (``assert_lift_matches_c_or_traps``): mysnprintf
     (PyOS_snprintf quarantine only; PyOS_vsnprintf uses staged below)
-  - Staged .jac (``assert_staged_jac_matches_c``): getbuildinfo, mysnprintf
-    (PyOS_vsnprintf edge)
+  - Staged .jac (``assert_staged_jac_matches_c``): getbuildinfo, getcopyright,
+    pystrcmp, mysnprintf (PyOS_vsnprintf edge)
   - Staged .jac + py_runtime_stubs (``_staged_oracle_with_py_stubs``): bisect
     (_bisectmodule), heapq (_heapqmodule)
 
@@ -140,8 +139,8 @@ def _staged_oracle_with_py_stubs(c_name: str, driver: str, jac_entry: str) {
 }
 
 
-test "jac-py pystrcmp: cc vs lifted jac agree on PyOS_mystricmp" {
-    _oracle(
+test "jac-py pystrcmp: cc vs staged jac agree on PyOS_mystricmp" {
+    _staged_oracle(
         "pystrcmp.c",
         "#include <stdio.h>\n"
         "int PyOS_mystricmp(const char *s1, const char *s2);\n"
@@ -180,8 +179,8 @@ test "jac-py getcompiler: cc vs lifted jac agree on Py_GetCompiler first byte" {
     );
 }
 
-test "jac-py getcopyright: cc vs lifted jac agree on Py_GetCopyright length" {
-    _oracle(
+test "jac-py getcopyright: cc vs staged jac agree on Py_GetCopyright length" {
+    _staged_oracle(
         "getcopyright.c",
         "#include <stdio.h>\n"
         "#include <string.h>\n"

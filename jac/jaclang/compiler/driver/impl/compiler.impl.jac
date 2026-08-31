@@ -635,7 +635,6 @@ impl JacCompiler.parse_str(
             ir_in=uni.CModuleAst(
                 file_ast, orig_src=uni.Source(c_src, mod_path=file_path)
             ),
-            prog=target_program,
             cancel_token=cancel_token,
             lenient_c=True
         );

@@ -1,5 +1,4 @@
 import jaclang.compiler.frontend.unitree as uni;
-import from jaclang.compiler.driver.program { JacProgram }
 import from jaclang.compiler.passes.cast_load_pass { CastBuildPass, CLiftSite }
 import from jaclang.compiler.tools.unparse_pass { unparse_module }
 
@@ -29,7 +28,6 @@ def lift_c_str(c_src: str, filename: str, lenient_c: bool = True) -> LiftResult 
     orig_src = uni.Source(c_src, filename);
     pass_ = CastBuildPass(
         ir_in=uni.CModuleAst(file_ast, orig_src=orig_src),
-        prog=JacProgram(),
         lenient_c=lenient_c
     );
     module = pass_.ir_out;
