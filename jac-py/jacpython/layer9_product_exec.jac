@@ -22,6 +22,7 @@ import from objects {
     PyDict,
     PySet,
     PyList,
+    PyStr,
     expect_int,
     expect_str,
     is_error,
@@ -61,7 +62,7 @@ def first_nested_code(co: PyCode) -> PyCode {
     return co;
 }
 
-def nested_code_by_name(co: PyCode, name: str) -> PyCode {
+def find_nested_code_by_name(co: PyCode, name: str) -> PyCode | None {
     ci = 0;
     while ci < len(co.consts) {
         c = co.consts[ci];
@@ -70,11 +71,20 @@ def nested_code_by_name(co: PyCode, name: str) -> PyCode {
             if nested.name == name {
                 return nested;
             }
+            hit = find_nested_code_by_name(nested, name);
+            if hit is not None {
+                return hit;
+            }
         }
         ci = ci + 1;
     }
-    assert False;
-    return co;
+    return None;
+}
+
+def nested_code_by_name(co: PyCode, name: str) -> PyCode {
+    hit = find_nested_code_by_name(co, name);
+    assert hit is not None;
+    return hit as PyCode;
 }
 
 # Strict list-of-ints check: fails loudly unless o is a PyList whose items are
@@ -284,7 +294,7 @@ test "layer9: band-11 module annotations execute in ceval" {
     assert expect_int(ns["x"]) == 5;
     assert isinstance(ns["ann"], PyDict);
     ann = ns["ann"] as PyDict;
-    assert "x" in ann.items;
+    assert ann.dict_contains(PyStr(t="str", val="x"));
     assert isinstance(ns["cond"], PySet);
     cond = ns["cond"] as PySet;
     assert cond.set_contains(PyInt(t="int", val=0));

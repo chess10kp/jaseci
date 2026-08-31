@@ -2489,9 +2489,12 @@ def visit_comp_elt(
         floc = call_func_loc(ca.func);
         if isinstance(ca.func, Name) {
             n = ca.func as Name;
-            emit_name_load(g, n.id, floc, True);
+            needs_null = emit_name_load(g, n.id, floc, True);
             if codegen_busy(g) {
                 return;
+            }
+            if needs_null {
+                g.emit_op(OP_PUSH_NULL, 0, floc);
             }
         } else {
             visit_comp_elt(g, ca.func, bound_names, filter_compare);

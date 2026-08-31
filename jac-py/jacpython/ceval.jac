@@ -11076,19 +11076,20 @@ def builtin_exec(
 # re-enters exec_code for synthesized operator/comprehension code objects
 # (pyc_first), so the final-error traceback display must only fire at the
 # OUTERMOST call -- where an error genuinely escapes the program -- never for
-# inner errors a guest handler may still catch.
-glob _tb_exec_depth: int = 0;
+# inner errors a guest handler may still catch. Scalar glob rebinding via +=
+# is scoped local in Jac (see layer3_flag); use a one-slot list holder instead.
+glob _tb_exec_depth: list[int] = [0];
 
 def exec_code(co: PyObj, args: list[PyObj], globals: dict[str, PyObj]) -> PyObj {
     match co {
         case PyCode():
-            _tb_exec_depth += 1;
+            _tb_exec_depth[0] = _tb_exec_depth[0] + 1;
             try {
                 outcome = exec_code_frame(co, args, {}, globals, globals, [], [], {});
             } finally {
-                _tb_exec_depth -= 1;
+                _tb_exec_depth[0] = _tb_exec_depth[0] - 1;
             }
-            if is_error(outcome) and _tb_exec_depth == 0 {
+            if is_error(outcome) and _tb_exec_depth[0] == 0 {
                 # Final-error surfacing: render the guest traceback chain to
                 # stderr shaped exactly like CPython's uncaught-exception path.
                 tb_display_error(outcome, py_str);
