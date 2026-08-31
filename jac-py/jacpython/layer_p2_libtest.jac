@@ -387,13 +387,23 @@ def _p2_lazy_violations(pkg: str, subs: list[str]) -> list[str] {
 # registers a minimal module covering what converted suites actually use.
 
 obj P2SupportGcCollectFn(PyObj) {
-    # CPython test/support/__init__.py gc_collect: runs gc.collect() twice so
-    # reference cycles and frame locals settle before weakref assertions.
-    # JacPython's ceval releases guest garbage through the host GC eagerly
-    # (no separate cycle collector), so observably this is a no-op that
-    # returns None -- which is all converted Lib/test pins rely on.
+    # CPython test.support.gc_collect: "Run the garbage collector." Guest
+    # objects are real host-CPython objects, so the host cycle collector is
+    # the faithful implementation; return gc.collect()'s count like Lib/test.
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        return py_none();
+        gc_mod_res = _jac_host_import("gc", PyList(t="list", items=[PyStr(t="str", val="*")]));
+        if not ((gc_mod_res[0] as bool)) {
+            return py_error(str(gc_mod_res[1]), str(gc_mod_res[2]));
+        }
+        collect_res = _jac_host_getattr(gc_mod_res[1], "collect");
+        if not ((collect_res[0] as bool)) {
+            return py_error(str(collect_res[1]), str(collect_res[2]));
+        }
+        res = _jac_host_call(collect_res[1], [], {});
+        if res[0] as bool {
+            return from_host(res[1]);
+        }
+        return py_error(str(res[1]), str(res[2]));
     }
 }
 
@@ -766,27 +776,6 @@ obj P2SupportRequiresDebugRangesFn(PyObj) {
             return args[0];
         }
         return P2SupportPassthroughFn(t="function");
-    }
-}
-
-obj P2SupportGcCollectFn(PyObj) {
-    # CPython test.support.gc_collect: "Run the garbage collector." Guest
-    # objects are real host-CPython objects, so the host cycle collector is
-    # the faithful implementation; return gc.collect()'s count like Lib/test.
-    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        gc_mod_res = _jac_host_import("gc", PyList(t="list", items=[PyStr(t="str", val="*")]));
-        if not ((gc_mod_res[0] as bool)) {
-            return py_error(str(gc_mod_res[1]), str(gc_mod_res[2]));
-        }
-        collect_res = _jac_host_getattr(gc_mod_res[1], "collect");
-        if not ((collect_res[0] as bool)) {
-            return py_error(str(collect_res[1]), str(collect_res[2]));
-        }
-        res = _jac_host_call(collect_res[1], [], {});
-        if res[0] as bool {
-            return from_host(res[1]);
-        }
-        return py_error(str(res[1]), str(res[2]));
     }
 }
 

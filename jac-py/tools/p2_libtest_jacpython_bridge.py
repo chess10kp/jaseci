@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,13 +13,25 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent.parent
-_JAC = _REPO / ".venv" / "bin" / "jac"
 _JACPYTHON = _REPO / "jac-py" / "jacpython"
 
 
+def _resolve_jac() -> Path | None:
+    """$JAC override, then PATH (CI sealed binary), then the dev venv."""
+    env_bin = os.environ.get("JAC")
+    if env_bin:
+        return Path(env_bin)
+    on_path = shutil.which("jac")
+    if on_path:
+        return Path(on_path)
+    venv_bin = _REPO / ".venv" / "bin" / "jac"
+    return venv_bin if venv_bin.is_file() else None
+
+
 def _run(source: str, expect: str) -> tuple[bool, str]:
-    if not _JAC.is_file():
-        return False, f"missing {_JAC}"
+    jac = _resolve_jac()
+    if jac is None:
+        return False, "jac binary not found (set $JAC or install jac-kit)"
     entry = textwrap.dedent(
         f"""
         import from layer_p2_libtest {{ p2_libtest_expect_ok }}
@@ -44,14 +57,15 @@ def _run(source: str, expect: str) -> tuple[bool, str]:
         path = Path(handle.name)
     env = dict(os.environ)
     jac_src = _REPO / "jac"
-    env["PYTHONPATH"] = str(jac_src)
-    env["JAC_DEV_SOURCE"] = str(jac_src)
+    if env.get("JAC_NO_DEV_SOURCE", "").strip() not in ("1", "true", "True"):
+        env["PYTHONPATH"] = str(jac_src)
+        env["JAC_DEV_SOURCE"] = str(jac_src)
     cp = os.environ.get("JACPYTHON_CPYTHON")
     if cp:
         env["JACPYTHON_CPYTHON"] = cp
     try:
         proc = subprocess.run(
-            [str(_JAC), "run", str(path)],
+            [str(jac), "run", str(path)],
             cwd=_REPO,
             capture_output=True,
             text=True,

@@ -121,6 +121,10 @@ def _jac_run_argv() -> list[str] {
     if jac_env and os.path.isfile(jac_env) {
         return [jac_env, "run"];
     }
+    jac_path = shutil.which("jac");
+    if jac_path {
+        return [jac_path, "run"];
+    }
     py = os.path.join(REPO_ROOT, ".venv", "bin", "python");
     if os.path.isfile(py) {
         return [py, "-m", "jaclang", "run"];
