@@ -12,6 +12,9 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent.parent
+sys.path.insert(0, str(_HERE))
+
+import opcode_meta2jac as om2j  # noqa: E402
 
 
 def _generator_python() -> str:
@@ -38,10 +41,8 @@ class OpcodeMeta2JacTests(unittest.TestCase):
     def test_cache_defaults_are_zero_not_opcode_index(self) -> None:
         import os
 
-        from opcode_meta2jac import _CPY, parse_defines, parse_sparse_array
-
-        opcode_ids = parse_defines(
-            open(os.path.join(_CPY, "Include", "opcode_ids.h")).read()
+        opcode_ids = om2j.parse_defines(
+            open(os.path.join(om2j._CPY, "Include", "opcode_ids.h")).read()
         )
         opmap = {
             name: val
@@ -55,9 +56,9 @@ class OpcodeMeta2JacTests(unittest.TestCase):
             and val >= 0
         }
         meta_text = open(
-            os.path.join(_CPY, "Include", "internal", "pycore_opcode_metadata.h")
+            os.path.join(om2j._CPY, "Include", "internal", "pycore_opcode_metadata.h")
         ).read()
-        caches = parse_sparse_array(meta_text, "_PyOpcode_Caches", opmap)
+        caches = om2j.parse_sparse_array(meta_text, "_PyOpcode_Caches", opmap)
         self.assertEqual(caches[128], 0)  # RESUME has no inline cache
 
     def test_reproducible_across_checkout_paths(self) -> None:
