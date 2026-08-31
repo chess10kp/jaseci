@@ -41,21 +41,21 @@ def __jac_value__(x: any) -> any {
 @__jac_value__
 obj unaryfunc {
     def call -> PyObj {
-        ;
+        return PyObj();
     }
 }
 
 @__jac_value__
 obj richcmpfunc {
     def call -> int {
-        ;
+        return 0;
     }
 }
 
 @__jac_value__
 obj ssizeargfunc {
     def call -> PyObj {
-        ;
+        return PyObj();
     }
 }
 
@@ -75,7 +75,7 @@ obj PyTypeObject {
 obj PyListObject {
     has ob_base: PyObject = PyObject(),
         ob_size: int = 0,
-        ob_item: object = object();
+        ob_item: list = [];
 }
 
 @__jac_value__
@@ -92,21 +92,22 @@ glob PyObj = PyObject,
      Py_NotImplemented: PyObj = PyObj();
 
 
-def get_sq_item(s: PyObj) -> ssizeargfunc {
-    tp: PyTypeObject = s.ob_base.ob_type;
+def get_sq_item(s: (PyObj | PyListObject)) -> (ssizeargfunc | None) {
+    lst: PyListObject = s;  # jac:ignore[E1001]
+    tp: PyTypeObject = lst.ob_base.ob_type;
     m: PySequenceMethods = tp.tp_as_sequence;
     if (m and m.sq_item) {
         return m.sq_item;
     }
 
     PyErr_SetString(PyExc_TypeError, "object does not support indexing");
-    return 0;
+    return None;
 }
 
 def internal_bisect_right(
-    `list: PyObj, item: PyObj, lo: int, hi: int, key: PyObj
+    `list: (PyObj | PyListObject), item: PyObj, lo: int, hi: int, key: PyObj
 ) -> int {
-    litem: PyObj = 0;
+    litem: (PyObj | None) = None;
     mid: int = 0;
     res: int = 0;
 
@@ -121,8 +122,8 @@ def internal_bisect_right(
         }
     }
 
-    sq_item: ssizeargfunc = get_sq_item(`list);
-    if (sq_item == 0) {
+    sq_item: (ssizeargfunc | None) = get_sq_item(`list);
+    if (sq_item == None) {
         return -1;
     }
 
@@ -131,18 +132,18 @@ def internal_bisect_right(
     }
 
     tp: PyTypeObject = item.ob_type;
-    compare: richcmpfunc = tp.tp_richcompare;
+    compare: (richcmpfunc | None) = tp.tp_richcompare;
     while (lo < hi) {
         mid = (size_t(lo) + hi) // 2;
-        litem = sq_item(`list, mid);
-        if (litem == 0) {
+        litem = sq_item(`list, mid);  # jac:ignore[E1001]
+        if (litem == None) {
             Py_LeaveRecursiveCall();
             return -1;
         }
 
         if (key != Py_None) {
-            newitem: PyObj = PyObject_CallOneArg(key, litem);
-            if (newitem == 0) {
+            newitem: (PyObj | None) = PyObject_CallOneArg(key, litem);  # jac:ignore[E1001]
+            if (newitem == None) {
                 ;
                 Py_LeaveRecursiveCall();
                 return -1;
@@ -152,12 +153,12 @@ def internal_bisect_right(
             litem = newitem;
         }
 
-        if ((compare != 0) and (litem.ob_type == tp)) {
-            res_obj: PyObj = compare(item, litem, 0);
+        if ((compare != None) and (litem != None) and (litem.ob_type == tp)) {
+            res_obj: (PyObj | None) = compare(item, litem, 0);  # jac:ignore[E1001]
             if (res_obj == Py_True) {
                 ;
                 ;
-                litem = 0;
+                litem = None;
                 hi = mid;
                 continue;
             }
@@ -165,12 +166,12 @@ def internal_bisect_right(
             if (res_obj == Py_False) {
                 ;
                 ;
-                litem = 0;
+                litem = None;
                 lo = mid + 1;
                 continue;
             }
 
-            if (res_obj == 0) {
+            if (res_obj == None) {
                 ;
                 Py_LeaveRecursiveCall();
                 return -1;
@@ -178,14 +179,14 @@ def internal_bisect_right(
 
             if (res_obj == Py_NotImplemented) {
                 ;
-                compare = 0;
-                res = PyObject_RichCompareBool(item, litem, 0);
+                compare = None;
+                res = PyObject_RichCompareBool(item, litem, 0);  # jac:ignore[E1053]
             } else {
-                res = PyObject_IsTrue(res_obj);
+                res = PyObject_IsTrue(res_obj);  # jac:ignore[E1001]
                 ;
             }
         } else {
-            res = PyObject_RichCompareBool(item, litem, 0);
+            res = PyObject_RichCompareBool(item, litem, 0);  # jac:ignore[E1053]
         }
 
         if (res < 0) {
@@ -195,7 +196,7 @@ def internal_bisect_right(
         }
 
         ;
-        litem = 0;
+        litem = None;
         if res {
             hi = mid;
         } else {
@@ -207,6 +208,8 @@ def internal_bisect_right(
     return lo;
 }
 
-def bisect_right(`list: PyObj, item: PyObj, lo: int, hi: int, key: PyObj) -> int {
+def bisect_right(
+    `list: (PyObj | PyListObject), item: PyObj, lo: int, hi: int, key: PyObj
+) -> int {
     return internal_bisect_right(`list, item, lo, hi, key);
 }

@@ -41,21 +41,21 @@ def __jac_value__(x: any) -> any {
 @__jac_value__
 obj unaryfunc {
     def call -> PyObj {
-        ;
+        return PyObj();
     }
 }
 
 @__jac_value__
 obj richcmpfunc {
     def call -> int {
-        ;
+        return 0;
     }
 }
 
 @__jac_value__
 obj ssizeargfunc {
     def call -> PyObj {
-        ;
+        return PyObj();
     }
 }
 
@@ -75,7 +75,7 @@ obj PyTypeObject {
 obj PyListObject {
     has ob_base: PyObject = PyObject(),
         ob_size: int = 0,
-        ob_item: object = object();
+        ob_item: list = [];
 }
 
 @__jac_value__
@@ -91,7 +91,7 @@ glob PyObj = PyObject,
 def siftdown(heap: PyListObject, startpos: int, pos: int) -> int {
     newitem: PyObj = PyObj();
     parent: PyObj = PyObj();
-    arr: object = object();
+    arr: list = [];
     parentpos: int = 0;
     size: int = 0;
     cmp: int = 0;
@@ -130,6 +130,7 @@ def siftdown(heap: PyListObject, startpos: int, pos: int) -> int {
     return 0;
 }
 
-def heap_siftdown(heap: PyObj, startpos: int, pos: int) -> int {
-    return siftdown(heap, startpos, pos);
+def heap_siftdown(heap: (PyObj | PyListObject), startpos: int, pos: int) -> int {
+    lst: PyListObject = heap;  # jac:ignore[E1001]
+    return siftdown(lst, startpos, pos);
 }
