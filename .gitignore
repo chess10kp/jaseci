@@ -88,7 +88,7 @@ reference/
 *.c2jac.report.json
 !jac-py/tools/**/baseline/project.c2jac.report.json
 !jac-py/Modules/_lifted/p1_corpus_slice1b/project.c2jac.report.json
-!jac-py/Modules/_lifted/p2_corpus_wave1/project.c2jac.report.json
+!jac-py/Modules/_lifted/p2_corpus_wave*/project.c2jac.report.json
 !jac-py/Modules/_lifted/p2_corpus_wave1/*.jac
 
 # P2 corpus lift staging (ephemeral copies of manifest sources)

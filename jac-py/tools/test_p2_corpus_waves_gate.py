@@ -9,6 +9,8 @@ keeps Tier-B density under the ratchet.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 import unittest
@@ -18,7 +20,18 @@ _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent.parent
 _MEASURE = _HERE / "measure_tier_b.py"
 _LIFT_DRIVER = _HERE / "lift_p2_corpus_wave.py"
-_JAC = _REPO / ".venv" / "bin" / "jac"
+
+
+def _resolve_jac() -> Path | None:
+    """$JAC override, then PATH (CI sealed binary), then the dev venv."""
+    env_bin = os.environ.get("JAC")
+    if env_bin:
+        return Path(env_bin)
+    on_path = shutil.which("jac")
+    if on_path:
+        return Path(on_path)
+    venv_bin = _REPO / ".venv" / "bin" / "jac"
+    return venv_bin if venv_bin.is_file() else None
 _MAX_DENSITY = 0.15
 # Per-wave waivers for intrinsically cast-dense kernels. Wave 18 (MT19937)
 # is all uint32 wrap arithmetic; its 17 sites are benign W4201 elisions
@@ -34,11 +47,12 @@ def _load(path: Path) -> dict:
 class P2CorpusWavesGateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        if not _JAC.is_file():
-            raise unittest.SkipTest(f"missing {_JAC} - run from repo with .venv")
+        cls.jac = _resolve_jac()
+        if cls.jac is None:
+            raise unittest.SkipTest("missing jac — set JAC, put jac on PATH, or use .venv")
 
     def test_all_waves(self) -> None:
-        for wave in range(2, 20):
+        for wave in range(2, 22):
             with self.subTest(wave=wave):
                 self._check_wave(wave)
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import shutil
@@ -19,7 +20,18 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent.parent
-_JAC = _REPO / ".venv" / "bin" / "jac"
+
+
+def _resolve_jac() -> Path | None:
+    """$JAC override, then PATH (CI sealed binary), then the dev venv."""
+    env_bin = os.environ.get("JAC")
+    if env_bin:
+        return Path(env_bin)
+    on_path = shutil.which("jac")
+    if on_path:
+        return Path(on_path)
+    venv_bin = _REPO / ".venv" / "bin" / "jac"
+    return venv_bin if venv_bin.is_file() else None
 
 
 def _run(cmd: list[str]) -> None:
@@ -84,8 +96,12 @@ def lift_wave(wave: int) -> int:
     manifest_path = _corpus_dir(wave) / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     out_dir = (_REPO / manifest["lift_output"]).resolve()
-    if not _JAC.is_file():
-        print(f"lift_p2_corpus_wave: missing {_JAC}", file=sys.stderr)
+    jac = _resolve_jac()
+    if jac is None:
+        print(
+            "lift_p2_corpus_wave: missing jac — set JAC, put jac on PATH, or use .venv",
+            file=sys.stderr,
+        )
         return 1
     out_dir.mkdir(parents=True, exist_ok=True)
     staging = (_corpus_dir(wave) / "_staging").resolve()
@@ -102,7 +118,7 @@ def lift_wave(wave: int) -> int:
         (staging / f"{stem}.c").write_bytes(src.read_bytes())
 
     cmd = [
-        str(_JAC),
+        str(jac),
         "tool",
         "c2jac",
         "--project",
