@@ -56,12 +56,9 @@ def _run(source: str, expect: str) -> tuple[bool, str]:
         handle.write(entry + "\n")
         path = Path(handle.name)
     env = dict(os.environ)
-    jacpython = _JACPYTHON
-    existing_jacpath = env.get("JACPATH", "")
-    parts = [p for p in existing_jacpath.split(os.pathsep) if p]
-    if str(jacpython) not in parts:
-        parts.insert(0, str(jacpython))
-    env["JACPATH"] = os.pathsep.join(parts)
+    # Facade modules (fcntl, mmap, …) live under jacpython; use that path
+    # alone so host stdlib names are not shadowed by prepending.
+    env["JACPATH"] = str(_JACPYTHON)
     jac_src = _REPO / "jac"
     if env.get("JAC_NO_DEV_SOURCE", "").strip() not in ("1", "true", "True"):
         env["PYTHONPATH"] = str(jac_src)
