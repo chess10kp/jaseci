@@ -13,7 +13,6 @@ from pathlib import Path
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent.parent
 _JACPYTHON = _REPO / "jac-py" / "jacpython"
-_LAYER_TEST = _JACPYTHON / "layer_p2_libtest.jac"
 
 
 def _resolve_jac() -> Path | None:
@@ -40,30 +39,8 @@ def _run_env() -> dict[str, str]:
     return env
 
 
-def _run_named_test(snippet_name: str) -> tuple[bool, str]:
-    """Run the matching built-in test in layer_p2_libtest.jac."""
-    jac = _resolve_jac()
-    if jac is None:
-        return False, "jac binary not found (set $JAC or install jac-kit)"
-    if not _LAYER_TEST.is_file():
-        return False, f"missing {_LAYER_TEST}"
-    proc = subprocess.run(
-        [str(jac), "test", str(_LAYER_TEST), "-f", snippet_name],
-        cwd=_REPO,
-        capture_output=True,
-        text=True,
-        timeout=120,
-        env=_run_env(),
-    )
-    stdout = (proc.stdout or "").strip()
-    stderr = (proc.stderr or "").strip()
-    if proc.returncode != 0:
-        return False, stderr or stdout or f"exit {proc.returncode}"
-    return True, "ok"
-
-
 def _run_inline(source: str, expect: str) -> tuple[bool, str]:
-    """Fallback: wrap arbitrary source in a one-off jac run entry."""
+    """Wrap arbitrary source in a one-off jac run entry."""
     jac = _resolve_jac()
     if jac is None:
         return False, "jac binary not found (set $JAC or install jac-kit)"
@@ -103,20 +80,15 @@ def _run_inline(source: str, expect: str) -> tuple[bool, str]:
     finally:
         path.unlink(missing_ok=True)
     stdout = (proc.stdout or "").strip()
-    stderr = (proc.stderr or proc.stdout or "").strip()
+    stderr = (proc.stderr or "").strip()
     if proc.returncode != 0:
-        return False, stderr or stdout or f"exit {proc.returncode}"
+        detail = "\n".join(part for part in (stdout, stderr) if part)
+        return False, detail or f"exit {proc.returncode}"
     if stdout.startswith("PASS:"):
         return True, stdout[5:]
     if stdout.startswith("FAIL:"):
         return False, stdout[5:]
-    return False, stdout or "missing PASS/FAIL marker"
-
-
-def _run(source: str, expect: str, snippet_name: str | None) -> tuple[bool, str]:
-    if snippet_name:
-        return _run_named_test(snippet_name)
-    return _run_inline(source, expect)
+    return False, stdout or stderr or "missing PASS/FAIL marker"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -126,11 +98,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--snippet-name",
         default="",
-        help="libtest snippet name; runs the built-in layer_p2_libtest test",
+        help="ignored; kept for libtest_runner CLI compatibility",
     )
     args = parser.parse_args(argv)
-    name = args.snippet_name.strip() or None
-    ok, detail = _run(args.source, args.expect, name)
+    ok, detail = _run_inline(args.source, args.expect)
     if ok:
         print(detail)
         return 0

@@ -14,7 +14,6 @@ import from _bisectmodule {
     _p2_insort,
     _p2_insort_left,
 }
-import from _heapqmodule { _p2_heappush, _p2_heappop, _p2_heapify, }
 import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
@@ -32,34 +31,6 @@ import from ceval {
     import_native,
     shim_module_get,
     sys3_module_cached,
-}
-import from _collectionsmodule {
-    _p2_deque,
-    _p2_defaultdict,
-}
-import from _collections_pylib {
-    _p2_counter,
-    _p2_namedtuple,
-    _p2_ordereddict,
-}
-import from _statmodule {
-    _p2_S_ISDIR,
-    _p2_S_ISCHR,
-    _p2_S_ISBLK,
-    _p2_S_ISREG,
-    _p2_S_ISFIFO,
-    _p2_S_ISLNK,
-    _p2_S_ISSOCK,
-    _p2_S_IMODE,
-    _p2_S_IFMT,
-    _p2_filemode,
-    S_IFDIR,
-    S_IFCHR,
-    S_IFBLK,
-    S_IFREG,
-    S_IFIFO,
-    S_IFLNK,
-    S_IFSOCK,
 }
 import from _opcodemodule {
     _p2_stack_effect,
@@ -93,15 +64,15 @@ import from pyc_first {
 }
 import from objects { PyDict, PyTuple }
 import from ceval { py_attr, py_set_attr, members_of, builtin_sorted_min_max, is_error, py_error, PyList, PyInt, PyBool }
-import from _functoolsmodule {
-    P2_MISSING,
-    P2_WRAPPER_ASSIGNMENTS,
-    _p2_reduce,
-    _p2_partial,
-    _p2_lru_cache,
-    _p2_cmp_to_key,
-}
 import from typing { typing_module_attrs }
+
+# CPython functools.WRAPPER_ASSIGNMENTS (PEP 649/795); inlined so the libtest
+# harness does not import _functoolsmodule at module load (that facade fails to
+# compile in the server-codespace fallback on CI when pulled transitively).
+glob P2_WRAPPER_ASSIGNMENTS: tuple = (
+    "__module__", "__name__", "__qualname__", "__doc__",
+    "__annotate__", "__type_params__",
+);
 
 def _p2_wrap_snippet(source: str) -> str {
     return (
