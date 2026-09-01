@@ -220,7 +220,7 @@ def run_libtest_jacpython(`case: LibtestSnippet) -> tuple[str, str] {
     bridge = os.path.join(REPO_ROOT, "jac-py", "tools", "p2_libtest_jacpython_bridge.py");
     py = os.path.join(REPO_ROOT, ".venv", "bin", "python");
     if not os.path.isfile(py) {
-        py = sys.executable;
+        py = host_python();
     }
     try {
         proc = subprocess.run(

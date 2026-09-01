@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import textwrap
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
@@ -32,19 +31,20 @@ def _run(source: str, expect: str) -> tuple[bool, str]:
     jac = _resolve_jac()
     if jac is None:
         return False, "jac binary not found (set $JAC or install jac-kit)"
-    entry = textwrap.dedent(
-        f"""
-        import from layer_p2_libtest {{ p2_libtest_expect_ok }}
-        with entry {{
-            (ok, detail) = p2_libtest_expect_ok({source!r}, {expect!r});
-            if ok {{
-                print("PASS:" + detail);
-            }} else {{
-                print("FAIL:" + detail);
-            }}
-        }}
-        """
-    ).strip()
+    # Jac braces must live in plain strings: when this bridge is invoked from
+    # ``jac test`` the fallback interpreter may be JacPython, which does not
+    # collapse f-string ``{{`` escapes the way CPython does.
+    entry = (
+        "import from layer_p2_libtest { p2_libtest_expect_ok }\n"
+        "with entry {\n"
+        f"    (ok, detail) = p2_libtest_expect_ok({source!r}, {expect!r});\n"
+        "    if ok {\n"
+        '        print("PASS:" + detail);\n'
+        "    } else {\n"
+        '        print("FAIL:" + detail);\n'
+        "    }\n"
+        "}\n"
+    )
     with tempfile.NamedTemporaryFile(
         mode="w",
         suffix=".jac",
