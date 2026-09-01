@@ -92,10 +92,14 @@ _POST_LIFT = {
 }
 
 
-def lift_wave(wave: int) -> int:
+def lift_wave(wave: int, out_dir: Path | None = None) -> int:
     manifest_path = _corpus_dir(wave) / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    out_dir = (_REPO / manifest["lift_output"]).resolve()
+    canonical_out = (_REPO / manifest["lift_output"]).resolve()
+    if out_dir is None:
+        out_dir = canonical_out
+    else:
+        out_dir = out_dir.resolve()
     jac = _resolve_jac()
     if jac is None:
         print(
@@ -129,7 +133,10 @@ def lift_wave(wave: int) -> int:
     _run(cmd)
 
     report = out_dir / "project.c2jac.report.json"
-    _POST_LIFT.get(wave, _post_lift_refresh_report)(out_dir, report)
+    if out_dir == canonical_out:
+        _POST_LIFT.get(wave, _post_lift_refresh_report)(out_dir, report)
+    else:
+        _post_lift_refresh_report(out_dir, report)
     print(f"lifted corpus -> {out_dir.relative_to(_REPO)}")
     print(f"aggregate report -> {report.relative_to(_REPO)}")
     return 0
@@ -144,8 +151,14 @@ def main(argv: list[str] | None = None) -> int:
         choices=range(2, 22),
         help="P2 wave number",
     )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=None,
+        help="lift output directory (default: manifest lift_output)",
+    )
     args = parser.parse_args(argv)
-    return lift_wave(args.wave)
+    return lift_wave(args.wave, args.out_dir)
 
 
 if __name__ == "__main__":

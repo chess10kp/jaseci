@@ -67,46 +67,60 @@ class P2CorpusWavesGateTests(unittest.TestCase):
         self.assertGreater(expected, 0, "corpus manifest lists no files")
         self.assertEqual(len(baseline.get("files", [])), expected)
 
-        proc = subprocess.run(
-            [sys.executable, str(_LIFT_DRIVER), "--wave", str(wave)],
-            cwd=_REPO,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(proc.returncode, 0, proc.stderr or proc.stdout)
+        scratch_dir = _HERE / f"p2_corpus_wave{wave}" / "_gate_lift"
+        if scratch_dir.exists():
+            shutil.rmtree(scratch_dir)
+        scratch_dir.mkdir(parents=True)
+        try:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(_LIFT_DRIVER),
+                    "--wave",
+                    str(wave),
+                    "--out-dir",
+                    str(scratch_dir),
+                ],
+                cwd=_REPO,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr or proc.stdout)
 
-        out_dir = _REPO / manifest["lift_output"]
-        aggregate = out_dir / "project.c2jac.report.json"
-        self.assertTrue(aggregate.is_file(), f"missing {aggregate}")
+            aggregate = scratch_dir / "project.c2jac.report.json"
+            self.assertTrue(aggregate.is_file(), f"missing {aggregate}")
 
-        current = _load(aggregate)
-        baseline_total = int(baseline["tier_b_total"])
-        current_total = int(current["tier_b_total"])
-        self.assertLessEqual(
-            current_total,
-            baseline_total,
-            f"wave{wave}: Tier-B regressed: {current_total} > baseline {baseline_total}",
-        )
+            current = _load(aggregate)
+            baseline_total = int(baseline["tier_b_total"])
+            current_total = int(current["tier_b_total"])
+            self.assertLessEqual(
+                current_total,
+                baseline_total,
+                f"wave{wave}: Tier-B regressed: {current_total} > baseline {baseline_total}",
+            )
 
-        measure = subprocess.run(
-            [sys.executable, str(_MEASURE), str(aggregate.relative_to(_REPO))],
-            cwd=_REPO,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        density_line = next(
-            (ln for ln in measure.stdout.splitlines() if ln.startswith("density:")),
-            "",
-        )
-        self.assertTrue(density_line, measure.stdout)
-        density = float(density_line.split(":")[1].strip())
-        limit = _DENSITY_WAIVERS.get(wave, _MAX_DENSITY)
-        self.assertLess(
-            density,
-            limit,
-            f"wave{wave}: Tier-B density {density:.6f} >= {limit}",
-        )
+            measure = subprocess.run(
+                [sys.executable, str(_MEASURE), str(aggregate.relative_to(_REPO))],
+                cwd=_REPO,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            density_line = next(
+                (ln for ln in measure.stdout.splitlines() if ln.startswith("density:")),
+                "",
+            )
+            self.assertTrue(density_line, measure.stdout)
+            density = float(density_line.split(":")[1].strip())
+            limit = _DENSITY_WAIVERS.get(wave, _MAX_DENSITY)
+            self.assertLess(
+                density,
+                limit,
+                f"wave{wave}: Tier-B density {density:.6f} >= {limit}",
+            )
+        finally:
+            if scratch_dir.exists():
+                shutil.rmtree(scratch_dir)
 
 
 if __name__ == "__main__":
