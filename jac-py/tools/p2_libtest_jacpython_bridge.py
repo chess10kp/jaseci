@@ -36,6 +36,16 @@ def _run_env() -> dict[str, str]:
     cp = os.environ.get("JACPYTHON_CPYTHON")
     if cp:
         env["JACPYTHON_CPYTHON"] = cp
+    # Facade modules (typing, ceval, …) live under jac-py/jacpython; conformance
+    # steps set JACPATH=jac for the compiler checkout, which would make
+    # ``import from typing`` resolve to host stdlib during bridge jac runs.
+    jacpython = str(_JACPYTHON)
+    existing = env.get("JACPATH", "")
+    parts = [p for p in existing.split(os.pathsep) if p]
+    if jacpython not in parts:
+        env["JACPATH"] = (
+            f"{jacpython}{os.pathsep}{existing}" if existing else jacpython
+        )
     return env
 
 
