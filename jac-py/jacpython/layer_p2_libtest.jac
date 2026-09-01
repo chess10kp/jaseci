@@ -64,7 +64,6 @@ import from pyc_first {
 }
 import from objects { PyDict, PyTuple }
 import from ceval { py_attr, py_set_attr, members_of, builtin_sorted_min_max, is_error, py_error, PyList, PyInt, PyBool }
-import from typing { typing_module_attrs }
 
 # CPython functools.WRAPPER_ASSIGNMENTS (PEP 649/795); inlined so the libtest
 # harness does not import _functoolsmodule at module load (that facade fails to
@@ -920,13 +919,6 @@ def p2_libtest_reset {
     };
     register_shim_module(
         "_opcode", PyModule(t="module", name="_opcode", attrs=opcode_attrs)
-    );
-    # _typing accelerator facade (Modules/_typingmodule.c port): Lib/typing.py
-    # imports its type-parameter substrate from here, so converted typing
-    # suites resolve it through this shim before any host fallback.
-    register_shim_module(
-        "_typing",
-        PyModule(t="module", name="_typing", attrs=typing_module_attrs())
     );
     _p2_warn_state_reset();
     register_shim_module(

@@ -609,16 +609,12 @@ jobs:
         run: jac test jac-py/tests/test_p2_staged_sync.jac
 
       - name: P2 conformance harness (T6 skeleton)
-        env:
-          JACPATH: "jac:jac-py/jacpython"
         run: jac test jac-py/tests/run_conformance.jac
 
       - name: P2 conformance manifest drift check
         run: git diff --exit-code jac-py/tests/conformance_manifest.json
 
       - name: P2 libtest partial (bisect/heapq/platform)
-        env:
-          JACPATH: "jac:jac-py/jacpython"
         run: jac test jac-py/tests/test_p2_libtest_partial.jac
 
       - name: P2 conformance manifest gate
