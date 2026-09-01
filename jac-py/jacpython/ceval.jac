@@ -501,7 +501,7 @@ import from ceval_opcodes_containers {
     op_delete_subscr,
 }
 
-import from vm_dispatch { ceval_ops, }
+import from vm_dispatch { ceval_ops, jac_frame_chain_slot_ref, }
 import from ceval_defs {
     PyBoundMethod,
     PyGenericAlias,
@@ -894,6 +894,14 @@ def clear_sys3_modules {
 def _sys3_forget(name: str) {
     if name in sys3_modules {
         del sys3_modules[name];
+    }
+}
+
+# Drop one delegated-module snapshot so the next shim/delegate import rebuilds
+# it (libtest resets must not reuse a stale host snapshot).
+def _delegate_forget(name: str) {
+    if name in delegate_cache {
+        del delegate_cache[name];
     }
 }
 
@@ -6151,6 +6159,11 @@ def obj_is_callable(x: PyObj) -> bool {
     if isinstance(x, PyHostProxy) {
         return (_jac_host_is_callable((x as PyHostProxy).val)) as bool;
     }
+    # Harness/facade shim callables (layer_p2_libtest P2*Fn, gc/heapq facades).
+    if x.t == "function" or x.t == "gc_fn" or x.t == "heapq_fn" or x.t == "copy_fn"
+        or x.t == "agen_asend_send" {
+        return True;
+    }
     return False;
 }
 
@@ -7453,7 +7466,7 @@ def make_pyclass_from_map(
     # positional arguments' (Lib/typing.py _ProtocolMeta.__new__).
     if "__new__" in namespace {
         maybe_new = namespace["__new__"];
-        if isinstance(maybe_new, PyFunction) {
+        if isinstance(maybe_new, PyFunction) or isinstance(maybe_new, PyHostProxy) {
             namespace["__new__"] = PyStaticMethod(
                 t="staticmethod", func=maybe_new
             ) as PyObj;
@@ -9992,6 +10005,166 @@ def send_throw_into(receiver: PyObj, err: PyObj) -> PyObj {
 # by the common case the generator machinery guarantees -- an argument passed
 # straight into the generator call is reachable only through its frame -- since
 # jacpython does not carry Python-level refcounts. Idempotent via frame.cleared.
+glob _gc_tracked_users: dict[str, PyUserObj] = {};
+
+def gc_track_user(u: PyUserObj) -> None {
+    _gc_tracked_users[str(id(u))] = u;
+}
+
+def gc_untrack_user(u: PyUserObj) -> None {
+    _gc_tracked_users.pop(str(id(u)), None);
+}
+
+def _gc_mark_obj(`obj: PyObj, marked: dict[str, bool]) {
+    key = str(id(`obj));
+    if key in marked {
+        return;
+    }
+    marked[key] = True;
+    if isinstance(`obj, PyUserObj) {
+        u = `obj as PyUserObj;
+        for name in u.attrs {
+            _gc_mark_obj(u.attrs[name], marked);
+        }
+        if u._has_base() {
+            _gc_mark_obj(u._base_obj(), marked);
+        }
+        return;
+    }
+    if isinstance(`obj, PyModule) {
+        m = `obj as PyModule;
+        for name in m.attrs {
+            _gc_mark_obj(m.attrs[name], marked);
+        }
+        return;
+    }
+    if isinstance(`obj, PyClass) {
+        c = `obj as PyClass;
+        for name in c.attrs {
+            _gc_mark_obj(c.attrs[name], marked);
+        }
+        for b in c.bases {
+            _gc_mark_obj(b, marked);
+        }
+        return;
+    }
+    if isinstance(`obj, PyList) {
+        for item in (`obj as PyList).items {
+            _gc_mark_obj(item, marked);
+        }
+        return;
+    }
+    if isinstance(`obj, PyTuple) {
+        for item in (`obj as PyTuple).items {
+            _gc_mark_obj(item, marked);
+        }
+        return;
+    }
+    if isinstance(`obj, PyDict) {
+        d = `obj as PyDict;
+        for hk in d.items {
+            `entry = d.items[hk];
+            _gc_mark_obj(`entry.key, marked);
+            _gc_mark_obj(`entry.value, marked);
+        }
+        return;
+    }
+    if isinstance(`obj, PySet) {
+        s = `obj as PySet;
+        for hk in s.items {
+            _gc_mark_obj(s.items[hk], marked);
+        }
+        return;
+    }
+    if isinstance(`obj, PyGenerator) {
+        g = `obj as PyGenerator;
+        if not g.frame.cleared {
+            for item in g.frame.fast {
+                _gc_mark_obj(item, marked);
+            }
+            for item in g.frame.stack {
+                _gc_mark_obj(item, marked);
+            }
+            for name in g.frame.locals {
+                _gc_mark_obj(g.frame.locals[name], marked);
+            }
+        }
+        return;
+    }
+    if isinstance(`obj, PyCell) {
+        _gc_mark_obj((`obj as PyCell).val, marked);
+        return;
+    }
+}
+
+def _gc_gather_roots() -> list[PyObj] {
+    roots: list[PyObj] = [];
+    for name in sys3_modules {
+        roots.append(sys3_modules[name]);
+    }
+    for name in shim_modules {
+        roots.append(shim_modules[name]);
+    }
+    chain = jac_frame_chain_slot_ref();
+    if chain is not None {
+        for fr in chain {
+            if isinstance(fr, PyFrame) and not (fr as PyFrame).cleared {
+                f = fr as PyFrame;
+                for item in f.fast {
+                    roots.append(item);
+                }
+                for item in f.stack {
+                    roots.append(item);
+                }
+                for name in f.locals {
+                    roots.append(f.locals[name]);
+                }
+            }
+        }
+    }
+    return roots;
+}
+
+def gc_collect_cycles() -> int {
+    # Host pass first (guest/host hybrid objects), then a guest mark-sweep over
+    # tracked PyUserObj instances for pure in-VM reference cycles (__del__ pins).
+    host_n = 0;
+    host_res = _jac_host_import("gc", to_host(PyList(t="list", items=[PyStr(t="str", val="*")])));
+    if (host_res[0] as bool) {
+        collect_res = _jac_host_getattr(host_res[1], "collect");
+        if (collect_res[0] as bool) {
+            call_res = _jac_host_call(collect_res[1], [], {});
+            if (call_res[0] as bool) and isinstance(call_res[1], int) {
+                host_n = call_res[1] as int;
+            }
+        }
+    }
+    marked: dict[str, bool] = {};
+    for root_item in _gc_gather_roots() {
+        _gc_mark_obj(root_item, marked);
+    }
+    collected = 0;
+    pending: list[str] = [];
+    for key in _gc_tracked_users {
+        pending.append(key);
+    }
+    for key in pending {
+        if key not in _gc_tracked_users {
+            continue;
+        }
+        u = _gc_tracked_users[key];
+        if str(id(u)) in marked {
+            continue;
+        }
+        if user_has_dunder(u, "__del__") {
+            _ = call_user_dunder(u, "__del__", []);
+        }
+        gc_untrack_user(u);
+        collected += 1;
+    }
+    return host_n + collected;
+}
+
 def frame_clear(frame: PyFrame) -> None {
     if frame.cleared {
         return;
@@ -11160,6 +11333,9 @@ with entry {
     ceval_ops["frame_clear"] = frame_clear;
     ceval_ops["from_host"] = from_host;
     ceval_ops["func_attr_is_fixed"] = func_attr_is_fixed;
+    ceval_ops["agen_asend_step"] = agen_asend_step;
+    ceval_ops["gc_collect_cycles"] = gc_collect_cycles;
+    ceval_ops["gc_track_user"] = gc_track_user;
     ceval_ops["gen_close"] = gen_close;
     ceval_ops["gen_resume"] = gen_resume;
     ceval_ops["gen_send"] = gen_send;

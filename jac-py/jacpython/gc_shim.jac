@@ -23,6 +23,7 @@
 # - garbage/callbacks are live lists; callbacks never fire (nothing is ever
 #   collected) and DEBUG_SAVEALL therefore never appends into garbage.
 
+import from ceval_api { gc_collect_cycles }
 import from objects {
     PyObj,
     PyStr,
@@ -105,8 +106,7 @@ obj PyGcFn(PyObj) {
             if len(args) > 0 and _gc_int_arg(args, 0) is None {
                 return py_error("TypeError", "an integer is required");
             }
-            # No cycle collector runs in-VM: nothing is ever unreachable.
-            return PyInt(t="int", val=0);
+            return PyInt(t="int", val=gc_collect_cycles());
         }
         if self.name == "get_stats" {
             stats: list[PyObj] = [];

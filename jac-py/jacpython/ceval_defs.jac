@@ -52,6 +52,8 @@ import from ceval_api {
     format_exception_text,
     from_host,
     func_attr_is_fixed,
+    agen_asend_step,
+    gc_track_user,
     gen_close,
     gen_send,
     gen_throw,
@@ -604,7 +606,7 @@ obj PyClass(PyObj) {
             if isinstance(user_new, PyStaticMethod) {
                 cand = (user_new as PyStaticMethod).func;
             }
-            if isinstance(cand, PyFunction) {
+            if isinstance(cand, PyFunction) or isinstance(cand, PyHostProxy) {
                 new_fn = cand;
                 has_user_new = True;
             }
@@ -631,7 +633,7 @@ obj PyClass(PyObj) {
             for a in args {
                 new_args.append(a);
             }
-            made = py_invoke(new_fn as PyFunction, new_args, kwargs);
+            made = py_invoke(new_fn as PyObj, new_args, kwargs);
             if is_error(made) {
                 return made;
             }
@@ -694,6 +696,12 @@ obj PyClass(PyObj) {
             if has_user_init and is_mutable_base(self.native_base) {
                 box_args = [];
             }
+            # Tuple subclasses without a recognized __new__ (host-eval namedtuple
+            # lambdas that slipped past the PyFunction/PyHostProxy gate) still need
+            # tuple.__new__(cls, (a, b, ...)) packing, not tuple(a, b, ...).
+            if self.native_base == "tuple" and len(box_args) > 1 {
+                box_args = [PyTuple(t="tuple", items=box_args)];
+            }
             boxed = construct_native_base(self.native_base, box_args);
             if is_error(boxed) {
                 return boxed;
@@ -726,6 +734,7 @@ obj PyClass(PyObj) {
             }
         }
         instance = PyUserObj(t="instance", cls=self, attrs={}, base=boxed);
+        gc_track_user(instance);
         if class_is_exception(self) {
             # CPython's BaseException_new records the constructor args on the
             # instance BEFORE __init__ runs, so a user __init__ that never calls
@@ -1475,6 +1484,9 @@ obj PyNativeNew(PyObj) {
         while j < len(args) {
             box_args.append(args[j]);
             j = j + 1;
+        }
+        if self.base_name == "tuple" and len(box_args) > 1 {
+            box_args = [PyTuple(t="tuple", items=box_args)];
         }
         # builtin.__new__ over a HOST class (namedtuple's dynamic tuple subclass)
         # stays host-side so the host subclass instance is preserved.
@@ -2782,10 +2794,48 @@ obj PyAsyncGenWrappedValue(PyObj) {
 # The one-shot awaitable `ag.__anext__()` / `ag.asend(v)` returns. The SEND
 # loop drives it through agen_asend_step like a native coroutine: a yield
 # surfaces the UNWRAPPED value, exhaustion raises StopAsyncIteration.
+obj PyAsyncGenASendSend(PyObj) {
+    has target: PyAsyncGenASend;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        sent = py_none();
+        if len(args) > 0 {
+            sent = args[0];
+        }
+        result = agen_asend_step(self.target, sent);
+        # Bare ``ag.__anext__().send(None)`` (Lib/test asyncgen pins): surface the
+        # unwrapped yield as a return value; exhaustion becomes StopIteration so
+        # ``except StopIteration`` can drain without ``await``.
+        if result.t == "genstop" {
+            return (result as PyGenStop).val;
+        }
+        if is_error(result) {
+            err = result as PyError;
+            if err.exception.type_name == "StopAsyncIteration" {
+                return stop_iteration(py_none());
+            }
+            return result;
+        }
+        return result;
+    }
+}
+
 obj PyAsyncGenASend(PyObj) {
     has gen: PyGenerator,
         value: PyObj,
         started: bool = False;
+
+    # CPython async_gen_asend exposes send() so bare ``ag.__anext__().send(None)``
+    # drives one step without ``await`` (Lib/test asyncgen pins).
+    def tp_getattro(name: str) -> PyObj {
+        if name == "send" {
+            return PyAsyncGenASendSend(t="agen_asend_send", target=self);
+        }
+        return py_error(
+            "AttributeError",
+            "async_generator_asend object has no attribute '" + name + "'",
+        );
+    }
 }
 
 # The one-shot awaitable `ag.athrow(exc)` / `ag.aclose()` returns: on first

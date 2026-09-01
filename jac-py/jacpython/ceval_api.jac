@@ -237,6 +237,18 @@ def gen_send(gen: PyObj, sent: PyObj) -> PyObj {
     return (ceval_ops["gen_send"] as any)(gen, sent);
 }
 
+def agen_asend_step(a: PyObj, sent: PyObj) -> PyObj {
+    return (ceval_ops["agen_asend_step"] as any)(a, sent);
+}
+
+def gc_track_user(u: PyObj) -> None {
+    (ceval_ops["gc_track_user"] as any)(u);
+}
+
+def gc_collect_cycles() -> int {
+    return (ceval_ops["gc_collect_cycles"] as any)();
+}
+
 def gen_throw(gen: PyObj, thrown: PyObj) -> PyObj {
     return (ceval_ops["gen_throw"] as any)(gen, thrown);
 }

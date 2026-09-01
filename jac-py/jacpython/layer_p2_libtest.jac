@@ -20,6 +20,8 @@ import from _warningsmodule {
 }
 import from ceval {
     _sys3_forget,
+    _delegate_forget,
+    delegated_module,
     set_layer3_active,
     to_host,
     _jac_host_import,
@@ -366,10 +368,11 @@ obj P2SupportGcCollectFn(PyObj) {
             return py_error(str(collect_res[1]), str(collect_res[2]));
         }
         res = _jac_host_call(collect_res[1], [], {});
-        if res[0] as bool {
-            return from_host(res[1]);
+        if not (res[0] as bool) {
+            return py_error(str(res[1]), str(res[2]));
         }
-        return py_error(str(res[1]), str(res[2]));
+        # CPython test.support.gc_collect discards gc.collect()'s return value.
+        return py_none();
     }
 }
 
@@ -631,6 +634,28 @@ obj P2LibWrapsDecorator(PyObj) {
     }
 }
 
+# Host functools.wraps/update_wrapper cannot preserve guest PyFunction identity
+# on __wrapped__; override the delegated shim with native metadata copy.
+obj P2FunctoolsUpdateWrapperFn(PyObj) {
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) != 2 {
+            return py_error(
+                "TypeError", "update_wrapper expected 2 arguments, got " + str(len(args))
+            );
+        }
+        return _p2_lib_native_update_wrapper(args[0], args[1]);
+    }
+}
+
+obj P2FunctoolsWrapsFn(PyObj) {
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(args) != 1 {
+            return py_error("TypeError", "wraps() expects one wrapped function");
+        }
+        return P2LibWrapsDecorator(t="function", wrapped=args[0]);
+    }
+}
+
 def _p2_opcode_pred_result(fn: any, args: list[PyObj]) -> PyObj {
     arg: PyObj = _p2_single_int_arg(args);
     if is_error(arg) { return arg; }
@@ -755,6 +780,24 @@ def p2_libtest_reset {
     # HOST collections module in the sys3 cache, which import_native checks
     # before the shim registry -- drop it so the facade shim always wins.
     _sys3_forget("collections");
+    _sys3_forget("functools");
+    _delegate_forget("collections");
+    _delegate_forget("functools");
+    # VM Lib/collections depends on host _collections._count_elements mutating a
+    # guest dict (counts stay zero) and namedtuple's eval __new__ path boxes
+    # wrong tuple subclasses. Host delegation keeps these pins host-exact while
+    # the harness still exercises ceval for snippet bodies and other imports.
+    coll_mod = delegated_module("collections");
+    if not is_error(coll_mod) {
+        register_shim_module("collections", coll_mod);
+    }
+    ft_mod = delegated_module("functools");
+    if not is_error(ft_mod) {
+        ft = ft_mod as PyModule;
+        ft.attrs["update_wrapper"] = P2FunctoolsUpdateWrapperFn(t="function");
+        ft.attrs["wraps"] = P2FunctoolsWrapsFn(t="function");
+        register_shim_module("functools", ft);
+    }
     platform_attrs: dict[str, PyObj] = {
         "platform": P2LibtestPlatformFn(t="function"),
         "system": P2LibtestSystemFn(t="function"),
