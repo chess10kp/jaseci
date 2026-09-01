@@ -15,7 +15,6 @@ import from _bisectmodule {
     _p2_insort_left,
 }
 import from _heapqmodule { _p2_heappush, _p2_heappop, _p2_heapify, }
-import from _jsonmodule { dumps, loads }
 import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
