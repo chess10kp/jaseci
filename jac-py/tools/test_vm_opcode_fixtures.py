@@ -16,8 +16,11 @@ import vm_opcode_fixtures as vmf  # noqa: E402
 
 class VmOpcodeFixturesTests(unittest.TestCase):
     def test_gate_passes(self) -> None:
+        cmd = [sys.executable, str(_HERE / "vm_opcode_fixtures.py"), "--check"]
+        if vmf.resolve_jac(_REPO) is not None:
+            cmd.append("--require-jac")
         proc = subprocess.run(
-            [sys.executable, str(_HERE / "vm_opcode_fixtures.py"), "--check"],
+            cmd,
             cwd=_REPO,
             capture_output=True,
             text=True,

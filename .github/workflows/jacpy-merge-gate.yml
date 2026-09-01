@@ -51,8 +51,7 @@ jobs:
 
       - name: opcode_meta2jac check
         run: python3 jac-py/tools/opcode_meta2jac.py --check
-      - name: VM opcode fixture coverage gate (non-blocking)
-        continue-on-error: true
+      - name: VM opcode fixture coverage gate
         run: python3 jac-py/tools/vm_opcode_fixtures.py --check
 
       - name: Band 6/7 CPython oracle goldens round-trip

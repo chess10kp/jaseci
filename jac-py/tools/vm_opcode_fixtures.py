@@ -12,6 +12,11 @@ emission set. The gate verifies:
 
 Run from repo root:
     python3 jac-py/tools/vm_opcode_fixtures.py --check
+    python3 jac-py/tools/vm_opcode_fixtures.py --check --require-jac
+
+Without ``--require-jac``, compiler-only opcode checks are skipped when no
+``jac`` binary is on PATH (merge gate). Full jac-py gates pass ``--require-jac``
+after ``setup-jac``.
 """
 
 from __future__ import annotations
@@ -1051,9 +1056,15 @@ def check_fixtures(python: Path) -> list[str]:
 
 
 def check_layer_markers(
-    layer_path: Path, python: Path, jac: Path | None, root: Path
-) -> list[str]:
+    layer_path: Path,
+    python: Path,
+    jac: Path | None,
+    root: Path,
+    *,
+    require_jac: bool = False,
+) -> tuple[list[str], list[str]]:
     errors: list[str] = []
+    skips: list[str] = []
     text = layer_path.read_text()
     marked = {match.removeprefix("OP_") for match in MARKER_RE.findall(text)}
     compiler_marked = {
@@ -1101,10 +1112,16 @@ def check_layer_markers(
                     f"COMPILER_FIXTURES (setup/body mismatch)"
                 )
             if jac is None:
-                errors.append(
-                    f"{layer_path.name} OP_{opcode}: jac binary required to verify "
-                    "native codegen opcode emission"
-                )
+                if require_jac:
+                    errors.append(
+                        f"{layer_path.name} OP_{opcode}: jac binary required to verify "
+                        "native codegen opcode emission"
+                    )
+                else:
+                    skips.append(
+                        f"{layer_path.name} OP_{opcode}: skipped native codegen check "
+                        "(no jac binary)"
+                    )
                 continue
             detail = _native_codegen_has_opcode(jac, root, opcode, body)
             if detail is not None:
@@ -1147,7 +1164,7 @@ def check_layer_markers(
             f"{layer_path.name} vm-opcode-compiler markers without parsed tests: "
             + ", ".join(f"OP_{op}" for op in sorted(extra_compiler))
         )
-    return errors
+    return errors, skips
 
 
 def check_codegen_sync(codegen_path: Path) -> list[str]:
@@ -1169,12 +1186,21 @@ def main() -> int:
         action="store_true",
         help="verify fixture registry, layer sync, and opcode coverage",
     )
-    parser.parse_args()
+    parser.add_argument(
+        "--require-jac",
+        action="store_true",
+        help=(
+            "fail when the jac binary is missing instead of skipping "
+            "compiler-only native codegen opcode checks"
+        ),
+    )
+    args = parser.parse_args()
 
     root = _repo_root()
     layer = root / "jac-py" / "jacpython" / "layer_vm_conformance.jac"
     codegen = root / "jac-py" / "jacpython" / "compiler_codegen.jac"
     errors: list[str] = []
+    skips: list[str] = []
     try:
         python = resolve_pinned_cpython(root)
     except RuntimeError as exc:
@@ -1185,7 +1211,11 @@ def main() -> int:
         errors.extend(check_fixtures(python))
     if layer.is_file():
         if python is not None:
-            errors.extend(check_layer_markers(layer, python, jac, root))
+            layer_errors, layer_skips = check_layer_markers(
+                layer, python, jac, root, require_jac=args.require_jac
+            )
+            errors.extend(layer_errors)
+            skips.extend(layer_skips)
         else:
             errors.append(
                 f"cannot verify {layer.name} without pinned CPython {CPYTHON_PIN}"
@@ -1198,6 +1228,14 @@ def main() -> int:
         for err in errors:
             print(f"FAIL: {err}")
         return 1
+    if skips:
+        unique_skips = sorted(set(skips))
+        print(
+            "SKIP: compiler-only native codegen checks without jac "
+            f"({len(unique_skips)} opcodes)"
+        )
+        for item in unique_skips:
+            print(f"  {item}")
     print(
         f"PASS: VM opcode fixtures cover {len(EMISSION_OPCODES)} emission opcodes "
         f"({len(FIXTURES)} CPython fixtures, "
