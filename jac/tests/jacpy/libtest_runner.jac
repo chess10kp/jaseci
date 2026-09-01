@@ -224,7 +224,15 @@ def run_libtest_jacpython(`case: LibtestSnippet) -> tuple[str, str] {
     }
     try {
         proc = subprocess.run(
-            [py, bridge, `case.code, "--expect", libtest_jac_expect_stdout(`case)],
+            [
+                py,
+                bridge,
+                `case.code,
+                "--expect",
+                libtest_jac_expect_stdout(`case),
+                "--snippet-name",
+                `case.name,
+            ],
             capture_output=True,
             text=True,
             timeout=JAC_RUN_TIMEOUT,
