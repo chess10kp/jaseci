@@ -17,6 +17,7 @@ import sys;
 import tempfile;
 import from tests.support { JAC_ROOT }
 import from tests.jacpy.libtest_snippets { LIBTEST_SNIPPETS, LibtestSnippet }
+import from layer_p2_libtest { p2_libtest_expect_ok }
 
 
 glob REPO_ROOT: str = os.path.dirname(JAC_ROOT),
@@ -217,37 +218,14 @@ def run_libtest_jacpython(`case: LibtestSnippet) -> tuple[str, str] {
             f"{`case.name} not jacpython-capable or disabled"
         );
     }
-    bridge = os.path.join(REPO_ROOT, "jac-py", "tools", "p2_libtest_jacpython_bridge.py");
-    py = os.path.join(REPO_ROOT, ".venv", "bin", "python");
-    if not os.path.isfile(py) {
-        py = host_python();
+    (ok, detail) = p2_libtest_expect_ok(
+        `case.code,
+        libtest_jac_expect_stdout(`case)
+    );
+    if ok {
+        return ("pass", detail);
     }
-    try {
-        proc = subprocess.run(
-            [
-                py,
-                bridge,
-                `case.code,
-                "--expect",
-                libtest_jac_expect_stdout(`case),
-                "--snippet-name",
-                `case.name,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=JAC_RUN_TIMEOUT,
-            cwd=REPO_ROOT,
-            env=_jac_run_env()
-        );
-    } except subprocess.TimeoutExpired {
-        return ("fail", "timeout");
-    }
-    if proc.returncode != 0 {
-        detail = (proc.stderr or proc.stdout or "").strip();
-        return ("fail", detail or f"exit {proc.returncode}");
-    }
-    stdout = (proc.stdout or "").strip();
-    return ("pass", stdout);
+    return ("fail", detail);
 }
 
 
