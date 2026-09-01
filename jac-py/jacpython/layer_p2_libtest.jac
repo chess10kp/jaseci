@@ -19,7 +19,6 @@ import from _warningsmodule {
     warnings_module_attrs,
     _p2_warn_state_reset,
 }
-import from _fcntlmodule { fcntl_module_attrs }
 import from ceval {
     _sys3_forget,
     set_layer3_active,
@@ -43,8 +42,6 @@ import from _collections_pylib {
     _p2_namedtuple,
     _p2_ordereddict,
 }
-import from _mmapmodule { build_mmap_module }
-import from _syslogmodule { build_syslog_module }
 import from _statmodule {
     _p2_S_ISDIR,
     _p2_S_ISCHR,
@@ -960,15 +957,10 @@ def p2_libtest_reset {
         "_typing",
         PyModule(t="module", name="_typing", attrs=typing_module_attrs())
     );
-    register_shim_module("mmap", build_mmap_module());
-    register_shim_module("syslog", build_syslog_module());
     _p2_warn_state_reset();
     register_shim_module(
         "warnings",
         PyModule(t="module", name="warnings", attrs=warnings_module_attrs())
-    );
-    register_shim_module(
-        "fcntl", PyModule(t="module", name="fcntl", attrs=fcntl_module_attrs())
     );
 }
 
