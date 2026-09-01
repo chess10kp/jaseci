@@ -7,7 +7,7 @@ def math_isqrt_small(n: int) -> int {
 
     x = n;
     while True {
-        y = (x + (n // x)) / 2;
+        y = (x + (n // x)) // 2;
         if (y >= x) {
             return x;
         }

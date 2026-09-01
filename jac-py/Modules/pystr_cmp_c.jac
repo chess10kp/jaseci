@@ -1,31 +1,27 @@
+def _uchar(c: int) -> int {
+    return c & 0xFF;
+}
+
 def pystr_cmp_c(a: str, b: str) -> int {
-    i: int = 0;
-    ca: int = 0;
-    cb: int = 0;
-    if ((a == 0) and (b == 0)) {
+    if (not a) and (not b) {
         return 0;
     }
 
-    if (a == 0) {
+    if not a {
         return -1;
     }
 
-    if (b == 0) {
+    if not b {
         return 1;
     }
 
-    i = 0;
-    while 1 {
-        ca = a[i] & 255;
-        cb = b[i] & 255;
-        if (ca != cb) {
-            return (ca - cb);
-        }
-
-        if (ca == 0) {
-            return 0;
-        }
-
-        i += 1;
+    while (
+        _uchar(ord(a[0]) if a else 0)
+        and (_uchar(ord(a[0]) if a else 0) == _uchar(ord(b[0]) if b else 0))
+    ) {
+        a = a[1:];
+        b = b[1:];
     }
+
+    return _uchar(ord(a[0]) if a else 0) - _uchar(ord(b[0]) if b else 0);
 }
