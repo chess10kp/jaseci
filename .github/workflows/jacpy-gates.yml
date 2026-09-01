@@ -208,10 +208,10 @@ jobs:
         run: jac test jac-py/tests/test_p2_corpus_density.jac
 
       - name: P2 waves 2-11 c2jac corpus lifts + Tier-B density gates
-        run: python3 -m unittest jac-py/tools/test_p2_corpus_waves_gate
+        run: python3 -m unittest jac-py/tools/test_p2_corpus_waves_gate.py
 
       - name: P2 waves 2-11 conformance manifest gates
-        run: python3 -m unittest jac-py/tools/p2_conformance_waves_gate
+        run: python3 -m unittest jac-py/tools/p2_conformance_waves_gate.py
 
       - name: P2 waves 2-11 module oracles
         env:
