@@ -32,7 +32,7 @@ def m_fabs(x: float) -> float {
 }
 
 
-def fsum_fold_partials(p: object, n: int, x: float, x_out: list) -> int {
+def fsum_fold_partials(p: list[float], n: int, x: float, x_out: list[float]) -> int {
     i: int = 0;
     j: int = 0;
     y: float = 0.0;
