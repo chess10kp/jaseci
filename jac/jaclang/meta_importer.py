@@ -178,6 +178,37 @@ sys.modules["jaclang.compiler.driver.modresolver"] = _modresolver
 get_jac_search_paths = _modresolver.get_jac_search_paths
 
 
+def _jacpath_roots() -> tuple[str, ...]:
+    raw = os.environ.get("JACPATH", "")
+    if not raw:
+        return ()
+    return tuple(
+        os.path.realpath(entry.strip())
+        for entry in raw.split(os.pathsep)
+        if entry.strip()
+    )
+
+
+def _jacpath_stdlib_shadow_blocked(fullname: str, origin: str) -> bool:
+    """True when a JACPATH entry would hijack a stdlib/builtin module name.
+
+    JacPython ships product-path facades named like stdlib modules (``weakref``,
+    ``types``, ...). ``JACPATH`` must expose those to the *guest* import hook,
+    not to the host ``meta_importer`` that bootstraps ``jaclang`` -- otherwise a
+    sealed-kit ``jac test`` with ``JACPATH=jac-py/jacpython`` re-enters the full
+    compiler while ``runtime.jac`` is still initializing and dies on a circular
+    ``JacRuntime`` import.
+    """
+    top = fullname.partition(".")[0]
+    if top not in sys.stdlib_module_names and top not in sys.builtin_module_names:
+        return False
+    real_origin = os.path.realpath(origin)
+    for root in _jacpath_roots():
+        if real_origin == root or real_origin.startswith(root + os.sep):
+            return True
+    return False
+
+
 class JacMetaImporter(MetaPathFinder, Loader):
     """Meta path importer to load .jac modules via Python's import system."""
 
@@ -234,15 +265,22 @@ class JacMetaImporter(MetaPathFinder, Loader):
             # Check for directory package (canonical __init__ variants and
             # precedence come from the shared extension registry).
             if os.path.isdir(candidate_path):
+                pkg_shadowed = False
                 for init_name in ext_registry.INIT_FILES:
                     init_file = os.path.join(candidate_path, init_name)
                     if os.path.isfile(init_file):
-                        return importlib.util.spec_from_file_location(
-                            fullname,
-                            init_file,
-                            loader=self,
-                            submodule_search_locations=[candidate_path],
-                        )
+                        if _jacpath_stdlib_shadow_blocked(fullname, init_file):
+                            pkg_shadowed = True
+                        else:
+                            return importlib.util.spec_from_file_location(
+                                fullname,
+                                init_file,
+                                loader=self,
+                                submodule_search_locations=[candidate_path],
+                            )
+                        break
+                if pkg_shadowed:
+                    continue
                 # No __init__.jac found — treat as an implicit Jac namespace
                 # package when a .jac source lives anywhere in its subtree (and
                 # it is not a regular Python package). Without this, Python's
@@ -253,6 +291,8 @@ class JacMetaImporter(MetaPathFinder, Loader):
                 # namespace package like ``engine/`` in ``engine.math.vec3``
                 # (issue #7211).
                 if ext_registry.is_jac_namespace_package(candidate_path):
+                    if _jacpath_stdlib_shadow_blocked(fullname, candidate_path):
+                        continue
                     spec = importlib.machinery.ModuleSpec(
                         fullname, loader=None, is_package=True
                     )
@@ -262,6 +302,8 @@ class JacMetaImporter(MetaPathFinder, Loader):
             for suffix in ext_registry.MODULE_SUFFIXES:
                 module_file = candidate_path + suffix
                 if os.path.isfile(module_file):
+                    if _jacpath_stdlib_shadow_blocked(fullname, module_file):
+                        break
                     return importlib.util.spec_from_file_location(
                         fullname, module_file, loader=self
                     )
@@ -469,17 +511,26 @@ class JacMetaImporter(MetaPathFinder, Loader):
             candidate_path = os.path.join(search_path, *module_path_parts)
             # Check for directory package (shared __init__ precedence).
             if os.path.isdir(candidate_path):
+                pkg_shadowed = False
                 for init_name in ext_registry.INIT_FILES:
                     init_file = os.path.join(candidate_path, init_name)
                     if os.path.isfile(init_file):
-                        return compiler.get_bytecode(
-                            full_target=init_file,
-                            target_program=program,
-                        )
+                        if _jacpath_stdlib_shadow_blocked(fullname, init_file):
+                            pkg_shadowed = True
+                        else:
+                            return compiler.get_bytecode(
+                                full_target=init_file,
+                                target_program=program,
+                            )
+                        break
+                if pkg_shadowed:
+                    continue
             # Check for a module file in codespace precedence order.
             for suffix in ext_registry.MODULE_SUFFIXES:
                 module_file = candidate_path + suffix
                 if os.path.isfile(module_file):
+                    if _jacpath_stdlib_shadow_blocked(fullname, module_file):
+                        break
                     return compiler.get_bytecode(
                         full_target=module_file,
                         target_program=program,
