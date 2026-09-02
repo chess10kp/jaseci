@@ -10011,10 +10011,43 @@ def send_throw_into(receiver: PyObj, err: PyObj) -> PyObj {
 # by the common case the generator machinery guarantees -- an argument passed
 # straight into the generator call is reachable only through its frame -- since
 # jacpython does not carry Python-level refcounts. Idempotent via frame.cleared.
-glob _gc_tracked_users: dict[str, PyUserObj] = {};
+# Weak host refs only: a strong table pinned every PyUserObj past its last
+# visible binding and broke refcount death (weakref.ref() stayed alive after
+# del without gc.collect()).
+glob _gc_tracked_users: dict[str, any] = {};
+
+def _gc_tracked_user(key: str) -> PyUserObj | None {
+    wr = _gc_tracked_users.get(key);
+    if wr is None {
+        return None;
+    }
+    raw = _jac_weakref_deref(wr);
+    if raw is None {
+        _gc_tracked_users.pop(key, None);
+        return None;
+    }
+    return raw as PyUserObj;
+}
+
+def _gc_prune_dead_tracked() -> None {
+    dead: list[str] = [];
+    for key in _gc_tracked_users {
+        wr = _gc_tracked_users[key];
+        if _jac_weakref_deref(wr) is None {
+            dead.append(key);
+        }
+    }
+    for key in dead {
+        _gc_tracked_users.pop(key, None);
+    }
+}
 
 def gc_track_user(u: PyUserObj) -> None {
-    _gc_tracked_users[str(id(u))] = u;
+    wr = _jac_make_weakref(u);
+    if wr is None {
+        return;
+    }
+    _gc_tracked_users[str(id(u))] = wr;
 }
 
 def gc_untrack_user(u: PyUserObj) -> None {
@@ -10145,6 +10178,7 @@ def gc_collect_cycles() -> int {
             }
         }
     }
+    _gc_prune_dead_tracked();
     marked: dict[str, bool] = {};
     for root_item in _gc_gather_roots() {
         _gc_mark_obj(root_item, marked);
@@ -10155,10 +10189,10 @@ def gc_collect_cycles() -> int {
         pending.append(key);
     }
     for key in pending {
-        if key not in _gc_tracked_users {
+        u = _gc_tracked_user(key);
+        if u is None {
             continue;
         }
-        u = _gc_tracked_users[key];
         if str(id(u)) in marked {
             continue;
         }
