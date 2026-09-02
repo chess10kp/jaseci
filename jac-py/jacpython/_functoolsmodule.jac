@@ -564,13 +564,28 @@ def _p2_cmp_to_key(mycmp: any) -> _P2CmpKeyFactory {
 # plain functions so setattr(cls, opname, func) binds through the descriptor
 # protocol once attached.
 
-def _p2_call_type_dunder(self: any, other: any, dunder: str) -> any {
-    op: any = getattr(type(self), dunder);
-    return op(self, other);
+def _p2_invoke_lt(inst: any, other: any) -> any {
+    op: any = getattr(type(inst), "__lt__");
+    return op(inst, other);
+}
+
+def _p2_invoke_le(inst: any, other: any) -> any {
+    op: any = getattr(type(inst), "__le__");
+    return op(inst, other);
+}
+
+def _p2_invoke_gt(inst: any, other: any) -> any {
+    op: any = getattr(type(inst), "__gt__");
+    return op(inst, other);
+}
+
+def _p2_invoke_ge(inst: any, other: any) -> any {
+    op: any = getattr(type(inst), "__ge__");
+    return op(inst, other);
 }
 
 def _p2_gt_from_lt(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__lt__");
+    op_result: any = _p2_invoke_lt(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -578,7 +593,7 @@ def _p2_gt_from_lt(self: any, other: any) -> any {
 }
 
 def _p2_le_from_lt(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__lt__");
+    op_result: any = _p2_invoke_lt(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -586,7 +601,7 @@ def _p2_le_from_lt(self: any, other: any) -> any {
 }
 
 def _p2_ge_from_lt(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__lt__");
+    op_result: any = _p2_invoke_lt(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -594,7 +609,7 @@ def _p2_ge_from_lt(self: any, other: any) -> any {
 }
 
 def _p2_ge_from_le(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__le__");
+    op_result: any = _p2_invoke_le(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -602,7 +617,7 @@ def _p2_ge_from_le(self: any, other: any) -> any {
 }
 
 def _p2_lt_from_le(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__le__");
+    op_result: any = _p2_invoke_le(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -610,7 +625,7 @@ def _p2_lt_from_le(self: any, other: any) -> any {
 }
 
 def _p2_gt_from_le(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__le__");
+    op_result: any = _p2_invoke_le(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -618,7 +633,7 @@ def _p2_gt_from_le(self: any, other: any) -> any {
 }
 
 def _p2_lt_from_gt(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__gt__");
+    op_result: any = _p2_invoke_gt(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -626,7 +641,7 @@ def _p2_lt_from_gt(self: any, other: any) -> any {
 }
 
 def _p2_ge_from_gt(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__gt__");
+    op_result: any = _p2_invoke_gt(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -634,7 +649,7 @@ def _p2_ge_from_gt(self: any, other: any) -> any {
 }
 
 def _p2_le_from_gt(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__gt__");
+    op_result: any = _p2_invoke_gt(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -642,7 +657,7 @@ def _p2_le_from_gt(self: any, other: any) -> any {
 }
 
 def _p2_le_from_ge(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__ge__");
+    op_result: any = _p2_invoke_ge(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -650,7 +665,7 @@ def _p2_le_from_ge(self: any, other: any) -> any {
 }
 
 def _p2_gt_from_ge(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__ge__");
+    op_result: any = _p2_invoke_ge(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
@@ -658,7 +673,7 @@ def _p2_gt_from_ge(self: any, other: any) -> any {
 }
 
 def _p2_lt_from_ge(self: any, other: any) -> any {
-    op_result: any = _p2_call_type_dunder(self, other, "__ge__");
+    op_result: any = _p2_invoke_ge(self, other);
     if op_result is NotImplemented {
         return op_result;
     }
