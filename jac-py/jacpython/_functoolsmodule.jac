@@ -73,7 +73,7 @@ obj _P2Partial {
         phcount: int = 0;
 
 
-    def __call__(*args: tuple, **kwargs: dict) -> any {
+    def __call__(*args: list, **kwargs: dict) -> any {
         # Mirrors partial_call: Placeholder slots consume the call's leading
         # positionals, so too few arguments is a host-exact TypeError.
         if len(args) < self.phcount {
@@ -304,7 +304,7 @@ obj _P2LRUWrapper {
     }
 
 
-    def _make_key(args: tuple, kwargs: dict) -> any {
+    def _make_key(args: list, kwargs: dict) -> any {
         # Mirrors the C key layout: positionals, then (kwd_mark, sorted pairs),
         # then -- when typed -- one more segment of argument types.
         key_parts: list = [];
@@ -334,7 +334,7 @@ obj _P2LRUWrapper {
     }
 
 
-    def __call__(*args: tuple, **kwargs: dict) -> any {
+    def __call__(*args: list, **kwargs: dict) -> any {
         key: any = self._make_key(args, kwargs);
         if key in self.cache {
             self.hits = self.hits + 1;
@@ -384,11 +384,11 @@ obj _P2LRUWrapper {
         return getattr(self, "__qualname__", "");
     }
 
-    def __copy__(*args: tuple) -> any {
+    def __copy__(*args: list) -> any {
         return self;
     }
 
-    def __deepcopy__(*args: tuple) -> any {
+    def __deepcopy__(*args: list) -> any {
         return self;
     }
 }
@@ -411,11 +411,11 @@ obj _P2LRUDecorator {
             func=user_function, maxsize=stored, typed=self.dec_typed
         );
         # CPython sets __wrapped__ so introspection sees through the cache.
-        wrapper.__wrapped__ = user_function;
-        wrapper.__module__ = "functools";
-        wrapper.__name__ = user_function.__name__;
-        wrapper.__qualname__ = user_function.__qualname__;
-        wrapper.__doc__ = user_function.__doc__;
+        setattr(wrapper, "__wrapped__", user_function);
+        setattr(wrapper, "__module__", "functools");
+        setattr(wrapper, "__name__", user_function.__name__);
+        setattr(wrapper, "__qualname__", user_function.__qualname__);
+        setattr(wrapper, "__doc__", user_function.__doc__);
         return wrapper;
     }
 }
@@ -564,8 +564,13 @@ def _p2_cmp_to_key(mycmp: any) -> _P2CmpKeyFactory {
 # plain functions so setattr(cls, opname, func) binds through the descriptor
 # protocol once attached.
 
+def _p2_call_type_dunder(self: any, other: any, dunder: str) -> any {
+    op: any = getattr(type(self), dunder);
+    return op(self, other);
+}
+
 def _p2_gt_from_lt(self: any, other: any) -> any {
-    op_result: any = type(self).__lt__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__lt__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -573,7 +578,7 @@ def _p2_gt_from_lt(self: any, other: any) -> any {
 }
 
 def _p2_le_from_lt(self: any, other: any) -> any {
-    op_result: any = type(self).__lt__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__lt__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -581,7 +586,7 @@ def _p2_le_from_lt(self: any, other: any) -> any {
 }
 
 def _p2_ge_from_lt(self: any, other: any) -> any {
-    op_result: any = type(self).__lt__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__lt__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -589,7 +594,7 @@ def _p2_ge_from_lt(self: any, other: any) -> any {
 }
 
 def _p2_ge_from_le(self: any, other: any) -> any {
-    op_result: any = type(self).__le__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__le__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -597,7 +602,7 @@ def _p2_ge_from_le(self: any, other: any) -> any {
 }
 
 def _p2_lt_from_le(self: any, other: any) -> any {
-    op_result: any = type(self).__le__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__le__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -605,7 +610,7 @@ def _p2_lt_from_le(self: any, other: any) -> any {
 }
 
 def _p2_gt_from_le(self: any, other: any) -> any {
-    op_result: any = type(self).__le__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__le__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -613,7 +618,7 @@ def _p2_gt_from_le(self: any, other: any) -> any {
 }
 
 def _p2_lt_from_gt(self: any, other: any) -> any {
-    op_result: any = type(self).__gt__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__gt__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -621,7 +626,7 @@ def _p2_lt_from_gt(self: any, other: any) -> any {
 }
 
 def _p2_ge_from_gt(self: any, other: any) -> any {
-    op_result: any = type(self).__gt__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__gt__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -629,7 +634,7 @@ def _p2_ge_from_gt(self: any, other: any) -> any {
 }
 
 def _p2_le_from_gt(self: any, other: any) -> any {
-    op_result: any = type(self).__gt__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__gt__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -637,7 +642,7 @@ def _p2_le_from_gt(self: any, other: any) -> any {
 }
 
 def _p2_le_from_ge(self: any, other: any) -> any {
-    op_result: any = type(self).__ge__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__ge__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -645,7 +650,7 @@ def _p2_le_from_ge(self: any, other: any) -> any {
 }
 
 def _p2_gt_from_ge(self: any, other: any) -> any {
-    op_result: any = type(self).__ge__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__ge__");
     if op_result is NotImplemented {
         return op_result;
     }
@@ -653,7 +658,7 @@ def _p2_gt_from_ge(self: any, other: any) -> any {
 }
 
 def _p2_lt_from_ge(self: any, other: any) -> any {
-    op_result: any = type(self).__ge__(self, other);
+    op_result: any = _p2_call_type_dunder(self, other, "__ge__");
     if op_result is NotImplemented {
         return op_result;
     }
