@@ -1,0 +1,26 @@
+{
+  "lenient": true,
+  "output": "jac-py/Objects/_lifted/bytesobject_core.jac",
+  "quarantined_functions": [],
+  "sites": [
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 574,
+      "msg": "cast to `char` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 574,
+      "msg": "cast to `char` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    }
+  ],
+  "source": "jac-py/tools/p3_object_core/corpus/bytesobject_core.c",
+  "tier_b_count": 2,
+  "version": 1
+}

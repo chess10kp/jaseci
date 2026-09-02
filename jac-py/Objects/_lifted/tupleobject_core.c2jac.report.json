@@ -1,0 +1,90 @@
+{
+  "lenient": true,
+  "output": "jac-py/Objects/_lifted/tupleobject_core.jac",
+  "quarantined_functions": [],
+  "sites": [
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 250,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 252,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 253,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 256,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 258,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 261,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 261,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 263,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 267,
+      "msg": "cast to `Py_hash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 268,
+      "msg": "cast to `Py_hash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    }
+  ],
+  "source": "jac-py/tools/p3_object_core/corpus/tupleobject_core.c",
+  "tier_b_count": 10,
+  "version": 1
+}

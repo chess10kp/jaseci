@@ -1,0 +1,26 @@
+{
+  "lenient": true,
+  "output": "jac-py/Objects/_lifted/floatobject_core.jac",
+  "quarantined_functions": [],
+  "sites": [
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 254,
+      "msg": "cast to `void` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 255,
+      "msg": "cast to `void` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    }
+  ],
+  "source": "jac-py/tools/p3_object_core/corpus/floatobject_core.c",
+  "tier_b_count": 2,
+  "version": 1
+}

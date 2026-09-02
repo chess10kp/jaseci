@@ -1,0 +1,18 @@
+{
+  "lenient": true,
+  "output": "jac-py/Objects/_lifted/enumobject_core.jac",
+  "quarantined_functions": [],
+  "sites": [
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 246,
+      "msg": "cast to `Py_ssize_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    }
+  ],
+  "source": "jac-py/tools/p3_object_core/corpus/enumobject_core.c",
+  "tier_b_count": 1,
+  "version": 1
+}

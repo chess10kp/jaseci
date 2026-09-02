@@ -1,0 +1,66 @@
+{
+  "lenient": true,
+  "output": "jac-py/Objects/_lifted/complexobject_core.jac",
+  "quarantined_functions": [],
+  "sites": [
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 259,
+      "msg": "cast to `void` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 260,
+      "msg": "cast to `void` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 271,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 271,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 272,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 273,
+      "msg": "cast to `Py_uhash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 275,
+      "msg": "cast to `Py_hash_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    }
+  ],
+  "source": "jac-py/tools/p3_object_core/corpus/complexobject_core.c",
+  "tier_b_count": 7,
+  "version": 1
+}

@@ -522,6 +522,10 @@ def _jac_async_generator_type():
     import types
     return types.AsyncGeneratorType
 
+def _jac_module_type():
+    import sys
+    return type(sys)
+
 def _jac_host_same_object(a, b):
     return a is b
 

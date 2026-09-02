@@ -1,0 +1,9 @@
+{
+  "lenient": true,
+  "output": "jac-py/Objects/_lifted/capsule_core.jac",
+  "quarantined_functions": [],
+  "sites": [],
+  "source": "jac-py/tools/p3_object_core/corpus/capsule_core.c",
+  "tier_b_count": 0,
+  "version": 1
+}

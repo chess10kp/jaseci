@@ -200,6 +200,9 @@ def _jac_coroutine_type():
 def _jac_async_generator_type():
     return _hb._jac_async_generator_type()
 
+def _jac_module_type():
+    return _hb._jac_module_type()
+
 def _jac_host_same_object(a, b):
     return _hb._jac_host_same_object(a, b)
 
@@ -3044,6 +3047,9 @@ def py_type_of(o: PyObj) -> PyObj {
             return from_host(_jac_async_generator_type());
         }
         return from_host(_jac_generator_type());
+    }
+    if isinstance(o, PyModule) {
+        return from_host(_jac_module_type());
     }
     ho_r = to_host_coerce(o);
     ho = ho_r[1];

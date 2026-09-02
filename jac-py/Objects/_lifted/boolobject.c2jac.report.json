@@ -1,0 +1,85 @@
+{
+  "lenient": true,
+  "output": "jac-py/Objects/_lifted/boolobject.jac",
+  "quarantined_functions": [
+    "bool_repr",
+    "bool_vectorcall"
+  ],
+  "sites": [
+    {
+      "band": "style",
+      "code": "W4209",
+      "function": null,
+      "line": 1,
+      "msg": "designated initializer `.lv_tag=` \u2014 field name dropped, emitted positionally",
+      "quarantined": false
+    },
+    {
+      "band": "style",
+      "code": "W4209",
+      "function": null,
+      "line": 1,
+      "msg": "designated initializer `.lv_tag=` \u2014 field name dropped, emitted positionally",
+      "quarantined": false
+    },
+    {
+      "band": "hole",
+      "code": "W4290",
+      "function": null,
+      "line": 149,
+      "msg": "C construct `UnaryOp` has no faithful Jac lowering \u2014 emitted as a placeholder",
+      "quarantined": true
+    },
+    {
+      "band": "hole",
+      "code": "W4290",
+      "function": null,
+      "line": 149,
+      "msg": "C construct `UnaryOp` has no faithful Jac lowering \u2014 emitted as a placeholder",
+      "quarantined": true
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 186,
+      "msg": "cast to `Py_ssize_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "hole",
+      "code": "W4290",
+      "function": null,
+      "line": 186,
+      "msg": "C construct `UnaryOp` has no faithful Jac lowering \u2014 emitted as a placeholder",
+      "quarantined": true
+    },
+    {
+      "band": "style",
+      "code": "W4201",
+      "function": null,
+      "line": 187,
+      "msg": "cast to `Py_ssize_t` elided \u2014 representation-changing conversion (truncation/narrowing/discard) not applied",
+      "quarantined": false
+    },
+    {
+      "band": "hole",
+      "code": "W4290",
+      "function": null,
+      "line": 307,
+      "msg": "C construct `Typename` has no faithful Jac lowering \u2014 emitted as a placeholder",
+      "quarantined": true
+    },
+    {
+      "band": "hole",
+      "code": "W4290",
+      "function": null,
+      "line": 308,
+      "msg": "C construct `UnaryOp` has no faithful Jac lowering \u2014 emitted as a placeholder",
+      "quarantined": true
+    }
+  ],
+  "source": "reference/cpython/Objects/boolobject.c",
+  "tier_b_count": 9,
+  "version": 1
+}

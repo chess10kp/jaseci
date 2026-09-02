@@ -75,7 +75,7 @@ def _jac_loc(path: str) -> int {
 test "P3 manifest: Layer-0 baseline entries present" {
     manifest = _load_json(MANIFEST_PATH);
     entries = manifest["layer0_files"] as list;
-    assert len(entries) == 6;
+    assert len(entries) == 9;
     for spec in entries {
         baseline = spec["baseline"] as dict;
         assert (baseline["failed"] as int) == 0;
@@ -88,8 +88,10 @@ test "P3 manifest: Layer-0 baseline entries present" {
 test "P3 manifest: Layer-1 entries gated with honest skip counts (P3.1b)" {
     manifest = _load_json(MANIFEST_PATH);
     entries = manifest["layer1_files"] as list;
-    assert len(entries) == 4;
-    expected_stems = ["test_set", "test_generators", "test_list", "test_tuple"];
+    assert len(entries) == 5;
+    expected_stems = [
+        "test_set", "test_generators", "test_list", "test_hashlib", "test_tuple"
+    ];
     seen: list[str] = [];
     for spec in entries {
         stem = spec["stem"] as str;
