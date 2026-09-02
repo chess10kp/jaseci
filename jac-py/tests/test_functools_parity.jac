@@ -305,7 +305,7 @@ test "wave20 wraps copies WRAPPER_ASSIGNMENTS and sets __wrapped__" {
     assert hwrapped.__name__ == "_host_spy_square";
     assert wrapped.__doc__ == "the real doc";
     assert wrapped.__module__ == "__main__" or isinstance(wrapped.__module__, str);
-    assert wrapped.__wrapped__ is real;
+    assert getattr(wrapped, "__wrapped__", None) is real;
     # missing attributes on the wrapped object are skipped silently
     def bare() {}
     @_p2_wraps(bare)
@@ -313,21 +313,21 @@ test "wave20 wraps copies WRAPPER_ASSIGNMENTS and sets __wrapped__" {
     # 3.14: update_wrapper assigns __annotate__, not __annotations__; the
     # wrapper's own annotations dict stays untouched.
     assert w2.__annotations__ == {"return": "None"};
-    assert w2.__wrapped__ is bare;
+    assert getattr(w2, "__wrapped__", None) is bare;
     # __dict__ merge exposes wrapper-side extras after update_wrapper
     def donor() {}
-    donor.extra = 42;
+    setattr(donor, "extra", 42);
     def sink() {}
     out = _p2_update_wrapper(sink, donor);
     assert out is sink;
-    assert sink.extra == 42;
-    assert sink.__wrapped__ is donor;
+    assert getattr(sink, "extra", None) == 42;
+    assert getattr(sink, "__wrapped__", None) is donor;
     # custom assigned/updated tuples are honored
     def sink2() {}
     _p2_update_wrapper(sink2, donor, ("__name__",), ());
     assert sink2.__name__ == "donor";
     assert getattr(sink2, "extra", None) is None;
-    assert sink2.__wrapped__ is donor;
+    assert getattr(sink2, "__wrapped__", None) is donor;
 }
 
 
@@ -388,10 +388,10 @@ test "wave20 total_ordering fills missing orderings like host" {
     vals: list = [1, 2, 3];
     for a in vals {
         for b in vals {
-            ja = JLtRoot(v=a);
-            jb = JLtRoot(v=b);
-            ha = HLtRoot(v=a);
-            hb = HLtRoot(v=b);
+            ja: any = JLtRoot(v=a);
+            jb: any = JLtRoot(v=b);
+            ha: any = HLtRoot(v=a);
+            hb: any = HLtRoot(v=b);
             assert (ja < jb) == (ha < hb) , (a, b, "lt");
             assert (ja <= jb) == (ha <= hb) , (a, b, "le");
             assert (ja > jb) == (ha > hb) , (a, b, "gt");
@@ -402,13 +402,15 @@ test "wave20 total_ordering fills missing orderings like host" {
         }
     }
     # __gt__-rooted class derives lt/le/ge correctly
-    g = JGtRoot(v=5);
-    assert g < JGtRoot(v=7);
-    assert g <= JGtRoot(v=5);
-    assert JGtRoot(v=7) >= JGtRoot(v=5);
+    g: any = JGtRoot(v=5);
+    g7: any = JGtRoot(v=7);
+    g5: any = JGtRoot(v=5);
+    assert g < g7;
+    assert g <= g5;
+    assert g7 >= g5;
     # __ge__-rooted class derives le/gt/lt correctly
-    hg1 = HGeRoot(v=1);
-    hg2 = HGeRoot(v=2);
+    hg1: any = HGeRoot(v=1);
+    hg2: any = HGeRoot(v=2);
     assert (hg1 < hg2) and (hg2 > hg1) and (hg2 >= hg1) and not (hg1 >= hg2);
     # no ordering op at all raises the host-exact ValueError
     obj Bad {
