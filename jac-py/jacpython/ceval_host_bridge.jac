@@ -247,17 +247,6 @@ def _jac_host_code_marshal(co):
     except BaseException as exc:
         return _jac_host_error(exc)
 
-def _jac_host_source_marshal(source):
-    # exec(str)/exec(bytes) source compiled on the host into the transport
-    # form (native statement-mode compile is Phase C). Errors -- SyntaxError
-    # above all -- come back through the tuple protocol so the guest raises a
-    # CATCHABLE exception, matching CPython's exec('for = 1') contract.
-    import marshal
-    try:
-        return (True, marshal.dumps(compile(source, "<string>", "exec")))
-    except BaseException as exc:
-        return _jac_host_error(exc)
-
 def _jac_host_type_name(value):
     return type(value).__name__
 

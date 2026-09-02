@@ -92,8 +92,6 @@ def _jac_host_builtin(name):
 def _jac_host_code_marshal(co):
     return _hb._jac_host_code_marshal(co)
 
-def _jac_host_source_marshal(source):
-    return _hb._jac_host_source_marshal(source)
 
 def _jac_host_type_name(value):
     return _hb._jac_host_type_name(value)
@@ -319,19 +317,8 @@ def _jac_make_guest_async_generator(*args, **kwargs):
 
 ::py::
 
-
-import marshal;
-
-
-
-
 import from marshal_reader { unmarshal, bytes_to_str }
-
-# Bootstrap transport duplicate (pyc_first.jac keeps the canonical copy for re-export).
-def host_compile_marshal(source: str) -> list[int] {
-    raw = marshal.dumps(compile(source, "<jacpython-host>", "exec"));
-    return raw as list[int];
-}
+import from compile_route { compile_source_routed, CompileRoute }
 
 # The object core -- the PyObj data-type hierarchy, value/container slots, and
 # pure helpers -- lives in the na-clean leaf `objects.jac`. This module (the
@@ -1144,7 +1131,14 @@ def import_native(absname: str) -> PyObj {
     # Register the (still-executing) module before running its body so a circular
     # import mid-closure resolves to this partial module instead of re-entering.
     sys3_modules[absname] = module;
-    outcome = exec_code(unmarshal(host_compile_marshal(source)), [], modglobals);
+    mod_co = compile_source_routed(source, origin, "exec", 0, CompileRoute.NATIVE);
+    if is_error(mod_co) {
+        # Native compile failed: forget the partial module (circular-import
+        # hygiene) and surface the compiler diagnostic verbatim.
+        _sys3_forget(absname);
+        return mod_co;
+    }
+    outcome = exec_code(mod_co as PyCode, [], modglobals);
     if is_error(outcome) {
         _sys3_forget(absname);
         return outcome;
@@ -11188,10 +11182,11 @@ def builtin_exec(
             "exec expected at least 1 argument, got " + str(len(args))
         );
     }
-    # str/bytes source: compile through the same marshal transport the import
-    # machinery uses (native statement-mode compile is Phase C) and normalize
-    # to a PyCode before dispatch. A host SyntaxError surfaces as a catchable
-    # guest exception, matching CPython's exec('for = 1') -> SyntaxError.
+    # str/bytes source: compile through the native product compiler
+    # (tokenizer -> parser -> symtable -> codegen -> flowgraph -> assembler,
+    # CompileRoute.NATIVE) before dispatch. A SyntaxError surfaces as a
+    # catchable guest exception, matching CPython's exec('for = 1') ->
+    # SyntaxError.
     co_source: PyObj = args[0];
     if isinstance(co_source, PyStr) or isinstance(co_source, PyBytes) {
         src = "";
@@ -11200,19 +11195,16 @@ def builtin_exec(
         } else {
             src = bytes_to_str((co_source as PyBytes).val);
         }
-        packed_src = _jac_host_source_marshal(src);
-        if not host_result_ok(packed_src) {
-            return host_result_error(packed_src);
+        native_co = compile_source_routed(
+            src, "<string>", "exec", 0, CompileRoute.NATIVE
+        );
+        if is_error(native_co) {
+            return native_co;
         }
-        converted_src = unmarshal(packed_src[1] as list[int]);
-        if is_error(converted_src) {
-            # Surface load-time failures (e.g. opcode validation) verbatim.
-            return converted_src;
-        }
-        if not isinstance(converted_src, PyCode) {
+        if not isinstance(native_co, PyCode) {
             return py_error("TypeError", "exec() argument 1 must be a code object");
         }
-        co_source = converted_src;
+        co_source = native_co;
     }
     co: PyCode;
     match co_source {
