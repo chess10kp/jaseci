@@ -1148,7 +1148,9 @@ impl NaIRGenCalls._codegen_intrinsic(
     _emitters: dict[IntrinsicDispatch, Callable[..., (ir.Value | None)]] = {
         IntrinsicDispatch.RC_RUNTIME: self._emit_intrinsic_rc_runtime,
         IntrinsicDispatch.FLOAT_BITS: self._emit_intrinsic_float_bits,
-        IntrinsicDispatch.BITS_FLOAT: self._emit_intrinsic_bits_float
+        IntrinsicDispatch.BITS_FLOAT: self._emit_intrinsic_bits_float,
+        IntrinsicDispatch.MEM_PEEK: self._emit_intrinsic_mem_peek,
+        IntrinsicDispatch.MEM_POKE: self._emit_intrinsic_mem_poke
     };
     handler = _emitters.get(intr.dispatch);
     if handler is None {
@@ -1238,6 +1240,64 @@ impl NaIRGenCalls._emit_intrinsic_bits_float(
         return None;
     }
     return self.builder.bitcast(arg_val, ir.DoubleType(), name="bits_float");
+}
+
+impl NaIRGenCalls._intrinsic_mem_width(intr: IntrinsicEntry) -> int {
+    if intr.name.endswith("u8") {
+        return 8;
+    }
+    if intr.name.endswith("u16") {
+        return 16;
+    }
+    if intr.name.endswith("u32") {
+        return 32;
+    }
+    return 64;
+}
+
+impl NaIRGenCalls._emit_intrinsic_mem_peek(
+    nd: uni.FuncCall, intr: IntrinsicEntry, args: list
+) -> (ir.Value | None) {
+    addr_val = self._intrinsic_operand(nd, intr, args[0], intr.param_specs[0]);
+    if addr_val is None {
+        return None;
+    }
+    width = self._intrinsic_mem_width(intr);
+    cell_ty = ir.IntType(width);
+    ptr_val = self.builder.inttoptr(
+        addr_val, cell_ty.as_pointer(), name="peek.ptr"
+    );
+    # align=1: peeks target arbitrary byte offsets in FFI buffers; without it
+    # LLVM may assume natural alignment and miscompile at higher opt levels.
+    loaded = self.builder.load(ptr_val, name="peek.val", align=1);
+    if width == 64 {
+        return loaded;
+    }
+    return self.builder.zext(loaded, ir.IntType(64), name="peek.zext");
+}
+
+impl NaIRGenCalls._emit_intrinsic_mem_poke(
+    nd: uni.FuncCall, intr: IntrinsicEntry, args: list
+) -> (ir.Value | None) {
+    addr_val = self._intrinsic_operand(nd, intr, args[0], intr.param_specs[0]);
+    if addr_val is None {
+        return None;
+    }
+    store_val = self._intrinsic_operand(nd, intr, args[1], intr.param_specs[1]);
+    if store_val is None {
+        return None;
+    }
+    width = self._intrinsic_mem_width(intr);
+    cell_ty = ir.IntType(width);
+    ptr_val = self.builder.inttoptr(
+        addr_val, cell_ty.as_pointer(), name="poke.ptr"
+    );
+    if width != 64 {
+        store_val = self.builder.trunc(store_val, cell_ty, name="poke.trunc");
+    }
+    # align=1: see _emit_intrinsic_mem_peek.
+    self.builder.store(store_val, ptr_val, align=1);
+    return None;
 }
 
 impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {

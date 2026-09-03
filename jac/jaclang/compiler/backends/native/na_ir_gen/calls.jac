@@ -53,6 +53,16 @@ obj NaIRGenCalls(NaIRGenState) {
         nd: uni.FuncCall, intr: IntrinsicEntry, args: list
     ) -> (ir.Value | None);
 
+    def _intrinsic_mem_width(intr: IntrinsicEntry) -> int;
+
+    def _emit_intrinsic_mem_peek(
+        nd: uni.FuncCall, intr: IntrinsicEntry, args: list
+    ) -> (ir.Value | None);
+
+    def _emit_intrinsic_mem_poke(
+        nd: uni.FuncCall, intr: IntrinsicEntry, args: list
+    ) -> (ir.Value | None);
+
     def _native_module_call_target(nd: uni.FuncCall) -> (tuple | None);
     def _emit_unsupported_builtin_call(nd: uni.FuncCall, func_name: str) -> None;
     def _empty_ctor_args_of(nd: uni.FuncCall) -> list;
