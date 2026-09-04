@@ -3351,6 +3351,39 @@ obj PySeqIter(PyObj) {
     def tp_iter -> PyObj {
         return self;
     }
+
+    def tp_getattro(name: str) -> PyObj {
+        if name == "__setstate__" {
+            return PySeqIterSetState(t="seqiter_setstate", it=self);
+        }
+        return py_error("AttributeError", name);
+    }
+}
+
+# Pickle/iterator restore hook for old-style sequence iterators (CPython
+# sq_iterator): __setstate__(index) rewinds the cursor so exhausted iterators
+# can be resumed (array gh-128961).
+obj PySeqIterSetState(PyObj) {
+    has it: PySeqIter;
+
+    def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
+        if len(kwargs) > 0 {
+            return py_error(
+                "TypeError", "__setstate__() takes no keyword arguments"
+            );
+        }
+        if len(args) != 1 {
+            return py_error(
+                "TypeError", "__setstate__() takes exactly one argument (index)"
+            );
+        }
+        iv = args[0].to_index();
+        if is_error(iv) {
+            return iv;
+        }
+        self.it.index = (iv as PyInt).val;
+        return py_none();
+    }
 }
 
 obj PyHandler(PyObj) {

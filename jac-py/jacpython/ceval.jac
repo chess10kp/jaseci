@@ -415,6 +415,11 @@ import from gc_shim { gc_module_attrs }
 import from sysconfig_shim { sysconfig_module_attrs }
 import from errno_shim { errno_module_attrs }
 import from signal_shim { signal_module_attrs }
+import from array_facade {
+    array_module_attrs,
+    PyArrayObj,
+    array_obj_len,
+}
 import from objects {
     _zero_step_error,
     DictEntry,
@@ -1000,6 +1005,15 @@ def import_native(absname: str) -> PyObj {
             install_sys_guest_overrides(sysmod);
             shim_modules["sys"] = sysmod;
         }
+    }
+    if absname == "array" and not ("array" in shim_modules) {
+        # Host array.array crosses as a PyHostProxy: slice assignment and
+        # in-place ops mutate a host copy, so guest `a[:] = a` / `a += a`
+        # fail with "object does not support item assignment". Serve the
+        # native bytearray-backed facade (array.jac / arrayobject.jac).
+        shim_modules["array"] = PyModule(
+            t="module", name="array", attrs=array_module_attrs()
+        );
     }
     if absname == "traceback" and not ("traceback" in shim_modules) {
         # The host traceback module is unreachable: every API takes tb objects
@@ -2909,6 +2923,13 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         # semantics implemented natively. The layer3 boot path instead runs
         # the real types.py in-VM and overrides just the coroutine attribute.
         shim_modules["types"] = build_types_facade();
+    }
+    if name == "array" and not ("array" in shim_modules) {
+        # Mirror of the import_native site: host array proxies lose VM-native
+        # mutation (slice assign, in-place add/mul).
+        shim_modules["array"] = PyModule(
+            t="module", name="array", attrs=array_module_attrs()
+        );
     }
     if name == "_sysconfig" and not ("_sysconfig" in shim_modules) {
         # Mirror of the import_native site: the host _sysconfig describes the
@@ -5426,6 +5447,9 @@ def py_len(value: PyObj) -> PyObj {
     if isinstance(value, PyFrameLocalsProxy) {
         return PyInt(t="int", val=framelocals_len(value as PyFrameLocalsProxy));
     }
+    if isinstance(value, PyArrayObj) {
+        return PyInt(t="int", val=array_obj_len(value as PyArrayObj));
+    }
     if isinstance(value, PyUserObj) {
         u = value as PyUserObj;
         if user_has_dunder(u, "__len__") {
@@ -7056,6 +7080,14 @@ def py_isinstance(ob: PyObj, typ: PyObj) -> bool {
             }
         }
         return False;
+    }
+    # Native array.array instances satisfy the collections.abc sequence ABCs
+    # (array_modexec registers MutableSequence/Reversible on the host type).
+    if ob.t == "array" and isinstance(typ, PyHostProxy) {
+        abc_name = str(_jac_host_class_name((typ as PyHostProxy).val));
+        if abc_name == "MutableSequence" or abc_name == "Reversible" {
+            return True;
+        }
     }
     if isinstance(typ, PyHostProxy) {
         host_type = (typ as PyHostProxy).val;

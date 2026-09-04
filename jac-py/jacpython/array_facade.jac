@@ -49,6 +49,7 @@ import from opcode_meta {
 import from arrayobject {
     Array,
     _p2_array,
+    _tc_is_int,
 }
 
 
@@ -294,7 +295,7 @@ glob _ARRAY_METHODS: list[str] = [
     "reverse", "tobytes", "frombytes", "fromlist", "tolist", "fromunicode",
     "tounicode", "buffer_info", "byteswap", "fromfile", "tofile",
     "__copy__", "__deepcopy__", "__len__", "__iter__", "__getitem__",
-    "__repr__", "__eq__", "__add__", "__mul__",
+    "__setitem__", "__delitem__", "__repr__", "__eq__", "__add__", "__mul__",
 ];
 
 def _is_array_method(name: str) -> bool {
@@ -495,6 +496,20 @@ obj PyArrayMethod(PyObj) {
         if n == "__getitem__" {
             return self.target.mp_subscript(args[0]);
         }
+        if n == "__setitem__" {
+            chk11 = self._need(args, 2, 2);
+            if not isinstance(chk11, bool) {
+                return chk11 as PyObj;
+            }
+            return self.target.mp_ass_subscript(args[0], args[1]);
+        }
+        if n == "__delitem__" {
+            chk12 = self._need(args, 1, 1);
+            if not isinstance(chk12, bool) {
+                return chk12 as PyObj;
+            }
+            return self.target.mp_del_subscript(args[0]);
+        }
         if n == "__repr__" {
             return PyStr(t="str", val=a.__repr__());
         }
@@ -682,6 +697,18 @@ obj PyArrayObj(PyObj) {
                 a._ass_slice(ns2, (value as PyArrayObj).arr as Array);
                 return py_none();
             }
+            store_v: any = _arr_item_of(value);
+            # CPython array_ass_item: PyNumber_Index on the RHS runs before
+            # the bounds check so a __index__ can resize the array first.
+            if _tc_is_int(a.typecode)
+                and not isinstance(value, PyInt)
+                and not isinstance(value, PyBool) {
+                coerced = value.to_index();
+                if is_error(coerced) {
+                    return coerced;
+                }
+                store_v = (coerced as PyInt).val;
+            }
             iv2 = index.to_index();
             if is_error(iv2) {
                 return py_error(
@@ -691,7 +718,7 @@ obj PyArrayObj(PyObj) {
                 );
             }
             a.__setitem__(
-                (iv2 as PyInt).val, _arr_item_of(value)
+                (iv2 as PyInt).val, store_v
             );
             return py_none();
         } except BaseException as e {
