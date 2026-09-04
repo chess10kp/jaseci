@@ -388,7 +388,7 @@ def visit_if(
                 owns_join = True;
             }
             emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
-            body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
+            body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=body_cont.loc);
             }
@@ -396,7 +396,7 @@ def visit_if(
                 g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
             }
             g.use(false_blk);
-            else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, None, ann_ctx);
+            else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, join, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=else_cont.loc);
             }
@@ -423,7 +423,7 @@ def visit_if(
             owns_tail = True;
         }
         emit_branch_if_test_false(g, kind, join.id, test_loc);
-        body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
+        body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=body_cont.loc);
         }
@@ -458,6 +458,31 @@ def visit_if(
     # (b) module/function/unit epilogue (tail is None from the module driver
     #     or visit_stmt_tail after a trailing for): CPython DUPLICATES the
     #     implicit `return None` into each falling-through branch.
+    if tail_join is not None {
+        join = tail_join as basicblock;
+        if not has_else {
+            emit_branch_if_test_false(g, kind, join.id, test_loc);
+            body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
+            if codegen_busy(g) {
+                return stmt_cont(loc=body_cont.loc);
+            }
+            return stmt_cont(loc=body_cont.loc);
+        }
+        emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
+        body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=body_cont.loc);
+        }
+        if not body_cont.terminated {
+            g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
+        }
+        g.use(false_blk);
+        else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, join, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=else_cont.loc);
+        }
+        return stmt_cont(loc=iloc);
+    }
     loop_frame = g.current_loop();
     if loop_frame is not None {
         if not has_else {
