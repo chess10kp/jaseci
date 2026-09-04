@@ -222,6 +222,12 @@ def _overflow(tc: str, v: int) {
         }
         raise OverflowError("Python int too large to convert to C unsigned long");
     }
+    if tc == "Q" and v < 0 {
+        raise OverflowError("can't convert negative int to unsigned");
+    }
+    if tc == "q" or tc == "Q" {
+        raise OverflowError("int too big to convert");
+    }
     raise OverflowError("int too big to convert");
 }
 
