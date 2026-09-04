@@ -1311,15 +1311,9 @@ def visit_try(
             } else {
                 fallthrough_blk = g.cur;
             }
-        } elif try_follows {
-            # More statements follow in the enclosing visit_stmts body (not an
-            # outer tail suffix): resume there after handler layout, matching
-            # visit_try_finally's try_follows-without-tail path.
-            if after_try_epilogue is not None {
-                fallthrough_blk = after_try_epilogue;
-            } else {
-                fallthrough_blk = g.cur;
-            }
+        } elif try_follows and after_try_epilogue is not None and not normal_terminated {
+            # More statements follow after a normal (non-terminating) body exit.
+            fallthrough_blk = after_try_epilogue;
         }
     } else {
         if not normal_terminated {
