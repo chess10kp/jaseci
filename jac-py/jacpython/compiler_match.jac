@@ -1173,7 +1173,8 @@ def visit_match(
     if owns_join and join_blk is not None and tail is not None {
         g.use(join_blk);
         tail_more = exec_tail_emits_code(tail, tail_idx);
-        tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+        tail_cont = visit_stmt_tail(
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
         return stmt_cont(
             loc=tail_cont.loc,
             next_si=len(tail as list[stmt]),

@@ -178,7 +178,11 @@ obj cfg_builder {
         loop_exit_epilogue_complete: bool = False,
         # Protect-span depth bump for try/except registered while emitting a
         # loop body (while +2, for +4). Set by visit_while/visit_for.
-        loop_except_depth_bump: int = 0;
+        loop_except_depth_bump: int = 0,
+        # Deferred resume block after yield-from POP_TOP when more stmts follow.
+        # The send-loop footer lays out cleanup labels before POP_TOP; jumping
+        # forward skips them so stackdepth fallthrough does not enter CLEANUP_THROW.
+        yield_from_resume: basicblock | None = None;
 
     def emit(ins: cinstr) {
         self.cur.instrs.append(ins);

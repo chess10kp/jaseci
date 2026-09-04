@@ -591,10 +591,13 @@ def emit_await_send_loop_header(
     g.emit_op(get_iter_op, get_iter_arg, yloc);
     none_idx = g.u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, yloc);
-    send_blk = g.new_block();
-    yield_blk = g.new_block();
-    after_resume_blk = g.new_block();
-    end_send_blk = g.new_block();
+    # Defer layout until each label's first use (CPython USE_LABEL). Eager
+    # add_block here placed yield/send fragments ahead of following loop
+    # bodies (yield from then for in the same outer loop) and broke stackdepth.
+    send_blk = g.new_deferred_block();
+    yield_blk = g.new_deferred_block();
+    after_resume_blk = g.new_deferred_block();
+    end_send_blk = g.new_deferred_block();
     g.use(send_blk);
     g.emit_jump(OP_SEND, end_send_blk.id, yloc);
     g.use(yield_blk);
@@ -617,8 +620,8 @@ def emit_await_send_loop_header(
 def emit_await_send_loop_footer(
     g: cfg_builder, als: await_send_loop, yloc: cloc
 ) -> tuple[basicblock, basicblock] {
-    cleanup_throw_blk = g.new_block();
-    cleanup_jump_blk = g.new_block();
+    cleanup_throw_blk = g.new_deferred_block();
+    cleanup_jump_blk = g.new_deferred_block();
     g.use(cleanup_throw_blk);
     g.emit_op(OP_CLEANUP_THROW, 0, yloc);
     g.use(cleanup_jump_blk);
@@ -920,6 +923,25 @@ def unit_fail(u: unverified_cfg, kind: str, message: str) {
     }
 }
 
+def emit_local_or_cell_store(g: cfg_builder, name: str, tloc: cloc) -> bool {
+    name = codegen_mangle(g, name);
+    fi = fast_local_index(g, name);
+    if fi >= 0 {
+        g.emit_op(OP_STORE_FAST, fi, tloc);
+        return True;
+    }
+    if g.sym_top is not None and g.sym_top.block_type != "module" {
+        flags = sym_dict_get(g.sym_top.symbols, name, 0);
+        scope = sym_scope_of(flags);
+        if scope == SCOPE_FREE or scope == SCOPE_CELL {
+            idx = localsplus_index(g, name);
+            g.emit_op(OP_STORE_DEREF, idx, tloc);
+            return True;
+        }
+    }
+    return False;
+}
+
 def emit_name_load(
     g: cfg_builder, name: str, tloc: cloc, for_call: bool = False
 ) -> bool {
@@ -1185,7 +1207,7 @@ def visit_compare(
             return None;
         }
         if use_join {
-            join = g.new_block();
+            join = g.new_deferred_block();
             g.emit_jump(OP_JUMP_FORWARD, join.id, cloc_cmp);
             g.use(cleanup);
             g.emit_op(OP_SWAP, 2, cloc_cmp);
@@ -1264,7 +1286,10 @@ def visit_boolop(
     }
     join: basicblock | None = None;
     if not false_shortcircuit_returns {
-        join = g.new_block();
+        # Defer until after the rhs is visited. Eager placement left the join
+        # between short-circuit fragments and the following statement (e.g. a
+        # second `if`), breaking stackdepth on `a and not (b and c)` tests.
+        join = g.new_deferred_block();
     }
     false_exit: basicblock | None = None;
     vi = 0;
@@ -2335,7 +2360,40 @@ def comp_target_slot_index(g: cfg_builder, name: str) -> int {
     return -1;
 }
 
-def comp_target_slots(g: cfg_builder, target: expr) -> list[int] | None {
+def comp_slot_already_stored(stored: list[int], slot: int) -> bool {
+    si = 0;
+    while si < len(stored) {
+        if stored[si] == slot {
+            return True;
+        }
+        si = si + 1;
+    }
+    return False;
+}
+
+def comp_slot_appears_later(elem_slots: list[int], from_idx: int) -> bool {
+    slot = elem_slots[from_idx];
+    j = from_idx + 1;
+    while j < len(elem_slots) {
+        if elem_slots[j] == slot {
+            return True;
+        }
+        j = j + 1;
+    }
+    return False;
+}
+
+def comp_should_sfsf_pair(remaining: int) -> bool {
+    if remaining == 2 or remaining == 3 {
+        return True;
+    }
+    if remaining >= 4 and remaining % 2 == 0 {
+        return True;
+    }
+    return False;
+}
+
+def comp_target_element_slots(g: cfg_builder, target: expr) -> list[int] | None {
     if isinstance(target, Name) {
         fi = comp_target_slot_index(g, (target as Name).id);
         if fi < 0 {
@@ -2345,20 +2403,42 @@ def comp_target_slots(g: cfg_builder, target: expr) -> list[int] | None {
     }
     if isinstance(target, Tuple) {
         elts = (target as Tuple).elts;
-        if len(elts) != 2 {
+        if len(elts) == 0 {
             return None;
         }
-        if not isinstance(elts[0], Name) or not isinstance(elts[1], Name) {
-            return None;
+        out: list[int] = [];
+        ei = 0;
+        while ei < len(elts) {
+            if not isinstance(elts[ei], Name) {
+                return None;
+            }
+            fi = comp_target_slot_index(g, (elts[ei] as Name).id);
+            if fi < 0 {
+                return None;
+            }
+            out.append(fi);
+            ei = ei + 1;
         }
-        fi0 = comp_target_slot_index(g, (elts[0] as Name).id);
-        fi1 = comp_target_slot_index(g, (elts[1] as Name).id);
-        if fi0 < 0 or fi1 < 0 {
-            return None;
-        }
-        return [fi0, fi1];
+        return out;
     }
     return None;
+}
+
+def comp_target_slots(g: cfg_builder, target: expr) -> list[int] | None {
+    elem_slots = comp_target_element_slots(g, target);
+    if elem_slots is None {
+        return None;
+    }
+    out: list[int] = [];
+    si = 0;
+    while si < len(elem_slots) {
+        slot = elem_slots[si];
+        if not comp_slot_already_stored(out, slot) {
+            out.append(slot);
+        }
+        si = si + 1;
+    }
+    return out;
 }
 
 # A cell-targeted comprehension clears its slot(s) into a fresh cell before the
@@ -2374,31 +2454,27 @@ def comp_emit_cell_init(g: cfg_builder, target: expr, slots: list[int], loc: clo
     }
 }
 
-# True when the comprehension's first evaluated body expression begins with the
-# single loop variable -- the case CPython fuses into STORE_FAST_LOAD_FAST.
-def comp_lead_is_loopvar(
+# Fast-local slot of the loop variable the comprehension body evaluates first,
+# or -1 when the lead leaf is not a bound target name.
+def comp_lead_loopvar_slot(
     g: cfg_builder,
     gen: comprehension,
     body_first: expr,
-    bound_names: list[str],
-    slots: list[int]
-) -> bool {
-    if len(slots) != 1 {
-        return False;
-    }
+    bound_names: list[str]
+) -> int {
     first: expr = body_first;
     if len(gen.ifs) > 0 {
         first = gen.ifs[0];
     }
     leaf = comp_leftmost_leaf(first);
     if not isinstance(leaf, Name) {
-        return False;
+        return -1;
     }
     nid = (leaf as Name).id;
     if not comp_name_bound(nid, bound_names) {
-        return False;
+        return -1;
     }
-    return fast_local_index(g, nid) == slots[0];
+    return fast_local_index(g, nid);
 }
 
 def comp_name_fast_index(g: cfg_builder, e: expr, bound_names: list[str]) -> int {
@@ -2582,19 +2658,30 @@ def visit_comp_elt(
     visit_expr(g, e);
 }
 
-# Bind the comprehension loop target. When `lead` is true the first evaluated
-# reference in the body is the (single) loop var, so CPython fuses the store with
-# that first load into STORE_FAST_LOAD_FAST, leaving a borrowed copy on the stack
-# that emit_name_load consumes for that reference (comp_pending_borrow). Otherwise
-# a plain STORE_FAST binds it and every reference loads its own borrow.
+# Bind the comprehension loop target. When `lead_slot` is the fast index of the
+# loop variable the body evaluates first, CPython fuses the final bind with that
+# load via STORE_FAST_LOAD_FAST (odd arity) or leaves a borrow for LOAD_FAST_BORROW
+# (even arity after STORE_FAST_STORE_FAST pairs). emit_name_load consumes
+# comp_pending_borrow for the fused case.
 def comp_emit_bind_target(
-    g: cfg_builder, target: expr, slots: list[int], lead: bool = False
+    g: cfg_builder, target: expr, slots: list[int], lead_slot: int = -1
 ) {
     tloc = expr_loc(target);
     g.u.comp_pending_borrow = -1;
+    elem_slots = comp_target_element_slots(g, target);
+    if elem_slots is None {
+        codegen_fail(
+            g, "NotImplementedError", "unsupported comprehension loop target"
+        );
+        return;
+    }
+    n = len(elem_slots);
     if comp_target_is_cell(g, target) {
         # Cell-scope target: bind through the slot's live cell. UNPACK_SEQUENCE
         # pushes elements left-to-right, so stores run last-to-first.
+        if n > 1 {
+            g.emit_op(OP_UNPACK_SEQUENCE, n, tloc);
+        }
         si = len(slots) - 1;
         while si >= 0 {
             g.emit_op(OP_STORE_DEREF, slots[si], tloc);
@@ -2602,27 +2689,65 @@ def comp_emit_bind_target(
         }
         return;
     }
-    if len(slots) == 1 {
-        if lead {
-            pair_arg = slots[0] * 16 + slots[0];
-            g.emit_op(OP_STORE_FAST_LOAD_FAST, pair_arg, tloc);
-            g.u.comp_pending_borrow = slots[0];
+    if n == 1 {
+        si = elem_slots[0];
+        if lead_slot >= 0 and lead_slot == si {
+            g.emit_op(OP_STORE_FAST_LOAD_FAST, si * 16 + lead_slot, tloc);
+            g.u.comp_pending_borrow = lead_slot;
         } else {
-            g.emit_op(OP_STORE_FAST, slots[0], tloc);
+            g.emit_op(OP_STORE_FAST, si, tloc);
         }
         return;
     }
-    unpack_loc = tloc;
-    store_loc = tloc;
-    if isinstance(target, Tuple) {
-        elts = (target as Tuple).elts;
-        if len(elts) > 0 {
-            store_loc = expr_loc(elts[0]);
+    g.emit_op(OP_UNPACK_SEQUENCE, n, tloc);
+    stored: list[int] = [];
+    i = 0;
+    while i < n {
+        remaining = n - i;
+        s0 = elem_slots[i];
+        if i < n - 1 {
+            s1 = elem_slots[i + 1];
+            if s0 != s1 and comp_should_sfsf_pair(remaining) {
+                store_loc = tloc;
+                if isinstance(target, Tuple) {
+                    elts = (target as Tuple).elts;
+                    if i < len(elts) {
+                        store_loc = expr_loc(elts[i]);
+                    }
+                }
+                g.emit_op(OP_STORE_FAST_STORE_FAST, s0 * 16 + s1, store_loc);
+                if not comp_slot_already_stored(stored, s0) {
+                    stored.append(s0);
+                }
+                if not comp_slot_already_stored(stored, s1) {
+                    stored.append(s1);
+                }
+                i = i + 2;
+                continue;
+            }
         }
+        si = elem_slots[i];
+        if i == n - 1 {
+            if lead_slot >= 0 and n % 2 == 1 {
+                g.emit_op(OP_STORE_FAST_LOAD_FAST, si * 16 + lead_slot, tloc);
+                g.u.comp_pending_borrow = lead_slot;
+            } elif comp_slot_already_stored(stored, si) {
+                g.emit_op(OP_POP_TOP, 0, tloc);
+            } else {
+                g.emit_op(OP_STORE_FAST, si, tloc);
+            }
+            break;
+        }
+        if comp_slot_appears_later(elem_slots, i) {
+            g.emit_op(OP_POP_TOP, 0, tloc);
+        } else {
+            g.emit_op(OP_STORE_FAST, si, tloc);
+            if not comp_slot_already_stored(stored, si) {
+                stored.append(si);
+            }
+        }
+        i = i + 1;
     }
-    g.emit_op(OP_UNPACK_SEQUENCE, len(slots), unpack_loc);
-    pair_arg = slots[0] * 16 + slots[1];
-    g.emit_op(OP_STORE_FAST_STORE_FAST, pair_arg, store_loc);
 }
 
 def comp_emit_filters(
@@ -2875,7 +3000,7 @@ def visit_list_comp_async(
     g.use(store_blk);
     g.u.comp_depth = g.u.comp_depth + 1;
     comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_is_loopvar(g, gen, lc.elt, bound_names, slots)
+        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, lc.elt, bound_names)
     );
     if codegen_busy(g) {
         g.u.comp_depth = g.u.comp_depth - 1;
@@ -3024,7 +3149,7 @@ def visit_set_comp_async(
     g.use(store_blk);
     g.u.comp_depth = g.u.comp_depth + 1;
     comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_is_loopvar(g, gen, sc.elt, bound_names, slots)
+        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, sc.elt, bound_names)
     );
     if codegen_busy(g) {
         g.u.comp_depth = g.u.comp_depth - 1;
@@ -3162,7 +3287,7 @@ def visit_dict_comp_async(
     g.use(store_blk);
     g.u.comp_depth = g.u.comp_depth + 1;
     comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_is_loopvar(g, gen, dc.key, bound_names, slots)
+        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, dc.key, bound_names)
     );
     if codegen_busy(g) {
         g.u.comp_depth = g.u.comp_depth - 1;
@@ -3302,7 +3427,7 @@ def visit_list_comp(g: cfg_builder, lc: ListComp) {
         second_fast = slots[1];
     }
     comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_is_loopvar(g, gen, lc.elt, bound_names, slots)
+        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, lc.elt, bound_names)
     );
     if codegen_busy(g) {
         return;
@@ -3406,7 +3531,7 @@ def visit_set_comp(g: cfg_builder, sc: SetComp) {
         second_fast = slots[1];
     }
     comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_is_loopvar(g, gen, sc.elt, bound_names, slots)
+        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, sc.elt, bound_names)
     );
     if codegen_busy(g) {
         return;
@@ -3503,7 +3628,7 @@ def visit_dict_comp(g: cfg_builder, dc: DictComp) {
         second_fast = slots[1];
     }
     comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_is_loopvar(g, gen, dc.key, bound_names, slots)
+        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, dc.key, bound_names)
     );
     if codegen_busy(g) {
         return;
@@ -3837,11 +3962,11 @@ def compile_genexp_cfg(
         }
         if gi == nloops - 1 {
             inner_names = bound_names;
-            lead = comp_lead_is_loopvar(g, gen, ge.elt, bound_names, slots);
+            lead_slot = comp_lead_loopvar_slot(g, gen, ge.elt, bound_names);
         } else {
-            lead = False;
+            lead_slot = -1;
         }
-        comp_emit_bind_target(g, gen.target, slots, lead);
+        comp_emit_bind_target(g, gen.target, slots, lead_slot);
         fj = 0;
         while fj < len(gen.ifs) {
             fexpr = gen.ifs[fj];

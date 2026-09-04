@@ -325,7 +325,7 @@ import from compiler_emit {
     comp_emit_setup,
     comp_emit_single_elt,
     comp_finish_loop,
-    comp_lead_is_loopvar,
+    comp_lead_loopvar_slot,
     comp_name_fast_index,
     comp_target_slots,
     compile_lambda_cfg,
@@ -914,6 +914,10 @@ def visit_stmts(
     terminated = False;
     si = from_idx;
     while si < len(stmts) {
+        if g.yield_from_resume is not None {
+            g.use(g.yield_from_resume);
+            g.yield_from_resume = None;
+        }
         follow = more_follows_after;
         if not follow {
             follow = exec_tail_emits_code(stmts, si + 1);
@@ -1206,7 +1210,16 @@ def visit_stmt(
             g.emit_op(OP_POP_TOP, 0, eloc);
             g.use(after);
         } else {
-            g.emit_op(OP_POP_TOP, 0, eloc);
+            if isinstance(x.value, YieldFrom) {
+                g.emit_op(OP_POP_TOP, 0, eloc);
+                if more_code_follows {
+                    resume = g.new_deferred_block();
+                    g.emit_jump(OP_JUMP_FORWARD, resume.id, eloc);
+                    g.yield_from_resume = resume;
+                }
+            } else {
+                g.emit_op(OP_POP_TOP, 0, eloc);
+            }
         }
         return stmt_cont(loc=eloc);
     }

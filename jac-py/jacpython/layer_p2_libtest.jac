@@ -781,8 +781,10 @@ def p2_libtest_reset {
     # before the shim registry -- drop it so the facade shim always wins.
     _sys3_forget("collections");
     _sys3_forget("functools");
+    _sys3_forget("types");
     _delegate_forget("collections");
     _delegate_forget("functools");
+    _delegate_forget("types");
     # VM Lib/collections depends on host _collections._count_elements mutating a
     # guest dict (counts stay zero) and namedtuple's eval __new__ path boxes
     # wrong tuple subclasses. Host delegation keeps these pins host-exact while
@@ -797,6 +799,13 @@ def p2_libtest_reset {
         ft.attrs["update_wrapper"] = P2FunctoolsUpdateWrapperFn(t="function");
         ft.attrs["wraps"] = P2FunctoolsWrapsFn(t="function");
         register_shim_module("functools", ft);
+    }
+    # types.py fallback boot hits nested try/except inside an ImportError
+    # handler (TracebackType introspection); delegate until that VM path is
+    # sound. difflib only needs GenericAlias from this module on this pin.
+    types_mod = delegated_module("types");
+    if not is_error(types_mod) {
+        register_shim_module("types", types_mod);
     }
     platform_attrs: dict[str, PyObj] = {
         "platform": P2LibtestPlatformFn(t="function"),

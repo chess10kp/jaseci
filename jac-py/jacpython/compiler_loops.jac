@@ -8,6 +8,7 @@ import from opcode_meta {
     OP_FOR_ITER,
     OP_GET_AITER,
     OP_GET_ITER,
+    OP_GET_YIELD_FROM_ITER,
     OP_JUMP_BACKWARD,
     OP_JUMP_FORWARD,
     OP_LOAD_CONST,
@@ -161,6 +162,12 @@ def flush_pending_break_finishes(g: cfg_builder, from_idx: int) {
 # The driver-appended unit epilogue (LOAD_CONST None; RETURN_VALUE) counts
 # toward MAX_COPY_SIZE when the tail itself falls through.
 def join_inlinable(join: basicblock, tail_terminated: bool) -> bool {
+    # Yield-from lowering leaves a short prefix on the join block while the
+    # SEND/END_SEND sequence lives on deferred blocks. Inlining that prefix onto
+    # break edges (plus a synthetic return) is not a complete continuation.
+    if len(join.instrs) > 0 and join.instrs[0].opcode == OP_GET_YIELD_FROM_ITER {
+        return False;
+    }
     count = len(join.instrs);
     if not tail_terminated {
         count = count + 2;
@@ -362,50 +369,26 @@ def visit_if(
     if codegen_busy(g) {
         return stmt_cont(loc=iloc);
     }
-    false_blk = g.new_block();
+    # Defer layout until after the true body (g.use below). Eager add_block here
+    # placed the false label between the branch and the true-path code, so
+    # calculate_stackdepth saw a spurious fallthrough from the test block into
+    # the false label with the iterator still on stack (if/for CFG crash).
+    false_blk = g.new_deferred_block();
     has_else = len(i.orelse) > 0;
     if more_code_follows {
         # tail is None in loop-body contexts: the continuation is the enclosing
         # loop's back edge, not a statement suffix to duplicate or consume.
         tail_more = tail is not None and exec_tail_emits_code(tail, tail_idx);
         if has_else {
-            if tail_more {
-                join = g.new_block();
-                emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
-                body_cont = visit_stmts(g, i.body, 0, False, tail, tail_idx, None, ann_ctx);
-                if codegen_busy(g) {
-                    return stmt_cont(loc=body_cont.loc);
-                }
-                if not body_cont.terminated {
-                    g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
-                }
-                g.use(false_blk);
-                else_cont = visit_stmts(g, i.orelse, 0, False, tail, tail_idx, None, ann_ctx);
-                if codegen_busy(g) {
-                    return stmt_cont(loc=else_cont.loc);
-                }
-                g.use(join);
-                tail_cont = visit_stmt_tail(
-                    g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
-                return stmt_cont(
-                    loc=tail_cont.loc,
-                    next_si=len(tail),
-                    terminated=tail_cont.terminated
-                );
+            owns_join = False;
+            if tail_join is not None {
+                join = tail_join as basicblock;
+            } else {
+                join = g.new_deferred_block();
+                owns_join = True;
             }
-            # tail_more is False but more_code_follows is True: the real
-            # continuation is in the CALLER's own statement list, not in `tail`
-            # (which is empty/exhausted here). This branch is only reached from
-            # visit_stmts-style callers -- the compile_fn_cfg/module driver
-            # always has more_code_follows == tail_more, so it never lands here.
-            # Converge both branches at `join` and return next_si=-1 so the
-            # caller emits its following statements. Using emit_tail_and_finish
-            # here would append a module return AND return next_si=len(tail)=0,
-            # resetting the caller's index -> infinite loop on
-            # `if c: return; if d: ... else: ...; <more>`.
-            join = g.new_block();
             emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
-            body_cont = visit_stmts(g, i.body, 0, False, tail, tail_idx, None, ann_ctx);
+            body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=body_cont.loc);
             }
@@ -413,29 +396,42 @@ def visit_if(
                 g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
             }
             g.use(false_blk);
-            else_cont = visit_stmts(g, i.orelse, 0, False, tail, tail_idx, None, ann_ctx);
+            else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, None, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=else_cont.loc);
             }
-            g.use(join);
+            if owns_join {
+                g.use(join);
+                if tail_more {
+                    tail_cont = visit_stmt_tail(
+                        g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+                    return stmt_cont(
+                        loc=tail_cont.loc,
+                        next_si=len(tail),
+                        terminated=tail_cont.terminated
+                    );
+                }
+                return stmt_cont(loc=iloc);
+            }
             return stmt_cont(loc=iloc);
         }
         owns_tail = False;
         if tail_join is not None {
             join = tail_join as basicblock;
         } else {
-            join = g.new_block();
+            join = g.new_deferred_block();
             owns_tail = True;
         }
         emit_branch_if_test_false(g, kind, join.id, test_loc);
-        body_cont = visit_stmts(g, i.body, 0, False, tail, tail_idx, join, ann_ctx);
+        body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=body_cont.loc);
         }
         if owns_tail {
             g.use(join);
             if tail_more {
-                tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+                tail_cont = visit_stmt_tail(
+                    g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
                 return stmt_cont(
                     loc=tail_cont.loc,
                     next_si=len(tail),
@@ -452,19 +448,37 @@ def visit_if(
         return stmt_cont(loc=body_cont.loc);
     }
     # more_code_follows == False: nothing follows this if in the current
-    # statement list. Two sub-cases, distinguished by `tail`:
+    # statement list. Two sub-cases:
     #
-    # (a) tail is None -- a loop body (or other back-edge context): the
-    #     continuation is the loop's JUMP_BACKWARD, not a return. Fall through and
-    #     let the enclosing loop emit the back-edge; never synthesize a return.
+    # (a) inside an active loop with tail is None -- the continuation is the
+    #     loop's JUMP_BACKWARD, not a return. visit_stmt_tail also passes
+    #     tail=None, but pops the loop stack before calling it, so use
+    #     current_loop() rather than tail alone to detect this case.
     #
-    # (b) tail is not None -- the function/module/compound tail: CPython
-    #     DUPLICATES the implicit `return None` into each falling-through branch
-    #     (verified: `if a in xs: r=1` emits a return after the true body AND at
-    #     the false label). Preserve that duplication, but skip the return after a
-    #     branch that already terminates (return/raise/continue) -- emitting one
-    #     there is dead code after a terminator ("Invalid CFG").
-    if tail is None {
+    # (b) module/function/unit epilogue (tail is None from the module driver
+    #     or visit_stmt_tail after a trailing for): CPython DUPLICATES the
+    #     implicit `return None` into each falling-through branch.
+    loop_frame = g.current_loop();
+    if loop_frame is not None {
+        if not has_else {
+            # Loop-body `if` without else: both paths rejoin the loop header.
+            # CPython emits POP_JUMP_IF_* then either body+JUMP_BACKWARD or an
+            # immediate JUMP_BACKWARD on the not-taken path — never a false label
+            # laid out after the true body (that spurious fallthrough broke
+            # stackdepth when a second for followed the outer if).
+            skip_blk = g.new_deferred_block();
+            emit_branch_if_test_false(g, kind, skip_blk.id, test_loc);
+            body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
+            if codegen_busy(g) {
+                return stmt_cont(loc=body_cont.loc);
+            }
+            if not body_cont.terminated {
+                g.emit_jump(OP_JUMP_BACKWARD, loop_frame.continue_blk.id, iloc);
+            }
+            g.use(skip_blk);
+            g.emit_jump(OP_JUMP_BACKWARD, loop_frame.continue_blk.id, iloc);
+            return stmt_cont(loc=iloc, terminated=True);
+        }
         emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
         body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
@@ -473,7 +487,7 @@ def visit_if(
         if has_else {
             else_join: basicblock | None = None;
             if not body_cont.terminated {
-                else_join = g.new_block();
+                else_join = g.new_deferred_block();
                 g.emit_jump(OP_JUMP_FORWARD, else_join.id, iloc);
             }
             g.use(false_blk);
@@ -561,7 +575,7 @@ def visit_while(
         # The back edge above is the last write into any nested loop's
         # continuation; finish its deferred break sites now.
         flush_pending_break_finishes(g, body_snap);
-        tail_more = tail is not None and exec_tail_emits_code(tail, tail_idx);
+        tail_more = tail is not None and exec_tail_emits_code(tail, tail_idx + 1);
         g.use(exit_blk);
         else_terminated = False;
         if len(w.orelse) > 0 {
@@ -586,7 +600,8 @@ def visit_while(
                 # the current block.
                 return stmt_cont(loc=wloc);
             }
-            tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+            tail_cont = visit_stmt_tail(
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
             return stmt_cont(
                 loc=tail_cont.loc, next_si=len(tail), terminated=tail_cont.terminated
             );
@@ -599,7 +614,8 @@ def visit_while(
             push_pending_break_finish(break_frame, join, True);
             return stmt_cont(loc=wloc);
         }
-        tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+        tail_cont = visit_stmt_tail(
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=tail_cont.loc);
         }
@@ -756,13 +772,16 @@ def visit_for(
     g.emit_op(OP_GET_ITER, 0, iter_loc);
     loop_hdr = g.new_block();
     g.use(loop_hdr);
-    after = g.new_block();
     has_break = loop_body_has_break(f.body);
     if more_code_follows {
+        # Defer exhaustion cleanup until after the body is visited. Eager
+        # placement left orphan blocks in layout when nested visit_for paths
+        # reassigned `after`, breaking stackdepth on a trailing loop.
+        after = g.new_deferred_block();
         # Break edges target the shared continuation AFTER orelse (CPython's
         # `end` label): break must skip the else clause.
         if has_break {
-            join = g.new_block();
+            join = g.new_deferred_block();
             g.push_loop(loop_hdr, join, True);
             break_frame = g.current_loop() as loop_frame;
             break_frame.pops_iter = True;
@@ -788,7 +807,7 @@ def visit_for(
         # The back edge above is the last write into any nested loop's
         # continuation; finish its deferred break sites now.
         flush_pending_break_finishes(g, body_snap);
-        tail_more = tail is not None and exec_tail_emits_code(tail, tail_idx);
+        tail_more = tail is not None and exec_tail_emits_code(tail, tail_idx + 1);
         g.use(after);
         g.emit_op(OP_END_FOR, 0, iter_loc);
         g.emit_op(OP_POP_ITER, 0, iter_loc);
@@ -810,15 +829,12 @@ def visit_for(
             return stmt_cont(loc=floc, next_si=len(tail), terminated=True);
         }
         if not has_break {
-            if tail is None {
-                # Nested-loop context: the caller emits the continuation into
-                # the current block.
-                return stmt_cont(loc=floc);
-            }
-            tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-            return stmt_cont(
-                loc=tail_cont.loc, next_si=len(tail), terminated=tail_cont.terminated
-            );
+            # CPython's exhaustion cleanup and the trailing statement suffix share
+            # one continuation label (`after`). Emit END_FOR/POP_ITER here, then
+            # let visit_stmts resume the suffix in this same block — do not
+            # recurse through visit_stmt_tail (that left tail=None on nested
+            # visit_if calls and duplicated layout edges).
+            return stmt_cont(loc=floc);
         }
         g.use(join);
         if tail is None {
@@ -828,7 +844,8 @@ def visit_for(
             push_pending_break_finish(break_frame, join, False);
             return stmt_cont(loc=floc);
         }
-        tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+        tail_cont = visit_stmt_tail(
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=tail_cont.loc);
         }
@@ -1073,7 +1090,8 @@ def visit_async_for(
         if has_break and not tail_more {
             return stmt_cont(loc=floc, next_si=len(tail), terminated=True);
         }
-        tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+        tail_cont = visit_stmt_tail(
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
         return stmt_cont(
             loc=tail_cont.loc, next_si=len(tail), terminated=tail_cont.terminated
         );

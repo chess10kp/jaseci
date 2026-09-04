@@ -80,7 +80,9 @@ import from compiler_emit {
     codegen_fail,
     emit_folded_int,
     emit_function_prologue,
+    emit_local_or_cell_store,
     emit_make_function_with_closure,
+    codegen_mangle,
     fast_local_index,
     fast_varnames_from_sym,
     freevars_from_sym,
@@ -531,6 +533,7 @@ def compile_class_cfg(
         );
         last = cont.loc;
         if codegen_busy(g) {
+            u.flush_late_consts();
             return u;
         }
         if cont.next_si >= 0 {
@@ -541,9 +544,11 @@ def compile_class_cfg(
     }
     finish_class_annotations(g, ann_plan);
     if codegen_busy(g) {
+        u.flush_late_consts();
         return u;
     }
     emit_class_body_epilogue(g, last);
+    u.flush_late_consts();
     return u;
 }
 
@@ -592,16 +597,14 @@ def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
         ri = ri - 1;
     }
     if g.sym_top is not None and g.sym_top.block_type == "function" {
-        fi = fast_local_index(g, fd.name);
-        if fi < 0 {
+        if not emit_local_or_cell_store(g, fd.name, floc) {
             codegen_fail(
                 g, "SystemError", "missing fast local for nested function " + fd.name
             );
             return stmt_cont(loc=floc);
         }
-        g.emit_op(OP_STORE_FAST, fi, floc);
     } else {
-        nidx = g.u.add_name(fd.name);
+        nidx = g.u.add_name(codegen_mangle(g, fd.name));
         g.emit_op(OP_STORE_NAME, nidx, floc);
     }
     return stmt_cont(loc=floc);
@@ -652,16 +655,14 @@ def visit_async_function_def(g: cfg_builder, afd: AsyncFunctionDef) -> stmt_cont
         ri = ri - 1;
     }
     if g.sym_top is not None and g.sym_top.block_type == "function" {
-        fi = fast_local_index(g, afd.name);
-        if fi < 0 {
+        if not emit_local_or_cell_store(g, afd.name, floc) {
             codegen_fail(
                 g, "SystemError", "missing fast local for nested function " + afd.name
             );
             return stmt_cont(loc=floc);
         }
-        g.emit_op(OP_STORE_FAST, fi, floc);
     } else {
-        nidx = g.u.add_name(afd.name);
+        nidx = g.u.add_name(codegen_mangle(g, afd.name));
         g.emit_op(OP_STORE_NAME, nidx, floc);
     }
     return stmt_cont(loc=floc);

@@ -574,7 +574,7 @@ obj _StructObj {
     }
 
     # ---- public API ----------------------------------------------------
-    def pack(*args: list) -> bytes {
+    def pack(*args: any) -> bytes {
         buf: list[int] = [0] * self.size;
         self._pack_into_list(args, buf, 0);
         return bytes(buf);
@@ -629,7 +629,7 @@ obj _StructObj {
         return _UnpackIter(so=self, data=data, index=0);
     }
 
-    def pack_into(buffer: any, offset: int, *args: list) {
+    def pack_into(buffer: any, offset: int, *args: any) {
         if not isinstance(buffer, bytearray) {
             raise TypeError(
                 "pack_into() requires a writable bytes-like object, not "
@@ -897,11 +897,11 @@ def calcsize(fmt: any) -> int {
     return (_cached(fmt) as _StructObj).size;
 }
 
-def pack(fmt: any, *vals: list) -> bytes {
+def pack(fmt: any, *vals: any) -> bytes {
     return (_cached(fmt) as _StructObj).pack(*vals);
 }
 
-def pack_into(fmt: any, buffer: any, offset: int, *vals: list) {
+def pack_into(fmt: any, buffer: any, offset: int, *vals: any) {
     (_cached(fmt) as _StructObj).pack_into(buffer, offset, *vals);
 }
 

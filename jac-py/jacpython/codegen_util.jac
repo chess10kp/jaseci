@@ -970,13 +970,22 @@ def comp_bound_names_from_target(target: expr) -> list[str] | None {
     }
     if isinstance(target, Tuple) {
         elts = (target as Tuple).elts;
-        if len(elts) != 2 {
+        if len(elts) == 0 {
             return None;
         }
-        if not isinstance(elts[0], Name) or not isinstance(elts[1], Name) {
-            return None;
+        names: list[str] = [];
+        ei = 0;
+        while ei < len(elts) {
+            if not isinstance(elts[ei], Name) {
+                return None;
+            }
+            nid = (elts[ei] as Name).id;
+            if not comp_name_bound(nid, names) {
+                names.append(nid);
+            }
+            ei = ei + 1;
         }
-        return [(elts[0] as Name).id, (elts[1] as Name).id];
+        return names;
     }
     return None;
 }
