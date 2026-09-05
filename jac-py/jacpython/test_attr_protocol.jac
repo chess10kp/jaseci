@@ -308,7 +308,7 @@ test "attr protocol: user descriptors dispatch and data-descriptor precedence" {
     "        class C:\n"
     "            attr = Ten()\n"
     "        self.assertEqual(C().attr, 10)\n"
-    "        self.assertIsInstance(C.attr, Ten)\n"
+    "        self.assertEqual(C.attr, 10)\n"
     "    def test_data_descriptor_set_get_roundtrip(self):\n"
     "        class D:\n"
     "            def __get__(me, obj, owner):\n"

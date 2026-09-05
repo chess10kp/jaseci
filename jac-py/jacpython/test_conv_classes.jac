@@ -30,7 +30,7 @@ import from layer0_replay_harness {
     layer1_replay_source,
 }
 
-def replay(src: str, want_passed: int) {
+def replay(src: str, want_passed: int) -> ReplayResult {
     # Every converted method must actually replay (no silent scaffolding skips).
     r = layer1_replay_source(src);
     assert r.failed == 0;

@@ -44,7 +44,7 @@ def _pin_host_dir(kind):
 # Host-side reference lists are read once per run through the same bridge the
 # VM itself uses; strings cross faithfully.
 def pin_host_dir(kind: str) -> str {
-    return _pin_host_dir(kind);
+    return _pin_host_dir(kind) as str;
 }
 
 # Exec `src` on ceval with fresh module globals; fails the test on raise.

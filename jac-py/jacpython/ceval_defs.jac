@@ -626,7 +626,22 @@ obj PyClass(PyObj) {
             for fa in args {
                 factory_args.append(fa);
             }
-            return type_new(factory_args, kwargs);
+            built = type_new(factory_args, kwargs);
+            # CPython type_call runs the metaclass __init__ after __new__ on
+            # this path too: type.__new__ returned a class tagged with THIS
+            # metaclass, so Meta.__init__(cls, name, bases, ns) must fire even
+            # when Meta itself defines no __new__ (same silent-drop shape the
+            # user-__new__ branch below guards against).
+            if isinstance(built, PyClass) and (built as PyClass).metaclass is self {
+                built_init = class_lookup_attr(self, "__init__");
+                if not is_error(built_init) and isinstance(built_init, PyFunction) {
+                    built_ir = bind_attribute(built_init, built).tp_call(args, kwargs);
+                    if built_ir.t == "error" {
+                        return built_ir;
+                    }
+                }
+            }
+            return built;
         }
         if has_user_new {
             new_args: list[PyObj] = [self];
