@@ -1413,7 +1413,12 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         imp_from = s as ImportFrom;
         ni = 0;
         while ni < len(imp_from.names) {
-            bind = sym_import_bind_name(imp_from.names[ni]);
+            a = imp_from.names[ni];
+            if a.name == "*" {
+                ni = ni + 1;
+                continue;
+            }
+            bind = sym_import_bind_name(a);
             if not b.add_def(bind, DEF_LOCAL, imp_from.lineno, imp_from.col_offset) {
                 return False;
             }

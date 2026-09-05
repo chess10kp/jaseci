@@ -200,9 +200,15 @@ def visit_import_from(g: cfg_builder, imp: ImportFrom) -> stmt_cont {
     ni = 0;
     while ni < len(imp.names) {
         a = imp.names[ni];
-        fidx = g.u.add_name(a.name);
-        g.emit_op(OP_IMPORT_FROM, fidx, iloc);
-        emit_name_store(g, import_bind_name(a), iloc);
+        if a.name == "*" {
+            # CPython 3.12+ INTRINSIC_IMPORT_STAR (CALL_INTRINSIC_1 oparg 2):
+            # bind the module's public names into globals; no STORE for '*'.
+            g.emit_op(OP_CALL_INTRINSIC_1, 2, iloc);
+        } else {
+            fidx = g.u.add_name(a.name);
+            g.emit_op(OP_IMPORT_FROM, fidx, iloc);
+            emit_name_store(g, import_bind_name(a), iloc);
+        }
         ni = ni + 1;
     }
     g.emit_op(OP_POP_TOP, 0, iloc);

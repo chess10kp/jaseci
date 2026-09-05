@@ -2078,6 +2078,21 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
         }
         if op == OP_IMPORT_FROM {
             module = stack[len(stack) - 1];
+            if co.names[arg] == "*" {
+                # Legacy/native `from mod import *` lowering (pre-INTRINSIC path
+                # or stale bytecode): same semantics as CALL_INTRINSIC_1 oparg 2.
+                star_out = import_star_into(module, globals);
+                if is_error(star_out) {
+                    target = recover_exception(co, star_out, offset, stack);
+                    if target >= 0 {
+                        ip = target;
+                        continue;
+                    }
+                    return star_out;
+                }
+                stack.append(py_none());
+                continue;
+            }
             result = py_attr(module, co.names[arg]);
             if is_error(result) {
                 # CPython's import_from converts a bare AttributeError into
