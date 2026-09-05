@@ -1,7 +1,7 @@
 """Focused parser-fidelity coverage for the human P3 backlog."""
 
 import from parser { parse_file }
-import from ast_nodes { Module, Expr, Call, Constant, FunctionDef, Try, TryStar }
+import from ast_nodes { Module, Expr, Call, Constant, FunctionDef, Try, TryStar, arguments }
 import from objects { PyInt, PyStr, PyBytes }
 
 test "trailing keyword spread survives after named keyword" {
@@ -44,6 +44,33 @@ test "try-star and except-star spans end at final body token" {
     assert stmt.end_lineno == 4 and stmt.end_col_offset == 9;
     assert stmt.handlers[0].end_lineno == 4;
     assert stmt.handlers[0].end_col_offset == 9;
+}
+
+test "multiline def defaults inside parens (functools.wraps shape)" {
+    src = "def wraps(wrapped,\n"
+    "          assigned = WRAPPER_ASSIGNMENTS,\n"
+    "          updated = WRAPPER_UPDATES):\n"
+    "    pass\n";
+    m = parse_file(src, "<wraps>");
+    assert m is not None;
+    fn = (m as Module).body[0] as FunctionDef;
+    assert fn.name == "wraps";
+}
+
+test "keyword-only defaults (namedtuple shape)" {
+    src = "def namedtuple(typename, field_names, *, rename=False, defaults=None, module=None):\n"
+    "    pass\n";
+    m = parse_file(src, "<namedtuple>");
+    assert m is not None;
+    fn = (m as Module).body[0] as FunctionDef;
+    assert fn.name == "namedtuple";
+    assert len(fn.args.kwonlyargs) == 3;
+}
+
+test "chained attribute subscript store target" {
+    src = "a.b['c'] = 1\n";
+    m = parse_file(src, "<chain-sub>");
+    assert m is not None;
 }
 
 test "string escapes decode and bytes retain bytes value" {

@@ -13228,6 +13228,17 @@ def rule_target_with_star_atom(p: peg_parser) -> expr | None {
             }
         }
     }
+
+    peg_reset(p, mark);
+    prim = rule_primary(p);
+    if prim is not None {
+        if ((peg_negative_lookahead_token(p, 12))) {
+            res = pa_set_context(prim, Store());
+            peg_insert_memo(p, mark, RULE_target_with_star_atom, res);
+            return res;
+        }
+    }
+    peg_reset(p, mark);
     peg_reset(p, mark);
     star_atom = rule_star_atom(p);
     if star_atom is not None {

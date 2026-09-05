@@ -1616,7 +1616,11 @@ def _patch_patterns_rule(source: str) -> str:
 
 
 def _patch_store_target_rules(source: str) -> str:
-    """Store/delete targets use atom, not t_primary: t_primary consumes .attr for loads."""
+    """Store/delete targets use atom, not t_primary (see CPython t_lookahead).
+
+    Chained subscript targets (``sys.modules['x']``) use the ``rule_t_primary``
+    fallback injected into ``rule_target_with_star_atom``.
+    """
     rules = (
         "def rule_target_with_star_atom",
         "def rule_single_subscript_attribute_target",
@@ -1633,6 +1637,29 @@ def _patch_store_target_rules(source: str) -> str:
             line = line.replace("a = rule_t_primary(p)", "a = rule_atom(p)")
         out.append(line)
     return "".join(out)
+
+
+_TARGET_WITH_STAR_ATOM_FALLBACK = '''
+    peg_reset(p, mark);
+    prim = rule_primary(p);
+    if prim is not None {
+        if ((peg_negative_lookahead_token(p, 12))) {
+            res = pa_set_context(prim, Store());
+            peg_insert_memo(p, mark, RULE_target_with_star_atom, res);
+            return res;
+        }
+    }
+    peg_reset(p, mark);
+'''
+
+
+def _inject_target_with_star_atom_fallback(source: str) -> str:
+    if "prim = rule_primary(p)" in source and "pa_set_context(prim, Store())" in source:
+        return source
+    anchor = "    peg_reset(p, mark);\n    star_atom = rule_star_atom(p);"
+    if anchor not in source:
+        raise RuntimeError("target_with_star_atom fallback anchor missing")
+    return source.replace(anchor, _TARGET_WITH_STAR_ATOM_FALLBACK + anchor, 1)
 
 
 def _patch_type_alias_simple_stmt(source: str) -> str:
@@ -1666,7 +1693,8 @@ def _patch_type_alias_simple_stmt(source: str) -> str:
 def _patch_parser_rules(source: str) -> str:
     source = _patch_patterns_rule(source)
     source = _patch_type_alias_simple_stmt(source)
-    return _patch_store_target_rules(source)
+    source = _patch_store_target_rules(source)
+    return _inject_target_with_star_atom_fallback(source)
 
 
 def main(argv: list[str]) -> int:
