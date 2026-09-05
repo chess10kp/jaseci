@@ -13,6 +13,8 @@ on:
         description: branch or sha to verify
         required: false
         default: jac-python
+  push:
+    branches: [jac-python]
 
 concurrency:
   group: jacpy-verify-${{ github.event.inputs.ref || github.ref }}
@@ -36,11 +38,18 @@ jobs:
           python-version: "3.14.6"
       - name: Pin CPython reference checkout
         run: python3 jac-py/tools/fetch_cpython_reference.py
+      - name: Resolve CPython oracle for host bridges
+        run: echo "JACPYTHON_CPYTHON=$(command -v python3)" >> "$GITHUB_ENV"
       - name: Build jac (dev binary; big instance handles it)
         uses: ./.github/actions/setup-jac
         with:
           skip-precompile: "true"
           ninja: "false"
+      - name: Sealed-binary native smoke (runtime route + D1)
+        env:
+          JAC_NO_DEV_SOURCE: "1"
+          JAC_TEST_NATIVE: "1"
+        run: python3 jac-py/tools/sealed_binary_native_smoke_gate.py
       - name: Core oracle + parity suites (runtime behavior)
         env:
           JACPATH: jac-py/jacpython

@@ -75,11 +75,13 @@ jobs:
       - name: Conformance manifest drift check
         run: git diff --exit-code jac-py/tests/conformance_manifest.json
 
-      # ---- known-red, non-blocking (tracked; do not block merges) ----
+      - name: Conformance dashboard ratchet
+        run: python3 jac-py/tools/conformance_dashboard.py --check
+
       - name: P3 import cycle gate
-        continue-on-error: true
         run: python3 jac-py/tools/p3_import_cycle_gate.py
 
+      # ---- known-red, non-blocking (tracked; do not block merges) ----
       - name: opcode_meta2jac Phase 3 tests
         continue-on-error: true
         run: python3 -m unittest jac-py/tools/test_opcode_meta2jac.py

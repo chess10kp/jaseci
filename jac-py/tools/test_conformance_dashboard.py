@@ -58,6 +58,31 @@ def test_entries_extracted_with_case_counts(tmp_path: Path) -> None:
     assert entries["getplatform"]["cases_total"] == 1
 
 
+def test_entries_separate_oracle_differential_jacpython_legs(tmp_path: Path) -> None:
+    doc = _manifest(["_bisectmodule"], wave="p2_wave1")
+    doc["modules"][0]["gate_type"] = "libtest"
+    doc["libtest_results"] = {
+        "_bisectmodule": {"passed": 2, "failed": 0, "total": 2}
+    }
+    doc["jac_differential_results"] = {
+        "_bisectmodule": {"passed": 1, "failed": 0, "skipped": 1, "total": 2}
+    }
+    doc["jacpython_results"] = {
+        "_bisectmodule": {"passed": 2, "failed": 0, "skipped": 0, "total": 2}
+    }
+    entry = cd.entries_from_doc(doc)["_bisectmodule"]
+    assert entry["impl_surface"] == "native"
+    assert entry["host_oracle"]["passed"] == 2
+    assert entry["jac_differential"]["skipped"] == 1
+    assert entry["jacpython"]["passed"] == 2
+
+
+def test_impl_surface_marks_stdlib_delegate_wave(tmp_path: Path) -> None:
+    doc = _manifest(["re"], wave="stdlib_delegate")
+    entry = cd.entries_from_doc(doc)["re"]
+    assert entry["impl_surface"] == "delegated"
+
+
 def test_collect_state_reports_unreadable_manifest(tmp_path: Path) -> None:
     _write_manifest(tmp_path, "conformance_manifest.json", _manifest(["a"]))
     (tmp_path / "conformance_manifest_wave2.json").write_text("{bogus", encoding="utf-8")
@@ -71,8 +96,17 @@ def test_collect_state_reports_unreadable_manifest(tmp_path: Path) -> None:
 
 
 def _base_entry(**over) -> dict:
-    entry = {"wave": "p2_wave1", "gate_type": "oracle", "status": "gated",
-             "cases_passed": None, "cases_total": None}
+    entry = {
+        "wave": "p2_wave1",
+        "gate_type": "oracle",
+        "status": "gated",
+        "cases_passed": None,
+        "cases_total": None,
+        "impl_surface": "oracle",
+        "host_oracle": {"passed": None, "failed": None, "skipped": None, "total": None},
+        "jac_differential": {"passed": None, "failed": None, "skipped": None, "total": None},
+        "jacpython": {"passed": None, "failed": None, "skipped": None, "total": None},
+    }
     entry.update(over)
     return entry
 
@@ -122,7 +156,7 @@ def test_render_markdown_includes_summary_and_rows(tmp_path: Path) -> None:
     state = {"m": _base_entry(cases_passed=None, cases_total=None)}
     text = cd.render_markdown(state, warnings)
     assert "# D2 Conformance Dashboard" in text
-    assert "| `m` | p2_wave1 | oracle | gated | — |" in text
+    assert "| `m` | p2_wave1 | oracle | gated | — | — | — |" in text
     assert "Gated modules: **1/1**" in text
 
 

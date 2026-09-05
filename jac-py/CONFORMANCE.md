@@ -77,20 +77,25 @@ Baseline schema (versioned):
 - **No local suite runs:** the dashboard never invokes `jac test`; it derives
   everything from gate-written manifests, so it is safe to run anywhere.
 
-## Suggested CI wiring (not yet wired)
+## CI wiring
 
-Add one non-blocking-elsewhere job to jac-py's workflow:
+The grow-only ratchet is **blocking** on every ``jac-python`` push via
+``.github/workflows/jacpy-merge-gate.yml``::
 
 ```yaml
-conformance-ratchet:
-  steps:
-    - uses: actions/checkout@v4
-    - run: python3 jac-py/tools/conformance_dashboard.py --check
-    # optional, publish the table as a job summary / artifact:
-    - run: python3 jac-py/tools/conformance_dashboard.py --out dash.md
-    - if: always()
-      uses: actions/upload-artifact@v4
-      with: { name: conformance-dashboard, path: dash.md }
+- run: python3 jac-py/tools/conformance_dashboard.py --check
+```
+
+Sealed-binary native smoke (runtime route + D1) runs on the farm verify lane
+``.github/workflows/jacpy-verify.yml`` via
+``jac-py/tools/sealed_binary_native_smoke_gate.py``.
+
+Optional artifact publish:
+
+```yaml
+- run: python3 jac-py/tools/conformance_dashboard.py --out dash.md
+- uses: actions/upload-artifact@v4
+  with: { name: conformance-dashboard, path: dash.md }
 ```
 
 Because `--check` reads only JSON manifests, the job needs no venv, no jac

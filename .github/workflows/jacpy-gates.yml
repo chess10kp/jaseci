@@ -1,10 +1,14 @@
-# JacPython campaign gates. Fork-owned file so our gate edits never conflict
+# jac-py gates. Fork-owned file so our gate edits never conflict
 # with upstream's constantly-moving ci.yml.
 #
 # Extracted from ci.yml's `jac-py-gates` job with one mechanical change:
 # ci.yml downloads a prebuilt binary from build-kit via the jac-kit artifact
 # action; standalone we build the sealed binary in place with the shared
 # setup-jac action instead (same binary, cache-backed).
+#
+# The fast merge gate (jacpy-merge-gate.yml) blocks on python-only gates
+# including the P3 import-cycle gate and conformance dashboard ratchet.
+# This workflow is the sealed-binary native smoke + full readiness lane.
 
 name: jac-py gates
 
