@@ -1,7 +1,7 @@
 # Native _types module surface (lift of reference/cpython/Modules/_typesmodule.c).
 #
 # _typesmodule.c is a pure-data multi-phase-init module: _types_exec() inserts
-# 26 immortal static type objects into the module dict (EXPORT_STATIC_TYPE, in
+# 27 immortal static type objects into the module dict (EXPORT_STATIC_TYPE, in
 # source order) and nothing else. Lib/types.py star-imports this surface
 # (`from _types import *`) and re-exports it, so the names below are the C
 # module's exact export ORDER -- all names are distinct so no shadowing occurs,
@@ -46,6 +46,7 @@ def _types_export_order -> list[PyStr] {
         PyStr(t="str", val="EllipsisType"),
         PyStr(t="str", val="FrameType"),
         PyStr(t="str", val="FunctionType"),
+        PyStr(t="str", val="GeneratorType"),
         PyStr(t="str", val="GenericAlias"),
         PyStr(t="str", val="GetSetDescriptorType"),
         PyStr(t="str", val="LambdaType"),
@@ -78,6 +79,7 @@ def _types_native_tags -> dict[str, PyStr] {
         "CoroutineType": PyStr(t="str", val="coroutine"),
         "EllipsisType": PyStr(t="str", val="ellipsis"),
         "FrameType": PyStr(t="str", val="frame"),
+        "GeneratorType": PyStr(t="str", val="generator"),
         "GenericAlias": PyStr(t="str", val="generic_alias"),
         "GetSetDescriptorType": PyStr(t="str", val="get_descriptor"),
         "MemberDescriptorType": PyStr(t="str", val="member_descr"),
