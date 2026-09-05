@@ -6735,6 +6735,10 @@ obj PyBuiltinSuperMethod(PyObj) {
             }
             if isinstance(b, PySet) {
                 s = b as PySet;
+                if s.frozen {
+                    # frozenset inherits object.__init__ (no storage mutation).
+                    return py_none();
+                }
                 if len(kwargs) > 0 {
                     return py_error(
                         "TypeError", "set() takes no keyword arguments"
