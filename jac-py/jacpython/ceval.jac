@@ -414,7 +414,7 @@ import from tracebackmodule { traceback_module_attrs, format_exception_text, tb_
 import from gc_shim { gc_module_attrs }
 import from sysconfig_shim { sysconfig_module_attrs }
 import from errno_shim { errno_module_attrs }
-import from signal_shim { signal_module_attrs }
+import from signal { signal_module_attrs }
 import from array_facade {
     array_module_attrs,
     PyArrayObj,
