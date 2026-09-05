@@ -3,6 +3,7 @@ import from type_slots {
     type_ready,
     Py_TPFLAGS_READY,
     Py_TPFLAGS_READYING,
+    type_slots_mangle,
     type_slots_filter_members,
     type_slots_wants_dict,
     type_slots_wants_weakref,
@@ -22,6 +23,13 @@ test "type_ready sets READY and rejects nested READYING" {
     assert type_ready(0) == Py_TPFLAGS_READY;
     assert type_ready(Py_TPFLAGS_READY) == Py_TPFLAGS_READY;
     assert type_ready(Py_TPFLAGS_READYING) == -1;
+}
+
+test "slots mangle rewrites private names like CPython type_new" {
+    assert type_slots_mangle("__p", "M") == "_M__p";
+    assert type_slots_mangle("x", "M") == "x";
+    assert type_slots_mangle("__dunder__", "M") == "__dunder__";
+    assert type_slots_mangle("__priv", "_Leading") == "_Leading__priv";
 }
 
 test "slots filter drops dict/weakref specials and dedupes" {
