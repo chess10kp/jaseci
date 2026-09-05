@@ -415,7 +415,7 @@ import from gc_shim { gc_module_attrs }
 import from sysconfig_shim { sysconfig_module_attrs }
 import from errno_shim { errno_module_attrs }
 import from signal_shim { signal_module_attrs }
-import from array_facade {
+import from array {
     array_module_attrs,
     PyArrayObj,
     array_obj_len,
