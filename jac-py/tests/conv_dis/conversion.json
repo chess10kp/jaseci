@@ -1,0 +1,816 @@
+{
+  "schema_version": 1,
+  "tool_version": "conv_suite-0.6.0",
+  "jac_sha": "unknown",
+  "cpython": {
+    "version": "3.14.6",
+    "sha": "c63aec69bd59c55314c06c23f4c22c03de76fe45"
+  },
+  "command": [
+    "convert_suite.py",
+    "reference/cpython/Lib/test/test_dis.py",
+    "-o",
+    "/var/tmp/worker6-000-conversion-wave-v5-1831212/jac-py/tests/conv_dis",
+    "--name",
+    "conv_dis"
+  ],
+  "generated_at": "2026-09-05T11:39:44",
+  "hashes": {
+    "pins_jac": "dff1f11c93f91b9f73a6b3b5d2c0af1fb1526915379313aa9285f2c2e5bd78a2"
+  },
+  "source_file": "reference/cpython/Lib/test/test_dis.py",
+  "generator": "jac-py/tools/convert_suite.py",
+  "module_stem": "dis",
+  "pins_file": "conv_dis_pins.jac",
+  "pins": [
+    {
+      "ident": "DisWithFileTests.test_opmap",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    assert dis.opmap['CACHE'] == 0, ('assertEqual', dis.opmap['CACHE'], 0)\n    assert dis.opmap['LOAD_CONST'] in dis.hasconst, ('assertIn', dis.opmap['LOAD_CONST'], dis.hasconst)\n    assert dis.opmap['STORE_NAME'] in dis.hasname, ('assertIn', dis.opmap['STORE_NAME'], dis.hasname)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_opname",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    assert dis.opname[dis.opmap['LOAD_FAST']] == 'LOAD_FAST', ('assertEqual', dis.opname[dis.opmap['LOAD_FAST']], 'LOAD_FAST')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_boundaries",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    assert dis.opmap['EXTENDED_ARG'] == dis.EXTENDED_ARG, ('assertEqual', dis.opmap['EXTENDED_ARG'], dis.EXTENDED_ARG)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_widths",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'opcode' has no attribute '_specialized_opmap'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 LOAD_GLOBAL              1 (NULL + print)"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_offsets",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_offsets'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_all_positions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: not enough arguments for format string"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_some_positions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_positions'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_linenos_but_no_columns",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_positions'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_no_positions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_positions'"
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_708901",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 LOAD_GLOBAL              1 (NULL + range)"
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_1333982",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 11           0 RESUME                   0\\n\\n 12           2 LOAD_ASSERTION_ERROR\\n              4 LOA"
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_42562",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 RETURN_CONST             0 (None)\\n', '  "
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_45757",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '          0 EXTENDED_ARG             1\\n          2 NOP\\n          4 EXTENDED_ARG             1\\n      "
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_46724",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '    >>    0 EXTENDED_ARG           255\\n          2 EXTENDED_ARG         65535\\n          4 EXTENDED_AR"
+    },
+    {
+      "ident": "DisWithFileTests.test_kw_names",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \" 13           0 RESUME                   0\\n\\n 14           2 LOAD_GLOBAL              1 (NULL + func_w"
+    },
+    {
+      "ident": "DisWithFileTests.test_intrinsic_1",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \"  0           0 RESUME                   0\\n\\n  1           2 LOAD_CONST               0 (0)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_intrinsic_2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport io\n\ndef _t():\n\n    def get_disassembly(func, lasti=-1, wrapper=True, **kwargs):\n        output = io.StringIO()\n        if wrapper:\n            dis.dis(func, file=output, **kwargs)\n        else:\n            dis.disassemble(func, lasti, file=output, **kwargs)\n        return output.getvalue()\n    assert 'CALL_INTRINSIC_2         1 (INTRINSIC_PREP_RERAISE_STAR)' in get_disassembly('try: pass\\nexcept* Exception: x'), ('assertIn', 'CALL_INTRINSIC_2         1 (INTRINSIC_PREP_RERAISE_STAR)', get_disassembly('try: pass\\nexcept* Exception: x'))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_big_linenos",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  1           0 RESUME                   0\\n\\n  3           2 LOAD_GLOBAL              0 (spam)\\n      "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_str",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  0           0 RESUME                   0\\n\\n  1           2 LOAD_NAME                0 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '          0 RESUME                   0\\n          2 LOAD_GLOBAL              1\\n         12 LOAD_FAST  "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_class",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 'Disassembly of __init__:\\n 12           0 RESUME                   0\\n\\n 13           2 LOAD_FAST      "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_instance_method",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 12           0 RESUME                   0\\n\\n 13           2 LOAD_FAST                1 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_instance_method_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '          0 RESUME                   0\\n          2 LOAD_FAST                1\\n          4 LOAD_CONST "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_static_method",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 15           0 RESUME                   0\\n\\n 17           2 LOAD_FAST                0 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_class_method",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 19           0 RESUME                   0\\n\\n 21           2 LOAD_FAST                1 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_generator",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport io\n\ndef _g(x):\n    yield x\n\ndef _t():\n\n    def get_disassembly(func, lasti=-1, wrapper=True, **kwargs):\n        output = io.StringIO()\n        if wrapper:\n            dis.dis(func, file=output, **kwargs)\n        else:\n            dis.disassemble(func, lasti, file=output, **kwargs)\n        return output.getvalue()\n    gen_func_disas = get_disassembly(_g)\n    gen_disas = get_disassembly(_g(1))\n    assert gen_disas == gen_func_disas, ('assertEqual', gen_disas, gen_func_disas)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_fstring",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \" 10           0 RESUME                   0\\n\\n 11           2 LOAD_FAST                0 (a)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_with",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 LOAD_FAST                0 (c)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_try_finally",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 NOP\\n\\n 12           4 LOAD_FAST         "
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport sys\n\ndef _t():\n    try:\n        del sys.last_exc\n    except AttributeError:\n        pass\n    try:\n        del sys.last_traceback\n    except AttributeError:\n        pass\n    try:\n        dis.dis(*(None,))\n    except RuntimeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_traceback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport contextlib\nimport dis\nimport io\nimport re\nimport sys\n\ndef _t():\n\n    def get_disassembly(func, lasti=-1, wrapper=True, **kwargs):\n        output = io.StringIO()\n        if wrapper:\n            dis.dis(func, file=output, **kwargs)\n        else:\n            dis.disassemble(func, lasti, file=output, **kwargs)\n        return output.getvalue()\n\n    def get_disassemble_as_string(func, lasti=-1):\n        return get_disassembly(func, lasti, False)\n\n    def strip_addresses(text):\n        return re.sub('\\\\b0x[0-9A-Fa-f]+\\\\b', '0x...', text)\n\n    def do_disassembly_compare(got, expected):\n        if got != expected:\n            got = strip_addresses(got)\n        assert got == expected, ('assertEqual', got, expected)\n\n    def do_disassembly_test(func, expected, **kwargs):\n        self.maxDiff = None\n        got = get_disassembly(func, depth=0, **kwargs)\n        do_disassembly_compare(got, expected)\n        if hasattr(func, '__code__'):\n            got_disco = io.StringIO()\n            with contextlib.redirect_stdout(got_disco):\n                dis.disco(func.__code__, **kwargs)\n            do_disassembly_compare(got_disco.getvalue(), expected)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.maxDiff = None\n    _SelfNS.maxDiff = None\n    self.maxDiff = None\n    try:\n        del sys.last_traceback\n    except AttributeError:\n        pass\n    try:\n        1 / 0\n    except Exception as e:\n        tb = e.__traceback__\n        sys.last_exc = e\n    tb_dis = get_disassemble_as_string(tb.tb_frame.f_code, tb.tb_lasti)\n    do_disassembly_test(None, tb_dis)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_object",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    try:\n        dis.dis(*(object(),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_recursive",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '              0 MAKE_CELL                0 (y)\\n\\n  9           2 RESUME                   0\\n\\n 11    "
+    },
+    {
+      "ident": "DisWithFileTests.test__try_compile_no_context_exc_on_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    try:\n        dis._try_compile(')', '')\n    except Exception as e:\n        assert e.__context__ is None, ('assertIsNone', e.__context__)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_loop_with_conditional_at_end_is_quickened",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "DisWithFileTests.test_extended_arg_quick",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  9           0 RESUME                   0\\n\\n 10           2 LOAD_CONST               1 (Ellipsis)\\n  "
+    },
+    {
+      "ident": "DisWithFileTests.test_show_currinstr_with_cache",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "DisWithFileTests.test_opmap",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    assert dis.opmap['CACHE'] == 0, ('assertEqual', dis.opmap['CACHE'], 0)\n    assert dis.opmap['LOAD_CONST'] in dis.hasconst, ('assertIn', dis.opmap['LOAD_CONST'], dis.hasconst)\n    assert dis.opmap['STORE_NAME'] in dis.hasname, ('assertIn', dis.opmap['STORE_NAME'], dis.hasname)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_opname",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    assert dis.opname[dis.opmap['LOAD_FAST']] == 'LOAD_FAST', ('assertEqual', dis.opname[dis.opmap['LOAD_FAST']], 'LOAD_FAST')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_boundaries",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    assert dis.opmap['EXTENDED_ARG'] == dis.EXTENDED_ARG, ('assertEqual', dis.opmap['EXTENDED_ARG'], dis.EXTENDED_ARG)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_widths",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'opcode' has no attribute '_specialized_opmap'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 LOAD_GLOBAL              1 (NULL + print)"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_offsets",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_offsets'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_all_positions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: not enough arguments for format string"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_some_positions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_positions'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_linenos_but_no_columns",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_positions'"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_with_no_positions",
+      "status": "quarantined",
+      "reason": "host-raised:TypeError: dis() got an unexpected keyword argument 'show_positions'"
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_708901",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 LOAD_GLOBAL              1 (NULL + range)"
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_1333982",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 11           0 RESUME                   0\\n\\n 12           2 LOAD_ASSERTION_ERROR\\n              4 LOA"
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_42562",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 RETURN_CONST             0 (None)\\n', '  "
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_45757",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '          0 EXTENDED_ARG             1\\n          2 NOP\\n          4 EXTENDED_ARG             1\\n      "
+    },
+    {
+      "ident": "DisWithFileTests.test_bug_46724",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '    >>    0 EXTENDED_ARG           255\\n          2 EXTENDED_ARG         65535\\n          4 EXTENDED_AR"
+    },
+    {
+      "ident": "DisWithFileTests.test_kw_names",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \" 13           0 RESUME                   0\\n\\n 14           2 LOAD_GLOBAL              1 (NULL + func_w"
+    },
+    {
+      "ident": "DisWithFileTests.test_intrinsic_1",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \"  0           0 RESUME                   0\\n\\n  1           2 LOAD_CONST               0 (0)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_intrinsic_2",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport io\n\ndef _t():\n\n    def get_disassembly(func, lasti=-1, wrapper=True, **kwargs):\n        output = io.StringIO()\n        if wrapper:\n            dis.dis(func, file=output, **kwargs)\n        else:\n            dis.disassemble(func, lasti, file=output, **kwargs)\n        return output.getvalue()\n    assert 'CALL_INTRINSIC_2         1 (INTRINSIC_PREP_RERAISE_STAR)' in get_disassembly('try: pass\\nexcept* Exception: x'), ('assertIn', 'CALL_INTRINSIC_2         1 (INTRINSIC_PREP_RERAISE_STAR)', get_disassembly('try: pass\\nexcept* Exception: x'))\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_big_linenos",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  1           0 RESUME                   0\\n\\n  3           2 LOAD_GLOBAL              0 (spam)\\n      "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_str",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  0           0 RESUME                   0\\n\\n  1           2 LOAD_NAME                0 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '          0 RESUME                   0\\n          2 LOAD_GLOBAL              1\\n         12 LOAD_FAST  "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_class",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', 'Disassembly of __init__:\\n 12           0 RESUME                   0\\n\\n 13           2 LOAD_FAST      "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_instance_method",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 12           0 RESUME                   0\\n\\n 13           2 LOAD_FAST                1 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_instance_method_bytes",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '          0 RESUME                   0\\n          2 LOAD_FAST                1\\n          4 LOAD_CONST "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_static_method",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 15           0 RESUME                   0\\n\\n 17           2 LOAD_FAST                0 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_class_method",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 19           0 RESUME                   0\\n\\n 21           2 LOAD_FAST                1 (x)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_generator",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport io\n\ndef _g(x):\n    yield x\n\ndef _t():\n\n    def get_disassembly(func, lasti=-1, wrapper=True, **kwargs):\n        output = io.StringIO()\n        if wrapper:\n            dis.dis(func, file=output, **kwargs)\n        else:\n            dis.disassemble(func, lasti, file=output, **kwargs)\n        return output.getvalue()\n    gen_func_disas = get_disassembly(_g)\n    gen_disas = get_disassembly(_g(1))\n    assert gen_disas == gen_func_disas, ('assertEqual', gen_disas, gen_func_disas)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_fstring",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', \" 10           0 RESUME                   0\\n\\n 11           2 LOAD_FAST                0 (a)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_with",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 LOAD_FAST                0 (c)\\n         "
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_try_finally",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', ' 10           0 RESUME                   0\\n\\n 11           2 NOP\\n\\n 12           4 LOAD_FAST         "
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_none",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport sys\n\ndef _t():\n    try:\n        del sys.last_exc\n    except AttributeError:\n        pass\n    try:\n        del sys.last_traceback\n    except AttributeError:\n        pass\n    try:\n        dis.dis(*(None,))\n    except RuntimeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_traceback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport contextlib\nimport dis\nimport io\nimport re\nimport sys\n\ndef _t():\n\n    def get_disassembly(func, lasti=-1, wrapper=True, **kwargs):\n        output = io.StringIO()\n        if wrapper:\n            dis.dis(func, file=output, **kwargs)\n        else:\n            dis.disassemble(func, lasti, file=output, **kwargs)\n        return output.getvalue()\n\n    def get_disassemble_as_string(func, lasti=-1):\n        return get_disassembly(func, lasti, False)\n\n    def strip_addresses(text):\n        return re.sub('\\\\b0x[0-9A-Fa-f]+\\\\b', '0x...', text)\n\n    def do_disassembly_compare(got, expected):\n        if got != expected:\n            got = strip_addresses(got)\n        assert got == expected, ('assertEqual', got, expected)\n\n    def do_disassembly_test(func, expected, **kwargs):\n        self.maxDiff = None\n        got = get_disassembly(func, depth=0, **kwargs)\n        do_disassembly_compare(got, expected)\n        if hasattr(func, '__code__'):\n            got_disco = io.StringIO()\n            with contextlib.redirect_stdout(got_disco):\n                dis.disco(func.__code__, **kwargs)\n            do_disassembly_compare(got_disco.getvalue(), expected)\n\n    class _SelfNS:\n        pass\n    self = _SelfNS()\n    self.maxDiff = None\n    _SelfNS.maxDiff = None\n    self.maxDiff = None\n    try:\n        del sys.last_traceback\n    except AttributeError:\n        pass\n    try:\n        1 / 0\n    except Exception as e:\n        tb = e.__traceback__\n        sys.last_exc = e\n    tb_dis = get_disassemble_as_string(tb.tb_frame.f_code, tb.tb_lasti)\n    do_disassembly_test(None, tb_dis)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_dis_object",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    try:\n        dis.dis(*(object(),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_recursive",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '              0 MAKE_CELL                0 (y)\\n\\n  9           2 RESUME                   0\\n\\n 11    "
+    },
+    {
+      "ident": "DisWithFileTests.test__try_compile_no_context_exc_on_error",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    try:\n        dis._try_compile(')', '')\n    except Exception as e:\n        assert e.__context__ is None, ('assertIsNone', e.__context__)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "DisWithFileTests.test_loop_with_conditional_at_end_is_quickened",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "DisWithFileTests.test_extended_arg_quick",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  9           0 RESUME                   0\\n\\n 10           2 LOAD_CONST               1 (Ellipsis)\\n  "
+    },
+    {
+      "ident": "DisWithFileTests.test_show_currinstr_with_cache",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "CodeInfoTests.test_code_info_object",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    try:\n        dis.code_info(*(object(),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "CodeInfoTests.test_pretty_flags_no_flags",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    assert dis.pretty_flags(0) == '0x0', ('assertEqual', dis.pretty_flags(0), '0x0')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "InstructionTests.test_instruction_str",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef simple():\n    pass\n\ndef _t():\n    instrs = dis.get_instructions(simple)\n    for instr in instrs:\n        str(instr)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "InstructionTests.test_default_first_line",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "InstructionTests.test_first_line_set_to_None",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "InstructionTests.test_outer",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "InstructionTests.test_nested",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "InstructionTests.test_doubly_nested",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "InstructionTests.test_jumpy",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "InstructionTests.test_co_positions",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', [Positions(lineno=0, end_lineno=1, col_offset=0, end_col_offset=0), Positions(lineno=1, end_lineno=1, co"
+    },
+    {
+      "ident": "InstructionTests.test_co_positions_missing_info",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    code = compile('x, y, z', '<test>', 'exec')\n    code_without_location_table = code.replace(co_linetable=b'')\n    actual = dis.get_instructions(code_without_location_table)\n    for instruction in actual:\n        positions = instruction.positions\n        assert len(positions) == 4, ('assertEqual', len(positions), 4)\n        if instruction.opname == 'RESUME':\n            continue\n        assert positions.lineno is None, ('assertIsNone', positions.lineno)\n        assert positions.end_lineno is None, ('assertIsNone', positions.end_lineno)\n        assert positions.col_offset is None, ('assertIsNone', positions.col_offset)\n        assert positions.end_col_offset is None, ('assertIsNone', positions.end_col_offset)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "InstructionTests.test_oparg_alias",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "InstructionTests.test_show_caches_with_label",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertIn', 'L1:', ' 10           0 RESUME                   0\\n\\n 11           2 LOAD_FAST                0 (x)\\n     "
+    },
+    {
+      "ident": "InstructionTests.test_is_op_format",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertIn', 'IS_OP                    0 (is)', '  0           0 RESUME                   0\\n\\n  1           2 LOAD_NAME"
+    },
+    {
+      "ident": "InstructionTests.test_contains_op_format",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertIn', 'CONTAINS_OP              0 (in)', '  0           0 RESUME                   0\\n\\n  1           2 LOAD_NAME"
+    },
+    {
+      "ident": "InstructionTests.test_baseopname_and_baseopcode",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "InstructionTests.test_jump_target",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "InstructionTests.test_argval_argrepr",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'dis' has no attribute 'ArgResolver'"
+    },
+    {
+      "ident": "InstructionTests.test_custom_arg_resolver",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: module 'dis' has no attribute 'ArgResolver'"
+    },
+    {
+      "ident": "InstructionTests.test_start_offset",
+      "status": "quarantined",
+      "reason": "host-raised:AttributeError: 'Instruction' object has no attribute 'start_offset'"
+    },
+    {
+      "ident": "BytecodeTests.test_instantiation",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\nimport types\n\nclass _C:\n\n    def __init__(self, x):\n        self.x = x == 1\n\n    @staticmethod\n    def sm(x):\n        x = x == 1\n\n    @classmethod\n    def cm(cls, x):\n        cls.x = x == 1\n\ndef _f(a):\n    print(a)\n    return 1\n\ndef _t():\n    for obj in [_f, _C(1).__init__, 'a=1', _f.__code__]:\n        b = dis.Bytecode(obj)\n        assert isinstance(b.codeobj, types.CodeType), ('assertIsInstance', b.codeobj, types.CodeType)\n    try:\n        dis.Bytecode(*(object(),))\n    except TypeError:\n        pass\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "BytecodeTests.test_iteration",
+      "status": "quarantined",
+      "reason": "host-raised:ValueError: Got unexpected field names: ['cache_info']"
+    },
+    {
+      "ident": "BytecodeTests.test_explicit_first_line",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "BytecodeTests.test_source_line_in_disassembly",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef simple():\n    pass\n\ndef _t():\n    actual = dis.Bytecode(simple).dis()\n    actual = actual.strip().partition(' ')[0]\n    expected = str(simple.__code__.co_firstlineno)\n    assert actual == expected, ('assertEqual', actual, expected)\n    actual = dis.Bytecode(simple, first_line=350).dis()\n    actual = actual.strip().partition(' ')[0]\n    assert actual == '350', ('assertEqual', actual, '350')\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "BytecodeTests.test_info",
+      "status": "quarantined",
+      "reason": "harness-error:ModuleNotFoundError: No module named 'test'"
+    },
+    {
+      "ident": "BytecodeTests.test_disassembled",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  8           0 RESUME                   0\\n\\n  9           2 LOAD_GLOBAL              1 (NULL + print)"
+    },
+    {
+      "ident": "BytecodeTests.test_from_traceback",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef get_tb():\n\n    def _error():\n        try:\n            1 / 0\n        except Exception as e:\n            tb = e.__traceback__\n        return tb\n    tb = _error()\n    while tb.tb_next:\n        tb = tb.tb_next\n    return tb\n\ndef _t():\n    tb = get_tb()\n    b = dis.Bytecode.from_traceback(tb)\n    while tb.tb_next:\n        tb = tb.tb_next\n    assert b.current_offset == tb.tb_lasti, ('assertEqual', b.current_offset, tb.tb_lasti)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "BytecodeTests.test_from_traceback_dis",
+      "status": "quarantined",
+      "reason": "host-raised:AssertionError: ('assertEqual', '  9           0 RESUME                   0\\n\\n 10           2 NOP\\n\\n 11           4 LOAD_CONST        "
+    },
+    {
+      "ident": "BytecodeTests.test_bytecode_co_positions",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    bytecode = dis.Bytecode('a=1')\n    for instr, positions in zip(bytecode, bytecode.codeobj.co_positions()):\n        assert instr.positions == positions\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestFinderMethods.test__find_imports",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    cases = [('import a.b.c', ('a.b.c', 0, None)), ('from a.b import c', ('a.b', 0, ('c',))), ('from a.b import c as d', ('a.b', 0, ('c',))), ('from a.b import *', ('a.b', 0, ('*',))), ('from ...a.b import c as d', ('a.b', 3, ('c',))), ('from ..a.b import c as d, e as f', ('a.b', 2, ('c', 'e'))), ('from ..a.b import *', ('a.b', 2, ('*',)))]\n    for src, expected in cases:\n        code = compile(src, '<string>', 'exec')\n        res = tuple(dis._find_imports(code))\n        assert len(res) == 1, ('assertEqual', len(res), 1)\n        assert res[0] == expected, ('assertEqual', res[0], expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestFinderMethods.test__find_store_names",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n    cases = [('x+y', ()), ('x=y=1', ('x', 'y')), ('x+=y', ('x',)), ('global x\\nx=y=1', ('x', 'y')), ('global x\\nz=x', ('z',))]\n    for src, expected in cases:\n        code = compile(src, '<string>', 'exec')\n        res = tuple(dis._find_store_names(code))\n        assert res == expected, ('assertEqual', res, expected)\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestFinderMethods.test_findlabels",
+      "status": "quarantined",
+      "reason": "harness-error:AttributeError: type object 'Instruction' has no attribute 'make'. Did you mean: '_make'?"
+    },
+    {
+      "ident": "TestFinderMethods.test_findlinestarts",
+      "status": "pinned",
+      "oracle": {
+        "status": "ok"
+      },
+      "snippet": "import os as _os\n\ndef _oracle_write(text):\n    _os.write(1, (text + '\\n').encode())\nimport dis\n\ndef _t():\n\n    def func():\n        pass\n    code = func.__code__\n    offsets = [linestart[0] for linestart in dis.findlinestarts(code)]\n    assert offsets == [0, 2], ('assertEqual', offsets, [0, 2])\ntry:\n    _t()\nexcept BaseException as _e:\n    _oracle_write('ORACLE_EXC ' + type(_e).__name__ + ' ' + repr(str(_e)))\nelse:\n    _oracle_write('ok')\n"
+    },
+    {
+      "ident": "TestDisTracebackWithFile.test_distb_empty",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 31"
+    },
+    {
+      "ident": "TestDisTracebackWithFile.test_distb_last_traceback",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestDisTracebackWithFile.test_distb_explicit_arg",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestDisTracebackWithFile.test_distb_empty",
+      "status": "quarantined",
+      "reason": "harness-error:IndentationError: expected an indented block after 'except' statement on line 31"
+    },
+    {
+      "ident": "TestDisTracebackWithFile.test_distb_last_traceback",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    },
+    {
+      "ident": "TestDisTracebackWithFile.test_distb_explicit_arg",
+      "status": "quarantined",
+      "reason": "host-raised:RuntimeError: super(): no arguments"
+    }
+  ],
+  "quarantined": [
+    {
+      "ident": "DisWithFileTests.test_disassemble_async_generator",
+      "reason": "unresolved-name:_ag"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_coroutine",
+      "reason": "unresolved-name:_co"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_asyncwith",
+      "reason": "unresolved-name:_asyncwith"
+    },
+    {
+      "ident": "DisWithFileTests.test_async_for_presentation",
+      "reason": "unresolved-name:async_iter1"
+    },
+    {
+      "ident": "DisWithFileTests.test_super_instructions",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_load_attr_specialize",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_call_specialize",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_loop_quicken",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_show_caches",
+      "reason": "helper:get_cached_values(helper:code_quicken(decorated-helper))"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_async_generator",
+      "reason": "unresolved-name:_ag"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_coroutine",
+      "reason": "unresolved-name:_co"
+    },
+    {
+      "ident": "DisWithFileTests.test_disassemble_asyncwith",
+      "reason": "unresolved-name:_asyncwith"
+    },
+    {
+      "ident": "DisWithFileTests.test_async_for_presentation",
+      "reason": "unresolved-name:async_iter1"
+    },
+    {
+      "ident": "DisWithFileTests.test_super_instructions",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_load_attr_specialize",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_call_specialize",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_loop_quicken",
+      "reason": "helper:code_quicken(decorated-helper)"
+    },
+    {
+      "ident": "DisWithFileTests.test_show_caches",
+      "reason": "helper:get_cached_values(helper:code_quicken(decorated-helper))"
+    },
+    {
+      "ident": "CodeInfoTests.test_code_info",
+      "reason": "unresolved-name:async_def"
+    },
+    {
+      "ident": "CodeInfoTests.test_show_code",
+      "reason": "unresolved-name:async_def"
+    },
+    {
+      "ident": "InstructionTests.test_co_positions_with_lots_of_caches",
+      "reason": "unresolved-name:cmath"
+    },
+    {
+      "ident": "InstructionTests.test_cache_offset_and_end_offset",
+      "reason": "uses-self.test_cache_offset_and_end_offset"
+    },
+    {
+      "ident": "TestBytecodeTestCase.test_assert_not_in_with_op_not_in_bytecode",
+      "reason": "self.assertInBytecode"
+    },
+    {
+      "ident": "TestBytecodeTestCase.test_assert_not_in_with_arg_not_in_bytecode",
+      "reason": "self.assertInBytecode"
+    },
+    {
+      "ident": "TestBytecodeTestCase.test_assert_not_in_with_arg_in_bytecode",
+      "reason": "uses-self.assertNotInBytecode"
+    },
+    {
+      "ident": "TestDisCLI.test_invocation",
+      "reason": "helper:set_source(helper:text_normalize(decorated-helper))"
+    },
+    {
+      "ident": "TestDisCLI.test_show_cache",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "TestDisCLI.test_show_offsets",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "TestDisCLI.test_show_positions",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    },
+    {
+      "ident": "TestDisCLI.test_specialized_code",
+      "reason": "helper:check_output(helper:set_source(helper:text_normalize(decorated-helper)))"
+    }
+  ],
+  "counts": {
+    "extracted": 145,
+    "pinned": 29,
+    "quarantined": 116
+  }
+}
