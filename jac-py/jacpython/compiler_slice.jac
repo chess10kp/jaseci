@@ -4028,6 +4028,26 @@ test "compiler_slice: try then trailing statements compile with sound structure"
     }
 }
 
+test "compiler_slice: try/finally then return in nested function compiles" {
+    src = (
+        "def outer():\n"
+        "    def wrapper():\n"
+        "        try:\n"
+        "            result = 1\n"
+        "        finally:\n"
+        "            pass\n"
+        "        return result\n"
+        "    return wrapper\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert len(actual.co_code) == len(exp.co_code);
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.stacksize == exp.stacksize;
+}
+
 # pass-only handler bodies duplicate the tail inline (CPython shape); exctab
 # borrow for that edge is still open — compile path is sound.
 test "compiler_slice: try pass handlers then trailing code compiles" {

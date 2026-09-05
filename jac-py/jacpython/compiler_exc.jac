@@ -372,7 +372,7 @@ def visit_try_finally(
         tail_done = True;
         tail_terminated = tail_cont.terminated;
         tail_end_blk = g.cur;
-        if tail_cont.terminated {
+        if not tail_cont.terminated {
             emit_module_return(g, tail_cont.loc);
         }
     } elif try_follows {
