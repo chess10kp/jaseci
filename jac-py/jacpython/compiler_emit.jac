@@ -1488,6 +1488,11 @@ def visit_expr(
             }
         }
         visit_expr(g, un.operand);
+        # CPython 3.11+ dropped UNARY_POSITIVE; unary plus is a no-op on the
+        # operand value (namedtuple and other stdlib sources emit UAdd).
+        if isinstance(un.op, UAdd) {
+            return None;
+        }
         if isinstance(un.op, Not) {
             need_to_bool = True;
             if isinstance(un.operand, Compare)
@@ -2645,6 +2650,9 @@ def visit_comp_elt(
         ul = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
         visit_comp_elt(g, un.operand, bound_names, filter_compare);
         if codegen_busy(g) {
+            return;
+        }
+        if isinstance(un.op, UAdd) {
             return;
         }
         opc = unary_opcode(un.op as PyObj);
