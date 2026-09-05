@@ -104,7 +104,7 @@
    "stem": "test_generators",
    "path": "Lib/test/test_generators.py",
    "baseline": {
-    "passed": 14,
+    "passed": 15,
     "failed": 0,
     "errored": 0,
     "skipped": 8

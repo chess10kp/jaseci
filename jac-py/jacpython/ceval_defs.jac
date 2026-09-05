@@ -2900,7 +2900,8 @@ obj PyGenerator(PyObj) {
         # the generator object, not the code). Empty string = fall back to the
         # code object's name, matching CPython's pre-assignment read path.
         gen_name: str = "",
-        gen_qualname: str = "";
+        gen_qualname: str = "",
+        frame_facade: PyObj | None = None;
 
     def tp_iter -> PyObj {
         # An async generator is driven exclusively through __anext__/asend;
@@ -2909,6 +2910,20 @@ obj PyGenerator(PyObj) {
             return py_error("TypeError", "'async_generator' object is not iterable");
         }
         return self;
+    }
+
+    # gi_frame / ag_frame surface accessor: CPython caches the frame object on
+    # the generator (identity stable across accesses) and returns None once the
+    # generator completed (frame released, 3.13+). One facade per generator;
+    # the gen<->facade reference cycle is host-gc collectible.
+    def frame_surface -> PyObj {
+        if self.finished {
+            return py_none();
+        }
+        if self.frame_facade is None {
+            self.frame_facade = PyGenFrame(t="genframe", gen=self);
+        }
+        return self.frame_facade as PyObj;
     }
 
     # gen.send / gen.throw / gen.close / gen.__next__ resolve to native bound
@@ -2923,7 +2938,7 @@ obj PyGenerator(PyObj) {
                 return PyAsyncGenMethod(t="agen_method", gen=self, kind=name);
             }
             if name == "ag_frame" {
-                return PyGenFrame(t="genframe", gen=self);
+                return self.frame_surface();
             }
             if name == "ag_running" {
                 # True only while the frame is actively executing, like gi_running.
@@ -2938,7 +2953,7 @@ obj PyGenerator(PyObj) {
             return PyGenMethod(t="gen_method", gen=self, kind=name);
         }
         if name == "gi_frame" or name == "ag_frame" {
-            return PyGenFrame(t="genframe", gen=self);
+            return self.frame_surface();
         }
         if name == "gi_running" or name == "ag_running" {
             # True only while the generator's frame is actively executing;
@@ -3062,15 +3077,21 @@ obj PyGenMethod(PyObj) {
         return gen_send(self.gen, py_none());
     }
 }
-# A generator's gi_frame surface: only .clear() is modeled (the frame-teardown
-# entry point CPython exposes), which releases the suspended frame's locals and
-# finalizes any user object dropped -- then marks the generator exhausted.
+# A generator's gi_frame/ag_frame surface: a stable facade over the generator's
+# real frame. .clear() stays local (releases the suspended frame's locals and
+# finalizes dropped user objects, then marks the generator exhausted); every
+# f_* attribute delegates to PyFrame.tp_getattro, so f_back answers from the
+# live chain walk -- None while not-started/suspended/exhausted, the resumer's
+# frame while running -- and f_code/f_locals/f_globals come from PyFrame.
 obj PyGenFrame(PyObj) {
     has gen: PyGenerator;
 
     def tp_getattro(name: str) -> PyObj {
         if name == "clear" {
             return PyGenFrameClear(t="genframe_clear", gen=self.gen);
+        }
+        if name.startswith("f_") {
+            return self.gen.frame.tp_getattro(name);
         }
         return py_error("AttributeError", name);
     }
