@@ -8528,11 +8528,14 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
     # An error was actually consulted: validate the handler now (3.14 semantics).
     h = errors.lower().replace("_", "-").replace(" ", "");
     known = h == "strict" or h == "ignore" or h == "replace"
-        or h == "backslashreplace" or h == "xmlcharrefreplace";
+        or h == "backslashreplace" or h == "xmlcharrefreplace"
+        or h == "surrogatepass";
     if not known {
         return py_error("LookupError", "unknown error handler name '" + errors + "'");
     }
-    if h == "strict" {
+    # surrogatepass only relaxes UTF-8 surrogate rules; other intrinsic codecs
+    # still reject out-of-range codepoints like strict.
+    if h == "strict" or (h == "surrogatepass" and not surrogates_only) {
         reason = "ordinal not in range(" + str(limit + 1) + ")";
         if surrogates_only {
             reason = "surrogates not allowed";
@@ -8557,6 +8560,10 @@ def _sm_encode(s: str, encoding: str, errors: str) -> PyObj {
         } elif h == "ignore" {
         } elif h == "replace" {
             out.append(63);
+        } elif h == "surrogatepass" {
+            out.append(0xE0 | (cp >> 12));
+            out.append(0x80 | ((cp >> 6) & 0x3F));
+            out.append(0x80 | (cp & 0x3F));
         } elif h == "backslashreplace" {
             esc = _repr_unicode_escape(cp);
             j = 0;
