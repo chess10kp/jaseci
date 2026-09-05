@@ -152,7 +152,8 @@ test "wave17 reader quoting modes" {
         "NONNUMERIC bad float",
         lambda { list(reader(iter(["1,x"]), quoting=QUOTE_NONNUMERIC)); },
         "ValueError", "could not convert string to float: 'x'");
-    rec = list(reader(iter(['1,"x",3']), quoting=QUOTE_NONNUMERIC))[0];
+    rows: list = list(reader(iter(['1,"x",3']), quoting=QUOTE_NONNUMERIC));
+    rec: list = rows[0] as list;
     assert rec[0] == 1.0;
     assert isinstance(rec[0], float);
     assert rec[1] == "x";
