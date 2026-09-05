@@ -30,6 +30,7 @@ import from objects {
     PyObj,
     PyStr,
     py_error,
+    ShimTypeMarker,
 }
 
 # Every exported name, in _typesmodule.c EXPORT_STATIC_TYPE order.
@@ -99,4 +100,24 @@ obj TypesMarkerCtor(PyObj) {
             "TypeError", "cannot create '" + self.name + "' instances"
         );
     }
+}
+
+# Native-family exports from _typesmodule.c: ShimTypeMarker wrappers so
+# py_isinstance matches on one PyObj.t compare. Constructor-bearing names
+# (FunctionType, ModuleType, MappingProxyType, ...) are overlaid at the
+# ceval install site with host proxies; this dict carries only the
+# rejecting-marker surface.
+def types_module_attrs() -> dict[str, PyObj] {
+    attrs: dict[str, PyObj] = {};
+    tags = _types_native_tags();
+    for name in tags {
+        tag = (tags[name] as PyStr).val;
+        ctor = TypesMarkerCtor(t="types_marker_ctor", name=name);
+        attrs[name] = ShimTypeMarker(
+            t="shim_type_marker",
+            tag=tag,
+            ctor=ctor,
+        );
+    }
+    return attrs;
 }
