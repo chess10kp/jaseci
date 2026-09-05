@@ -3072,6 +3072,13 @@ obj PyGenFrame(PyObj) {
         if name == "clear" {
             return PyGenFrameClear(t="genframe_clear", gen=self.gen);
         }
+        # Delegate frame introspection attrs (f_back/f_code/f_locals/...) to
+        # the suspended PyFrame; suspended generator frames stay off the live
+        # chain so f_back is None, matching CPython gi_frame semantics.
+        if name == "f_back" or name == "f_code" or name == "f_locals"
+            or name == "f_globals" {
+            return self.gen.frame.tp_getattro(name);
+        }
         return py_error("AttributeError", name);
     }
 }
