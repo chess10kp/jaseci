@@ -371,10 +371,10 @@ test "wave19 deque surface: extend/index/count/remove/insert/rotate" {
 
 
 test "wave19 deque item access: get/set/del, slices rejected" {
-    d = _p2_deque([10, 20, 30, 40]);
+    d: any = _p2_deque([10, 20, 30, 40]);
     assert d[0] == 10 and d[-1] == 40 and d[2] == 30;
 
-    d[0] = "x";
+    d[0] = "x" as any;
     assert repr(d) == "deque(['x', 20, 30, 40])" , repr(d);
     del d[1];
     assert repr(d) == "deque(['x', 30, 40])" , repr(d);
