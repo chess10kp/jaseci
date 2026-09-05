@@ -476,7 +476,7 @@ test "layer1: bytes hash richcompare and repr (P3.2a)" {
     src = "class TestBytesCore(unittest.TestCase):\n"
     "    def test_bytes_hash(self):\n"
     "        self.assertEqual(hash(b'abc') == hash(b'abc'), True)\n"
-    "        self.assertNotEqual(hash(b'a'), hash(b'b'))\n"
+    "        self.assertEqual(hash(b'a') == hash(b'b'), False)\n"
     "    def test_bytes_richcompare(self):\n"
     "        self.assertEqual(b'abc', b'abc')\n"
     "        self.assertLess(b'a', b'b')\n"
@@ -644,7 +644,11 @@ test "layer1: hash routing and compare protocol probes (P3.1e/M10)" {
     "        self.assertEqual(got, [1, 2])\n"
     "        with self.assertRaises(TypeError):\n"
     "            iter(42, 99)\n"
-    "        it = iter(lambda: 7, 8)\n"
+    "        state = [6]\n"
+    "        def bump():\n"
+    "            state[0] += 1\n"
+    "            return state[0]\n"
+    "        it = iter(bump, 8)\n"
     "        self.assertEqual(next(it), 7)\n"
     "        self.assertEqual(list(it), [])\n";
     result = layer1_replay_source(src);

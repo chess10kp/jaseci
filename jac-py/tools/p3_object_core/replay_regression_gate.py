@@ -22,6 +22,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 REPLAY_JAC = REPO_ROOT / "jac-py" / "jacpython" / "layer0_replay.jac"
 _TEST_NAME_RE = re.compile(r'^test "([^"]+)"', re.MULTILINE)
+# Wall-clock budget per isolated ``jac test`` subprocess (seconds).
+_SUBPROCESS_TIMEOUT = int(os.environ.get("REPLAY_REGRESSION_TIMEOUT", "180"))
 
 
 def _resolve_jac() -> Path | None:
@@ -61,21 +63,34 @@ def run_replay_regressions(
         cmd = [str(jac_bin), "test", str(REPLAY_JAC), "--filter", name]
         if verbose:
             cmd.insert(2, "--verbose")
-        proc = subprocess.run(
-            cmd,
-            cwd=REPO_ROOT,
-            env=env,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        try:
+            proc = subprocess.run(
+                cmd,
+                cwd=REPO_ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=_SUBPROCESS_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired as exc:
+            detail = (exc.stdout or "") + (exc.stderr or "")
+            print(f"{prefix} TIMEOUT after {_SUBPROCESS_TIMEOUT}s", flush=True)
+            if detail.strip():
+                print(detail.strip(), flush=True)
+            raise SystemExit(
+                f"layer0_replay regression timed out at {name} "
+                f"(>{_SUBPROCESS_TIMEOUT}s)"
+            )
         detail = (proc.stdout or proc.stderr or "").strip()
         if proc.returncode != 0:
             failures.append(name)
             print(f"{prefix} FAILED (exit {proc.returncode})", flush=True)
             if detail:
                 print(detail, flush=True)
-            continue
+            raise SystemExit(
+                f"layer0_replay regression failed at {name} (exit {proc.returncode})"
+            )
         print(f"{prefix} OK", flush=True)
     if failures:
         joined = "\n  - ".join(failures)
