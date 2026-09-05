@@ -415,6 +415,7 @@ import from gc_shim { gc_module_attrs }
 import from sysconfig_shim { sysconfig_module_attrs }
 import from errno_shim { errno_module_attrs }
 import from signal_shim { signal_module_attrs }
+import from types { types_module_attrs }
 import from array_facade {
     array_module_attrs,
     PyArrayObj,
@@ -995,6 +996,15 @@ def import_native(absname: str) -> PyObj {
         shim_modules["_sysconfig"] = PyModule(
             t="module", name="_sysconfig", attrs=sysconfig_module_attrs()
         );
+    }
+    if absname == "_types" and not ("_types" in shim_modules) {
+        # _typesmodule.c lift: native ShimTypeMarker exports for faithful VM
+        # type families, with constructor-bearing names left as host proxies
+        # from the delegated snapshot (see types.jac / build_types_module).
+        typesmod = build_types_module();
+        if not is_error(typesmod) {
+            shim_modules["_types"] = typesmod;
+        }
     }
     if absname == "sys" and not ("sys" in shim_modules) {
         # Serve a delegate snapshot with exception-state OVERRIDDEN: the host sys
@@ -2937,6 +2947,14 @@ def host_import(name: str, fromlist: PyObj) -> PyObj {
         shim_modules["_sysconfig"] = PyModule(
             t="module", name="_sysconfig", attrs=sysconfig_module_attrs()
         );
+    }
+    if name == "_types" and not ("_types" in shim_modules) {
+        # Mirror of the import_native site: _typesmodule.c native markers
+        # over the delegated host snapshot.
+        typesmod = build_types_module();
+        if not is_error(typesmod) {
+            shim_modules["_types"] = typesmod;
+        }
     }
     if name == "sys" and not ("sys" in shim_modules) {
         # Mirror of the import_native site: exception-state attrs must read
@@ -10421,6 +10439,23 @@ def build_signal_facade -> PyObj {
     }
     m = mod as PyModule;
     native = signal_module_attrs();
+    for k in native {
+        m.attrs[k] = native[k];
+    }
+    return mod;
+}
+
+def build_types_module -> PyObj {
+    # _typesmodule.c lift: start from the delegated host snapshot (constructor-
+    # bearing static types: FunctionType, ModuleType, MappingProxyType, ...)
+    # and overlay guest-native ShimTypeMarker exports for every VM-faithful
+    # type family (see types.jac types_module_attrs).
+    mod = delegated_module("_types");
+    if is_error(mod) {
+        return mod;
+    }
+    m = mod as PyModule;
+    native = types_module_attrs();
     for k in native {
         m.attrs[k] = native[k];
     }
