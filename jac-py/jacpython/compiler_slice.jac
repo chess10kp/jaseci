@@ -1736,6 +1736,59 @@ test "compiler_slice: band5 nested class parsed executes in ceval" {
     assert expect_int(ns["result"]) == 1;
 }
 
+# ---------------- Band 5 slice 6: class body __slots__ ----------------
+# Class-body ``__slots__`` is an ordinary name binding at compile time; runtime
+# layout/enforcement is wired through ``compute_class_slots`` in ceval. These
+# pins lock bytecode parity for the declaration form and end-to-end slot writes.
+
+test "compiler_slice: band5 class __slots__ parsed matches oracle co_code" {
+    src = (
+        "class C:\n"
+        + "    __slots__ = ('x',)\n"
+        + "result = C.__name__\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.stacksize == exp.stacksize;
+    nested = nested_code_by_name(actual, "C");
+    exp_nested = nested_code_by_name(exp, "C");
+    assert nested.co_code == exp_nested.co_code;
+    assert nested.stacksize == exp_nested.stacksize;
+}
+
+test "compiler_slice: band5 class __slots__ parsed executes in ceval" {
+    src = (
+        "class C:\n"
+        + "    __slots__ = ('x',)\n"
+        + "c = C()\n"
+        + "c.x = 3\n"
+        + "result = c.x\n"
+    );
+    co = compile_parsed_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co, [], ns);
+    assert not is_error(out);
+    assert expect_int(ns["result"]) == 3;
+}
+
+test "compiler_slice: band5 class __slots__ string form executes in ceval" {
+    src = (
+        "class S:\n"
+        + "    __slots__ = 'q'\n"
+        + "s = S()\n"
+        + "s.q = 7\n"
+        + "result = s.q\n"
+    );
+    co = compile_parsed_exec(src);
+    ns: dict[str, PyObj] = {};
+    out = exec_code(co, [], ns);
+    assert not is_error(out);
+    assert expect_int(ns["result"]) == 7;
+}
+
 # ---------------- Band 6 slice 1: try/except typed handler ----------------
 
 test "compiler_slice: band6 try except typed parsed matches oracle co_code" {
