@@ -180,8 +180,10 @@ def complex_repr_text(c: PyComplex) -> str {
 # damage is "complex() arg is a malformed string"; underscore misuse comes
 # from the float layer as "could not convert string to complex: '<s>'".
 
+# CPython routes complex(str) through _PyUnicode_TransformDecimalAndSpaceToASCII,
+# which maps Py_UNICODE_ISSPACE code points to ASCII space before parsing.
 def _cpx_is_space(c: str) -> bool {
-    return c == " " or c == "\t" or c == "\n" or c == "\r" or c == "\v" or c == "\f";
+    return len(c) > 0 and c.isspace();
 }
 
 def _cpx_strip_ws(s: str) -> str {

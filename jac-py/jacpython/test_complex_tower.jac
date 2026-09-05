@@ -128,6 +128,7 @@ test "complex tower: parsing-valid -- complex str parsing j suffix parens words 
     assert vm_str("complex('-Infinity')") == "(-inf+0j)";
     assert vm_str("complex('nan')") == "(nan+0j)";
     assert vm_str("complex('1+j')") == "(1+1j)";
+    assert vm_str("complex('\\N{EM SPACE}(\\N{EN SPACE}1+1j ) ')") == "(1+1j)";
 }
 
 test "complex tower: parsing-errors -- exact ValueError texts for malformed strings" {
