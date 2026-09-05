@@ -1,5 +1,9 @@
 # P3 — ``__slots__`` layout helpers + ``type_ready`` flags (import-free leaf).
-# Used by ``typeobject`` / ``ceval`` during ``PyType_Ready`` class finalization.
+# Call sites (landed):
+#   - ``ceval.jac`` ``compute_class_slots`` / ``type_new`` (mangle, merge, dict
+#     flags, member descriptor install)
+#   - ``ceval.jac`` ``PyUserObj`` attr gate (``type_slots_attr_allowed``,
+#     ``type_slots_in_dict_view``)
 # Mirrors CPython type_new dict/weakref inheritance rules for heap types.
 
 glob Py_TPFLAGS_READY: int = 4096,
