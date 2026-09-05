@@ -109,6 +109,9 @@ glob _L1_IDENTITY_CHECKS = {
     "assertIs", "assertIsNot", "assertIsInstance", "assertNotIsInstance",
 };
 
+# assertTrue/False are truthiness relations, not raw operand equality.
+glob _L1_TRUTHINESS_CHECKS = {"assertTrue", "assertFalse"};
+
 
 def _stmt_scope_nodes(stmt: any) -> any {
     # ast.walk(stmt) minus nested function/class subtrees: names bound in an
@@ -972,6 +975,15 @@ def _l1_replay_method(setup_src: str, checks: any) -> int {
                 jac_name = _l1_jac_raise_name(ns_jac, chk[1][1] as str);
                 host_name = _l1_host_raises(ns_host, chk[1][1]);
                 if not (_l1_raise_match(jac_name, host_name) as bool) {
+                    return 0;
+                }
+                continue;
+            }
+            if (chk[0] as str) in _L1_TRUTHINESS_CHECKS and len(chk[1]) == 1 {
+                a_src = chk[1][0] as str;
+                jac_truth = to_host(layer1_eval_in(ns_jac, "bool(" + a_src + ")"));
+                host_truth = bool(_l1_host_eval_in(ns_host, a_src));
+                if (jac_truth as bool) != host_truth {
                     return 0;
                 }
                 continue;
