@@ -18,6 +18,7 @@ already in any lane). Parser-only items stay here and are **not** auto-seeded.
 | module AnnAssign `__annotate__` on early terminate | `bf069783e` | |
 | comprehension filter call push_null (`abs(y)`) | `bf069783e` | |
 | exception-table varint decode | `bf069783e` | `pycode_diff.jac` |
+| native import/exec cutover | `fa8d84ffe` | `compile_route` NATIVE+BOOTSTRAP, `ceval` import/exec routed; `test_runtime_mode` 79/79 |
 
 ---
 
@@ -27,6 +28,23 @@ already in any lane). Parser-only items stay here and are **not** auto-seeded.
 |----|------|---------|--------------|
 | gates-full | census | Full `jacpy-gates.yml` green on tip (`bf069783e+`) | GitHub Actions jac-py P4 gates |
 | hold-failed-19 | desk | Triage 19 failed queue items (HOLD until full gates green) | `ops/DESK.md` |
+
+---
+
+## P0.5 — layer3_import frontier (native boot burn-down)
+
+Eight RED in `jac-py/jacpython/layer3_import.jac` (DESK 2026-09-02): the Phase 4
+burn-down driver. All cluster on real stdlib boot through the native compiler.
+
+| ID | Lane | Summary | Gate / repro |
+|----|------|---------|--------------|
+| exec-module-parse-gap | mech | real stdlib sources fail native parse: `SyntaxError: compile_source: failed to parse exec module` (functools.wraps def, namedtuple defaults) | layer3 `functools.wraps copies name/doc` + `namedtuple with defaults` |
+| namedtuple-unary-op | mech | `NotImplementedError: unsupported unary operator` in namedtuple dynamic-class trampoline | layer3 namedtuple trampoline |
+| dict-stackdepth-fallthrough | exceptions | `Invalid CFG, inconsistent stackdepth at block 2 via fallthrough (want 1 have 2)` | layer3 `native objects expose __dict__` |
+| collections-boot | census | behavioral assert | layer3 `collections + transitive deps boot in-VM` |
+| unittest-closure-boot | census | behavioral assert | layer3 `unittest leaf closure proxy-free` |
+| from-import-star-bind | census | behavioral assert | layer3 `from-import-star binds public names` |
+| functools-contextlib-boot | census | behavioral assert; blocked by exec-module-parse-gap | layer3 `functools+contextlib boot in-VM` |
 
 ---
 
@@ -99,6 +117,18 @@ See `seed-backlog.sh` for live enqueue text:
 |------|-------|-------|
 | repr/str dispatch | objects/walker | `str(P())` → `'None'` when only `__repr__` defined | BAND12 item 53 |
 | slice richcompare | objects | `slice(1,2)==slice(1,2)` False | BAND12 item 54 |
+
+---
+
+## P7 — Native-runtime architecture (PLAN.md phases)
+
+| ID | Lane | Summary | Ref |
+|----|------|---------|-----|
+| dict-set-hash-buckets | objects | P0 correctness: dict/set single-value hash maps drop unequal keys with identical hashes → ordered hash buckets | PLAN #3 |
+| compile-context | mech | process-global compiler state not exception-safe → per-compilation context + safe cleanup | PLAN #4 |
+| bridge-lifetime | mech | bridge stand-in caches retain guest objects → interpreter-owned/weak caches, stale-id protection | PLAN #6 |
+| bootstrap-tripwire | census | `pyc_first` transport + `dataclassmodule.jac` template compiles bypass `note_host_source_marshal` — instrument both | DESK next-4 |
+| blocking-gates | census | import-cycle + conformance-dashboard gates blocking, sealed-binary native smoke, oracle/native/delegated result separation | PLAN #7 |
 
 ---
 

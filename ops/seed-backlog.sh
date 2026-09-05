@@ -25,6 +25,14 @@ Dynamic slice(1,7,2) value never reaches slice path in mp_subscript.
 Shared fix with slice-assignment: mp_subscript/ass/del all accept PySlice.
 EOF
 
+enqueue objects 030-dict-set-hash-buckets <<'EOF'
+family: objects | ref: PLAN.md #3 (independent P0 correctness)
+dict/set storage loses unequal keys with identical hashes (single-value map).
+Ordered hash buckets: same-hash unequal keys coexist; equal keys overwrite in
+place keeping the first key object; deletion removes only the match; insertion
+order + iterator versioning intact. DONE = collision pins + existing dict pins.
+EOF
+
 # ---- exceptions lane (worker3: exceptions_core.jac + compiler exc paths) ---
 enqueue exceptions 050-exc-class-synthesis <<'EOF'
 family: exceptions
@@ -75,6 +83,13 @@ Land the one-line import first; then align async-with co_code vs oracle.
 Gate: jchk jac-py/jacpython/compiler_exc.jac ; jac test jac-py/jacpython/layer10_product_controlflow.jac
 EOF
 
+enqueue exceptions 095-dict-stackdepth-fallthrough <<'EOF'
+family: exceptions | ref: layer3_import `native objects expose __dict__`
+CFG stackdepth crash: "Invalid CFG, inconsistent stackdepth at block 2 via
+fallthrough (want 1 have 2)" compiling the layer3 __dict__ test body.
+flowgraph.jac fallthrough edge. DONE = that layer3 test compiles + passes in CI.
+EOF
+
 # ---- mech lane (worker4: runtime-gap / bridge-policy) ----------------------
 enqueue mech 030-range-bridge <<'EOF'
 family: mech (bridge-policy) | DESIGN-FIRST
@@ -94,6 +109,21 @@ Fix assembler.jac PEP 626 location-table writer (single root cause).
 Gate: jac test jac-py/jacpython/compiler_slice.jac ; spot-check layer8/layer9 nested fns
 EOF
 
+enqueue mech 141-exec-module-parse-gap <<'EOF'
+family: mech | ref: layer3_import frontier (DESK 2026-09-02)
+product_compile.jac:85 "failed to parse exec module" on real stdlib sources:
+functools.wraps def + namedtuple-defaults source. Highest-value layer3 red —
+blocks functools/contextlib/collections boots. DONE = both sources parse +
+execute natively (layer3 tests green).
+EOF
+
+enqueue mech 142-namedtuple-unary-op <<'EOF'
+family: mech | ref: layer3_import namedtuple trampoline
+ceval: NotImplementedError "unsupported unary operator" while the namedtuple
+dynamic class boots (layer3_import.jac:338 trampoline). Find the missing
+UNARY_* op, implement + oracle pin. DONE = layer3 trampoline test green.
+EOF
+
 enqueue mech 150-ceval-check-eg-match <<'EOF'
 family: mech | ref: BAND11 learnings #4
 Implement CHECK_EG_MATCH in ceval.jac so except* (ExceptionGroup) runs after compile parity.
@@ -105,6 +135,21 @@ family: mech | ref: BAND12 #1
 f-strings: tokenizer still plain STRING; need parse -> JoinedStr -> FORMAT_VALUE/BUILD_STRING
 lowering + ceval. Hand-built AST band12 tests in compiler_slice.jac are the oracle pins.
 Gate: jac test jac-py/jacpython/compiler_slice.jac (band 12 f-string tests) + native f'...' exec
+EOF
+
+enqueue mech 180-compile-context <<'EOF'
+family: mech | ref: PLAN.md #4
+Compiler state is process-global + not exception-safe (product_compile_active,
+pending_break_finishes, statement handlers, ceval op registries, traceback/
+module/exec depth). Move to a per-compilation context with exception-safe
+cleanup. DONE = failed-then-valid, recursive, repeated compilation all green.
+EOF
+
+enqueue mech 185-bridge-lifetime <<'EOF'
+family: mech (bridge-policy) | ref: PLAN.md #6
+Bridge stand-in caches can retain guest objects. Make caches interpreter-owned
+or weakly cleaned; add stale-id() protection. DONE = create/release churn of
+many guest classes/objects without retention; live-view deviations documented.
 EOF
 
 # ---- converter lane (worker6: converter throughput, jac-py/tools) ---------
@@ -131,6 +176,46 @@ EOF
 enqueue census 130-pr6973-corpus <<'EOF'
 family: census | ref: PR#6973 D
 Corpus/gates integrity check (detail: logs/runtime-lane-brief.md).
+EOF
+
+enqueue census 140-collections-boot <<'EOF'
+family: census | ref: layer3_import.jac:224
+Behavioral: collections package + transitive deps must boot in-VM. Diagnose the
+first failing bind/opcode vs host oracle; fix or split into precise gap tasks.
+DONE = layer3 collections boot green (or named follow-ups seeded).
+EOF
+
+enqueue census 145-unittest-closure-boot <<'EOF'
+family: census | ref: layer3_import.jac:249
+Behavioral: leaf modules across the unittest closure boot proxy-free. Diagnose
+vs host oracle. DONE = layer3 unittest-closure test green or split out.
+EOF
+
+enqueue census 150-from-import-star <<'EOF'
+family: census | ref: layer3_import.jac:292
+Behavioral: from-import-star binds a module's public names (skip _-prefixed).
+Diagnose IMPORT_STAR path vs oracle. DONE = layer3 from-import-star green.
+EOF
+
+enqueue census 155-functools-contextlib-boot <<'EOF'
+family: census | ref: layer3_import.jac:467 | BLOCKED-BY mech/141 parse gap
+Behavioral: functools + contextlib boot in-VM (wraps / __dict__ / type-keyed
+dispatch). Re-diagnose after mech/141 lands; then fix residual binds.
+DONE = layer3 functools+contextlib boot green.
+EOF
+
+enqueue census 160-bootstrap-tripwire <<'EOF'
+family: census | ref: DESK 2026-09-02 next-4 (bootstrap seams)
+pyc_first bootstrap transport + dataclassmodule.jac template compiles bypass
+note_host_source_marshal — instrument both so NATIVE mode fails loudly there.
+DONE = tripwire test covers both seams.
+EOF
+
+enqueue census 165-blocking-gates <<'EOF'
+family: census | ref: PLAN.md #7
+Make CI prove the cutover: import-cycle gate blocking, conformance-dashboard
+check blocking, sealed-binary native smoke test, oracle/native/delegated result
+separation. DONE = gates fail on cutover regression, not just report it.
 EOF
 
 # Note: parser items (#8473 trailing **d, try/except span ends, posonly-after-default,
