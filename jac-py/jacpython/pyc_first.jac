@@ -64,6 +64,7 @@ import from ceval_defs {
     PyGenerator,
 }
 
+import from compile_route { note_host_source_marshal }
 import from objects {
     PyBool,
     PyFloat,
@@ -631,14 +632,20 @@ glob ADD_MARSHAL: list[int] = [
 # Bootstrap transport: host compile() + marshal (PLAN.md P0.3 transitional).
 # Canonical copy kept here for re-export; ceval.jac carries a duplicate for
 # acyclic import (see PLAN.md §4 module-boundary constraint).
-def host_compile_marshal(source: str) -> list[int] {
+def host_compile_marshal(source: str) -> any {
+    chk = note_host_source_marshal();
+    if is_error(chk) {
+        return chk;
+    }
     raw = marshal.dumps(compile(source, "<jacpython-host>", "exec"));
     return raw as list[int];
 }
 
 # ---------------- tests ----------------
 def run_source(source: str) -> dict[str, PyObj] {
-    return exec_module(unmarshal(host_compile_marshal(source)));
+    marshalled = host_compile_marshal(source);
+    assert not is_error(marshalled);
+    return exec_module(unmarshal(marshalled as list[int]));
 }
 
 test "pyc-first: attributes and imports" {
@@ -776,7 +783,9 @@ test "pyc-first: real CPython 3.14 marshal -> jacpython ceval" {
     # The source boundary is real host compile -> marshal -> Jac unmarshal;
     # this is deliberately not another embedded byte fixture.
     source = "numbers = [4, 5, 6]\nanswer = numbers[1] + 2\nword = 'a' + 'b'\n";
-    source_co = unmarshal(host_compile_marshal(source));
+    source_marshalled = host_compile_marshal(source);
+    assert not is_error(source_marshalled);
+    source_co = unmarshal(source_marshalled as list[int]);
     source_globals = exec_module(source_co);
     assert expect_int(source_globals["answer"]) == 7;
     assert expect_str(source_globals["word"]) == "ab";
@@ -784,7 +793,9 @@ test "pyc-first: real CPython 3.14 marshal -> jacpython ceval" {
         == 5;
 
     function_source = "def add(a, b):\n    return a + b\nresult = add(2, 3)\n";
-    function_co = unmarshal(host_compile_marshal(function_source));
+    function_marshalled = host_compile_marshal(function_source);
+    assert not is_error(function_marshalled);
+    function_co = unmarshal(function_marshalled as list[int]);
     function_globals = exec_module(function_co);
     assert expect_int(function_globals["result"]) == 5;
 }

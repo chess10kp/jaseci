@@ -13,10 +13,12 @@ import from pyc_first {
     set_layer3_active,
     import_native,
     exec_code,
+    host_compile_marshal,
     py_attr,
     py_invoke,
     to_host,
 }
+import from dataclassmodule { dc_make_fn }
 import from compile_route {
     CompileRoute,
     compile_source_routed,
@@ -49,6 +51,28 @@ test "runtime_mode: NATIVE route rejects host source marshal" {
     chk = note_host_source_marshal();
     set_compile_route_active(prev);
     assert is_error(chk), "expected host marshal guard to fail on NATIVE route";
+    assert native_host_marshal_violation();
+    assert host_source_marshal_invocations() == 1;
+}
+
+test "runtime_mode: pyc_first bootstrap transport tripwire rejects NATIVE" {
+    reset_host_source_marshal_stats();
+    prev = get_compile_route_active();
+    set_compile_route_active(CompileRoute.NATIVE);
+    outcome = host_compile_marshal("x = 1\n");
+    set_compile_route_active(prev);
+    assert is_error(outcome), "expected pyc_first host_compile_marshal to fail on NATIVE route";
+    assert native_host_marshal_violation();
+    assert host_source_marshal_invocations() == 1;
+}
+
+test "runtime_mode: dataclass template compile tripwire rejects NATIVE" {
+    reset_host_source_marshal_stats();
+    prev = get_compile_route_active();
+    set_compile_route_active(CompileRoute.NATIVE);
+    outcome = dc_make_fn({}, "def f():\n    pass\n", "f");
+    set_compile_route_active(prev);
+    assert is_error(outcome), "expected dataclass template compile to fail on NATIVE route";
     assert native_host_marshal_violation();
     assert host_source_marshal_invocations() == 1;
 }

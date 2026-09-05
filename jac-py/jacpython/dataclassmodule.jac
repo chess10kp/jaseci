@@ -52,6 +52,7 @@ import from ceval {
     register_shim_module,
 }
 import from ceval_defs { PyClass, PyUserObj, }
+import from compile_route { note_host_source_marshal }
 import from pyc_first { unmarshal, exec_code }
 import from host_oracle { host_compile_marshal }
 
@@ -1038,6 +1039,10 @@ def dc_collect_fields(cls: PyClass, anns: PyObj, params: DCParams) -> PyObj {
 # ---------------- decoration ----------------
 
 def dc_make_fn(ns: dict[str, PyObj], src: str, fname: str) -> PyObj {
+    chk = note_host_source_marshal();
+    if is_error(chk) {
+        return chk;
+    }
     outcome = exec_code(
         unmarshal(host_compile_marshal(src, "<dataclasses>", "exec")), [], ns
     );
@@ -1448,6 +1453,10 @@ obj DCMakeDataclassFn(PyObj) {
             body = "    pass\n";
         }
         src += body;
+        chk = note_host_source_marshal();
+        if is_error(chk) {
+            return chk;
+        }
         outcome = exec_code(
             unmarshal(host_compile_marshal(src, "<dataclasses>", "exec")), [], ns
         );
