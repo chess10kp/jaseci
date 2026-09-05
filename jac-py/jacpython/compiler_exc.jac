@@ -1985,6 +1985,41 @@ def visit_try_star(
 # the walk's all-matched exit jumps back into it, and the exceptional exits
 # rerun the finally under PUSH_EXC_INFO (fin_except) + COPY/POP_EXCEPT/RERAISE
 # (fin_unwind) regions placed after unwind.
+#
+# CPython registers try/except* co_names in AST order (body, handlers, orelse).
+# Our success path emits orelse before the handler walk, so prescan handlers in
+# throwaway blocks first; add_name/const registration persists after truncation.
+def prescan_trystar_handler_names(
+    g: cfg_builder,
+    t: TryStar,
+    ann_ctx: ann_scope_plan | None
+) {
+    dead_blocks = len(g.u.blocks);
+    dead_regions = len(g.u.except_regions);
+    dead_nte = g.u.nested_try_except_end;
+    noloc = no_loc();
+    g.use(g.new_block());
+    hi = 0;
+    while hi < len(t.handlers) {
+        h = t.handlers[hi] as ExceptHandler;
+        visit_expr(g, h.type as expr);
+        if codegen_busy(g) {
+            return;
+        }
+        if h.name is not None {
+            emit_name_store(g, h.name as str, noloc);
+        }
+        visit_stmts(g, h.body, 0, False, None, 0, None, ann_ctx);
+        if codegen_busy(g) {
+            return;
+        }
+        hi = hi + 1;
+    }
+    g.u.blocks = g.u.blocks[0:dead_blocks];
+    g.u.except_regions = g.u.except_regions[0:dead_regions];
+    g.u.nested_try_except_end = dead_nte;
+}
+
 def visit_try_star_except(
     g: cfg_builder,
     t: TryStar,
@@ -2026,12 +2061,32 @@ def visit_try_star_except(
     g.use(protect_end);
     normal_terminated = body_cont.terminated;
     else_cont: stmt_cont | None = None;
-    if t.orelse is not None and len(t.orelse) > 0 and not body_cont.terminated {
+    has_else = t.orelse is not None and len(t.orelse) > 0;
+    if has_else {
+        prescan_trystar_handler_names(g, t, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=tloc);
+        }
+        dead_blocks = -1;
+        dead_regions = -1;
+        dead_nte = -1;
+        if body_cont.terminated {
+            # Dead else still registers names after handlers (CPython flowgraph
+            # strips the bytes but keeps co_names order).
+            dead_blocks = len(g.u.blocks);
+            dead_regions = len(g.u.except_regions);
+            dead_nte = g.u.nested_try_except_end;
+            g.use(g.new_block());
+        }
         else_cont = visit_stmts(g, t.orelse, 0, try_follows, tail, tail_idx, tail_join, ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=tloc);
         }
-        if else_cont.terminated {
+        if dead_blocks >= 0 {
+            g.u.blocks = g.u.blocks[0:dead_blocks];
+            g.u.except_regions = g.u.except_regions[0:dead_regions];
+            g.u.nested_try_except_end = dead_nte;
+        } elif else_cont.terminated {
             normal_terminated = True;
         }
     }

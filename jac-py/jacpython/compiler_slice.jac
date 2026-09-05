@@ -4057,11 +4057,6 @@ test "compiler_slice: except* then trailing statements compile with sound struct
 # recombines it. Byte-exact against the host oracle including co_names and
 # linetable for the shapes below.
 #
-# Known-blocked shapes (NOT TryStar-lowering bugs):
-#  - fresh names bound in an `else` clause get co_names indices allocated at
-#    orelse emit time (before the handler section) instead of CPython's AST
-#    order; reuse existing names in else bodies until that ordering moves.
-
 test "compiler_slice: band11 except* bare handler matches oracle PyCode" {
     src = (
         "try:\n"
@@ -4147,6 +4142,25 @@ test "compiler_slice: band11 except* with else reusing names matches oracle PyCo
     expected = oracle_exec(src, "<f>");
     assert isinstance(expected, PyCode);
     exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.linetable == exp.linetable;
+}
+
+test "compiler_slice: band11 except* else fresh names co_names matches oracle" {
+    src = (
+        "try:\n"
+        + "    x = 1\n"
+        + "except* ValueError:\n"
+        + "    h = 2\n"
+        + "else:\n"
+        + "    e = 3\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.names == exp.names;
     assert actual.co_code == exp.co_code;
     assert actual.exceptiontable == exp.exceptiontable;
     assert actual.linetable == exp.linetable;
