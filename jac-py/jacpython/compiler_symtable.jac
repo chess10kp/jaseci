@@ -1114,7 +1114,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             # not the AST child order (body, handlers, orelse).
             tr_body: list[stmt];
             tr_orelse: list[stmt];
-            tr_handlers: list[ExceptHandler] | None = None;
+            tr_handlers = None;
             tr_finalbody: list[stmt] | None = None;
             if isinstance(s, TryStar) {
                 ts = s as TryStar;
@@ -1148,7 +1148,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             if tr_handlers is not None {
                 hi = 0;
                 while hi < len(tr_handlers) {
-                    h = tr_handlers[hi];
+                    h = tr_handlers[hi] as ExceptHandler;
                     if h.type is not None {
                         if not sym_visit_load_expr(b, h.type) {
                             return False;
