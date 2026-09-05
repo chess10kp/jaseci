@@ -13,29 +13,21 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import shutil
 import subprocess
 import sys
 import unittest
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+_TOOLS = Path(__file__).resolve().parents[1]
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
+
+from jac_subprocess import REPO_ROOT, resolve_jac, subprocess_env
+
 REPLAY_JAC = REPO_ROOT / "jac-py" / "jacpython" / "layer0_replay.jac"
 _TEST_NAME_RE = re.compile(r'^test "([^"]+)"', re.MULTILINE)
 # Wall-clock budget per isolated ``jac test`` subprocess (seconds).
 _SUBPROCESS_TIMEOUT = int(os.environ.get("REPLAY_REGRESSION_TIMEOUT", "180"))
-
-
-def _resolve_jac() -> Path | None:
-    """$JAC override, then PATH (CI installs jac-kit), then the dev venv."""
-    env_bin = os.environ.get("JAC")
-    if env_bin:
-        return Path(env_bin)
-    on_path = shutil.which("jac")
-    if on_path:
-        return Path(on_path)
-    venv_bin = REPO_ROOT / ".venv" / "bin" / "jac"
-    return venv_bin if venv_bin.is_file() else None
 
 
 def replay_test_names() -> list[str]:
@@ -100,11 +92,10 @@ def run_replay_regressions(
 
 class ReplayRegressionGate(unittest.TestCase):
     def test_layer0_layer1_replay_regressions(self) -> None:
-        jac_bin = _resolve_jac()
+        jac_bin = resolve_jac()
         if jac_bin is None:
             self.skipTest("jac binary not found (set $JAC or install jac-kit)")
-        env = os.environ.copy()
-        env.setdefault("JACPATH", "jac-py/jacpython")
+        env = subprocess_env(profile="jacpython", include_dev_source=False)
         max_tests = int(env["REPLAY_REGRESSION_MAX"]) if "REPLAY_REGRESSION_MAX" in env else None
         try:
             run_replay_regressions(
@@ -130,12 +121,11 @@ def main(argv: list[str] | None = None) -> int:
         help="omit per-test jac --verbose",
     )
     args = parser.parse_args(argv)
-    jac_bin = _resolve_jac()
+    jac_bin = resolve_jac()
     if jac_bin is None:
         print("jac binary not found (set $JAC or install jac-kit)", file=sys.stderr)
         return 2
-    env = os.environ.copy()
-    env.setdefault("JACPATH", "jac-py/jacpython")
+    env = subprocess_env(profile="jacpython", include_dev_source=False)
     try:
         run_replay_regressions(
             jac_bin=jac_bin,

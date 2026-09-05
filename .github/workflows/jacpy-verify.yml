@@ -42,6 +42,8 @@ jobs:
           skip-precompile: "true"
           ninja: "false"
       - name: Core oracle + parity suites (runtime behavior)
+        env:
+          JACPATH: jac-py/jacpython
         run: |
           set -e
           jac test jac-py/jacpython/layer4_compile.jac

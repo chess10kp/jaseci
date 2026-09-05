@@ -32,10 +32,8 @@ import subprocess
 import sys
 import tempfile
 
-TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(os.path.dirname(TOOLS_DIR))
-SMOKE_DRIVER = os.path.join(REPO_ROOT, "jac-py", "jacpython", "_fuzz_smoke.jac")
-JAC = os.path.join(REPO_ROOT, ".venv", "bin", "jac")
+from jac_subprocess import REPO_ROOT, resolve_jac, subprocess_env
+SMOKE_DRIVER = REPO_ROOT / "jac-py" / "jacpython" / "_fuzz_smoke.jac"
 SMOKE_INPUT = os.environ.get("FUZZ_CASES_FILE", "/var/tmp/fuzz_cases.json")
 
 _OK_RE = re.compile(r"^ok (\S+) passed: (\d+) skipped: (\d+)")
@@ -51,9 +49,13 @@ def load_corpus(path: str) -> list[dict]:
 
 def run_smoke(timeout: int) -> tuple[dict[str, str], list[str]]:
     """Run the sanctioned driver; return ({name: verdict}, [unparsed lines])."""
-    env = dict(os.environ, JACPYTHON_CPYTHON="python3")
+    jac = resolve_jac(REPO_ROOT)
+    if jac is None:
+        raise FileNotFoundError("jac binary not found (set $JAC or install jac-kit)")
+    env = subprocess_env(profile="jacpython", include_dev_source=False)
+    env.setdefault("JACPYTHON_CPYTHON", "python3")
     proc = subprocess.run(
-        [JAC, "run", SMOKE_DRIVER],
+        [str(jac), "run", str(SMOKE_DRIVER)],
         cwd=REPO_ROOT, env=env, capture_output=True, text=True, timeout=timeout,
     )
     out = proc.stdout.splitlines()

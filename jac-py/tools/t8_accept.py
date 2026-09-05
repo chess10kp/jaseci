@@ -24,9 +24,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-_HERE = Path(__file__).resolve().parent
-_REPO = _HERE.parent.parent
-_JAC = _REPO / ".venv" / "bin" / "jac"
+from jac_subprocess import REPO_ROOT, resolve_jac, subprocess_env
+
 _ORACLE_TESTS = [
     "jac-py/tests/test_p2_module_oracles.jac",
     "jac-py/tests/test_rotatingtree_oracle.jac",
@@ -35,7 +34,7 @@ _LIBTEST = "jac-py/tests/test_p2_libtest_partial.jac"
 
 
 def _resolve(path: Path) -> Path:
-    return path if path.is_absolute() else _REPO / path
+    return path if path.is_absolute() else REPO_ROOT / path
 
 
 def read_tier_b_total(report: Path) -> int:
@@ -62,11 +61,17 @@ def build_metrics(sites_before: int, sites_after: int, tests_passed: bool) -> di
     }
 
 
-def _run_jac_test(jac: Path, targets: list[str], label: str) -> tuple[bool, str]:
-    if not jac.is_file():
-        return False, f"missing jac executable: {jac}"
+def _run_jac_test(jac: Path | None, targets: list[str], label: str) -> tuple[bool, str]:
+    if jac is None:
+        return False, "missing jac executable (set $JAC or install jac-kit)"
     cmd = [str(jac), "test", *targets]
-    proc = subprocess.run(cmd, cwd=_REPO, capture_output=True, text=True)
+    proc = subprocess.run(
+        cmd,
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env=subprocess_env(profile="jac_lang", include_dev_source=False),
+    )
     if proc.returncode == 0:
         return True, proc.stdout or ""
     detail = proc.stderr or proc.stdout or f"exit {proc.returncode}"
@@ -74,11 +79,11 @@ def _run_jac_test(jac: Path, targets: list[str], label: str) -> tuple[bool, str]
 
 
 def run_oracle_tests(jac: Path | None = None) -> tuple[bool, str]:
-    return _run_jac_test(jac or _JAC, _ORACLE_TESTS, "oracle")
+    return _run_jac_test(resolve_jac() if jac is None else jac, _ORACLE_TESTS, "oracle")
 
 
 def run_libtest_tests(jac: Path | None = None) -> tuple[bool, str]:
-    return _run_jac_test(jac or _JAC, [_LIBTEST], "libtest")
+    return _run_jac_test(resolve_jac() if jac is None else jac, [_LIBTEST], "libtest")
 
 
 def run_conformance_gate() -> tuple[bool, str]:

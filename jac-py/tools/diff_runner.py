@@ -49,6 +49,7 @@ DEFAULT_JAC_TIMEOUT = 300
 JAC_TIMEOUT = int(os.environ.get("JAC_DIFF_TIMEOUT", DEFAULT_JAC_TIMEOUT))
 
 from convert_suite import attempt_header, file_sha256  # shared fingerprint block
+from jac_subprocess import resolve_jac, subprocess_env
 
 TOOL_VERSION = "diff_runner-0.2.2"
 
@@ -153,15 +154,14 @@ def run_pins(pins: list[dict]) -> tuple[list[tuple[str, str, str]], bool, str]:
     """
     harness = _JACPYTHON_DIR / f"conv_harness_{os.getpid()}.jac"
     harness.write_text(build_harness(pins), encoding="utf-8")
-    env = dict(os.environ)
-    env["PYTHONPATH"] = str(_REPO / "jac")
-    env["JAC_DEV_SOURCE"] = str(_REPO / "jac")
+    env = subprocess_env(profile="jacpython", include_dev_source=True)
+    jac = resolve_jac(_REPO) or _JAC
     marks: list[tuple[str, str, str]] = []
     timed_out = False
     stderr_tail = ""
     try:
         proc = subprocess.run(
-            [str(_JAC), "run", str(harness)],
+            [str(jac), "run", str(harness)],
             cwd=str(_REPO),
             env=env,
             capture_output=True,

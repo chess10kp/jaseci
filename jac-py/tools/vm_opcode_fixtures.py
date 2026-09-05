@@ -33,6 +33,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from jac_subprocess import subprocess_env
+
 # Policy pin: CURRENT.md / fetch_cpython_reference.py
 CPYTHON_PIN = "3.14.6"
 CPYTHON_MINOR = "3.14"
@@ -1017,6 +1019,7 @@ def _native_codegen_has_opcode(
             cwd=root,
             capture_output=True,
             text=True,
+            env=subprocess_env(profile="jacpython", include_dev_source=False),
         )
     finally:
         if probe_path is not None:

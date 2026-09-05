@@ -3,45 +3,18 @@
 from __future__ import annotations
 
 import argparse
-import os
-import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
-_HERE = Path(__file__).resolve().parent
-_REPO = _HERE.parent.parent
-_JACPYTHON = _REPO / "jac-py" / "jacpython"
+from jac_subprocess import REPO_ROOT, resolve_jac, subprocess_env
 
-
-def _resolve_jac() -> Path | None:
-    """$JAC override, then PATH (CI sealed binary), then the dev venv."""
-    env_bin = os.environ.get("JAC")
-    if env_bin:
-        return Path(env_bin)
-    on_path = shutil.which("jac")
-    if on_path:
-        return Path(on_path)
-    venv_bin = _REPO / ".venv" / "bin" / "jac"
-    return venv_bin if venv_bin.is_file() else None
-
-
-def _run_env() -> dict[str, str]:
-    env = dict(os.environ)
-    jac_src = _REPO / "jac"
-    if env.get("JAC_NO_DEV_SOURCE", "").strip() not in ("1", "true", "True"):
-        env["PYTHONPATH"] = str(jac_src)
-        env["JAC_DEV_SOURCE"] = str(jac_src)
-    cp = os.environ.get("JACPYTHON_CPYTHON")
-    if cp:
-        env["JACPYTHON_CPYTHON"] = cp
-    return env
+_JACPYTHON = REPO_ROOT / "jac-py" / "jacpython"
 
 
 def _run_inline(source: str, expect: str) -> tuple[bool, str]:
     """Wrap arbitrary source in a one-off jac run entry."""
-    jac = _resolve_jac()
+    jac = resolve_jac()
     if jac is None:
         return False, "jac binary not found (set $JAC or install jac-kit)"
     # Jac braces must live in plain strings: when this bridge is invoked from
@@ -71,11 +44,11 @@ def _run_inline(source: str, expect: str) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
             [str(jac), "run", str(path)],
-            cwd=_REPO,
+            cwd=REPO_ROOT,
             capture_output=True,
             text=True,
             timeout=120,
-            env=_run_env(),
+            env=subprocess_env(profile="jacpython"),
         )
     finally:
         path.unlink(missing_ok=True)

@@ -302,6 +302,10 @@ jobs:
       # Replay pins mutate ceval state; one jac test process accumulates the
       # import graph and can hang/OOM before the first progress line (run
       # 33937616179). Drive each case in an isolated subprocess instead.
+      #
+      # P3 gate drivers spawn their own ``jac run`` children; step-scoped
+      # ``env: JACPATH`` does not persist. ``replay_gate.py`` /
+      # ``runtime_gate.py`` build child env via ``tools/jac_subprocess.py``.
       - name: P3 Layer-0/1 replay regression tests
         timeout-minutes: 30
         env:
@@ -309,9 +313,8 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: python3 jac-py/tools/p3_object_core/replay_regression_gate.py
 
-      # The P3 gate drivers only use JACPYTHON_CPYTHON as a run/skip flag; the
-      # interpreter itself is never executed. Resolve it from PATH (setup-python
-      # above pins 3.14) so no dev-machine path leaks into CI.
+      # The P3 gate drivers spawn isolated ``jac run`` children. Child env is
+      # assembled in ``tools/jac_subprocess.py`` (JACPATH + optional oracle pin).
       - name: Resolve CPython oracle flag for P3 gates
         run: echo "JACPYTHON_CPYTHON=$(command -v python3)" >> "$GITHUB_ENV"
 
@@ -325,29 +328,47 @@ jobs:
       # EXECUTE the pinned host interpreter for both legs; JACPYTHON_CPYTHON
       # resolved earlier pins them to the setup-python 3.14 install.
       - name: Exception hierarchy parity pins
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_exc_hierarchy.jac
 
       - name: Converted exception CPython differential tests
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_conv_exceptions.jac
 
       - name: Converted protocol CPython differential tests
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_conv_protocols.jac
 
       - name: Converted class CPython differential tests
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_conv_classes.jac
 
       - name: Directory enumeration tests
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_dir_enumeration.jac
 
       - name: Function attribute surface pins
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_func_attr_surface.jac
 
       - name: Attribute protocol pins
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_attr_protocol.jac
 
       - name: Heapq native shim pins
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_heapq_shim.jac
 
       - name: T-string runtime arm pins
+        env:
+          JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_tstring_arms.jac
 

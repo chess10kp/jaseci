@@ -66,6 +66,12 @@ jobs:
       - name: T8 acceptance validation
         run: python3 -m unittest jac-py/tools/test_t8_accept.py jac-py/tools/test_t8_driver.py
 
+      - name: jac subprocess env helper tests
+        run: python3 -m unittest jac-py/tools/test_jac_subprocess.py
+
+      - name: jac subprocess env gate
+        run: python3 jac-py/tools/jac_subprocess_gate.py
+
       - name: Conformance manifest drift check
         run: git diff --exit-code jac-py/tests/conformance_manifest.json
 
