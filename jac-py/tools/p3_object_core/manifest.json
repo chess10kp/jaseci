@@ -95,7 +95,7 @@
     "passed": 7,
     "failed": 0,
     "errored": 0,
-    "skipped": 7
+    "skipped": 10
    },
    "gate": "P3.1b",
    "status": "gated"
