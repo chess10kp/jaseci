@@ -3915,6 +3915,17 @@ test "compiler_slice: value-context not keeps UNARY_NOT" {
     assert actual.co_code == exp.co_code;
 }
 
+test "compiler_slice: unary positive uses CALL_INTRINSIC_1" {
+    src = "r = +x\n";
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    exp = expected as PyCode;
+    assert actual.co_code == exp.co_code;
+    assert actual.exceptiontable == exp.exceptiontable;
+    assert actual.stacksize == exp.stacksize;
+}
+
 # Recursive byte-parity over a code object tree: co_code/exceptiontable/
 # stacksize/name tables/var pools/flags/argcounts plus every nested const code.
 def assert_typealias_parity(actual: PyCode, expected: PyCode) -> None {

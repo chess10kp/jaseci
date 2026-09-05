@@ -1487,6 +1487,14 @@ def visit_expr(
                 return None;
             }
         }
+        if isinstance(un.op, UAdd) {
+            visit_expr(g, un.operand);
+            g.emit_op(
+                OP_CALL_INTRINSIC_1, 5,
+                nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset)
+            );
+            return None;
+        }
         visit_expr(g, un.operand);
         if isinstance(un.op, Not) {
             need_to_bool = True;
@@ -2643,6 +2651,14 @@ def visit_comp_elt(
             }
         }
         ul = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
+        if isinstance(un.op, UAdd) {
+            visit_comp_elt(g, un.operand, bound_names, filter_compare);
+            if codegen_busy(g) {
+                return;
+            }
+            g.emit_op(OP_CALL_INTRINSIC_1, 5, ul);
+            return;
+        }
         visit_comp_elt(g, un.operand, bound_names, filter_compare);
         if codegen_busy(g) {
             return;
