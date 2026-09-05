@@ -186,3 +186,50 @@ test "set subclass: __new__-only with kwargs -> set.__init__ rejects" {
         + "    r = 'TypeError: ' + str(e)\n"
     ) == "TypeError: set() takes no keyword arguments";
 }
+
+# ---- frozenset ----
+
+test "frozenset subclass: no-init positional freezes box at __new__" {
+    assert run_src(
+        "class subclass(frozenset):\n"
+        + "    pass\n"
+        + "u = subclass([1, 2])\n"
+        + "r = (type(u) is subclass, set(u) == {1, 2})\n"
+    ) == "(True, True)";
+}
+
+test "frozenset subclass: no-init kwargs rejected" {
+    assert run_src(
+        "class subclass(frozenset):\n"
+        + "    pass\n"
+        + "try:\n"
+        + "    subclass(sequence=())\n"
+        + "    r = 'NO-RAISE'\n"
+        + "except TypeError as e:\n"
+        + "    r = 'TypeError: ' + str(e)\n"
+    ) == "TypeError: frozenset() takes no keyword arguments";
+}
+
+test "frozenset subclass: user __init__ records kwargs, box frozen from args" {
+    assert run_src(
+        "class subclass_with_init(frozenset):\n"
+        + "    def __init__(self, arg, newarg=None):\n"
+        + "        self.newarg = newarg\n"
+        + "u = subclass_with_init([1, 2], newarg=3)\n"
+        + "r = (type(u) is subclass_with_init, set(u) == {1, 2}, u.newarg)\n"
+    ) == "(True, True, 3)";
+}
+
+test "frozenset subclass: user __new__ accepts call-site kwargs (host parity)" {
+    # Host oracle: frozenset inherits object.__init__, which tolerates excess
+    # kwargs when __new__ is overridden (unlike set.__init__).
+    assert run_src(
+        "class subclass_with_new(frozenset):\n"
+        + "    def __new__(cls, arg, newarg=None):\n"
+        + "        self = super().__new__(cls, arg)\n"
+        + "        self.newarg = newarg\n"
+        + "        return self\n"
+        + "u = subclass_with_new([1, 2], newarg=3)\n"
+        + "r = (type(u) is subclass_with_new, set(u) == {1, 2}, u.newarg)\n"
+    ) == "(True, True, 3)";
+}

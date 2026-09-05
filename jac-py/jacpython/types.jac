@@ -1,7 +1,7 @@
 # Native _types module surface (lift of reference/cpython/Modules/_typesmodule.c).
 #
 # _typesmodule.c is a pure-data multi-phase-init module: _types_exec() inserts
-# 26 immortal static type objects into the module dict (EXPORT_STATIC_TYPE, in
+# 27 immortal static type objects into the module dict (EXPORT_STATIC_TYPE, in
 # source order) and nothing else. Lib/types.py star-imports this surface
 # (`from _types import *`) and re-exports it, so the names below are the C
 # module's exact export ORDER -- all names are distinct so no shadowing occurs,
@@ -30,6 +30,7 @@ import from objects {
     PyObj,
     PyStr,
     py_error,
+    ShimTypeMarker,
 }
 
 # Every exported name, in _typesmodule.c EXPORT_STATIC_TYPE order.
@@ -46,6 +47,7 @@ def _types_export_order -> list[PyStr] {
         PyStr(t="str", val="EllipsisType"),
         PyStr(t="str", val="FrameType"),
         PyStr(t="str", val="FunctionType"),
+        PyStr(t="str", val="GeneratorType"),
         PyStr(t="str", val="GenericAlias"),
         PyStr(t="str", val="GetSetDescriptorType"),
         PyStr(t="str", val="LambdaType"),
@@ -78,6 +80,7 @@ def _types_native_tags -> dict[str, PyStr] {
         "CoroutineType": PyStr(t="str", val="coroutine"),
         "EllipsisType": PyStr(t="str", val="ellipsis"),
         "FrameType": PyStr(t="str", val="frame"),
+        "GeneratorType": PyStr(t="str", val="generator"),
         "GenericAlias": PyStr(t="str", val="generic_alias"),
         "GetSetDescriptorType": PyStr(t="str", val="get_descriptor"),
         "MemberDescriptorType": PyStr(t="str", val="member_descr"),
@@ -99,4 +102,24 @@ obj TypesMarkerCtor(PyObj) {
             "TypeError", "cannot create '" + self.name + "' instances"
         );
     }
+}
+
+# Native-family exports from _typesmodule.c: ShimTypeMarker wrappers so
+# py_isinstance matches on one PyObj.t compare. Constructor-bearing names
+# (FunctionType, ModuleType, MappingProxyType, ...) are overlaid at the
+# ceval install site with host proxies; this dict carries only the
+# rejecting-marker surface.
+def types_module_attrs() -> dict[str, PyObj] {
+    attrs: dict[str, PyObj] = {};
+    tags = _types_native_tags();
+    for name in tags {
+        tag = (tags[name] as PyStr).val;
+        ctor = TypesMarkerCtor(t="types_marker_ctor", name=name);
+        attrs[name] = ShimTypeMarker(
+            t="shim_type_marker",
+            tag=tag,
+            ctor=ctor,
+        );
+    }
+    return attrs;
 }
