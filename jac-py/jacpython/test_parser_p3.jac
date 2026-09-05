@@ -26,6 +26,41 @@ test "positional-only defaults parse" {
     assert ((fn.args.defaults[0] as Constant).value as PyInt).val == 2;
 }
 
+test "posonly slash star kwds (OrderedDict.__new__ shape)" {
+    src = "def __new__(cls, /, *args, **kwds):\n    pass\n";
+    m = parse_file(src, "<od-new>");
+    assert m is not None;
+    fn = (m as Module).body[0] as FunctionDef;
+    assert len(fn.args.posonlyargs) == 1;
+    assert fn.args.vararg is not None;
+    assert fn.args.kwarg is not None;
+}
+
+test "posonly default tuple slash kwds (OrderedDict.__init__ shape)" {
+    src = "def __init__(self, other=(), /, **kwds):\n    pass\n";
+    m = parse_file(src, "<od-init>");
+    assert m is not None;
+    fn = (m as Module).body[0] as FunctionDef;
+    assert len(fn.args.posonlyargs) == 2;
+    assert fn.args.kwarg is not None;
+}
+
+test "classmethod trailing slash (ChainMap.fromkeys shape)" {
+    src = "def fromkeys(cls, iterable, value=None, /):\n    pass\n";
+    m = parse_file(src, "<fromkeys>");
+    assert m is not None;
+    fn = (m as Module).body[0] as FunctionDef;
+    assert len(fn.args.posonlyargs) == 3;
+}
+
+test "posonly trailing slash only (UserString.removeprefix shape)" {
+    src = "def removeprefix(self, prefix, /):\n    pass\n";
+    m = parse_file(src, "<removeprefix>");
+    assert m is not None;
+    fn = (m as Module).body[0] as FunctionDef;
+    assert len(fn.args.posonlyargs) == 2;
+}
+
 test "try and except spans end at final body token" {
     src = "try:\n    x = 1\nexcept ValueError:\n    a = 1\nx = 2\n";
     m = parse_file(src, "<p3-try>");
