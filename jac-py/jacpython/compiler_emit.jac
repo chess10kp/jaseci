@@ -1488,6 +1488,13 @@ def visit_expr(
             }
         }
         visit_expr(g, un.operand);
+        uloc = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
+        if isinstance(un.op, UAdd) {
+            # CPython 3.14: unary + lowers to CALL_INTRINSIC_1
+            # (INTRINSIC_UNARY_POSITIVE), not a dedicated opcode.
+            g.emit_op(OP_CALL_INTRINSIC_1, 5, uloc);
+            return None;
+        }
         if isinstance(un.op, Not) {
             need_to_bool = True;
             if isinstance(un.operand, Compare)
@@ -2645,6 +2652,10 @@ def visit_comp_elt(
         ul = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
         visit_comp_elt(g, un.operand, bound_names, filter_compare);
         if codegen_busy(g) {
+            return;
+        }
+        if isinstance(un.op, UAdd) {
+            g.emit_op(OP_CALL_INTRINSIC_1, 5, ul);
             return;
         }
         opc = unary_opcode(un.op as PyObj);

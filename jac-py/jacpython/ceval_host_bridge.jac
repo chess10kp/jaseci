@@ -588,9 +588,15 @@ def _jac_module_info(absname):
     # metaclass chain built on them: `class P(metaclass=_PM(ABCMeta))` lost its
     # entire ancestry and `import typing` died in _ProtocolMeta.__init__.
     # Unfreeze-by-name so the sys.path walk below finds Lib/abc.py and boots it
-    # in-VM. Extend the set only with a fresh conv-pipe diff pass.
-    if _imp.is_frozen(parts[0]) and parts[0] != "abc":
+    # in-VM. _collections_abc is the same shape (frozen bootstrap copy, real
+    # Lib/_collections_abc.py must run in-VM so collections' ABC view subclasses
+    # inherit native PyClass bases, not host-proxy ABCs). Extend the set only
+    # with a fresh conv-pipe diff pass.
+    if _imp.is_frozen(parts[0])
+        and parts[0] != "abc"
+        and parts[0] != "_collections_abc" {
         return ("native", "", False, "", "")
+    }
 
     def locate(base_dir, part):
         # One directory scan: regular package > plain module > extension >
