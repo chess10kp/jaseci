@@ -2929,6 +2929,15 @@ obj PyGenerator(PyObj) {
                 # True only while the frame is actively executing, like gi_running.
                 return PyBool(t="bool", val=self.running);
             }
+            if name == "ag_code" {
+                return self.frame.co as PyObj;
+            }
+            if name == "ag_suspended" {
+                return PyBool(
+                    t="bool",
+                    val=self.started and not self.running and not self.finished,
+                );
+            }
             return py_error(
                 "AttributeError",
                 "'async_generator' object has no attribute '" + name + "'",
@@ -2945,6 +2954,16 @@ obj PyGenerator(PyObj) {
             # observable from re-entrant access (the generator inspecting
             # itself through a callback), False while suspended/finished.
             return PyBool(t="bool", val=self.running);
+        }
+        if name == "gi_code" or name == "ag_code" {
+            return self.frame.co as PyObj;
+        }
+        if name == "gi_suspended" or name == "ag_suspended" {
+            # FRAME_SUSPENDED: started, not executing, not exhausted.
+            return PyBool(
+                t="bool",
+                val=self.started and not self.running and not self.finished,
+            );
         }
         if name == "gi_yieldfrom" {
             # The sub-iterator a `yield from` is currently delegating to, else
