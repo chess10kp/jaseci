@@ -299,8 +299,15 @@ jobs:
           JACPATH: jac-py/jacpython
         run: jac test jac-py/tests/test_datetime_parity.jac
 
+      # Replay pins mutate ceval state; one jac test process accumulates the
+      # import graph and can hang/OOM before the first progress line (run
+      # 33937616179). Drive each case in an isolated subprocess instead.
       - name: P3 Layer-0/1 replay regression tests
-        run: jac test jac-py/jacpython/layer0_replay.jac
+        timeout-minutes: 30
+        env:
+          JACPATH: jac-py/jacpython
+          PYTHONUNBUFFERED: "1"
+        run: python3 jac-py/tools/p3_object_core/replay_regression_gate.py
 
       # The P3 gate drivers only use JACPYTHON_CPYTHON as a run/skip flag; the
       # interpreter itself is never executed. Resolve it from PATH (setup-python
