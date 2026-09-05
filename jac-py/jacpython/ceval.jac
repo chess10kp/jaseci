@@ -351,6 +351,8 @@ import from type_slots {
     type_slots_merge_names,
     type_slots_has_dict,
     type_slots_in_dict_view,
+    type_ready,
+    Py_TPFLAGS_READY,
 }
 import from tupleobject { tuple_hash, tuple_richcompare, }
 import from longobject { long_hash_obj, int_repr, }
@@ -360,8 +362,6 @@ import from typeobject {
     type_richcompare,
     type_richcompare_same,
     type_tp_name,
-    type_ready,
-    Py_TPFLAGS_READY,
 }
 import from bytesobject { bytes_hash_obj, bytes_richcompare, bytes_repr, }
 import from strobject { str_repr, }
