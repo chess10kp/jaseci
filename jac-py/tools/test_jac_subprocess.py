@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 import os
+import sys
 import unittest
 import unittest.mock
+from pathlib import Path
+
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
 
 from jac_subprocess import REPO_ROOT, ensure_jacpath, jacpath_entries, subprocess_env
 from jac_subprocess_gate import check_file, jac_run_test_subprocess_files
