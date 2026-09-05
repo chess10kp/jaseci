@@ -127,6 +127,17 @@ obj PyObj {
     def to_index -> PyObj {
         return py_error("TypeError", "object cannot be interpreted as an integer");
     }
+
+    # Implicit str/repr slots (CPython tp_str/tp_repr). Native data types and
+    # ceval heap types override; the default declines so py_str/py_repr keep
+    # their existing dispatch tables.
+    def tp_repr -> PyObj {
+        return PY_NOT_IMPLEMENTED;
+    }
+
+    def tp_str -> PyObj {
+        return self.tp_repr();
+    }
 }
 
 # Objects/longobject.c long_true_divide (port of the canonical TestLong
@@ -1299,6 +1310,10 @@ obj PyStructTime(PyTuple) {
             i2 = i2 + 1;
         }
         return PyStr(t="str", val=out + ")");
+    }
+
+    def tp_str -> PyObj {
+        return self.tp_repr();
     }
 }
 

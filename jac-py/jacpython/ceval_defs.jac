@@ -970,6 +970,16 @@ obj PyUserObj(PyObj) {
         }
         return py_error("TypeError", "object does not support item deletion");
     }
+
+    # Walker str/repr slots: MRO dunder lookup at dispatch (never getattribute),
+    # before any to_host bridging -- a plain user object marshals as None.
+    def tp_repr -> PyObj {
+        return py_repr(self as PyObj);
+    }
+
+    def tp_str -> PyObj {
+        return py_str(self as PyObj);
+    }
 }
 
 # The DEFAULT attribute protocol for a generic instance -- what
