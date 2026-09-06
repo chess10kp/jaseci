@@ -8310,8 +8310,17 @@ obj PySetMethod(PyObj) {
                     return acc;
                 }
             }
-            # Write the result back into the receiver's storage in place.
-            s.items = (acc as PySet).items;
+            # Write the result back into the receiver's storage in place,
+            # preserving container identity for live views: refill items and
+            # order rather than rebinding either. Rebinding items alone left
+            # order stale, so iteration after update() missed added members.
+            acc_set = acc as PySet;
+            s.items.clear();
+            for sk in acc_set.items {
+                s.items[sk] = acc_set.items[sk];
+            }
+            s.order.clear();
+            s.order.extend(acc_set.order);
             return py_none();
         }
         return py_error("AttributeError", n);
