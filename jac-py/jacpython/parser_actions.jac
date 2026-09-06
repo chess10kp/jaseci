@@ -492,36 +492,99 @@ def pa_concatenate_strings(parts: list[object]) -> expr | None {
     if len(parts) == 0 {
         return None;
     }
-    if len(parts) == 1 {
-        c = parts[0];
-        if isinstance(c, Constant) {
-            return c as Constant;
+    has_fstring = False;
+    i = 0;
+    while i < len(parts) {
+        if isinstance(parts[i], JoinedStr) {
+            has_fstring = True;
         }
-        return None;
+        i = i + 1;
     }
-    out = "";
+    if not has_fstring {
+        # All-literal concatenation: fold into one Constant.
+        if len(parts) == 1 {
+            return parts[0] as Constant;
+        }
+        out = "";
+        i = 0;
+        while i < len(parts) {
+            c = parts[i];
+            if not isinstance(c, Constant) {
+                return None;
+            }
+            cc = c as Constant;
+            if not isinstance(cc.value, PyStr) {
+                return None;
+            }
+            out = out + (cc.value as PyStr).val;
+            i = i + 1;
+        }
+        first = parts[0] as Constant;
+        last = parts[len(parts) - 1] as Constant;
+        return Constant(
+            value=PyStr(t="str", val=out),
+            kind=None,
+            lineno=first.lineno,
+            col_offset=first.col_offset,
+            end_lineno=last.end_lineno,
+            end_col_offset=last.end_col_offset
+        );
+    }
+    # Mixed literal/f-string concatenation (CP concatenate_strings semantics):
+    # flatten every part into JoinedStr figures -- constants stay literal
+    # figures, each f-string contributes its own values in place.
+    figures: list[expr] = [];
     i = 0;
     while i < len(parts) {
         c = parts[i];
-        if not isinstance(c, Constant) {
+        if isinstance(c, Constant) {
+            figures.append(c as expr);
+        } elif isinstance(c, JoinedStr) {
+            js = c as JoinedStr;
+            vals = js.values if js.values is not None else [];
+            j = 0;
+            while j < len(vals) {
+                figures.append(vals[j]);
+                j = j + 1;
+            }
+        } else {
             return None;
         }
-        cc = c as Constant;
-        if not isinstance(cc.value, PyStr) {
-            return None;
-        }
-        out = out + (cc.value as PyStr).val;
         i = i + 1;
     }
-    first = parts[0] as Constant;
-    last = parts[len(parts) - 1] as Constant;
-    return Constant(
-        value=PyStr(t="str", val=out),
-        kind=None,
-        lineno=first.lineno,
-        col_offset=first.col_offset,
-        end_lineno=last.end_lineno,
-        end_col_offset=last.end_col_offset
+    if len(figures) == 0 {
+        return None;
+    }
+    fpart = parts[0];
+    lpart = parts[len(parts) - 1];
+    fl: int | None = 0;
+    fc: int | None = 0;
+    ll: int | None = 0;
+    lc: int | None = 0;
+    if isinstance(fpart, Constant) {
+        fc0 = fpart as Constant;
+        fl = fc0.lineno;
+        fc = fc0.col_offset;
+    } else {
+        f0 = fpart as JoinedStr;
+        fl = f0.lineno;
+        fc = f0.col_offset;
+    }
+    if isinstance(lpart, Constant) {
+        lc0 = lpart as Constant;
+        ll = lc0.end_lineno;
+        lc = lc0.end_col_offset;
+    } else {
+        l0 = lpart as JoinedStr;
+        ll = l0.end_lineno;
+        lc = l0.end_col_offset;
+    }
+    return JoinedStr(
+        values=figures,
+        lineno=fl,
+        col_offset=fc,
+        end_lineno=ll,
+        end_col_offset=lc
     );
 }
 
