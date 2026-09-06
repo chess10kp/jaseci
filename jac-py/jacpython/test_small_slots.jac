@@ -120,6 +120,29 @@ test "isinstance/issubclass agree with the displayed MRO" {
     assert to_host(vm_eval_in(ns, "issubclass(C, object)")) as bool;
 }
 
+test "diamond MRO: __mro__, mro(), and dispatch share C3 order" {
+    # Classic D(B,C) over B(A)/C(A): linearization [D,B,C,A,object] and
+    # attribute lookup picks B.who before C/A -- the introspection surface
+    # must match the dispatch MRO class_mro already uses.
+    ns = class_ns(
+        "class A:\n"
+        "    def who(self):\n"
+        "        return 'A'\n"
+        "class B(A):\n"
+        "    def who(self):\n"
+        "        return 'B'\n"
+        "class C(A):\n"
+        "    pass\n"
+        "class D(B, C):\n"
+        "    pass\n"
+    );
+    assert to_host(vm_eval_in(ns, "[c.__name__ for c in D.__mro__]"))
+        == ["D", "B", "C", "A", "object"];
+    assert to_host(vm_eval_in(ns, "D.mro() == list(D.__mro__)")) as bool;
+    assert to_host(vm_eval_in(ns, "D.__mro__[-1] is object")) as bool;
+    assert to_host(vm_eval_in(ns, "D().who()")) == "B";
+}
+
 # ---- item 44: old-style iteration over a __getitem__-only class ------------
 
 def seq_cls_ns() -> dict[str, PyObj] {
