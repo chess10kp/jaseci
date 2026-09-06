@@ -28,7 +28,8 @@ import from pycode_diff {
 }
 import from host_oracle { host_compile_marshal }
 import from pyc_first { unmarshal, exec_code }
-import from product_compile { compile_source, product_compile_active }
+import from product_compile { compile_source }
+import from compiler_context { product_compile_active }
 
 
 def oracle_code(source: str, filename: str, mode: str, optimize: int) -> PyObj {
@@ -158,7 +159,7 @@ test "layer4: product compile_source produces native PyCode for eval" {
 }
 
 test "layer4: product path flag starts clear" {
-    assert not product_compile_active;
+    assert not product_compile_active();
 }
 
 test "layer4: EXTENDED_ARG folds wide oparg for large indices" {

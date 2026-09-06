@@ -96,6 +96,17 @@ obj loop_frame {
         break_sites: list[break_site] = [];
 }
 
+# Deferred break-edge finish job (see compiler_loops.jac). Lives here so the
+# per-compilation context holder can type its queue without importing loops.
+obj pending_break_finish {
+    has frame: loop_frame,
+        join: basicblock,
+        allow_nop: bool,
+        test_blk: basicblock | None = None,
+        branch_idx: int = -1,
+        body_hdr: basicblock | None = None;
+}
+
 # Enclosing with / async-with frame tracked for return unwinding (mirrors
 # CPython COMPILE_FBLOCK_WITH / COMPILE_FBLOCK_ASYNC_WITH). The open protect
 # region is closed at the unwind boundary (POP_BLOCK equivalent).

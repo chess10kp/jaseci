@@ -5,7 +5,7 @@
 # -> validation -> codegen -> flowgraph -> assembler. exec/single (statement)
 # modes are Phase C and fail loudly rather than falling back to the host.
 
-import from objects { PyObj, py_error }
+import from objects { PyObj, py_error, is_error }
 import from parser { parse_eval_expr, parse_file }
 import from compiler_validate { validate_eval_expr, validate_module_body }
 import from compiler_symtable { build_module_symtable }
@@ -20,21 +20,28 @@ import from compiler_loops { visit_if }
 import from compiler_match { visit_match }
 import from flowgraph { verify_cfg }
 import from assembler { assemble }
-
-# Set True only while the native pipeline runs. Test harnesses use this to
-# detect accidental host-bridge calls on the product path. compile_source wraps
-# the real work in compile_eval_path so the flag is reset on every return path,
-# even when the inner reports a PyError result.
-glob product_compile_active: bool = False;
+import from compiler_context {
+    enter_compile_context,
+    exit_compile_context,
+    product_compile_active,
+    ensure_compile_registries_wired,
+}
 
 def compile_source(source: str, filename: str, mode: str, optimize: int) -> PyObj {
-    product_compile_active = True;
-    if mode == "eval" {
-        result = compile_eval_path(source, filename, mode);
-    } else {
-        result = compile_exec_path(source, filename, mode);
+    reg = ensure_compile_registries_wired();
+    if is_error(reg) {
+        return reg;
     }
-    product_compile_active = False;
+    enter_compile_context();
+    try {
+        if mode == "eval" {
+            result = compile_eval_path(source, filename, mode);
+        } else {
+            result = compile_exec_path(source, filename, mode);
+        }
+    } finally {
+        exit_compile_context();
+    }
     return result;
 }
 
