@@ -359,11 +359,9 @@ def visit_try_finally(
     fallthrough_blk: basicblock | None = None;
     tail_end_blk: basicblock | None = None;
     tail_done = False;
-    tail_terminated = False;
     if try_follows and tail is not None and tail_idx < len(tail) {
         if body_cont.terminated {
             tail_done = True;
-            tail_terminated = True;
         } else {
             tail_more = False;
             if tail_idx + 1 < len(tail) {
@@ -374,7 +372,6 @@ def visit_try_finally(
                 return stmt_cont(loc=finally_cont.loc);
             }
             tail_done = True;
-            tail_terminated = tail_cont.terminated;
             tail_end_blk = g.cur;
             if not tail_cont.terminated {
                 emit_module_return(g, tail_cont.loc);
@@ -383,7 +380,12 @@ def visit_try_finally(
     } elif try_follows {
         fallthrough_blk = g.cur;
     } else {
-        emit_module_return(g, finally_cont.loc);
+        # A terminating try or finally has no normal continuation.  Keep the
+        # allocated success block as an exception-table boundary, but do not
+        # append an unreachable RETURN_VALUE to it.
+        if not body_cont.terminated and not finally_cont.terminated {
+            emit_module_return(g, finally_cont.loc);
+        }
     }
     g.u.nested_try_finally_success_end = after_protected.id;
     noloc = no_loc();
@@ -393,7 +395,9 @@ def visit_try_finally(
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
-    g.emit_op(OP_RERAISE, 0, finally_except_cont.loc);
+    if not finally_except_cont.terminated {
+        g.emit_op(OP_RERAISE, 0, finally_except_cont.loc);
+    }
     g.u.except_regions.append(
         except_region(
             start_block=protect_start,
@@ -424,7 +428,11 @@ def visit_try_finally(
         if tail_end_blk is not None {
             g.use(tail_end_blk);
         }
-        return stmt_cont(loc=tloc, next_si=len(tail as list[stmt]), terminated=tail_terminated);
+        # The enclosing statement-list suffix was emitted here, including its
+        # implicit module/function return when it fell through.  Mark the
+        # continuation terminated so compile_exec/compile_fn_cfg does not
+        # append a second RETURN_VALUE after that terminator.
+        return stmt_cont(loc=tloc, next_si=len(tail as list[stmt]), terminated=True);
     }
     return stmt_cont(loc=tloc, terminated=True);
 }
@@ -491,7 +499,9 @@ def emit_finally_inline_block(
             emit_module_return(g, tc.loc);
         }
     } else {
-        emit_module_return(g, fc.loc);
+        if not fc.terminated {
+            emit_module_return(g, fc.loc);
+        }
     }
 }
 
@@ -1214,7 +1224,6 @@ def visit_try(
     # except_region indices owned (and later bound) by this invocation only.
     ownidx: list[int] = [];
     tail_duplicated = False;
-    tail_dup_terminated = False;
     nop_blk = g.new_block();
     g.u.nested_try_except_start = nop_blk.id;
     try_body = g.new_block();
@@ -1593,7 +1602,6 @@ def visit_try(
                         g, tail, tail_idx, tail_more, ann_ctx
                     );
                     tail_duplicated = True;
-                    tail_dup_terminated = tail_cont.terminated;
                     if not tail_cont.terminated {
                         emit_module_return(g, tail_cont.loc);
                     }
@@ -1876,16 +1884,22 @@ def visit_try(
     # Publish this statement's last block for an enclosing try whose body is
     # exactly this try/except, so its body span starts after our regions.
     g.u.nested_try_except_end = unwind_blk.id;
+    # A non-terminating try body still has a normal continuation.  The
+    # pass-only handler's duplicated tail is an exceptional-path copy; resume
+    # the normal tail from its own fallthrough block rather than consuming it.
+    if fallthrough_blk is not None and not normal_terminated {
+        g.use(fallthrough_blk);
+        return stmt_cont(loc=tloc, terminated=False);
+    }
     if tail_duplicated and tail is not None {
+        # With no normal continuation, the handler duplicated and finished the
+        # enclosing suffix itself; stop the owning statement loop from
+        # appending another return.
         return stmt_cont(
             loc=tloc,
             next_si=len(tail as list[stmt]),
-            terminated=tail_dup_terminated
+            terminated=True
         );
-    }
-    if fallthrough_blk is not None {
-        g.use(fallthrough_blk);
-        return stmt_cont(loc=tloc, terminated=False);
     }
     return stmt_cont(loc=tloc, terminated=True);
 }
