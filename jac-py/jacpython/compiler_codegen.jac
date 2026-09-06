@@ -946,14 +946,27 @@ def visit_stmts(
     return stmt_cont(loc=last, terminated=terminated);
 }
 
-# Lower a statement suffix once at the current block.
+# Lower a statement suffix once at the current block. When prefix_terminated
+# is set, the owning construct's body ended unconditionally (return/break/etc.);
+# the suffix is unreachable on that path and must not emit live bytes here.
 def visit_stmt_tail(
     g: cfg_builder,
     tail: list[stmt],
     from_idx: int,
     more_follows_after: bool = False,
-    ann_ctx: ann_scope_plan | None = None
+    ann_ctx: ann_scope_plan | None = None,
+    prefix_terminated: bool = False
 ) -> stmt_cont {
+    if prefix_terminated {
+        if from_idx < len(tail) {
+            return stmt_cont(
+                loc=stmt_loc(tail[from_idx]),
+                next_si=len(tail),
+                terminated=True
+            );
+        }
+        return stmt_cont(loc=loc(1, 1, 0, 0), next_si=len(tail), terminated=True);
+    }
     return visit_stmts(
         g, tail, from_idx, more_follows_after, None, 0, None, ann_ctx
     );

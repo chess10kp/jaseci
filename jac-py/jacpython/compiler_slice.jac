@@ -4028,6 +4028,31 @@ test "compiler_slice: try then trailing statements compile with sound structure"
     }
 }
 
+# try/finally or try/except whose try-body terminates must not append live
+# bytes for unreachable if/try/with tails (verify_cfg "instructions after
+# terminator") nor re-visit pass-handler-duplicated tails from compile_fn_cfg.
+test "compiler_slice: terminating try tails compile without CFG crashes" {
+    for src in [
+        "def f(x):\n    try:\n        return 1\n    finally:\n        pass\n    if x:\n        pass\n",
+        "def f(x):\n    try:\n        return 1\n    finally:\n        pass\n    try:\n        pass\n    except ValueError:\n        pass\n",
+        "def f(x):\n    try:\n        return 1\n    finally:\n        pass\n    with x:\n        pass\n",
+        "def f(x):\n    try:\n        return 1\n    except ValueError:\n        pass\n    if x:\n        pass\n",
+        "def f(x):\n    return x\n    if x:\n        pass\n",
+        "def f(x):\n    return x\n    try:\n        pass\n    except ValueError:\n        pass\n",
+        "def f(x):\n    return x\n    with x:\n        pass\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        af = first_nested_code(actual);
+        ef = first_nested_code(exp);
+        assert len(af.co_code) == len(ef.co_code);
+        assert af.exceptiontable == ef.exceptiontable;
+        assert af.stacksize == ef.stacksize;
+    }
+}
+
 # pass-only handler bodies duplicate the tail inline (CPython shape); exctab
 # borrow for that edge is still open — compile path is sound.
 test "compiler_slice: try pass handlers then trailing code compiles" {
