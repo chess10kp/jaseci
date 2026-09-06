@@ -3291,6 +3291,22 @@ obj ExcSetStateFn(PyObj) {
     }
 }
 
+# CPython BaseException.args_setter: tuples pass through, lists convert,
+# anything else raises TypeError. Shared by PyException.tp_setattro and user-
+# exception instance writes so pre-raise and caught-wrapper paths stay aligned.
+def _exception_args_from_value(value: PyObj) -> PyObj {
+    items: list[PyObj] = [];
+    if isinstance(value, PyTuple) {
+        items.extend((value as PyTuple).items);
+        return PyTuple(t="tuple", items=items);
+    }
+    if isinstance(value, PyList) {
+        items.extend((value as PyList).items);
+        return PyTuple(t="tuple", items=items);
+    }
+    return py_error("TypeError", "'" + value.t + "' object is not iterable");
+}
+
 obj PyException(PyObj) {
     has type_name: str,
         message: str,
@@ -3367,8 +3383,17 @@ obj PyException(PyObj) {
             return py_none();
         }
         # Identity dunder: e.__class__ resolves to the exception type object
-        # (e.__class__.__name__ on caught exceptions is a core idiom).
+        # (e.__class__.__name__ on caught exceptions is a core idiom). A raised
+        # user subclass keeps its defining PyClass in `raw` so __class__ and
+        # type() agree and chained __context__/__cause__ entries expose the
+        # real class identity (not a synthetic PyExceptionType marker).
         if name == "__class__" {
+            if self.raw is not None {
+                raw_obj = self.raw as PyObj;
+                if raw_obj.t == "instance" {
+                    return raw_obj.tp_getattro("__class__");
+                }
+            }
             return py_exception_type(self.type_name);
         }
         if name == "__traceback__" {
@@ -3425,18 +3450,25 @@ obj PyException(PyObj) {
     # so the old import-cycle blocker on enforcing these checks is gone.
     def tp_setattro(name: str, value: PyObj) -> PyObj {
         if name == "args" {
-            # BaseException.args_setter converts via PySequence_Tuple: tuples
-            # pass through, lists convert, anything else raises TypeError.
-            items: list[PyObj] = [];
-            if isinstance(value, PyTuple) {
-                items.extend((value as PyTuple).items);
-            } elif isinstance(value, PyList) {
-                items.extend((value as PyList).items);
-            } else {
-                return py_error("TypeError", "'" + value.t + "' object is not iterable");
+            coerced = _exception_args_from_value(value);
+            if is_error(coerced) {
+                return coerced;
             }
+            items = (coerced as PyTuple).items;
             self.args = [];
             self.args.extend(items);
+            # A caught user subclass keeps its live instance in `raw`; mirror
+            # args onto it so bare re-raise and super().__init__ paths agree.
+            if self.raw is not None {
+                raw_obj = self.raw as PyObj;
+                if raw_obj.t == "instance" {
+                    stored: list[PyObj] = [];
+                    stored.extend(items);
+                    raw_obj.tp_setattro(
+                        "args", PyTuple(t="tuple", items=stored)
+                    );
+                }
+            }
             return py_none();
         }
         if name == "__traceback__" {
