@@ -88,6 +88,10 @@ import from ast_nodes {
     MatchOr,
     MatchSingleton,
     ImportFrom,
+    JoinedStr,
+    FormattedValue,
+    TemplateStr,
+    Interpolation,
 }
 import from peg_runtime { peg_parser, peg_token, peg_has_error, peg_raise_syntax_error }
 
@@ -509,6 +513,25 @@ def pa_constant_from_token(tok: peg_token | None) -> Constant | None {
 
 def pa_decoded_constant_from_token(tok: peg_token | None) -> Constant | None {
     return pa_constant_from_string(tok);
+}
+
+def pa_fstring_part_constant_from_token(tok: peg_token | None) -> Constant | None {
+    if tok is None {
+        return None;
+    }
+    return Constant(
+        value=PyStr(t="str", val=tok.spelling),
+        kind=None,
+        lineno=tok.lineno,
+        col_offset=tok.col_offset,
+        end_lineno=tok.end_lineno,
+        end_col_offset=tok.end_col_offset
+    );
+}
+
+obj peg_result_metadata {
+    has result: object,
+        metadata: str | None;
 }
 
 def _is_prefixed_int(s: str) -> bool {
@@ -2034,12 +2057,396 @@ def pa_seq_extract_starred_exprs(seq: list[object]) -> list[expr] {
     return out;
 }
 
-def pa_setup_full_format_spec(`node: peg_token) -> peg_token {
-    return `node;
+def pa_setup_full_format_spec(
+    colon: peg_token,
+    spec: list[expr],
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> peg_result_metadata | None {
+    non_empty: list[expr] = [];
+    i = 0;
+    while i < len(spec) {
+        item = spec[i];
+        if isinstance(item, Constant) {
+            c = item as Constant;
+            if isinstance(c.value, PyStr) {
+                s = (c.value as PyStr).val;
+                if len(s) == 0 {
+                    i = i + 1;
+                    continue;
+                }
+            }
+        }
+        non_empty.append(item);
+        i = i + 1;
+    }
+    res: expr | None = None;
+    if len(non_empty) == 0
+        or (len(non_empty) == 1 and isinstance(non_empty[0], Constant)) {
+        res = JoinedStr(
+            values=non_empty,
+            lineno=lineno,
+            col_offset=col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
+    } else {
+        res = pa_concatenate_strings(non_empty);
+        if res is None {
+            res = JoinedStr(
+                values=non_empty,
+                lineno=lineno,
+                col_offset=col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
+        }
+    }
+    if res is None {
+        return None;
+    }
+    return peg_result_metadata(result=res, metadata=colon.metadata);
 }
 
-def pa_check_fstring_conversion(a: object, b: object) -> peg_token {
-    return a as peg_token;
+def pa_check_fstring_conversion(
+    conv_token: peg_token, conv: Name
+) -> peg_result_metadata | None {
+    if conv_token.lineno != conv.lineno
+        or conv_token.end_col_offset != conv.col_offset {
+        return None;
+    }
+    if len(conv.id) != 1 {
+        return None;
+    }
+    ch = conv.id[0];
+    if ch != "s" and ch != "r" and ch != "a" {
+        return None;
+    }
+    return peg_result_metadata(result=conv, metadata=conv_token.metadata);
+}
+
+def _pa_fstring_prefix_is_raw(start_tok: peg_token) -> bool {
+    spell = start_tok.spelling;
+    i = 0;
+    while i < len(spell) {
+        c = spell[i];
+        if c == "r" or c == "R" {
+            return True;
+        }
+        if c == "f" or c == "F" or c == "u" or c == "U" or c == "b" or c == "B" {
+            i = i + 1;
+            continue;
+        }
+        break;
+    }
+    return False;
+}
+
+def _pa_decode_fstring_body(body: str, is_raw: bool) -> str {
+    if is_raw {
+        return body;
+    }
+    if body == "{{" or body == "}}" {
+        return body[0:1];
+    }
+    return pa_decode_escape_body(body);
+}
+
+def _pa_decode_fstring_part(is_raw: bool, constant: Constant) -> Constant {
+    if not isinstance(constant.value, PyStr) {
+        return constant;
+    }
+    bstr = (constant.value as PyStr).val;
+    decode_len = len(bstr);
+    if bstr == "{{" or bstr == "}}" {
+        decode_len = 1;
+    }
+    local_raw = is_raw or bstr.find("\\") < 0;
+    slice = bstr[0:decode_len];
+    decoded = _pa_decode_fstring_body(slice, local_raw);
+    return Constant(
+        value=PyStr(t="str", val=decoded),
+        kind=None,
+        lineno=constant.lineno,
+        col_offset=constant.col_offset,
+        end_lineno=constant.end_lineno,
+        end_col_offset=constant.end_col_offset
+    );
+}
+
+def _pa_rtwm_result(o: object | None) -> expr | None {
+    if o is None {
+        return None;
+    }
+    if isinstance(o, peg_result_metadata) {
+        r = (o as peg_result_metadata).result;
+        if isinstance(r, expr) {
+            return r as expr;
+        }
+    }
+    return None;
+}
+
+def _pa_get_interpolation_conversion(
+    debug: peg_token | None,
+    conversion: object | None,
+    format: object | None
+) -> int {
+    conv_expr = _pa_rtwm_result(conversion);
+    if conv_expr is not None and isinstance(conv_expr, Name) {
+        n = conv_expr as Name;
+        if len(n.id) > 0 {
+            return ord(n.id[0]);
+        }
+    }
+    if debug is not None and format is None {
+        return ord("r");
+    }
+    return -1;
+}
+
+def _pa_debug_metadata(
+    conversion: object | None,
+    format: object | None,
+    closing_brace: peg_token,
+    end_lineno: int,
+    end_col_offset: int
+) -> tuple[str, int, int] {
+    if conversion is not None and isinstance(conversion, peg_result_metadata) {
+        c = conversion as peg_result_metadata;
+        if isinstance(c.result, Name) {
+            n = c.result as Name;
+            meta = c.metadata;
+            if meta is None {
+                meta = "";
+            }
+            return (meta, n.lineno, n.col_offset);
+        }
+    }
+    if format is not None and isinstance(format, peg_result_metadata) {
+        f = format as peg_result_metadata;
+        if isinstance(f.result, expr) {
+            e = f.result as expr;
+            meta = f.metadata;
+            if meta is None {
+                meta = "";
+            }
+            return (meta, e.lineno, e.col_offset + 1);
+        }
+    }
+    meta = closing_brace.metadata;
+    if meta is None {
+        meta = "";
+    }
+    return (meta, end_lineno, end_col_offset);
+}
+
+def _pa_strip_interpolation_expr(exprstr: str) -> str {
+    len_s = len(exprstr);
+    while len_s > 0 {
+        c = exprstr[len_s - 1];
+        if c == "=" or c == " " or c == "\t" or c == "\n" or c == "\r" {
+            len_s = len_s - 1;
+            continue;
+        }
+        break;
+    }
+    return exprstr[0:len_s];
+}
+
+def _pa_get_resized_exprs(
+    start_tok: peg_token,
+    raw_expressions: list[expr],
+    end_tok: peg_token,
+    is_tstring: bool
+) -> list[expr] {
+    is_raw = _pa_fstring_prefix_is_raw(start_tok);
+    out: list[expr] = [];
+    i = 0;
+    while i < len(raw_expressions) {
+        item = raw_expressions[i];
+        if isinstance(item, JoinedStr) {
+            js = item as JoinedStr;
+            if len(js.values) == 2 {
+                first = js.values[0];
+                second = js.values[1];
+                if isinstance(first, Constant) {
+                    out.append(first);
+                    if is_tstring {
+                        if isinstance(second, Interpolation) {
+                            out.append(second);
+                        }
+                    } else {
+                        if isinstance(second, FormattedValue) {
+                            out.append(second);
+                        }
+                    }
+                    i = i + 1;
+                    continue;
+                }
+            }
+        }
+        if isinstance(item, Constant) {
+            decoded = _pa_decode_fstring_part(is_raw, item as Constant);
+            if isinstance(decoded.value, PyStr) {
+                if len((decoded.value as PyStr).val) == 0 {
+                    i = i + 1;
+                    continue;
+                }
+            }
+            out.append(decoded);
+        } else {
+            out.append(item);
+        }
+        i = i + 1;
+    }
+    return out;
+}
+
+def pa_joined_str(
+    a: object,
+    b: list[expr],
+    c: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    start_tok = a as peg_token;
+    end_tok = c as peg_token;
+    values = _pa_get_resized_exprs(start_tok, b, end_tok, False);
+    return JoinedStr(
+        values=values,
+        lineno=start_tok.lineno,
+        col_offset=start_tok.col_offset,
+        end_lineno=end_tok.end_lineno,
+        end_col_offset=end_tok.end_col_offset
+    );
+}
+
+def pa_template_str(
+    a: object,
+    b: list[expr],
+    c: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    start_tok = a as peg_token;
+    end_tok = c as peg_token;
+    values = _pa_get_resized_exprs(start_tok, b, end_tok, True);
+    return TemplateStr(
+        values=values,
+        lineno=start_tok.lineno,
+        col_offset=start_tok.col_offset,
+        end_lineno=end_tok.end_lineno,
+        end_col_offset=end_tok.end_col_offset
+    );
+}
+
+def pa_formatted_value(
+    a: object,
+    b: object,
+    c: object,
+    d: object,
+    e: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    expression = a as expr;
+    debug = b as peg_token | None;
+    conversion = c as object | None;
+    format = d as object | None;
+    closing_brace = e as peg_token;
+    conversion_val = _pa_get_interpolation_conversion(debug, conversion, format);
+    format_spec = _pa_rtwm_result(format);
+    formatted_value = FormattedValue(
+        value=expression,
+        conversion=conversion_val,
+        format_spec=format_spec,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+    if debug is None {
+        return formatted_value;
+    }
+    (debug_metadata, debug_end_line, debug_end_offset) = _pa_debug_metadata(
+        conversion, format, closing_brace, end_lineno, end_col_offset
+    );
+    debug_text = Constant(
+        value=PyStr(t="str", val=debug_metadata),
+        kind=None,
+        lineno=lineno,
+        col_offset=col_offset + 1,
+        end_lineno=debug_end_line,
+        end_col_offset=debug_end_offset - 1
+    );
+    return JoinedStr(
+        values=[debug_text, formatted_value],
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=debug_end_line,
+        end_col_offset=debug_end_offset
+    );
+}
+
+def pa_interpolation(
+    a: object,
+    b: object,
+    c: object,
+    d: object,
+    e: object,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int
+) -> expr | None {
+    expression = a as expr;
+    debug = b as peg_token | None;
+    conversion = c as object | None;
+    format = d as object | None;
+    closing_brace = e as peg_token;
+    conversion_val = _pa_get_interpolation_conversion(debug, conversion, format);
+    format_spec = _pa_rtwm_result(format);
+    (debug_metadata, debug_end_line, debug_end_offset) = _pa_debug_metadata(
+        conversion, format, closing_brace, end_lineno, end_col_offset
+    );
+    final_exprstr = _pa_strip_interpolation_expr(debug_metadata);
+    interpolation = Interpolation(
+        value=expression,
+        str=PyStr(t="str", val=final_exprstr),
+        conversion=conversion_val,
+        format_spec=format_spec,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+    if debug is None {
+        return interpolation;
+    }
+    debug_text = Constant(
+        value=PyStr(t="str", val=debug_metadata),
+        kind=None,
+        lineno=lineno,
+        col_offset=col_offset + 1,
+        end_lineno=debug_end_line,
+        end_col_offset=debug_end_offset - 1
+    );
+    return JoinedStr(
+        values=[debug_text, interpolation],
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=debug_end_line,
+        end_col_offset=debug_end_offset
+    );
 }
 
 def pa_function_def_decorators(decs: list[expr], stmt: stmt) -> stmt {
@@ -2190,56 +2597,4 @@ def pa_slash_with_default(
     end_col_offset: int
 ) -> object {
     return (a, b);
-}
-
-def pa_joined_str(
-    a: object,
-    b: list[expr],
-    c: object,
-    lineno: int,
-    col_offset: int,
-    end_lineno: int,
-    end_col_offset: int
-) -> expr | None {
-    return None;
-}
-
-def pa_template_str(
-    a: object,
-    b: list[expr],
-    c: object,
-    lineno: int,
-    col_offset: int,
-    end_lineno: int,
-    end_col_offset: int
-) -> expr | None {
-    return None;
-}
-
-def pa_formatted_value(
-    a: object,
-    b: object,
-    c: object,
-    d: object,
-    e: object,
-    lineno: int,
-    col_offset: int,
-    end_lineno: int,
-    end_col_offset: int
-) -> expr | None {
-    return None;
-}
-
-def pa_interpolation(
-    a: object,
-    b: object,
-    c: object,
-    d: object,
-    e: object,
-    lineno: int,
-    col_offset: int,
-    end_lineno: int,
-    end_col_offset: int
-) -> expr | None {
-    return None;
 }

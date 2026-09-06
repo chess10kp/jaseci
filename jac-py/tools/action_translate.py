@@ -895,7 +895,7 @@ class ActionTranslator:
             "_PyPegen_seq_delete_starred_exprs": unary("pa_seq_delete_starred_exprs"),
             "_PyPegen_seq_extract_starred_exprs": unary("pa_seq_extract_starred_exprs"),
             "_PyPegen_setup_full_format_spec": lambda self, args: (
-                f"pa_setup_full_format_spec(`node={self._emit(args[0])})"
+                f"pa_setup_full_format_spec({self._emit(args[0])}, {self._emit(args[1])}, {loc})"
             ),
             "_PyPegen_check_fstring_conversion": binary("pa_check_fstring_conversion"),
             "_PyPegen_function_def_decorators": binary("pa_function_def_decorators"),
