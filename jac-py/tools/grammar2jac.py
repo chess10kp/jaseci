@@ -1663,7 +1663,120 @@ def _patch_type_alias_simple_stmt(source: str) -> str:
     return source.replace(old, new, 1)
 
 
+def _patch_fstring_rules(source: str) -> str:
+    """Keep f-string semantic actions and inferred result types in sync.
+
+    The reference grammar's C actions are translated through parser_actions.jac,
+    whose Jac signatures are richer than the grammar's original return types.
+    These targeted rewrites keep the generated parser aligned with those
+    signatures while preserving the grammar as the source of parse structure.
+    """
+    old_import = (
+        "    pa_constant_from_string, pa_constant_from_token, pa_decoded_constant_from_token, "
+        "pa_ensure_imaginary,"
+    )
+    new_import = (
+        "    pa_constant_from_string, pa_constant_from_token, pa_constant_from_fstring_middle, "
+        "pa_decoded_constant_from_token, pa_ensure_imaginary,"
+    )
+    if old_import not in source:
+        raise RuntimeError("f-string parser import patch anchor missing")
+    source = source.replace(old_import, new_import, 1)
+
+    old_joined_str = (
+        "                res = pa_joined_str(a, b, c, start_lineno, start_col_offset, "
+        "end_lineno, end_col_offset);"
+    )
+    new_joined_str = (
+        "                end_tok = c as peg_token;\n"
+        "                res = pa_joined_str(\n"
+        "                    a, b, c, start_lineno, start_col_offset, "
+        "end_tok.end_lineno, end_tok.end_col_offset\n"
+        "                );"
+    )
+    if old_joined_str not in source:
+        raise RuntimeError("f-string joined-string patch anchor missing")
+    source = source.replace(old_joined_str, new_joined_str, 1)
+
+    old_conversion = (
+        "def rule_fstring_conversion(p: peg_parser) -> peg_token | None {\n"
+        "    mark = peg_mark(p);\n"
+        "    res: peg_token | None = None;"
+    )
+    new_conversion = (
+        "def rule_fstring_conversion(p: peg_parser) -> Name | None {\n"
+        "    mark = peg_mark(p);\n"
+        "    res: Name | None = None;"
+    )
+    if old_conversion not in source:
+        raise RuntimeError("f-string conversion type patch anchor missing")
+    source = source.replace(old_conversion, new_conversion, 1)
+
+    old_full_format_spec = (
+        "def rule_fstring_full_format_spec(p: peg_parser) -> peg_token | None {\n"
+        "    mark = peg_mark(p);\n"
+        "    start_lineno = 1;\n"
+        "    start_col_offset = 0;\n"
+        "    end_lineno = 1;\n"
+        "    end_col_offset = 0;\n"
+        "    if peg_fill_token(p) {\n"
+        "        t0 = p.tokens[p.mark];\n"
+        "        start_lineno = t0.lineno;\n"
+        "        start_col_offset = t0.col_offset;\n"
+        "    }\n"
+        "    res: peg_token | None = None;"
+    )
+    new_full_format_spec = old_full_format_spec.replace(
+        "peg_token | None", "expr | None"
+    )
+    if old_full_format_spec not in source:
+        raise RuntimeError("f-string format-spec type patch anchor missing")
+    source = source.replace(old_full_format_spec, new_full_format_spec, 1)
+
+    old_tstring_full_format_spec = (
+        "def rule_tstring_full_format_spec(p: peg_parser) -> peg_token | None {\n"
+        "    mark = peg_mark(p);\n"
+        "    start_lineno = 1;\n"
+        "    start_col_offset = 0;\n"
+        "    end_lineno = 1;\n"
+        "    end_col_offset = 0;\n"
+        "    if peg_fill_token(p) {\n"
+        "        t0 = p.tokens[p.mark];\n"
+        "        start_lineno = t0.lineno;\n"
+        "        start_col_offset = t0.col_offset;\n"
+        "    }\n"
+        "    res: peg_token | None = None;"
+    )
+    new_tstring_full_format_spec = old_tstring_full_format_spec.replace(
+        "peg_token | None", "expr | None"
+    )
+    if old_tstring_full_format_spec not in source:
+        raise RuntimeError("t-string format-spec type patch anchor missing")
+    source = source.replace(old_tstring_full_format_spec, new_tstring_full_format_spec, 1)
+
+    old_format_spec_action = (
+        "            res = pa_setup_full_format_spec(`node=colon);"
+    )
+    new_format_spec_action = (
+        "            res = pa_setup_full_format_spec(\n"
+        "                colon, spec, start_lineno, start_col_offset, end_lineno, end_col_offset\n"
+        "            );"
+    )
+    if source.count(old_format_spec_action) != 2:
+        raise RuntimeError("f-string format-spec action patch anchor count changed")
+    source = source.replace(old_format_spec_action, new_format_spec_action)
+
+    old_middle_action = "        res = pa_constant_from_token(t);"
+    new_middle_action = "        res = pa_constant_from_fstring_middle(t, False);"
+    if old_middle_action not in source:
+        raise RuntimeError("f-string middle action patch anchor missing")
+    source = source.replace(old_middle_action, new_middle_action, 1)
+
+    return source
+
+
 def _patch_parser_rules(source: str) -> str:
+    source = _patch_fstring_rules(source)
     source = _patch_patterns_rule(source)
     source = _patch_type_alias_simple_stmt(source)
     return _patch_store_target_rules(source)
