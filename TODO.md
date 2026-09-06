@@ -282,11 +282,8 @@ Status per item as of last update. Verified = I reproduced it myself; fixed = fi
    Fix direction: tp_getattro/attribute path must check class-dict values for
    **get**/**set** before returning (data-descr priority over instance dict).
 
-2. **[LOW-MED] Exposed `__mro__` is not the C3 linearization.**
-   `A.__mro__` == `(A,)` - missing `object`; diamond classes expose immediate
-   bases only. Internal DISPATCH MRO is correct (diamond method resolution
-   verified green), so this is the introspection surface only.
-   Fix: expose the same linearized order dispatch uses, with object appended.
+2. ~~[LOW-MED] Exposed `__mro__` is not the C3 linearization.~~ FIXED before the 2026-09-05 worker pass (class_full_mro was already wired); `19d797a63` adds the diamond-MRO regression pin. `A.__mro__` and `mro()` now expose the dispatch linearization including `object`.
+   ~~Fix: expose the same linearized order dispatch uses, with object appended.~~
 
 3. **[LEDGER, carried]** to_host wrapper gaps (PyNativeBuiltin/bound methods);
    weakref API coverage debt. Single-branch workflow: fix in-branch, no GitHub issues.
@@ -427,12 +424,7 @@ INFRA ITEM A (check-mode hygiene): jac check gives FALSE FAILURES in the shared
     - py_none() mints fresh instances with no richcompare arm, so None in {None}
     returned False. Fixed via eq/ne-vs-PyNoneType arm; None==0/'' correctly False.
 
-1. **[MED] User exception subclass loses .args READ.** str(e.args) where
-    e = MyErr('m') (user subclass of Exception) raises AttributeError('args');
-    base builtin exceptions read fine. The class-attr lookup through the
-    native-base Exception layout misses the args slot for subclasses.
-    Distinct from item 39 (WRITE on base instances) - this is READ on
-    subclass instances. Found fuzz round 43. YoungHawk candidate.
+1. ~~[MED] User exception subclass loses .args READ.~~ FIXED by `5f025060f` (landed as `4f67c5d1f`): user-exception `.args` storage/read and reassignment now stay aligned; focused fidelity pins cover list/tuple reassignment and re-raise preservation.
 
 2. **[HIGH][FIXED 79ddec285 UltraMoon] List/tuple repetition copied instead of
     aliasing** - root cause: sequence-*int had no native slot, fell through to
@@ -544,11 +536,9 @@ INFRA ITEM A (check-mode hygiene): jac check gives FALSE FAILURES in the shared
     (ceval ~1536). Full diagnosis: jac-py/tools/SPEC_ITEM_51.md. Fix needs
     held-file ceval.jac. Item remains LIVE.
 
-15. **[MED][ROUTE-REPLAY-ONLY] C.**mro** returns tuple of Nones.** Diamond-inheritance class:
-    str(C.**mro**) -> '(None, None, None, None)' instead of the class tuple.
-    MRO linearization itself works (pin-item2-mro-c3 exercises order via
-    resolution, and issubclass/isinstance pass) - the **mro** ATTRIBUTE
-    exposes unfilled slots. Display/attr-materialization gap.
+15. ~~[MED][ROUTE-REPLAY-ONLY] C.**mro** returns tuple of Nones.~~ FIXED by the pre-existing `class_full_mro` wiring; `19d797a63` pins the public `mro()`/`__mro__` surface against diamond dispatch. The old replay finding is stale.
+   ~~MRO linearization itself works (pin-item2-mro-c3 exercises order via resolution, and issubclass/isinstance pass) - the **mro** ATTRIBUTE
+   exposes unfilled slots. Display/attr-materialization gap.~~
 
 16. **[HIGH-adjacent][ROUTE-REPLAY-ONLY] INPLACE ops REBIND instead of MUTATE.** a = b = [];
     a += [1]: b stays [0], a is b -> False. CPython list.**iadd**/**imul**
@@ -963,22 +953,9 @@ per-protocol special cases.
 
 ### Widened-differential findings (QuickBear, 2026-08-22 afternoon)
 
-0b. **\[COMPILER\]\[HIGH\] f-strings do not interpolate at all.**
-    `f'{a}+{b}'` compiles to a single LOAD_CONST of the literal text
-    "{a}+{b}" -- runtime produces that literal instead of "1+2". Root cause:
-    parser actions pa_joined_str / pa_formatted_value / pa_interpolation /
-    pa_template_str (parser_actions.jac ~1717+) are stubs returning None, so
-    JoinedStr never reaches codegen. Fix needs both sides: parse actions
-    building JoinedStr/FormattedValue AST, plus emit lowering
-    (FORMAT_SIMPLE=12 / BUILD_STRING=50 opcodes already exist with ceval
-    support). Every f-string in every program is silently wrong until fixed.
+0b. ~~[COMPILER][HIGH] f-strings do not interpolate at all.~~ FIXED by the landed end-to-end tokenizer/parser branch (`eb9a86cc6`, landed as `c2f00eca4`): f-string tokenization now feeds JoinedStr/FormattedValue actions. Runtime/CI coverage remains pending because the local typeshed payload is unavailable.
 
-0c. **\[CODEGEN\]\[HIGH\] for/else with break/continue miscompiles control flow.**
-    Byte diff shows duplicated epilogues mid-stream and a JUMP_FORWARD 245
-    past program end; runtime: `done=0; for...break; else: done=99; r=done`
-    yields None instead of 0. while/else is byte-exact, so this is specific
-    to FOR + break/continue + else interaction. Semantic correctness bug,
-    not just parity.
+0c. ~~[CODEGEN][HIGH] for/else with break/continue miscompiles control flow.~~ CLOSED as stale against current HEAD: the existing CFG emits the break/else and exhaust/else paths correctly; `5ded6bf8c` adds byte-exact break/exhaust/continue pins. Runtime/CI coverage remains pending because the local typeshed payload is unavailable.
 
 3b. **\[CODEGEN-PARITY\]\[MED\] def with *args/**kw defaults: function-attribute
     operand ordering differs from host.** Function BODY bytes match; module

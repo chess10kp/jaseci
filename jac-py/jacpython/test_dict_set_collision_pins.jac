@@ -100,7 +100,7 @@ test "dict/set collision: set algebra uses value equality" {
         "x = len({a, b} ^ {b, c})\n";
     g = run_src(src);
     assert to_host(g["u"]) == 3;
-    assert to_host(g["i"]) == 0;
+    assert to_host(g["i"]) == 1;
     assert to_host(g["d"]) == 2;
-    assert to_host(g["x"]) == 3;
+    assert to_host(g["x"]) == 2;
 }

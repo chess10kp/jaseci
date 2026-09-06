@@ -1876,7 +1876,9 @@ def _dict_remove_slot(d: PyDict, sk: str) -> PyObj {
             kept.append(x);
         }
     }
-    d.order = kept;
+    # Preserve list identity: set-algebra helpers pass order by reference.
+    d.order.clear();
+    d.order.extend(kept);
     return py_none();
 }
 
@@ -1888,7 +1890,9 @@ def _set_remove_slot(s: PySet, sk: str) -> PyObj {
             kept.append(x);
         }
     }
-    s.order = kept;
+    # Preserve list identity for callers holding the construction order list.
+    s.order.clear();
+    s.order.extend(kept);
     return py_none();
 }
 
