@@ -361,19 +361,24 @@ def visit_try_finally(
     tail_done = False;
     tail_terminated = False;
     if try_follows and tail is not None and tail_idx < len(tail) {
-        tail_more = False;
-        if tail_idx + 1 < len(tail) {
-            tail_more = exec_tail_emits_code(tail, tail_idx + 1);
-        }
-        tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=finally_cont.loc);
-        }
-        tail_done = True;
-        tail_terminated = tail_cont.terminated;
-        tail_end_blk = g.cur;
-        if tail_cont.terminated {
-            emit_module_return(g, tail_cont.loc);
+        if body_cont.terminated {
+            tail_done = True;
+            tail_terminated = True;
+        } else {
+            tail_more = False;
+            if tail_idx + 1 < len(tail) {
+                tail_more = exec_tail_emits_code(tail, tail_idx + 1);
+            }
+            tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+            if codegen_busy(g) {
+                return stmt_cont(loc=finally_cont.loc);
+            }
+            tail_done = True;
+            tail_terminated = tail_cont.terminated;
+            tail_end_blk = g.cur;
+            if not tail_cont.terminated {
+                emit_module_return(g, tail_cont.loc);
+            }
         }
     } elif try_follows {
         fallthrough_blk = g.cur;
@@ -1208,6 +1213,8 @@ def visit_try(
     g.u.nested_try_except_end = -1;
     # except_region indices owned (and later bound) by this invocation only.
     ownidx: list[int] = [];
+    tail_duplicated = False;
+    tail_dup_terminated = False;
     nop_blk = g.new_block();
     g.u.nested_try_except_start = nop_blk.id;
     try_body = g.new_block();
@@ -1585,6 +1592,8 @@ def visit_try(
                     tail_cont = visit_stmt_tail(
                         g, tail, tail_idx, tail_more, ann_ctx
                     );
+                    tail_duplicated = True;
+                    tail_dup_terminated = tail_cont.terminated;
                     if not tail_cont.terminated {
                         emit_module_return(g, tail_cont.loc);
                     }
@@ -1867,6 +1876,13 @@ def visit_try(
     # Publish this statement's last block for an enclosing try whose body is
     # exactly this try/except, so its body span starts after our regions.
     g.u.nested_try_except_end = unwind_blk.id;
+    if tail_duplicated and tail is not None {
+        return stmt_cont(
+            loc=tloc,
+            next_si=len(tail as list[stmt]),
+            terminated=tail_dup_terminated
+        );
+    }
     if fallthrough_blk is not None {
         g.use(fallthrough_blk);
         return stmt_cont(loc=tloc, terminated=False);
