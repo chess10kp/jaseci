@@ -1807,12 +1807,185 @@ obj PyTypeVar(PyObj) {
     }
 }
 
+# Internal dict/set slot suffix when unequal keys share one hashkey digest.
+glob _DICT_SLOT_COLL: str = "\x00";
+
 # Backing slot for the hash-key protocol: the original key object is kept next
 # to its value so keys()/iteration/repr/KeyError return real keys, never the
 # internal hashkey string. A plain obj (not a PyObj) -- pure storage.
 obj DictEntry {
     has key: PyObj,
         value: PyObj;
+}
+
+# Rebuild insertion-order index when callers seeded ``items`` without ``order``.
+def _dict_ensure_order(d: PyDict) -> PyObj {
+    if len(d.order) > 0 {
+        return py_none();
+    }
+    for sk in d.items {
+        d.order.append(sk);
+    }
+    return py_none();
+}
+
+def _set_ensure_order(s: PySet) -> PyObj {
+    if len(s.order) > 0 {
+        return py_none();
+    }
+    for sk in s.items {
+        s.order.append(sk);
+    }
+    return py_none();
+}
+
+# Allocate a fresh internal slot key for a new dict entry (hashkey may collide).
+def _dict_new_slot(d: PyDict, hk: str) -> str {
+    if not (hk in d.items) {
+        return hk;
+    }
+    n = 0;
+    while True {
+        sk = hk + _DICT_SLOT_COLL + str(n);
+        if not (sk in d.items) {
+            return sk;
+        }
+        n = n + 1;
+    }
+}
+
+def _set_new_slot(s: PySet, hk: str) -> str {
+    if not (hk in s.items) {
+        return hk;
+    }
+    n = 0;
+    while True {
+        sk = hk + _DICT_SLOT_COLL + str(n);
+        if not (sk in s.items) {
+            return sk;
+        }
+        n = n + 1;
+    }
+}
+
+def _dict_remove_slot(d: PyDict, sk: str) -> PyObj {
+    del d.items[sk];
+    kept: list[str] = [];
+    for x in d.order {
+        if x != sk {
+            kept.append(x);
+        }
+    }
+    d.order = kept;
+    return py_none();
+}
+
+def _set_remove_slot(s: PySet, sk: str) -> PyObj {
+    del s.items[sk];
+    kept: list[str] = [];
+    for x in s.order {
+        if x != sk {
+            kept.append(x);
+        }
+    }
+    s.order = kept;
+    return py_none();
+}
+
+# Locate the internal slot for ``key`` via hashkey prefilter + rich compare.
+# Returns PyStr(slot), py_none() when absent, or a propagated comparison error.
+def _dict_find_entry(d: PyDict, key: PyObj) -> PyObj {
+    _dict_ensure_order(d);
+    hkr = key.tp_hashkey();
+    if is_error(hkr) {
+        return hkr;
+    }
+    hk = hashkey_str(hkr);
+    for sk in d.order {
+        ent = d.items[sk];
+        stored = ent.key;
+        if key is stored {
+            return PyStr(t="str", val=sk);
+        }
+        skr = stored.tp_hashkey();
+        if is_error(skr) {
+            continue;
+        }
+        if hashkey_str(skr) != hk {
+            continue;
+        }
+        eq = PyObject_RichCompare(key, stored, Py_EQ);
+        if is_error(eq) {
+            return eq;
+        }
+        if _richcompare_truth(eq) == 1 {
+            return PyStr(t="str", val=sk);
+        }
+    }
+    return py_none();
+}
+
+# Append ``member`` to a set under construction (value-deduped).
+def _set_push_member(
+    items: dict[str, PyObj], order: list[str], member: PyObj
+) -> PyObj {
+    probe = PySet(t="set", items=items, order=order, frozen=False);
+    if probe.set_contains(member) {
+        return py_none();
+    }
+    hkr = member.tp_hashkey();
+    if is_error(hkr) {
+        return hkr;
+    }
+    sk = _set_new_slot(probe, hashkey_str(hkr));
+    items[sk] = member;
+    order.append(sk);
+    return py_none();
+}
+
+# Same contract as ``_dict_find_entry`` for set members.
+def _set_find_entry(s: PySet, member: PyObj) -> PyObj {
+    _set_ensure_order(s);
+    hkr = member.tp_hashkey();
+    if is_error(hkr) {
+        return hkr;
+    }
+    hk = hashkey_str(hkr);
+    for sk in s.order {
+        stored = s.items[sk];
+        if member is stored {
+            return PyStr(t="str", val=sk);
+        }
+        skr = stored.tp_hashkey();
+        if is_error(skr) {
+            continue;
+        }
+        if hashkey_str(skr) != hk {
+            continue;
+        }
+        eq = PyObject_RichCompare(member, stored, Py_EQ);
+        if is_error(eq) {
+            return eq;
+        }
+        if _richcompare_truth(eq) == 1 {
+            return PyStr(t="str", val=sk);
+        }
+    }
+    return py_none();
+}
+
+def _set_remove_member(
+    items: dict[str, PyObj], order: list[str], member: PyObj
+) -> PyObj {
+    probe = PySet(t="set", items=items, order=order, frozen=False);
+    found = _set_find_entry(probe, member);
+    if is_error(found) {
+        return found;
+    }
+    if found.t == "none" {
+        return py_none();
+    }
+    return _set_remove_slot(probe, expect_str(found));
 }
 
 # Native, size-guarded dict iterator (mode = keys|values|items). Holds the dict
@@ -1837,6 +2010,8 @@ obj PyDict(PyObj) {
     # Keyed on tp_hashkey() (value-equality with numeric collapse), not on the
     # raw string. Jac dict insertion order is preserved, matching CPython.
     has items: dict[str, DictEntry],
+        # Internal slot keys in insertion order (supports hash collisions).
+        order: list[str] = [],
         # Bumped on every structural mutation (set/overwrite/delete). A dict
         # iterator snapshots it and raises RuntimeError when it changes mid-loop
         # -- catching both size change AND net-zero delete+reinsert, matching
@@ -1849,9 +2024,10 @@ obj PyDict(PyObj) {
 
     # A native, size-guarded iterator over this dict. mode = keys|values|items.
     def dict_iter(mode: str) -> PyDictIter {
+        _dict_ensure_order(self);
         keys: list[str] = [];
-        for hk in self.items {
-            keys.append(hk);
+        for sk in self.order {
+            keys.append(sk);
         }
         return PyDictIter(
             t="dictiter",
@@ -1864,15 +2040,15 @@ obj PyDict(PyObj) {
     }
 
     def mp_subscript(index: PyObj) -> PyObj {
-        hkr = index.tp_hashkey();
-        if is_error(hkr) {
-            return _unhashable_error("a dict key", index);
+        found = _dict_find_entry(self, index);
+        if is_error(found) {
+            return found;
         }
-        hk = hashkey_str(hkr);
-        if hk in self.items {
-            return self.items[hk].value;
+        if found.t == "none" {
+            return py_error("KeyError", dict_key_repr(index));
         }
-        return py_error("KeyError", dict_key_repr(index));
+        sk = expect_str(found);
+        return self.items[sk].value;
     }
 
     def mp_ass_subscript(index: PyObj, value: PyObj) -> PyObj {
@@ -1881,32 +2057,39 @@ obj PyDict(PyObj) {
             return _unhashable_error("a dict key", index);
         }
         hk = hashkey_str(hkr);
-        if hk in self.items {
+        found = _dict_find_entry(self, index);
+        if is_error(found) {
+            return found;
+        }
+        if found.t != "none" {
+            sk = expect_str(found);
             # Overwrite value, keep the FIRST key object + slot position (CPython
             # semantics). Rebuild the entry rather than writing a nested obj field
             # in place (na external-field-write header hazard on the leaf). A plain
             # value overwrite leaves the key set unchanged, so it does NOT bump
             # version -- `for k in d: d[k] = ...` is legal in CPython (size guard).
-            self.items[hk] = DictEntry(key=self.items[hk].key, value=value);
+            self.items[sk] = DictEntry(key=self.items[sk].key, value=value);
         } else {
-            self.items[hk] = DictEntry(key=index, value=value);
+            sk = _dict_new_slot(self, hk);
+            self.items[sk] = DictEntry(key=index, value=value);
+            self.order.append(sk);
             self.version = self.version + 1;
         }
         return py_none();
     }
 
     def mp_del_subscript(index: PyObj) -> PyObj {
-        hkr = index.tp_hashkey();
-        if is_error(hkr) {
-            return _unhashable_error("a dict key", index);
+        found = _dict_find_entry(self, index);
+        if is_error(found) {
+            return found;
         }
-        hk = hashkey_str(hkr);
-        if hk in self.items {
-            del self.items[hk];
-            self.version = self.version + 1;
-            return py_none();
+        if found.t == "none" {
+            return py_error("KeyError", dict_key_repr(index));
         }
-        return py_error("KeyError", dict_key_repr(index));
+        sk = expect_str(found);
+        _dict_remove_slot(self, sk);
+        self.version = self.version + 1;
+        return py_none();
     }
 
     # Public helpers so bootstrap/ceval code never touches the raw entry map.
@@ -1917,26 +2100,24 @@ obj PyDict(PyObj) {
     # CPython ``dict_equal`` adapted to hashkey buckets, as a method so both
     # the tp_richcompare slot and free helpers share one implementation.
     def dict_equal(b: PyDict) -> PyObj {
-        if len(self.items) != len(b.items) {
+        _dict_ensure_order(self);
+        _dict_ensure_order(b);
+        if len(self.order) != len(b.order) {
             return PyBool(t="bool", val=False);
         }
-        for hk in self.items {
-            ak = self.items[hk].key;
-            av = self.items[hk].value;
-            if not (hk in b.items) {
+        for sk in self.order {
+            ent = self.items[sk];
+            ak = ent.key;
+            av = ent.value;
+            bfound = _dict_find_entry(b, ak);
+            if is_error(bfound) {
+                return bfound;
+            }
+            if bfound.t == "none" {
                 return PyBool(t="bool", val=False);
             }
-            bk = b.items[hk].key;
-            bv = b.items[hk].value;
-            if ak is not bk {
-                keq = PyObject_RichCompare(ak, bk, Py_EQ);
-                if is_error(keq) {
-                    return keq;
-                }
-                if _richcompare_truth(keq) != 1 {
-                    return PyBool(t="bool", val=False);
-                }
-            }
+            bsk = expect_str(bfound);
+            bv = b.items[bsk].value;
             if av is not bv {
                 veq = PyObject_RichCompare(av, bv, Py_EQ);
                 if is_error(veq) {
@@ -1967,25 +2148,27 @@ obj PyDict(PyObj) {
     }
 
     def dict_contains(keyobj: PyObj) -> bool {
-        hkr = keyobj.tp_hashkey();
-        if is_error(hkr) {
+        found = _dict_find_entry(self, keyobj);
+        if is_error(found) {
             return False;
         }
-        return hashkey_str(hkr) in self.items;
+        return found.t != "none";
     }
 
     def dict_keys -> list[PyObj] {
+        _dict_ensure_order(self);
         out: list[PyObj] = [];
-        for hk in self.items {
-            out.append(self.items[hk].key);
+        for sk in self.order {
+            out.append(self.items[sk].key);
         }
         return out;
     }
 
     def dict_values -> list[PyObj] {
+        _dict_ensure_order(self);
         out: list[PyObj] = [];
-        for hk in self.items {
-            out.append(self.items[hk].value);
+        for sk in self.order {
+            out.append(self.items[sk].value);
         }
         return out;
     }
@@ -1993,9 +2176,10 @@ obj PyDict(PyObj) {
     # Values re-keyed by their string key (only entries whose key is a PyStr).
     # For the inherently str-keyed consumers: kwdefaults, %(name) mapping format.
     def dict_str_map -> dict[str, PyObj] {
+        _dict_ensure_order(self);
         out: dict[str, PyObj] = {};
-        for hk in self.items {
-            `entry = self.items[hk];
+        for sk in self.order {
+            `entry = self.items[sk];
             if `entry.key.t == "str" {
                 out[expect_str(`entry.key)] = `entry.value;
             }
@@ -2025,6 +2209,7 @@ obj PyDict(PyObj) {
 # algebra are value-based with the same numeric collapse as PyDict.
 obj PySet(PyObj) {
     has items: dict[str, PyObj],
+        order: list[str] = [],
         frozen: bool = False;
 
     def set_contains(member: PyObj) -> bool {
@@ -2049,54 +2234,68 @@ obj PySet(PyObj) {
             return _unhashable_error("a set element", member);
         }
         hk = hashkey_str(hkr);
+        found = _set_find_entry(self, member);
+        if is_error(found) {
+            return found;
+        }
+        if found.t != "none" {
+            return py_none();
+        }
         # First occurrence wins: {1, 1.0, True} keeps the int 1 it saw first
         # (CPython set-literal insertion order). Overwriting would keep the last.
-        if not (hk in self.items) {
-            self.items[hk] = member;
-        }
+        sk = _set_new_slot(self, hk);
+        self.items[sk] = member;
+        self.order.append(sk);
         return py_none();
     }
 
     # Remove and return an arbitrary member (the first in iteration order, which
     # is deterministic here). Empty set -> KeyError, matching CPython's set.pop().
     def set_pop -> PyObj {
-        for hk in self.items {
-            member = self.items[hk];
-            del self.items[hk];
-            return member;
+        _set_ensure_order(self);
+        if len(self.order) == 0 {
+            return py_error("KeyError", "pop from an empty set");
         }
-        return py_error("KeyError", "pop from an empty set");
+        sk = self.order[0];
+        member = self.items[sk];
+        _set_remove_slot(self, sk);
+        return member;
     }
 
     def set_discard(member: PyObj) -> PyObj {
-        hkr = member.tp_hashkey();
-        if is_error(hkr) {
+        found = _set_find_entry(self, member);
+        if is_error(found) {
             return py_error("TypeError", "unhashable type");
         }
-        hk = hashkey_str(hkr);
-        if hk in self.items {
-            del self.items[hk];
+        if found.t != "none" {
+            sk = expect_str(found);
+            _set_remove_slot(self, sk);
         }
         return py_none();
     }
 
     def set_clear -> PyObj {
         self.items = {};
+        self.order = [];
         return py_none();
     }
 
     def set_copy -> PyObj {
+        _set_ensure_order(self);
         copy_items: dict[str, PyObj] = {};
-        for hk in self.items {
-            copy_items[hk] = self.items[hk];
+        copy_order: list[str] = [];
+        for sk in self.order {
+            copy_items[sk] = self.items[sk];
+            copy_order.append(sk);
         }
-        return PySet(t=self.t, items=copy_items, frozen=self.frozen);
+        return PySet(t=self.t, items=copy_items, order=copy_order, frozen=self.frozen);
     }
 
     def set_members -> list[PyObj] {
+        _set_ensure_order(self);
         out: list[PyObj] = [];
-        for hk in self.items {
-            out.append(self.items[hk]);
+        for sk in self.order {
+            out.append(self.items[sk]);
         }
         return out;
     }
@@ -2116,9 +2315,14 @@ obj PySet(PyObj) {
         if not self.frozen {
             return py_error("TypeError", "unhashable type");
         }
+        _set_ensure_order(self);
         keys: list[str] = [];
-        for hk in self.items {
-            keys.append(hk);
+        for sk in self.order {
+            hkr = self.items[sk].tp_hashkey();
+            if is_error(hkr) {
+                return hkr;
+            }
+            keys.append(hashkey_str(hkr));
         }
         i = 1;
         while i < len(keys) {
@@ -2143,46 +2347,73 @@ obj PySet(PyObj) {
             return py_error("TypeError", "unsupported operand types");
         }
         o = other as PySet;
+        _set_ensure_order(self);
+        _set_ensure_order(o);
         result_items: dict[str, PyObj] = {};
+        result_order: list[str] = [];
         if kind == NB_OR {
-            # union
-            for hk in self.items {
-                result_items[hk] = self.items[hk];
+            for sk in self.order {
+                err = _set_push_member(result_items, result_order, self.items[sk]);
+                if is_error(err) {
+                    return err;
+                }
             }
-            for hk in o.items {
-                result_items[hk] = o.items[hk];
+            for sk in o.order {
+                err = _set_push_member(result_items, result_order, o.items[sk]);
+                if is_error(err) {
+                    return err;
+                }
             }
         } elif kind == NB_AND {
-            # intersection
-            for hk in self.items {
-                if hk in o.items {
-                    result_items[hk] = self.items[hk];
+            for sk in self.order {
+                m = self.items[sk];
+                if o.set_contains(m) {
+                    err = _set_push_member(result_items, result_order, m);
+                    if is_error(err) {
+                        return err;
+                    }
                 }
             }
         } elif kind == NB_SUBTRACT {
-            # difference
-            for hk in self.items {
-                if not (hk in o.items) {
-                    result_items[hk] = self.items[hk];
+            for sk in self.order {
+                m = self.items[sk];
+                if not o.set_contains(m) {
+                    err = _set_push_member(result_items, result_order, m);
+                    if is_error(err) {
+                        return err;
+                    }
                 }
             }
         } elif kind == NB_XOR {
-            # symmetric difference
-            for hk in self.items {
-                if not (hk in o.items) {
-                    result_items[hk] = self.items[hk];
+            for sk in self.order {
+                err = _set_push_member(result_items, result_order, self.items[sk]);
+                if is_error(err) {
+                    return err;
                 }
             }
-            for hk in o.items {
-                if not (hk in self.items) {
-                    result_items[hk] = o.items[hk];
+            for sk in o.order {
+                m = o.items[sk];
+                probe = PySet(
+                    t=self.t, items=result_items, order=result_order, frozen=False
+                );
+                if probe.set_contains(m) {
+                    err = _set_remove_member(result_items, result_order, m);
+                    if is_error(err) {
+                        return err;
+                    }
+                } else {
+                    err = _set_push_member(result_items, result_order, m);
+                    if is_error(err) {
+                        return err;
+                    }
                 }
             }
         } else {
             return py_error("TypeError", "unsupported operand types");
         }
-        # Result type follows the left operand (frozenset|set -> frozenset).
-        return PySet(t=self.t, items=result_items, frozen=self.frozen);
+        return PySet(
+            t=self.t, items=result_items, order=result_order, frozen=self.frozen
+        );
     }
 
     def tp_richcompare(kind: int, other: PyObj) -> PyObj {
@@ -2366,46 +2597,22 @@ def _unhashable_error(what: str, v: PyObj) -> PyObj {
 }
 
 def _set_contains_elem(so: PySet, key: PyObj) -> PyObj {
-    hkr = key.tp_hashkey();
-    if is_error(hkr) {
+    found = _set_find_entry(so, key);
+    if is_error(found) {
+        return found;
+    }
+    if found.t == "none" {
         return PyBool(t="bool", val=False);
     }
-    hk = hashkey_str(hkr);
-    # Bucket hit confirms through the full compare protocol; a raising element
-    # __eq__ propagates verbatim (CPython set_add_entry / set_contains_key).
-    if hk in so.items {
-        res = PyObject_RichCompare(key, so.items[hk], Py_EQ);
-        if is_error(res) {
-            return res;
-        }
-        if _richcompare_truth(res) == 1 {
-            return PyBool(t="bool", val=True);
-        }
-    }
-    # Hash collision / cross-hashkey scan (numeric collapse makes 1 and 1.0
-    # distinct hashkeys here, so True-in-{1} relies on this sweep).
-    for hk2 in so.items {
-        stored = so.items[hk2];
-        if key is stored {
-            return PyBool(t="bool", val=True);
-        }
-        res = PyObject_RichCompare(key, stored, Py_EQ);
-        if is_error(res) {
-            return res;
-        }
-        if _richcompare_truth(res) == 1 {
-            return PyBool(t="bool", val=True);
-        }
-    }
-    return PyBool(t="bool", val=False);
+    return PyBool(t="bool", val=True);
 }
 
 def _pyset_richcompare_na(op: int, v: PySet, w: PySet) -> PyObj {
-    vlen = len(v.items);
-    wlen = len(w.items);
+    _set_ensure_order(v);
+    _set_ensure_order(w);
     v_sub = True;
-    for hk in v.items {
-        elem = v.items[hk];
+    for sk in v.order {
+        elem = v.items[sk];
         found = _set_contains_elem(w, elem);
         if is_error(found) {
             return found;
@@ -2415,8 +2622,8 @@ def _pyset_richcompare_na(op: int, v: PySet, w: PySet) -> PyObj {
         }
     }
     w_sub = True;
-    for hk in w.items {
-        elem = w.items[hk];
+    for sk in w.order {
+        elem = w.items[sk];
         found = _set_contains_elem(v, elem);
         if is_error(found) {
             return found;
@@ -2859,8 +3066,10 @@ def _py_sequence_tuple(o: PyObj, out: list[PyObj]) -> bool {
         return True;
     }
     if isinstance(o, PyDict) {
-        for hk in (o as PyDict).items {
-            out.append((o as PyDict).items[hk].key);
+        _dict_ensure_order(o as PyDict);
+        d = o as PyDict;
+        for sk in d.order {
+            out.append(d.items[sk].key);
         }
         return True;
     }
