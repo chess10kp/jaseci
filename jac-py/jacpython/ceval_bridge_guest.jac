@@ -283,10 +283,111 @@ def _jac_make_host_trampoline(native_fn):
 # helpers FOR_ITER uses. Position stays SHARED with the guest object, so host
 # consumption no longer drains/consumes the underlying iterator silently.
 
-_JAC_CLASS_STANDINS = {}   # id(guest_cls) -> [weakref.ref(cls), host_class]
-_JAC_USER_STANDINS = {}    # id(user_obj) -> [weakref.ref(obj), standin_instance]
+# Stand-in caches: id(guest) -> [weakref.ref(guest), weakref.ref(host_face)].
+# Neither side is strongly retained by the table alone -- host stand-ins drop
+# out when the last host reference goes away, and guest-death callbacks scrub
+# back-references (_jac_guest_cls_ / _jac_guest_) so released guest objects
+# are not pinned by forgotten crossings. Lookup requires guest_wr() is the
+# requesting object (stale-id() protection when ids are reused).
+_JAC_CLASS_STANDINS = {}
+_JAC_USER_STANDINS = {}
 
 _JAC_ITER_DONE = object()  # sentinel for iter(callable, sentinel)
+
+
+def _jac_standin_evict_class(key, host_cls=None):
+    _JAC_CLASS_STANDINS.pop(key, None)
+    if host_cls is not None:
+        try:
+            del host_cls._jac_guest_cls_
+        except BaseException:
+            pass
+
+
+def _jac_standin_evict_user(key, inst=None):
+    _JAC_USER_STANDINS.pop(key, None)
+    if inst is not None:
+        try:
+            del inst._jac_guest_
+        except BaseException:
+            pass
+
+
+def _jac_standin_class_lookup(key, cls):
+    ent = _JAC_CLASS_STANDINS.get(key)
+    if ent is None:
+        return None
+    guest_live = ent[0]()
+    host_live = ent[1]()
+    if guest_live is cls and host_live is not None:
+        return host_live
+    if host_live is not None:
+        _jac_standin_evict_class(key, host_live)
+    else:
+        _JAC_CLASS_STANDINS.pop(key, None)
+    return None
+
+
+def _jac_standin_user_lookup(key, u):
+    ent = _JAC_USER_STANDINS.get(key)
+    if ent is None:
+        return None
+    guest_live = ent[0]()
+    host_live = ent[1]()
+    if guest_live is u and host_live is not None:
+        return host_live
+    if host_live is not None:
+        _jac_standin_evict_user(key, host_live)
+    else:
+        _JAC_USER_STANDINS.pop(key, None)
+    return None
+
+
+def _jac_standin_register_class(key, cls, host_cls):
+    wr_mod = _hb._jac_host_weakref()
+
+    def on_guest_dead(ref, k=key, hc=host_cls):
+        _jac_standin_evict_class(k, hc)
+
+    def on_host_dead(ref, k=key):
+        _JAC_CLASS_STANDINS.pop(k, None)
+
+    guest_wr = wr_mod.ref(cls, on_guest_dead)
+    host_wr = wr_mod.ref(host_cls, on_host_dead)
+    _JAC_CLASS_STANDINS[key] = [guest_wr, host_wr]
+
+
+def _jac_standin_register_user(key, u, inst):
+    wr_mod = _hb._jac_host_weakref()
+
+    def on_guest_dead(ref, k=key, hi=inst):
+        _jac_standin_evict_user(k, hi)
+
+    def on_host_dead(ref, k=key):
+        _JAC_USER_STANDINS.pop(k, None)
+
+    guest_wr = wr_mod.ref(u, on_guest_dead)
+    host_wr = wr_mod.ref(inst, on_host_dead)
+    _JAC_USER_STANDINS[key] = [guest_wr, host_wr]
+
+
+def _jac_standin_cache_sizes():
+    # Prune dead weakref slots, then report live entry counts (test hook).
+    for key, ent in list(_JAC_CLASS_STANDINS.items()):
+        if ent[0]() is None or ent[1]() is None:
+            hc = ent[1]()
+            if hc is not None:
+                _jac_standin_evict_class(key, hc)
+            else:
+                _JAC_CLASS_STANDINS.pop(key, None)
+    for key, ent in list(_JAC_USER_STANDINS.items()):
+        if ent[0]() is None or ent[1]() is None:
+            hi = ent[1]()
+            if hi is not None:
+                _jac_standin_evict_user(key, hi)
+            else:
+                _JAC_USER_STANDINS.pop(key, None)
+    return (len(_JAC_CLASS_STANDINS), len(_JAC_USER_STANDINS))
 
 
 def _jac_notimpl_value():
@@ -433,9 +534,9 @@ def _jac_standin_install_methods(ns, cls):
 def _jac_standin_class(cls):
     # The cached name-faithful host class for a guest PyClass.
     key = id(cls)
-    ent = _JAC_CLASS_STANDINS.get(key)
-    if ent is not None and ent[0]() is cls:
-        return ent[1]
+    cached = _jac_standin_class_lookup(key, cls)
+    if cached is not None:
+        return cached
     ns = {}
     _jac_standin_install_methods(ns, cls)
     r = class_lookup_attr(cls, "__repr__")
@@ -470,22 +571,22 @@ def _jac_standin_class(cls):
     else:
         host_cls = type(cls.name, _jac_standin_bases(cls), ns)
     host_cls._jac_guest_cls_ = cls
-    _JAC_CLASS_STANDINS[key] = [_hb._jac_host_weakref().ref(cls), host_cls]
+    _jac_standin_register_class(key, cls, host_cls)
     return host_cls
 
 
 def _jac_user_standin(u):
     # The cached name-faithful host instance for a plain guest PyUserObj.
     key = id(u)
-    ent = _JAC_USER_STANDINS.get(key)
-    if ent is not None and ent[0]() is u:
-        return ent[1]
+    cached = _jac_standin_user_lookup(key, u)
+    if cached is not None:
+        return cached
     host_cls = _jac_standin_class(u.cls)
     inst = host_cls.__new__(host_cls)
     # Strong back-reference: while the host holds the stand-in, the guest
     # object stays alive and recoverable (identity round-trip).
     inst._jac_guest_ = u
-    _JAC_USER_STANDINS[key] = [_hb._jac_host_weakref().ref(u), inst]
+    _jac_standin_register_user(key, u, inst)
     return inst
 
 
@@ -512,14 +613,14 @@ def _jac_user_standin_typed(u):
     # shell: C state constructed in-VM survives the crossing AND guest
     # overrides stay visible to host callbacks (marshal-style readers).
     key = id(u)
-    ent = _JAC_USER_STANDINS.get(key)
-    if ent is not None and ent[0]() is u:
-        return ent[1]
+    cached = _jac_standin_user_lookup(key, u)
+    if cached is not None:
+        return cached
     base_r = to_host(u._base_obj())
     host_cls = _jac_standin_class(u.cls)
     if not _jac_standin_adopt(base_r, host_cls, u):
         return base_r
-    _JAC_USER_STANDINS[key] = [_hb._jac_host_weakref().ref(u), base_r]
+    _jac_standin_register_user(key, u, base_r)
     return base_r
 
 

@@ -282,6 +282,9 @@ def _jac_user_standin_typed(*args, **kwargs):
 def _jac_standin_mro_covers(*args, **kwargs):
     return _bg._jac_standin_mro_covers(*args, **kwargs)
 
+def _jac_standin_cache_sizes(*args, **kwargs):
+    return _bg._jac_standin_cache_sizes(*args, **kwargs)
+
 def _jac_hostproxy_val_is_type(*args, **kwargs):
     return _bg._jac_hostproxy_val_is_type(*args, **kwargs)
 

@@ -96,3 +96,25 @@ their consumer wires `live_container_bridge` into the crossing point:
 - `jacpython/ceval.jac`: `_jac_make_live_list/_dict/_set` shims,
   `live_container_bridge` dispatcher, pyc_first re-export.
 - `jacpython/test_live_view_containers.jac`: vm_exec-pattern conformance pins.
+
+## Stand-in cache lifetime (bridge-lifetime)
+
+Host stand-ins for guest `PyClass` / plain `PyUserObj` are cached in
+`ceval_bridge_guest.jac` so repeated crossings reuse the same name-faithful
+host face. The cache is **not** a retention sink:
+
+| mechanism | behavior |
+|-----------|----------|
+| doubly-weak slots | each entry holds `weakref.ref(guest)` and `weakref.ref(host_face)`; the table alone does not keep either side alive |
+| stale-`id()` guard | lookup requires `guest_wr() is obj`; dead or reused ids evict before reminting |
+| guest-death callback | scrubs `_jac_guest_cls_` / `_jac_guest_` on the host face so a collected guest is not pinned by a forgotten back-reference |
+| host-face death callback | drops the cache slot when the last host reference to the stand-in goes away |
+
+**Documented deviation:** while a host consumer still holds a stand-in, the
+`_jac_guest_` / `_jac_guest_cls_` back-reference is strong so identity
+round-trips and guest dunder replay keep working. That is intentional bounded
+retention tied to live host use, not unbounded global cache growth.
+
+Live views (`_jac_make_live_list` / `_dict` / `_set`) are unrelated to
+stand-in caching; their documented deltas (non-builtin `isinstance`, iteration
+snapshot rules, etc.) are unchanged.
