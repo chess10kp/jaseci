@@ -41,6 +41,7 @@ import from compiler_ir {
     loop_frame,
     mk_instr,
     no_loc,
+    pending_break_finish,
     same_loc,
     stmt_cont,
 }
@@ -67,6 +68,11 @@ import from compiler_annotations { ann_scope_plan }
 import from compiler_codegen { emit_module_return, emit_tail_and_finish, visit_stmt_tail, visit_stmts, visit_store_target_tos }
 import from compiler_dispatch { stmt_handlers }
 import from compiler_exc { emit_anext_send_except_regions }
+import from compiler_context {
+    append_pending_break_finish,
+    current_pending_break_finishes,
+    push_pending_break_finish,
+}
 
 # ---------------- break-edge tail duplication (CPython parity) ----------------
 #
@@ -88,27 +94,6 @@ import from compiler_exc { emit_anext_send_except_regions }
 # no further instructions. Flushing drives the SAME finish_break_sites
 # mechanism as the synchronous tail-present path -- there is one splicer, and
 # deferral only changes WHEN it observes the finalized continuation.
-obj pending_break_finish {
-    has frame: loop_frame,
-        join: basicblock,
-        allow_nop: bool,
-        # While-family nested loops only: the conditional that guards the loop
-        # body targets the continuation as its FALSE edge. When the finalized
-        # continuation turns out artificial, CPython's passes thread that edge
-        # through it (conditional reversal): jump-true to the body, with a
-        # copy of the continuation inlined after the test.
-        test_blk: basicblock | None = None,
-        branch_idx: int = -1,
-        body_hdr: basicblock | None = None;
-}
-
-glob pending_break_finishes: list[pending_break_finish] = [];
-
-def push_pending_break_finish(frame: loop_frame, join: basicblock, allow_nop: bool) {
-    pending_break_finishes.append(
-        pending_break_finish(frame=frame, join=join, allow_nop=allow_nop)
-    );
-}
 
 # Does control fall out of the block (CPython BB_HAS_FALLTHROUGH)?
 def block_is_terminated(b: basicblock) -> bool {
@@ -126,9 +111,10 @@ def block_is_terminated(b: basicblock) -> bool {
 # block. Jobs are consumed even when neither inline predicate fires -- keeping
 # the plain jump then matches CPython, whose pass simply does not rewrite.
 def flush_pending_break_finishes(g: cfg_builder, from_idx: int) {
-    while from_idx < len(pending_break_finishes) {
-        job = pending_break_finishes[from_idx];
-        pending_break_finishes.pop(from_idx);
+    jobs = current_pending_break_finishes();
+    while from_idx < len(jobs) {
+        job = jobs[from_idx];
+        jobs.pop(from_idx);
         if not block_is_terminated(job.join) {
             # Falling-through continuations are finalized by the unit drivers
             # (epilogue synthesis needs tail context this lane does not have);
@@ -587,7 +573,7 @@ def visit_while(
             g.push_loop(head, exit_blk, False);
         }
         emit_branch_if_test_false(g, kind, exit_blk.id, test_loc);
-        body_snap = len(pending_break_finishes);
+        body_snap = len(current_pending_break_finishes());
         body_cont = visit_stmts(g, w.body, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
             g.pop_loop();
@@ -604,7 +590,7 @@ def visit_while(
         g.use(exit_blk);
         else_terminated = False;
         if len(w.orelse) > 0 {
-            else_snap = len(pending_break_finishes);
+            else_snap = len(current_pending_break_finishes());
             else_cont = visit_stmts(g, w.orelse, 0, False, None, 0, None, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=else_cont.loc);
@@ -681,7 +667,7 @@ def visit_while(
         } else {
             g.push_loop(head, after_body, False);
         }
-        body_snap = len(pending_break_finishes);
+        body_snap = len(current_pending_break_finishes());
         g.use(body_hdr);
         body_cont = visit_stmts(g, w.body, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
@@ -707,7 +693,7 @@ def visit_while(
                 branch_idx=branch_idx,
                 body_hdr=body_hdr
             );
-            pending_break_finishes.append(job);
+            append_pending_break_finish(job);
         }
         g.use(after_body);
         return stmt_cont(loc=wloc, terminated=False);
@@ -731,7 +717,7 @@ def visit_while(
     } else {
         g.push_loop(head, exit_blk, False);
     }
-    body_snap = len(pending_break_finishes);
+    body_snap = len(current_pending_break_finishes());
     body_cont = visit_stmts(g, w.body, 0, False, None, 0, None, ann_ctx);
     if codegen_busy(g) {
         g.pop_loop();
@@ -754,7 +740,7 @@ def visit_while(
     if not exit_blk.placed {
         g.use(exit_blk);
         if len(w.orelse) > 0 {
-            else_snap = len(pending_break_finishes);
+            else_snap = len(current_pending_break_finishes());
             else_cont = visit_stmts(g, w.orelse, 0, False, None, 0, None, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=else_cont.loc);
@@ -819,7 +805,7 @@ def visit_for(
             g.pop_loop();
             return stmt_cont(loc=store.loc);
         }
-        body_snap = len(pending_break_finishes);
+        body_snap = len(current_pending_break_finishes());
         body_cont = visit_stmts(g, f.body, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
             g.pop_loop();
@@ -838,7 +824,7 @@ def visit_for(
         g.emit_op(OP_POP_ITER, 0, iter_loc);
         else_terminated = False;
         if len(f.orelse) > 0 {
-            else_snap = len(pending_break_finishes);
+            else_snap = len(current_pending_break_finishes());
             else_cont = visit_stmts(g, f.orelse, 0, False, None, 0, None, ann_ctx);
             if codegen_busy(g) {
                 return stmt_cont(loc=else_cont.loc);
@@ -909,7 +895,7 @@ def visit_for(
             g.pop_loop();
             return stmt_cont(loc=store.loc);
         }
-        body_snap = len(pending_break_finishes);
+        body_snap = len(current_pending_break_finishes());
         body_cont = visit_stmts(g, f.body, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
             g.pop_loop();
@@ -961,7 +947,7 @@ def visit_for(
         g.pop_loop();
         return stmt_cont(loc=store.loc);
     }
-    body_snap = len(pending_break_finishes);
+    body_snap = len(current_pending_break_finishes());
     body_cont = visit_stmts(g, f.body, 0, False, None, 0, None, ann_ctx);
     if codegen_busy(g) {
         g.pop_loop();
@@ -987,7 +973,7 @@ def visit_for(
     }
     else_terminated = False;
     if len(f.orelse) > 0 and not epilogue_done {
-        else_snap = len(pending_break_finishes);
+        else_snap = len(current_pending_break_finishes());
         else_cont = visit_stmts(g, f.orelse, 0, False, None, 0, None, ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=else_cont.loc);
