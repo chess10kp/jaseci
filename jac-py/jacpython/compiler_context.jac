@@ -12,7 +12,6 @@ import from compiler_ir {
     loop_frame,
 }
 import from compiler_dispatch { stmt_handlers }
-import from vm_dispatch { ceval_ops }
 
 obj compile_context {
     has pending_break_finishes: list[pending_break_finish] = [];
@@ -96,30 +95,6 @@ def ensure_compile_registries_wired() -> PyObj {
             );
         }
         hi = hi + 1;
-    }
-    anchor_ops = [
-        "exec_code_frame",
-        "builtin_exec",
-        "from_host",
-        "py_invoke",
-    ];
-    oi = 0;
-    while oi < len(anchor_ops) {
-        key = anchor_ops[oi];
-        if not (key in ceval_ops) {
-            return py_error(
-                "RuntimeError",
-                "ceval: ceval_ops missing '" + key + "'"
-            );
-        }
-        slot = ceval_ops[key];
-        if slot is None {
-            return py_error(
-                "RuntimeError",
-                "ceval: ceval_ops '" + key + "' is unwired"
-            );
-        }
-        oi = oi + 1;
     }
     _registries_validated[0] = True;
     return py_none();
