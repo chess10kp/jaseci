@@ -2383,7 +2383,12 @@ def run_frame_inner(frame: PyFrame) -> PyObj {
                             handled_exc as PyException
                         );
                     } elif isinstance(handled_exc, PyUserObj) {
-                        (result as PyError).exception.context = handled_exc;
+                        wrapped = py_raise_value(handled_exc);
+                        if isinstance(wrapped, PyError) {
+                            (result as PyError).exception.context = (
+                                wrapped as PyError
+                            ).exception;
+                        }
                     }
                 }
             }

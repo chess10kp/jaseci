@@ -93,6 +93,58 @@ test "BaseException attribute reassignment lands" {
     assert vm_str(ns, "saved") == "('y',)";
 }
 
+test "user exception args reassignment accepts list and tuple" {
+    ns = vm_exec(
+        "class MyErr(Exception):\n"
+        "    pass\n"
+        "e = MyErr('x')\n"
+        "e.args = ['y']\n"
+        "a1 = e.args\n"
+        "try:\n"
+        "    raise MyErr('p')\n"
+        "except MyErr as e2:\n"
+        "    e2.args = ('q',)\n"
+        "    a2 = e2.args\n"
+        "    s2 = str(e2)\n"
+    );
+    assert vm_str(ns, "a1") == "('y',)";
+    assert vm_str(ns, "a2") == "('q',)";
+    assert vm_str(ns, "s2") == "q";
+}
+
+test "bare re-raise preserves args after reassignment on user exception" {
+    ns = vm_exec(
+        "class MyErr(Exception):\n"
+        "    pass\n"
+        "try:\n"
+        "    try:\n"
+        "        raise MyErr('orig')\n"
+        "    except MyErr as e:\n"
+        "        e.args = ('new',)\n"
+        "        raise\n"
+        "except MyErr as e2:\n"
+        "    saved = e2.args\n"
+    );
+    assert vm_str(ns, "saved") == "('new',)";
+}
+
+test "user exception chain __class__ identity via context" {
+    ns = vm_exec(
+        "class MyErr(Exception):\n"
+        "    pass\n"
+        "try:\n"
+        "    try:\n"
+        "        raise MyErr('inner')\n"
+        "    except MyErr:\n"
+        "        raise TypeError('outer')\n"
+        "except TypeError as e:\n"
+        "    ctx_cls = e.__context__.__class__.__name__\n"
+        "    type_cls = type(e.__context__).__name__\n"
+    );
+    assert vm_str(ns, "ctx_cls") == "MyErr";
+    assert vm_str(ns, "type_cls") == "MyErr";
+}
+
 test "user exception subclass records constructor args at new time" {
     # A custom __init__ that never calls super().__init__ still leaves
     # e.args == constructor args (CPython BaseException_new semantics).

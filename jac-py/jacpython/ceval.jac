@@ -476,7 +476,8 @@ import from objects {
     str_mod_format,
     is_error,
     hashkey_str,
-    PY_NOT_IMPLEMENTED
+    PY_NOT_IMPLEMENTED,
+    _exception_args_from_value,
 }
 import from ceval_opcodes_containers {
     op_build_list,
@@ -1618,6 +1619,14 @@ def default_user_setattro(u: PyUserObj, name: str, value: PyObj) -> PyObj {
             "'" + u.cls.name + "' object has no attribute '" + name
                 + "' and no __dict__ for setting new attributes",
         );
+    }
+    if name == "args" and class_is_exception(u.cls) {
+        coerced = _exception_args_from_value(value);
+        if is_error(coerced) {
+            return coerced;
+        }
+        u.attrs["args"] = coerced;
+        return py_none();
     }
     u.attrs[name] = value;
     # Keep the live __dict__ view current (identity-stable mirror).
@@ -5899,6 +5908,8 @@ def user_exception_view(u: PyUserObj) -> PyException {
     stored = u.attrs.get("args");
     if isinstance(stored, PyTuple) {
         exc_args.extend((stored as PyTuple).items);
+    } elif isinstance(stored, PyList) {
+        exc_args.extend((stored as PyList).items);
     }
     # Resolve the nearest builtin exception ancestor (class MyErr(KeyError) ->
     # "KeyError") so per-type __str__/attribute semantics inherited from the
