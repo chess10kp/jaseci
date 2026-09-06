@@ -275,6 +275,16 @@ obj PyInt(PyObj) {
     }
 
     def tp_richcompare(kind: int, other: PyObj) -> PyObj {
+        # CPython long_richcompare keys on PyLong_Check(other): any int
+        # subclass instance compares numerically. A user subclass of int
+        # arrives as a boxed user object, so try the __index__ unwrap first;
+        # a raising or non-int unwrap keeps the non-numeric handling below.
+        if other.t != "int" and other.t != "bool" and other.t != "float" {
+            idxr = other.to_index();
+            if not is_error(idxr) and (idxr.t == "int" or idxr.t == "bool") {
+                other = idxr;
+            }
+        }
         # int vs int/bool: exact integer comparison (bool is an int subclass,
         # so `1 == True` and `0 < False` compare by numeric value).
         if other.t == "int" or other.t == "bool" {
