@@ -671,6 +671,56 @@ test "compiler_slice: loop-else then trailing statements compile with sound stru
     }
 }
 
+# for/else CFG audit: break must skip orelse; natural exhaustion must run orelse;
+# both paths thread one trailing suffix without verify_cfg "instructions after
+# terminator" (break uses the post-orelse join; exhaust falls through cleanup
+# then orelse then tail). Pinned byte-exact against the host oracle on HEAD.
+test "compiler_slice: for-else break or exhaust then trailing code matches oracle" {
+    for src in [
+        "done = 0\nfor x in y:\n    break\nelse:\n    done = 99\nr = done\n",
+        "done = 0\nfor x in y:\n    pass\nelse:\n    done = 99\nr = done\n",
+        "def f(it):\n    done = 0\n    for x in it:\n        break\n    else:\n        done = 99\n    r = done\n    return r\n",
+        "def f(it):\n    done = 0\n    for x in it:\n        pass\n    else:\n        done = 99\n    r = done\n    return r\n",
+    ] {
+        actual = compile_parsed_exec(src);
+        expected = oracle_exec(src, "<f>");
+        assert isinstance(expected, PyCode);
+        exp = expected as PyCode;
+        if src.startswith("def ") {
+            af = nested_code_by_name(actual, "f");
+            ef = nested_code_by_name(exp, "f");
+            assert af.co_code == ef.co_code;
+            assert af.exceptiontable == ef.exceptiontable;
+            assert af.stacksize == ef.stacksize;
+        } else {
+            assert actual.co_code == exp.co_code;
+            assert actual.exceptiontable == exp.exceptiontable;
+            assert actual.stacksize == exp.stacksize;
+        }
+    }
+}
+
+test "compiler_slice: for-else continue dead body stmt then trailing matches oracle" {
+    src = (
+        "def f(it):\n"
+        + "    t = 0\n"
+        + "    for x in it:\n"
+        + "        continue\n"
+        + "        t = 9\n"
+        + "    else:\n"
+        + "        t = 99\n"
+        + "    return t\n"
+    );
+    actual = compile_parsed_exec(src);
+    expected = oracle_exec(src, "<f>");
+    assert isinstance(expected, PyCode);
+    af = nested_code_by_name(actual, "f");
+    ef = nested_code_by_name(expected as PyCode, "f");
+    assert af.co_code == ef.co_code;
+    assert af.exceptiontable == ef.exceptiontable;
+    assert af.stacksize == ef.stacksize;
+}
+
 # Conditional expression (ternary) in embedded position -- value consumed by a
 # surrounding operation -- uses CPython's branch+join shape and is byte-exact.
 # (A statement-tail `x = a if c else b` is duplicated by CPython and is a separate
