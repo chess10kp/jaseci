@@ -10,7 +10,9 @@ every worker can sit at the ceiling at once and still fit.
 """
 
 import os;
+import from unittest.mock { mock_open, patch }
 import from jaclang.cli.workpool { MAX_AUTO_JOBS, WORKER_MEM_BYTES, default_jobs }
+import from jaclang.testing.test_runner { resolve_jobs as resolve_test_jobs }
 
 glob GB: int = 1024 * 1024 * 1024;
 
@@ -26,4 +28,21 @@ test "default_jobs sizes the pool by the per-worker ceiling" {
         == default_jobs(avail_bytes=16 * GB);
     # A ceiling the box cannot hold even once still yields one worker.
     assert default_jobs(worker_bytes=64 * GB, avail_bytes=16 * GB) == 1;
+}
+
+test "automatic test workers fit their configured memory ceiling" {
+    with patch("os.cpu_count", return_value=4), patch(
+        "builtins.open", mock_open(read_data="MemAvailable: 16777216 kB\n")
+    ), patch.dict(os.environ, {"JAC_TEST_JOBS": "auto", "JAC_TEST_RECYCLE_MB": ""}) {
+        # Four workers allowed 8 GB each cannot share a 16 GB runner.
+        assert resolve_test_jobs() == 1;
+        with patch.dict(os.environ, {"JAC_TEST_RECYCLE_MB": "4096"}) {
+            assert resolve_test_jobs() == 2;
+        }
+        with patch.dict(os.environ, {"JAC_TEST_RECYCLE_MB": "0"}) {
+            assert resolve_test_jobs() == 4;
+        }
+        # An explicit count remains an operator override.
+        assert resolve_test_jobs("3") == 3;
+    }
 }
