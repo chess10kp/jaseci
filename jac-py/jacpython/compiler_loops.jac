@@ -386,6 +386,14 @@ def visit_if(
             if codegen_busy(g) {
                 return stmt_cont(loc=else_cont.loc);
             }
+            # An open orelse end falls through to join only when it is still
+            # the last-placed block; a body construct that materialized
+            # deferred machinery below (try handlers) sits between them, so
+            # close the path with an explicit jump.
+            if not else_cont.terminated
+                and g.u.blocks[len(g.u.blocks) - 1] is not g.cur {
+                g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
+            }
             if owns_join {
                 g.use(join);
                 if tail_more {
@@ -399,7 +407,10 @@ def visit_if(
                 }
                 return stmt_cont(loc=iloc);
             }
-            return stmt_cont(loc=iloc);
+            # Adopted join: the current block is the orelse end, which may
+            # have terminated (raise/return in the last branch). The caller
+            # must not emit a jump into a terminated block.
+            return stmt_cont(loc=iloc, terminated=else_cont.terminated);
         }
         owns_tail = False;
         if tail_join is not None {
@@ -412,6 +423,13 @@ def visit_if(
         body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=body_cont.loc);
+        }
+        # Same fallthrough contract as the orelse above: when the open body
+        # end is no longer the last-placed block (deferred try/with machinery
+        # materialized below it), an explicit jump is required to reach join.
+        if not body_cont.terminated
+            and g.u.blocks[len(g.u.blocks) - 1] is not g.cur {
+            g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
         }
         if owns_tail {
             g.use(join);
@@ -431,7 +449,9 @@ def visit_if(
             # caller's index to 0 -> infinite loop (hangs `while: if c: break; more`).
             return stmt_cont(loc=body_cont.loc);
         }
-        return stmt_cont(loc=body_cont.loc);
+        # Adopted join: the body end is the current block and may have
+        # terminated; the caller must not emit a jump into a terminated block.
+        return stmt_cont(loc=body_cont.loc, terminated=body_cont.terminated);
     }
     # more_code_follows == False: nothing follows this if in the current
     # statement list. Two sub-cases:
@@ -452,7 +472,7 @@ def visit_if(
             if codegen_busy(g) {
                 return stmt_cont(loc=body_cont.loc);
             }
-            return stmt_cont(loc=body_cont.loc);
+            return stmt_cont(loc=body_cont.loc, terminated=body_cont.terminated);
         }
         emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
         body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
@@ -467,7 +487,7 @@ def visit_if(
         if codegen_busy(g) {
             return stmt_cont(loc=else_cont.loc);
         }
-        return stmt_cont(loc=iloc);
+        return stmt_cont(loc=iloc, terminated=else_cont.terminated);
     }
     loop_frame = g.current_loop();
     if loop_frame is not None {
@@ -784,6 +804,13 @@ def visit_for(
     loop_hdr = g.new_block();
     g.use(loop_hdr);
     has_break = loop_body_has_break(f.body);
+    # The iterator stays on the value stack across the whole body: every try
+    # anywhere in the body (any nesting) must record it in its exception-table
+    # depth. Without the bump the handler unwinds past the iterator and the
+    # back edge re-enters FOR_ITER on an empty stack. The bump is only read
+    # by try_protect_stack_depth / try_unwind_stack_depth during region
+    # creation, so setting it for every for-loop is exact.
+    g.loop_except_depth_bump = g.loop_except_depth_bump + 1;
     if more_code_follows {
         # Defer exhaustion cleanup until after the body is visited. Eager
         # placement left orphan blocks in layout when nested visit_for paths
@@ -815,6 +842,7 @@ def visit_for(
             g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, body_cont.loc);
         }
         g.pop_loop();
+        g.loop_except_depth_bump = g.loop_except_depth_bump - 1;
         # The back edge above is the last write into any nested loop's
         # continuation; finish its deferred break sites now.
         flush_pending_break_finishes(g, body_snap);
@@ -881,6 +909,7 @@ def visit_for(
         # then copies its artificial content over each break jump.
         after = g.new_deferred_block();
         join = after;
+        g.loop_except_depth_bump = g.loop_except_depth_bump + 1;
         if has_break {
             join = g.new_deferred_block();
             g.push_loop(loop_hdr, join, True);
@@ -908,6 +937,7 @@ def visit_for(
             g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, no_loc());
         }
         g.pop_loop();
+        g.loop_except_depth_bump = g.loop_except_depth_bump - 1;
         flush_pending_break_finishes(g, body_snap);
         g.use(after);
         g.emit_op(OP_END_FOR, 0, iter_loc);
@@ -925,13 +955,7 @@ def visit_for(
     # return into the continuation for the natural path; finish_break_sites
     # synthesizes that epilogue over each break edge now.
     after = g.new_deferred_block();
-    try_in_body = loop_body_has_try(f.body);
-    if try_in_body {
-        g.loop_exit_before_try_handlers = after;
-        g.loop_exit_return_loc = iter_loc;
-        g.loop_exit_emits_end_for = True;
-        g.loop_except_depth_bump = 1;
-    }
+    g.loop_except_depth_bump = g.loop_except_depth_bump + 1;
     if has_break {
         join = g.new_deferred_block();
         g.push_loop(loop_hdr, join, True);
@@ -958,12 +982,7 @@ def visit_for(
     }
     g.pop_loop();
     flush_pending_break_finishes(g, body_snap);
-    if try_in_body {
-        g.loop_exit_before_try_handlers = None;
-        g.loop_exit_return_loc = None;
-        g.loop_exit_emits_end_for = False;
-        g.loop_except_depth_bump = 0;
-    }
+    g.loop_except_depth_bump = g.loop_except_depth_bump - 1;
     epilogue_done = g.loop_exit_epilogue_complete;
     g.loop_exit_epilogue_complete = False;
     if not after.placed {

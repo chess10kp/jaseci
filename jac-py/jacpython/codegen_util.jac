@@ -30,9 +30,9 @@ import from opcode_meta {
     OP_STORE_DEREF,
     OP_BUILD_TUPLE,
     OP_SET_FUNCTION_ATTRIBUTE,
-    OP_BINARY_OP,
     CO_OPTIMIZED,
     CO_NEWLOCALS,
+    CO_METHOD,
     CO_NESTED,
     CO_GENERATOR,
     CO_COROUTINE,
@@ -309,8 +309,13 @@ def function_argcounts(args: arguments) -> tuple[int, int, int] {
     return (posonly + regular, posonly, kwonly);
 }
 
-def function_code_flags(args: arguments) -> int {
+def function_code_flags(args: arguments, in_class: bool = False) -> int {
+    # CPython 3.14 CO_METHOD: code whose immediately-enclosing scope is a
+    # class body (def / async def / lambda; any first-arg name).
     flags = CO_OPTIMIZED | CO_NEWLOCALS;
+    if in_class {
+        flags = flags | CO_METHOD;
+    }
     if args.vararg is not None {
         flags = flags | CO_VARARGS;
     }
@@ -318,6 +323,21 @@ def function_code_flags(args: arguments) -> int {
         flags = flags | CO_VARKEYWORDS;
     }
     return flags;
+}
+
+# CPython qualname rules for a nested code object: plain name at module scope,
+# <Class>.<name> inside a class body, and <parent>.<locals>.<name> under any
+# other (function) scope (compiler.c compute_qualname).
+def nested_code_qualname(
+    parent_block_type: str, parent_qualname: str, name: str
+) -> str {
+    if parent_block_type == "module" {
+        return name;
+    }
+    if parent_block_type == "class" {
+        return parent_qualname + "." + name;
+    }
+    return parent_qualname + ".<locals>." + name;
 }
 
 # AST class name for unsupported-node diagnostics (ordered isinstance chain).

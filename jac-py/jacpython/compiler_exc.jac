@@ -62,8 +62,10 @@ import from compiler_ir {
     stmt_cont,
     with_fblock,
     with_unwind_rec,
+    await_footer_job,
+    try_await_frame,
 }
-import from flowgraph { find_block }
+import from flowgraph { find_block, build_layout_pos, layout_pos }
 import from compiler_emit {
     anext_send_loop,
     await_send_loop,
@@ -105,6 +107,176 @@ def try_protect_stack_depth(g: cfg_builder) -> int {
 
 def try_unwind_stack_depth(g: cfg_builder) -> int {
     return 3 + g.handler_nest_depth + loop_protect_except_bump(g);
+}
+
+# The try body's exception-table span, split around each await/yield-from
+# carve recorded while the body was visited. CPython's table has one row per
+# warm stretch between the CLEANUP_THROW windows; our find_handler takes the
+# first matching row, so the unsplit span would swallow the yield windows.
+def try_body_span_rows(
+    g: cfg_builder,
+    fr: try_await_frame | None,
+    start_blk: int,
+    end_blk: int,
+    handler_blk: int,
+    depth: int
+) -> list[except_region] {
+    rows: list[except_region] = [];
+    if fr is None or len((fr as try_await_frame).carves) == 0 {
+        rows.append(
+            except_region(
+                start_block=start_blk,
+                end_block=end_blk,
+                handler_block=handler_blk,
+                stack_depth=depth
+            )
+        );
+        return rows;
+    }
+    cur = start_blk;
+    ci = 0;
+    while ci < len((fr as try_await_frame).carves) {
+        (y_blk, r_blk) = (fr as try_await_frame).carves[ci];
+        if y_blk > cur {
+            rows.append(
+                except_region(
+                    start_block=cur,
+                    end_block=y_blk,
+                    handler_block=handler_blk,
+                    stack_depth=depth
+                )
+            );
+        }
+        cur = r_blk;
+        ci = ci + 1;
+    }
+    if end_blk > cur {
+        rows.append(
+            except_region(
+                start_block=cur,
+                end_block=end_blk,
+                handler_block=handler_blk,
+                stack_depth=depth
+            )
+        );
+    }
+    return rows;
+}
+
+# Flush the CLEANUP_THROW footers queued by awaits inside this try body.
+# Each cold pair is placed after all warm body code (before the handler
+# blocks; CPython push_cold_blocks_to_end), every pair gets its own
+# [ct..cj) -> handler row, and the generator region resumes after the try
+# span ([protect_end .. first CT), split around later await windows via the
+# open-tail list). With the async-with defer flag set the pairs were already
+# placed by the visit_async_with seam; region rows are pure data and are
+# still recorded here.
+def flush_try_await_footers(
+    g: cfg_builder,
+    fr: try_await_frame,
+    protect_end: int,
+    handler_blk: int,
+    span_depth: int,
+    place_now: bool
+) {
+    fq = fr.footer_base;
+    n = len(g.pending_await_footers);
+    first_ct = -1;
+    if n > fq {
+        first_ct = (g.pending_await_footers[fq] as await_footer_job).ct.id;
+    }
+    # Region rows first (pure data), then placement, then queue truncation.
+    # All window comparisons use LAYOUT positions: ct/cj are deferred blocks
+    # allocated at the await but placed here, so ids do not track offsets.
+    fq = fr.footer_base;
+    while fq < n {
+        pf = g.pending_await_footers[fq] as await_footer_job;
+        g.u.except_regions.append(
+            except_region(
+                start_block=pf.ct.id,
+                end_block=pf.cj.id,
+                handler_block=handler_blk,
+                stack_depth=span_depth,
+                preserve_lasti=False
+            )
+        );
+        fq = fq + 1;
+    }
+    # Place the cold pairs only when no warm code can follow inside this
+    # statement (no tail): a later-emitted delegation header on a block
+    # laid out BEFORE the pair would fall through into CLEANUP_THROW at warm
+    # depth. Deferred pairs are placed at unit end instead (all warm code
+    # already terminated there). Layout positions are read AFTER placement:
+    # ct/cj are deferred blocks whose ids do not track their offsets.
+    placed = False;
+    if not g.defer_await_footer_placement and place_now {
+        placed = True;
+        fq = fr.footer_base;
+        while fq < n {
+            pf = g.pending_await_footers[fq] as await_footer_job;
+            pf.emit_ct_row = False;
+            g.use(pf.ct);
+            g.emit_op(OP_CLEANUP_THROW, 0, pf.loc);
+            g.use(pf.cj);
+            g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, pf.end_send.id, pf.loc);
+            fq = fq + 1;
+        }
+        g.pending_await_footers = g.pending_await_footers[0:fr.footer_base];
+    }
+    # Layout positions AFTER placement: the ct/cj pairs were just laid out,
+    # and deferred blocks' ids do not track their offsets.
+    pos = build_layout_pos(g.u);
+    pe_pos = layout_pos(pos, protect_end);
+    ct_ok = False;
+    if first_ct >= 0 {
+        if placed {
+            ct_ok = layout_pos(pos, first_ct) > pe_pos;
+        } else {
+            # Placement deferred: the pair lands after all warm code at unit
+            # end, which is necessarily after protect_end.
+            ct_ok = True;
+        }
+    }
+    if ct_ok {
+        ct_pos = layout_pos(pos, first_ct);
+        end_blk = first_ct;
+        end_pos = ct_pos;
+        ti = 0;
+        while ti < len(g.open_gen_tails) {
+            oreg = g.u.except_regions[g.open_gen_tails[ti]];
+            st_pos = layout_pos(pos, oreg.start_block);
+            if st_pos > pe_pos and st_pos < end_pos {
+                end_blk = oreg.start_block;
+                end_pos = st_pos;
+            }
+            ti = ti + 1;
+        }
+        if end_pos > pe_pos {
+            g.u.except_regions.append(
+                except_region(
+                    start_block=protect_end,
+                    end_block=end_blk,
+                    handler_block=-1,
+                    stack_depth=2,
+                    preserve_lasti=True
+                )
+            );
+            g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+            g.open_gen_tails.append(len(g.u.except_regions) - 1);
+        }
+    }
+    g.await_region_barrier = protect_end;
+}
+
+# Push the try-body frame awaits consult while the body is visited.
+def push_try_await_frame(g: cfg_builder, nop_blk: int) -> try_await_frame {
+    fr = try_await_frame(
+        nop_blk=nop_blk,
+        footer_base=len(g.pending_await_footers),
+        carves=[]
+    );
+    g.open_try_frames.append(fr);
+    return fr;
 }
 
 # Suspendable functions: PEP 479 StopIteration handler at end of co_code.
@@ -341,6 +513,7 @@ def visit_try_finally(
     g.emit_op(OP_NOP, 0, tloc);
     g.use(try_entry);
     protect_start = g.cur.id;
+    try_frame = push_try_await_frame(g, nop_blk.id);
     try_follows = more_code_follows;
     if not try_follows and tail is not None and tail_idx < len(tail) {
         try_follows = True;
@@ -349,6 +522,7 @@ def visit_try_finally(
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
+    g.open_try_frames.pop();
     g.use(protect_end);
     finally_cont = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
     if codegen_busy(g) {
@@ -387,8 +561,9 @@ def visit_try_finally(
             emit_module_return(g, finally_cont.loc);
         }
     }
-    g.u.nested_try_finally_success_end = after_protected.id;
     noloc = no_loc();
+    g.u.nested_try_finally_success_end = after_protected.id;
+    flush_try_await_footers(g, try_frame, protect_end.id, finally_except.id, 1, not try_follows);
     g.use(finally_except);
     g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
     finally_except_cont = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
@@ -398,14 +573,11 @@ def visit_try_finally(
     if not finally_except_cont.terminated {
         g.emit_op(OP_RERAISE, 0, finally_except_cont.loc);
     }
-    g.u.except_regions.append(
-        except_region(
-            start_block=protect_start,
-            end_block=protect_end.id,
-            handler_block=finally_except.id,
-            stack_depth=1
-        )
-    );
+    for reg in try_body_span_rows(
+        g, try_frame, protect_start, protect_end.id, finally_except.id, 1
+    ) {
+        g.u.except_regions.append(reg);
+    }
     g.u.except_regions.append(
         except_region(
             start_block=finally_except.id,
@@ -600,10 +772,12 @@ def visit_try_except_finally(
     g.emit_op(OP_NOP, 0, tloc);
     g.use(try_body);
     protect_start = g.cur.id;
+    try_frame = push_try_await_frame(g, nop_blk.id);
     body_cont = visit_stmts(g, t.body, 0, True, None, 0, None, ann_ctx);
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
+    g.open_try_frames.pop();
 
     protect_end = g.new_block();
     g.use(protect_end);
@@ -727,14 +901,11 @@ def visit_try_except_finally(
             );
         }
     } else {
-        spans.append(
-            except_region(
-                start_block=protect_start,
-                end_block=protect_end.id,
-                handler_block=handler_entry.id,
-                stack_depth=1
-            )
-        );
+        for reg in try_body_span_rows(
+            g, try_frame, protect_start, protect_end.id, handler_entry.id, 1
+        ) {
+            spans.append(reg);
+        }
     }
 
     fin_early = normal_reaches_fin;
@@ -760,10 +931,49 @@ def visit_try_except_finally(
         hi = hi + 1;
     }
 
+    tef_warm_done = False;
+    tail_follows = tail is not None and tail_idx < len(tail);
     if fin_early {
         g.use(fin_inline);
     }
-
+    if fin_early and tail_follows {
+        # CPython's inline finally block on the normal path: leading NOP when
+        # warm code follows in this block; a bare unit return appends without
+        # one (host "tef alone" has no NOP, "tef + tail" does).
+        g.emit_op(OP_NOP, 0, tloc);
+        # Inline finalbody and the warm suffix must be emitted BEFORE the
+        # handler machinery is placed: suffix statements that allocate fresh
+        # blocks (nested try/while heads) have to land ahead of the cold
+        # machinery (CPython push_cold_blocks_to_end layout). Filling this
+        # block late laid those blocks after the machinery while fin_inline
+        # fell through into handler_entry at warm depth ("Invalid CFG, stack
+        # underflow").
+        fc = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
+        if codegen_busy(g) {
+            return stmt_cont(loc=tloc);
+        }
+        if tail is not None and tail_idx < len(tail) {
+            # The suffix may run a nested try/while that overwrites the
+            # unit-level bookkeeping our span carve-out below reads;
+            # snapshot and restore around it.
+            saved_ntee = g.u.nested_try_except_end;
+            saved_espans = g.u.nested_except_epilogue_spans;
+            tail_more = exec_tail_emits_code(tail, tail_idx + 1);
+            tc = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
+            g.u.nested_try_except_end = saved_ntee;
+            g.u.nested_except_epilogue_spans = saved_espans;
+            if codegen_busy(g) {
+                return stmt_cont(loc=tloc);
+            }
+            if not tc.terminated {
+                emit_module_return(g, tc.loc);
+            }
+        } elif not fc.terminated {
+            emit_module_return(g, fc.loc);
+        }
+        tef_warm_done = True;
+    }
+    flush_try_await_footers(g, try_frame, protect_end.id, handler_entry.id, 1, True);
     g.use(handler_entry);
     g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
     hi = 0;
@@ -1151,7 +1361,7 @@ def visit_try_except_finally(
             stack_depth=1
         )
     );
-    if any_reaches_fin {
+    if any_reaches_fin and not tef_warm_done {
         emit_finally_inline_block(
             g,
             t.finalbody,
@@ -1241,6 +1451,7 @@ def visit_try(
     }
     g.use(try_body);
     protect_start = g.cur.id;
+    try_frame = push_try_await_frame(g, nop_blk.id);
     try_follows = more_code_follows;
     if not try_follows and tail is not None and tail_idx < len(tail) {
         try_follows = True;
@@ -1249,6 +1460,7 @@ def visit_try(
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
+    g.open_try_frames.pop();
     # When break/continue terminates the body, CPython ends the protected span on
     # that exit block; laying out empty protect_end / after_try blocks before the
     # handler would fall through into PUSH_EXC_INFO at the wrong stack depth
@@ -1298,6 +1510,7 @@ def visit_try(
     }
     body_fini_region_start: int = -1;
     fallthrough_blk: basicblock | None = None;
+    loop_normal_exit_blk: basicblock | None = None;
     if try_follows or g.handler_fallthrough_fin is not None {
         if g.handler_fallthrough_fin is not None
             and not normal_terminated
@@ -1332,8 +1545,24 @@ def visit_try(
             fallthrough_blk = after_try_epilogue;
         }
     } else {
-        if not normal_terminated {
+        # A try closing a loop body must NOT fold the unit return into its
+        # normal path: the loop emits the back edge from this try's exit
+        # block (CPython keeps the return in the unit epilogue, after the
+        # END_FOR/POP_ITER cleanup). Capture that exit block NOW -- g.cur
+        # moves onto the handler machinery while it is emitted.
+        # A try ending a join-owning body (if/with) is in the same position:
+        # the enclosing visitor emits its jump to the join from the open exit
+        # block, and the unit return (if any) lands once, after the construct.
+        # Folding it here would return None on the true path and strand the
+        # join on the false path only.
+        if not normal_terminated
+            and len(g.loop_stack) == 0
+            and tail_join is None {
             emit_module_return(g, body_cont.loc);
+        } else {
+            if not normal_terminated {
+                loop_normal_exit_blk = g.cur;
+            }
         }
     }
     # All handler machinery is DEFERRED (placed at first use, CPython
@@ -1428,16 +1657,50 @@ def visit_try(
             );
         }
     } else {
-        g.u.except_regions.append(
-            except_region(
-                start_block=protect_start,
-                end_block=protect_end_blk.id,
-                handler_block=handler_entry.id,
-                stack_depth=try_protect_stack_depth(g)
-            )
-        );
+        for reg in try_body_span_rows(
+            g, try_frame, protect_start, protect_end_blk.id,
+            handler_entry.id, try_protect_stack_depth(g)
+        ) {
+            g.u.except_regions.append(reg);
+        }
     }
     noloc = no_loc();
+    # Warm-tail consumption: when more statements follow this try in the same
+    # statement list, emit that suffix BEFORE the handler machinery. CPython
+    # keeps handler blocks cold (push_cold_blocks_to_end), so the assembled
+    # layout puts all warm code ahead of the machinery; emitting the tail first
+    # mirrors that order. Without it, a tail statement that allocates its own
+    # head blocks (nested try, while) is laid out after the machinery while
+    # after_try_epilogue -- placed earlier, still empty -- falls straight into
+    # the handler entry at warm stack depth ("Invalid CFG, stack underflow").
+    # Guarded to the plain statement-list case: an enclosing-handler epilogue
+    # or a pending loop-exit block must keep their current layout positions.
+    warm_tail_done = False;
+    warm_loc: cloc = tloc;
+    warm_terminated = False;
+    warm_end_blk: basicblock | None = None;
+    if fallthrough_blk is not None
+        and not normal_terminated
+        and g.handler_fallthrough_fin is None
+        and g.loop_exit_before_try_handlers is None
+        and try_follows
+        and tail is not None
+        and tail_idx < len(tail) {
+        # The suffix visit may run a nested try/while, which overwrites the
+        # unit-level nested-try bookkeeping that the region carve-out below
+        # reads for OUR body; snapshot and restore around it.
+        saved_ntee = g.u.nested_try_except_end;
+        saved_espans = g.u.nested_except_epilogue_spans;
+        g.use(fallthrough_blk);
+        tail_more_warm = exec_tail_emits_code(tail, tail_idx + 1);
+        wcont = visit_stmt_tail(g, tail, tail_idx, tail_more_warm, ann_ctx);
+        g.u.nested_try_except_end = saved_ntee;
+        g.u.nested_except_epilogue_spans = saved_espans;
+        warm_tail_done = True;
+        warm_loc = wcont.loc;
+        warm_terminated = wcont.terminated;
+        warm_end_blk = g.cur;
+    }
     if skip_protect_succ
         and g.loop_exit_before_try_handlers is not None
         and not g.loop_exit_before_try_handlers.placed {
@@ -1451,6 +1714,10 @@ def visit_try(
         );
         g.loop_exit_epilogue_complete = True;
     }
+    flush_try_await_footers(
+        g, try_frame, protect_end_blk.id, handler_entry.id,
+        try_protect_stack_depth(g), not try_follows
+    );
     g.use(handler_entry);
     handler_region_start = handler_entry.id;
     g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
@@ -1887,9 +2154,29 @@ def visit_try(
     # A non-terminating try body still has a normal continuation.  The
     # pass-only handler's duplicated tail is an exceptional-path copy; resume
     # the normal tail from its own fallthrough block rather than consuming it.
+    if warm_tail_done {
+        # The warm suffix was emitted ahead of the machinery above; the
+        # handler's duplicated copy (if any) finished the exceptional path.
+        # Resume the owning loop past the consumed suffix, with the current
+        # block back at the warm tail's end so the unit epilogue (module
+        # return) or the enclosing construct continues from there.
+        g.use(warm_end_blk as basicblock);
+        return stmt_cont(
+            loc=warm_loc,
+            next_si=len(tail as list[stmt]),
+            terminated=warm_terminated
+        );
+    }
     if fallthrough_blk is not None and not normal_terminated {
         g.use(fallthrough_blk);
         return stmt_cont(loc=tloc, terminated=False);
+    }
+    if not normal_terminated and loop_normal_exit_blk is not None {
+        # Try closing a loop body: the normal continuation stays open on the
+        # captured exit block (after_try_epilogue, or the orelse's end);
+        # visit_for / visit_while emit the back edge from exactly there.
+        g.use(loop_normal_exit_blk as basicblock);
+        return stmt_cont(loc=body_cont.loc, terminated=False);
     }
     if tail_duplicated and tail is not None {
         # With no normal continuation, the handler duplicated and finished the
@@ -2568,14 +2855,6 @@ def visit_with(
     if codegen_busy(g) {
         return stmt_cont(loc=wloc);
     }
-    if g.with_unwind_used and not body_cont.terminated {
-        codegen_fail(
-            g,
-            "NotImplementedError",
-            "return inside with followed by more statements not supported"
-        );
-        return stmt_cont(loc=wloc);
-    }
     body_exits = not body_cont.terminated;
     if n == 1 and body_exits {
         # Frame unwinds via the inline __exit__ call below.
@@ -2599,8 +2878,9 @@ def visit_with(
             xs.append(xblk);
             k = k + 1;
         }
-        # normal-path continuation (after outermost inline exit)
         if with_follows and tail is not None {
+            exit_join = g.new_block();
+            g.use(exit_join);
             tail_more = False;
             if tail_idx + 1 < len(tail) {
                 tail_more = exec_tail_emits_code(tail, tail_idx + 1);
@@ -2612,9 +2892,13 @@ def visit_with(
             if not tail_cont.terminated {
                 emit_module_return(g, tail_cont.loc);
             }
+            exit_join_id = exit_join.id;
         } else {
             emit_module_return(g, body_cont.loc);
+            exit_join_id = -1;
         }
+    } else {
+        exit_join_id = -1;
     }
     # --- cleanup handlers, innermost first (ws/ends/uns[k] is frame n-1-k) ---
     ws: list[basicblock] = [];
@@ -2642,6 +2926,10 @@ def visit_with(
         if i_frame > 0 {
             # fall back to the enclosing frame's inline __exit__ (xs[k+1] = X_{i-1})
             g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, xs[k + 1].id, wloc);
+        } elif exit_join_id >= 0 {
+            # Outermost frame: CPython's handler success jumps back to the
+            # shared `exit` block (laid out before the handler section).
+            g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, exit_join_id, wloc);
         } else {
             emit_module_return(g, wloc);
         }
@@ -2828,6 +3116,13 @@ def visit_async_with(
     if not with_follows and tail is not None and tail_idx < len(tail) {
         with_follows = True;
     }
+    # Body awaits queue their CLEANUP_THROW footers instead of placing them
+    # eagerly: CPython groups every cleanup pair (enter -> body awaits ->
+    # exit/unwind) after the construct's final RETURN, never adjacent to the
+    # end_send block.
+    prev_defer_footer = g.defer_await_footer_placement;
+    footer_base = len(g.pending_await_footers);
+    g.defer_await_footer_placement = True;
     body_cont = visit_stmts(g, w.body, 0, with_follows, tail, tail_idx, tail_join, ann_ctx);
     if codegen_busy(g) {
         return stmt_cont(loc=wloc);
@@ -2889,6 +3184,7 @@ def visit_async_with(
             emit_module_return(g, body_cont.loc);
         }
     }
+    g.defer_await_footer_placement = prev_defer_footer;
     # --- enter-loop CT footers, grouped after the tail in item order ---
     ect: list[basicblock] = [];
     ecj: list[basicblock] = [];
@@ -2916,6 +3212,19 @@ def visit_async_with(
         ecj.append(cj);
         i = i + 1;
     }
+    # Body-await cleanup pairs queued during the body visit: place them here,
+    # after the enter footers and before the return-unwind footers, matching
+    # CPython's grouping (each CT follows the enclosing construct's RETURN).
+    fq = footer_base;
+    while fq < len(g.pending_await_footers) {
+        pf = g.pending_await_footers[fq] as await_footer_job;
+        g.use(pf.ct);
+        g.emit_op(OP_CLEANUP_THROW, 0, pf.loc);
+        g.use(pf.cj);
+        g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, pf.end_send.id, pf.loc);
+        fq = fq + 1;
+    }
+    g.pending_await_footers = g.pending_await_footers[0:footer_base];
     # Position the return-unwind await footers (one per unwound async-with
     # frame, innermost first). Each gets its own carve row; spans of inner
     # frames are protected by the previous frame's region, the outermost keeps

@@ -1616,23 +1616,39 @@ def _patch_patterns_rule(source: str) -> str:
 
 
 def _patch_store_target_rules(source: str) -> str:
-    """Store/delete targets use atom, not t_primary: t_primary consumes .attr for loads."""
-    rules = (
-        "def rule_target_with_star_atom",
-        "def rule_single_subscript_attribute_target",
-        "def rule_del_target",
+    """Store/delete targets must keep the grammar's t_primary references.
+
+    A previous generator patch swapped rule_atom for rule_t_primary inside the
+    store-target rules ("t_primary consumes .attr for loads"). That diagnosis
+    was wrong: the real culprit was rule_t_lookahead leaking its match (the
+    positive-lookahead emission never restored the mark), which made t_primary
+    over-consume the '.'/'[' that the outer store-target alternative needs.
+    With rule_t_lookahead restored to a pure predicate (see
+    _patch_lookahead_rules), the generated code matches CPython exactly:
+    t_primary parses the dotted/subscripted prefix (m.attrs) and the outer
+    rule applies the final Store-context '.' NAME / '[' slices ']' step.
+    """
+    return source
+
+
+def _patch_lookahead_rules(source: str) -> str:
+    """rule_t_lookahead is a pure predicate: it must not consume on match.
+
+    The generated body returns the matched token, leaving p.mark advanced
+    past '(' / '[' / '.'. Every call site uses it as a lookahead condition
+    (`is not None` / `is None`), so restore the mark before returning.
+    """
+    start = source.index("def rule_t_lookahead(p: peg_parser)")
+    end = source.index("\ndef ", start)
+    body = source[start:end]
+    old = "        res = lit as object;\n        return res;"
+    if body.count(old) != 3:
+        raise RuntimeError("t_lookahead patch anchor missing in generated parser")
+    body = body.replace(
+        old,
+        "        res = lit as object;\n        peg_reset(p, mark);\n        return res;",
     )
-    out: list[str] = []
-    in_rule = False
-    for line in source.splitlines(keepends=True):
-        if any(line.startswith(f"{r}(p:") for r in rules):
-            in_rule = True
-        elif in_rule and line.startswith("def rule_"):
-            in_rule = False
-        if in_rule and "a = rule_t_primary(p)" in line:
-            line = line.replace("a = rule_t_primary(p)", "a = rule_atom(p)")
-        out.append(line)
-    return "".join(out)
+    return source[:start] + body + source[end:]
 
 
 def _patch_type_alias_simple_stmt(source: str) -> str:
@@ -1779,7 +1795,8 @@ def _patch_parser_rules(source: str) -> str:
     source = _patch_fstring_rules(source)
     source = _patch_patterns_rule(source)
     source = _patch_type_alias_simple_stmt(source)
-    return _patch_store_target_rules(source)
+    source = _patch_store_target_rules(source)
+    return _patch_lookahead_rules(source)
 
 
 def main(argv: list[str]) -> int:

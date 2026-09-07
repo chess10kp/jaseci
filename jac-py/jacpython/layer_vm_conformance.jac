@@ -250,6 +250,16 @@ test "vm: STORE_DEREF writes closure cell" {
     );
 }
 
+# vm-opcode: OP_DELETE_DEREF
+test "vm: DELETE_DEREF unbinds closure cell" {
+    assert_vm_value_matches_host(
+        "",
+        "def outer():\n    x = 1\n    def inner():\n        nonlocal x\n        del x\n    inner()\n    return 42\nresult = outer()\n",
+        "exec",
+        "result",
+    );
+}
+
 # vm-opcode: OP_BUILD_TUPLE
 test "vm: BUILD_TUPLE assembles closure freevar tuple" {
     assert_vm_value_matches_host(

@@ -130,6 +130,35 @@ obj with_unwind_rec {
         cj: basicblock;
 }
 
+# One `await` SEND-loop cleanup pair inside an async-with body: the blocks
+# carry content but are PLACED by the enclosing visit_async_with after the
+# construct's continuation, matching CPython's cleanup grouping (enter ->
+# body awaits in order -> exit/unwind, all after the final RETURN).
+obj await_footer_job {
+    has ct: basicblock,
+        cj: basicblock,
+        end_send: basicblock,
+        loc: cloc,
+        # Frame-less await following a previous delegation: CPython ends the
+        # generator row at the PREVIOUS cleanup jump and gives this pair its
+        # own [ct..cj) -> generator row at placement time.
+        emit_ct_row: bool = False;
+}
+
+
+# An open try body while its statements are visited: an `await` (or
+# `yield from`) inside queues its CLEANUP_THROW footer for this frame's
+# flush and records its yield-window carve. CPython marks the cleanup pair
+# cold (push_cold_blocks_to_end) and splits the try body's exception-table
+# span around each [yield..after_resume) window; our find_handler takes the
+# first matching row, so an unsplit span would misroute yield-window
+# exceptions to the try handler instead of CLEANUP_THROW.
+obj try_await_frame {
+    has nop_blk: int,
+        footer_base: int,
+        carves: list[tuple[int, int]] = [];
+}
+
 # CFG builder: owns the current block and emits into unverified_cfg (Phase 4).
 obj cfg_builder {
     has u: unverified_cfg,
@@ -145,6 +174,23 @@ obj cfg_builder {
         # async-with frame unwound by a return. CT footer blocks are deferred
         # objects positioned later by the visitor.
         with_unwind_recs: list[with_unwind_rec] = [],
+        # When inside an async-with body: await SEND-loop cleanup pairs are
+        # queued here (placement deferred) instead of being placed eagerly,
+        # so they land after the construct's continuation like CPython's.
+        defer_await_footer_placement: bool = False,
+        pending_await_footers: list[await_footer_job] = [],
+        # Open try-body frames (innermost last). Awaits consult the innermost
+        # frame to trim the generator-protect region and queue carves.
+        open_try_frames: list[try_await_frame] = [],
+        # Start block of the generator-protect region row for the next await:
+        # function entry until the first boundary, then the last committed
+        # try's protect end or the previous await's after-resume block
+        # (CPython closes/reopens the region at each construct boundary).
+        await_region_barrier: int = -1,
+        # except_region indices of open generator-tail rows ([protect_end..ct)
+        # and post-resume [r..cj) rows); a later await's yield window splits
+        # them, matching CPython's A-then-C row pattern around each window.
+        open_gen_tails: list[int] = [],
         # Suspendable function (generator/coroutine) PEP 479 protect start block id.
         generator_protect_start: int = -1,
         # END_ASYNC_FOR handler block id (async-for PEP 479 unwind region).

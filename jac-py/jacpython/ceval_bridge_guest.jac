@@ -327,9 +327,24 @@ def _jac_standin_dunder(dunder_name, vm_fn):
     def _meth(self, *args):
         u = getattr(self, "_jac_guest_", None)
         if u is None:
-            raise RuntimeError(
-                "bridge-table: stand-in lost its guest back-reference"
-            )
+            # Host-created instance of a guest stand-in class: recover via
+            # the type's guest-class marker and replay the dunder function
+            # directly (vm_fn's dispatch would re-enter host lookup on the
+            # proxy and recurse into this trampoline).
+            gcls = getattr(type(self), "_jac_guest_cls_", None)
+            if gcls is None:
+                raise RuntimeError(
+                    "bridge-table: stand-in lost its guest back-reference"
+                )
+            fn = class_lookup_attr(gcls, dunder_name)
+            if isinstance(fn, PyError):
+                _jac_reraise_pyerror(fn)
+            u = from_host(self)
+            h_args = [from_host(a) for a in args]
+            res = fn.tp_call([u] + h_args, {})
+            if isinstance(res, PyError):
+                _jac_reraise_pyerror(res)
+            return to_host(res)
         res = vm_fn(u)
         if isinstance(res, PyError):
             _jac_reraise_pyerror(res)
@@ -389,13 +404,26 @@ def _jac_standin_method(name):
     # see guest OVERRIDES, not just inherited base behavior.
     def _meth(self, *args, **kwargs):
         u = getattr(self, "_jac_guest_", None)
+        m = None
         if u is None:
-            raise RuntimeError(
-                "bridge-table: stand-in lost its guest back-reference"
-            )
-        m = py_attr(u, name)
-        if isinstance(m, PyError):
-            _jac_reraise_pyerror(m)
+            # Host-created instance of a guest stand-in class (tuple.__new__
+            # on a namedtuple stand-in): no attachable back-reference, but the
+            # guest class marker on the type recovers both the object (as a
+            # host-proxy face of self) and the guest function directly -- going
+            # through py_attr would fetch this trampoline again and recurse.
+            gcls = getattr(type(self), "_jac_guest_cls_", None)
+            if gcls is None:
+                raise RuntimeError(
+                    "bridge-table: stand-in lost its guest back-reference"
+                )
+            u = from_host(self)
+            m = class_lookup_attr(gcls, name)
+            if isinstance(m, PyError):
+                _jac_reraise_pyerror(m)
+        else:
+            m = py_attr(u, name)
+            if isinstance(m, PyError):
+                _jac_reraise_pyerror(m)
         b = bind_attribute(m, u)
         if isinstance(b, PyError):
             _jac_reraise_pyerror(b)
@@ -417,17 +445,24 @@ def _jac_standin_install_methods(ns, cls):
     # Install trampolines for every guest-DEFINED plain method (own attrs;
     # only PyFunction values install so data is never shadowed). Inherited
     # behavior answers through the real host base; identity dunders keep host
-    # semantics.
+    # semantics. Non-function, non-dunder attrs (namedtuple _tuplegetter field
+    # descriptors, _fields, plain class data) cross as host values so host-side
+    # getattr on instances of the stand-in resolves them instead of raising
+    # AttributeError; anything to_host cannot convert stays guest-only.
     try:
         items = list(cls.attrs.items())
     except BaseException:
         return
     for name, val in items:
-        if name in ns or not isinstance(val, PyFunction):
+        if name in ns or name.startswith("__"):
             continue
-        if name.startswith("__"):
+        if isinstance(val, PyFunction):
+            ns[name] = _jac_standin_method(name)
             continue
-        ns[name] = _jac_standin_method(name)
+        try:
+            ns[name] = to_host(val)
+        except BaseException:
+            pass
 
 
 def _jac_standin_class(cls):

@@ -294,9 +294,11 @@ import from compiler_ir {
     new_cfg_builder,
     loop_frame,
     except_region,
-    comp_handler,
-    with_fblock,
     with_unwind_rec,
+    with_fblock,
+    await_footer_job,
+    try_await_frame,
+    comp_handler,
 }
 import from compiler_symtable {
     sym_block,
@@ -314,11 +316,12 @@ import from compiler_symtable {
     sym_block_tuple_names,
 }
 import from compiler_diagnostics { lowering_diagnostic }
-import from flowgraph { verify_cfg, optimize_swap_range }
+import from flowgraph { verify_cfg, optimize_swap_range, build_layout_pos, layout_pos }
 import from assembler { assemble }
 import from codegen_util {
     fold_default_leaf_values,
     args_have_kw_defaults,
+    nested_code_qualname,
     function_argcounts,
     function_code_flags,
     ast_node_name,
@@ -567,9 +570,79 @@ def emit_send_delegation_loop(
     als = emit_await_send_loop_header(
         g, get_iter_op, get_iter_arg, resume_after_yield_arg, yloc
     );
-    (ct, cj) = emit_await_send_loop_footer(g, als, yloc);
-    emit_await_send_except_regions(g, als, ct, cj, 3, -1);
+    # The CLEANUP_THROW/CJ pair is a cold block (CPython push_cold_blocks_to_end):
+    # it is queued here and placed at the enclosing construct's flush point
+    # (try handler entry / async-with seam / unit end), never eagerly after
+    # end_send -- an eager pair sits directly on end_send's warm fallthrough
+    # edge, which converges at SEND-seeded depth and underflows the verifier
+    # whenever the continuation closes at a block boundary (try body end).
+    ct = g.new_deferred_block();
+    cj = g.new_deferred_block();
+    g.pending_await_footers.append(
+        await_footer_job(ct=ct, cj=cj, end_send=als.end_send_blk, loc=yloc)
+    );
+    emit_await_send_except_regions(g, als, ct, cj, 3, -1, -1, -1, 2, True, True);
     g.use(als.end_send_blk);
+}
+
+# Place every still-queued await CLEANUP_THROW footer after all warm code
+# (unit end, before the deferred comp / generator-except handlers). CPython
+# keeps these cold blocks after the body's final RETURN, in queue order.
+def flush_pending_await_footers(g: cfg_builder) {
+    fi = 0;
+    while fi < len(g.pending_await_footers) {
+        pf = g.pending_await_footers[fi] as await_footer_job;
+        g.use(pf.ct);
+        g.emit_op(OP_CLEANUP_THROW, 0, pf.loc);
+        g.use(pf.cj);
+        g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, pf.end_send.id, pf.loc);
+        if pf.emit_ct_row {
+            g.u.except_regions.append(
+                except_region(
+                    start_block=pf.ct.id,
+                    end_block=pf.cj.id,
+                    handler_block=-1,
+                    stack_depth=2,
+                    preserve_lasti=True
+                )
+            );
+            g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+        }
+        fi = fi + 1;
+    }
+    g.pending_await_footers = [];
+    g.open_gen_tails = [];
+}
+
+# Trim every open generator-tail row at a new await's yield window: the row
+# up to the window becomes that await's generator region (the A row CPython
+# closes/reopens per window), and the window's own B row plus the await's
+# post-resume rows cover everything after. Without the trim the stale row
+# would win find_handler's first match and misroute the yield window.
+# Returns True when an open row already starts at start_blk (the caller then
+# skips its own A row: the trimmed tail IS that row).
+def split_open_gen_tails(g: cfg_builder, y_blk: int, start_blk: int) -> bool {
+    pos = build_layout_pos(g.u);
+    y_pos = layout_pos(pos, y_blk);
+    if y_pos < 0 {
+        return False;
+    }
+    start_pos = layout_pos(pos, start_blk);
+    covered = False;
+    ti = 0;
+    while ti < len(g.open_gen_tails) {
+        ri = g.open_gen_tails[ti];
+        reg = g.u.except_regions[ri];
+        if layout_pos(pos, reg.start_block) < y_pos
+            and y_pos < layout_pos(pos, reg.end_block) {
+            reg.end_block = y_blk;
+        }
+        if layout_pos(pos, reg.start_block) == start_pos {
+            covered = True;
+        }
+        ti = ti + 1;
+    }
+    return covered;
 }
 
 # GET_AWAITABLE / GET_YIELD_FROM_ITER + SEND loop (footer deferred for async-with).
@@ -639,7 +712,8 @@ def emit_await_send_except_regions(
     pep479_start: int = -1,
     pep479_end: int = -1,
     after_resume_stack_depth: int = 2,
-    after_resume_preserve_lasti: bool = True
+    after_resume_preserve_lasti: bool = True,
+    from_delegation: bool = False
 ) {
     `protect = g.generator_protect_start;
     if `protect < 0 {
@@ -652,16 +726,49 @@ def emit_await_send_except_regions(
     if pep479_end >= 0 {
         pep479_end_blk = pep479_end;
     }
-    g.u.except_regions.append(
-        except_region(
-            start_block=`protect,
-            end_block=als.yield_blk.id,
-            handler_block=-1,
-            stack_depth=2,
-            preserve_lasti=True
-        )
-    );
-    g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+    frame: try_await_frame | None = None;
+    if from_delegation and len(g.open_try_frames) > 0 {
+        frame = g.open_try_frames[len(g.open_try_frames) - 1];
+    }
+    # Generator-protect region A. CPython closes it at each construct
+    # boundary and reopens at the previous await's after-resume: the row
+    # starts at the barrier (function entry until the first boundary), and
+    # inside a try body it is trimmed to end at the try's opening NOP --
+    # the try's own split span covers the body up to the yield window.
+    a_start = `protect;
+    if g.await_region_barrier > a_start {
+        a_start = g.await_region_barrier;
+    }
+    # Trim open generator-tail rows around this await's yield window first.
+    # a_covered: an open row already starts at a_start (its trimmed span is
+    # this await's generator region), so skip emitting a duplicate A row.
+    a_covered = False;
+    if from_delegation {
+        a_covered = split_open_gen_tails(g, als.yield_blk.id, a_start);
+    }
+    a_end = als.yield_blk.id;
+    if frame is not None {
+        fr = frame as try_await_frame;
+        if fr.nop_blk < a_end {
+            a_end = fr.nop_blk;
+        }
+        fr.carves.append((als.yield_blk.id, als.after_resume_blk.id));
+    }
+    if a_start < a_end and not a_covered {
+        g.u.except_regions.append(
+            except_region(
+                start_block=a_start,
+                end_block=a_end,
+                handler_block=-1,
+                stack_depth=2,
+                preserve_lasti=True
+            )
+        );
+        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+        g.open_gen_tails.append(len(g.u.except_regions) - 1);
+    }
+    g.await_region_barrier = als.after_resume_blk.id;
+    # Yield-window carve -> CLEANUP_THROW.
     g.u.except_regions.append(
         except_region(
             start_block=als.yield_blk.id,
@@ -675,17 +782,36 @@ def emit_await_send_except_regions(
     if ar_handler < 0 {
         ar_handler = -1;
     }
-    g.u.except_regions.append(
-        except_region(
-            start_block=als.after_resume_blk.id,
-            end_block=pep479_end_blk,
-            handler_block=ar_handler,
-            stack_depth=after_resume_stack_depth,
-            preserve_lasti=after_resume_preserve_lasti
-        )
-    );
-    if after_resume_handler < 0 {
-        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+    if frame is None {
+        # Post-resume generator region. Following a previous delegation,
+        # CPython ends this row at the PREVIOUS cleanup jump (the CJ block
+        # itself stays uncovered) and gives this pair its own [ct..cj) row
+        # when the footers are placed; the first delegation's row runs to its
+        # own CJ (coalesced with the CT coverage). Inside a try body this row
+        # is emitted by the frame flush instead ([protect_end .. first CT)).
+        prev_cj = -1;
+        njobs = len(g.pending_await_footers);
+        if njobs > 1 {
+            prev_cj = (g.pending_await_footers[njobs - 2] as await_footer_job).cj.id;
+        }
+        c_end = pep479_end_blk;
+        if prev_cj >= 0 {
+            c_end = prev_cj;
+            (g.pending_await_footers[njobs - 1] as await_footer_job).emit_ct_row = True;
+        }
+        g.u.except_regions.append(
+            except_region(
+                start_block=als.after_resume_blk.id,
+                end_block=c_end,
+                handler_block=ar_handler,
+                stack_depth=after_resume_stack_depth,
+                preserve_lasti=after_resume_preserve_lasti
+            )
+        );
+        if after_resume_handler < 0 {
+            g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+            g.open_gen_tails.append(len(g.u.except_regions) - 1);
+        }
     }
 }
 
@@ -925,11 +1051,9 @@ def unit_fail(u: unverified_cfg, kind: str, message: str) {
 
 def emit_local_or_cell_store(g: cfg_builder, name: str, tloc: cloc) -> bool {
     name = codegen_mangle(g, name);
-    fi = fast_local_index(g, name);
-    if fi >= 0 {
-        g.emit_op(OP_STORE_FAST, fi, tloc);
-        return True;
-    }
+    # Cell/free scope FIRST (see emit_name_load): a STORE_FAST into a
+    # cellvar's converted slot would replace the cell object itself,
+    # desynchronizing every closure sharing it. CPython stores deref.
     if g.sym_top is not None and g.sym_top.block_type != "module" {
         flags = sym_dict_get(g.sym_top.symbols, name, 0);
         scope = sym_scope_of(flags);
@@ -938,6 +1062,11 @@ def emit_local_or_cell_store(g: cfg_builder, name: str, tloc: cloc) -> bool {
             g.emit_op(OP_STORE_DEREF, idx, tloc);
             return True;
         }
+    }
+    fi = fast_local_index(g, name);
+    if fi >= 0 {
+        g.emit_op(OP_STORE_FAST, fi, tloc);
+        return True;
     }
     return False;
 }
@@ -948,6 +1077,30 @@ def emit_name_load(
     # Returns True when a separate PUSH_NULL is required before CALL (LOAD_NAME
     # and fast locals). LOAD_GLOBAL folds NULL into the oparg low bit (CPython 3.14).
     name = codegen_mangle(g, name);
+    # Cell/free scope FIRST: a cellvar param shares the localsplus fast-slot
+    # region, but its slot holds the raw PyCell (LOAD_FAST_BORROW's closure
+    # view). Reads must deref (LOAD_DEREF unwraps) exactly like CPython, which
+    # never emits a fast load for a CO_FAST_CELL name -- a raw cell escaping
+    # as a call argument crashed functools.wraps (wrapped=cell) and
+    # recursive_repr (user_function=cell).
+    if g.sym_top is not None and g.sym_top.block_type != "module" {
+        flags = sym_dict_get(g.sym_top.symbols, name, 0);
+        scope = sym_scope_of(flags);
+        if scope == SCOPE_FREE or scope == SCOPE_CELL {
+            idx = localsplus_index(g, name);
+            if g.sym_top.block_type == "class" and scope == SCOPE_FREE {
+                # Class bodies resolve free names through the class namespace
+                # first: LOAD_LOCALS + LOAD_FROM_DICT_OR_DEREF lets a same-named
+                # class attribute shadow the enclosing cell (CPython
+                # compile_name_op class-scope rule).
+                g.emit_op(OP_LOAD_LOCALS, 0, tloc);
+                g.emit_op(OP_LOAD_FROM_DICT_OR_DEREF, idx, tloc);
+            } else {
+                g.emit_op(OP_LOAD_DEREF, idx, tloc);
+            }
+            return True;
+        }
+    }
     fi = fast_local_index(g, name);
     if fi >= 0 {
         # Inside a comprehension body the loop target's borrowed copy is left on
@@ -983,24 +1136,6 @@ def emit_name_load(
         }
         return True;
     }
-    if g.sym_top is not None and g.sym_top.block_type != "module" {
-        flags = sym_dict_get(g.sym_top.symbols, name, 0);
-        scope = sym_scope_of(flags);
-        if scope == SCOPE_FREE or scope == SCOPE_CELL {
-            idx = localsplus_index(g, name);
-            if g.sym_top.block_type == "class" and scope == SCOPE_FREE {
-                # Class bodies resolve free names through the class namespace
-                # first: LOAD_LOCALS + LOAD_FROM_DICT_OR_DEREF lets a same-named
-                # class attribute shadow the enclosing cell (CPython
-                # compile_name_op class-scope rule).
-                g.emit_op(OP_LOAD_LOCALS, 0, tloc);
-                g.emit_op(OP_LOAD_FROM_DICT_OR_DEREF, idx, tloc);
-            } else {
-                g.emit_op(OP_LOAD_DEREF, idx, tloc);
-            }
-            return True;
-        }
-    }
     if g.u.classdict_names {
         # Class-scope __annotate__ body: every free name resolves through the
         # class namespace first, then globals/builtins (PEP 649 classdict
@@ -1035,6 +1170,15 @@ def emit_name_load(
 # and LOAD_FAST when the name is a comprehension / local slot in varnames.
 def name_load_opcode(g: cfg_builder, name: str) -> int {
     name = codegen_mangle(g, name);
+    # Cell/free names deref even when they occupy a localsplus fast slot
+    # (CO_FAST_CELL param): a fast load would leak the raw PyCell.
+    if g.sym_top is not None and g.sym_top.block_type != "module" {
+        flags = sym_dict_get(g.sym_top.symbols, name, 0);
+        scope = sym_scope_of(flags);
+        if scope == SCOPE_FREE or scope == SCOPE_CELL {
+            return OP_LOAD_DEREF;
+        }
+    }
     if fast_local_index(g, name) >= 0 {
         return OP_LOAD_FAST;
     }
@@ -1486,6 +1630,30 @@ def visit_expr(
                 g.emit_op(OP_LOAD_CONST, late_idx, uloc);
                 return None;
             }
+        }
+        if isinstance(un.op, UAdd) {
+            # 3.14 dropped UNARY_POSITIVE: unary + lowers to CALL_INTRINSIC_1
+            # (INTRINSIC_UNARY_POSITIVE). A constant operand folds to the plain
+            # const load located at the UnaryOp span, matching the host
+            # optimizer's +const fold.
+            uloc = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
+            if isinstance(un.operand, Constant) {
+                cvu = (un.operand as Constant).value;
+                if isinstance(cvu, PyInt) {
+                    register_int_literal_const(g, un.operand, register_int_const);
+                    emit_folded_int(g, (cvu as PyInt).val, uloc);
+                    return None;
+                }
+                idxu = g.u.add_const(cvu);
+                g.emit_op(OP_LOAD_CONST, idxu, uloc);
+                return None;
+            }
+            visit_expr(g, un.operand);
+            if codegen_busy(g) {
+                return None;
+            }
+            g.emit_op(OP_CALL_INTRINSIC_1, 5, uloc);
+            return None;
         }
         visit_expr(g, un.operand);
         if isinstance(un.op, Not) {
@@ -2642,6 +2810,22 @@ def visit_comp_elt(
                 return;
             }
         }
+        if isinstance(un.op, UAdd) {
+            # Same CALL_INTRINSIC_1 lowering as visit_expr (3.14 dropped
+            # UNARY_POSITIVE); constant operand folds to the const load at the
+            # UnaryOp span.
+            uloc = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
+            if isinstance(un.operand, Constant) {
+                visit_comp_elt(g, un.operand, bound_names, filter_compare);
+                return;
+            }
+            visit_comp_elt(g, un.operand, bound_names, filter_compare);
+            if codegen_busy(g) {
+                return;
+            }
+            g.emit_op(OP_CALL_INTRINSIC_1, 5, uloc);
+            return;
+        }
         ul = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
         visit_comp_elt(g, un.operand, bound_names, filter_compare);
         if codegen_busy(g) {
@@ -3793,7 +3977,10 @@ def visit_lambda(g: cfg_builder, lam: Lambda) {
         codegen_fail(g, "SystemError", "missing symtable for lambda");
         return;
     }
-    u_fn = compile_lambda_cfg(lam, g.u.filename, sym_fn, g.private);
+    u_fn = compile_lambda_cfg(
+        lam, g.u.filename, sym_fn, g.private, g.sym_top.block_type == "class",
+        nested_code_qualname(g.sym_top.block_type, g.u.qualname, "<lambda>")
+    );
     if u_fn.diag is not None {
         g.u.diag = u_fn.diag;
         return;
@@ -3810,18 +3997,29 @@ def visit_lambda(g: cfg_builder, lam: Lambda) {
 
 # Build unverified_cfg for a lambda body (expression + RETURN_VALUE).
 def compile_lambda_cfg(
-    lam: Lambda, filename: str, sym_fn: sym_block, private: str | None = None
+    lam: Lambda,
+    filename: str,
+    sym_fn: sym_block,
+    private: str | None = None,
+    in_class: bool = False,
+    qualname: str | None = None
 ) -> unverified_cfg {
     (argcount, posonly, kwonly) = function_argcounts(lam.args);
     u = unverified_cfg(
-        filename=filename, name="<lambda>", qualname="<lambda>", firstlineno=lam.lineno
+        filename=filename,
+        name="<lambda>",
+        qualname=qualname if qualname is not None else "<lambda>",
+        firstlineno=lam.lineno
     );
     u.argcount = argcount;
     u.posonlyargcount = posonly;
     u.kwonlyargcount = kwonly;
     u.param_count = len(sym_fn.varnames);
-    u.flags = function_code_flags(lam.args);
+    u.flags = function_code_flags(lam.args, in_class);
     u.varnames = fast_varnames_from_sym(sym_fn);
+    if sym_fn.nested {
+        u.flags = u.flags | CO_NESTED;
+    }
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_fn, private);
     emit_function_prologue(g, sym_fn, lam.lineno);

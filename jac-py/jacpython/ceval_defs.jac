@@ -1326,7 +1326,7 @@ obj PyFunction(PyObj) {
     }
 
     def tp_call(args: list[PyObj], kwargs: dict[str, PyObj]) -> PyObj {
-        return exec_code_frame(
+        _r = exec_code_frame(
             self.code,
             args,
             kwargs,
@@ -1336,6 +1336,7 @@ obj PyFunction(PyObj) {
             self._effective_defaults(),
             self._effective_kwdefaults()
         );
+        return _r;
     }
 }
 
@@ -1517,6 +1518,25 @@ obj PyNativeNew(PyObj) {
                 return from_host(hres[1]);
             }
             return host_result_error(hres);
+        }
+        # Same over a GUEST class whose builtin base is tuple: the instance must
+        # be the host subclass object however it is reached (constructor and
+        # classmethod _make both land here) -- a native PyUserObj face would
+        # answer repr/==/field descriptors from a second, divergent identity.
+        # tuple only: str/int mixin classes (enum) rely on the boxed PyUserObj.
+        if self.base_name == "tuple" and isinstance(target_cls, PyClass) {
+            host_cls = to_host(target_cls);
+            if isinstance(host_cls, type) {
+                raw_box2: list[any] = [];
+                for a in box_args {
+                    raw_box2.append(to_host(a));
+                }
+                hres2 = _jac_builtin_new(self.base_name, host_cls, raw_box2);
+                if host_result_ok(hres2) {
+                    return from_host(hres2[1]);
+                }
+                return host_result_error(hres2);
+            }
         }
         boxed = construct_native_base(self.base_name, box_args);
         if is_error(boxed) {

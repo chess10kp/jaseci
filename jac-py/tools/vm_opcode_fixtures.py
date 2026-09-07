@@ -80,6 +80,7 @@ EMISSION_OPCODES: tuple[str, ...] = (
     "STORE_SUBSCR",
     "LOAD_ATTR",
     "DELETE_NAME",
+    "DELETE_DEREF",
     "DELETE_FAST",
     "DELETE_ATTR",
     "DELETE_SUBSCR",
@@ -262,6 +263,17 @@ FIXTURES: tuple[VmFixture, ...] = (
         "    except ZeroDivisionError as e:\n"
         "        return str(e)\n"
         "result = f()\n",
+    ),
+    VmFixture(
+        "DELETE_DEREF",
+        "def outer():\n"
+        "    x = 1\n"
+        "    def inner():\n"
+        "        nonlocal x\n"
+        "        del x\n"
+        "    inner()\n"
+        "    return 42\n"
+        "result = outer()\n",
     ),
     VmFixture(
         "DELETE_ATTR",

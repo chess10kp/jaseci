@@ -555,6 +555,32 @@ def pa_concatenate_strings(parts: list[object]) -> expr | None {
     if len(figures) == 0 {
         return None;
     }
+    # Merge adjacent literal figures (CPython concatenates neighboring
+    # Constants when gluing implicitly-joined strings into one JoinedStr).
+    merged: list[expr] = [];
+    k = 0;
+    while k < len(figures) {
+        fig = figures[k];
+        if isinstance(fig, Constant) and len(merged) > 0 and isinstance(merged[len(merged) - 1], Constant) {
+            prev = merged[len(merged) - 1] as Constant;
+            pc = fig as Constant;
+            if isinstance(prev.value, PyStr) and isinstance(pc.value, PyStr) {
+                merged[len(merged) - 1] = Constant(
+                    value=PyStr(t="str", val=(prev.value as PyStr).val + (pc.value as PyStr).val),
+                    kind=prev.kind,
+                    lineno=prev.lineno,
+                    col_offset=prev.col_offset,
+                    end_lineno=pc.end_lineno,
+                    end_col_offset=pc.end_col_offset
+                );
+                k = k + 1;
+                continue;
+            }
+        }
+        merged.append(fig as expr);
+        k = k + 1;
+    }
+    figures = merged;
     fpart = parts[0];
     lpart = parts[len(parts) - 1];
     fl: int | None = 0;

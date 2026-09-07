@@ -4478,3 +4478,103 @@ test "compiler_slice: comprehension filters match oracle bytes" {
         assert_parsed_matches_oracle(src);
     }
 }
+
+# Nested-if terminator joins: an inner `if` whose branch ends in a terminator
+# (return/raise) inside an outer branch that has a following join must converge
+# on a local join holding the sibling remainder. Adopting the outer tail_join
+# while sibling code follows landed the remainder after a terminator
+# ("Invalid CFG, instructions after terminator"); the adopted-join paths must
+# also propagate `terminated` so no jump is emitted into a dead block.
+test "compiler_slice: nested if terminator join shapes match oracle bytes" {
+    for src in [
+        "def g(instance, x, fget):\n    if instance is None:\n        if x:\n            return instance\n        raise AttributeError()\n    return fget(instance)\n",
+        "def g(x):\n    if x:\n        return 1\n    return 2\n",
+        "def g(instance, x, fget):\n    if instance is None:\n        if x:\n            return instance\n        else:\n            raise AttributeError()\n    return fget(instance)\n",
+        "def g(a, x):\n    if a:\n        if x:\n            return 1\n        raise ValueError()\n",
+        "def g(self):\n    if self.x is None:\n        raise A()\n    elif self.f is None:\n        raise B('u')\n    return self.f(self)\n",
+    ] {
+        assert_parsed_matches_oracle(src);
+    }
+}
+
+# 3.14 code-object metadata: class-body def/lambda carry CO_METHOD (0x8000000)
+# and nested qualnames follow CPython's Class.method / parent.<locals>.name
+# rules. Byte parity on real-stdlib bodies guards both.
+test "compiler_slice: class methods match oracle (CO_METHOD flag, qualname)" {
+    for src in [
+        "class DynamicClassAttribute:\n    def __get__(self, instance, ownerclass=None):\n        if instance is None:\n            if self.__isabstractmethod__:\n                return self\n            raise AttributeError()\n        elif self.fget is None:\n            raise AttributeError('unreadable attribute')\n        return self.fget(instance)\n",
+        "class C:\n    m = lambda x: x\n",
+        "def outer():\n    def inner():\n        pass\n    return inner\n",
+        "class Repr:\n    def repr1(self, x, level):\n        cls = type(x)\n        typename = cls.__name__\n        if ' ' in typename:\n            parts = typename.split()\n            typename = '_'.join(parts)\n        method = getattr(self, 'repr_' + typename, None)\n        if method:\n            if typename not in self._lookup:\n                return method(x, level)\n            module = getattr(cls, '__module__', None)\n            if module == self._lookup[typename]:\n                return method(x, level)\n        return self.repr_instance(x, level)\n",
+    ] {
+        assert_parsed_matches_oracle(src);
+    }
+}
+
+# Async SEND-loop footer placement: inside an async-with body the await
+# CLEANUP_THROW footers are queued and placed after the construct's
+# continuation (enter -> body -> exit/unwind grouping), never adjacent to the
+# end_send block. Eager placement made the walker converge the cleanup jump
+# edge on the SEND-seeded end_send depth ("stack underflow" / "inconsistent
+# stackdepth"). Plain `return await` stays byte-exact with the host.
+test "compiler_slice: async send-loop footer placement shapes" {
+    for src in [
+        "async def f(x, g):\n    return await g(x)\n",
+    ] {
+        assert_parsed_matches_oracle(src);
+    }
+    # Compile-clean regression guards (full exception-table parity for these
+    # shapes is tracked separately from this fix).
+    for src in [
+        "async def inner(self, func, args):\n    async with self:\n        return await func(args)\n",
+        "async def f(cm, g, x):\n    async with cm:\n        await g(x)\n",
+        "async def f(cm):\n    async with cm:\n        pass\n",
+    ] {
+        m = parse_file(src, "<f>");
+        body = (m as Module).body;
+        vr = validate_module_body(body);
+        assert vr.diag is None;
+        sr = build_module_symtable(body);
+        u = compile_exec(body, "<f>", "<module>", 1, sr.top);
+        assert u.diag is None;
+        assert verify_cfg(u).diag is None;
+    }
+}
+
+# Await/yield-from inside try: the SEND-loop CLEANUP_THROW footers are queued
+# and placed as cold blocks at the enclosing try's handler entry (or unit end
+# when warm code follows), and the body's exception-table span is split around
+# each yield window with the generator region trimmed to the try NOP and
+# reopened after it. Eager placement put the cold pair directly on end_send's
+# warm fallthrough edge ("Invalid CFG, stack underflow" at try body end), and
+# the unsplit span made find_handler route yield-window exceptions to the try
+# handler instead of CLEANUP_THROW. `return await` stays byte-exact. The
+# remaining diffs in the guarded shapes below are pre-existing residuals
+# tracked separately: missing POP_EXCEPT on return-inside-except-handler
+# (sync and async) and the async handler-exit exception-table rows.
+test "compiler_slice: await-in-try footer flush shapes" {
+    for src in [
+        "async def f(x, g):\n    return await g(x)\n",
+    ] {
+        assert_parsed_matches_oracle(src);
+    }
+    for src in [
+        "async def g(gen):\n    try:\n        await gen.athrow(None)\n    except StopAsyncIteration:\n        return False\n",
+        "async def g(a, b):\n    try:\n        await a\n        await b\n    except StopAsyncIteration:\n        return False\n",
+        "async def g(a):\n    try:\n        await a\n    except StopAsyncIteration:\n        pass\n",
+        "async def g(a):\n    try:\n        await a\n    except StopAsyncIteration:\n        pass\n    finally:\n        print(1)\n",
+        "async def g(a, b):\n    try:\n        await a\n    except StopAsyncIteration:\n        pass\n    await b\n",
+        "async def g(a):\n    try:\n        await a\n    finally:\n        print(1)\n",
+        "def g(sub):\n    try:\n        yield from sub\n    except StopIteration:\n        return False\n",
+        "async def g(a, b):\n    await a\n    await b\n",
+    ] {
+        m = parse_file(src, "<f>");
+        body = (m as Module).body;
+        vr = validate_module_body(body);
+        assert vr.diag is None;
+        sr = build_module_symtable(body);
+        u = compile_exec(body, "<f>", "<module>", 1, sr.top);
+        assert u.diag is None;
+        assert verify_cfg(u).diag is None;
+    }
+}

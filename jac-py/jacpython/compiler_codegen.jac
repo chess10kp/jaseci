@@ -122,6 +122,7 @@ import from opcode_meta {
     OP_LOAD_FAST_AND_CLEAR,
     OP_STORE_FAST,
     OP_DELETE_FAST,
+    OP_DELETE_DEREF,
     OP_STORE_FAST_STORE_FAST,
     OP_STORE_FAST_LOAD_FAST,
     OP_UNPACK_SEQUENCE,
@@ -463,11 +464,11 @@ import from compiler_annotations {
 
 def emit_name_store(g: cfg_builder, name: str, tloc: cloc) {
     name = codegen_mangle(g, name);
-    fi = fast_local_index(g, name);
-    if fi >= 0 {
-        g.emit_op(OP_STORE_FAST, fi, tloc);
-        return;
-    }
+    # Cell/free scope FIRST (see emit_name_load in compiler_emit): a
+    # STORE_FAST into a cellvar's converted localsplus slot would replace the
+    # cell object itself. CPython emits STORE_DEREF for CO_FAST_CELL params --
+    # namedtuple rebinds field_names/typename and broke with "free variable is
+    # not set" without this.
     if g.sym_top is not None and g.sym_top.block_type != "module" {
         flags = sym_dict_get(g.sym_top.symbols, name, 0);
         scope = sym_scope_of(flags);
@@ -476,6 +477,15 @@ def emit_name_store(g: cfg_builder, name: str, tloc: cloc) {
             g.emit_op(OP_STORE_DEREF, idx, tloc);
             return;
         }
+    }
+    fi = fast_local_index(g, name);
+    if fi >= 0 {
+        g.emit_op(OP_STORE_FAST, fi, tloc);
+        return;
+    }
+    if g.sym_top is not None and g.sym_top.block_type != "module" {
+        flags = sym_dict_get(g.sym_top.symbols, name, 0);
+        scope = sym_scope_of(flags);
         if scope == SCOPE_GLOBAL_EXPLICIT or scope == SCOPE_GLOBAL_IMPLICIT {
             idx = g.u.add_name(name);
             g.emit_op(OP_STORE_GLOBAL, idx, tloc);
@@ -488,6 +498,17 @@ def emit_name_store(g: cfg_builder, name: str, tloc: cloc) {
 
 def emit_name_delete(g: cfg_builder, name: str, tloc: cloc) {
     name = codegen_mangle(g, name);
+    # Cell/free scope FIRST (see emit_name_load in compiler_emit): CPython
+    # emits DELETE_DEREF for cell/free names, never DELETE_FAST.
+    if g.sym_top is not None and g.sym_top.block_type != "module" {
+        flags = sym_dict_get(g.sym_top.symbols, name, 0);
+        scope = sym_scope_of(flags);
+        if scope == SCOPE_FREE or scope == SCOPE_CELL {
+            idx = localsplus_index(g, name);
+            g.emit_op(OP_DELETE_DEREF, idx, tloc);
+            return;
+        }
+    }
     fi = fast_local_index(g, name);
     if fi >= 0 {
         g.emit_op(OP_DELETE_FAST, fi, tloc);
@@ -496,12 +517,6 @@ def emit_name_delete(g: cfg_builder, name: str, tloc: cloc) {
     if g.sym_top is not None and g.sym_top.block_type != "module" {
         flags = sym_dict_get(g.sym_top.symbols, name, 0);
         scope = sym_scope_of(flags);
-        if scope == SCOPE_FREE or scope == SCOPE_CELL {
-            codegen_fail(
-                g, "NotImplementedError", "delete of cell/free var not supported"
-            );
-            return;
-        }
         if scope == SCOPE_GLOBAL_EXPLICIT or scope == SCOPE_GLOBAL_IMPLICIT {
             idx = g.u.add_name(name);
             g.emit_op(OP_DELETE_GLOBAL, idx, tloc);
@@ -919,13 +934,33 @@ def visit_stmts(
             g.yield_from_resume = None;
         }
         follow = more_follows_after;
+        local_more = exec_tail_emits_code(stmts, si + 1);
         if not follow {
-            follow = exec_tail_emits_code(stmts, si + 1);
+            follow = local_more;
         }
         if not follow and tail is not None {
             follow = exec_tail_emits_code(tail, tail_idx);
         }
-        cont = visit_stmt(g, stmts[si], follow, tail, tail_idx, tail_join, ann_ctx);
+        # A shared outer join may only be adopted by the statement that owns
+        # this list's continuation (the last code-emitting one). When more
+        # statements follow here, the child's false edge must converge on a
+        # join holding THIS remainder: adopting the outer join makes the
+        # remainder land in the current (terminated) block -- "Invalid CFG,
+        # instructions after terminator" for `if: if: return; raise` shapes.
+        join_arg = tail_join;
+        # Tail-consuming visitors (if/with/try) treat (tail, tail_idx) as
+        # "everything that follows". When this list has its own remainder,
+        # that remainder IS the continuation: hand the child this list's
+        # suffix so a consumed tail covers exactly the following statements
+        # instead of swallowing them as unreachable after the outer tail.
+        child_tail = tail;
+        child_idx = tail_idx;
+        if local_more {
+            join_arg = None;
+            child_tail = stmts;
+            child_idx = si + 1;
+        }
+        cont = visit_stmt(g, stmts[si], follow, child_tail, child_idx, join_arg, ann_ctx);
         last = cont.loc;
         if cont.terminated {
             # Statements after an unconditional terminator (return/break/

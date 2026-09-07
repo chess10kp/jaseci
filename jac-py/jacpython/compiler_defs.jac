@@ -77,6 +77,7 @@ import from assembler { assemble }
 import from compiler_emit {
     cellvars_from_sym,
     codegen_busy,
+    flush_pending_await_footers,
     codegen_fail,
     emit_folded_int,
     emit_function_prologue,
@@ -101,6 +102,7 @@ import from codegen_util {
     function_code_flags,
     function_def_loc,
     import_bind_name,
+    nested_code_qualname,
     nloc,
 }
 import from compiler_codegen { emit_name_store, visit_stmt }
@@ -111,6 +113,23 @@ import from compiler_annotations {
     emit_class_annotation_setup,
     finish_class_annotations
 }
+def sym_class_child_at(
+    parent: sym_block, class_name: str, lineno: int, col_offset: int
+) -> sym_block | None {
+    ci = 0;
+    while ci < len(parent.children) {
+        ch = parent.children[ci];
+        if ch.block_type == "class"
+            and ch.name == class_name
+            and ch.lineno == lineno
+            and ch.col_offset == col_offset {
+            return ch;
+        }
+        ci = ci + 1;
+    }
+    return None;
+}
+
 def sym_class_child(parent: sym_block, class_name: str) -> sym_block | None {
     ci = 0;
     while ci < len(parent.children) {
@@ -197,6 +216,14 @@ def visit_import_from(g: cfg_builder, imp: ImportFrom) -> stmt_cont {
     }
     fromlist = PyTuple(t="tuple", items=names);
     emit_import_name_call(g, modname, level, fromlist, iloc);
+    if len(imp.names) == 1 and imp.names[0].name == "*" {
+        # `from M import *` lowers to CALL_INTRINSIC_1 INTRINSIC_IMPORT_STAR
+        # (oparg 2) + POP_TOP in CPython 3.14 -- IMPORT_FROM is never emitted
+        # with name '*'. The intrinsic pops the module and pushes None.
+        g.emit_op(OP_CALL_INTRINSIC_1, 2, iloc);
+        g.emit_op(OP_POP_TOP, 0, iloc);
+        return stmt_cont(loc=iloc);
+    }
     ni = 0;
     while ni < len(imp.names) {
         a = imp.names[ni];
@@ -390,7 +417,9 @@ def visit_class_def(g: cfg_builder, cd: ClassDef) -> stmt_cont {
         codegen_fail(g, "SystemError", "class definition without symtable");
         return stmt_cont(loc=cloc);
     }
-    sym_cls = sym_class_child(g.sym_top, cd.name);
+    sym_cls = sym_class_child_at(
+        g.sym_top, cd.name, cd.lineno, cd.col_offset
+    );
     if sym_cls is None {
         codegen_fail(g, "SystemError", "missing symtable for class " + cd.name);
         return stmt_cont(loc=cloc);
@@ -560,7 +589,9 @@ def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
         codegen_fail(g, "SystemError", "function definition without symtable");
         return stmt_cont(loc=floc);
     }
-    sym_fn = sym_function_child(g.sym_top, fd.name);
+    sym_fn = sym_function_child_at(
+        g.sym_top, fd.name, fd.lineno, fd.col_offset
+    );
     if sym_fn is None {
         codegen_fail(g, "SystemError", "missing symtable for function " + fd.name);
         return stmt_cont(loc=floc);
@@ -571,7 +602,9 @@ def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
     }
     u_fn = compile_fn_cfg(
         fd.name, fd.args, fd.body, fd.lineno, g.u.filename, sym_fn, g.private,
-        decorators[0].lineno if len(decorators) > 0 else None
+        decorators[0].lineno if len(decorators) > 0 else None,
+        g.sym_top.block_type == "class",
+        nested_code_qualname(g.sym_top.block_type, g.u.qualname, fd.name)
     );
     if u_fn.diag is not None {
         g.u.diag = u_fn.diag;
@@ -618,7 +651,9 @@ def visit_async_function_def(g: cfg_builder, afd: AsyncFunctionDef) -> stmt_cont
         codegen_fail(g, "SystemError", "function definition without symtable");
         return stmt_cont(loc=floc);
     }
-    sym_fn = sym_function_child(g.sym_top, afd.name);
+    sym_fn = sym_function_child_at(
+        g.sym_top, afd.name, afd.lineno, afd.col_offset
+    );
     if sym_fn is None {
         codegen_fail(g, "SystemError", "missing symtable for function " + afd.name);
         return stmt_cont(loc=floc);
@@ -629,7 +664,9 @@ def visit_async_function_def(g: cfg_builder, afd: AsyncFunctionDef) -> stmt_cont
     }
     u_fn = compile_fn_cfg(
         afd.name, afd.args, afd.body, afd.lineno, g.u.filename, sym_fn, g.private,
-        decorators[0].lineno if len(decorators) > 0 else None
+        decorators[0].lineno if len(decorators) > 0 else None,
+        g.sym_top.block_type == "class",
+        nested_code_qualname(g.sym_top.block_type, g.u.qualname, afd.name)
     );
     if u_fn.diag is not None {
         g.u.diag = u_fn.diag;
@@ -678,7 +715,9 @@ def compile_fn_cfg(
     filename: str,
     sym_fn: sym_block,
     private: str | None = None,
-    body_firstlineno: int | None = None
+    body_firstlineno: int | None = None,
+    in_class: bool = False,
+    qualname: str | None = None
 ) -> unverified_cfg {
     # CPython codegen_function scopes the body at the first decorator's line
     # when decorated (drives co_firstlineno and the prologue rows).
@@ -687,14 +726,20 @@ def compile_fn_cfg(
     }
     (argcount, posonly, kwonly) = function_argcounts(args);
     u = unverified_cfg(
-        filename=filename, name=name, qualname=name, firstlineno=body_firstlineno
+        filename=filename,
+        name=name,
+        qualname=qualname if qualname is not None else name,
+        firstlineno=body_firstlineno
     );
     u.argcount = argcount;
+    u.flags = function_code_flags(args, in_class);
+    if sym_fn.nested {
+        u.flags = u.flags | CO_NESTED;
+    }
     u.posonlyargcount = posonly;
     u.kwonlyargcount = kwonly;
     u.param_count = len(sym_fn.varnames);
     is_suspendable = sym_fn.generator or sym_fn.coroutine;
-    u.flags = function_code_flags(args);
     if sym_fn.generator and sym_fn.coroutine {
         u.flags = u.flags | CO_ASYNC_GENERATOR;
     } elif sym_fn.generator {
@@ -723,6 +768,7 @@ def compile_fn_cfg(
             # are emitted here too -- CPython lays them out after the (dead)
             # epilogue regardless of how the body ended.
             u.add_const(py_none());
+            flush_pending_await_footers(g);
             emit_deferred_comp_handlers(g);
             if is_suspendable {
                 emit_generator_except_handler(g, protect_start);
@@ -745,6 +791,7 @@ def compile_fn_cfg(
         g.emit_op(OP_LOAD_CONST, none_idx, last);
         g.emit_op(OP_RETURN_VALUE, 0, last);
     }
+    flush_pending_await_footers(g);
     emit_deferred_comp_handlers(g);
     if is_suspendable {
         emit_generator_except_handler(g, protect_start);

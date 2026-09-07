@@ -1230,7 +1230,9 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         }
         nested = sym_compute_nested(b);
         in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
-        if not b.push_block("function", fd.name, fd.lineno, nested, in_class) {
+        if not b.push_block(
+            "function", fd.name, fd.lineno, nested, in_class, fd.col_offset
+        ) {
             return False;
         }
         if not sym_visit_params(b, fd.args) {
@@ -1266,7 +1268,9 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         }
         nested = sym_compute_nested(b);
         in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
-        if not b.push_block("function", afd.name, afd.lineno, nested, in_class) {
+        if not b.push_block(
+            "function", afd.name, afd.lineno, nested, in_class, afd.col_offset
+        ) {
             return False;
         }
         b.cur.coroutine = True;
@@ -1302,7 +1306,9 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         }
         saved_private = b.private;
         nested = b.cur.block_type != "module";
-        if not b.push_block("class", cd.name, cd.lineno, nested) {
+        if not b.push_block(
+            "class", cd.name, cd.lineno, nested, False, cd.col_offset
+        ) {
             return False;
         }
         b.private = cd.name;

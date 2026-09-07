@@ -23,6 +23,7 @@ import from token_model {
     LBRACE,
     RBRACE,
     COMMA,
+    COLON,
     FSTRING_START,
     FSTRING_MIDDLE,
     FSTRING_END,
@@ -60,7 +61,10 @@ obj tok_state {
         fstring_qlen: int = 1,
         fstring_raw: bool = False,
         fstring_expr_depth: int = 0,
-        fstring_resume: bool = False;
+        fstring_resume: bool = False,
+        fstring_in_spec: bool = False,
+        fstring_field_paren: int = 0,
+        eof_newline_done: bool = False;
 }
 
 def _indent_error(st: tok_state, msg: str) -> tok_diag {
@@ -553,6 +557,7 @@ def _fstring_emit_end(st: tok_state, spelling: str, lineno: int, col_offset: int
     st.fstring_raw = False;
     st.fstring_expr_depth = 0;
     st.fstring_resume = False;
+    st.fstring_in_spec = False;
     tok = tok_token(
         tok_type=FSTRING_END,
         spelling=spelling,
@@ -565,8 +570,66 @@ def _fstring_emit_end(st: tok_state, spelling: str, lineno: int, col_offset: int
     return tok;
 }
 
+def _fstring_scan_format_spec(st: tok_state) -> tok_token | tok_diag | None {
+    # Format-spec mode (PEP 701): after the terminating ':' of a replacement
+    # field, text up to the field's '}' scans as FSTRING_MIDDLE. '{{'/'}}'
+    # double; a lone '{' opens a nested replacement field (the operator path
+    # emits its LBRACE); a lone '}' terminates the field (emitted via the
+    # operator path as RBRACE so the parser and depth tracking see it).
+    quote = st.fstring_quote;
+    qlen = st.fstring_qlen;
+    start_lineno = st.lineno;
+    start_col = st.col_offset;
+    buf = "";
+    while st.pos < len(st.source) {
+        ch = _peek(st);
+        if ch == quote {
+            return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+        }
+        if qlen == 1 and (ch == "\n" or ch == "\r") {
+            return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+        }
+        if ch == "{" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "{" {
+            buf = buf + "{";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "}" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "}" {
+            buf = buf + "}";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "{" or ch == "}" {
+            if len(buf) > 0 {
+                st.fstring_resume = True;
+                return _fstring_emit_middle(st, buf, start_lineno, start_col, st.col_offset);
+            }
+            # Let the operator path emit LBRACE (nested field) or RBRACE
+            # (field terminator) so fstring_expr_depth tracking applies.
+            return None;
+        }
+        if ch == "\\" and not st.fstring_raw {
+            buf = buf + ch;
+            _advance(st);
+            if st.pos < len(st.source) {
+                buf = buf + st.source[st.pos];
+                _advance(st);
+            }
+            continue;
+        }
+        buf = buf + ch;
+        _advance(st);
+    }
+    return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+}
+
 def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
     st.fstring_resume = False;
+    if st.fstring_in_spec {
+        return _fstring_scan_format_spec(st);
+    }
     if st.fstring_expr_depth > 0 {
         col = st.col_offset;
         return _fstring_emit_middle(st, "", st.lineno, col, col);
@@ -663,6 +726,7 @@ def _read_fstring_start(
     st.fstring_raw = raw;
     st.fstring_expr_depth = 0;
     st.fstring_resume = True;
+    st.fstring_in_spec = False;
     tok = tok_token(
         tok_type=FSTRING_START,
         spelling=spell,
@@ -810,6 +874,32 @@ def _endmarker_lineno(st: tok_state) -> int {
         return lineno - 1;
     }
     return lineno;
+}
+
+def _last_line_has_token_content(st: tok_state) -> bool {
+    # Inspect the unterminated final physical line: strip trailing whitespace
+    # and a trailing comment; whatever remains must hold at least one token
+    # character for CPython's implicit EOF NEWLINE to apply. A trailing line
+    # continuation ('\\') means the logical line is incomplete at EOF; CPython
+    # rejects that, so suppress the virtual NEWLINE and let the parse fail.
+    i = len(st.source) - 1;
+    while i >= 0 and (st.source[i] == " " or st.source[i] == "\t" or st.source[i] == "\f") {
+        i = i - 1;
+    }
+    if i < 0 {
+        return False;
+    }
+    if st.source[i] == "\\" {
+        return False;
+    }
+    j = i;
+    while j >= 0 and st.source[j] != "\n" and st.source[j] != "\r" {
+        if st.source[j] == "#" {
+            return False;
+        }
+        j = j - 1;
+    }
+    return True;
 }
 
 def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
@@ -968,10 +1058,27 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             if st.fstring_active {
                 if op.tok_type == LBRACE {
                     st.fstring_expr_depth = st.fstring_expr_depth + 1;
+                    if st.fstring_expr_depth == 1 {
+                        # Paren level right after the field's own '{': a colon
+                        # at this level (and depth 1) is a format-spec start.
+                        st.fstring_field_paren = st.paren_level + 1;
+                    }
+                }
+                if op.tok_type == COLON and st.fstring_expr_depth == 1 and st.paren_level == st.fstring_field_paren {
+                    # Top-level ':' in a replacement field starts the format
+                    # spec (PEP 701); following text scans as FSTRING_MIDDLE.
+                    st.fstring_in_spec = True;
+                    st.fstring_resume = True;
                 }
                 if op.tok_type == RBRACE and st.fstring_expr_depth > 0 {
                     st.fstring_expr_depth = st.fstring_expr_depth - 1;
                     if st.fstring_expr_depth == 0 {
+                        st.fstring_resume = True;
+                        st.fstring_in_spec = False;
+                    }
+                    elif st.fstring_in_spec {
+                        # Closing a nested field inside a spec returns to the
+                        # spec text.
                         st.fstring_resume = True;
                     }
                 }
@@ -988,6 +1095,20 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         st.error = bad;
         st.done = True;
         return bad;
+    }
+    if not st.eof_newline_done and len(st.source) > 0 {
+        last = st.source[len(st.source) - 1];
+        if last != "\n" and last != "\r" and _last_line_has_token_content(st) {
+            st.eof_newline_done = True;
+            return tok_token(
+                tok_type=NEWLINE,
+                spelling="",
+                lineno=st.lineno,
+                col_offset=st.col_offset,
+                end_lineno=st.lineno,
+                end_col_offset=st.col_offset
+            );
+        }
     }
     _begin_eof_dedents(st);
     pending = _flush_pending_indent(st);

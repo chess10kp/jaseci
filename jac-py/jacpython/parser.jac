@@ -4931,7 +4931,7 @@ def rule_del_target(p: peg_parser) -> expr | None {
         start_col_offset = t0.col_offset;
     }
     res: expr | None = None;
-    a = rule_atom(p);
+    a = rule_t_primary(p);
     if a is not None {
         lit = peg_expect_token(p, 23);
         if lit is not None {
@@ -4954,7 +4954,7 @@ def rule_del_target(p: peg_parser) -> expr | None {
         }
     }
     peg_reset(p, mark);
-    a = rule_atom(p);
+    a = rule_t_primary(p);
     if a is not None {
         lit = peg_expect_token(p, 9);
         if lit is not None {
@@ -11981,7 +11981,7 @@ def rule_single_subscript_attribute_target(p: peg_parser) -> expr | None {
         start_col_offset = t0.col_offset;
     }
     res: expr | None = None;
-    a = rule_atom(p);
+    a = rule_t_primary(p);
     if a is not None {
         lit = peg_expect_token(p, 23);
         if lit is not None {
@@ -12003,7 +12003,7 @@ def rule_single_subscript_attribute_target(p: peg_parser) -> expr | None {
         }
     }
     peg_reset(p, mark);
-    a = rule_atom(p);
+    a = rule_t_primary(p);
     if a is not None {
         lit = peg_expect_token(p, 9);
         if lit is not None {
@@ -13015,18 +13015,21 @@ def rule_t_lookahead(p: peg_parser) -> object | None {
     lit = peg_expect_token(p, 7);
     if lit is not None {
         res = lit as object;
+        peg_reset(p, mark);
         return res;
     }
     peg_reset(p, mark);
     lit = peg_expect_token(p, 9);
     if lit is not None {
         res = lit as object;
+        peg_reset(p, mark);
         return res;
     }
     peg_reset(p, mark);
     lit = peg_expect_token(p, 23);
     if lit is not None {
         res = lit as object;
+        peg_reset(p, mark);
         return res;
     }
     peg_reset(p, mark);
@@ -13185,7 +13188,7 @@ def rule_target_with_star_atom(p: peg_parser) -> expr | None {
         start_col_offset = t0.col_offset;
     }
     res: expr | None = None;
-    a = rule_atom(p);
+    a = rule_t_primary(p);
     if a is not None {
         lit = peg_expect_token(p, 23);
         if lit is not None {
@@ -13208,7 +13211,7 @@ def rule_target_with_star_atom(p: peg_parser) -> expr | None {
         }
     }
     peg_reset(p, mark);
-    a = rule_atom(p);
+    a = rule_t_primary(p);
     if a is not None {
         lit = peg_expect_token(p, 9);
         if lit is not None {
