@@ -1,3 +1,4 @@
+import from jaclang.jac0core.cache_paths { atomic_write }
 import ctypes;
 import hashlib;
 import json;
@@ -751,9 +752,10 @@ def _write_sidecar(
         "action_digest": action_digest,
         "artifact_sha256": artifact_sha256
     };
-    with open(output_path + ".layout.json", "w", encoding="utf-8") as lf {
-        lf.write(json.dumps(sidecar, sort_keys=True));
-    }
+    atomic_write(
+        output_path + ".layout.json",
+        json.dumps(sidecar, sort_keys=True).encode("utf-8")
+    );
     return (classes, ldigest);
 }
 
@@ -1071,9 +1073,7 @@ def link_wasm(
     imports: set[str] = set(app_imports or set());
     imports.update(plan.clib_symbol_lib().keys());
     wasm_bytes = emit_wasm_from_ir(merged_ir, app_imports=imports);
-    with open(output_path, "wb") as wf {
-        wf.write(wasm_bytes);
-    }
+    atomic_write(output_path, wasm_bytes, mode=0o644);
     digest = plan.plan_digest();
     (classes, ldigest) = _write_sidecar(plan, output_path, digest);
     return LinkResult(

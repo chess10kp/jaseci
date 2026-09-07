@@ -383,3 +383,8 @@ includes bytecode sealing, runtime packaging and compression.
 - `JAC_NA_DEBUG=1` prints the plan's unsettled units per round, each typed
   import the walk resolved and with what, and the stack of any unit compile
   that raised.
+
+Native binaries and layout sidecars are published with the shared bootstrap-safe
+atomic writer. Replacing a binary preserves the old image for open readers and
+gives macOS a fresh file identity for code-signature validation. JIR merge
+transactions hold the shared file lock across their read and atomic replacement.

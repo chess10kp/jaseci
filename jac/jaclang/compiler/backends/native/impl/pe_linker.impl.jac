@@ -1,3 +1,4 @@
+import from jaclang.jac0core.cache_paths { atomic_write }
 import struct;
 import os;
 import from jaclang.compiler.backends.native.linker_common {
@@ -1208,8 +1209,6 @@ impl PeLinker.link(
     if not exe_bytes {
         return False;
     }
-    with open(output_path, "wb") as f {
-        f.write(exe_bytes);
-    }
+    atomic_write(output_path, exe_bytes, mode=0o755);
     return True;
 }

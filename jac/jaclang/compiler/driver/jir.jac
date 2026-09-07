@@ -4,7 +4,7 @@ import struct;
 import sys;
 import zlib;
 import from pathlib { Path }
-import from jaclang.jac0core.cache_paths { FileLock }
+import from jaclang.jac0core.cache_paths { FileLock, atomic_write }
 
 glob MAGIC = b"JIR\x00",
      FORMAT_VERSION: int = 28,
@@ -1300,13 +1300,7 @@ def write_module_cache(
             }
             cache_path.parent.mkdir(parents=True, exist_ok=True);
             jir_bytes = write_precompiled_jir(None, "", merged_flags, sections);
-            tmp_path = cache_path.with_suffix(f'.{os.getpid()}.tmp');
-            try {
-                tmp_path.write_bytes(jir_bytes);
-                tmp_path.rename(cache_path);
-            } finally {
-                tmp_path.unlink(missing_ok=True);
-            }
+            atomic_write(cache_path, jir_bytes);
             return True;
         }
     } except Exception {

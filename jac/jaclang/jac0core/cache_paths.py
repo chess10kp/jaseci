@@ -6,7 +6,7 @@ bytecode cache (``meta_importer``) and the JIR module cache
 (``jaclang.compiler.driver.jir``) derive their directories from here, so the
 platform-resolution logic lives in exactly one place.
 
-This bootstrap-safe module owns global cache directories and file locking.
+This bootstrap-safe module owns global cache directories, file locking, and atomic publication.
 The per-module cache locations (``jir/modules/``, holding every product of
 a module including its native interface and object) are project-aware and
 therefore resolved in ``jaclang.compiler.driver.jir`` via
@@ -22,6 +22,7 @@ Platform roots:
 import errno
 import os
 import time
+import tempfile
 import sys
 from pathlib import Path
 
@@ -102,3 +103,33 @@ class FileLock:
 
     def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
         self.release()
+
+
+def atomic_write(path: str | Path, data: bytes, mode: int | None = None) -> None:
+    """Publish complete bytes on a new inode; open readers retain the old image.
+
+    Callers that merge existing contents must hold FileLock across their read
+    and this replacement. Existing permissions are preserved unless mode is
+    explicit; new cache files retain tempfile's private permissions.
+    """
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            dir=destination.parent, prefix=f".{destination.name}.", suffix=".tmp",
+            delete=False,
+        ) as output:
+            temporary = Path(output.name)
+            output.write(data)
+        if mode is None:
+            try:
+                mode = destination.stat().st_mode & 0o777
+            except FileNotFoundError:
+                pass
+        if mode is not None:
+            temporary.chmod(mode)
+        os.replace(temporary, destination)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)

@@ -1,3 +1,4 @@
+import from jaclang.jac0core.cache_paths { atomic_write }
 import struct;
 import os;
 import from jaclang.cli.console { console }
@@ -3342,21 +3343,18 @@ impl ElfLinker.link(
     if not exe_bytes {
         return False;
     }
-    with open(output_path, "wb") as f {
-        f.write(exe_bytes);
-    }
-    os.chmod(output_path, 0o755);
+    atomic_write(output_path, exe_bytes, mode=0o755);
 
     import from jaclang.compiler.driver.compile_options { env_symmap_requested }
     if env_symmap_requested() {
         symmap_path = output_path + ".symmap";
-        with open(symmap_path, "w") as smf {
+        rows = [
+            f"{sname} 0x{va:016x}\n"
             for (sname, va) in sorted(
                 linker.sym_vaddrs.items(), key=lambda (kv) { kv[1]; }
-            ) {
-                smf.write(f"{sname} 0x{va:016x}\n");
-            }
-        }
+            )
+        ];
+        atomic_write(symmap_path, "".join(rows).encode("utf-8"));
     }
 
     return True;
