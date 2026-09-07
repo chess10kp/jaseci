@@ -54,10 +54,12 @@ import from jaclang.compiler.frontend.unitree {
     InnerCompr,
     Int,
     IterForStmt,
+    JsxComment,
     JsxElement,
     JsxElementName,
     JsxNormalAttribute,
     JsxSpreadAttribute,
+    JsxText,
     KVPair,
     KWPair,
     LambdaExpr,
@@ -247,6 +249,7 @@ import from jaclang.compiler.frontend.diagnostics {
     E5094,
     W1050,
     W1051,
+    W1053,
     W1100,
     W1101,
     W1102
@@ -770,6 +773,11 @@ walker TypeEvaluator {
         expr: JsxElement, component_name: str, func_type: FunctionType | None = None
     ) -> None;
 
+    def _validate_jsx_children(
+        expr: JsxElement, component_name: str, param_map: dict[str, Parameter]
+    ) -> None;
+
+    def _has_rendered_jsx_children(expr: JsxElement) -> bool;
     def _validate_intrinsic_jsx_props(expr: JsxElement, tag_name: str) -> None;
     def _resolve_intrinsic_jsx_tag(part: Name, tag_name: str) -> None;
     def validate_typevar_in_type_expr(expr: Expr) -> None;
