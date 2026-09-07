@@ -1811,7 +1811,8 @@ impl JacCompiler._compile_pipeline(
         import from jaclang.compiler.frontend.module_facts { ModuleFacts }
         needs_native = is_native_mod or ModuleFacts.has_native_context_stmts(mod_targ);
 
-        if needs_native
+        if _full_head
+            and needs_native
             and not actual_program.analysis.analyses_run.provides(mod_targ, 'TypeOf') {
             self.run_schedule(
                 mod=mod_targ,
@@ -1826,7 +1827,9 @@ impl JacCompiler._compile_pipeline(
             passes=get_py_code_gen(
                 native=needs_native,
                 provided=actual_program.analysis.analyses_run.provided(mod_targ)
-            ),
+            )
+                if _full_head
+                else get_bootstrap_code_gen(),
             cancel_token=options.cancel_token
         );
         if mod_targ.decided_codespace == 'native' {

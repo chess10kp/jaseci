@@ -341,7 +341,7 @@ def native_pipeline_available -> tuple[bool, str] {
     return verdict;
 }
 
-def _py_codegen_tail -> list[type[Transform]] {
+def get_bootstrap_code_gen -> list[type[Transform]] {
     return [JcirGenPass, JcirBytecodeGenPass];
 }
 
@@ -349,7 +349,7 @@ def get_py_code_gen(
     native: bool = True, provided: (set[str] | None) = None
 ) -> list[type[Transform]] {
     if _codegen_tier_reason() {
-        return _py_codegen_tail();
+        return get_bootstrap_code_gen();
     }
     _tok = _codegen_sched_loading.set(True);
     try {
@@ -367,7 +367,7 @@ def get_py_code_gen(
             passes.extend([NaIRGenPass, NativeCompilePass]);
             _note_native_schedule_failure(None);
         }
-        passes.extend(_py_codegen_tail());
+        passes.extend(get_bootstrap_code_gen());
         import from jaclang.compiler.passes.freeze_structure_pass {
             FreezeStructurePass
         }
@@ -382,7 +382,7 @@ def get_py_code_gen(
         if native {
             _note_native_schedule_failure(e);
         }
-        return _py_codegen_tail();
+        return get_bootstrap_code_gen();
     } finally {
         _codegen_sched_loading.reset(_tok);
     }

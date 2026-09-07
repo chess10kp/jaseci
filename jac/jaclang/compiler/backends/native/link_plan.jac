@@ -530,6 +530,10 @@ def _build_link_plan(
     }
 
     check_pub_collisions(ordered);
+    import from jaclang.compiler.driver.na_coverage { na_coverage_replay }
+    for unit in ordered {
+        na_coverage_replay(unit.path, unit.iface.coverage or {"outcome": "native"});
+    }
     return LinkPlan(
         prog=prog,
         options=opts,

@@ -51,6 +51,7 @@ import from jaclang.compiler.driver.pass_driver {
 import from jaclang.compiler.driver.schedules {
     get_analysis_sched,
     get_boundary_analysis_sched,
+    get_bootstrap_code_gen,
     get_format_sched,
     get_ir_gen_sched,
     get_lint_sched,
