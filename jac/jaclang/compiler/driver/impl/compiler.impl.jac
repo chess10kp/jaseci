@@ -1186,6 +1186,10 @@ impl JacCompiler.compile(
         _outer_opts: (CompileOptions | None) = None;
         _outer_prog: (JacProgram | None) = None;
         _scratch_prog: (JacProgram | None) = None;
+        _retain_selfhost = self.selfhost.is_selfhost(target_program);
+        if _retain_selfhost {
+            self.selfhost.enter_execution();
+        }
         try {
             _wrap_prog = target_program;
 
@@ -1313,6 +1317,9 @@ impl JacCompiler.compile(
             if _gc_prev is not None {
                 import gc;
                 gc.set_threshold(*_gc_prev);
+            }
+            if _retain_selfhost {
+                self.selfhost.exit_execution();
             }
         }
     }

@@ -11,6 +11,46 @@ import from jaclang.compiler.driver.program { JacProgram }
 
 glob SRC = "def area(r: float) -> float { return 3.14 * r * r; }\n";
 
+test "direct compiler source compilation retains analysis across nested import eviction" {
+    import marshal;
+    import tempfile;
+    import from pathlib { Path }
+    import from unittest.mock { patch }
+    import jaclang.compiler.driver.compiler as compiler_mod;
+    import from jaclang.compiler.driver.compile_options { CompileOptions }
+    compiler = JacProgram()._get_compiler();
+    program = compiler.selfhost.program;
+    original_run = compiler_mod.run_pass;
+    evictions: list[str] = [];
+
+    def run_and_evict(pass_cls: any, mod: any, prog: any, **kwargs: any) -> any {
+        result = original_run(pass_cls, mod, prog, **kwargs);
+        if pass_cls.__name__ == "CFGBuildPass" and prog is program {
+            evictions.append(mod.loc.mod_path);
+            compiler.selfhost.evict_unit(mod.loc.mod_path, None, collect=False);
+        }
+        return result;
+    }
+
+    with tempfile.TemporaryDirectory() as directory {
+        source = str(Path(directory) / "direct_compile.jac");
+        with patch.object(compiler_mod, "run_pass", side_effect=run_and_evict) {
+            mod = compiler.compile(
+                source,
+                target_program=program,
+                use_str="glob answer: int = 42;\n",
+                options=CompileOptions(force_codespace="server")
+            );
+        }
+        assert evictions;
+        assert mod.gen.py_bytecode is not None;
+        namespace: dict = {"__name__": "direct_compile", "__file__": source};
+        exec(marshal.loads(mod.gen.py_bytecode), namespace);
+        assert namespace["answer"] == 42;
+        assert not program.mod.hub;
+    }
+}
+
 test "programs hydrate independent semantic objects from shared catalog bytes" {
     first = JacProgram();
     second = JacProgram();
