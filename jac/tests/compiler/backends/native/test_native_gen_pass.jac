@@ -3148,7 +3148,7 @@ test "clib decl with no return arrow lowers to void, not i64" {
         "    def explicit_none(x: f64) -> None;\n"
         "}\n"
         "def use_it(n: f64) -> f64 { return n; }\n",
-        options=native_force_opts()
+        options=CompileOptions(force_codespace="native", skip_native_engine=True)
     );
     assert not prog.errors_had , f"Errors: {prog.errors_had}";
     s = str(ir.gen.llvm_ir);
@@ -3269,10 +3269,14 @@ test "clib dotted logical import maps to origin-relative subdir (issue #6387)" {
     _fix = str(os.path.join(FIXTURES, "clib_logical_dotted.jac"));
     try {
         push_native_target("x86_64-unknown-linux-gnu");
-        ir = JacProgram().compile(_fix, options=CompileOptions());
+        ir = JacProgram().compile(
+            _fix, options=CompileOptions(skip_native_engine=True)
+        );
         assert list(ir.gen._clib_paths) == ["$ORIGIN/libs/libraylib.so"] , f"ELF: {ir.gen._clib_paths}";
         push_native_target("arm64-apple-darwin");
-        ir2 = JacProgram().compile(_fix, options=CompileOptions());
+        ir2 = JacProgram().compile(
+            _fix, options=CompileOptions(skip_native_engine=True)
+        );
         assert list(ir2.gen._clib_paths) == ["@loader_path/libs/libraylib.dylib"] , f"Mach-O: {ir2.gen._clib_paths}";
     } finally {
         pop_native_target(_saved);
@@ -3283,7 +3287,7 @@ test "clib struct value-type coercion" {
     prog = JacProgram();
     ir = prog.compile(
         str(os.path.join(FIXTURES, "clib_struct_coerce.jac")),
-        options=native_force_opts()
+        options=CompileOptions(force_codespace="native", skip_native_engine=True)
     );
     assert not prog.errors_had , f"Errors: {prog.errors_had}";
     assert ir.gen.llvm_ir is not None , "No LLVM IR generated";
@@ -3327,7 +3331,8 @@ test "clib System V AMD64 ABI lowering" {
     }
     prog = JacProgram();
     ir = prog.compile(
-        str(os.path.join(FIXTURES, "clib_sysv_abi.jac")), options=native_force_opts()
+        str(os.path.join(FIXTURES, "clib_sysv_abi.jac")),
+        options=CompileOptions(force_codespace="native", skip_native_engine=True)
     );
     assert not prog.errors_had , f"Errors: {prog.errors_had}";
     assert ir.gen.llvm_ir is not None , "No LLVM IR generated";
@@ -3420,7 +3425,8 @@ test "clib AArch64 AAPCS ABI lowering" {
     try {
         prog = JacProgram();
         ir = prog.compile(
-            str(os.path.join(FIXTURES, "clib_sysv_abi.jac")), options=CompileOptions()
+            str(os.path.join(FIXTURES, "clib_sysv_abi.jac")),
+            options=CompileOptions(skip_native_engine=True)
         );
         assert not prog.errors_had , f"Errors: {prog.errors_had}";
         assert ir.gen.llvm_ir is not None , "No LLVM IR generated";
