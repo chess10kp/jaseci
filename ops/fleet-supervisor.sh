@@ -22,8 +22,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 source ./fleet-queue.sh
 
-TICK="${TICK:-120}"                 # control-loop period (s)
-PENDING_LOW="${PENDING_LOW:-2}"     # refill a lane when its pending drops below this
+TICK="${TICK:-120}"                 # control-loop period (s); idle lanes stay idle
 LOCK="$QROOT/fleet-supervisor.lock"
 
 # AGENT RUNTIME policy — which CLI every fleet session drives. All sessions are
@@ -85,10 +84,8 @@ declare -A WORKERS=(
 # worker5/.fifth.env is the SPARE and is used by the DESK (IronUnion) by default —
 # see DESK_KEY. To field worker5 as a 7th claimer, give it a free key and add it here.
 
-# The command a worker session runs: a LEAN CLAIMER. Each session is
-# wall-clock-bounded (MAX_SESSION_MIN) so context resets on respawn. When the
-# agent exits (lane drained, timeout, or death), the until-loop respawns it
-# fresh with a new lean prompt; it re-claims.
+# The command a worker session runs: a LEAN CLAIMER. It never launches a model
+# turn unless the lane has real pending work.
 MAX_SESSION_MIN="${MAX_SESSION_MIN:-45}"
 ALOG="$PWD/logs/agent"     # per-session agent output (agent-<worker>.log, truncated each respawn)
 mkdir -p "$PWD/logs"
@@ -98,13 +95,17 @@ worker_cmd() {  # <worker> <lane> <keyfile>
 until false; do
 $(pi_env_block "$w" "$key")
   export WORKER="$w" LANE="$lane"
+  source "$PWD/fleet-queue.sh"
+  if ! has_real_pending "$lane"; then
+    status idle - "no real work"
+    sleep 30
+    continue
+  fi
   PROMPT="\$(bash "$PWD/worker-prompt.sh" "$w" "$lane")"
-  # One prompt per process (see agent_cli); this until-loop provides the
-  # repetition, so each session handles a single task -> minimal context.
-  # Output teed to logs/agent-<w>.log so credit_guard (supervisor tick) can see
-  # billing/auth failures — without this an out-of-credits fleet just churns.
+  # One prompt per process; only real pending work may start a model turn.
+  # Output is teed to logs/agent-<w>.log for the billing/auth guard.
   timeout ${MAX_SESSION_MIN}m $(agent_cli "$w" "$MODEL") "\$PROMPT" 2>&1 | tee "$ALOG-$w.log" || true
-  echo "[\$(date -u +%FT%TZ)] $w session ended; respawn in 5s" >&2
+  echo "[\$(date -u +%FT%TZ)] $w session ended; retrying only if real work remains" >&2
   sleep 5
 done
 EOF
@@ -113,6 +114,9 @@ EOF
 ensure_worker() {  # start the tmux session if absent (session name == worker name)
   local w="$1" spec="${WORKERS[$w]}" lane key sess="$w"
   lane="$(awk '{print $1}' <<<"$spec")"; key="$(awk '{print $2}' <<<"$spec")"
+  if ! has_real_pending "$lane" && ! tmux has-session -t "$sess" 2>/dev/null; then
+    return 0
+  fi
   # If a stale dead-shell session with this name exists (e.g. reboot-restored),
   # replace it so the claimer actually starts.
   if tmux has-session -t "$sess" 2>/dev/null; then
@@ -128,6 +132,9 @@ ensure_worker() {  # start the tmux session if absent (session name == worker na
 DESK_KEY="${DESK_KEY:-$HOME/.fifth.env}"          # desk key (pi runtime only)
 ensure_desk() {
   local sess="desk"
+  if ! has_coordination_work && ! tmux has-session -t "$sess" 2>/dev/null; then
+    return 0
+  fi
   # Liveness check like ensure_worker: a session that EXISTS but whose agent
   # process has died leaves a dead shell. Without this the desk can sit dead
   # forever while the supervisor thinks it is fine (this bit us: desk dead ~1h,
@@ -139,6 +146,8 @@ ensure_desk() {
   fi
   tmux new-session -d -s "$sess" "until false; do
 $(pi_env_block desk "$DESK_KEY")
+    source '$PWD/fleet-queue.sh'
+    if ! has_coordination_work; then sleep 30; continue; fi
     timeout ${MAX_SESSION_MIN}m $(agent_cli desk "${DESK_MODEL:-}") \"\$(bash '$PWD/desk-prompt.sh')\" 2>&1 | tee '$ALOG-desk.log' || true
     sleep 5
   done"
@@ -175,16 +184,10 @@ credit_guard() {
   return 0
 }
 
-refill() {  # keep every lane's pending non-empty (token-max toward the deadline)
-  local lane depth
-  for lane in objects exceptions mech converter typesys census; do
-    depth=$(find "$QROOT/lanes/$lane/pending" -maxdepth 1 -name '*.task' 2>/dev/null | wc -l)
-    (( depth < PENDING_LOW )) || continue
-    echo "lane $lane low ($depth); refilling"
-    bash ./seed-backlog.sh >/dev/null 2>&1 || true              # human backlog (idempotent)
-    { [ "$lane" = census ] || [ "$lane" = typesys ]; } && bash ./gapq-bridge.sh >/dev/null 2>&1 || true  # census gaps
-    { [ "$lane" = converter ] || [ "$lane" = mech ]; } && bash ./port-backlog.sh >/dev/null 2>&1 || true  # porting frontier
-  done
+refill() {  # explicit discovery of real backlog; never manufacture work
+  bash ./seed-backlog.sh >/dev/null 2>&1 || true
+  bash ./gapq-bridge.sh >/dev/null 2>&1 || true
+  bash ./port-backlog.sh >/dev/null 2>&1 || true
 }
 
 start() {
@@ -205,7 +208,6 @@ start() {
     for w in "${!WORKERS[@]}"; do ensure_worker "$w"; done   # respawn any dead session
     reap                                                     # requeue stale claims
     credit_guard                                             # stop fleet on billing/auth death
-    refill                                                   # keep lanes fed
     [ "${JANITOR:-1}" = 1 ] && bash "$PWD/tmp-janitor.sh" >>"$QROOT/janitor.log" 2>&1 || true  # GC merged worktrees; keep /tmp off 100%
     snapshot >> "$QROOT/queue-digest.log"                    # audit trail (desk tails this, not context)
     sleep "$TICK"
@@ -215,7 +217,7 @@ start() {
 stop() {
   tmux kill-session -t desk 2>/dev/null || true
   for w in "${!WORKERS[@]}"; do tmux kill-session -t "$w" 2>/dev/null || true; done
-  pkill -f fleet-supervisor.sh 2>/dev/null || true
+  tmux kill-session -t pi-sup 2>/dev/null || true
   echo "fleet stopped (desk + workers)"
 }
 

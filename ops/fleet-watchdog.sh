@@ -38,6 +38,12 @@ if (( TMP_PCT >= 90 )); then
       -o -name 'pi-bash-*.log' -o -name 'wt-*' \) -mmin +20 -exec rm -rf {} + 2>/dev/null || true
 fi
 
+# Do not restart an idle fleet. The watchdog only revives the supervisor when
+# actionable work or review work exists; synthetic backups do not qualify.
+source "$OPS/fleet-queue.sh"
+if ! has_coordination_work; then
+  exit 0
+fi
 # 2) supervisor liveness — relaunch if down.
 if pgrep -f 'fleet-supervisor.sh start' >/dev/null 2>&1; then
   exit 0

@@ -23,5 +23,5 @@ worker5     mech        ~/.fifth.env          SPARE — documented unused key; p
 # timeouts, .venv/bin/jac check gates, conventional commits, NO Co-Authored-By,
 # rebase onto fetched tip before push.
 #
-# Deadline: Aug 27 EOD, then token cliff (post-cliff model = Composer 2.5).
-# Front-load everything before the cliff — keep every lane's pending non-empty.
+# Completion policy: after the deadline, optimize for landing real work. A lane
+# with no real pending task stays idle; synthetic keepalive/drain tasks are not work.

@@ -19,13 +19,20 @@ HB_STALE_MIN="${HB_STALE_MIN:-15}"   # requeue a claim whose heartbeat is older 
 if [ -n "${ZSH_VERSION:-}" ]; then setopt NULL_GLOB 2>/dev/null; fi
 if [ -n "${BASH_VERSION:-}" ]; then shopt -s nullglob 2>/dev/null; fi
 
-# --- worker: claim the next pending item in a lane --------------------------
-# claim_next <lane>  ->  echoes claimed .task path, rc=1 if lane empty
+# --- worker: claim the next real pending item in a lane ----------------------
+# Synthetic backup/drain tasks are legacy bookkeeping, not work. Archive them
+# before a model sees them so they cannot consume a turn or self-replenish.
 claim_next() {
   local lane="$1" src dst
   : "${WORKER:?set WORKER=worker1..worker7}"
   for src in "$QROOT/lanes/$lane/pending"/*.task; do
     [ -e "$src" ] || continue   # nullglob: no files -> loop body skipped -> return 1 below
+    if [[ "${src##*/}" == *-backup.task ]]; then
+      mkdir -p "$QROOT/lanes/$lane/_synthetic"
+      mv -n "$src" "$QROOT/lanes/$lane/_synthetic/${src##*/}" 2>/dev/null || true
+      rm -f "$src.owner" "$src.hb"
+      continue
+    fi
     dst="$QROOT/lanes/$lane/claimed/${src##*/}"
     # mv -n is atomic; the loser of a two-worker race finds src gone and the
     # double-check ([ ! -e src ] && [ -e dst ]) fails, so it tries the next file.
@@ -37,6 +44,26 @@ claim_next() {
     fi
   done
   return 1
+}
+
+# True only when a lane has actionable implementation work. Legacy synthetic
+# backups are deliberately excluded.
+has_real_pending() {
+  local lane="$1"
+  find "$QROOT/lanes/$lane/pending" -maxdepth 1 -type f -name '*.task' \
+    ! -name '*-backup.task' -print -quit 2>/dev/null | grep -q .
+}
+has_real_pending_any() {
+  local lane
+  for lane in objects exceptions mech converter typesys census; do
+    has_real_pending "$lane" && return 0
+  done
+  return 1
+}
+has_coordination_work() {
+  has_real_pending_any \
+    || find "$QROOT/lanes/review/pending" -maxdepth 1 -type f -name '*.task' \
+      -print -quit 2>/dev/null | grep -q .
 }
 
 # heartbeat a claimed task (call from the worker's progress loop / keepalive)
@@ -153,8 +180,9 @@ Boot:
 
 Your loop:
   1. snapshot                      # read state (this is ALL you ingest)
-  2. keep every lane's pending non-empty -> ./seed-backlog.sh (edit BACKLOG.md first)
-  3. triage failed/*.err one file at a time; requeue or reassign via OWNERS
+  2. Preserve real pending work only; never synthesize *-backup.task or
+     drain-only work to keep a lane non-empty.
+  3. triage failed/*.err one file at a time; requeue or reassign real work via OWNERS
   4. when YOUR context gets heavy: update DESK.md, run 'handoff', respawn, stop.
 
 Do NOT read logs/ or worker transcripts into context; open a specific

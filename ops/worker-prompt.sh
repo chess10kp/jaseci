@@ -98,11 +98,12 @@ STANDING RULES (hard):
   - COMPUTE: 'jac check <file>' ONLY, once per file. NEVER 'jac test'/'jac run'/
     test suites/parallel or looping jac. Runtime behavior is gated in CI, not here.
   - Conventional commits. NO "Co-Authored-By" / no AI attribution (CI hard-blocks it).
-  - If a task is malformed or belongs to another lane, fail it with that reason; do not adopt it.
+  - If a task is malformed, synthetic (*-backup.task/drain-only), or belongs to
+    another lane, fail it with that reason; do not adopt it or enqueue a replacement.
 
 REPORTING: your ONLY report channel is complete/fail on the task. No mesh, no notes,
 no messaging any other agent. The desk reads results from the queue.
 
-Deadline Aug 27 EOD; keep claiming until your lane is empty, then exit (you will be
-respawned when new work arrives). Start now: claim your first task.
+Completion policy: claim real work, finish it, and exit when the lane has no real
+pending task. Never create synthetic work to remain busy.
 EOF

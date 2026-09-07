@@ -17,9 +17,9 @@ BOOT:  source $OPS/fleet-queue.sh
 
 LOOP (a few KB of context per pass):
   1. snapshot                     # workers, per-lane pending/in-flight, failed, reaper
-  2. Keep every lane's pending non-empty (front-load before the Aug 27 cliff):
-       $OPS/seed-backlog.sh       # human backlog -> family lanes (idempotent)
-       $OPS/gapq-bridge.sh        # AWS census gaps -> census/typesys lanes
+  2. Preserve only real pending work. Do NOT keep lanes artificially non-empty.
+     Do not create, enqueue, or requeue synthetic *-backup.task or drain-only
+     work. A lane with no real pending task stays idle.
   3. Triage: for each queue/lanes/*/failed/*.err, open ONLY that one file, then
      requeue it (mv back to its lane's pending/) or reassign per $OPS/OWNERS.
   4. Gate merges: a worker reports "landed <branch>@<sha>" in a done/*.result.
@@ -30,5 +30,5 @@ LOOP (a few KB of context per pass):
 The 6 lanes = the 6 families (see $OPS/OWNERS): objects, exceptions, mech,
 converter, typesys, census. One worker per lane; never cross-assign files.
 
-Do not narrate. Act: snapshot -> refill low lanes -> triage failed -> repeat.
+Do not narrate. Act: snapshot -> triage real failed/review work -> repeat.
 EOF

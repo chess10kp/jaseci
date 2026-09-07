@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# lane-keeper.sh — keep every worker lane topped up with PORTING work, live.
+# lane-keeper.sh — discover real porting work, live.
 #
-# Problem it solves: family lanes (objects/exceptions/typesys/census) get no new
-# work once seed-backlog's static list + farm gaps are exhausted, so workers go
-# idle while the real porting backlog (600-port-* CPython module lifts) sits in
-# the mech lane where only worker4 can reach it. This keeper runs the live
-# generator each tick and rebalances so no lane drops below a low-watermark —
-# continuous top-up instead of drain-then-scramble.
+# It may generate real converter/mech tasks from the CPython/reference
+# frontier and rebalance independent module lifts. It must never create
+# synthetic keepalive or drain-only work.
+#
+# When the module backlog is genuinely exhausted the generators emit nothing
+# and lanes dry legitimately. That is the normal completion state.
 #
 # Each tick:
 #   1. port-backlog.sh  — regenerate port-module (mech) + convert-suite (converter)
