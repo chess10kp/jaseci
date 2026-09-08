@@ -1,5 +1,23 @@
 # DESK state — pass 2026-09-07 (layer3_import ALL GREEN)
 
+## desk pass 2026-09-07/08 (fleet restart + DELETE_DEREF cutover fix)
+
+- Fleet restarted (`fleet-supervisor.sh start`, cursor runtime): 4 lean claimer
+  shells (w2/w3/w4/w7) idle; w6/w8 status lines are known ghost-busy residue.
+  Lanes were fully drained — seed-backlog items all in done/ with landed
+  results; gapq-bridge +0 (1 known); port-backlog +0.
+- Backlog reconciled: layer3 P0.5 marked RESOLVED (104/0); its 7 stale enqueues
+  pruned from seed-backlog.sh so refill can't re-seed landed work.
+- Full gates RED on e769c7375 (run 34185004683, Phase 6 VM conformance,
+  198p/1f): "vm: DELETE_DEREF unbinds closure cell". Root cause probe-verified:
+  1c6a63f14 added the run_frame arm + emission but skipped the
+  opcode_allowlist regen (the header's documented pairing rule) — host opcode
+  62 rejected at marshal load (`unknown opcode 62`). Seeded mech
+  170-opcode-allowlist-delete-deref; worker4 landed
+  wp4/opcode-allowlist-delete-deref@9f42eafa4 (desk-verified 199/0), merged
+  ff to jac-python @9f42eafa4. Gate confirmation CI pending.
+
+
 ## layer3_import COMPLETE (104 passed / 0 failed)
 - Full CPython-stdlib boot in-VM under layer3 now green. Final root causes
   (all verified minimal-repro / byte-diff, then full-suite):

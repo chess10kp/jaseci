@@ -18,7 +18,7 @@ already in any lane). Parser-only items stay here and are **not** auto-seeded.
 | module AnnAssign `__annotate__` on early terminate | `bf069783e` | |
 | comprehension filter call push_null (`abs(y)`) | `bf069783e` | |
 | exception-table varint decode | `bf069783e` | `pycode_diff.jac` |
-| native import/exec cutover | `fa8d84ffe` | `compile_route` NATIVE+BOOTSTRAP, `ceval` import/exec routed; `test_runtime_mode` 79/79 |
+| layer3_import burn-down complete | `b1e92cf55` | **104/0** `jac test jac-py/jacpython/layer3_import.jac`; parse/trampoline/stackdepth/boot items below all green |
 
 ---
 
@@ -31,20 +31,11 @@ already in any lane). Parser-only items stay here and are **not** auto-seeded.
 
 ---
 
-## P0.5 — layer3_import frontier (native boot burn-down)
+## P0.5 — layer3_import frontier — RESOLVED (2026-09-07)
 
-Eight RED in `jac-py/jacpython/layer3_import.jac` (DESK 2026-09-02): the Phase 4
-burn-down driver. All cluster on real stdlib boot through the native compiler.
-
-| ID | Lane | Summary | Gate / repro |
-|----|------|---------|--------------|
-| exec-module-parse-gap | mech | real stdlib sources fail native parse: `SyntaxError: compile_source: failed to parse exec module` (functools.wraps def, namedtuple defaults) | layer3 `functools.wraps copies name/doc` + `namedtuple with defaults` |
-| namedtuple-unary-op | mech | `NotImplementedError: unsupported unary operator` in namedtuple dynamic-class trampoline | layer3 namedtuple trampoline |
-| dict-stackdepth-fallthrough | exceptions | `Invalid CFG, inconsistent stackdepth at block 2 via fallthrough (want 1 have 2)` | layer3 `native objects expose __dict__` |
-| collections-boot | census | behavioral assert | layer3 `collections + transitive deps boot in-VM` |
-| unittest-closure-boot | census | behavioral assert | layer3 `unittest leaf closure proxy-free` |
-| from-import-star-bind | census | behavioral assert | layer3 `from-import-star binds public names` |
-| functools-contextlib-boot | census | behavioral assert; blocked by exec-module-parse-gap | layer3 `functools+contextlib boot in-VM` |
+All eight REDs fixed; `layer3_import.jac` **104 passed / 0 failed**. Root causes
+and commit-level detail live in `ops/DESK.md` (top section). Seeds removed from
+`seed-backlog.sh`; keep the gate green on merge — no further burn-down.
 
 ---
 

@@ -83,13 +83,6 @@ Land the one-line import first; then align async-with co_code vs oracle.
 Gate: jchk jac-py/jacpython/compiler_exc.jac ; jac test jac-py/jacpython/layer10_product_controlflow.jac
 EOF
 
-enqueue exceptions 095-dict-stackdepth-fallthrough <<'EOF'
-family: exceptions | ref: layer3_import `native objects expose __dict__`
-CFG stackdepth crash: "Invalid CFG, inconsistent stackdepth at block 2 via
-fallthrough (want 1 have 2)" compiling the layer3 __dict__ test body.
-flowgraph.jac fallthrough edge. DONE = that layer3 test compiles + passes in CI.
-EOF
-
 # ---- mech lane (worker4: runtime-gap / bridge-policy) ----------------------
 enqueue mech 030-range-bridge <<'EOF'
 family: mech (bridge-policy) | DESIGN-FIRST
@@ -107,21 +100,6 @@ family: mech | ref: BAND12 #2
 Nested def/class scopes: co_code exact vs oracle but linetable diverges (~35 shapes).
 Fix assembler.jac PEP 626 location-table writer (single root cause).
 Gate: jac test jac-py/jacpython/compiler_slice.jac ; spot-check layer8/layer9 nested fns
-EOF
-
-enqueue mech 141-exec-module-parse-gap <<'EOF'
-family: mech | ref: layer3_import frontier (DESK 2026-09-02)
-product_compile.jac:85 "failed to parse exec module" on real stdlib sources:
-functools.wraps def + namedtuple-defaults source. Highest-value layer3 red —
-blocks functools/contextlib/collections boots. DONE = both sources parse +
-execute natively (layer3 tests green).
-EOF
-
-enqueue mech 142-namedtuple-unary-op <<'EOF'
-family: mech | ref: layer3_import namedtuple trampoline
-ceval: NotImplementedError "unsupported unary operator" while the namedtuple
-dynamic class boots (layer3_import.jac:338 trampoline). Find the missing
-UNARY_* op, implement + oracle pin. DONE = layer3 trampoline test green.
 EOF
 
 enqueue mech 150-ceval-check-eg-match <<'EOF'
@@ -176,32 +154,6 @@ EOF
 enqueue census 130-pr6973-corpus <<'EOF'
 family: census | ref: PR#6973 D
 Corpus/gates integrity check (detail: logs/runtime-lane-brief.md).
-EOF
-
-enqueue census 140-collections-boot <<'EOF'
-family: census | ref: layer3_import.jac:224
-Behavioral: collections package + transitive deps must boot in-VM. Diagnose the
-first failing bind/opcode vs host oracle; fix or split into precise gap tasks.
-DONE = layer3 collections boot green (or named follow-ups seeded).
-EOF
-
-enqueue census 145-unittest-closure-boot <<'EOF'
-family: census | ref: layer3_import.jac:249
-Behavioral: leaf modules across the unittest closure boot proxy-free. Diagnose
-vs host oracle. DONE = layer3 unittest-closure test green or split out.
-EOF
-
-enqueue census 150-from-import-star <<'EOF'
-family: census | ref: layer3_import.jac:292
-Behavioral: from-import-star binds a module's public names (skip _-prefixed).
-Diagnose IMPORT_STAR path vs oracle. DONE = layer3 from-import-star green.
-EOF
-
-enqueue census 155-functools-contextlib-boot <<'EOF'
-family: census | ref: layer3_import.jac:467 | BLOCKED-BY mech/141 parse gap
-Behavioral: functools + contextlib boot in-VM (wraps / __dict__ / type-keyed
-dispatch). Re-diagnose after mech/141 lands; then fix residual binds.
-DONE = layer3 functools+contextlib boot green.
 EOF
 
 enqueue census 160-bootstrap-tripwire <<'EOF'
