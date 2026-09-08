@@ -16,7 +16,7 @@
       "output": "jac-py/Modules/_lifted/p1_corpus_slice1b/getbuildinfo.jac",
       "quarantined_functions": [],
       "source": "jac-py/tools/p1_corpus/corpus/getbuildinfo.c",
-      "tier_b_count": 0
+      "tier_b_count": 2
     },
     {
       "output": "jac-py/Modules/_lifted/p1_corpus_slice1b/mysnprintf.jac",
@@ -24,7 +24,7 @@
         "PyOS_snprintf"
       ],
       "source": "jac-py/tools/p1_corpus/corpus/mysnprintf.c",
-      "tier_b_count": 0
+      "tier_b_count": 1
     },
     {
       "output": "jac-py/Modules/_lifted/p1_corpus_slice1b/pystrcmp.jac",
@@ -42,6 +42,6 @@
   "quarantined_functions": [
     "PyOS_snprintf"
   ],
-  "tier_b_total": 0,
+  "tier_b_total": 3,
   "version": 1
 }
