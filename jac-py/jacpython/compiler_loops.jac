@@ -955,10 +955,20 @@ def visit_for(
     # return into the continuation for the natural path; finish_break_sites
     # synthesizes that epilogue over each break edge now.
     after = g.new_deferred_block();
+    try_in_body = loop_body_has_try(f.body);
     g.loop_except_depth_bump = g.loop_except_depth_bump + 1;
+    if try_in_body {
+        g.loop_exit_before_try_handlers = after;
+        g.loop_exit_return_loc = iter_loc;
+        g.loop_exit_emits_end_for = True;
+    }
     if has_break {
         join = g.new_deferred_block();
-        g.push_loop(loop_hdr, join, True);
+        if try_in_body {
+            g.push_loop(loop_hdr, after, True);
+        } else {
+            g.push_loop(loop_hdr, join, True);
+        }
         break_frame = g.current_loop() as loop_frame;
         break_frame.pops_iter = True;
     } else {
@@ -982,13 +992,20 @@ def visit_for(
     }
     g.pop_loop();
     flush_pending_break_finishes(g, body_snap);
+    if try_in_body {
+        g.loop_exit_before_try_handlers = None;
+        g.loop_exit_return_loc = None;
+        g.loop_exit_emits_end_for = False;
+    }
     g.loop_except_depth_bump = g.loop_except_depth_bump - 1;
     epilogue_done = g.loop_exit_epilogue_complete;
     g.loop_exit_epilogue_complete = False;
+    exit_epilogue_emitted = False;
     if not after.placed {
         g.use(after);
         g.emit_op(OP_END_FOR, 0, iter_loc);
         g.emit_op(OP_POP_ITER, 0, iter_loc);
+        exit_epilogue_emitted = True;
     }
     else_terminated = False;
     if len(f.orelse) > 0 and not epilogue_done {
@@ -1001,13 +1018,23 @@ def visit_for(
         else_terminated = else_cont.terminated;
     }
     if has_break {
-        g.use(join);
+        break_join = join;
+        if try_in_body {
+            break_join = after;
+        } else {
+            g.use(join);
+        }
         join_epilogue = epilogue_done;
-        if not join.placed or not block_is_terminated(join) {
+        if not break_join.placed or not block_is_terminated(break_join) {
             join_epilogue = False;
         }
         finish_break_sites(
-            g, break_frame, join, iter_loc, join_epilogue, False
+            g,
+            break_frame,
+            break_join,
+            iter_loc,
+            join_epilogue or exit_epilogue_emitted,
+            False
         );
         return stmt_cont(loc=iter_loc, terminated=else_terminated or epilogue_done);
     }
