@@ -3026,7 +3026,11 @@ impl Parser.parse_jsx_child -> JsxChild | JsxElement | None {
                 kid.append(s);
             }
             kid.append(rbrace_uni);
-            return JsxSlot(body=stmts, kid=kid);
+            __jsx_body: list[UniNode] = [];
+            for __s in stmts {
+                __jsx_body.append(__s);
+            }
+            return JsxSlot(body=__jsx_body, kid=kid);
         }
 
         expr = self.parse_expression();
@@ -3058,7 +3062,11 @@ impl Parser.parse_jsx_child -> JsxChild | JsxElement | None {
                 kid2.append(s);
             }
             kid2.append(rbrace_uni);
-            return JsxSlot(body=stmts2, kid=kid2);
+            __jsx_body2: list[UniNode] = [];
+            for __s2 in stmts2 {
+                __jsx_body2.append(__s2);
+            }
+            return JsxSlot(body=__jsx_body2, kid=kid2);
         }
         rbrace_uni = self.consume_uni(TokenKind.RBRACE);
         kid_expr: list[UniNode] = [lbrace_uni, expr, rbrace_uni];
