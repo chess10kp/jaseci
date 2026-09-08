@@ -9,6 +9,7 @@ venv
 _precompiled/
 _dist/
 _planning/
+jac-seal/
 
 # Distribution / packaging
 .Python
@@ -149,3 +150,4 @@ jac-py/jacpython/_fuzz_*.jac
 !jac-py/jacpython/_fuzz_smoke.jac
 jac-py/jacpython/_t[0-9]*.jac
 jac-py/jacpython/zz_*tmp*.jac
+.xdg-cache/

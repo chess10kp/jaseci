@@ -226,14 +226,17 @@ cli/commands/
 
 ### Real example
 
-**[`jaclang/cli/commands/`](https://github.com/Jaseci-Labs/jaseci/tree/7b0f5297ac87d7bf2cc06922d7e77cd979c3c7f2/jac/jaclang/cli/commands)** -- The command group files, each declaring functions with rich decorator metadata (command names, argument specs, help text, usage examples). The [`impl/`](https://github.com/Jaseci-Labs/jaseci/tree/7b0f5297ac87d7bf2cc06922d7e77cd979c3c7f2/jac/jaclang/cli/commands/impl) directory holds the actual command logic.
+**[`jaclang/cli/commands/`](https://github.com/Jaseci-Labs/jaseci/tree/7b0f5297ac87d7bf2cc06922d7e77cd979c3c7f2/jac/jaclang/cli/commands)** -- The command group files, each declaring functions next to a `comptime` command spec (command name, argument specs, help text, usage examples). The [`impl/`](https://github.com/Jaseci-Labs/jaseci/tree/7b0f5297ac87d7bf2cc06922d7e77cd979c3c7f2/jac/jaclang/cli/commands/impl) directory holds the actual command logic.
 
 The declaration file functions as a **command catalog** -- study this example carefully:
 
 ```jac
 """Execution commands: run, enter, serve, debug."""
 
-@registry.command(
+import from jaclang.cli.command { Arg, ArgKind, CommandSpec }
+import from jaclang.comptime { name as ct_name }
+
+comptime SPEC_RUN: CommandSpec = CommandSpec(
     name="run",
     help="Run a Jac program",
     args=[
@@ -243,10 +246,13 @@ The declaration file functions as a **command catalog** -- study this example ca
     examples=[
         ("jac run hello.jac", "Run a simple program"),
     ],
-    group="execution"
-)
+    group="execution",
+    handler_name=ct_name(run)
+);
 def run(filename: str, main: bool = True, cache: bool = True) -> int;
 ```
+
+The spec is a compile-time value: `jaclang/cli/manifest.jac` imports every `SPEC_*` binding with `comptime import` and folds them into one `ROUTES` table, so the CLI's help, completions, and dispatch all read a table that was computed while the manifest compiled.
 
 The impl file then provides the body:
 
@@ -424,6 +430,33 @@ Work through this decision tree from top to bottom, and you will arrive at the a
 
 !!! note "No wrong answer"
     These patterns are conventions, not rigid rules. The compiler codebase uses all five, sometimes in adjacent directories. The goal is always the same: pick the pattern that makes your declaration files most readable as standalone documentation of your module's API. When in doubt, start with the simpler pattern and refactor to a more structured one as the module grows.
+
+---
+
+## Apps and Shared Code
+
+The patterns above organize one module. A project that ships more than one
+thing (a site, a mobile client, a command-line tool, a service or two) is
+organized one level up as a [workspace](apps.md): each deliverable is an app
+with its own root, and everything under no app's root is shared code.
+
+```
+acme/
+  jac.toml           [apps.web] path = "web"; [apps.cli] path = "cli"; ...
+  core/              shared: domain types, walkers, pure logic; no JSX, no DOM
+    social_graph.jac     claimed by a file-rooted [apps.social_graph] service app
+    scoring.jac
+    impl/                the impl/ folder works the same for shared modules
+  web/               the web app: pages/, components/, main.jac
+  cli/               the command-line app: main.jac, commands/
+```
+
+Two rules keep the layering honest, and the compiler checks both:
+dependencies point from apps toward `core/` and never back (a shared module
+importing from an app is `E2040`), and one app reaches another only through
+its walkers and `def:pub` functions (`E2039`). Declaration and implementation
+files split exactly as described above inside every app and inside shared
+code; the annex rules do not change at an app boundary.
 
 ---
 

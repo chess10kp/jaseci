@@ -19,7 +19,6 @@ obj ReactBackend(FrameworkBackend) {
     def lower_effect(e: Effect) -> list[es.Statement];
     def lower_async_boundary(a: AsyncBoundary) -> es.Expression;
     def lower_state_read(name: str) -> es.Expression;
-    def lower_view_expr(expr: es.Expression) -> es.Expression;
     def lower_view(view: ViewElement, sync_loc: any) -> es.Expression;
     def _view_attr_property(attr: any, sync_loc: any) -> es.Property;
     def state_field_symbols(s: StateField) -> list[str];
@@ -32,7 +31,6 @@ obj ReactBackend(FrameworkBackend) {
     def import_source(symbol: str) -> str;
     def required_globals -> list[str];
     def runtime_source_basename -> str;
-    def vite_aliases -> dict[str, str];
     def build_entry_script(
         entry_module: str, install_global_handlers: bool = True
     ) -> str;
@@ -43,7 +41,6 @@ obj ReactBackend(FrameworkBackend) {
 
     def vite_plugin_lines -> (tuple[str, str] | None);
     def _hook_symbols -> set[str];
-    def _get_setter_name(var_name: str) -> str;
     def _state_cell_name(var_name: str) -> str;
     def _state_cell_member(var_name: str, member: str) -> es.Expression;
     def _jsx_fragment(children: list[es.Expression]) -> es.CallExpression;

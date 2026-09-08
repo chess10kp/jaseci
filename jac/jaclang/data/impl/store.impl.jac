@@ -166,6 +166,7 @@ impl PgStore.postinit -> None {
     self._listeners = [];
     self._listen_thread = None;
     self._listen_stop = None;
+    self._side_listened = False;
     self._booted = False;
     self._ready = False;
     self._readying = None;
@@ -303,7 +304,12 @@ def _owner_alive(pid: (int | None)) -> bool {
 
 impl PgStore._connect -> any {
     import from jaclang.data.pgload { connect as pg_connect }
+    import from jaclang.data.pgpool { checkout }
     info = self.conninfo;
+    pooled = checkout(info);
+    if pooled is not None {
+        return pooled;
+    }
     return pg_connect(
         info.user,
         host=(info.host or None),
@@ -313,6 +319,35 @@ impl PgStore._connect -> any {
         password=(info.password or None),
         startup_params={'application_name': _app_identity()}
     );
+}
+
+
+def _park_conn(info: any, conn: any, in_txn: bool, listened: bool) -> None {
+    import from jaclang.data.pgpool { pool_enabled, release }
+    if conn is None {
+        return;
+    }
+    if not pool_enabled() or getattr(conn, '_closed', False) {
+        try {
+            conn.close();
+        } except Exception {}
+        return;
+    }
+    try {
+        if in_txn {
+            conn.run('ROLLBACK');
+        }
+        conn.run('DISCARD ALL');
+        if listened {
+            conn.notifications.clear();
+        }
+    } except Exception {
+        try {
+            conn.close();
+        } except Exception {}
+        return;
+    }
+    release(info, conn);
 }
 
 
@@ -360,7 +395,7 @@ impl PgStore._run(sql: str, params: dict) -> list {
             self._conn = None;
             try {
                 self.conninfo = self.ensure_cb();
-            } except Exception { }
+            } except Exception {}
             conn = self._main();
         }
         try {
@@ -369,14 +404,14 @@ impl PgStore._run(sql: str, params: dict) -> list {
             if _conn_dead(e) {
                 try {
                     conn.close();
-                } except Exception { }
+                } except Exception {}
                 self._conn = None;
                 was_txn = self._in_txn;
                 self._in_txn = False;
                 if self.ensure_cb is not None {
                     try {
                         self.conninfo = self.ensure_cb();
-                    } except Exception { }
+                    } except Exception {}
                 }
                 if was_txn {
                     import from jaclang.data.pgwire { PgWireError }
@@ -390,7 +425,7 @@ impl PgStore._run(sql: str, params: dict) -> list {
             if self._in_txn {
                 try {
                     conn.run('ROLLBACK');
-                } except Exception { }
+                } except Exception {}
                 self._in_txn = False;
             }
             raise;
@@ -466,16 +501,18 @@ impl PgStore.ensure_schema(promotions: dict[str, list[str]]) -> None {
 
 
 impl PgStore.ensure_schema_once(promotions: dict[str, list[str]]) -> None {
+    self._ensure_ready();
     ns = _store_ns(self.conninfo);
-    if ns in _schema_ready {
+    key = _schema_extension_key();
+    if _schema_ready.get(ns) == key {
         return;
     }
     with _schema_gate {
-        if ns in _schema_ready {
+        if _schema_ready.get(ns) == key {
             return;
         }
         self.ensure_schema(promotions);
-        _schema_ready.add(ns);
+        _schema_ready[ns] = key;
     }
 }
 
@@ -593,6 +630,11 @@ impl PgStore._apply_schema_ddl -> None {
         }
         self._apply_promotions();
         self._property_graph_ddl();
+        for name in sorted(_schema_extensions) {
+            for stmt in _schema_extensions[name] {
+                self._run(stmt, {});
+            }
+        }
     } finally {
         self._run('SET lock_timeout = DEFAULT', {});
     }
@@ -616,6 +658,12 @@ impl PgStore._schema_fingerprint -> str {
     }
     for col in sorted(self._promotion_columns()) {
         h.update(str(col).encode());
+    }
+    for name in sorted(_schema_extensions) {
+        h.update(name.encode());
+        for stmt in _schema_extensions[name] {
+            h.update(stmt.encode());
+        }
     }
     return f"{SCHEMA_VERSION}:{h.hexdigest()[:24]}";
 }
@@ -729,7 +777,7 @@ impl PgStore.begin(isolation: TxnIsolation = TxnIsolation.SERIALIZABLE) -> None 
         self._isolation = isolation;
         try {
             self._run("SET LOCAL lock_timeout = '10s'", {});
-        } except Exception { }
+        } except Exception {}
     }
 }
 
@@ -1045,6 +1093,46 @@ impl PgStore.kv_delete(key: str) -> None {
 }
 
 
+impl PgStore.kv_acquire_lease(key: str, ttl_seconds: int, owner: str) -> bool {
+    with self._lock {
+        conn: any = self._side();
+        rows = conn.run(
+            """
+            INSERT INTO kv_state (key, value, expires_at, updated_at)
+            VALUES (
+                :k, :o, now() + make_interval(secs => CAST(:ttl AS int)), now()
+            )
+            ON CONFLICT (key) DO UPDATE SET
+                value = EXCLUDED.value,
+                expires_at = EXCLUDED.expires_at,
+                updated_at = now()
+            WHERE kv_state.value = :o
+                  OR kv_state.expires_at IS NULL
+                  OR kv_state.expires_at <= now()
+            RETURNING key
+            """,
+            k=f"lease:{key}",
+            o=owner,
+            ttl=ttl_seconds
+        );
+    }
+    return bool(rows);
+}
+
+
+impl PgStore.kv_release_lease(key: str, owner: str) -> bool {
+    with self._lock {
+        conn: any = self._side();
+        rows = conn.run(
+            'DELETE FROM kv_state WHERE key = :k AND value = :o RETURNING key',
+            k=f"lease:{key}",
+            o=owner
+        );
+    }
+    return bool(rows);
+}
+
+
 impl PgStore.quarantine(
     missing_id: UUID, referrer_id: (UUID | None), kind: str
 ) -> None {
@@ -1087,6 +1175,7 @@ impl PgStore.listen(channel: str, callback: any) -> None {
         );
         conn: any = self._side();
         conn.run(f"LISTEN {_quote_channel(ident)}");
+        self._side_listened = True;
         if self._listen_thread is None {
             self._listen_stop = threading.Event();
             t: any = threading.Thread(
@@ -1327,19 +1416,23 @@ impl PgStore._property_graph_ddl -> None {
 
 impl PgStore.close -> None {
     parked: any = None;
+    main_conn: any = None;
+    side_conn: any = None;
+    was_txn = False;
+    listened = False;
     with self._lock {
         parked = self._stop_listen_thread();
         self._listeners = [];
-        for c in [self._conn, self._side_conn] {
-            if c is not None {
-                try {
-                    c.close();
-                } except Exception { }
-            }
-        }
+        main_conn = self._conn;
+        side_conn = self._side_conn;
+        was_txn = self._in_txn;
+        listened = self._side_listened;
         self._conn = None;
         self._side_conn = None;
         self._in_txn = False;
+        self._side_listened = False;
     }
     self._join_listen_thread(parked);
+    _park_conn(self.conninfo, main_conn, was_txn, False);
+    _park_conn(self.conninfo, side_conn, False, listened);
 }

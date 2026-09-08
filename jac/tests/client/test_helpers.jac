@@ -135,9 +135,13 @@ def request_endpoint(
 """Start `jac start main.jac` for a project dir and wait for the port.
 
 ``extra_args`` is inserted after ``start`` (e.g. ``["--profile", "prod"]``).
+``app`` is an optional trailing positional (e.g. a workspace app name);
+every flag precedes it, so it is never mistaken for a flag target.
 Returns ``(server_process, port)``. Caller must ``stop_server`` it.
 """
-def start_app_server(project_path: any, extra_args: list | None = None) -> tuple {
+def start_app_server(
+    project_path: any, extra_args: list | None = None, app: str = ""
+) -> tuple {
     import tempfile;
     port = get_free_port();
     jac_cmd = get_jac_command();
@@ -146,7 +150,10 @@ def start_app_server(project_path: any, extra_args: list | None = None) -> tuple
     if extra_args {
         args = [*args, *extra_args];
     }
-    args = [*args, "-p", str(port), "main.jac"];
+    args = [*args, "-p", str(port)];
+    if app {
+        args = [*args, app];
+    }
     # Capture the server's output so a boot failure surfaces as a diagnosis
     # instead of an opaque 120s port-wait timeout (a crashed server and a
     # hung one look identical from wait_for_port).
@@ -167,7 +174,10 @@ def start_app_server(project_path: any, extra_args: list | None = None) -> tuple
         start_new_session=True
     );
     try {
-        wait_for_port("127.0.0.1", port, timeout=120.0);
+        # The jaclang_org app is a full site: cold-compiling it plus its
+        # client bundle takes minutes on a small CI runner, not the seconds
+        # the littleX-era 120s budget assumed.
+        wait_for_port("127.0.0.1", port, timeout=600.0);
     } except TimeoutError as exc {
         stop_server(server);
         log_f.flush();

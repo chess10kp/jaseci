@@ -38,10 +38,6 @@ impl ReactBackend.runtime_source_basename -> str {
     return "client_runtime.jac";
 }
 
-impl ReactBackend.vite_aliases -> dict[str, str] {
-    return {};
-}
-
 impl ReactBackend.build_entry_script(
     entry_module: str, install_global_handlers: bool = True
 ) -> str {
@@ -78,11 +74,6 @@ impl ReactBackend._hook_symbols -> set[str] {
 
 impl ReactBackend.vite_plugin_lines -> (tuple[str, str] | None) {
     return ('import react from "@vitejs/plugin-react";', 'react()');
-}
-
-impl ReactBackend._get_setter_name(var_name: str) -> str {
-    import from jaclang.compiler.backends.es.framework_backend { state_setter_name }
-    return state_setter_name(var_name);
 }
 
 impl ReactBackend._jsx_fragment(children: list[es.Expression]) -> es.CallExpression {
@@ -172,10 +163,6 @@ impl ReactBackend.lower_ref_field(r: RefField) -> list[es.Statement] {
 
 impl ReactBackend.lower_state_read(name: str) -> es.Expression {
     return self._state_cell_member(name, 'val');
-}
-
-impl ReactBackend.lower_view_expr(expr: es.Expression) -> es.Expression {
-    return expr;
 }
 
 impl ReactBackend._view_attr_property(attr: any, sync_loc: any) -> es.Property {

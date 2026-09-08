@@ -1,0 +1,4 @@
+2026-08-30T20:10:51Z TOKEN BUDGET: 204.555M tokens today > MAX_DAILY_TOKENS_M=200M — fleet stopped.
+  Breakdown in/out/cache_rd/cache_wr: 17098903 3267600 184188553 0 204.555
+  Ledger: /home/jac/.local/state/jacq/ledger/tokens.jsonl (summary: python3 ops/token-ledger.py summary)
+  To override (think twice): MAX_DAILY_TOKENS_M=<n> ops/fleet-supervisor.sh start

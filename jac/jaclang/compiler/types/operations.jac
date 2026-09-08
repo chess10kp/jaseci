@@ -194,7 +194,7 @@ def get_pow_result_type(
     left_node: Expr | None = None,
     diag_node: UniNode | None = None
 ) -> (TypeBase | None) {
-    import from jaclang.compiler.backends.py.const_fold { fold_const }
+    import from jaclang.compiler.frontend.const_fold { fold_const }
     float_class = evaluator.prefetch.float_class;
     if float_class is None or not both_numeric(left_type, right_type) {
         return None;
@@ -237,7 +237,7 @@ def is_annotation_type(evaluator: TypeEvaluator, ty: TypeBase) -> bool {
 
     none_type_class = evaluator.prefetch.none_type_class;
     if isinstance(ty, ClassType) and none_type_class is not None {
-        return ty.shared == none_type_class.shared;
+        return ty.shared.same_class(none_type_class.shared);
     }
     return False;
 }
@@ -497,6 +497,10 @@ def get_type_of_binary_operation(
 
         def validate_conn_type(type_expr: Expr) -> TypeBase {
             ct = evaluator.get_type_of_expression(type_expr);
+
+            if isinstance(ct, ClassType) and evaluator._is_type_subscript(ct) {
+                ct = evaluator._get_type_for_member_lookup(ct);
+            }
             if (
                 not ct.is_any_type()
                 and not isinstance(ct, UnknownType)
@@ -620,6 +624,27 @@ def get_type_of_binary_operation(
             return False;
         }
 
+        def bridged_spawn_type(side: Expr, t: TypeBase) -> TypeBase | None {
+            if not (isinstance(side, FuncCall) and evaluator._is_sv_async_call(side)) {
+                return None;
+            }
+            if not (
+                isinstance(t, ClassType)
+                and t.is_builtin("Coroutine")
+                and t.private.type_args
+                and is_walker_instance(t.private.type_args[-1])
+            ) {
+                return None;
+            }
+            return t;
+        }
+        for (side, side_type) in ((expr.left, left_type), (expr.right, right_type)) {
+            bridged = bridged_spawn_type(side, side_type);
+            if bridged is not None {
+                return bridged;
+            }
+        }
+
         left_unknown = left_type.is_any_type() or isinstance(left_type, UnknownType);
         right_unknown = right_type.is_any_type() or isinstance(right_type, UnknownType);
         left_walker = is_walker_instance(left_type);
@@ -669,7 +694,9 @@ def get_type_of_binary_operation(
         synth_call = FuncCall(
             target=callable_node, params=params, genai_call=None, kid=expr.kid
         );
-        synth_call.parent = expr.parent;
+        if expr.parent is not None {
+            synth_call.set_parent(expr.parent);
+        }
         return evaluator.validate_call_args(synth_call);
     }
     return UnknownType();

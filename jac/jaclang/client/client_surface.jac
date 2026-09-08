@@ -73,7 +73,12 @@ def with_runtime_globals(
     (names, src) = _required_runtime_globals(backend);
     missing: list[str] = [];
     for name in names {
-        if f"function {name}(" in js_code {
+        if re.search(
+            r"(?m)^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+"
+                + re.escape(name)
+                + r"\b",
+            js_code
+        ) {
             continue;
         }
 

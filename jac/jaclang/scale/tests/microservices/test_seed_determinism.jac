@@ -3,6 +3,7 @@ import tempfile;
 import from pathlib { Path }
 import from jaclang.scale.injector.bundle { pack_jab, content_address }
 import from jaclang.scale.injector.binary { pack_binary_bytes }
+import from jaclang.scale.tests.support { pod_binary, require_pod_binary }
 import from jaclang.compiler.driver.jir {
     FLAG_PRECOMPILED,
     compiler_source_digest,
@@ -16,7 +17,7 @@ import from jaclang.compiler.driver.jir {
 }
 
 
-glob _JAC_BIN: Path = Path(__file__).parents[4] / "zig-out" / "bin" / "jac";
+glob _JAC_BIN: Path = pod_binary();
 
 
 test "identical content packs to identical bytes (content-address stable)" {
@@ -24,9 +25,7 @@ test "identical content packs to identical bytes (content-address stable)" {
     # zeroed gzip header time and normalized member mtimes/owners.
     assert pack_binary_bytes(b"ELF") == pack_binary_bytes(b"ELF");
 
-    if not _JAC_BIN.is_file() {
-        return;
-    }
+    require_pod_binary();
     binary = _JAC_BIN.read_bytes();
     d = tempfile.mkdtemp();
     src = Path(d, "svc.jac");
@@ -49,7 +48,6 @@ def _stage_compiler_tree(where: str, codegen_body: str) -> str {
         "jac0.py",
         "compiler/driver/jir.jac",
         "compiler/backends/py/jcir_gen_pass.jac",
-        "compiler/native_materialize.jac",
         "compiler/backends/native/llvm/libjacllvm.so",
         "dist/precompile_bytecode.jac",
         "server/machine.jac",
@@ -97,7 +95,6 @@ test "the compiler digest ignores build artifacts and non-compiler modules" {
         a = _stage_compiler_tree(os.path.join(tmp, "base"), "emit(1);\n");
         base = compiler_source_digest(a);
         for (rel, text) in [
-            ("compiler/native_materialize.jac", "generated at seal time\n"),
             ("compiler/backends/native/llvm/libjacllvm.so", "relinked shim\n"),
             ("server/machine.jac", "runtime edit\n"),
             ("compiler/__pycache__/stale.py", "byte cache\n"),
@@ -161,7 +158,8 @@ test "the running compiler digest covers the real compiler tree" {
         "compiler/driver/jir.jac",
         "compiler/frontend/unitree.jac",
         "compiler/backends/py/jcir_gen_pass.jac",
-        "compiler/backends/py/impl/jcir_gen_pass.impl.jac",
+        "compiler/backends/py/jcir_gen_pass.impl/expr.impl.jac",
+        "compiler/backends/native/na_ir_gen_pass.impl/core.impl.jac",
         "compiler/passes/type_checker_pass.jac",
         "dist/precompile_bytecode.jac"
     ] {
@@ -170,7 +168,6 @@ test "the running compiler digest covers the real compiler tree" {
     assert len(rels) > 250;
     assert len(rels) == len(set(rels));
     assert rels == sorted(rels);
-    assert "compiler/native_materialize.jac" not in rels;
     for rel in rels {
         assert "/tests/" not in rel and not rel.startswith("tests/") , f"{rel} is test material and must not gate the seed";
         assert rel.endswith(".jac") or rel.endswith(".py");
