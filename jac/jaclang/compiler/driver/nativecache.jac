@@ -284,6 +284,7 @@ obj NativeUnitRegistry {
         options: (CompileOptions | None) = None,
         check_deps: bool = True
     ) -> (NativeUnitEntry | None) {
+        options = options if options is not None else self._options();
         resolved = os.path.realpath(path);
         if not jir_cacheable_source_path(resolved) {
             return None;
@@ -299,13 +300,13 @@ obj NativeUnitRegistry {
         if resolved in self.building {
             return None;
         }
-        if resolved in self.checking {
+        if resolved in self.checking and not options.no_ir_cache {
             return self._read_from_disk(
                 resolved, stamp, check_deps=False, options=options
             );
         }
         (rebuild, _) = cache_mode();
-        if not rebuild {
+        if not rebuild and not options.no_ir_cache {
             self.checking.add(resolved);
             try {
                 found = self._read_from_disk(

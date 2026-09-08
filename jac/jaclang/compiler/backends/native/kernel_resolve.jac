@@ -2,7 +2,7 @@ import from jaclang.jac0core.cache_paths { FileLock }
 import json;
 import os;
 import sys;
-import from dataclasses { field }
+import from jaclang.runtime.object_model { field }
 import from jaclang.compiler.driver.compile_options {
     CompileOptions,
     NATIVE_LINK_MODE_BITCODE

@@ -22,6 +22,12 @@ test "arena host scalar boundary input and asynchronous lifecycle" {
         module = program.compile(str(source), options=CompileOptions());
         assert not program.errors_had , str(program.errors_had);
         js = module.gen.js;
+        webgl = program.compile(
+            str(Path(TESTS_DIR).parent / "jaclang" / "client" / "webgl.jac"),
+            options=CompileOptions()
+        );
+        assert not program.errors_had , str(program.errors_had);
+        webgl_js = webgl.gen.js;
     } finally {
         set_config(previous);
     }
@@ -31,8 +37,11 @@ test "arena host scalar boundary input and asynchronous lifecycle" {
     with tempfile.TemporaryDirectory() as tmp {
         target = Path(tmp);
         (target / "host.mjs").write_text(
-            js.replace("@jac/wasm_host", "./wasm_host.mjs")
+            js.replace("@jac/wasm_host", "./wasm_host.mjs").replace(
+                "@jac/webgl", "./webgl.mjs"
+            )
         );
+        (target / "webgl.mjs").write_text(webgl_js);
         (target / "wasm_host.mjs").write_text(
             (fixtures / "arena_wasm_stub.mjs").read_text()
         );

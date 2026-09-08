@@ -772,7 +772,10 @@ def _reuse_artifact(
 ) -> (LinkResult | None) {
     import from jaclang.compiler.driver.jir { cache_mode }
     (rebuild, _) = cache_mode();
-    if rebuild or plan.options.native_debug or plan.options.dump_ir_path {
+    if rebuild
+        or plan.options.no_ir_cache
+        or plan.options.native_debug
+        or plan.options.dump_ir_path {
         return None;
     }
     try {

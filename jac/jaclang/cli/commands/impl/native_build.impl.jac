@@ -47,7 +47,8 @@ impl native_build(
     link_mode: str = "",
     target: str = "",
     debug: bool = False,
-    memory: str = ""
+    memory: str = "",
+    no_ir_cache: bool = False
 ) -> int {
     def _target_triple(target: str) -> str {
         if target in ["wasm", "wasm32", "wasm32-unknown-unknown"] {
@@ -155,12 +156,13 @@ impl native_build(
         prog = JacProgram();
         options = CompileOptions(
             aot_mode=True,
-            default_codespace='native',
+            default_codespace="native",
             skip_native_engine=True,
             memory_profile=memory,
             native_target=triple,
             native_debug=(True if debug else None),
-            native_link_mode=(link_mode or None)
+            native_link_mode=(link_mode or None),
+            no_ir_cache=debug or no_ir_cache
         );
         prog.options = options;
         ir_module = (

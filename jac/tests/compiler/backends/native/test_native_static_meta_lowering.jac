@@ -31,7 +31,11 @@ def compile_native(name: str) -> tuple {
     ir = prog.compile(
         file_path=os.path.join(FIXTURES, name),
         options=CompileOptions(
-            aot_mode=True, force_codespace='native', na_gc_mode='cycles'
+            aot_mode=True,
+            force_codespace='native',
+            na_gc_mode='cycles',
+            no_ir_cache=True,
+            skip_native_engine=True
         )
     );
     return (prog, ir, );

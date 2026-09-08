@@ -19,17 +19,7 @@ impl NaIRGenPass._get_fmt_kernel_fn(name: str) -> (ir.Function | None) {
     if not self._ensure_fmt_kernel() {
         return None;
     }
-    fn = self.func_symtab.get(name);
-    if fn is not None {
-        return fn;
-    }
-
-    existing = self.llvm_module.globals.get(name);
-    if isinstance(existing, ir.Function) {
-        self.func_symtab[name] = existing;
-        return existing;
-    }
-    _km: any = self._fmt_kernel_mod;
-    self._walk_imported_module_abilities(_km, with_fn_verdicts=False);
-    return self.func_symtab.get(name);
+    module = self._fmt_kernel_mod;
+    assert isinstance(module, uni.Module);
+    return self._module_functions.get((os.path.realpath(module.loc.mod_path), name));
 }

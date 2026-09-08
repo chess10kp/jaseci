@@ -230,3 +230,34 @@ impl NativeCompilePass.transform(ir_in: uni.Module) -> uni.Module {
 impl NativeCompilePass.run_walk with uni.Module entry {
     self.ir_out = self._run_impl(here);
 }
+
+impl native_linked_ir_text(module: uni.Module) -> str {
+    bitcode = module.gen.native_bitcode;
+    if bitcode is not None {
+        return str(llvm.parse_bitcode(bitcode));
+    }
+    return str(module.gen.llvm_ir);
+}
+
+
+impl native_demoted_ir_symbols(llvm_ir_text: str) -> list[str] {
+    import re as _ds_re;
+    _ds_def = _ds_re.compile(
+        r'^define\b[^@\n]*@(?:"([^"]+\.__jac_demoted)"'
+        r'|([A-Za-z0-9_.$\-]+\.__jac_demoted))\(',
+        _ds_re.MULTILINE
+    );
+    import from jaclang.compiler.backends.native.lowering {
+        NativeLoweringKind,
+        native_lowering_issues
+    }
+    found: set[str] = {
+        issue.symbol
+        for issue in native_lowering_issues(llvm_ir_text)
+        if issue.kind == NativeLoweringKind.CALLABLE
+    };
+    for (_ds_q, _ds_bare) in _ds_def.findall(llvm_ir_text) {
+        found.add((_ds_q or _ds_bare)[:-len(".__jac_demoted")]);
+    }
+    return sorted(found);
+}

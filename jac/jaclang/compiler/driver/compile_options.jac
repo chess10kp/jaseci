@@ -1,4 +1,4 @@
-import from dataclasses { field }
+import from jaclang.runtime.object_model { field }
 
 glob _config_probe: dict = {"active": False};
 
@@ -24,6 +24,7 @@ obj CompileOptions {
         iface_ok: bool = False,
         need_full_ast: bool = False,
         skip_native_engine: bool = False,
+        no_ir_cache: bool = False,
         resolve_annex_parent: bool = False,
         aot_mode: bool = False,
         native_unit: bool = False,
@@ -180,6 +181,7 @@ obj CompileOptions {
     def clone_for_native_import -> CompileOptions {
         return CompileOptions(
             skip_native_engine=True,
+            no_ir_cache=self.no_ir_cache,
             aot_mode=True,
             default_codespace='native',
             native_unit=self.native_unit,

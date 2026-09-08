@@ -10,29 +10,15 @@ import from c {
 import from c { def freeaddrinfo(res: int) -> None;  }
 import from c { def gai_strerror(errcode: i32) -> str;  }
 import from c { def memcpy(dst: bytes, src: int, n: u64) -> int;  }
-import from c { def strerror(errnum: i32) -> str;  }
+import from _errno_native { errno_message }
 import from _socket_abi {
     ADDRINFO_ADDRLEN_OFFSET,
     ADDRINFO_ADDR_OFFSET,
     ADDRINFO_NEXT_OFFSET,
-    ADDRINFO_SIZE,
-    errno_pointer
+    ADDRINFO_SIZE
 }
 
 glob _SOCKADDR_MAX: int = 128;
-
-
-def:pub last_errno -> int {
-    p = errno_pointer();
-    b4 = b"\x00" * 4;
-    memcpy(b4, p, 4);
-    return int.from_bytes(b4, "little");
-}
-
-
-def:pub errno_message -> str {
-    return strerror(i32(last_errno()));
-}
 
 
 def:pub resolve_all(host: str, service: str) -> tuple[(list[bytes], int)] {

@@ -281,8 +281,8 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
      E0063 = _err(
          "E0063",
          Category.SYNTAX,
-         "'glob' is only valid at module level, perhaps you mean global",
-         help="Move the glob declaration to the top of the file, outside any function or code block.",
+         "'glob' is only valid at module level",
+         help="Declare it at module level, outside any function or code block; a function rebinds a module glob by plain assignment, Jac has no global statement.",
          blocks_codegen=True
      ),
      E0064 = _err(
@@ -446,6 +446,11 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          Category.TYPE,
          "Explicit 'any' type annotation disables type checking here;"
          " consider a more specific type"
+     ),
+     E1038 = _err(
+         "E1038",
+         Category.TYPE,
+         "Mapping unpacking is not valid in a type argument list"
      ),
      E1040 = _err("E1040", Category.TYPE, "Type \"{type}\" is not subscriptable"),
      E1041 = _err("E1041", Category.TYPE, "Type \"{type}\" is not awaitable"),
@@ -1911,7 +1916,7 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          "E5083",
          Category.CODEGEN,
          "na import targets collide on wasm artifact '{stem}.wasm': '{path}' vs '{other}'",
-         help="Every `na import` target emits /static/<stem>.wasm named by its file stem, and set_na_env / __na_bind address the module by that stem, so two different native modules with the same basename would overwrite each other's artifact and bind to the wrong exports. Rename one of the files."
+         help="Every `na import` target emits /static/<stem>.wasm named by its file stem, and generated native bindings address the module by that stem, so two different native modules with the same basename would overwrite each other's artifact and bind to the wrong exports. Rename one of the files."
      ),
      E5082 = _err(
          "E5082",
@@ -1950,6 +1955,18 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          Category.CODEGEN,
          "Constructing '{cls}' would run '{owner}.postinit' on a Python shadow the native object cannot see",
          help="A native class over a Python-side base owns two halves: its own slots live in the native struct, the base's live on a Python shadow instance the bridge keeps beside it. Construction runs the base's `__post_init__` on that shadow, where the subclass's native slots do not exist and its method overrides are not on the shadow's class -- so a store the base initializer makes is invisible natively, and a call it dispatches reaches the base's body rather than the override. The object comes out with its declared defaults and nothing says so. Give '{cls}' a `postinit` of its own -- it suppresses the base's and can chain into it with `super.postinit()`, which does bridge -- or bring the base into the native unit so the whole chain lowers."
+     ),
+     E5112 = _err(
+         "E5112",
+         Category.CODEGEN,
+         "Native object '{name}' is opaque in client code; use its imported native operations",
+         blocks_codegen=True
+     ),
+     E5110 = _err(
+         "E5110",
+         Category.CODEGEN,
+         "Invalid native host contract: {details}",
+         blocks_codegen=True
      ),
      E5100 = _err(
          "E5100",

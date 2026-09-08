@@ -1,6 +1,6 @@
 import hashlib;
 import json;
-import from dataclasses { field }
+import from jaclang.runtime.object_model { field }
 import from jaclang.compiler.frontend.codeinfo {
     NativeModuleLayout,
     native_layout_to_dict

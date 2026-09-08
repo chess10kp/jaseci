@@ -60,3 +60,10 @@ test "a checkout runtime import shares the installed compiler's runtime unit" {
         assert get_func(engine, "probe", ctypes.c_int64)() == 1;
     }
 }
+
+test "native edge peers require a live edge incident to the origin" {
+    (engine, _) = compile_native("osp_edge_peer.jac");
+    probe = get_func(engine, "probe", ctypes.c_bool);
+    assert probe();
+    assert probe();
+}

@@ -5,5 +5,6 @@ def native_build(
     link_mode: str = "",
     target: str = "",
     debug: bool = False,
-    memory: str = ""
+    memory: str = "",
+    no_ir_cache: bool = False
 ) -> int;

@@ -4,7 +4,7 @@ import type from jaclang.compiler.backends.native.llvm.binding {
     TargetMachine
 }
 import jaclang.compiler.frontend.unitree as uni;
-import from jaclang.compiler.passes { Transform }
+import from jaclang.compiler.passes.transform { Transform }
 import from jaclang.compiler.frontend.diagnostics { E5020, E5026 }
 import type from jaclang.compiler.driver.compile_options { CompileOptions }
 import type from jaclang.compiler.driver.program { JacProgram }
@@ -41,3 +41,6 @@ walker NativeCompilePass(Transform) {
 
     can run_walk with uni.Module entry;
 }
+
+def native_demoted_ir_symbols(llvm_ir_text: str) -> list[str];
+def native_linked_ir_text(module: uni.Module) -> str;

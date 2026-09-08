@@ -13,6 +13,9 @@ Imported as `from tests.support`, which resolves identically under the single
 import ctypes;
 
 import from pathlib { Path }
+import type from jaclang.compiler.driver.compile_options { CompileOptions }
+import type from jaclang.compiler.frontend.unitree { Module }
+import type from jaclang.compiler.backends.native.llvm.binding { ExecutionEngine }
 
 # `tests/`: the directory holding this file.
 glob TESTS_DIR: str = str(Path(__file__).resolve().parent),
@@ -26,7 +29,7 @@ compile a fixture and expect a JIT engine now state the mandate explicitly.
 Forced placement keeps lowering failures loud (no server demotion), exactly
 like the old suffix.
 """
-def native_force_opts -> any {
+def native_force_opts -> CompileOptions {
     import from jaclang.compiler.driver.compile_options { CompileOptions }
     return CompileOptions(force_codespace='native');
 }
@@ -154,13 +157,10 @@ module's mutable globals, so handing the same one to two tests would let the
 first test's writes reach the second. Tests that want a fixture compiled once
 should assert against it once, in a single test.
 """
-def compile_native(fixture: str, fixture_dir: str = "") -> tuple {
-    import from jaclang.compiler.driver.program { JacProgram }
-    base = fixture_dir or NATIVE_FIXTURES;
-    prog = JacProgram();
-    ir = prog.compile(file_path=str(Path(base) / fixture), options=native_force_opts());
-    errors = [str(e) for e in prog.errors_had] if prog.errors_had else [];
-    assert not prog.errors_had , f"Compilation errors in {fixture}: {errors}";
+def compile_native(
+    fixture: str, fixture_dir: str = ""
+) -> tuple[ExecutionEngine, Module] {
+    ir = _compile_native_fixture(fixture, fixture_dir, native_force_opts());
     eng = ir.gen.native_engine;
     assert eng is not None , f"No native engine produced for {fixture}";
     remember_native_unit(eng, ir);
@@ -240,8 +240,7 @@ def native_symbol(eng: any, name: str) -> str {
         import from jaclang.compiler.frontend.codeinfo { native_glob_init_name }
         return native_glob_init_name(path);
     }
-    if name == "jac_entry"
-        or name.startswith(("__jac_", "__rc_", "jac_", "__osp", "__mt_")) {
+    if name == "jac_entry" {
         return name;
     }
     iface = eng?._jac_native_iface;
@@ -256,6 +255,9 @@ def native_symbol(eng: any, name: str) -> str {
         if found is not None {
             return found;
         }
+    }
+    if name.startswith(("__jac_", "__rc_", "jac_", "__osp", "__mt_")) {
+        return name;
     }
     if not path {
         return name;
@@ -316,6 +318,35 @@ def native_address(eng: any, name: str) -> int {
         addr = eng.get_function_address(name);
     }
     return addr;
+}
+
+"""Inspect fresh lowering output before LLVM optimization removes layout types."""
+def compile_native_ir(
+    fixture: str, fixture_dir: str = "", options: CompileOptions | None = None
+) -> Module {
+    options = options or native_force_opts();
+    options.skip_native_engine = True;
+    options.no_ir_cache = True;
+    return _compile_native_fixture(fixture, fixture_dir, options);
+}
+
+def _compile_native_fixture(
+    fixture: str, fixture_dir: str, options: CompileOptions
+) -> Module {
+    import from jaclang.compiler.driver.program { JacProgram }
+    base = fixture_dir or NATIVE_FIXTURES;
+    prog = JacProgram();
+    ir = prog.compile(file_path=str(Path(base) / fixture), options=options);
+    errors = [e.pretty_print() for e in prog.errors_had] if prog.errors_had else [];
+    if errors and ir is not None and ir.gen.llvm_ir is not None {
+        import from jaclang.compiler.backends.native.lowering { native_lowering_issues }
+        errors.extend(
+            issue.detail for issue in native_lowering_issues(str(ir.gen.llvm_ir))
+        );
+    }
+    assert not prog.errors_had , f"Compilation errors in {fixture}: {errors}";
+    assert ir is not None , f"No module produced for {fixture}";
+    return ir;
 }
 
 """Get a ctypes-callable function from a JIT engine."""

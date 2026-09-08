@@ -53,7 +53,7 @@ impl NaIRGenPass.type_map.getter -> dict[str, ir.Type] {
     return self._type_map;
 }
 
-impl NaIRGenPass.complex_struct_type.getter -> ir.Type {
+impl NaIRGenPass.complex_struct_type.getter -> ir.IdentifiedStructType {
     if self._complex_struct_type is None {
         raise RuntimeError(
             "NaIRGenPass.complex_struct_type read before postinit built it"
@@ -62,7 +62,7 @@ impl NaIRGenPass.complex_struct_type.getter -> ir.Type {
     return self._complex_struct_type;
 }
 
-impl NaIRGenPass.range_struct_type.getter -> ir.Type {
+impl NaIRGenPass.range_struct_type.getter -> ir.IdentifiedStructType {
     if self._range_struct_type is None {
         raise RuntimeError(
             "NaIRGenPass.range_struct_type read before postinit built it"
@@ -71,7 +71,7 @@ impl NaIRGenPass.range_struct_type.getter -> ir.Type {
     return self._range_struct_type;
 }
 
-impl NaIRGenPass.slice_struct_type.getter -> ir.Type {
+impl NaIRGenPass.slice_struct_type.getter -> ir.IdentifiedStructType {
     if self._slice_struct_type is None {
         raise RuntimeError(
             "NaIRGenPass.slice_struct_type read before postinit built it"
@@ -80,7 +80,7 @@ impl NaIRGenPass.slice_struct_type.getter -> ir.Type {
     return self._slice_struct_type;
 }
 
-impl NaIRGenPass.jacval_type.getter -> ir.Type {
+impl NaIRGenPass.jacval_type.getter -> ir.IdentifiedStructType {
     if self._jacval_type is None {
         raise RuntimeError("NaIRGenPass.jacval_type read before postinit built it");
     }

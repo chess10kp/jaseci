@@ -33,6 +33,7 @@ import from jaclang.compiler.frontend.codeinfo {
     native_unit_prefix
 }
 import from jaclang.compiler.driver.program { JacProgram }
+import from jaclang.compiler.driver.compile_options { CompileOptions }
 
 glob FIXTURES = str(
          Path(jaclang.__file__).parent / "compiler" / "tests" / "fixtures"
@@ -154,10 +155,10 @@ def run_js_expr(js_code: str, expr: str) -> any {
 # -----------------------------------------------------------------------
 # NA (Native / LLVM) helpers
 # -----------------------------------------------------------------------
-def compile_native(fixture: str) -> tuple {
+def compile_native(fixture: str, *, no_ir_cache: bool = False) -> tuple {
     prog = JacProgram();
     path = str(os.path.join(FIXTURES, fixture));
-    ir = prog.compile(file_path=path);
+    ir = prog.compile(file_path=path, options=CompileOptions(no_ir_cache=no_ir_cache));
     errors = [str(e) for e in prog.errors_had] if prog.errors_had else [];
     assert not prog.errors_had , f"Compilation errors in {fixture}: {errors}";
     eng = ir.gen.native_engine;

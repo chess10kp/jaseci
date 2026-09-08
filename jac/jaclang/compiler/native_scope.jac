@@ -32,7 +32,19 @@ glob NATIVE_SCOPE: tuple[NativeScopeEntry, ...] = (
 
      ),
      KERNEL_ROOT_MODULE: str = "jaclang.compiler.jc_unit",
-     _SCOPE_SUFFIX_CACHE: list = [];
+     _SCOPE_SUFFIX_CACHE: list[str] = [];
+
+def scope_allows_inferred_path(mod_path: str) -> bool {
+    import from jaclang.compiler.frontend.codeinfo {
+        native_unit_compile_active,
+        native_unit_identity
+    }
+    if native_unit_compile_active()
+        and native_unit_identity(mod_path).startswith("jaclang/compiler/") {
+        return in_native_scope_path(mod_path);
+    }
+    return True;
+}
 
 def native_scope_path_suffixes -> list[str] {
     if not _SCOPE_SUFFIX_CACHE {
