@@ -233,6 +233,13 @@ obj cfg_builder {
         # Set when visit_try materializes loop_exit_before_try_handlers with
         # the full natural-exit epilogue (including RETURN_VALUE).
         loop_exit_epilogue_complete: bool = False,
+        # Unit-final for loop with break inside try and no orelse: CPython's
+        # creation order lays the FOR_ITER exhaustion block (END_FOR/POP_ITER/
+        # return) after the warm body but BEFORE the try machinery. visit_for
+        # stashes the deferred block here; visit_try places it just before its
+        # own machinery so the assembled order matches the host.
+        unit_for_after: basicblock | None = None,
+        unit_for_after_loc: cloc | None = None,
         # Protect-span depth bump for try/except registered while emitting a
         # loop body (while +2, for +4). Set by visit_while/visit_for.
         loop_except_depth_bump: int = 0,
@@ -497,7 +504,7 @@ obj unverified_cfg {
     # in a post-visit optimizer pass, after the epilogue None), then patch all
     # negative OP_LOAD_CONST opargs to final indices. Call exactly once per
     # unverified_cfg before verification/assembly; no-op when nothing staged.
-    def flush_late_consts() {
+    def flush_late_consts {
         if self.late_flushed or len(self.late_consts) == 0 {
             return;
         }

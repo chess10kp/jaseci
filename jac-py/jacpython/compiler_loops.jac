@@ -23,13 +23,7 @@ import from opcode_meta {
     is_scope_exit_opcode,
     is_unconditional_jump_opcode,
 }
-import from ast_nodes {
-    AsyncFor,
-    For,
-    If,
-    While,
-    stmt,
-}
+import from ast_nodes { AsyncFor, For, If, While, stmt, }
 import from compiler_ir {
     basicblock,
     break_site,
@@ -65,7 +59,13 @@ import from codegen_util {
     nloc,
 }
 import from compiler_annotations { ann_scope_plan }
-import from compiler_codegen { emit_module_return, emit_tail_and_finish, visit_stmt_tail, visit_stmts, visit_store_target_tos }
+import from compiler_codegen {
+    emit_module_return,
+    emit_tail_and_finish,
+    visit_stmt_tail,
+    visit_stmts,
+    visit_store_target_tos
+}
 import from compiler_dispatch { stmt_handlers }
 import from compiler_exc { emit_anext_send_except_regions }
 import from compiler_context {
@@ -122,7 +122,8 @@ def flush_pending_break_finishes(g: cfg_builder, from_idx: int) {
             continue;
         }
         finish_break_sites(g, job.frame, job.join, no_loc(), True, job.allow_nop);
-        if job.test_blk is not None and job.branch_idx >= 0
+        if job.test_blk is not None
+            and job.branch_idx >= 0
             and job.body_hdr is not None
             and join_artificial_tail(job.join) {
             # Thread the test's false edge through the artificial anchor
@@ -273,17 +274,13 @@ def finish_break_sites(
         site = frame.break_sites[si];
         if site.instr_idx < 0 or site.instr_idx >= len(site.blk.instrs) {
             codegen_fail(
-                g,
-                "SystemError",
-                "break site index out of range in finish_break_sites"
+                g, "SystemError", "break site index out of range in finish_break_sites"
             );
             return;
         }
         if not is_unconditional_jump_opcode(site.blk.instrs[site.instr_idx].opcode) {
             codegen_fail(
-                g,
-                "SystemError",
-                "break site does not point at its recorded jump"
+                g, "SystemError", "break site does not point at its recorded jump"
             );
             return;
         }
@@ -292,9 +289,7 @@ def finish_break_sites(
             # ours must sit strictly below it or the rebuild above would
             # drop instructions between the two exits.
             codegen_fail(
-                g,
-                "SystemError",
-                "break sites in one block not in descending order"
+                g, "SystemError", "break sites in one block not in descending order"
             );
             return;
         }
@@ -340,6 +335,7 @@ def finish_break_sites(
         si = si - 1;
     }
 }
+
 def visit_if(
     g: cfg_builder,
     i: If,
@@ -398,7 +394,12 @@ def visit_if(
                 g.use(join);
                 if tail_more {
                     tail_cont = visit_stmt_tail(
-                        g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+                        g,
+                        tail,
+                        tail_idx,
+                        exec_tail_emits_code(tail, tail_idx + 1),
+                        ann_ctx
+                    );
                     return stmt_cont(
                         loc=tail_cont.loc,
                         next_si=len(tail),
@@ -427,15 +428,15 @@ def visit_if(
         # Same fallthrough contract as the orelse above: when the open body
         # end is no longer the last-placed block (deferred try/with machinery
         # materialized below it), an explicit jump is required to reach join.
-        if not body_cont.terminated
-            and g.u.blocks[len(g.u.blocks) - 1] is not g.cur {
+        if not body_cont.terminated and g.u.blocks[len(g.u.blocks) - 1] is not g.cur {
             g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
         }
         if owns_tail {
             g.use(join);
             if tail_more {
                 tail_cont = visit_stmt_tail(
-                    g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+                    g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx
+                );
                 return stmt_cont(
                     loc=tail_cont.loc,
                     next_si=len(tail),
@@ -632,7 +633,8 @@ def visit_while(
                 return stmt_cont(loc=wloc);
             }
             tail_cont = visit_stmt_tail(
-            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+                g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx
+            );
             return stmt_cont(
                 loc=tail_cont.loc, next_si=len(tail), terminated=tail_cont.terminated
             );
@@ -646,7 +648,8 @@ def visit_while(
             return stmt_cont(loc=wloc);
         }
         tail_cont = visit_stmt_tail(
-            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=tail_cont.loc);
         }
@@ -654,12 +657,7 @@ def visit_while(
         # artificial break NOP survives tail duplication when its line differs
         # from the copied continuation's first line.
         finish_break_sites(
-            g,
-            break_frame,
-            join,
-            tail_cont.loc,
-            tail_cont.terminated,
-            True
+            g, break_frame, join, tail_cont.loc, tail_cont.terminated, True
         );
         return stmt_cont(
             loc=tail_cont.loc, next_si=len(tail), terminated=tail_cont.terminated
@@ -884,17 +882,13 @@ def visit_for(
             return stmt_cont(loc=floc);
         }
         tail_cont = visit_stmt_tail(
-            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=tail_cont.loc);
         }
         finish_break_sites(
-            g,
-            break_frame,
-            join,
-            tail_cont.loc,
-            tail_cont.terminated,
-            False
+            g, break_frame, join, tail_cont.loc, tail_cont.terminated, False
         );
         return stmt_cont(
             loc=tail_cont.loc, next_si=len(tail), terminated=tail_cont.terminated
@@ -955,14 +949,29 @@ def visit_for(
     # return into the continuation for the natural path; finish_break_sites
     # synthesizes that epilogue over each break edge now.
     after = g.new_deferred_block();
+    # The unconditional bump at the loop head already counts this loop's
+    # iterator exactly once; region depths must not double-count it.
     try_in_body = loop_body_has_try(f.body);
-    g.loop_except_depth_bump = g.loop_except_depth_bump + 1;
     try_exit_blk: basicblock | None = None;
     if try_in_body {
-        try_exit_blk = g.new_deferred_block();
+        tmp_blk: basicblock = g.new_deferred_block();
+        # Pure splice source for finish_break_sites: every break edge inlines
+        # its contents, so once breaks finish the block has no incoming edge.
+        # exit_inline_ok lets remove_unreachable_blocks drop it (same idiom as
+        # match's join/end blocks); without it the dead return bytes would
+        # survive into co_code.
+        tmp_blk.exit_inline_ok = True;
+        try_exit_blk = tmp_blk;
         g.loop_exit_before_try_handlers = try_exit_blk;
-        g.loop_exit_return_loc = iter_loc;
-        g.loop_exit_emits_end_for = True;
+        # Oracle contract (3.14): a break edge unwinds the iterator with its
+        # own POP_TOP and then inlines the plain continuation return; the
+        # END_FOR/POP_ITER pair belongs only to the FOR_ITER exhaustion path
+        # (after). Mirrors visit_while, which never sets this flag.
+        g.loop_exit_emits_end_for = False;
+        if has_break and len(f.orelse) == 0 {
+            g.unit_for_after = after;
+            g.unit_for_after_loc = iter_loc;
+        }
     }
     if has_break {
         if try_in_body {
@@ -1000,8 +1009,9 @@ def visit_for(
         g.loop_exit_before_try_handlers = None;
         g.loop_exit_return_loc = None;
         g.loop_exit_emits_end_for = False;
+        g.unit_for_after = None;
+        g.unit_for_after_loc = None;
     }
-    g.loop_except_depth_bump = g.loop_except_depth_bump - 1;
     epilogue_done = g.loop_exit_epilogue_complete;
     g.loop_exit_epilogue_complete = False;
     if not after.placed {
@@ -1019,21 +1029,32 @@ def visit_for(
         flush_pending_break_finishes(g, else_snap);
         else_terminated = else_cont.terminated;
     }
+    if try_in_body and not (try_exit_blk as basicblock).placed {
+        # visit_try never materialized the break exit (no protected span
+        # ended at a break boundary). Place the bare continuation return so
+        # finish_break_sites splices a terminated join instead of leaving a
+        # dangling break target. Mirrors visit_while's exit_blk fallback.
+        g.use(try_exit_blk as basicblock);
+        emit_module_return(g, iter_loc);
+    }
     if has_break {
-        break_join = join;
         if try_in_body {
             break_join = try_exit_blk as basicblock;
         } else {
             g.use(join);
+            break_join = join;
         }
         join_epilogue = epilogue_done;
         if not break_join.placed or not block_is_terminated(break_join) {
             join_epilogue = False;
         }
-        finish_break_sites(
-            g, break_frame, break_join, iter_loc, join_epilogue, False
-        );
-        return stmt_cont(loc=iter_loc, terminated=else_terminated or epilogue_done);
+        finish_break_sites(g, break_frame, break_join, iter_loc, join_epilogue, False);
+        # The unit driver must append the natural-path return only when the
+        # exhaustion block is still open: with the visit_try hook it is
+        # already terminated, and a terminated back-edge block must not take
+        # dead epilogue bytes.
+        exhausted = after.placed and block_is_terminated(after);
+        return stmt_cont(loc=iter_loc, terminated=else_terminated or exhausted);
     }
     if epilogue_done {
         return stmt_cont(loc=iter_loc, terminated=True);
@@ -1145,7 +1166,8 @@ def visit_async_for(
             return stmt_cont(loc=floc, next_si=len(tail), terminated=True);
         }
         tail_cont = visit_stmt_tail(
-            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx
+        );
         return stmt_cont(
             loc=tail_cont.loc, next_si=len(tail), terminated=tail_cont.terminated
         );
@@ -1235,4 +1257,3 @@ with entry {
     stmt_handlers["visit_for"] = visit_for;
     stmt_handlers["visit_async_for"] = visit_async_for;
 }
-
