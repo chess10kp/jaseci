@@ -2900,6 +2900,18 @@ impl TypeEvaluator._assign_class(
                             if src_arg.is_builtin("str") and dest_arg.is_builtin("LiteralString") {
                                 continue;
                             }
+                            if src_arg.is_builtin("object") or dest_arg.is_builtin("object") {
+                                if not self.assign_type(src_arg, dest_arg, strict) {
+                                    return False;
+                                }
+                                continue;
+                            }
+                            if (src_arg.shared.is_builtin_class or src_arg.shared.is_from_stdlib_stub) and (dest_arg.shared.is_builtin_class or dest_arg.shared.is_from_stdlib_stub) {
+                                if not self.assign_type(src_arg, dest_arg, strict) {
+                                    return False;
+                                }
+                                continue;
+                            }
                         }
                         if not self.assign_type(src_arg, dest_arg, strict) {
                             return False;
@@ -2952,6 +2964,18 @@ impl TypeEvaluator._assign_class(
                                 continue;
                             }
                             if src_arg.is_builtin("str") and dest_arg.is_builtin("LiteralString") {
+                                continue;
+                            }
+                            if src_arg.is_builtin("object") or dest_arg.is_builtin("object") {
+                                if not self.assign_type(src_arg, dest_arg, strict) {
+                                    return False;
+                                }
+                                continue;
+                            }
+                            if (src_arg.shared.is_builtin_class or src_arg.shared.is_from_stdlib_stub) and (dest_arg.shared.is_builtin_class or dest_arg.shared.is_from_stdlib_stub) {
+                                if not self.assign_type(src_arg, dest_arg, strict) {
+                                    return False;
+                                }
                                 continue;
                             }
                         }
