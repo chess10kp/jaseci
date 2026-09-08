@@ -1,13 +1,4 @@
-"""The worker pool budgets each worker at the ceiling it may reach.
-
-`default_jobs` sizes a pool from available memory. It used to divide by a
-typical footprint (WORKER_MEM_BYTES) while the pools that recycle workers on
-an RSS ceiling let each worker grow to that ceiling first, so a cold `jac
-check` sweep on a 16 GB runner ran four workers that were each allowed 4 GB:
-17 GB with the parent, and the runner died before any of them retired. A
-caller that recycles at a ceiling now passes it, and the pool is sized so
-every worker can sit at the ceiling at once and still fit.
-"""
+"""Scheduling budgets and post-file retirement are independent policies."""
 
 import os;
 import from unittest.mock { mock_open, patch }
@@ -30,14 +21,13 @@ test "default_jobs sizes the pool by the per-worker ceiling" {
     assert default_jobs(worker_bytes=64 * GB, avail_bytes=16 * GB) == 1;
 }
 
-test "automatic test workers fit their configured memory ceiling" {
+test "test retirement thresholds do not serialize automatic scheduling" {
     with patch("os.cpu_count", return_value=4), patch(
         "builtins.open", mock_open(read_data="MemAvailable: 16777216 kB\n")
     ), patch.dict(os.environ, {"JAC_TEST_JOBS": "auto", "JAC_TEST_RECYCLE_MB": ""}) {
-        # Four workers allowed 8 GB each cannot share a 16 GB runner.
-        assert resolve_test_jobs() == 1;
+        assert resolve_test_jobs() == 4;
         with patch.dict(os.environ, {"JAC_TEST_RECYCLE_MB": "4096"}) {
-            assert resolve_test_jobs() == 2;
+            assert resolve_test_jobs() == 4;
         }
         with patch.dict(os.environ, {"JAC_TEST_RECYCLE_MB": "0"}) {
             assert resolve_test_jobs() == 4;

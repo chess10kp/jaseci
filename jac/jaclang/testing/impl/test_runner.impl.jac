@@ -1024,7 +1024,6 @@ impl run_tests(
     forced_serial = str(raw_jobs).strip() == "0";
     use_pool = hasattr(os, "fork")
         and not forced_serial
-        and ((workers > 1) or bool(iso_set) or bool(ser_set))
         and (len(plan.files) > 1 or bool(iso_set) or bool(ser_set));
     if not use_pool {
         _run_plan(
@@ -1081,11 +1080,8 @@ impl run_tests(
 
 impl resolve_jobs(requested: (str | int | None) = None) -> int {
     import from jaclang.cli.workpool { resolve_jobs as _resolve_pool_jobs }
-    return _resolve_pool_jobs(
-        requested,
-        env_var="JAC_TEST_JOBS",
-        worker_bytes=_test_rss_cap_mb() * 1024 * 1024
-    );
+
+    return _resolve_pool_jobs(requested, env_var="JAC_TEST_JOBS");
 }
 
 def _test_rss_cap_mb -> int {
