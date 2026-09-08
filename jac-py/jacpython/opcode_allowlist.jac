@@ -1,5 +1,5 @@
 # GENERATED: load-time opcode allowlist for the exec/marshal path.
-# Set = the 116 opcodes ceval.jac run_frame dispatches
+# Set = the 117 opcodes ceval.jac run_frame dispatches
 # (numbers from opcode_meta.jac = CPython opcode_ids.h). Regenerate by
 # re-grepping dispatch arms after adding new arms.
 #
@@ -67,6 +67,7 @@ OP_CACHE,
      OP_COPY,
      OP_COPY_FREE_VARS,
      OP_DELETE_ATTR,
+     OP_DELETE_DEREF,
      OP_DELETE_FAST,
      OP_DELETE_GLOBAL,
      OP_DELETE_NAME,
@@ -189,6 +190,7 @@ glob _OP_ALLOW: dict[int, bool] = {
     59: True,
     60: True,
     61: True,
+    62: True,
     63: True,
     64: True,
     65: True,
@@ -309,6 +311,7 @@ glob _OP_NAMES: dict[int, str] = {
     59: "OP_COPY",
     60: "OP_COPY_FREE_VARS",
     61: "OP_DELETE_ATTR",
+    62: "OP_DELETE_DEREF",
     63: "OP_DELETE_FAST",
     64: "OP_DELETE_GLOBAL",
     65: "OP_DELETE_NAME",
