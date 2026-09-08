@@ -220,16 +220,16 @@ impl TypeEvaluator._get_type_of_expression_core(
                             if len(elem_types) == 1 {
                                 list_inst.private.type_args = [elem_types[0]];
                             } elif len(elem_types) > 1 {
-                                list_inst.private.type_args = [
-                                    UnionType(types=elem_types)
-                                ];
+                                __ut: TypeBase = UnionType(types=elem_types);
+                                list_inst.private.type_args = [__ut];
                             }
                         }
                     } else {
                         if len(elem_types) == 1 {
                             list_inst.private.type_args = [elem_types[0]];
                         } elif len(elem_types) > 1 {
-                            list_inst.private.type_args = [UnionType(types=elem_types)];
+                            __ut2: TypeBase = UnionType(types=elem_types);
+                            list_inst.private.type_args = [__ut2];
                         }
                     }
                 }
@@ -2871,8 +2871,38 @@ impl TypeEvaluator._assign_class(
                     dest_arg = self._convert_to_instance(
                         dest_type.private.type_args[i]
                     );
-                    if not self.assign_type(src_arg, dest_arg, strict) {
-                        return False;
+                    tp = dest_type.shared.type_params[i]
+                        if (
+                            dest_type.shared.type_params
+                            and i < len(dest_type.shared.type_params)
+                        )
+                        else None;
+                    if tp and tp.is_covariant {
+                        if not self.assign_type(src_arg, dest_arg, strict) {
+                            return False;
+                        }
+                    } elif tp and tp.is_contravariant {
+                        if not self.assign_type(dest_arg, src_arg, strict) {
+                            return False;
+                        }
+                    } else {
+                        if isinstance(dest_arg, UnknownType) {
+                            continue;
+                        }
+                        if isinstance(src_arg, ClassType) and isinstance(dest_arg, ClassType) {
+                            if src_arg.is_builtin("LiteralString") and dest_arg.is_builtin("str") {
+                                continue;
+                            }
+                            if src_arg.is_builtin("str") and dest_arg.is_builtin("LiteralString") {
+                                continue;
+                            }
+                        }
+                        if not self.assign_type(src_arg, dest_arg, strict) {
+                            return False;
+                        }
+                        if not self.assign_type(dest_arg, src_arg, strict) {
+                            return False;
+                        }
                     }
                 }
             }
@@ -2906,7 +2936,21 @@ impl TypeEvaluator._assign_class(
                             return False;
                         }
                     } else {
+                        if isinstance(dest_arg, UnknownType) {
+                            continue;
+                        }
+                        if isinstance(src_arg, ClassType) and isinstance(dest_arg, ClassType) {
+                            if src_arg.is_builtin("LiteralString") and dest_arg.is_builtin("str") {
+                                continue;
+                            }
+                            if src_arg.is_builtin("str") and dest_arg.is_builtin("LiteralString") {
+                                continue;
+                            }
+                        }
                         if not self.assign_type(src_arg, dest_arg, strict) {
+                            return False;
+                        }
+                        if not self.assign_type(dest_arg, src_arg, strict) {
                             return False;
                         }
                     }
