@@ -2877,11 +2877,15 @@ impl TypeEvaluator._assign_class(
                             and i < len(dest_type.shared.type_params)
                         )
                         else None;
-                    if tp and tp.is_covariant {
+                    if tp is None {
                         if not self.assign_type(src_arg, dest_arg, strict) {
                             return False;
                         }
-                    } elif tp and tp.is_contravariant {
+                    } elif tp.is_covariant {
+                        if not self.assign_type(src_arg, dest_arg, strict) {
+                            return False;
+                        }
+                    } elif tp.is_contravariant {
                         if not self.assign_type(dest_arg, src_arg, strict) {
                             return False;
                         }
@@ -2927,11 +2931,15 @@ impl TypeEvaluator._assign_class(
                             and i < len(dest_type.shared.type_params)
                         )
                         else None;
-                    if tp and tp.is_covariant {
+                    if tp is None {
                         if not self.assign_type(src_arg, dest_arg, strict) {
                             return False;
                         }
-                    } elif tp and tp.is_contravariant {
+                    } elif tp.is_covariant {
+                        if not self.assign_type(src_arg, dest_arg, strict) {
+                            return False;
+                        }
+                    } elif tp.is_contravariant {
                         if not self.assign_type(dest_arg, src_arg, strict) {
                             return False;
                         }
