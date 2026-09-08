@@ -202,7 +202,9 @@ test "typevar10_ellipsis_stub_no_error" {
 """Mutable generic containers require invariant type arguments."""
 test "invariant_generic_arguments" {
     program = JacProgram();
-    mod = program.compile(os.path.join(CHECKER_FIXTURES, "checker_invariant_generics.jac"));
+    mod = program.compile(
+        os.path.join(CHECKER_FIXTURES, "checker_invariant_generics.jac")
+    );
 
     errors = [e.pretty_print() for e in program.errors_had];
     all_errors = "\n".join(errors);
