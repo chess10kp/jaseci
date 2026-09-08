@@ -181,7 +181,7 @@ def is_pyobj_type(t: c_ast.Node) -> bool {
         return True;
     }
     names = t?.names or [];
-    return names and names[-1] == "PyObject";
+    return bool(names) and names[-1] == "PyObject";
 }
 
 def ptr_depth(decl_type: c_ast.Node) -> int {
