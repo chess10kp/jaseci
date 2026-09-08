@@ -1,13 +1,22 @@
-# DESK state — pass 2026-09-08
+# DESK state — pass 2026-09-08 (evening)
+
+## gotchas (standing — read first)
+- **Cache isolation is mandatory**: sibling sessions share `~/.cache/jac` and
+  poison bootstrap entries mid-run (hangs at every commit, VM spins). Run all
+  jac commands with `XDG_CACHE_HOME=$REPO/.xdg-cache`. Full writeup:
+  `ops/local-cache-isolation.md`. Never bare `git add -A` (swept 113 MB
+  runtime binaries at fa0e4dbd5; push bounced).
+- Local inexplicable hang → CI is the arbiter (sealed binary); don't bisect
+  locally.
 
 ## gates
-- **merge gate**: pending push @c2bc9ada4 (repair on top of d23b36e80)
-- **full jac-py gates**: RED @9f42eafa4 (run 34187063273) — layer10
-  `for_break_inside_try_matches_oracle` 1f (139p/1f). Blocks hold-failed-19 requeue.
+- **upstream merge LANDED**: fa0e4dbd5 = 075453d07 + upstream/main (147
+  commits, #9022 semantics/native migration). Merge `fa0e4dbd5` pushed.
 - 185 LANDED @d23b36e80 + repair @c2bc9ada4: oracle parity reached
-  (co_code/linetable/stacksize). Local: layer10 140/140, layer9 203/203,
-  vm_conformance 199/199, flowgraph 29/29.
-- Re-dispatched jacpy-gates.yml on tip @c2bc9ada4.
+  (co_code/linetable/stacksize). Merged-tree local (isolated cache):
+  layer10 140/140, layer9 203/203, vm_conformance 199/199, flowgraph 29/29.
+- Full jacpy-gates.yml re-dispatched on fa0e4dbd5 (run 34285012919) —
+  watching libtest harness (difflib snippet) as the open verdict.
 
 ## in-flight
 | worker | lane | task |
