@@ -2906,17 +2906,15 @@ impl TypeEvaluator._assign_class(
                                 }
                                 continue;
                             }
-                            if (src_arg.shared.is_builtin_class or src_arg.shared.is_from_stdlib_stub) and (dest_arg.shared.is_builtin_class or dest_arg.shared.is_from_stdlib_stub) {
-                                if not self.assign_type(src_arg, dest_arg, strict) {
-                                    return False;
-                                }
-                                continue;
+                            if not self.assign_type(src_arg, dest_arg, strict) {
+                                return False;
                             }
+                            if not self.assign_type(dest_arg, src_arg, strict) {
+                                return False;
+                            }
+                            continue;
                         }
                         if not self.assign_type(src_arg, dest_arg, strict) {
-                            return False;
-                        }
-                        if not self.assign_type(dest_arg, src_arg, strict) {
                             return False;
                         }
                     }
@@ -2972,17 +2970,15 @@ impl TypeEvaluator._assign_class(
                                 }
                                 continue;
                             }
-                            if (src_arg.shared.is_builtin_class or src_arg.shared.is_from_stdlib_stub) and (dest_arg.shared.is_builtin_class or dest_arg.shared.is_from_stdlib_stub) {
-                                if not self.assign_type(src_arg, dest_arg, strict) {
-                                    return False;
-                                }
-                                continue;
+                            if not self.assign_type(src_arg, dest_arg, strict) {
+                                return False;
                             }
+                            if not self.assign_type(dest_arg, src_arg, strict) {
+                                return False;
+                            }
+                            continue;
                         }
                         if not self.assign_type(src_arg, dest_arg, strict) {
-                            return False;
-                        }
-                        if not self.assign_type(dest_arg, src_arg, strict) {
                             return False;
                         }
                     }
