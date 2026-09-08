@@ -66,6 +66,11 @@ jobs:
       - name: Set up jac (build the binary)
         uses: ./.github/actions/setup-jac
         with:
+          # The post-merge tree's JIR precompile/seal spikes RAM past the
+          # hosted runner's oomd threshold (SIGTERM at ~20-25m, two runs:
+          # 34287006408, 34289302982). Skip it: the binary compiles JIRs
+          # lazily on first use and the lanes fit the 120m job budget.
+          skip-precompile: "true"
           # jac-python is a trusted, long-lived campaign branch. Let completed
           # dispatches seed content-keyed build caches for the next checkpoint.
           write-caches: "true"
