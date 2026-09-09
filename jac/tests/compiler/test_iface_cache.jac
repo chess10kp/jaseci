@@ -873,6 +873,32 @@ test "include preserves the lazy type provider of hydrated dependency symbols" {
 }
 
 
+test "short lived types cannot alias memoized interface identities" {
+    import gc;
+    import from jaclang.compiler.types.types { ClassType, UnknownType }
+    import from jaclang.compiler.types.stubcat.locate { jaclang_pkg_dir }
+    import from jaclang.compiler.types.stubcat.writer { CatalogWriter }
+    (main, dep) = _project("obj Foreign {}\n");
+    prog = JacProgram();
+    mod = prog.compile(dep, options=CompileOptions(no_cgen=True, need_full_ast=True));
+    evaluator = prog.get_type_evaluator();
+    declared = evaluator.get_type_of_symbol(mod.names_in_scope["Foreign"]);
+    assert isinstance(declared, ClassType);
+    writer = CatalogWriter(
+        evaluator=evaluator, pkg_dir=jaclang_pkg_dir(), boundary=mod
+    );
+    class_key = writer._type_ident(declared);
+    for i in range(128) {
+        ephemeral = ClassType(_shared=declared.shared, flags=declared.flags);
+        assert writer._type_ident(ephemeral) == class_key;
+        del ephemeral;
+        gc.collect(0);
+        unknown = UnknownType();
+        assert writer._type_ident(unknown) != class_key;
+        del unknown;
+    }
+}
+
 test "failed type evaluation cannot publish an interface" {
     import from unittest.mock { patch }
     import from jaclang.compiler.types.stubcat.locate { jaclang_pkg_dir }

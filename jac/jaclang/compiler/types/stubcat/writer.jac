@@ -295,7 +295,7 @@ obj CatalogWriter {
         pending_syms: list[int] postinit,
         type_ids: dict[any, int] postinit,
         _ident_visiting: set[int] postinit,
-        _type_ident_memo: dict[int, any] postinit,
+        _type_ident_memo: dict[int, tuple[TypeBase, any]] postinit,
         types: list[TypeBase] postinit,
         pending_types: list[int] postinit,
         shared_ids: dict[any, int] postinit,
@@ -751,7 +751,7 @@ obj CatalogWriter {
         }
         memo = self._type_ident_memo.get(tid);
         if memo is not None {
-            return memo;
+            return memo[1];
         }
         if tid in self._ident_visiting {
             return tid;
@@ -762,7 +762,7 @@ obj CatalogWriter {
         } finally {
             self._ident_visiting.discard(tid);
         }
-        self._type_ident_memo[tid] = key;
+        self._type_ident_memo[tid] = (t, key);
         return key;
     }
 
