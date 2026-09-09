@@ -209,8 +209,8 @@ test "invariant_generic_arguments" {
     errors = [e.pretty_print() for e in program.errors_had];
     all_errors = "\n".join(errors);
 
-    assert len(errors) == 2 , f"Expected 2 invariant generic errors, got:\n{all_errors}";
-    assert all_errors.count("Cannot assign") == 2 , f"Expected both container substitutions to be rejected, got:\n{all_errors}";
+    assert len(errors) == 7 , f"Expected 7 invariant generic errors, got:\n{all_errors}";
+    assert all_errors.count("Cannot assign") == 7 , f"Expected all seven container substitutions to be rejected, got:\n{all_errors}";
 }
 
 """Test that module-level dunder variables (__name__, __file__, etc.) type-check cleanly."""
