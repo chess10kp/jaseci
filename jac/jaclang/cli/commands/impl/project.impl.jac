@@ -2075,3 +2075,74 @@ impl bundle(
     }
     return 0;
 }
+
+impl why(packages: list = []) -> int {
+    import from pathlib { Path }
+    import from jaclang.project.config { get_config }
+    import from jaclang.project.lockfile { jac_lock_rows, read_lock, why_chains }
+    config = get_config();
+    if config is None {
+        console.error(
+            "No jac.toml found", hint="Run 'jac create' to create a project first."
+        );
+        return 1;
+    }
+    if not packages {
+        console.error(
+            "Usage: jac why <package>",
+            hint="Pass at least one dependency name."
+        );
+        return 1;
+    }
+    lock_data = read_lock(config.project_root or Path.cwd());
+    jac_rows = jac_lock_rows(lock_data);
+    py_graph = lock_data.get("python_graph", {});
+    if not isinstance(py_graph, dict) {
+        py_graph = {};
+    }
+    npm_pins = lock_data.get("npm", {});
+    if not isinstance(npm_pins, dict) {
+        npm_pins = {};
+    }
+
+    def tag(n: str) -> str {
+        if n in jac_rows {
+            return " (jac)";
+        }
+        if n in py_graph {
+            return " (python)";
+        }
+        if n in npm_pins {
+            return " (npm)";
+        }
+        return "";
+    }
+
+    exit_code = 0;
+    for raw_name in packages {
+        pname = str(raw_name);
+        chains = why_chains(lock_data, pname);
+        known = (
+            pname in jac_rows or pname in py_graph or pname in npm_pins
+        );
+        if not chains or not known {
+            console.error(
+                f"'{pname}' is not recorded in jac.lock",
+                hint="Run 'jac install' to (re)generate the lockfile."
+            );
+            exit_code = 1;
+            continue;
+        }
+        console.print(f"\nWhy {pname}{tag(pname)} is installed", style="bold");
+        for chain in chains {
+            parts = [p + tag(p) for p in chain];
+            line = " <- ".join(parts);
+            if len(chain) == 1 and pname in npm_pins {
+                line += " (direct npm dependency)";
+            }
+            console.print(f"  {line}", style="muted");
+        }
+        console.print(f"  {len(chains)} chain(s)", style="muted");
+    }
+    return exit_code;
+}

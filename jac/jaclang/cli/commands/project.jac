@@ -493,6 +493,26 @@ def update(packages: list = [], dev: bool = False, verbose: bool = False) -> int
 
 def deps(scale: bool = False, as_json: bool = False) -> int;
 
+comptime SPEC_WHY: CommandSpec = CommandSpec(
+         name="why",
+         help="Explain why a dependency is installed",
+         args=[
+             Arg.create(
+                 "packages",
+                 kind=ArgKind.MULTI_POSITIONAL,
+                 `default=[],
+                 help="Package(s) to explain (reads jac.lock reverse edges)"
+             )
+         ],
+         examples=[
+             ("jac why requests", "Show every chain from requests back to the project"),
+             ("jac why mylib", "Show which pure-jac dependencies pull in mylib")
+         ],
+         group="project",
+         handler_name=ct_name(why)
+     );
+
+def why(packages: list = []) -> int;
 def script(name: str = "", list_scripts: bool = False) -> int;
 
 comptime SPEC_CLEAN: CommandSpec = CommandSpec(

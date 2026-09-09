@@ -549,3 +549,24 @@ test "frozen install errors when manifest is ahead of lock" {
         restore_store(store_tmp, old_env);
     }
 }
+
+test "why chains trace reverse edges" {
+    import from jaclang.project.lockfile { why_chains }
+    lock_data = {
+        "jac": {
+            "mylib": {"git": "https://x", "requested_by": ["root"]},
+            "shared": {"git": "https://y", "requested_by": ["mylib", "other"]}
+        },
+        "python_graph": {
+            "requests": ["root"],
+            "urllib3": ["requests"]
+        }
+    };
+    chains = why_chains(lock_data, "urllib3");
+    assert chains == [["urllib3", "requests", "root"]];
+    shared_chains = why_chains(lock_data, "shared");
+    assert ["shared", "mylib", "root"] in shared_chains;
+    assert ["shared", "other"] in shared_chains;
+    assert why_chains(lock_data, "mylib") == [["mylib", "root"]];
+    assert why_chains(lock_data, "nope") == [["nope"]];
+}
