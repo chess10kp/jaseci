@@ -266,3 +266,50 @@ def harvest_npm_lock(config: JacConfig) -> dict {
     }
     return {k: v for (k, v) in pins.items() if v};
 }
+
+
+def why_chains(lock_data: dict, name: str) -> list {
+    # all reverse-dependency chains for `name`, e.g.
+    # [name, requirer, ..., "root"]. Reads [jac.*] requested_by edges and
+    # the [python_graph] section; an unknown name yields [].
+    jac_rows = jac_lock_rows(lock_data);
+    py_graph = lock_data.get("python_graph", {});
+    if not isinstance(py_graph, dict) {
+        py_graph = {};
+    }
+
+    def requirers_of(cur: str) -> list {
+        if cur in jac_rows and isinstance(jac_rows[cur], dict) {
+            reqs = jac_rows[cur].get("requested_by", []);
+            return reqs if isinstance(reqs, list) else [];
+        }
+        if cur in py_graph {
+            reqs = py_graph[cur];
+            return reqs if isinstance(reqs, list) else [];
+        }
+        return [];
+    }
+
+    chains: list = [];
+
+    def walk(cur: str, trail: list) -> None {
+        if cur in trail {
+            return;
+        }
+        reqs = requirers_of(cur);
+        if not reqs {
+            chains.append(trail + [cur]);
+            return;
+        }
+        for r in reqs {
+            if r == "root" {
+                chains.append(trail + [cur, "root"]);
+            } else {
+                walk(str(r), trail + [cur]);
+            }
+        }
+    }
+
+    walk(name, []);
+    return chains;
+}
