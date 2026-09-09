@@ -1,5 +1,6 @@
 import os;
 import jaclang.compiler.frontend.unitree as uni;
+import from jaclang.compiler.frontend.roles { BodyRole }
 import from jaclang.compiler.frontend.constant { Tokens as Tok }
 import from jaclang.compiler.frontend.helpers { read_file_with_encoding }
 import from jaclang.compiler.cfront.lift { LiftResult, lift_c_file, render_lifted_jac }
@@ -166,8 +167,7 @@ def wire_cross_tu_imports(mod: uni.Module, my_stem: str, registry: dict[str, str
         new_body.append(el);
     }
     if not needed {
-        mod.body = new_body;
-        mod.kid = list(new_body);
+        mod._role_set(BodyRole, new_body);
         return;
     }
     imports: list[uni.ElementStmt] = [];
@@ -175,8 +175,7 @@ def wire_cross_tu_imports(mod: uni.Module, my_stem: str, registry: dict[str, str
         imports.append(_make_import(mod.source, owner, sorted(needed[owner])));
     }
     wired = [*imports, *new_body];
-    mod.body = wired;
-    mod.kid = list(wired);
+    mod._role_set(BodyRole, wired);
 }
 
 def lift_c_project(
