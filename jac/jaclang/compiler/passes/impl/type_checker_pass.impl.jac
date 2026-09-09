@@ -1,4 +1,8 @@
 impl TypeCheckPass.exit_special_var_ref with SpecialVarRef exit {
+    if here.name_of is not here
+        or (isinstance(here.parent, AtomTrailer) and here.parent.right is here) {
+        return;
+    }
     self.evaluator.get_type_of_expression(here);
 }
 

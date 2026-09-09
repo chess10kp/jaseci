@@ -926,6 +926,42 @@ test "failed type evaluation cannot publish an interface" {
     assert refused;
 }
 
+test "special variable method names retain their signatures across cache hydration" {
+    import from jaclang.compiler.types.types { FunctionType }
+    import from jaclang.compiler.types.stubcat.reader { CatModule }
+    (main, dep) = _project(
+        "class Lookup { static def root -> int { return 1; } }\n"
+        "with entry { answer: int = Lookup.root(); }\n"
+    );
+    Path(main).write_text(
+        "import from depmod { Lookup }\n"
+        "with entry { answer: int = Lookup.root(); graph_root = root; }\n"
+    );
+    (cold, _) = _check(dep);
+    assert not cold.errors_had;
+    hydrated = JacProgram();
+    mod = hydrated.compile(dep, options=_check_opts());
+    assert isinstance(mod, CatModule);
+    scope = mod.find_scope("Lookup");
+    assert scope is not None;
+    method = hydrated.get_type_evaluator().get_type_of_symbol(
+        scope.names_in_scope["root"]
+    );
+    assert isinstance(method, FunctionType);
+    assert str(method.return_type) == "int";
+    (warm, _) = _check(main);
+    assert not warm.errors_had;
+    _rewrite(
+        main,
+        "import from depmod { Lookup }\n"
+        "with entry { answer: str = Lookup.root(); }\n"
+    );
+    (invalid, _) = _check(main);
+    assert any(
+        err.code is not None and err.code.code == "E1001" for err in invalid.errors_had
+    );
+}
+
 test "interface identity normalizes relative and absolute source paths" {
     import from jaclang.compiler.types.stubcat.locate { jaclang_pkg_dir }
     import from jaclang.compiler.types.stubcat.modiface { build_module_iface }
