@@ -13,10 +13,23 @@
 - **upstream merge LANDED**: fa0e4dbd5 = 075453d07 + upstream/main (147
   commits, #9022 semantics/native migration). Merge `fa0e4dbd5` pushed.
 - 185 LANDED @d23b36e80 + repair @c2bc9ada4: oracle parity reached
-  (co_code/linetable/stacksize). Merged-tree local (isolated cache):
-  layer10 140/140, layer9 203/203, vm_conformance 199/199, flowgraph 29/29.
-- Full jacpy-gates.yml re-dispatched on fa0e4dbd5 (run 34285012919) —
-  watching libtest harness (difflib snippet) as the open verdict.
+  (co_code/linetable/stacksize).
+- Post-merge CI repair chain (each verified locally before dispatch):
+  f812832cd is_pyobj_type bool (E1002 strict payload check);
+  1a3b82141 skip JIR precompile (seal OOMs runner, SIGTERM ~20m);
+  9f950386c woven Module.init accepts campaign fields (decl/impl shadow);
+  01e051a03 JAC_PAYLOAD_SKIP_KERNEL (native kernel build exceeds runner
+  memory — fork fails outright; demotion warnings in transform.impl are
+  upstream's own and benign).
+- Full jacpy-gates.yml on 01e051a03: run 34297981315 in flight. Open
+  verdicts: (a) do lanes pass end-to-end on the hosted runner, (b) libtest
+  difflib snippet (spun in CI pre-merge; locally interpreted-ceval import
+  chain is slow — long-budget probes running).
+- Merged-tree local (isolated cache): layer10 140/140, layer9 203/203,
+  vm_conformance 199/199, flowgraph 29/29, p2_module_oracles 10/10.
+- **Decl/impl parity sweep**: unitree decl inits vs woven roles.impl inits
+  must match param-for-param — the impl shadows the decl. Sweep script
+  pattern in this file's history; zero mismatches remain.
 
 ## in-flight
 | worker | lane | task |
