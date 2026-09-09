@@ -501,9 +501,8 @@ jobs:
             paths: jaclang/compiler/tests
             sealed: ""
             iface_verify: "1"
-            # Source compiler workers peak above 4 GB; four can exhaust this
-            # 16 GB runner before the pool's per-file recycling can intervene.
-            jobs: "2"
+            # Exercise four workers with recycling and per-file RSS logging.
+            jobs: "4"
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/jac-kit
