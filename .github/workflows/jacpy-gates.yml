@@ -33,6 +33,9 @@ env:
   # mid-build; runs 34295798666/34289302982/34287006408). Gates lanes never
   # exercise the compiler's native-build path, so ship without the kernel.
   JAC_PAYLOAD_SKIP_KERNEL: "1"
+  # Without the kernel .so, native parsing is unavailable; the store parser
+  # (explicit fallback) serves the lanes. Named by the Layer 4 OSError.
+  JAC_COMPILER_LIB: "off"
   JAC_TEST_NATIVE: "1"
 
 jobs:
