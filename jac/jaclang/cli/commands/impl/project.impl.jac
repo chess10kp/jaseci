@@ -734,6 +734,7 @@ impl install(
     dev: bool = False,
     extras: list = [],
     no_save: bool = False,
+    frozen: bool = False,
     git: str = "",
     npm: bool | None = None,
     shadcn: bool = False,
@@ -844,7 +845,7 @@ impl install(
             names.append(name);
         }
         provider = JacGitProvider();
-        ctx = InstallContext(verbose=verbose);
+        ctx = InstallContext(verbose=verbose, frozen=frozen);
         if no_save or dry_run {
             section = config.plugin_dependencies.setdefault("jac", {});
             for spec in jac_specs {
@@ -910,7 +911,7 @@ impl install(
         if enabled
     ];
     python = get_python_provider();
-    ctx = InstallContext(verbose=verbose, install_flags=install_flags);
+    ctx = InstallContext(verbose=verbose, install_flags=install_flags, frozen=frozen);
     global_ctx = InstallContext(
         verbose=verbose, install_flags=install_flags, target="global"
     );
@@ -1166,12 +1167,40 @@ impl install(
 
     install_success = True;
     python_deps = dep_plan.for_ecosystem("python");
-    if python_deps {
+    import from jaclang.project.lockfile {
+        harvest_npm_lock,
+        harvest_python_lock,
+        read_lock,
+        update_python_rows
+    }
+    lock = read_lock(config.project_root or Path.cwd());
+    py_pins = lock.get("python", {});
+    py_pins = py_pins if isinstance(py_pins, dict) else {};
+    if python_deps and py_pins {
+        pin_specs = [f"{name}{py_pins[name]}" for name in sorted(py_pins.keys())];
+        with console.status(
+            f"Installing {len(pin_specs)} pinned package(s)...", spinner="dots"
+        ) as status {
+            install_success = python.install_specs(config, pin_specs, ctx);
+        }
+    } elif python_deps {
         with console.status(
             f"Installing {len(python_deps)} package(s)...", spinner="dots"
         ) as status {
             install_success = python.install_all(config, python_deps, ctx);
         }
+    }
+
+    if not dry_run and install_success and not no_save {
+        (py_harvest, py_graph) = harvest_python_lock(
+            config, config.get_venv_dir()
+        );
+        update_python_rows(
+            config.project_root or Path.cwd(),
+            py_harvest,
+            py_graph,
+            npm_pins=harvest_npm_lock(config)
+        );
     }
 
     if dry_run {
@@ -1341,6 +1370,8 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
             return 1;
         }
         jac_provider.save_deps_map(config, resolved);
+        import from jaclang.project.lockfile { update_jac_rows }
+        update_jac_rows(config.project_root or Path.cwd(), resolved);
         for pkg in resolved.values() {
             if jac_targets and pkg.name not in jac_targets {
                 continue;
@@ -1348,7 +1379,8 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
             old_sha = old_shas.get(pkg.name, "");
             if pkg.sha and old_sha and old_sha != pkg.sha {
                 console.print(
-                    f"  ✔ {pkg.name}: {old_sha[:12]} -> {pkg.sha[:12]}", style="success"
+                    f"  ✔ {pkg.name}: {old_sha[:12]} -> {pkg.sha[:12]}",
+                    style="success"
                 );
             } else {
                 via = f"{pkg.sha[:12]}" if pkg.sha else "path dep";
@@ -1468,6 +1500,18 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
             return 1;
         }
     }
+    import from jaclang.project.lockfile {
+        harvest_npm_lock,
+        harvest_python_lock,
+        update_python_rows
+    }
+    (py_harvest, py_graph) = harvest_python_lock(config, config.get_venv_dir());
+    update_python_rows(
+        config.project_root or Path.cwd(),
+        py_harvest,
+        py_graph,
+        npm_pins=harvest_npm_lock(config)
+    );
     console.success("Dependencies updated");
     return 0;
 }

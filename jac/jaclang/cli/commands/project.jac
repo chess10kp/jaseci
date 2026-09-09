@@ -221,6 +221,12 @@ comptime SPEC_INSTALL: CommandSpec = CommandSpec(
                  short=""
              ),
              Arg.create(
+                 "frozen",
+                 typ=bool,
+                 `default=False,
+                 help="Install exactly what jac.lock records; error if the manifest has pure-jac dependencies missing from the lockfile"
+             ),
+             Arg.create(
                  "git",
                  `default="",
                  help="Git repository URL to install and record as a git dependency",
@@ -387,6 +393,7 @@ def install(
     dev: bool = False,
     extras: list = [],
     no_save: bool = False,
+    frozen: bool = False,
     git: str = "",
     npm: bool | None = None,
     shadcn: bool = False,

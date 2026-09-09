@@ -548,11 +548,35 @@ obj JacGitProvider(EcosystemProvider) {
                 requested_by=[requirer]
             );
         } else {
+            pin_sha = str(pins.get("sha", "")) if pins else "";
+            stale: list[str] = [];
+            if pin_sha and commit and commit != pin_sha {
+                stale.append(
+                    f"manifest pins commit {commit[:12]} but jac.lock records "
+                    f"{pin_sha[:12]}"
+                );
+            }
+            if pin_sha and str(pins.get("git", "")) != key {
+                stale.append(
+                    f"manifest source is {key} but jac.lock records "
+                    f"{pins.get('git', '')}"
+                );
+            }
+            if stale and ctx is not None and ctx.frozen {
+                raise JacDepError(
+                    f"'{name}': {'; '.join(stale)}. "
+                    f"Run 'jac install' to refresh the lockfile."
+                );
+            }
+            if stale {
+                pins = {};
+                pin_sha = "";
+            }
             try {
                 fetched = fetch_package(
                     url=key,
-                    ref=ref,
-                    sha=commit or None,
+                    ref=ref if not (commit or pin_sha) else "",
+                    sha=commit or pin_sha or None,
                     expected_tree=str(pins.get("tree", "")),
                     verify=bool(pins)
                 );
@@ -622,9 +646,25 @@ obj JacGitProvider(EcosystemProvider) {
             return True;
         }
         include_root_dev = True if not deps else any(d.dev for d in deps);
+        import from jaclang.project.lockfile { jac_lock_rows, read_lock, update_jac_rows }
+        pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+        if ctx.frozen {
+            missing = [
+                n
+                for n in {**root_deps, **(root_dev if include_root_dev else {})}
+                if n not in pins
+            ];
+            if missing {
+                console.error(
+                    f"jac.lock is missing: {', '.join(sorted(missing))}. "
+                    f"Run 'jac install' to refresh the lockfile."
+                );
+                return False;
+            }
+        }
         try {
             resolved = self.resolve_closure(
-                config, ctx, include_root_dev=include_root_dev
+                config, ctx, frozen_pins=pins, include_root_dev=include_root_dev
             );
         } except JacDepError as e {
             console.error(str(e));
@@ -632,6 +672,7 @@ obj JacGitProvider(EcosystemProvider) {
         }
         self.save_deps_map(config, resolved);
         if not ctx.is_dry_run() {
+            update_jac_rows(config.project_root or Path.cwd(), resolved);
             write_pth(config, resolved);
             for pkg in resolved.values() {
                 via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
@@ -656,8 +697,11 @@ obj JacGitProvider(EcosystemProvider) {
             section[name] = dep;
         }
         config.save();
+        import from jaclang.project.lockfile { jac_lock_rows, read_lock, update_jac_rows }
         try {
-            resolved = self.resolve_closure(config, ctx);
+            resolved = self.resolve_closure(
+                config, ctx, frozen_pins=jac_lock_rows(read_lock(config.project_root or Path.cwd()))
+            );
         } except JacDepError as e {
             self._unrecord(config, name, dev);
             config.save();
@@ -665,6 +709,9 @@ obj JacGitProvider(EcosystemProvider) {
             return None;
         }
         self.save_deps_map(config, resolved);
+        if ctx is None or not ctx.is_dry_run() {
+            update_jac_rows(config.project_root or Path.cwd(), resolved);
+        }
         write_pth(config, resolved);
         pkg = resolved[name];
         via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
@@ -712,6 +759,8 @@ obj JacGitProvider(EcosystemProvider) {
             return False;
         }
         self.save_deps_map(config, resolved);
+        import from jaclang.project.lockfile { update_jac_rows }
+        update_jac_rows(config.project_root or Path.cwd(), resolved);
         write_pth(config, resolved);
         console.print(f"  ✔ Removed {name} from [dependencies.jac]", style="success");
         return True;
