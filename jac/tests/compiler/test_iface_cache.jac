@@ -845,6 +845,7 @@ test "a verification program does not recursively verify cached dependencies" {
 
 test "include preserves the lazy type provider of hydrated dependency symbols" {
     import from jaclang.compiler.types.types { ClassType }
+    import from jaclang.compiler.frontend.constant { BindingKind }
     with tempfile.TemporaryDirectory() as tmpdir {
         base = Path(tmpdir).resolve() / "included_base.jac";
         facade = Path(tmpdir).resolve() / "included_facade.jac";
@@ -859,12 +860,61 @@ test "include preserves the lazy type provider of hydrated dependency symbols" {
         module = prog.load_dependency_module(str(facade));
         imported = module.sym_tab.lookup("Exported");
         assert imported is not None and imported.provider is original.provider;
+        assert imported.imported_from is original;
+        assert imported.binding_kind == original.binding_kind;
+        assert prog.get_type_evaluator().resolve_to_definition_symbol(imported)
+            is original;
         assert isinstance(
             prog.get_type_evaluator().get_type_of_symbol(imported), ClassType
         );
+        original.binding_kind = BindingKind.TYPE;
+        assert imported.binding_kind == BindingKind.TYPE;
     }
 }
 
+
+test "failed type evaluation cannot publish an interface" {
+    import from unittest.mock { patch }
+    import from jaclang.compiler.types.stubcat.locate { jaclang_pkg_dir }
+    import from jaclang.compiler.types.stubcat.modiface {
+        build_module_iface,
+        IncoherentInterface
+    }
+    (main, dep) = _project();
+    prog = JacProgram();
+    mod = prog.compile(dep, options=CompileOptions(no_cgen=True, need_full_ast=True));
+    evaluator = prog.get_type_evaluator();
+    refused = False;
+    with patch.object(
+        type(evaluator),
+        "get_type_of_symbol",
+        side_effect=RuntimeError("incomplete dependency")
+    ) {
+        try {
+            build_module_iface(mod, evaluator, jaclang_pkg_dir());
+        } except IncoherentInterface as exc {
+            assert any("incomplete dependency" in failure for failure in exc.failures);
+            refused = True;
+        }
+    }
+    assert refused;
+}
+
+test "interface identity normalizes relative and absolute source paths" {
+    import from jaclang.compiler.types.stubcat.locate { jaclang_pkg_dir }
+    import from jaclang.compiler.types.stubcat.modiface { build_module_iface }
+    (main, dep) = _project();
+    pkg = jaclang_pkg_dir();
+    payloads: list[bytes] = [];
+    for path in [dep, os.path.relpath(dep)] {
+        prog = JacProgram();
+        mod = prog.compile(
+            path, options=CompileOptions(no_cgen=True, need_full_ast=True)
+        );
+        payloads.append(build_module_iface(mod, prog.get_type_evaluator(), pkg));
+    }
+    assert payloads[0] == payloads[1];
+}
 
 test "equivalent external class references have one interface identity" {
     import from copy { copy }

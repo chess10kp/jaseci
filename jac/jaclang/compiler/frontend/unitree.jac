@@ -276,7 +276,8 @@ node Symbol {
         na_stack_ok: bool = False,
         _in_stub_scope: (bool | None) = None,
         _binding_kind: (BindingKind | None) = None,
-        provider: SymbolProvider | None = None;
+        provider: SymbolProvider | None = None,
+        imported_from: Symbol | None = None;
 
     def init(
         defn: NameAtom,

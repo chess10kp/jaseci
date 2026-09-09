@@ -1449,6 +1449,9 @@ impl Symbol.binding_kind.getter -> BindingKind {
         if cur._binding_kind is not None {
             return cur._binding_kind;
         }
+        if cur.imported_from is not None {
+            continue;
+        }
         if item is None {
             return binding_kind_of_decl(decl);
         }
@@ -1655,7 +1658,7 @@ impl UniScopeNode.insert(
     collision = self.names_in_scope[nd.sym_name].defn[-1]
         if (single and (nd.sym_name in self.names_in_scope))
         else None;
-    provider = nd.sym.provider if imported and nd.sym is not None else None;
+    origin = nd.sym if imported else None;
     symbol = nd.name_spec.create_symbol(
         access=access_spec
             if isinstance(access_spec, SymbolAccess)
@@ -1663,7 +1666,10 @@ impl UniScopeNode.insert(
         parent_tab=self,
         imported=imported
     );
-    symbol.provider = provider;
+    if origin is not None {
+        symbol.provider = origin.provider;
+        symbol.imported_from = origin;
+    }
     current = self.names_in_scope;
     if (nd.sym_name in current) {
         self +>:ScopeOverload:+> symbol;
@@ -4286,6 +4292,11 @@ impl import_chain_of(sym: Symbol) -> list[Symbol] {
         }
         seen.add(id(cur));
         chain.append(cur);
+        origin = cur.imported_from;
+        if origin is not None {
+            cur = origin;
+            continue;
+        }
         decl = cur.decl;
         if not isinstance(decl.parent, ModuleItem) {
             return chain;
