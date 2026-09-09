@@ -445,8 +445,8 @@ test "the glue supplies the region-death hook only when no unit does" {
     (glue_ir, _exports) = link_glue_ir(spec);
     assert f"define void @{REGION_DIED_HOOK}(" in glue_ir;
 
-    graph = os.path.join(root_dir, "graph.jac");
-    with open(graph, "w") as f {
+    graph_path = os.path.join(root_dir, "graph.jac");
+    with open(graph_path, "w") as f {
         f.write(
             "node Cell { has v: int = 0; }\n"
             "walker Sum { has total: int = 0;\n"
@@ -457,9 +457,9 @@ test "the glue supplies the region-death hook only when no unit does" {
     }
     gprog = JacProgram();
     opts = _opts();
-    gprog.compile(file_path=graph, options=opts);
+    gprog.compile(file_path=graph_path, options=opts);
     assert not gprog.errors_had , [str(e) for e in gprog.errors_had];
-    gplan = build_link_plan(gprog, [graph], opts);
+    gplan = build_link_plan(gprog, [graph_path], opts);
     suppliers = [
         u.path
         for u in gplan.units

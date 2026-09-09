@@ -796,13 +796,15 @@ test "verification checks interfaces without encoding or rewriting dependencies"
     reg._materialize(ent);
     paths = [get_module_cache_path(main), get_module_cache_path(dep)];
     before = [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths];
-    with patch.object(
-        IfaceRegistry,
-        "_encode_iface",
-        side_effect=AssertionError("verification encoded a dependency")
-    ) as encoder {
+    encoded: list[str] = [];
+    original = vars(IfaceRegistry)["_encode_iface"];
+    def encode(registry: IfaceRegistry, codec: any, mod: any) -> any {
+        encoded.append(os.path.realpath(mod.loc.mod_path));
+        return original(registry, codec, mod);
+    }
+    with patch.object(IfaceRegistry, "_encode_iface", new=encode) {
         reg._verify_iface(main, ent);
-        assert encoder.call_count == 0;
+        assert encoded == [main];
         ent.digest = "deliberately incorrect interface digest";
         caught = False;
         try {
@@ -811,6 +813,7 @@ test "verification checks interfaces without encoding or rewriting dependencies"
             caught = True;
         }
         assert caught , "verification accepted an incorrect interface digest";
+        assert encoded == [main, main];
     }
     assert [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths] == before , (
         "verification rewrote the cache it was checking"
@@ -860,4 +863,56 @@ test "include preserves the lazy type provider of hydrated dependency symbols" {
             prog.get_type_evaluator().get_type_of_symbol(imported), ClassType
         );
     }
+}
+
+
+test "equivalent external class references have one interface identity" {
+    import from copy { copy }
+    import from jaclang.compiler.types.types { ClassType, FunctionType }
+    import from jaclang.compiler.types.stubcat.locate { jaclang_pkg_dir }
+    import from jaclang.compiler.types.stubcat.modiface { build_module_iface }
+    (main, dep) = _project("obj Foreign {}\n");
+    Path(main).write_text(
+        "import from depmod { Foreign }\n"
+        "def f() -> Foreign { return Foreign(); }\n"
+        "def g() -> Foreign { return Foreign(); }\n"
+    );
+    prog = JacProgram();
+    mod = prog.compile(main, options=CompileOptions(no_cgen=True, need_full_ast=True));
+    evaluator = prog.get_type_evaluator();
+    pkg = jaclang_pkg_dir();
+    before = build_module_iface(mod, evaluator, pkg);
+    fn = evaluator.get_type_of_symbol(mod.names_in_scope["g"]);
+    assert isinstance(fn, FunctionType);
+    original = fn.return_type;
+    assert isinstance(original, ClassType);
+    fn.return_type = ClassType(
+        _shared=copy(original.shared),
+        private=copy(original.private),
+        flags=original.flags
+    );
+    assert build_module_iface(mod, evaluator, pkg) == before;
+    other = JacProgram();
+    other_mod = other.compile(
+        dep, options=CompileOptions(no_cgen=True, need_full_ast=True)
+    );
+    twin = other.get_type_evaluator().get_type_of_symbol(
+        other_mod.names_in_scope["Foreign"]
+    );
+    assert isinstance(twin, ClassType);
+    fn.return_type = ClassType(
+        _shared=twin.shared, private=copy(original.private), flags=original.flags
+    );
+    assert build_module_iface(mod, evaluator, pkg) == before;
+    hydrated = JacProgram();
+    hydrated_mod = hydrated.load_dependency_module(dep);
+    cached = hydrated.get_type_evaluator().get_type_of_symbol(
+        hydrated_mod.names_in_scope["Foreign"]
+    );
+    assert isinstance(cached, ClassType);
+    assert hydrated.analysis.cache_events.get("dep_hydrate", 0) == 1;
+    fn.return_type = ClassType(
+        _shared=cached.shared, private=copy(original.private), flags=original.flags
+    );
+    assert build_module_iface(mod, evaluator, pkg) == before;
 }

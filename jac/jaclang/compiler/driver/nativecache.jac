@@ -606,6 +606,8 @@ obj NativeBuildSession {
             if mod is None {
                 self.source_keys[resolved] = NativeUnitRegistry._source_key(resolved);
                 opts.no_cgen = True;
+
+                opts.aot_mode = False;
                 mod = self.prog.compile(resolved, use_str=use_str, options=opts);
                 self.registry._event("native_unit_analysis");
             }
@@ -613,8 +615,22 @@ obj NativeBuildSession {
                 return None;
             }
             opts.no_cgen = False;
+            opts.aot_mode = True;
             self.prog.options = opts;
             set_effective_default_codespace("native");
+
+            import from jaclang.compiler.frontend.unitree { ContextAwareNode }
+            import from jaclang.compiler.frontend.constant { CodeContext }
+            import from jaclang.compiler.driver.boundary_classify {
+                _stamp_context_element
+            }
+            mod.decided_codespace = "native";
+            for stmt in mod.body {
+                if isinstance(stmt, ContextAwareNode)
+                    and stmt.code_context != CodeContext.CLIENT {
+                    _stamp_context_element(stmt, CodeContext.NATIVE);
+                }
+            }
             import from jaclang.compiler.passes.rc_facts_pass { RcFactsPass }
             import from jaclang.compiler.backends.native.na_ir_gen_pass { NaIRGenPass }
             mod.gen.llvm_ir = None;

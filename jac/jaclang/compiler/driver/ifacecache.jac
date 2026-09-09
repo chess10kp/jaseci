@@ -783,9 +783,7 @@ obj IfaceRegistry {
         resolved: str, mod: any, options: any, err_start: int, warn_start: int
     ) -> None {
         import json;
-        # An oracle compares source with the served cache. Persisting here
-        # both mutates that evidence and encodes the entire dependency closure
-        # unnecessarily; _verify_iface explicitly encodes only its target.
+
         if self.verifying or mod is None or mod.parse_failed {
             return;
         }
@@ -1068,12 +1066,14 @@ obj IfaceRegistry {
             }
             codec = iface_codec();
             assert codec is not None;
-            fresh_digest = codec.read_iface_hash(
-                codec.build_module_iface(
-                    fresh, prog2.get_type_evaluator(), self._pkg_dir()
-                )
-            )
-                or "";
+            fresh_bytes = prog2.iface_registry()._encode_iface(codec, fresh);
+            if fresh_bytes is None {
+                raise RuntimeError(
+                    f"analysis-cache verify failed for {resolved}: fresh "
+                    "source has no coherent interface"
+                );
+            }
+            fresh_digest = codec.read_iface_hash(fresh_bytes) or "";
             if fresh_digest != ent.digest {
                 raise RuntimeError(
                     f"analysis-cache verify failed for {resolved}: the served "

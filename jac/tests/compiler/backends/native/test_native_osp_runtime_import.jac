@@ -17,14 +17,14 @@ import from jaclang.compiler.frontend.codeinfo {
 
 test "explicit runtime imports use distinct source unit identities" {
     kernel = kernel_unit_path(OSP_KERNEL_REL);
-    graph = kernel_unit_path(OSP_GRAPH_REL);
+    graph_path = kernel_unit_path(OSP_GRAPH_REL);
     assert is_kernel_unit_path(kernel);
-    assert is_kernel_unit_path(graph);
-    assert native_module_key(kernel) != native_module_key(graph);
+    assert is_kernel_unit_path(graph_path);
+    assert native_module_key(kernel) != native_module_key(graph_path);
     assert not is_kernel_unit_path("/checkout/osp_kernel.jac");
     for (name, path) in [
         ("jaclang.runtime.osp_kernel", kernel),
-        ("jaclang.runtime.osp_graph", graph)
+        ("jaclang.runtime.osp_graph", graph_path)
     ] {
         (_, resolved) = resolve_native_module(name, "/checkout", allow_inferred=False);
         assert resolved == path;

@@ -398,7 +398,7 @@ obj CatalogWriter {
             return id(scope);
         }
         mod = module_of(scope);
-        if mod is None or not self.in_boundary(mod) {
+        if mod is None {
             return id(scope);
         }
         loc = scope.loc;
@@ -422,7 +422,7 @@ obj CatalogWriter {
         }
         home = home_scope(sym);
         mod = module_of(home);
-        if home is None or mod is None or not self.in_boundary(mod) {
+        if home is None or mod is None {
             return id(sym);
         }
         loc = sym.decl.loc if sym.decl else None;
@@ -449,8 +449,17 @@ obj CatalogWriter {
             tab = None;
         }
         mod = module_of(tab) if tab is not None else None;
-        if tab is None or mod is None or not self.in_boundary(mod) {
+        if tab is None or mod is None {
             return id(shared);
+        }
+        if not self.in_boundary(mod) {
+            return (
+                "xref",
+                self._mod_ident(mod),
+                self.scope_dotted_path(tab),
+                shared.class_name,
+                shared.canonical_key()
+            );
         }
         return (self._scope_ident(tab), shared.class_name, );
     }

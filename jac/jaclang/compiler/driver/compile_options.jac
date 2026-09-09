@@ -180,6 +180,7 @@ obj CompileOptions {
 
     def clone_for_native_import -> CompileOptions {
         return CompileOptions(
+            need_full_ast=True,
             skip_native_engine=True,
             no_ir_cache=self.no_ir_cache,
             aot_mode=True,
