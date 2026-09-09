@@ -1451,6 +1451,9 @@ impl JacCompiler._native_sections(
 impl JacCompiler._persist_native_unit(
     full_target: str, result: uni.Module, actual_program: JacProgram
 ) -> None {
+    if actual_program.iface_registry().verifying {
+        return;
+    }
     if result is None or result.parse_failed or result.gen.native_iface is None {
         return;
     }
@@ -2265,7 +2268,9 @@ impl JacCompiler.get_client_artifact(
     }
     mark = len(actual_program.errors_had);
     compiled = self.compile(
-        file_path=full_target, target_program=actual_program, options=CompileOptions()
+        file_path=full_target,
+        target_program=actual_program,
+        options=CompileOptions(no_cgen=True)
     );
     if len(actual_program.errors_had) > mark {
         return None;

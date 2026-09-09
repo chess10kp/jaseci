@@ -758,6 +758,8 @@ test "cache verification compares once and releases its temporary program" {
     import from jaclang.compiler.driver.ifacecache { IfaceRegistry }
     (main, dep) = _project();
     _check(main);
+    paths = [get_module_cache_path(main), get_module_cache_path(dep)];
+    before = [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths];
     temporary: list[JacProgram] = [];
     factory = vars(IfaceRegistry)["_fresh_verify_program"];
     def record(reg: IfaceRegistry) -> JacProgram {
@@ -776,8 +778,43 @@ test "cache verification compares once and releases its temporary program" {
             temporary
         )} programs"
     );
+    assert temporary[0].analysis.cache_events.get("iface_encode", 0) == 0;
+    assert temporary[0].analysis.cache_events.get("iface_persist", 0) == 0;
+    assert [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths] == before;
     assert temporary[0].type_evaluator is None;
     assert not temporary[0].mod.hub , "the verification retained its compile closure";
+}
+
+test "verification checks interfaces without encoding or rewriting dependencies" {
+    import from unittest.mock { patch }
+    import from jaclang.compiler.driver.ifacecache { IfaceRegistry }
+    (main, dep) = _project();
+    (prog, _) = _check(main);
+    reg = prog.iface_registry();
+    ent = reg._register_from_disk(main, False);
+    assert ent is not None;
+    reg._materialize(ent);
+    paths = [get_module_cache_path(main), get_module_cache_path(dep)];
+    before = [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths];
+    with patch.object(
+        IfaceRegistry,
+        "_encode_iface",
+        side_effect=AssertionError("verification encoded a dependency")
+    ) as encoder {
+        reg._verify_iface(main, ent);
+        assert encoder.call_count == 0;
+        ent.digest = "deliberately incorrect interface digest";
+        caught = False;
+        try {
+            reg._verify_iface(main, ent);
+        } except RuntimeError {
+            caught = True;
+        }
+        assert caught , "verification accepted an incorrect interface digest";
+    }
+    assert [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths] == before , (
+        "verification rewrote the cache it was checking"
+    );
 }
 
 test "a verification program does not recursively verify cached dependencies" {

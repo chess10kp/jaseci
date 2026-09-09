@@ -783,7 +783,10 @@ obj IfaceRegistry {
         resolved: str, mod: any, options: any, err_start: int, warn_start: int
     ) -> None {
         import json;
-        if mod is None or mod.parse_failed {
+        # An oracle compares source with the served cache. Persisting here
+        # both mutates that evidence and encodes the entire dependency closure
+        # unnecessarily; _verify_iface explicitly encodes only its target.
+        if self.verifying or mod is None or mod.parse_failed {
             return;
         }
         codec = iface_codec();

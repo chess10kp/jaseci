@@ -1087,6 +1087,7 @@ impl NaIRGenPass._walk_imported_module_type_names(imported_mod: uni.Module) -> N
         if (
             isinstance(stmt, uni.ContextAwareNode)
             and stmt.code_context == CodeContext.CLIENT
+            and not stmt.codespace_dual
         ) {
             continue;
         }
@@ -1113,6 +1114,7 @@ impl NaIRGenPass._walk_imported_module_types(imported_mod: uni.Module) -> None {
         if (
             isinstance(stmt, uni.ContextAwareNode)
             and stmt.code_context == CodeContext.CLIENT
+            and not stmt.codespace_dual
         ) {
             continue;
         }
@@ -1218,6 +1220,7 @@ impl NaIRGenPass._walk_imported_module_abilities(
         if (
             isinstance(stmt, uni.ContextAwareNode)
             and stmt.code_context == CodeContext.CLIENT
+            and not stmt.codespace_dual
         ) {
             continue;
         }
@@ -1230,6 +1233,7 @@ impl NaIRGenPass._walk_imported_module_abilities(
         if (
             isinstance(stmt, uni.ContextAwareNode)
             and stmt.code_context == CodeContext.CLIENT
+            and not stmt.codespace_dual
         ) {
             continue;
         }
@@ -1297,6 +1301,7 @@ impl NaIRGenPass._register_imported_hierarchy(imported_mod: uni.Module) -> None 
         if (
             isinstance(stmt, uni.ContextAwareNode)
             and stmt.code_context == CodeContext.CLIENT
+            and not stmt.codespace_dual
         ) {
             continue;
         }

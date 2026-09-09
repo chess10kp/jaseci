@@ -759,7 +759,7 @@ impl EsastGenPass.exit_atom_trailer with uni.AtomTrailer exit {
             or self.sync_loc(es.Identifier(name='obj'), jac_node=here.target)
     );
     if isinstance(here.right, uni.FilterCompr) {
-        here.gen.es_ast = self._apply_osp_filter(here, `obj, here.right);
+        here.gen.es_ast = self._build_osp_filter(here, `obj, here.right);
         return;
     }
     if (here.right and here.right.gen.es_ast) {
