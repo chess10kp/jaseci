@@ -1480,7 +1480,9 @@ impl BoundaryAnalysisPass._record_access_levels(manifest: any) -> None {
 
 
 impl BoundaryAnalysisPass.enter_atom_trailer with AtomTrailer entry {
-    if not here.is_attr or self._get_context(here) != InteropContext.CLIENT {
+    if not here.is_attr
+        or self._get_context(here) != InteropContext.CLIENT
+        or (self.prog is not None and self.prog.options.aot_mode) {
         return;
     }
     import from jaclang.compiler.types.types { ClassType }
