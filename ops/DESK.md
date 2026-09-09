@@ -21,12 +21,23 @@
   01e051a03 JAC_PAYLOAD_SKIP_KERNEL (native kernel build exceeds runner
   memory — fork fails outright; demotion warnings in transform.impl are
   upstream's own and benign).
-- Full jacpy-gates.yml on 01e051a03: run 34297981315 in flight. Open
-  verdicts: (a) do lanes pass end-to-end on the hosted runner, (b) libtest
-  difflib snippet (spun in CI pre-merge; locally interpreted-ceval import
-  chain is slow — long-budget probes running).
-- Merged-tree local (isolated cache): layer10 140/140, layer9 203/203,
-  vm_conformance 199/199, flowgraph 29/29, p2_module_oracles 10/10.
+- Full jacpy-gates.yml on 01e051a03: run 34297981315 — setup PASSED (5m36s,
+  skip-precompile+kernel-skip); failed Layer 4 → fixed by JAC_COMPILER_LIB=off
+  (a27c75e78) → run 34298516569 failed P2 waves lifts → fixed by _role_set
+  (b0f5e950c) → run 34301431456 reached libtest, 20m step-timeout with zero
+  marks (true hang, confirmed CI-side).
+- **OPEN REGRESSION — libtest difflib/import spin (workpackage-ready)**:
+  introduced by 1c6a63f14 ("carve try/await exception tables and emit
+  DELETE_DEREF", Sep 7) — proven by isolated-cache probe: b1e92cf55 PASSES
+  (463s exit 0), 1c6a63f14 HANGS (adjacent commits, single variable).
+  Repro: difflib-only slice of layer_p2_libtest under `jac test`; guest VM
+  spins 98% CPU importing host stdlib through the layer3 shim path
+  (set_layer3_active(True) + IMPORT_NAME routing). Prime suspect: the same
+  commit's ceval_bridge_guest stand-in recovery path (host-created guest
+  stand-ins, e.g. namedtuple via tuple.__new__) re-entering trampolines.
+  Layer lanes don't cover the intersection (layer3 shim routing × bridge
+  recovery) — that's the census gap. Fix owner: VM/bridge debugging
+  session; instrument ceval find_handler + stand-in trampoline entry.
 - **Decl/impl parity sweep**: unitree decl inits vs woven roles.impl inits
   must match param-for-param — the impl shadows the decl. Sweep script
   pattern in this file's history; zero mismatches remain.
