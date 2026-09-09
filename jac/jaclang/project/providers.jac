@@ -644,6 +644,8 @@ def get_provider_registry -> ProviderRegistry {
     if _registry is None {
         _registry = ProviderRegistry();
         _registry.register(PythonProvider());
+        import from jaclang.project.jac_provider { JacGitProvider }
+        _registry.register(JacGitProvider());
         initialize_provider_registry();
     }
     return _registry;
