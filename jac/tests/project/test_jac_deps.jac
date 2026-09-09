@@ -29,6 +29,11 @@ import from jaclang.project.jac_provider {
     version_satisfied
 }
 import from jaclang.project.providers { InstallContext, get_provider_registry }
+import from jaclang.project.lockfile {
+    jac_lock_rows,
+    read_lock,
+    update_jac_rows
+}
 
 
 def make_git_repo(path: Path, jac_toml: str, files: dict) -> str {
@@ -397,4 +402,150 @@ test "registry exposes the jac provider" {
     assert provider is not None;
     assert provider.name == "jac";
     assert registry.get_by_flag("--npm") is not None;
+}
+
+# ===== jac.lock =====
+test "lock rows round-trip through install" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_lock_rt_");
+        origin = make_git_repo(
+            Path(outer) / "origin",
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        toml_text = (
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nmylib = {{ git = "{origin}" }}\n'
+        );
+        (config, tmp) = make_project(toml_text);
+        try {
+            provider = JacGitProvider();
+            ok = provider.install_all(config, [], InstallContext());
+            assert ok;
+            lock_file = (config.project_root or Path.cwd()) / "jac.lock";
+            assert lock_file.is_file();
+            rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            assert "mylib" in rows;
+            row = rows["mylib"];
+            assert row["git"] == origin;
+            assert row["sha"];
+            assert row["tree"].startswith("sha256-");
+            assert row["version"] == "1.2.0";
+            assert row["requested_by"] == ["root"];
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+test "frozen replay keeps the recorded commit" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_lock_fz_");
+        origin_path = Path(outer) / "origin";
+        origin = make_git_repo(
+            origin_path,
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        toml_text = (
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nmylib = {{ git = "{origin}" }}\n'
+        );
+        (config, tmp) = make_project(toml_text);
+        try {
+            provider = JacGitProvider();
+            ok = provider.install_all(config, [], InstallContext());
+            assert ok;
+            rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            pinned_sha = rows["mylib"]["sha"];
+            (origin_path / "extra.jac").write_text(
+                "def extra() -> int { return 7; }\n", encoding="utf-8"
+            );
+            env = dict(os.environ);
+            subprocess.run(
+                ["git", "-C", str(origin_path), "add", "-A"], check=True, env=env
+            );
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(origin_path),
+                    "-c",
+                    "user.name=t",
+                    "-c",
+                    "user.email=t@t",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "second"
+                ],
+                check=True,
+                env=env
+            );
+            replayed = provider.resolve_closure(
+                config,
+                InstallContext(frozen=True),
+                frozen_pins=jac_lock_rows(
+                    read_lock(config.project_root or Path.cwd())
+                )
+            );
+            assert replayed["mylib"].sha == pinned_sha;
+            fresh = provider.resolve_closure(config, InstallContext());
+            assert fresh["mylib"].sha != pinned_sha;
+            assert update_jac_rows(config.project_root or Path.cwd(), fresh);
+            rows2 = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            assert rows2["mylib"]["sha"] == fresh["mylib"].sha;
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+test "frozen install errors when manifest is ahead of lock" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_lock_st_");
+        origin = make_git_repo(
+            Path(outer) / "origin",
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        origin2 = make_git_repo(
+            Path(outer) / "origin2",
+            '[project]\nname = "otherlib"\nversion = "2.0.0"\n',
+            {"otherlib.jac": "def other() -> int { return 1; }\n"}
+        );
+        toml_text = (
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nmylib = {{ git = "{origin}" }}\n'
+        );
+        (config, tmp) = make_project(toml_text);
+        try {
+            provider = JacGitProvider();
+            ok = provider.install_all(config, [], InstallContext());
+            assert ok;
+            section = config.plugin_dependencies.setdefault("jac", {});
+            section["newdep"] = {"git": origin2};
+            config.save();
+            frozen_ok = provider.install_all(config, [], InstallContext(frozen=True));
+            assert not frozen_ok;
+            fresh_ok = provider.install_all(config, [], InstallContext());
+            assert fresh_ok;
+            rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            assert "newdep" in rows;
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
 }

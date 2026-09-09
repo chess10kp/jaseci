@@ -72,7 +72,8 @@ obj DependencyPlan {
 obj InstallContext {
     has verbose: bool = False,
         install_flags: list[str] = [],
-        target: str = "project";
+        target: str = "project",
+        frozen: bool = False;
 
     def is_dry_run -> bool {
         return "--dry-run" in self.install_flags;
