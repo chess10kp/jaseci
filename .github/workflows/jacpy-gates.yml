@@ -29,6 +29,10 @@ permissions:
 # (diagnosed 2026-08-26; see ~/notes/jac-test-hang-diagnosis.md).
 env:
   JAC_NO_DEV_SOURCE: "1"
+  # Post-merge native kernel build exceeds hosted-runner memory (fork fails
+  # mid-build; runs 34295798666/34289302982/34287006408). Gates lanes never
+  # exercise the compiler's native-build path, so ship without the kernel.
+  JAC_PAYLOAD_SKIP_KERNEL: "1"
   JAC_TEST_NATIVE: "1"
 
 jobs:

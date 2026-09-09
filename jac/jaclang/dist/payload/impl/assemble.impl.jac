@@ -167,6 +167,16 @@ impl assemble_site(repo_root: str, site: str, opts: MkPayloadOpts) {
         _bundle_bun(site, opts);
         return;
     }
+    if os.environ.get("JAC_PAYLOAD_SKIP_KERNEL") == "1" {
+        # The native kernel lowers the whole compiler through LLVM; on
+        # memory-capped CI runners the post-merge tree exceeds the cgroup
+        # and fork/exec of the builder child fails outright. Gates lanes
+        # never invoke the compiler's own native-build path, so shipping
+        # without the kernel .so is safe there.
+        log("==> skipping native compiler kernel (JAC_PAYLOAD_SKIP_KERNEL=1)");
+        _bundle_bun(site, opts);
+        return;
+    }
     log(f"==> building native compiler kernel (jac build --native --lib {jc_src})");
     jc_boot = (
         "import os, sys\n"
