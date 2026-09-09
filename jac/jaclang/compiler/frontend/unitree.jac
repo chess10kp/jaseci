@@ -650,6 +650,7 @@ node Module(AstDocNode, UniScopeNode) {
         stub_only: bool = False,
         src_terminals: list[Token] = [],
         is_raised_from_py: bool = False,
+        has_synthesized_tokens: bool = False,
         parse_failed: bool = False,
         mobui_enforced_root: (str | None) = None,
         jac_project_root: (str | None) = None,
@@ -867,8 +868,8 @@ node Import(ContextAwareNode, ElementStmt, CodeBlockStmt) {
         native_only_drop: bool postinit;
 
     has from_loc: (ModulePath | None) { getter; }
-    has items: Sequence[(ModuleItem | ModulePath)] { getter; }
-    has clib_decls: (Sequence[UniNode] | None) { getter; }
+    has items: Sequence[(ModuleItem | ModulePath)] { getter; setter(items: Sequence[(ModuleItem | ModulePath)]); }
+    has clib_decls: (Sequence[UniNode] | None) { getter; setter(clib_decls: (Sequence[UniNode] | None)); }
     has hint: (SubTag[Token] | None) { getter; }
 
     def init(
