@@ -150,6 +150,11 @@ exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -Wno-unused-command-line-
 SH
             ;;
         macos-*)
+            # Zig's driver ignores -bundle and crashes while linking an
+            # executable with unresolved Python symbols. dlopen accepts a
+            # shared Mach-O library with the same dynamic symbol lookup.
+            export LDSHARED='$(CC) -shared -undefined dynamic_lookup'
+            export BLDSHARED="$LDSHARED"
             cat > "$work/bin/pycc" <<'SH'
 #!/bin/sh
 exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument -Wno-error=date-time '-Wl,-rpath,@loader_path/../lib' "$@"
