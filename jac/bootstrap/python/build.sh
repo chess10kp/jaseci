@@ -14,7 +14,7 @@ case "$platform" in
     macos-aarch64) target=aarch64-macos.11.0; openssl_target=darwin64-arm64-cc ;;
     *) echo "Unsupported Python release platform: $platform" >&2; exit 1 ;;
 esac
-for tool in make perl; do
+for tool in make perl patch; do
     command -v "$tool" >/dev/null || { echo "Source Python builds require $tool" >&2; exit 1; }
 done
 prefix=$work/python/install
@@ -50,6 +50,9 @@ exec "$JAC_PYTHON_ZIG" ranlib "$@"
 SH
 chmod +x "$work/bin/cc" "$work/bin/ar" "$work/bin/ranlib"
 export CC="$work/bin/cc" AR="$work/bin/ar" RANLIB="$work/bin/ranlib"
+# The completed SDK is cached separately. Keep transient C compilation caches
+# in this build tree so dependency objects cannot exhaust release-runner disks.
+export ZIG_LOCAL_CACHE_DIR="$work/cc-cache" ZIG_GLOBAL_CACHE_DIR="$work/cc-cache"
 export SOURCE_DATE_EPOCH=0
 # Zig's tar extractor does not preserve mtimes. Equalize the released source
 # inputs so make uses the shipped generated files instead of invoking Autotools.
@@ -62,7 +65,13 @@ unset CXXFLAGS CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH LD_LIBRARY_P
 step() {
     label=$1; shift
     echo "build-python: $label"
-    "$@" > "$work/logs/$label.log" 2>&1
+    ( "$@" ) > "$work/logs/$label.log" 2>&1
+    rm -rf "$work/cc-cache"
+    case "$label" in
+        zlib|bzip2|zstd|sqlite|xz|libffi|mpdecimal|expat|openssl)
+            rm -rf "$src/$label"
+            ;;
+    esac
 }
 trap 'result=$?; if [ "$result" -ne 0 ] && [ -n "${label:-}" ]; then tail -80 "$work/logs/$label.log" >&2; fi' EXIT
 zlib() {
@@ -128,6 +137,7 @@ openssl() {
 }
 cpython() {
     cd "$src/cpython"
+    patch -f -F0 -p1 -i "$recipe/compiler-bridge.patch"
     # The shared interpreter must survive relocation into the Jac payload.
     case "$platform" in
         linux-*)
@@ -184,6 +194,14 @@ SETUP
     make -j"$jobs" PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)'
     make -j"$jobs" PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)' install
 }
+# Preserve notices before discarding each dependency's installed build tree.
+mkdir -p "$work/python/licenses"
+find "$src" -type f \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'Copyright*' \) |
+while IFS= read -r notice; do
+    relative=${notice#"$src/"}
+    mkdir -p "$work/python/licenses/$(dirname "$relative")"
+    cp "$notice" "$work/python/licenses/$relative"
+done
 step zlib zlib
 step bzip2 bzip2
 step zstd zstd
@@ -198,12 +216,6 @@ step finalize "$prefix/bin/python3.14" -I "$recipe/finalize.py"
 mkdir -p "$work/python/build/lib" "$work/python/licenses"
 cp "$deps/lib/"*.a "$work/python/build/lib/"
 cp "$src/certifi/certifi/cacert.pem" "$work/python/build/cacert.pem"
-find "$src" -type f \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'Copyright*' \) |
-while IFS= read -r notice; do
-    relative=${notice#"$src/"}
-    mkdir -p "$work/python/licenses/$(dirname "$relative")"
-    cp "$notice" "$work/python/licenses/$relative"
-done
 step smoke "$prefix/bin/python3.14" -I "$recipe/smoke.py"
 # No compiled test modules, docs, or configuration machinery in the runtime.
 rm -rf "$prefix/share" "$prefix/lib/python3.14/test" \

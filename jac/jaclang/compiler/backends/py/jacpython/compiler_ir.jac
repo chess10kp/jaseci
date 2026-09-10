@@ -8,11 +8,23 @@
 # CPython 3.14 (PEP 626); col offsets are 0-based byte offsets, NO_COLUMN = -1.
 
 import from jaclang.runtime.python.objects {
-    PyObj, PyInt, PyBool, PyFloat, PyComplex, PyStr, PyBytes,
-    PyTuple, PySet, PySlice, PyCode, py_none
+    PyObj,
+    PyInt,
+    PyBool,
+    PyFloat,
+    PyComplex,
+    PyStr,
+    PyBytes,
+    PyTuple,
+    PySet,
+    PySlice,
+    PyCode,
+    py_none
 }
 import from jaclang.runtime.python.opcode_meta { opcode_cache_count, OP_LOAD_CONST }
-import from jaclang.compiler.frontend.python.compiler_diagnostics { compiler_diagnostic }
+import from jaclang.compiler.frontend.python.compiler_diagnostics {
+    compiler_diagnostic
+}
 import from jaclang.compiler.frontend.python.compiler_symtable { sym_block }
 
 def constant_key(value: PyObj) -> str {
@@ -28,7 +40,11 @@ def constant_key(value: PyObj) -> str {
         return "frozenset:" + "".join(str(len(key)) + ":" + key for key in keys);
     }
     if isinstance(value, PySlice) {
-        keys = [constant_key(value.start), constant_key(value.stop), constant_key(value.step)];
+        keys = [
+            constant_key(value.start),
+            constant_key(value.stop),
+            constant_key(value.step)
+        ];
         return "slice:" + "".join(str(len(key)) + ":" + key for key in keys);
     }
     if isinstance(value, PyFloat) {
@@ -209,6 +225,9 @@ obj try_await_frame {
 obj cfg_builder {
     has u: unverified_cfg,
         cur: basicblock,
+        # An implicit scope exit inside a cleanup body must finish that body
+        # before its owner resumes the enclosing exception/return operation.
+        fallthrough_target: basicblock | None = None,
         sym_top: sym_block | None = None,
         private: str | None = None,
         loop_stack: list[loop_frame] = [],
@@ -377,6 +396,7 @@ obj basicblock {
         # it out at the current end of the layout list, mirroring CPython's split
         # of NEW_JUMP_TARGET_LABEL (allocate) from USE_LABEL (place).
         placed: bool = True,
+        fallthrough_used: bool = False,
         # True on match join/end blocks: the shared success target of match-arm
         # (and MatchOr alternative) success jumps. The flowgraph's small-exit
         # inliner only tail-duplicates into these blocks, keeping the pass scoped

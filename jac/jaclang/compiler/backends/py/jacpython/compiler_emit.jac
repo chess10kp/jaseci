@@ -7,7 +7,8 @@
 # module only imports lower layers (no cycles).
 
 import from jaclang.runtime.python.objects {
-    PyFloat, PyComplex,
+    PyFloat,
+    PyComplex,
     PyObj,
     PyBool,
     PyInt,
@@ -317,8 +318,15 @@ import from jaclang.compiler.frontend.python.compiler_symtable {
     SCOPE_FREE,
     sym_block_tuple_names,
 }
-import from jaclang.compiler.frontend.python.compiler_diagnostics { lowering_diagnostic }
-import from jaclang.compiler.backends.py.jacpython.flowgraph { verify_cfg, optimize_swap_range, build_layout_pos, layout_pos }
+import from jaclang.compiler.frontend.python.compiler_diagnostics {
+    lowering_diagnostic
+}
+import from jaclang.compiler.backends.py.jacpython.flowgraph {
+    verify_cfg,
+    optimize_swap_range,
+    build_layout_pos,
+    layout_pos
+}
 import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
 import from jaclang.compiler.backends.py.jacpython.codegen_util {
     fold_default_leaf_values,
@@ -821,10 +829,11 @@ def emit_with_return_unwind(g: cfg_builder, wloc: cloc) {
     g.with_unwind_used = True;
     while len(g.with_fblocks) > 0 {
         fb = g.with_fblocks[len(g.with_fblocks) - 1];
-        g.with_fblocks = g.with_fblocks[0 : len(g.with_fblocks) - 1];
+        g.with_fblocks = g.with_fblocks[0:len(g.with_fblocks) - 1];
         boundary = g.new_block();
         g.use(boundary);
-        if fb.protect_region >= 0 and g.u.except_regions[fb.protect_region].end_block < 0 {
+        if fb.protect_region >= 0
+            and g.u.except_regions[fb.protect_region].end_block < 0 {
             g.u.except_regions[fb.protect_region].end_block = boundary.id;
         }
         g.emit_op(OP_SWAP, 3, wloc);
@@ -932,7 +941,8 @@ def emit_function_defaults(g: cfg_builder, defaults: list[expr], tloc: cloc) -> 
         while li < len(leaves) {
             lf = leaves[li];
             register_int_literal_const(g, lf, True);
-            if isinstance(lf, Constant) and not isinstance((lf as Constant).value, PyInt) {
+            if isinstance(lf, Constant)
+                and not isinstance((lf as Constant).value, PyInt) {
                 g.u.add_const((lf as Constant).value);
             }
             li = li + 1;
@@ -1246,7 +1256,8 @@ def visit_subscript_index(
                 # CPython keeps the dead small-int slot ONLY when the pool is
                 # still empty (index 0), mirroring register_int_literal_const;
                 # later subscript keys are pure LOAD_SMALL_INT with no entry.
-                in_class_body = g.sym_top is not None and g.sym_top.block_type == "class";
+                in_class_body = g.sym_top is not None
+                    and g.sym_top.block_type == "class";
                 if len(g.u.consts) == 0 and not in_class_body {
                     g.u.add_const(cv);
                 }
@@ -1579,7 +1590,9 @@ def visit_expr(
     if isinstance(e, Name) {
         n = e as Name;
         if n.id == "__debug__" {
-            import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+            import from jaclang.compiler.backends.py.jacpython.compiler_context {
+                current_optimization_level
+            }
             value = PyBool(t="bool", val=current_optimization_level() == 0);
             g.emit_op(OP_LOAD_CONST, g.u.add_const(value), expr_loc(n));
             return None;
@@ -1644,7 +1657,9 @@ def visit_expr(
                         g.u.dead_small_int_const = True;
                     }
                 }
-                late_idx = g.u.stage_late_const(PyInt(t="int", val=-((cv as PyInt).val)));
+                late_idx = g.u.stage_late_const(
+                    PyInt(t="int", val=-((cv as PyInt).val))
+                );
                 g.emit_op(OP_LOAD_CONST, late_idx, uloc);
                 return None;
             }
@@ -1682,7 +1697,8 @@ def visit_expr(
             }
             if need_to_bool {
                 g.emit_op(
-                    OP_TO_BOOL, 0,
+                    OP_TO_BOOL,
+                    0,
                     nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset)
                 );
             }
@@ -1716,8 +1732,10 @@ def visit_expr(
         ie = e as IfExp;
         ieloc = nloc(ie.lineno, ie.end_lineno, ie.col_offset, ie.end_col_offset);
         test_loc = expr_loc(ie.`test);
-        else_blk = g.new_block();
-        join_blk = g.new_block();
+        # The test can allocate its own blocks (chained comparisons/booleans).
+        # Place each arm only after that test and its preceding arm finish.
+        else_blk = g.new_deferred_block();
+        join_blk = g.new_deferred_block();
         kind = visit_test_expr(g, ie.`test, test_loc, True);
         if codegen_busy(g) {
             return None;
@@ -1859,7 +1877,11 @@ def visit_expr(
         ne = e as NamedExpr;
         wloc = nloc(ne.lineno, ne.end_lineno, ne.col_offset, ne.end_col_offset);
         visit_expr(
-            g, ne.value, false_shortcircuit_returns, compare_use_join, register_int_const
+            g,
+            ne.value,
+            false_shortcircuit_returns,
+            compare_use_join,
+            register_int_const
         );
         if codegen_busy(g) {
             return None;
@@ -1955,7 +1977,9 @@ def visit_expr(
                 register_int_literal_const(g, telts[ti2], True);
                 ti2 = ti2 + 1;
             }
-            cidx = g.u.stage_late_const(PyTuple(t="tuple", items=display_const_items(telts)));
+            cidx = g.u.stage_late_const(
+                PyTuple(t="tuple", items=display_const_items(telts))
+            );
             g.emit_op(OP_LOAD_CONST, cidx, dloc);
             return None;
         }
@@ -1991,7 +2015,9 @@ def visit_expr(
             # CPython packs an all-constant list as an empty list extended by a
             # folded const tuple: BUILD_LIST 0; LOAD_CONST (tuple); LIST_EXTEND 1.
             g.emit_op(OP_BUILD_LIST, 0, dloc);
-            cidx = g.u.stage_late_const(PyTuple(t="tuple", items=display_const_items(lelts)));
+            cidx = g.u.stage_late_const(
+                PyTuple(t="tuple", items=display_const_items(lelts))
+            );
             g.emit_op(OP_LOAD_CONST, cidx, dloc);
             g.emit_op(OP_LIST_EXTEND, 1, dloc);
             return None;
@@ -2277,10 +2303,7 @@ def call_has_unpacking(ca: Call) -> bool {
 #     closed by CALL_INTRINSIC_1(LIST_TO_TUPLE); a kwargs-only call uses an
 #     empty-tuple constant instead.
 def emit_call_ex_positional(
-    g: cfg_builder,
-    ca: Call,
-    cloc_call: cloc,
-    register_int_const: bool = True
+    g: cfg_builder, ca: Call, cloc_call: cloc, register_int_const: bool = True
 ) -> None {
     args = call_effective_args(ca);
     if len(args) == 1 and isinstance(args[0], Starred) {
@@ -2300,8 +2323,11 @@ def emit_call_ex_positional(
         # Plain-only positional side lowers as a tuple display (folded to a
         # late const tuple when every element is constant).
         tup = Tuple(
-            elts=args, ctx=Load(), lineno=ca.lineno,
-            col_offset=ca.col_offset, end_lineno=ca.end_lineno,
+            elts=args,
+            ctx=Load(),
+            lineno=ca.lineno,
+            col_offset=ca.col_offset,
+            end_lineno=ca.end_lineno,
             end_col_offset=ca.end_col_offset
         );
         visit_expr(g, tup as expr, False, False, register_int_const);
@@ -2367,11 +2393,7 @@ def emit_call_instruction(g: cfg_builder, ca: Call, cloc_call: cloc) {
 # Emits the whole operand sequence plus the opcode (+ trailing NOP) and returns
 # True when this shape applied; callers then skip generic emission.
 def try_load_super_attr(
-    g: cfg_builder,
-    value: expr,
-    attr_name: str,
-    method_form: bool,
-    aloc: cloc
+    g: cfg_builder, value: expr, attr_name: str, method_form: bool, aloc: cloc
 ) -> bool {
     if not isinstance(value, Call) {
         return False;
@@ -2658,10 +2680,7 @@ def comp_emit_cell_init(g: cfg_builder, target: expr, slots: list[int], loc: clo
 # Fast-local slot of the loop variable the comprehension body evaluates first,
 # or -1 when the lead leaf is not a bound target name.
 def comp_lead_loopvar_slot(
-    g: cfg_builder,
-    gen: comprehension,
-    body_first: expr,
-    bound_names: list[str]
+    g: cfg_builder, gen: comprehension, body_first: expr, bound_names: list[str]
 ) -> int {
     first: expr = body_first;
     if len(gen.ifs) > 0 {
@@ -2838,7 +2857,9 @@ def visit_comp_elt(
                         g.u.dead_small_int_const = True;
                     }
                 }
-                late_idx = g.u.stage_late_const(PyInt(t="int", val=-((cv as PyInt).val)));
+                late_idx = g.u.stage_late_const(
+                    PyInt(t="int", val=-((cv as PyInt).val))
+                );
                 g.emit_op(OP_LOAD_CONST, late_idx, ul);
                 return;
             }
@@ -2887,9 +2908,7 @@ def comp_emit_bind_target(
     g.u.comp_pending_borrow = -1;
     elem_slots = comp_target_element_slots(g, target);
     if elem_slots is None {
-        codegen_fail(
-            g, "NotImplementedError", "unsupported comprehension loop target"
-        );
+        codegen_fail(g, "NotImplementedError", "unsupported comprehension loop target");
         return;
     }
     n = len(elem_slots);
@@ -4011,7 +4030,11 @@ def visit_lambda(g: cfg_builder, lam: Lambda) {
         return;
     }
     u_fn = compile_lambda_cfg(
-        lam, g.u.filename, sym_fn, g.private, g.sym_top.block_type == "class",
+        lam,
+        g.u.filename,
+        sym_fn,
+        g.private,
+        g.sym_top.block_type == "class",
         nested_code_qualname(g.sym_top.block_type, g.u.qualname, "<lambda>")
     );
     if u_fn.diag is not None {
@@ -4210,7 +4233,8 @@ def compile_genexp_cfg(
                 invert = not invert;
                 fe = (fe as UnaryOp).operand;
             }
-            is_single_cmp_gx = isinstance(fe, Compare) and len((fe as Compare).ops) == 1;
+            is_single_cmp_gx = isinstance(fe, Compare)
+                and len((fe as Compare).ops) == 1;
             visit_comp_elt(g, fe, bound_names, True);
             if codegen_busy(g) {
                 u.flush_late_consts();

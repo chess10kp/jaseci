@@ -23,7 +23,15 @@ import from jaclang.runtime.python.opcode_meta {
     is_scope_exit_opcode,
     is_unconditional_jump_opcode,
 }
-import from jaclang.compiler.frontend.python.ast_nodes { AsyncFor, For, If, While, stmt, }
+import from jaclang.compiler.frontend.python.ast_nodes {
+    AsyncFor,
+    Constant,
+    For,
+    If,
+    Name,
+    While,
+    stmt,
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     basicblock,
     break_site,
@@ -40,7 +48,10 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     stmt_cont,
 }
 import from jaclang.runtime.python.objects { py_none }
-import from jaclang.compiler.backends.py.jacpython.flowgraph { MAX_COPY_SIZE, copy_cinstr }
+import from jaclang.compiler.backends.py.jacpython.flowgraph {
+    MAX_COPY_SIZE,
+    copy_cinstr
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     codegen_busy,
     codegen_fail,
@@ -58,7 +69,9 @@ import from jaclang.compiler.backends.py.jacpython.codegen_util {
     loop_body_has_try,
     nloc,
 }
-import from jaclang.compiler.backends.py.jacpython.compiler_annotations { ann_scope_plan }
+import from jaclang.compiler.backends.py.jacpython.compiler_annotations {
+    ann_scope_plan
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
     emit_module_return,
     emit_tail_and_finish,
@@ -67,11 +80,14 @@ import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
     visit_store_target_tos
 }
 import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
-import from jaclang.compiler.backends.py.jacpython.compiler_exc { emit_anext_send_except_regions }
+import from jaclang.compiler.backends.py.jacpython.compiler_exc {
+    emit_anext_send_except_regions
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_context {
     append_pending_break_finish,
     current_pending_break_finishes,
     push_pending_break_finish,
+    current_optimization_level,
 }
 
 # ---------------- break-edge tail duplication (CPython parity) ----------------
@@ -346,6 +362,29 @@ def visit_if(
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
     iloc = nloc(i.lineno, i.end_lineno, i.col_offset, i.end_col_offset);
+    # Scope analysis has already visited both branches. Elide only the bytecode
+    # for an unreachable constant branch, preserving bindings in the symbol table.
+    constant_test = None;
+    if isinstance(i.`test, Constant) {
+        constant_test = i.`test.value.tp_bool();
+    } elif isinstance(i.`test, Name) and i.`test.id == "__debug__" {
+        constant_test = current_optimization_level() == 0;
+    }
+    if constant_test is not None {
+        chosen = i.body if constant_test else i.orelse;
+        if not chosen {
+            return stmt_cont(loc=iloc);
+        }
+        join = g.new_deferred_block();
+        branch = visit_stmts(g, chosen, 0, False, None, 0, join, ann_ctx);
+        if not branch.terminated {
+            if g.u.blocks[-1] is not g.cur {
+                g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
+            }
+            g.use(join);
+        }
+        return stmt_cont(loc=branch.loc, terminated=branch.terminated);
+    }
     test_loc = expr_loc(i.`test);
     kind = visit_test_expr(g, i.`test, test_loc, True);
     if codegen_busy(g) {

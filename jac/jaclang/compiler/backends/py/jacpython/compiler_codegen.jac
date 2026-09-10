@@ -26,7 +26,8 @@ import from jaclang.runtime.python.objects {
 # Statement-dispatch handler registry (leaf module; see compiler_dispatch.jac).
 import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
 import from jaclang.runtime.python.opcode_meta {
-    is_scope_exit_opcode, is_unconditional_jump_opcode,
+    is_scope_exit_opcode,
+    is_unconditional_jump_opcode,
     OP_RESUME,
     OP_RETURN_GENERATOR,
     OP_RETURN_VALUE,
@@ -312,8 +313,13 @@ import from jaclang.compiler.frontend.python.compiler_symtable {
     SCOPE_FREE,
     sym_block_tuple_names,
 }
-import from jaclang.compiler.frontend.python.compiler_diagnostics { lowering_diagnostic }
-import from jaclang.compiler.backends.py.jacpython.flowgraph { verify_cfg, optimize_swap_range }
+import from jaclang.compiler.frontend.python.compiler_diagnostics {
+    lowering_diagnostic
+}
+import from jaclang.compiler.backends.py.jacpython.flowgraph {
+    verify_cfg,
+    optimize_swap_range
+}
 import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
 import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     cellvars_from_sym,
@@ -433,37 +439,6 @@ import from jaclang.compiler.backends.py.jacpython.compiler_annotations {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def emit_name_store(g: cfg_builder, name: str, tloc: cloc) {
     name = codegen_mangle(g, name);
     # Cell/free scope FIRST (see emit_name_load in compiler_emit): a
@@ -530,10 +505,6 @@ def emit_name_delete(g: cfg_builder, name: str, tloc: cloc) {
 }
 
 
-
-
-
-
 # Non-constant slice STORE (value already on the stack, container just pushed).
 # 2-element: STORE_SLICE (fused). 3-element: BUILD_SLICE 3 + STORE_SUBSCR.
 def emit_slice_store(g: cfg_builder, sl: Slice, lc: cloc) {
@@ -565,10 +536,6 @@ def emit_slice_delete(g: cfg_builder, sl: Slice, lc: cloc) {
 }
 
 
-
-
-
-
 def emit_compare_cleanup(g: cfg_builder, cleanup: basicblock, lc: cloc) {
     g.use(cleanup);
     g.emit_op(OP_SWAP, 2, lc);
@@ -576,19 +543,14 @@ def emit_compare_cleanup(g: cfg_builder, cleanup: basicblock, lc: cloc) {
 }
 
 
-
-
-
-
-
-
-
-
 # Build a unverified_cfg for an eval-mode expression. Emits RESUME (module/eval
 # scope: lineno 0), the expression, then RETURN_VALUE carrying the expression's
 # span. addNone is false for eval (no trailing None push).
 def compile_eval(
-    e: expr, filename: str, name: str, firstlineno: int,
+    e: expr,
+    filename: str,
+    name: str,
+    firstlineno: int,
     sym_top: sym_block | None = None
 ) -> unverified_cfg {
     u = unverified_cfg(
@@ -722,8 +684,6 @@ def visit_store_target_tos(g: cfg_builder, t: expr) -> stmt_cont {
 }
 
 
-
-
 # With the sequence value on TOS, emit UNPACK_SEQUENCE (no star) or UNPACK_EX
 # (starred), then store each element target left-to-right. Nested Tuple/List
 # targets recurse; a Starred target stores the captured list into its .value.
@@ -835,30 +795,6 @@ def visit_delete_target(g: cfg_builder, t: expr) -> stmt_cont {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Module-level epilogue (LOAD_CONST None; RETURN_VALUE).
 def emit_module_return(g: cfg_builder, lc: cloc) {
     if g.cur.instrs {
@@ -867,6 +803,11 @@ def emit_module_return(g: cfg_builder, lc: cloc) {
             return;
         }
     }
+    if g.fallthrough_target is not None {
+        g.fallthrough_target.fallthrough_used = True;
+        g.emit_jump(OP_JUMP_FORWARD, g.fallthrough_target.id, lc);
+        return;
+    }
     none_idx = g.u.stage_late_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, lc);
     g.emit_op(OP_RETURN_VALUE, 0, lc);
@@ -874,11 +815,7 @@ def emit_module_return(g: cfg_builder, lc: cloc) {
 
 # Natural exit for a unit-final loop whose body contains try/except: lay out
 # before handler machinery when break/continue ends the protected span.
-def emit_unit_loop_exit_epilogue(
-    g: cfg_builder,
-    lc: cloc,
-    with_end_for: bool
-) {
+def emit_unit_loop_exit_epilogue(g: cfg_builder, lc: cloc, with_end_for: bool) {
     if with_end_for {
         g.emit_op(OP_END_FOR, 0, lc);
         g.emit_op(OP_POP_ITER, 0, lc);
@@ -887,21 +824,12 @@ def emit_unit_loop_exit_epilogue(
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
 # Lower assert (test + optional message).
 def visit_assert_stmt(g: cfg_builder, a: Assert) -> stmt_cont {
     aloc = nloc(a.lineno, a.end_lineno, a.col_offset, a.end_col_offset);
-    import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+    import from jaclang.compiler.backends.py.jacpython.compiler_context {
+        current_optimization_level
+    }
     if current_optimization_level() > 0 {
         return stmt_cont(loc=aloc);
     }
@@ -976,7 +904,9 @@ def visit_stmts(
             child_tail = stmts;
             child_idx = si + 1;
         }
-        cont = visit_stmt(g, stmts[si], follow, child_tail, child_idx, join_arg, ann_ctx);
+        cont = visit_stmt(
+            g, stmts[si], follow, child_tail, child_idx, join_arg, ann_ctx
+        );
         last = cont.loc;
         if cont.terminated {
             # Statements after an unconditional terminator (return/break/
@@ -1011,16 +941,12 @@ def visit_stmt_tail(
     if prefix_terminated {
         if from_idx < len(tail) {
             return stmt_cont(
-                loc=stmt_loc(tail[from_idx]),
-                next_si=len(tail),
-                terminated=True
+                loc=stmt_loc(tail[from_idx]), next_si=len(tail), terminated=True
             );
         }
         return stmt_cont(loc=loc(1, 1, 0, 0), next_si=len(tail), terminated=True);
     }
-    return visit_stmts(
-        g, tail, from_idx, more_follows_after, None, 0, None, ann_ctx
-    );
+    return visit_stmts(g, tail, from_idx, more_follows_after, None, 0, None, ann_ctx);
 }
 
 # Emit tail suffix and finish the module when CPython duplicates it per branch.
@@ -1038,48 +964,6 @@ def emit_tail_and_finish(
     emit_module_return(g, tail_cont.loc);
     return stmt_cont(loc=end_loc, next_si=len(tail), terminated=True);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Lower one statement into the builder's current block.
@@ -1310,22 +1194,30 @@ def visit_stmt(
     if isinstance(s, If) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return stmt_handlers["visit_if"](g, s as If, more_code_follows, tail, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_if"](
+            g, s as If, more_code_follows, tail, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, While) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return stmt_handlers["visit_while"](g, s as While, more_code_follows, tail, tail_idx, ann_ctx);
+        return stmt_handlers["visit_while"](
+            g, s as While, more_code_follows, tail, tail_idx, ann_ctx
+        );
     }
     if isinstance(s, For) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return stmt_handlers["visit_for"](g, s as For, more_code_follows, tail, tail_idx, ann_ctx);
+        return stmt_handlers["visit_for"](
+            g, s as For, more_code_follows, tail, tail_idx, ann_ctx
+        );
     }
     if isinstance(s, AsyncFor) {
         # tail stays None in loop-body contexts: the continuation is the
         # enclosing loop's back edge / the caller's own statement list.
-        return stmt_handlers["visit_async_for"](g, s as AsyncFor, more_code_follows, tail, tail_idx, ann_ctx);
+        return stmt_handlers["visit_async_for"](
+            g, s as AsyncFor, more_code_follows, tail, tail_idx, ann_ctx
+        );
     }
     if isinstance(s, Break) {
         b = s as Break;
@@ -1389,14 +1281,18 @@ def visit_stmt(
         if t is None {
             t = [];
         }
-        return stmt_handlers["visit_try"](g, s as Try, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_try"](
+            g, s as Try, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, TryStar) {
         t = tail;
         if t is None {
             t = [];
         }
-        return stmt_handlers["visit_try_star"](g, s as TryStar, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_try_star"](
+            g, s as TryStar, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, Raise) {
         return stmt_handlers["visit_raise_stmt"](g, s as Raise);
@@ -1406,7 +1302,9 @@ def visit_stmt(
         if t is None {
             t = [];
         }
-        return stmt_handlers["visit_with"](g, s as With, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_with"](
+            g, s as With, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, AsyncWith) {
         t = tail;
@@ -1414,14 +1312,17 @@ def visit_stmt(
             t = [];
         }
         return stmt_handlers["visit_async_with"](
-            g, s as AsyncWith, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+            g, s as AsyncWith, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, Match) {
         t = tail;
         if t is None {
             t = [];
         }
-        return stmt_handlers["visit_match"](g, s as Match, more_code_follows, t, tail_idx, tail_join, ann_ctx);
+        return stmt_handlers["visit_match"](
+            g, s as Match, more_code_follows, t, tail_idx, tail_join, ann_ctx
+        );
     }
     if isinstance(s, Assert) {
         return visit_assert_stmt(g, s as Assert);
@@ -1451,7 +1352,9 @@ def visit_return_stmt(
             name = codegen_mangle(g, n.id);
             fi = fast_local_index(g, name);
             if fi >= 0 {
-                nloc_name = nloc(n.lineno, n.end_lineno, n.col_offset, n.end_col_offset);
+                nloc_name = nloc(
+                    n.lineno, n.end_lineno, n.col_offset, n.end_col_offset
+                );
                 if check_fast {
                     g.emit_op(OP_LOAD_FAST_CHECK, fi, nloc_name);
                 } elif borrow_fast {
@@ -1484,19 +1387,6 @@ def visit_return_stmt(
     }
     g.emit_op(OP_RETURN_VALUE, 0, rloc);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Build a unverified_cfg for an exec-mode module body. Emits RESUME (module scope:
@@ -1538,7 +1428,9 @@ def compile_exec(
     g = new_cfg_builder(u, entry_blk, sym_top);
     ploc0 = loc(0, firstlineno, 0, 0);
     if ann_plan.any_annotation {
-        g.emit_op(OP_MAKE_CELL, localsplus_index_u(u, "__conditional_annotations__"), no_loc());
+        g.emit_op(
+            OP_MAKE_CELL, localsplus_index_u(u, "__conditional_annotations__"), no_loc()
+        );
     }
     g.emit_op(OP_RESUME, 0, ploc0);
     if ann_plan.any_annotation {
@@ -1553,7 +1445,9 @@ def compile_exec(
     si = 0;
     doc = body_docstring(body) if not interactive else None;
     if doc is not None {
-        import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+        import from jaclang.compiler.backends.py.jacpython.compiler_context {
+            current_optimization_level
+        }
         if current_optimization_level() < 2 {
             last = expr_loc((body[0] as Expr).value);
             g.emit_op(OP_LOAD_CONST, u.add_const(doc), last);

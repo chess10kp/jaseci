@@ -27,6 +27,7 @@ assert sqlite3.connect(":memory:").execute("select 6 * 7").fetchone() == (42,)
 assert str(decimal.Decimal("0.1") + decimal.Decimal("0.2")) == "0.3"
 assert hashlib.sha256(sample).digest()
 assert ctypes.pythonapi.PyInitConfig_Create
+assert ctypes.pythonapi._PyJac_CompilerBridgeVersion() == 1
 callback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int)(lambda value: value + 1)
 assert callback(41) == 42
 assert sysconfig.get_config_var("Py_ENABLE_SHARED") == 1

@@ -8,7 +8,7 @@ const inputs = [_][]const u8{
     "bootstrap/build_python.zig",    "bootstrap/seed.zig",
     "bootstrap/python/sources.json", "bootstrap/python/cpython-sources.txt",
     "bootstrap/python/build.sh",     "bootstrap/python/smoke.py",
-    "bootstrap/python/finalize.py",
+    "bootstrap/python/finalize.py",  "bootstrap/python/compiler-bridge.patch",
 };
 const Source = struct { url: []const u8, sha256: []const u8, version: ?[]const u8 = null };
 

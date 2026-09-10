@@ -67,7 +67,11 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     await_footer_job,
     try_await_frame,
 }
-import from jaclang.compiler.backends.py.jacpython.flowgraph { find_block, build_layout_pos, layout_pos }
+import from jaclang.compiler.backends.py.jacpython.flowgraph {
+    find_block,
+    build_layout_pos,
+    layout_pos
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     anext_send_loop,
     await_send_loop,
@@ -88,7 +92,9 @@ import from jaclang.compiler.backends.py.jacpython.codegen_util {
     stmt_loc,
     try_handler_span,
 }
-import from jaclang.compiler.backends.py.jacpython.compiler_annotations { ann_scope_plan }
+import from jaclang.compiler.backends.py.jacpython.compiler_annotations {
+    ann_scope_plan
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
     emit_module_return,
     emit_name_delete,
@@ -100,6 +106,27 @@ import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
     visit_store_target_tos
 }
 import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
+
+def visit_cleanup_stmts(
+    g: cfg_builder, body: list[stmt], ann_ctx: ann_scope_plan | None
+) -> stmt_cont {
+    join = g.new_deferred_block();
+    previous = g.fallthrough_target;
+    g.fallthrough_target = join;
+    try {
+        result = visit_stmts(g, body, 0, False, None, 0, None, ann_ctx);
+    } finally {
+        g.fallthrough_target = previous;
+    }
+    if not result.terminated or join.fallthrough_used {
+        if not result.terminated and g.u.blocks[-1] is not g.cur {
+            g.emit_jump(OP_JUMP_FORWARD, join.id, result.loc);
+        }
+        g.use(join);
+        return stmt_cont(loc=result.loc);
+    }
+    return result;
+}
 
 def handler_is_pass_only(h: ExceptHandler) -> bool {
     if h.body is None or len(h.body) != 1 {
@@ -512,12 +539,16 @@ def visit_try_finally(
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
     tloc = stmt_loc(t);
+    protect_depth = try_protect_stack_depth(g);
+    unwind_depth = try_unwind_stack_depth(g);
     nop_blk = g.new_block();
     try_entry = g.new_block();
-    protect_end = g.new_block();
-    after_protected = g.new_block();
-    finally_except = g.new_block();
-    unwind = g.new_block();
+    # Nested bodies allocate their own blocks. Keep structural boundaries out
+    # of the layout until each preceding body has finished emitting its code.
+    protect_end = g.new_deferred_block();
+    after_protected = g.new_deferred_block();
+    finally_except = g.new_deferred_block();
+    unwind = g.new_deferred_block();
     g.use(nop_blk);
     g.emit_op(OP_NOP, 0, tloc);
     g.use(try_entry);
@@ -533,11 +564,10 @@ def visit_try_finally(
     }
     g.open_try_frames.pop();
     g.use(protect_end);
-    finally_cont = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
+    finally_cont = visit_cleanup_stmts(g, t.finalbody, ann_ctx);
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
-    g.u.nested_try_finally_success_start = protect_end.id;
     g.use(after_protected);
     fallthrough_blk: basicblock | None = None;
     tail_end_blk: basicblock | None = None;
@@ -571,13 +601,17 @@ def visit_try_finally(
         }
     }
     noloc = no_loc();
-    g.u.nested_try_finally_success_end = after_protected.id;
     flush_try_await_footers(
-        g, try_frame, protect_end.id, finally_except.id, 1, not try_follows
+        g, try_frame, protect_end.id, finally_except.id, protect_depth, not try_follows
     );
     g.use(finally_except);
     g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
-    finally_except_cont = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
+    # The active exception and previous exception state remain below the
+    # cleanup body's operands, including any nested handlers it emits.
+    saved_nest = g.handler_nest_depth;
+    g.handler_nest_depth = saved_nest + 2;
+    finally_except_cont = visit_cleanup_stmts(g, t.finalbody, ann_ctx);
+    g.handler_nest_depth = saved_nest;
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
@@ -585,7 +619,7 @@ def visit_try_finally(
         g.emit_op(OP_RERAISE, 0, finally_except_cont.loc);
     }
     for reg in try_body_span_rows(
-        g, try_frame, protect_start, protect_end.id, finally_except.id, 1
+        g, try_frame, protect_start, protect_end.id, finally_except.id, protect_depth
     ) {
         g.u.except_regions.append(reg);
     }
@@ -594,11 +628,15 @@ def visit_try_finally(
             start_block=finally_except.id,
             end_block=unwind.id,
             handler_block=unwind.id,
-            stack_depth=3,
+            stack_depth=unwind_depth,
             preserve_lasti=True
         )
     );
     g.use(unwind);
+    # Publish this invocation's bounds after nested cleanup compilation has
+    # finished; nested finally blocks publish their own bounds while visited.
+    g.u.nested_try_finally_success_start = protect_end.id;
+    g.u.nested_try_finally_success_end = after_protected.id;
     g.u.nested_try_finally_unwind_start = unwind.id;
     g.emit_op(OP_COPY, 3, noloc);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
@@ -661,7 +699,7 @@ def emit_finally_inline_block(
     if with_nop {
         g.emit_op(OP_NOP, 0, tloc);
     }
-    fc = visit_stmts(g, finalbody, 0, False, None, 0, None, ann_ctx);
+    fc = visit_cleanup_stmts(g, finalbody, ann_ctx);
     if codegen_busy(g) {
         return;
     }
@@ -1393,11 +1431,13 @@ def visit_try_except_finally(
     # Exceptional finally handler: run finalbody under PUSH_EXC_INFO, re-raise.
     g.use(fin_except);
     g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
-    fe_cont = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
+    fe_cont = visit_cleanup_stmts(g, t.finalbody, ann_ctx);
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
-    g.emit_op(OP_RERAISE, 0, fe_cont.loc);
+    if not fe_cont.terminated {
+        g.emit_op(OP_RERAISE, 0, fe_cont.loc);
+    }
     g.use(outer_unwind);
     g.emit_op(OP_COPY, 3, noloc);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
@@ -2645,27 +2685,6 @@ def visit_try_star_except(
     g.emit_op(OP_COPY, 3, noloc);
     g.emit_op(OP_POP_EXCEPT, 0, noloc);
     g.emit_op(OP_RERAISE, 1, noloc);
-    if has_fin {
-        # Exceptional exits of the walk rerun the finally, then propagate:
-        # RERAISE 0 (reraise needed) and the unwind path land here via the
-        # depth-0 region appended below; a raising finally body lands in
-        # fin_unwind via the lasti region.
-        fin_e = fin_except_blk as basicblock;
-        fin_u = fin_unwind_blk as basicblock;
-        fbx = finalbody as list[stmt];
-        g.use(fin_e);
-        g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
-        fin_exc_cont = visit_stmts(g, fbx, 0, False, None, 0, None, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=tloc);
-        }
-        g.emit_op(OP_RERAISE, 0, fin_exc_cont.loc);
-        g.use(fin_u);
-        g.emit_op(OP_COPY, 3, noloc);
-        g.emit_op(OP_POP_EXCEPT, 0, noloc);
-        g.emit_op(OP_RERAISE, 1, noloc);
-    }
-
     if has_fin and not fin_early {
         # Late inline finally copy: only predecessor is the nothing-to-reraise
         # path above.
@@ -2690,11 +2709,13 @@ def visit_try_star_except(
         # RERAISE 1).
         g.use(fin_except);
         g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
-        fe_cont = visit_stmts(g, t.finalbody, 0, False, None, 0, None, ann_ctx);
+        fe_cont = visit_cleanup_stmts(g, t.finalbody, ann_ctx);
         if codegen_busy(g) {
             return stmt_cont(loc=tloc);
         }
-        g.emit_op(OP_RERAISE, 0, fe_cont.loc);
+        if not fe_cont.terminated {
+            g.emit_op(OP_RERAISE, 0, fe_cont.loc);
+        }
         g.use(outer_unwind);
         g.emit_op(OP_COPY, 3, noloc);
         g.emit_op(OP_POP_EXCEPT, 0, noloc);

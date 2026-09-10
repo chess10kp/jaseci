@@ -4,7 +4,17 @@
 # objects. Generated parser rules call these helpers; this file is hand-written
 # and grows with each grammar profile.
 
-import from jaclang.runtime.python.objects { PyObj, PyInt, PyBool, PyStr, PyBytes, PyFloat, PyComplex, PyEllipsis, py_none }
+import from jaclang.runtime.python.objects {
+    PyObj,
+    PyInt,
+    PyBool,
+    PyStr,
+    PyBytes,
+    PyFloat,
+    PyComplex,
+    PyEllipsis,
+    py_none
+}
 import from jaclang.compiler.frontend.python.ast_nodes {
     ast_node,
     expr,
@@ -91,7 +101,12 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     JoinedStr,
     FormattedValue,
 }
-import from jaclang.compiler.frontend.python.peg_runtime { peg_parser, peg_token, peg_has_error, peg_raise_syntax_error }
+import from jaclang.compiler.frontend.python.peg_runtime {
+    peg_parser,
+    peg_token,
+    peg_has_error,
+    peg_raise_syntax_error
+}
 
 obj pa_cmpop_expr_pair {
     has cmpop: cmpop,
@@ -143,8 +158,13 @@ def pa_name_from_token(tok: peg_token | None) -> Name | None {
     if tok is None {
         return None;
     }
+    identifier = tok.spelling;
+    if not identifier.isascii() {
+        import unicodedata;
+        identifier = unicodedata.normalize("NFKC", identifier);
+    }
     return Name(
-        id=tok.spelling,
+        id=identifier,
         ctx=Load(),
         lineno=tok.lineno,
         col_offset=tok.col_offset,
@@ -257,7 +277,9 @@ def pa_decode_string_literal_spelling(spelling: str) -> str | list[int] | None {
     return pa_decode_escape_body(body);
 }
 
-def pa_constant_from_fstring_middle(tok: peg_token | None, raw: bool) -> Constant | None {
+def pa_constant_from_fstring_middle(
+    tok: peg_token | None, raw: bool
+) -> Constant | None {
     if tok is None {
         return None;
     }
@@ -374,12 +396,16 @@ def pa_concatenate_strings(parts: list[object]) -> expr | None {
     k = 0;
     while k < len(figures) {
         fig = figures[k];
-        if isinstance(fig, Constant) and len(merged) > 0 and isinstance(merged[len(merged) - 1], Constant) {
+        if isinstance(fig, Constant)
+            and len(merged) > 0
+            and isinstance(merged[len(merged) - 1], Constant) {
             prev = merged[len(merged) - 1] as Constant;
             pc = fig as Constant;
             if isinstance(prev.value, PyStr) and isinstance(pc.value, PyStr) {
                 merged[len(merged) - 1] = Constant(
-                    value=PyStr(t="str", val=(prev.value as PyStr).val + (pc.value as PyStr).val),
+                    value=PyStr(
+                        t="str", val=(prev.value as PyStr).val + (pc.value as PyStr).val
+                    ),
                     kind=prev.kind,
                     lineno=prev.lineno,
                     col_offset=prev.col_offset,
@@ -419,11 +445,7 @@ def pa_concatenate_strings(parts: list[object]) -> expr | None {
         lc = l0.end_col_offset;
     }
     return JoinedStr(
-        values=figures,
-        lineno=fl,
-        col_offset=fc,
-        end_lineno=ll,
-        end_col_offset=lc
+        values=figures, lineno=fl, col_offset=fc, end_lineno=ll, end_col_offset=lc
     );
 }
 
@@ -436,11 +458,16 @@ def pa_decoded_constant_from_token(tok: peg_token | None) -> Constant | None {
 }
 
 def _is_prefixed_int(s: str) -> bool {
-    return len(s) >= 3 and s[0] == "0" and (
-        s[1] == "x" or s[1] == "X" or
-        s[1] == "o" or s[1] == "O" or
-        s[1] == "b" or s[1] == "B"
-    );
+    return len(s) >= 3
+        and s[0] == "0"
+        and (
+            s[1] == "x"
+            or s[1] == "X"
+            or s[1] == "o"
+            or s[1] == "O"
+            or s[1] == "b"
+            or s[1] == "B"
+        );
 }
 
 def _has_float_marker(s: str) -> bool {
@@ -471,7 +498,11 @@ def pa_py_number_from_spelling(spelling: str) -> PyObj {
         }
         return PyInt(t="int", val=int(spelling, 0));
     } except ValueError as error {
-        raise SyntaxError(str(error));
+        message = str(error);
+        if message.startswith("Exceeds the limit ") {
+            message += " Consider hexadecimal for huge integer literals to avoid decimal conversion limits.";
+        }
+        raise SyntaxError(message);
     }
 }
 
@@ -479,7 +510,21 @@ def pa_number_from_token(tok: peg_token | None) -> Constant | None {
     if tok is None {
         return None;
     }
-    val = pa_py_number_from_spelling(tok.spelling);
+    try {
+        val = pa_py_number_from_spelling(tok.spelling);
+    } except SyntaxError as error {
+        raise SyntaxError(
+            error.msg,
+            (
+                None,
+                tok.lineno,
+                tok.col_offset + 1,
+                None,
+                tok.end_lineno,
+                tok.end_col_offset + 1
+            )
+        );
+    }
     return Constant(
         value=val,
         kind=None,
@@ -507,9 +552,12 @@ def pa_constant_ellipsis(
     lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
 ) -> Constant {
     return Constant(
-        value=PyEllipsis(t="ellipsis"), kind=None,
-        lineno=lineno, col_offset=col_offset,
-        end_lineno=end_lineno, end_col_offset=end_col_offset
+        value=PyEllipsis(t="ellipsis"),
+        kind=None,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
     );
 }
 
@@ -527,11 +575,7 @@ def pa_constant_bool(
 }
 
 def pa_match_singleton(
-    val: object,
-    lineno: int,
-    col_offset: int,
-    end_lineno: int,
-    end_col_offset: int
+    val: object, lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
 ) -> MatchSingleton {
     pyval: PyObj;
     if val is True {
@@ -747,7 +791,9 @@ def pa_singleton_seq_pattern(item: pattern) -> list[pattern] {
     return [item];
 }
 
-def pa_seq_insert_front_pattern(head: pattern, tail: list[pattern] | None) -> list[pattern] {
+def pa_seq_insert_front_pattern(
+    head: pattern, tail: list[pattern] | None
+) -> list[pattern] {
     if tail is None {
         return pa_singleton_seq_pattern(head);
     }
@@ -798,7 +844,9 @@ def pa_singleton_seq_type_param(item: type_param) -> list[type_param] {
     return [item];
 }
 
-def pa_seq_insert_front_type_param(head: type_param, tail: list[type_param] | None) -> list[type_param] {
+def pa_seq_insert_front_type_param(
+    head: type_param, tail: list[type_param] | None
+) -> list[type_param] {
     if tail is None {
         return pa_singleton_seq_type_param(head);
     }
@@ -815,7 +863,9 @@ def pa_singleton_seq_withitem(item: withitem) -> list[withitem] {
     return [item];
 }
 
-def pa_seq_insert_front_withitem(head: withitem, tail: list[withitem] | None) -> list[withitem] {
+def pa_seq_insert_front_withitem(
+    head: withitem, tail: list[withitem] | None
+) -> list[withitem] {
     if tail is None {
         return pa_singleton_seq_withitem(head);
     }
@@ -845,7 +895,9 @@ def pa_seq_insert_front_arg(head: arg, tail: list[arg] | None) -> list[arg] {
     return out;
 }
 
-def pa_singleton_seq_kw_or_starred(item: keyword_or_starred_node) -> list[keyword_or_starred_node] {
+def pa_singleton_seq_kw_or_starred(
+    item: keyword_or_starred_node
+) -> list[keyword_or_starred_node] {
     return [item];
 }
 
@@ -1341,9 +1393,7 @@ def pa_seq_append_to_end(head: object | None, item: object) -> list[object] {
     return out;
 }
 
-def pa_seq_append_to_end_expr(
-    head: list[expr] | None, item: expr
-) -> list[expr] {
+def pa_seq_append_to_end_expr(head: list[expr] | None, item: expr) -> list[expr] {
     if head is None {
         return pa_singleton_seq_expr(item);
     }
@@ -1357,9 +1407,7 @@ def pa_seq_append_to_end_expr(
     return out;
 }
 
-def pa_seq_append_to_end_stmt(
-    head: list[stmt] | None, item: stmt
-) -> list[stmt] {
+def pa_seq_append_to_end_stmt(head: list[stmt] | None, item: stmt) -> list[stmt] {
     if head is None {
         return pa_singleton_seq_stmt(item);
     }
@@ -1967,7 +2015,8 @@ def pa_setup_full_format_spec(
 }
 
 def pa_check_fstring_conversion(conv_token: peg_token, conv: Name) -> Name | None {
-    if conv_token.lineno != conv.lineno or conv_token.end_col_offset != conv.col_offset {
+    if conv_token.lineno != conv.lineno
+        or conv_token.end_col_offset != conv.col_offset {
         return None;
     }
     if len(conv.id) != 1 {
@@ -2001,9 +2050,7 @@ def _fstring_debug_prefix(expression: expr) -> str {
 }
 
 def _interpolation_conversion(
-    debug_expr: object,
-    conversion: object,
-    format: object
+    debug_expr: object, conversion: object, format: object
 ) -> int {
     if conversion is not None {
         conv = conversion as Name;

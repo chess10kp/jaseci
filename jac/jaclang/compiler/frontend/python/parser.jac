@@ -5,65 +5,303 @@ Maintained directly in Jac.
 """
 
 import from jaclang.compiler.frontend.python.token_model {
-    ENDMARKER, NAME, NUMBER, STRING, OP, NT_OFFSET, NEWLINE, TYPE_COMMENT,
-    INDENT, DEDENT, FSTRING_START, FSTRING_MIDDLE, FSTRING_END,
-    TSTRING_START, TSTRING_MIDDLE, TSTRING_END,
+    ENDMARKER,
+    NAME,
+    NUMBER,
+    STRING,
+    OP,
+    NT_OFFSET,
+    NEWLINE,
+    TYPE_COMMENT,
+    INDENT,
+    DEDENT,
+    FSTRING_START,
+    FSTRING_MIDDLE,
+    FSTRING_END,
+    TSTRING_START,
+    TSTRING_MIDDLE,
+    TSTRING_END,
 }
 import from jaclang.compiler.frontend.python.peg_runtime {
-    peg_parser, peg_parser_from_source, peg_set_keywords,
-    peg_set_soft_keywords, peg_keyword_entry, peg_mark, peg_reset,
-    peg_check_memo, peg_insert_memo, peg_update_memo,
-    peg_expect_token, peg_expect_soft_keyword, peg_expect_forced_token,
-    peg_expect_forced_result, peg_has_error, peg_fill_token,
+    peg_parser,
+    peg_parser_from_source,
+    peg_set_keywords,
+    peg_set_soft_keywords,
+    peg_keyword_entry,
+    peg_mark,
+    peg_reset,
+    peg_check_memo,
+    peg_insert_memo,
+    peg_update_memo,
+    peg_expect_token,
+    peg_expect_soft_keyword,
+    peg_expect_forced_token,
+    peg_expect_forced_result,
+    peg_has_error,
+    peg_fill_token,
     peg_get_last_nonnwhitespace_token,
-    peg_positive_lookahead_token, peg_negative_lookahead_token,
-    peg_left_rec_finish, peg_token,
+    peg_positive_lookahead_token,
+    peg_negative_lookahead_token,
+    peg_left_rec_finish,
+    peg_token,
     peg_reset_for_error_pass,
-    STAR_TARGETS, DEL_TARGETS, FOR_TARGETS,
+    STAR_TARGETS,
+    DEL_TARGETS,
+    FOR_TARGETS,
 }
 import from jaclang.compiler.frontend.python.parser_actions {
-    kv_pair, kp_pair, keyword_or_starred_node, name_default_pair,
-    pa_cmpop_expr_pair, pa_key_value_pair, pa_key_pattern_pair, pa_keyword_or_starred,
-    pa_name_default_pair, pa_make_cmpop_pair, pa_name_from_token, pa_name_id, pa_number_from_token,
-    pa_ast_expression, pa_ast_binop, pa_ast_unaryop, pa_ast_boolop, pa_ast_compare, pa_ast_call,
-    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_ellipsis, pa_constant_from_expr, pa_match_singleton, pa_pattern_list, pa_singleton_seq, pa_singleton_seq_expr, pa_singleton_seq_stmt, pa_singleton_seq_alias, pa_stmt_list_or_empty,
-    pa_seq_insert_front_expr, pa_seq_insert_front_pattern, pa_seq_insert_front_stmt,
-    pa_seq_insert_front_alias, pa_seq_insert_front_type_param, pa_seq_insert_front_withitem,
-    pa_seq_insert_front_arg, pa_seq_insert_front_kw_or_starred, pa_seq_insert_front_kvpair,
-    pa_seq_insert_front_kvpattern, pa_seq_insert_front, pa_seq_append_to_end, pa_seq_append_to_end_expr, pa_seq_append_to_end_stmt, pa_get_cmpops, pa_get_exprs, pa_get_keys, pa_get_values,
-    pa_get_patterns, pa_get_pattern_keys, pa_collect_call_seqs, pa_call_from_optional_args,
-    pa_ast_starred, pa_check, pa_make_module, pa_seq_flatten, pa_set_context, pa_map_names_to_ids,
-    pa_ast_expr_stmt, pa_ast_assign, pa_ast_annassign, pa_ast_return, pa_ast_pass, pa_ast_break,
-    pa_ast_continue, pa_ast_tuple, pa_ast_attribute, pa_ast_subscript, pa_ast_slice, pa_ast_augassign,
-    pa_ast_delete, pa_raise_syntax, pa_raise_syntax_known_expr, pa_raise_syntax_known_range,
-    pa_raise_invalid_target, pa_aug_op, pa_call_args, pa_call_keywords, pa_comp_field,
-    pa_empty_arguments, pa_dummy_name, pa_interactive_exit, pa_seq_count_dots, pa_seq_first,
-    pa_seq_last, pa_seq_len, pa_seq_get, pa_or_pattern_singleton, pa_check_legacy_stmt_or_raise,
-    pa_raise_type_param_error, pa_raise_kvpair_error, pa_checked_future_import, pa_nonparen_genexp_in_call,
-    pa_arguments_parsing_error, pa_check_legacy_stmt, pa_concatenate_strings, pa_concatenate_tstrings,
-    pa_constant_from_string, pa_constant_from_token, pa_constant_from_fstring_middle, pa_decoded_constant_from_token, pa_ensure_imaginary,
-    pa_ensure_real, pa_get_expr_name, pa_get_last_comprehension_item, pa_join_names_with_dot,
-    pa_join_sequences, pa_join_sequences_kw_or_starred, pa_alias_for_star, pa_add_type_comment_to_arg, pa_seq_delete_starred_exprs,
-    pa_seq_extract_starred_exprs, pa_setup_full_format_spec, pa_check_fstring_conversion,
-    pa_function_def_decorators, pa_class_def_decorators, pa_make_arguments, pa_star_etc, pa_slash_with_default,
-    pa_joined_str, pa_template_str, pa_formatted_value, pa_interpolation, pa_err_occurred,
-    pa_expr_lineno, pa_expr_end_col_offset, pa_expr_end_lineno,
+    kv_pair,
+    kp_pair,
+    keyword_or_starred_node,
+    name_default_pair,
+    pa_cmpop_expr_pair,
+    pa_key_value_pair,
+    pa_key_pattern_pair,
+    pa_keyword_or_starred,
+    pa_name_default_pair,
+    pa_make_cmpop_pair,
+    pa_name_from_token,
+    pa_name_id,
+    pa_number_from_token,
+    pa_ast_expression,
+    pa_ast_binop,
+    pa_ast_unaryop,
+    pa_ast_boolop,
+    pa_ast_compare,
+    pa_ast_call,
+    pa_ast_ifexp,
+    pa_constant_bool,
+    pa_constant_none,
+    pa_constant_ellipsis,
+    pa_constant_from_expr,
+    pa_match_singleton,
+    pa_pattern_list,
+    pa_singleton_seq,
+    pa_singleton_seq_expr,
+    pa_singleton_seq_stmt,
+    pa_singleton_seq_alias,
+    pa_stmt_list_or_empty,
+    pa_seq_insert_front_expr,
+    pa_seq_insert_front_pattern,
+    pa_seq_insert_front_stmt,
+    pa_seq_insert_front_alias,
+    pa_seq_insert_front_type_param,
+    pa_seq_insert_front_withitem,
+    pa_seq_insert_front_arg,
+    pa_seq_insert_front_kw_or_starred,
+    pa_seq_insert_front_kvpair,
+    pa_seq_insert_front_kvpattern,
+    pa_seq_insert_front,
+    pa_seq_append_to_end,
+    pa_seq_append_to_end_expr,
+    pa_seq_append_to_end_stmt,
+    pa_get_cmpops,
+    pa_get_exprs,
+    pa_get_keys,
+    pa_get_values,
+    pa_get_patterns,
+    pa_get_pattern_keys,
+    pa_collect_call_seqs,
+    pa_call_from_optional_args,
+    pa_ast_starred,
+    pa_check,
+    pa_make_module,
+    pa_seq_flatten,
+    pa_set_context,
+    pa_map_names_to_ids,
+    pa_ast_expr_stmt,
+    pa_ast_assign,
+    pa_ast_annassign,
+    pa_ast_return,
+    pa_ast_pass,
+    pa_ast_break,
+    pa_ast_continue,
+    pa_ast_tuple,
+    pa_ast_attribute,
+    pa_ast_subscript,
+    pa_ast_slice,
+    pa_ast_augassign,
+    pa_ast_delete,
+    pa_raise_syntax,
+    pa_raise_syntax_known_expr,
+    pa_raise_syntax_known_range,
+    pa_raise_invalid_target,
+    pa_aug_op,
+    pa_call_args,
+    pa_call_keywords,
+    pa_comp_field,
+    pa_empty_arguments,
+    pa_dummy_name,
+    pa_interactive_exit,
+    pa_seq_count_dots,
+    pa_seq_first,
+    pa_seq_last,
+    pa_seq_len,
+    pa_seq_get,
+    pa_or_pattern_singleton,
+    pa_check_legacy_stmt_or_raise,
+    pa_raise_type_param_error,
+    pa_raise_kvpair_error,
+    pa_checked_future_import,
+    pa_nonparen_genexp_in_call,
+    pa_arguments_parsing_error,
+    pa_check_legacy_stmt,
+    pa_concatenate_strings,
+    pa_concatenate_tstrings,
+    pa_constant_from_string,
+    pa_constant_from_token,
+    pa_constant_from_fstring_middle,
+    pa_decoded_constant_from_token,
+    pa_ensure_imaginary,
+    pa_ensure_real,
+    pa_get_expr_name,
+    pa_get_last_comprehension_item,
+    pa_join_names_with_dot,
+    pa_join_sequences,
+    pa_join_sequences_kw_or_starred,
+    pa_alias_for_star,
+    pa_add_type_comment_to_arg,
+    pa_seq_delete_starred_exprs,
+    pa_seq_extract_starred_exprs,
+    pa_setup_full_format_spec,
+    pa_check_fstring_conversion,
+    pa_function_def_decorators,
+    pa_class_def_decorators,
+    pa_make_arguments,
+    pa_star_etc,
+    pa_slash_with_default,
+    pa_joined_str,
+    pa_template_str,
+    pa_formatted_value,
+    pa_interpolation,
+    pa_err_occurred,
+    pa_expr_lineno,
+    pa_expr_end_col_offset,
+    pa_expr_end_lineno,
 }
 import from jaclang.compiler.frontend.python.ast_nodes {
-    ast_node, expr, mod, stmt, pattern, operator, cmpop, expr_context,
-    arguments, alias, arg, keyword, comprehension, excepthandler, match_case, type_param, withitem,
-    Expression, Interactive, FunctionType, Module, Name, Load, Store, Del,
-    Assign, AnnAssign, AugAssign, Expr, Return, Pass, Break, Continue, Delete, Raise,
-    Import, ImportFrom, Global, Nonlocal, Assert, If, For, AsyncFor, While, With, AsyncWith,
-    FunctionDef, AsyncFunctionDef, ClassDef, Try, TryStar, ExceptHandler, Match, TypeAlias,
-    Attribute, Subscript, Slice, Tuple, List, Dict, Set, Starred, NamedExpr, Lambda,
-    BinOp, UnaryOp, BoolOp, Compare, Call, IfExp, Await, Yield, YieldFrom,
-    ListComp, SetComp, DictComp, GeneratorExp, Constant, JoinedStr, TemplateStr,
-    FormattedValue, Interpolation, MatchAs, MatchOr, MatchSequence, MatchMapping, MatchClass,
-    MatchStar, MatchSingleton, MatchValue,
-    Add, Sub, Mult, Div, FloorDiv, Mod, MatMult, Pow, LShift, RShift, BitOr, BitXor, BitAnd,
-    USub, UAdd, Not, Invert, Or, And, Lt, LtE, Gt, GtE, Eq, NotEq, In, IsNot, Is, NotIn,
-    TypeVar, TypeVarTuple, ParamSpec,
+    ast_node,
+    expr,
+    mod,
+    stmt,
+    pattern,
+    operator,
+    cmpop,
+    expr_context,
+    arguments,
+    alias,
+    arg,
+    keyword,
+    comprehension,
+    excepthandler,
+    match_case,
+    type_param,
+    withitem,
+    Expression,
+    Interactive,
+    FunctionType,
+    Module,
+    Name,
+    Load,
+    Store,
+    Del,
+    Assign,
+    AnnAssign,
+    AugAssign,
+    Expr,
+    Return,
+    Pass,
+    Break,
+    Continue,
+    Delete,
+    Raise,
+    Import,
+    ImportFrom,
+    Global,
+    Nonlocal,
+    Assert,
+    If,
+    For,
+    AsyncFor,
+    While,
+    With,
+    AsyncWith,
+    FunctionDef,
+    AsyncFunctionDef,
+    ClassDef,
+    Try,
+    TryStar,
+    ExceptHandler,
+    Match,
+    TypeAlias,
+    Attribute,
+    Subscript,
+    Slice,
+    Tuple,
+    List,
+    Dict,
+    Set,
+    Starred,
+    NamedExpr,
+    Lambda,
+    BinOp,
+    UnaryOp,
+    BoolOp,
+    Compare,
+    Call,
+    IfExp,
+    Await,
+    Yield,
+    YieldFrom,
+    ListComp,
+    SetComp,
+    DictComp,
+    GeneratorExp,
+    Constant,
+    JoinedStr,
+    TemplateStr,
+    FormattedValue,
+    Interpolation,
+    MatchAs,
+    MatchOr,
+    MatchSequence,
+    MatchMapping,
+    MatchClass,
+    MatchStar,
+    MatchSingleton,
+    MatchValue,
+    Add,
+    Sub,
+    Mult,
+    Div,
+    FloorDiv,
+    Mod,
+    MatMult,
+    Pow,
+    LShift,
+    RShift,
+    BitOr,
+    BitXor,
+    BitAnd,
+    USub,
+    UAdd,
+    Not,
+    Invert,
+    Or,
+    And,
+    Lt,
+    LtE,
+    Gt,
+    GtE,
+    Eq,
+    NotEq,
+    In,
+    IsNot,
+    Is,
+    NotIn,
+    TypeVar,
+    TypeVarTuple,
+    ParamSpec,
 }
 
 glob RULE__gather_101: int = NT_OFFSET + 0,
@@ -529,7 +767,9 @@ def rule__gather_106(p: peg_parser) -> list[keyword_or_starred_node] | None {
     if elem is not None {
         seq = rule__loop0_105(p);
         if seq is not None {
-            res = pa_seq_insert_front_kw_or_starred(elem as keyword_or_starred_node, seq) as list[keyword_or_starred_node];
+            res = pa_seq_insert_front_kw_or_starred(
+                elem as keyword_or_starred_node, seq
+            ) as list[keyword_or_starred_node];
             return res;
         }
     }
@@ -544,7 +784,9 @@ def rule__gather_108(p: peg_parser) -> list[keyword_or_starred_node] | None {
     if elem is not None {
         seq = rule__loop0_107(p);
         if seq is not None {
-            res = pa_seq_insert_front_kw_or_starred(elem as keyword_or_starred_node, seq) as list[keyword_or_starred_node];
+            res = pa_seq_insert_front_kw_or_starred(
+                elem as keyword_or_starred_node, seq
+            ) as list[keyword_or_starred_node];
             return res;
         }
     }
@@ -679,7 +921,9 @@ def rule__gather_140(p: peg_parser) -> list[type_param] | None {
     if elem is not None {
         seq = rule__loop0_139(p);
         if seq is not None {
-            res = pa_seq_insert_front_type_param(elem as type_param, seq) as list[type_param];
+            res = pa_seq_insert_front_type_param(elem as type_param, seq) as list[
+                type_param
+            ];
             return res;
         }
     }
@@ -3333,7 +3577,9 @@ def rule_args(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_collect_call_seqs(a, b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_collect_call_seqs(
+            a, b, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -3347,7 +3593,15 @@ def rule_args(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_ast_call(pa_dummy_name(start_lineno, start_col_offset, end_lineno, end_col_offset), pa_check(pa_seq_extract_starred_exprs(a_2)) as list[expr], pa_check(pa_seq_delete_starred_exprs(a_2)) as list[keyword], start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_ast_call(
+            pa_dummy_name(start_lineno, start_col_offset, end_lineno, end_col_offset),
+            pa_check(pa_seq_extract_starred_exprs(a_2)) as list[expr],
+            pa_check(pa_seq_delete_starred_exprs(a_2)) as list[keyword],
+            start_lineno,
+            start_col_offset,
+            end_lineno,
+            end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -3408,7 +3662,14 @@ def rule_as_pattern(p: peg_parser) -> pattern | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = MatchAs(pattern=pattern, name=pa_name_id(target), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = MatchAs(
+                    pattern=pattern,
+                    name=pa_name_id(target),
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -3448,7 +3709,14 @@ def rule_assert_stmt(p: peg_parser) -> stmt | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = Assert(`test=a, msg=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = Assert(
+                `test=a,
+                msg=b,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -3483,7 +3751,16 @@ def rule_assignment(p: peg_parser) -> stmt | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_annassign(pa_check(pa_set_context(a, Store())) as expr, b, c, 1, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_annassign(
+                    pa_check(pa_set_context(a, Store())) as expr,
+                    b,
+                    c,
+                    1,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -3504,7 +3781,16 @@ def rule_assignment(p: peg_parser) -> stmt | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_annassign(a_2, b, c, 0, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_annassign(
+                    a_2,
+                    b,
+                    c,
+                    0,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -3524,7 +3810,9 @@ def rule_assignment(p: peg_parser) -> stmt | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_assign(a_3, b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_assign(
+                    a_3, b, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -3545,7 +3833,15 @@ def rule_assignment(p: peg_parser) -> stmt | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_augassign(a_4, pa_aug_op(b_4), c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_augassign(
+                    a_4,
+                    pa_aug_op(b_4),
+                    c,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -3587,7 +3883,14 @@ def rule_assignment_expression(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = NamedExpr(target=pa_check(pa_set_context(a, Store())) as expr, value=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = NamedExpr(
+                    target=pa_check(pa_set_context(a, Store())) as expr,
+                    value=b,
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -3624,7 +3927,9 @@ def rule_atom(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_bool(True, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_bool(
+            True, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -3638,7 +3943,9 @@ def rule_atom(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_bool(False, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_bool(
+            False, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -3652,11 +3959,19 @@ def rule_atom(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_none(start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_none(
+            start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
-    if ((peg_positive_lookahead_token(p, STRING) or peg_positive_lookahead_token(p, FSTRING_START) or peg_positive_lookahead_token(p, TSTRING_START))) {
+    if (
+        (
+            peg_positive_lookahead_token(p, STRING)
+            or peg_positive_lookahead_token(p, FSTRING_START)
+            or peg_positive_lookahead_token(p, TSTRING_START)
+        )
+    ) {
         strings = rule_strings(p);
         if strings is not None {
             res = strings;
@@ -3704,7 +4019,9 @@ def rule_atom(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_ellipsis(start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_ellipsis(
+            start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -3761,7 +4078,15 @@ def rule_attr_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_attribute(value, pa_name_id(attr), Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_attribute(
+                    value,
+                    pa_name_id(attr),
+                    Load(),
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -3882,7 +4207,13 @@ def rule_await_primary(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = Await(value=a, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = Await(
+                value=a,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_await_primary, res);
             return res;
         }
@@ -3949,7 +4280,15 @@ def rule_bitwise_and_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, BitAnd(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    BitAnd(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -4014,7 +4353,15 @@ def rule_bitwise_or_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, BitOr(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    BitOr(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -4079,7 +4426,15 @@ def rule_bitwise_xor_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, BitXor(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    BitXor(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -4186,7 +4541,14 @@ def rule_capture_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = MatchAs(pattern=None, name=pa_name_id(target), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = MatchAs(
+            pattern=None,
+            name=pa_name_id(target),
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -4211,7 +4573,11 @@ def rule_case_block(p: peg_parser) -> match_case | None {
             if lit is not None {
                 body = rule_block(p);
                 if body is not None {
-                    res = match_case(pattern=pattern, guard=guard, body=(body if body is not None else []));
+                    res = match_case(
+                        pattern=pattern,
+                        guard=guard,
+                        body=(body if body is not None else [])
+                    );
                     return res;
                 }
             }
@@ -4278,7 +4644,28 @@ def rule_class_def_raw(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = ClassDef(name=pa_name_id(a), bases=((pa_call_args(b) if b is not None else []) if (pa_call_args(b) if b is not None else []) is not None else []), keywords=((pa_call_keywords(b) if b is not None else []) if (pa_call_keywords(b) if b is not None else []) is not None else []), body=(c if c is not None else []), decorator_list=[], type_params=(t if t is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = ClassDef(
+                        name=pa_name_id(a),
+                        bases=(
+                            (pa_call_args(b) if b is not None else [])
+                                if (pa_call_args(b) if b is not None else [])
+                                    is not None
+                                else []
+                        ),
+                        keywords=(
+                            (pa_call_keywords(b) if b is not None else [])
+                                if (pa_call_keywords(b) if b is not None else [])
+                                    is not None
+                                else []
+                        ),
+                        body=(c if c is not None else []),
+                        decorator_list=[],
+                        type_params=(t if t is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -4314,7 +4701,16 @@ def rule_class_pattern(p: peg_parser) -> pattern | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = MatchClass(cls=cls, patterns=[], kwd_attrs=[], kwd_patterns=[], lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = MatchClass(
+                    cls=cls,
+                    patterns=[],
+                    kwd_attrs=[],
+                    kwd_patterns=[],
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -4337,7 +4733,16 @@ def rule_class_pattern(p: peg_parser) -> pattern | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = MatchClass(cls=cls, patterns=(patterns if patterns is not None else []), kwd_attrs=[], kwd_patterns=[], lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = MatchClass(
+                        cls=cls,
+                        patterns=(patterns if patterns is not None else []),
+                        kwd_attrs=[],
+                        kwd_patterns=[],
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -4361,7 +4766,38 @@ def rule_class_pattern(p: peg_parser) -> pattern | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = MatchClass(cls=cls, patterns=[], kwd_attrs=(pa_check(pa_map_names_to_ids(pa_check(pa_get_pattern_keys(keywords)) as list[expr])) as list[str] if pa_check(pa_map_names_to_ids(pa_check(pa_get_pattern_keys(keywords)) as list[expr])) as list[str] is not None else []), kwd_patterns=(pa_check(pa_get_patterns(keywords)) as list[pattern] if pa_check(pa_get_patterns(keywords)) as list[pattern] is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = MatchClass(
+                        cls=cls,
+                        patterns=[],
+                        kwd_attrs=(
+                            pa_check(
+                                pa_map_names_to_ids(
+                                    pa_check(pa_get_pattern_keys(keywords)) as list[
+                                        expr
+                                    ]
+                                )
+                            ) as list[str]
+                                if pa_check(
+                                    pa_map_names_to_ids(
+                                        pa_check(pa_get_pattern_keys(keywords)) as list[
+                                            expr
+                                        ]
+                                    )
+                                ) as list[str]
+                                    is not None
+                                else []
+                        ),
+                        kwd_patterns=(
+                            pa_check(pa_get_patterns(keywords)) as list[pattern]
+                                if pa_check(pa_get_patterns(keywords)) as list[pattern]
+                                    is not None
+                                else []
+                        ),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -4389,7 +4825,40 @@ def rule_class_pattern(p: peg_parser) -> pattern | None {
                             }
                             end_lineno = end_tok.end_lineno;
                             end_col_offset = end_tok.end_col_offset;
-                            res = MatchClass(cls=cls, patterns=(patterns if patterns is not None else []), kwd_attrs=(pa_check(pa_map_names_to_ids(pa_check(pa_get_pattern_keys(keywords)) as list[expr])) as list[str] if pa_check(pa_map_names_to_ids(pa_check(pa_get_pattern_keys(keywords)) as list[expr])) as list[str] is not None else []), kwd_patterns=(pa_check(pa_get_patterns(keywords)) as list[pattern] if pa_check(pa_get_patterns(keywords)) as list[pattern] is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                            res = MatchClass(
+                                cls=cls,
+                                patterns=(patterns if patterns is not None else []),
+                                kwd_attrs=(
+                                    pa_check(
+                                        pa_map_names_to_ids(
+                                            pa_check(pa_get_pattern_keys(keywords)) as list[
+                                                expr
+                                            ]
+                                        )
+                                    ) as list[str]
+                                        if pa_check(
+                                            pa_map_names_to_ids(
+                                                pa_check(
+                                                    pa_get_pattern_keys(keywords)
+                                                ) as list[expr]
+                                            )
+                                        ) as list[str]
+                                            is not None
+                                        else []
+                                ),
+                                kwd_patterns=(
+                                    pa_check(pa_get_patterns(keywords)) as list[pattern]
+                                        if pa_check(pa_get_patterns(keywords)) as list[
+                                            pattern
+                                        ]
+                                            is not None
+                                        else []
+                                ),
+                                lineno=start_lineno,
+                                col_offset=start_col_offset,
+                                end_lineno=end_lineno,
+                                end_col_offset=end_col_offset
+                            );
                             return res;
                         }
                     }
@@ -4564,7 +5033,15 @@ def rule_comparison(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_compare(a, pa_check(pa_get_cmpops(b)) as list[cmpop], pa_check(pa_get_exprs(b)) as list[expr], start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_compare(
+                a,
+                pa_check(pa_get_cmpops(b)) as list[cmpop],
+                pa_check(pa_get_exprs(b)) as list[expr],
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -4604,7 +5081,15 @@ def rule_complex_number(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(real, Add(), imag, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    real,
+                    Add(),
+                    imag,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -4624,7 +5109,15 @@ def rule_complex_number(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(real, Sub(), imag, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    real,
+                    Sub(),
+                    imag,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -4636,7 +5129,13 @@ def rule_complex_number(p: peg_parser) -> expr | None {
 def rule_compound_stmt(p: peg_parser) -> stmt | None {
     mark = peg_mark(p);
     res: stmt | None = None;
-    if ((peg_positive_lookahead_token(p, 574) or peg_positive_lookahead_token(p, 49) or peg_positive_lookahead_token(p, 699))) {
+    if (
+        (
+            peg_positive_lookahead_token(p, 574)
+            or peg_positive_lookahead_token(p, 49)
+            or peg_positive_lookahead_token(p, 699)
+        )
+    ) {
         function_def = rule_function_def(p);
         if function_def is not None {
             res = function_def;
@@ -4652,7 +5151,9 @@ def rule_compound_stmt(p: peg_parser) -> stmt | None {
         }
     }
     peg_reset(p, mark);
-    if ((peg_positive_lookahead_token(p, 570) or peg_positive_lookahead_token(p, 49))) {
+    if (
+        (peg_positive_lookahead_token(p, 570) or peg_positive_lookahead_token(p, 49))
+    ) {
         class_def = rule_class_def(p);
         if class_def is not None {
             res = class_def;
@@ -4660,7 +5161,9 @@ def rule_compound_stmt(p: peg_parser) -> stmt | None {
         }
     }
     peg_reset(p, mark);
-    if ((peg_positive_lookahead_token(p, 700) or peg_positive_lookahead_token(p, 699))) {
+    if (
+        (peg_positive_lookahead_token(p, 700) or peg_positive_lookahead_token(p, 699))
+    ) {
         with_stmt = rule_with_stmt(p);
         if with_stmt is not None {
             res = with_stmt;
@@ -4668,7 +5171,9 @@ def rule_compound_stmt(p: peg_parser) -> stmt | None {
         }
     }
     peg_reset(p, mark);
-    if ((peg_positive_lookahead_token(p, 621) or peg_positive_lookahead_token(p, 699))) {
+    if (
+        (peg_positive_lookahead_token(p, 621) or peg_positive_lookahead_token(p, 699))
+    ) {
         for_stmt = rule_for_stmt(p);
         if for_stmt is not None {
             res = for_stmt;
@@ -4729,7 +5234,14 @@ def rule_conjunction(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_boolop(And(), pa_check(pa_seq_insert_front_expr(a, b)) as list[expr], start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_boolop(
+                And(),
+                pa_check(pa_seq_insert_front_expr(a, b)) as list[expr],
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_conjunction, res);
             return res;
         }
@@ -4768,7 +5280,9 @@ def rule_continue_stmt(p: peg_parser) -> stmt | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_ast_continue(start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_ast_continue(
+            start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -4824,7 +5338,12 @@ def rule_del_stmt(p: peg_parser) -> stmt | None {
     if kw is not None {
         a = rule_del_targets(p);
         if a is not None {
-            if ((peg_positive_lookahead_token(p, 13) or peg_positive_lookahead_token(p, NEWLINE))) {
+            if (
+                (
+                    peg_positive_lookahead_token(p, 13)
+                    or peg_positive_lookahead_token(p, NEWLINE)
+                )
+            ) {
                 end_tok = peg_get_last_nonnwhitespace_token(p);
                 if end_tok is None {
                     p.error_indicator = True;
@@ -4833,7 +5352,9 @@ def rule_del_stmt(p: peg_parser) -> stmt | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_delete(a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_delete(
+                    a, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -4891,7 +5412,9 @@ def rule_del_t_atom(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(a_3, Del(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                a_3, Del(), start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -4909,7 +5432,14 @@ def rule_del_t_atom(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = List(elts=(a_4 if a_4 is not None else []), ctx=Del(), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = List(
+                elts=(a_4 if a_4 is not None else []),
+                ctx=Del(),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -4948,7 +5478,15 @@ def rule_del_target(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = pa_ast_attribute(a, pa_name_id(b), Del(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_ast_attribute(
+                        a,
+                        pa_name_id(b),
+                        Del(),
+                        start_lineno,
+                        start_col_offset,
+                        end_lineno,
+                        end_col_offset
+                    );
                     peg_insert_memo(p, mark, RULE_del_target, res);
                     return res;
                 }
@@ -4973,7 +5511,15 @@ def rule_del_target(p: peg_parser) -> expr | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = pa_ast_subscript(a, b_2, Del(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                        res = pa_ast_subscript(
+                            a,
+                            b_2,
+                            Del(),
+                            start_lineno,
+                            start_col_offset,
+                            end_lineno,
+                            end_col_offset
+                        );
                         peg_insert_memo(p, mark, RULE_del_target, res);
                         return res;
                     }
@@ -5031,7 +5577,22 @@ def rule_dict(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = Dict(keys=(pa_check(pa_get_keys(a)) as list[expr] if pa_check(pa_get_keys(a)) as list[expr] is not None else []), values=(pa_check(pa_get_values(a)) as list[expr] if pa_check(pa_get_values(a)) as list[expr] is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = Dict(
+                keys=(
+                    pa_check(pa_get_keys(a)) as list[expr]
+                        if pa_check(pa_get_keys(a)) as list[expr] is not None
+                        else []
+                ),
+                values=(
+                    pa_check(pa_get_values(a)) as list[expr]
+                        if pa_check(pa_get_values(a)) as list[expr] is not None
+                        else []
+                ),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -5079,7 +5640,15 @@ def rule_dictcomp(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = DictComp(key=pa_comp_field(a, "key"), value=pa_comp_field(a, "value"), generators=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = DictComp(
+                        key=pa_comp_field(a, "key"),
+                        value=pa_comp_field(a, "value"),
+                        generators=(b if b is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -5123,7 +5692,14 @@ def rule_disjunction(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_boolop(Or(), pa_check(pa_seq_insert_front_expr(a, b)) as list[expr], start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_boolop(
+                Or(),
+                pa_check(pa_seq_insert_front_expr(a, b)) as list[expr],
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_disjunction, res);
             return res;
         }
@@ -5169,7 +5745,14 @@ def rule_dotted_as_name(p: peg_parser) -> alias | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = alias(name=pa_name_id(a), asname=(pa_name_id(b) if b is not None else None), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = alias(
+            name=pa_name_id(a),
+            asname=(pa_name_id(b) if b is not None else None),
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -5267,7 +5850,9 @@ def rule_double_starred_kvpair(p: peg_parser) -> kv_pair | None {
     if lit is not None {
         a = rule_bitwise_or(p);
         if a is not None {
-            res = pa_key_value_pair(None, a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_key_value_pair(
+                None, a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -5330,7 +5915,17 @@ def rule_elif_stmt(p: peg_parser) -> stmt | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(pa_check(pa_singleton_seq_stmt(c)) as list[stmt]), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = If(
+                            `test=a,
+                            body=(b if b is not None else []),
+                            orelse=pa_stmt_list_or_empty(
+                                pa_check(pa_singleton_seq_stmt(c)) as list[stmt]
+                            ),
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -5355,7 +5950,15 @@ def rule_elif_stmt(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(c_3), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = If(
+                        `test=a,
+                        body=(b if b is not None else []),
+                        orelse=pa_stmt_list_or_empty(c_3),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -5456,7 +6059,15 @@ def rule_except_block(p: peg_parser) -> excepthandler | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = ExceptHandler(`type=e, name=None, body=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = ExceptHandler(
+                        `type=e,
+                        name=None,
+                        body=(b if b is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -5483,7 +6094,15 @@ def rule_except_block(p: peg_parser) -> excepthandler | None {
                             }
                             end_lineno = end_tok.end_lineno;
                             end_col_offset = end_tok.end_col_offset;
-                            res = ExceptHandler(`type=e, name=pa_name_id(t), body=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                            res = ExceptHandler(
+                                `type=e,
+                                name=pa_name_id(t),
+                                body=(b if b is not None else []),
+                                lineno=start_lineno,
+                                col_offset=start_col_offset,
+                                end_lineno=end_lineno,
+                                end_col_offset=end_col_offset
+                            );
                             return res;
                         }
                     }
@@ -5508,7 +6127,15 @@ def rule_except_block(p: peg_parser) -> excepthandler | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = ExceptHandler(`type=e, name=None, body=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = ExceptHandler(
+                        `type=e,
+                        name=None,
+                        body=(b if b is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -5529,7 +6156,15 @@ def rule_except_block(p: peg_parser) -> excepthandler | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = ExceptHandler(`type=None, name=None, body=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = ExceptHandler(
+                    `type=None,
+                    name=None,
+                    body=(b if b is not None else []),
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -5580,7 +6215,15 @@ def rule_except_star_block(p: peg_parser) -> excepthandler | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = ExceptHandler(`type=e, name=None, body=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = ExceptHandler(
+                            `type=e,
+                            name=None,
+                            body=(b if b is not None else []),
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -5610,7 +6253,15 @@ def rule_except_star_block(p: peg_parser) -> excepthandler | None {
                                 }
                                 end_lineno = end_tok.end_lineno;
                                 end_col_offset = end_tok.end_col_offset;
-                                res = ExceptHandler(`type=e, name=pa_name_id(t), body=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                                res = ExceptHandler(
+                                    `type=e,
+                                    name=pa_name_id(t),
+                                    body=(b if b is not None else []),
+                                    lineno=start_lineno,
+                                    col_offset=start_col_offset,
+                                    end_lineno=end_lineno,
+                                    end_col_offset=end_col_offset
+                                );
                                 return res;
                             }
                         }
@@ -5638,7 +6289,15 @@ def rule_except_star_block(p: peg_parser) -> excepthandler | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = ExceptHandler(`type=e, name=None, body=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = ExceptHandler(
+                            `type=e,
+                            name=None,
+                            body=(b if b is not None else []),
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -5703,7 +6362,15 @@ def rule_expression(p: peg_parser) -> expr | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = pa_ast_ifexp(b, a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                        res = pa_ast_ifexp(
+                            b,
+                            a,
+                            c,
+                            start_lineno,
+                            start_col_offset,
+                            end_lineno,
+                            end_col_offset
+                        );
                         peg_insert_memo(p, mark, RULE_expression, res);
                         return res;
                     }
@@ -5760,7 +6427,15 @@ def rule_expression_without_invalid(p: peg_parser) -> expr | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = pa_ast_ifexp(b, a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                        res = pa_ast_ifexp(
+                            b,
+                            a,
+                            c,
+                            start_lineno,
+                            start_col_offset,
+                            end_lineno,
+                            end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -5808,7 +6483,14 @@ def rule_expressions(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_seq_insert_front_expr(a, b)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                pa_check(pa_seq_insert_front_expr(a, b)) as list[expr],
+                Load(),
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -5825,7 +6507,14 @@ def rule_expressions(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_singleton_seq_expr(a)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                pa_check(pa_singleton_seq_expr(a)) as list[expr],
+                Load(),
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -5867,7 +6556,9 @@ def rule_factor(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_unaryop(UAdd(), a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_unaryop(
+                UAdd(), a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_factor, res);
             return res;
         }
@@ -5885,7 +6576,9 @@ def rule_factor(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_unaryop(USub(), a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_unaryop(
+                USub(), a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_factor, res);
             return res;
         }
@@ -5903,7 +6596,9 @@ def rule_factor(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_unaryop(Invert(), a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_unaryop(
+                Invert(), a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_factor, res);
             return res;
         }
@@ -5973,7 +6668,12 @@ def rule_for_if_clause(p: peg_parser) -> comprehension | None {
                     if b is not None {
                         c = rule__loop0_26(p);
                         if c is not None {
-                            res = comprehension(target=a, iter=b, ifs=(c if c is not None else []), is_async=1);
+                            res = comprehension(
+                                target=a,
+                                iter=b,
+                                ifs=(c if c is not None else []),
+                                is_async=1
+                            );
                             return res;
                         }
                     }
@@ -5993,7 +6693,12 @@ def rule_for_if_clause(p: peg_parser) -> comprehension | None {
                 if b is not None {
                     c = rule__loop0_26(p);
                     if c is not None {
-                        res = comprehension(target=a, iter=b, ifs=(c if c is not None else []), is_async=0);
+                        res = comprehension(
+                            target=a,
+                            iter=b,
+                            ifs=(c if c is not None else []),
+                            is_async=0
+                        );
                         return res;
                     }
                 }
@@ -6069,7 +6774,17 @@ def rule_for_stmt(p: peg_parser) -> stmt | None {
                             }
                             end_lineno = end_tok.end_lineno;
                             end_col_offset = end_tok.end_col_offset;
-                            res = For(target=t, iter=ex, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(el), type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                            res = For(
+                                target=t,
+                                iter=ex,
+                                body=(b if b is not None else []),
+                                orelse=pa_stmt_list_or_empty(el),
+                                type_comment=None,
+                                lineno=start_lineno,
+                                col_offset=start_col_offset,
+                                end_lineno=end_lineno,
+                                end_col_offset=end_col_offset
+                            );
                             return res;
                         }
                     }
@@ -6103,7 +6818,17 @@ def rule_for_stmt(p: peg_parser) -> stmt | None {
                                 }
                                 end_lineno = end_tok.end_lineno;
                                 end_col_offset = end_tok.end_col_offset;
-                                res = AsyncFor(target=t, iter=ex, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(el), type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                                res = AsyncFor(
+                                    target=t,
+                                    iter=ex,
+                                    body=(b if b is not None else []),
+                                    orelse=pa_stmt_list_or_empty(el),
+                                    type_comment=None,
+                                    lineno=start_lineno,
+                                    col_offset=start_col_offset,
+                                    end_lineno=end_lineno,
+                                    end_col_offset=end_col_offset
+                                );
                                 return res;
                             }
                         }
@@ -6142,7 +6867,13 @@ def rule_fstring(p: peg_parser) -> expr | None {
             if c is not None {
                 end_tok = c as peg_token;
                 res = pa_joined_str(
-                    a, b, c, start_lineno, start_col_offset, end_tok.end_lineno, end_tok.end_col_offset
+                    a,
+                    b,
+                    c,
+                    start_lineno,
+                    start_col_offset,
+                    end_tok.end_lineno,
+                    end_tok.end_col_offset
                 );
                 return res;
             }
@@ -6266,7 +6997,17 @@ def rule_fstring_replacement_field(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_formatted_value(a, debug_expr, conversion, format, rbrace, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_formatted_value(
+                    a,
+                    debug_expr,
+                    conversion,
+                    format,
+                    rbrace,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -6297,7 +7038,9 @@ def rule_func_type(p: peg_parser) -> mod | None {
                     if seq is not None {
                         _endmarker = peg_expect_token(p, ENDMARKER);
                         if _endmarker is not None {
-                            res = FunctionType(argtypes=(a if a is not None else []), returns=b);
+                            res = FunctionType(
+                                argtypes=(a if a is not None else []), returns=b
+                            );
                             return res;
                         }
                     }
@@ -6395,7 +7138,23 @@ def rule_function_def_raw(p: peg_parser) -> stmt | None {
                             }
                             end_lineno = end_tok.end_lineno;
                             end_col_offset = end_tok.end_col_offset;
-                            res = FunctionDef(name=pa_name_id(n), args=(params if params is not None else pa_check(pa_empty_arguments()) as arguments), body=(b if b is not None else []), decorator_list=[], returns=a, type_comment=None, type_params=(t if t is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                            res = FunctionDef(
+                                name=pa_name_id(n),
+                                args=(
+                                    params
+                                        if params is not None
+                                        else pa_check(pa_empty_arguments()) as arguments
+                                ),
+                                body=(b if b is not None else []),
+                                decorator_list=[],
+                                returns=a,
+                                type_comment=None,
+                                type_params=(t if t is not None else []),
+                                lineno=start_lineno,
+                                col_offset=start_col_offset,
+                                end_lineno=end_lineno,
+                                end_col_offset=end_col_offset
+                            );
                             return res;
                         }
                     }
@@ -6430,7 +7189,25 @@ def rule_function_def_raw(p: peg_parser) -> stmt | None {
                                 }
                                 end_lineno = end_tok.end_lineno;
                                 end_col_offset = end_tok.end_col_offset;
-                                res = AsyncFunctionDef(name=pa_name_id(n), args=(params if params is not None else pa_check(pa_empty_arguments()) as arguments), body=(b if b is not None else []), decorator_list=[], returns=a, type_comment=None, type_params=(t if t is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                                res = AsyncFunctionDef(
+                                    name=pa_name_id(n),
+                                    args=(
+                                        params
+                                            if params is not None
+                                            else pa_check(
+                                                pa_empty_arguments()
+                                            ) as arguments
+                                    ),
+                                    body=(b if b is not None else []),
+                                    decorator_list=[],
+                                    returns=a,
+                                    type_comment=None,
+                                    type_params=(t if t is not None else []),
+                                    lineno=start_lineno,
+                                    col_offset=start_col_offset,
+                                    end_lineno=end_lineno,
+                                    end_col_offset=end_col_offset
+                                );
                                 return res;
                             }
                         }
@@ -6477,7 +7254,14 @@ def rule_genexp(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = GeneratorExp(elt=a, generators=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = GeneratorExp(
+                        elt=a,
+                        generators=(b if b is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -6517,7 +7301,17 @@ def rule_global_stmt(p: peg_parser) -> stmt | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = Global(names=(pa_check(pa_map_names_to_ids(a)) as list[str] if pa_check(pa_map_names_to_ids(a)) as list[str] is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = Global(
+                names=(
+                    pa_check(pa_map_names_to_ids(a)) as list[str]
+                        if pa_check(pa_map_names_to_ids(a)) as list[str] is not None
+                        else []
+                ),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -6648,7 +7442,17 @@ def rule_if_stmt(p: peg_parser) -> stmt | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(pa_check(pa_singleton_seq_stmt(c)) as list[stmt]), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = If(
+                            `test=a,
+                            body=(b if b is not None else []),
+                            orelse=pa_stmt_list_or_empty(
+                                pa_check(pa_singleton_seq_stmt(c)) as list[stmt]
+                            ),
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -6673,7 +7477,15 @@ def rule_if_stmt(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = If(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(c_3), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = If(
+                        `test=a,
+                        body=(b if b is not None else []),
+                        orelse=pa_stmt_list_or_empty(c_3),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -6725,7 +7537,15 @@ def rule_import_from(p: peg_parser) -> stmt | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = pa_checked_future_import(pa_name_id(b), c, pa_seq_count_dots(a), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                        res = pa_checked_future_import(
+                            pa_name_id(b),
+                            c,
+                            pa_seq_count_dots(a),
+                            start_lineno,
+                            start_col_offset,
+                            end_lineno,
+                            end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -6749,7 +7569,15 @@ def rule_import_from(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = ImportFrom(module=None, names=(b_2 if b_2 is not None else []), level=pa_seq_count_dots(a), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = ImportFrom(
+                        module=None,
+                        names=(b_2 if b_2 is not None else []),
+                        level=pa_seq_count_dots(a),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -6788,7 +7616,14 @@ def rule_import_from_as_name(p: peg_parser) -> alias | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = alias(name=pa_name_id(a), asname=(pa_name_id(b) if b is not None else None), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = alias(
+            name=pa_name_id(a),
+            asname=(pa_name_id(b) if b is not None else None),
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -6850,7 +7685,13 @@ def rule_import_from_targets(p: peg_parser) -> list[alias] | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_singleton_seq_alias(pa_check(pa_alias_for_star(start_lineno, start_col_offset, end_lineno, end_col_offset)) as alias);
+        res = pa_singleton_seq_alias(
+            pa_check(
+                pa_alias_for_star(
+                    start_lineno, start_col_offset, end_lineno, end_col_offset
+                )
+            ) as alias
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -6887,7 +7728,13 @@ def rule_import_name(p: peg_parser) -> stmt | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = Import(names=(a if a is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = Import(
+                names=(a if a is not None else []),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -6991,7 +7838,12 @@ def rule_invalid_arguments(p: peg_parser) -> object | None {
         if a is not None {
             gather = rule__gather_42(p);
             if gather is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "iterable argument unpacking follows keyword argument unpacking");
+                res = pa_raise_syntax_known_expr(
+                    p,
+                    False,
+                    a,
+                    "iterable argument unpacking follows keyword argument unpacking"
+                );
                 return res;
             }
         }
@@ -7004,7 +7856,13 @@ def rule_invalid_arguments(p: peg_parser) -> object | None {
             lit = peg_expect_token(p, 12);
             if lit is not None {
                 rhs = rule__tmp_43(p);
-                res = pa_raise_syntax_known_range(p, False, a_2, pa_get_last_comprehension_item(pa_seq_last(b)), "Generator expression must be parenthesized");
+                res = pa_raise_syntax_known_range(
+                    p,
+                    False,
+                    a_2,
+                    pa_get_last_comprehension_item(pa_seq_last(b)),
+                    "Generator expression must be parenthesized"
+                );
                 return res;
             }
         }
@@ -7018,7 +7876,13 @@ def rule_invalid_arguments(p: peg_parser) -> object | None {
             if expression is not None {
                 for_if_clauses = rule_for_if_clauses(p);
                 if for_if_clauses is not None {
-                    res = pa_raise_syntax_known_range(p, False, a_3, b_3, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?");
+                    res = pa_raise_syntax_known_range(
+                        p,
+                        False,
+                        a_3,
+                        b_3,
+                        "invalid syntax. Maybe you meant '==' or ':=' instead of '='?"
+                    );
                     return res;
                 }
             }
@@ -7030,8 +7894,15 @@ def rule_invalid_arguments(p: peg_parser) -> object | None {
     if a_4 is not None {
         b_4 = peg_expect_token(p, 22);
         if b_4 is not None {
-            if ((peg_positive_lookahead_token(p, 12) or peg_positive_lookahead_token(p, 8))) {
-                res = pa_raise_syntax_known_range(p, False, a_4, b_4, "expected argument value expression");
+            if (
+                (
+                    peg_positive_lookahead_token(p, 12)
+                    or peg_positive_lookahead_token(p, 8)
+                )
+            ) {
+                res = pa_raise_syntax_known_range(
+                    p, False, a_4, b_4, "expected argument value expression"
+                );
                 return res;
             }
         }
@@ -7054,7 +7925,13 @@ def rule_invalid_arguments(p: peg_parser) -> object | None {
             if a_6 is not None {
                 b = rule_for_if_clauses(p);
                 if b is not None {
-                    res = pa_raise_syntax_known_range(p, False, a_6, pa_get_last_comprehension_item(pa_seq_last(b)), "Generator expression must be parenthesized");
+                    res = pa_raise_syntax_known_range(
+                        p,
+                        False,
+                        a_6,
+                        pa_get_last_comprehension_item(pa_seq_last(b)),
+                        "Generator expression must be parenthesized"
+                    );
                     return res;
                 }
             }
@@ -7090,7 +7967,9 @@ def rule_invalid_arithmetic(p: peg_parser) -> object | None {
             if a is not None {
                 b = rule_inversion(p);
                 if b is not None {
-                    res = pa_raise_syntax_known_range(p, False, a, b, "'not' after an operator must be parenthesized");
+                    res = pa_raise_syntax_known_range(
+                        p, False, a, b, "'not' after an operator must be parenthesized"
+                    );
                     return res;
                 }
             }
@@ -7112,7 +7991,9 @@ def rule_invalid_as_pattern(p: peg_parser) -> object | None {
         if kw is not None {
             a = peg_expect_soft_keyword(p, "_");
             if a is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "cannot use '_' as a target");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "cannot use '_' as a target"
+                );
                 return res;
             }
         }
@@ -7124,7 +8005,9 @@ def rule_invalid_as_pattern(p: peg_parser) -> object | None {
         if kw is not None {
             a_2 = rule_expression(p);
             if a_2 is not None {
-                res = pa_raise_syntax_known_expr(p, False, a_2, "cannot use %s as pattern target");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a_2, "cannot use %s as pattern target"
+                );
                 return res;
             }
         }
@@ -7145,7 +8028,9 @@ def rule_invalid_assignment(p: peg_parser) -> object | None {
         if lit is not None {
             expression = rule_expression(p);
             if expression is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "only single target (not %s) can be annotated");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "only single target (not %s) can be annotated"
+                );
                 return res;
             }
         }
@@ -7161,7 +8046,12 @@ def rule_invalid_assignment(p: peg_parser) -> object | None {
                 if lit_1 is not None {
                     expression = rule_expression(p);
                     if expression is not None {
-                        res = pa_raise_syntax_known_expr(p, False, a, "only single target (not tuple) can be annotated");
+                        res = pa_raise_syntax_known_expr(
+                            p,
+                            False,
+                            a,
+                            "only single target (not tuple) can be annotated"
+                        );
                         return res;
                     }
                 }
@@ -7175,7 +8065,9 @@ def rule_invalid_assignment(p: peg_parser) -> object | None {
         if lit is not None {
             expression = rule_expression(p);
             if expression is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "illegal target for annotation");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "illegal target for annotation"
+                );
                 return res;
             }
         }
@@ -7199,7 +8091,9 @@ def rule_invalid_assignment(p: peg_parser) -> object | None {
         if a is not None {
             lit = peg_expect_token(p, 22);
             if lit is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "assignment to yield expression not possible");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "assignment to yield expression not possible"
+                );
                 return res;
             }
         }
@@ -7211,7 +8105,12 @@ def rule_invalid_assignment(p: peg_parser) -> object | None {
         if augassign is not None {
             annotated_rhs = rule_annotated_rhs(p);
             if annotated_rhs is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "'%s' is an illegal expression for augmented assignment");
+                res = pa_raise_syntax_known_expr(
+                    p,
+                    False,
+                    a,
+                    "'%s' is an illegal expression for augmented assignment"
+                );
                 return res;
             }
         }
@@ -7266,7 +8165,11 @@ def rule_invalid_case_block(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after 'case' statement on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after 'case' statement on line %d"
+                        );
                         return res;
                     }
                 }
@@ -7330,7 +8233,11 @@ def rule_invalid_class_def_raw(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after class definition on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after class definition on line %d"
+                        );
                         return res;
                     }
                 }
@@ -7353,7 +8260,13 @@ def rule_invalid_class_pattern(p: peg_parser) -> object | None {
         if lit is not None {
             a = rule_invalid_class_argument_pattern(p);
             if a is not None {
-                res = pa_raise_syntax_known_range(p, False, pa_seq_first(a), pa_seq_last(a), "positional patterns follow keyword patterns");
+                res = pa_raise_syntax_known_range(
+                    p,
+                    False,
+                    pa_seq_first(a),
+                    pa_seq_last(a),
+                    "positional patterns follow keyword patterns"
+                );
                 return res;
             }
         }
@@ -7374,7 +8287,9 @@ def rule_invalid_comprehension(p: peg_parser) -> object | None {
         if a is not None {
             for_if_clauses = rule_for_if_clauses(p);
             if for_if_clauses is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "iterable unpacking cannot be used in comprehension");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "iterable unpacking cannot be used in comprehension"
+                );
                 return res;
             }
         }
@@ -7390,7 +8305,13 @@ def rule_invalid_comprehension(p: peg_parser) -> object | None {
                 if b is not None {
                     for_if_clauses = rule_for_if_clauses(p);
                     if for_if_clauses is not None {
-                        res = pa_raise_syntax_known_range(p, False, a, pa_seq_last(b), "did you forget parentheses around the comprehension target?");
+                        res = pa_raise_syntax_known_range(
+                            p,
+                            False,
+                            a,
+                            pa_seq_last(b),
+                            "did you forget parentheses around the comprehension target?"
+                        );
                         return res;
                     }
                 }
@@ -7406,7 +8327,13 @@ def rule_invalid_comprehension(p: peg_parser) -> object | None {
             if b_3 is not None {
                 for_if_clauses = rule_for_if_clauses(p);
                 if for_if_clauses is not None {
-                    res = pa_raise_syntax_known_range(p, False, a, b_3, "did you forget parentheses around the comprehension target?");
+                    res = pa_raise_syntax_known_range(
+                        p,
+                        False,
+                        a,
+                        b_3,
+                        "did you forget parentheses around the comprehension target?"
+                    );
                     return res;
                 }
             }
@@ -7439,7 +8366,11 @@ def rule_invalid_def_raw(p: peg_parser) -> object | None {
                         _newline = peg_expect_token(p, NEWLINE);
                         if _newline is not None {
                             if (peg_negative_lookahead_token(p, INDENT)) {
-                                res = pa_raise_syntax(p, False, "expected an indented block after function definition on line %d");
+                                res = pa_raise_syntax(
+                                    p,
+                                    False,
+                                    "expected an indented block after function definition on line %d"
+                                );
                                 return res;
                             }
                         }
@@ -7466,7 +8397,19 @@ def rule_invalid_def_raw(p: peg_parser) -> object | None {
                         func_type_comment = rule_func_type_comment(p);
                         block = rule_block(p);
                         if block is not None {
-                            res = [kw, kw_1, name_var, type_params, forced, params, lit, rhs, forced_1, func_type_comment, block];
+                            res = [
+                                kw,
+                                kw_1,
+                                name_var,
+                                type_params,
+                                forced,
+                                params,
+                                lit,
+                                rhs,
+                                forced_1,
+                                func_type_comment,
+                                block
+                            ];
                             return res;
                         }
                     }
@@ -7486,8 +8429,12 @@ def rule_invalid_default(p: peg_parser) -> object | None {
     res: object | None = None;
     a = peg_expect_token(p, 22);
     if a is not None {
-        if ((peg_positive_lookahead_token(p, 8) or peg_positive_lookahead_token(p, 12))) {
-            res = pa_raise_syntax_known_expr(p, False, a, "expected default value expression");
+        if (
+            (peg_positive_lookahead_token(p, 8) or peg_positive_lookahead_token(p, 12))
+        ) {
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "expected default value expression"
+            );
             return res;
         }
     }
@@ -7529,7 +8476,12 @@ def rule_invalid_dict_comprehension(p: peg_parser) -> object | None {
                 if for_if_clauses is not None {
                     lit_1 = peg_expect_token(p, 26);
                     if lit_1 is not None {
-                        res = pa_raise_syntax_known_expr(p, False, a, "dict unpacking cannot be used in dict comprehension");
+                        res = pa_raise_syntax_known_expr(
+                            p,
+                            False,
+                            a,
+                            "dict unpacking cannot be used in dict comprehension"
+                        );
                         return res;
                     }
                 }
@@ -7553,7 +8505,9 @@ def rule_invalid_dotted_as_name(p: peg_parser) -> object | None {
             if ((rule__tmp_51(p) is None)) {
                 a = rule_expression(p);
                 if a is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a, "cannot use %s as import target");
+                    res = pa_raise_syntax_known_expr(
+                        p, False, a, "cannot use %s as import target"
+                    );
                     return res;
                 }
             }
@@ -7589,7 +8543,12 @@ def rule_invalid_double_starred_kvpairs(p: peg_parser) -> object | None {
             if a is not None {
                 bitwise_or = rule_bitwise_or(p);
                 if bitwise_or is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a, "cannot use a starred expression in a dictionary value");
+                    res = pa_raise_syntax_known_expr(
+                        p,
+                        False,
+                        a,
+                        "cannot use a starred expression in a dictionary value"
+                    );
                     return res;
                 }
             }
@@ -7600,8 +8559,15 @@ def rule_invalid_double_starred_kvpairs(p: peg_parser) -> object | None {
     if expression is not None {
         a = peg_expect_token(p, 11);
         if a is not None {
-            if ((peg_positive_lookahead_token(p, 26) or peg_positive_lookahead_token(p, 12))) {
-                res = pa_raise_syntax_known_expr(p, False, a, "expression expected after dictionary key and ':'");
+            if (
+                (
+                    peg_positive_lookahead_token(p, 26)
+                    or peg_positive_lookahead_token(p, 12)
+                )
+            ) {
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "expression expected after dictionary key and ':'"
+                );
                 return res;
             }
         }
@@ -7626,7 +8592,9 @@ def rule_invalid_double_type_comments(p: peg_parser) -> object | None {
                 if _newline_1 is not None {
                     _indent = peg_expect_token(p, INDENT);
                     if _indent is not None {
-                        res = pa_raise_syntax(p, False, "Cannot have two type comments on def");
+                        res = pa_raise_syntax(
+                            p, False, "Cannot have two type comments on def"
+                        );
                         return res;
                     }
                 }
@@ -7664,7 +8632,11 @@ def rule_invalid_elif_stmt(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after 'elif' statement on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after 'elif' statement on line %d"
+                        );
                         return res;
                     }
                 }
@@ -7688,7 +8660,11 @@ def rule_invalid_else_stmt(p: peg_parser) -> object | None {
             _newline = peg_expect_token(p, NEWLINE);
             if _newline is not None {
                 if (peg_negative_lookahead_token(p, INDENT)) {
-                    res = pa_raise_syntax(p, False, "expected an indented block after 'else' statement on line %d");
+                    res = pa_raise_syntax(
+                        p,
+                        False,
+                        "expected an indented block after 'else' statement on line %d"
+                    );
                     return res;
                 }
             }
@@ -7703,7 +8679,9 @@ def rule_invalid_else_stmt(p: peg_parser) -> object | None {
             if block is not None {
                 kw_1 = peg_expect_token(p, 581);
                 if kw_1 is not None {
-                    res = pa_raise_syntax(p, False, "'elif' block follows an 'else' block");
+                    res = pa_raise_syntax(
+                        p, False, "'elif' block follows an 'else' block"
+                    );
                     return res;
                 }
             }
@@ -7735,7 +8713,12 @@ def rule_invalid_except_star_stmt(p: peg_parser) -> object | None {
                             if name_var is not None {
                                 lit_2 = peg_expect_token(p, 11);
                                 if lit_2 is not None {
-                                    res = pa_raise_syntax_known_expr(p, False, a, "multiple exception types must be parenthesized when using 'as'");
+                                    res = pa_raise_syntax_known_expr(
+                                        p,
+                                        False,
+                                        a,
+                                        "multiple exception types must be parenthesized when using 'as'"
+                                    );
                                     return res;
                                 }
                             }
@@ -7788,7 +8771,9 @@ def rule_invalid_except_star_stmt(p: peg_parser) -> object | None {
                         if lit_1 is not None {
                             block = rule_block(p);
                             if block is not None {
-                                res = pa_raise_syntax_known_expr(p, False, a, "cannot use except* statement with %s");
+                                res = pa_raise_syntax_known_expr(
+                                    p, False, a, "cannot use except* statement with %s"
+                                );
                                 return res;
                             }
                         }
@@ -7819,7 +8804,11 @@ def rule_invalid_except_star_stmt_indent(p: peg_parser) -> object | None {
                     _newline = peg_expect_token(p, NEWLINE);
                     if _newline is not None {
                         if (peg_negative_lookahead_token(p, INDENT)) {
-                            res = pa_raise_syntax(p, False, "expected an indented block after 'except*' statement on line %d");
+                            res = pa_raise_syntax(
+                                p,
+                                False,
+                                "expected an indented block after 'except*' statement on line %d"
+                            );
                             return res;
                         }
                     }
@@ -7851,7 +8840,12 @@ def rule_invalid_except_stmt(p: peg_parser) -> object | None {
                         if name_var is not None {
                             lit_1 = peg_expect_token(p, 11);
                             if lit_1 is not None {
-                                res = pa_raise_syntax_known_expr(p, False, a, "multiple exception types must be parenthesized when using 'as'");
+                                res = pa_raise_syntax_known_expr(
+                                    p,
+                                    False,
+                                    a,
+                                    "multiple exception types must be parenthesized when using 'as'"
+                                );
                                 return res;
                             }
                         }
@@ -7895,7 +8889,9 @@ def rule_invalid_except_stmt(p: peg_parser) -> object | None {
                     if lit is not None {
                         block = rule_block(p);
                         if block is not None {
-                            res = pa_raise_syntax_known_expr(p, False, a, "cannot use except statement with %s");
+                            res = pa_raise_syntax_known_expr(
+                                p, False, a, "cannot use except statement with %s"
+                            );
                             return res;
                         }
                     }
@@ -7923,7 +8919,11 @@ def rule_invalid_except_stmt_indent(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after 'except' statement on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after 'except' statement on line %d"
+                        );
                         return res;
                     }
                 }
@@ -7938,7 +8938,11 @@ def rule_invalid_except_stmt_indent(p: peg_parser) -> object | None {
             _newline = peg_expect_token(p, NEWLINE);
             if _newline is not None {
                 if (peg_negative_lookahead_token(p, INDENT)) {
-                    res = pa_raise_syntax(p, False, "expected an indented block after 'except' statement on line %d");
+                    res = pa_raise_syntax(
+                        p,
+                        False,
+                        "expected an indented block after 'except' statement on line %d"
+                    );
                     return res;
                 }
             }
@@ -7960,7 +8964,13 @@ def rule_invalid_expression(p: peg_parser) -> object | None {
         if a is not None {
             string_var_1 = peg_expect_token(p, STRING);
             if string_var_1 is not None {
-                res = pa_raise_syntax_known_range(p, False, pa_seq_first(a), pa_seq_last(a), "invalid syntax. Is this intended to be part of the string?");
+                res = pa_raise_syntax_known_range(
+                    p,
+                    False,
+                    pa_seq_first(a),
+                    pa_seq_last(a),
+                    "invalid syntax. Is this intended to be part of the string?"
+                );
                 return res;
             }
         }
@@ -7983,8 +8993,15 @@ def rule_invalid_expression(p: peg_parser) -> object | None {
         if kw is not None {
             b = rule_disjunction(p);
             if b is not None {
-                if ((peg_negative_lookahead_token(p, 606) and peg_negative_lookahead_token(p, 11))) {
-                    res = pa_raise_syntax_known_range(p, False, a_3, b, "expected 'else' after 'if' expression");
+                if (
+                    (
+                        peg_negative_lookahead_token(p, 606)
+                        and peg_negative_lookahead_token(p, 11)
+                    )
+                ) {
+                    res = pa_raise_syntax_known_range(
+                        p, False, a_3, b, "expected 'else' after 'if' expression"
+                    );
                     return res;
                 }
             }
@@ -8000,7 +9017,11 @@ def rule_invalid_expression(p: peg_parser) -> object | None {
                 kw_1 = peg_expect_token(p, 606);
                 if kw_1 is not None {
                     if ((rule_expression(p) is None)) {
-                        res = pa_raise_syntax(p, True, "expected expression after 'else', but statement is given");
+                        res = pa_raise_syntax(
+                            p,
+                            True,
+                            "expected expression after 'else', but statement is given"
+                        );
                         return res;
                     }
                 }
@@ -8018,7 +9039,12 @@ def rule_invalid_expression(p: peg_parser) -> object | None {
                 if kw_1 is not None {
                     c = rule_simple_stmt(p);
                     if c is not None {
-                        res = pa_raise_syntax_known_expr(p, False, a_5, "expected expression before 'if', but statement is given");
+                        res = pa_raise_syntax_known_expr(
+                            p,
+                            False,
+                            a_5,
+                            "expected expression before 'if', but statement is given"
+                        );
                         return res;
                     }
                 }
@@ -8032,7 +9058,13 @@ def rule_invalid_expression(p: peg_parser) -> object | None {
         b_6 = peg_expect_token(p, 11);
         if b_6 is not None {
             if (peg_positive_lookahead_token(p, FSTRING_MIDDLE)) {
-                res = pa_raise_syntax_known_range(p, False, a_6, b_6, "f-string: lambda expressions are not allowed without parentheses");
+                res = pa_raise_syntax_known_range(
+                    p,
+                    False,
+                    a_6,
+                    b_6,
+                    "f-string: lambda expressions are not allowed without parentheses"
+                );
                 return res;
             }
         }
@@ -8044,7 +9076,13 @@ def rule_invalid_expression(p: peg_parser) -> object | None {
         b_7 = peg_expect_token(p, 11);
         if b_7 is not None {
             if (peg_positive_lookahead_token(p, TSTRING_MIDDLE)) {
-                res = pa_raise_syntax_known_range(p, False, a_7, b_7, "t-string: lambda expressions are not allowed without parentheses");
+                res = pa_raise_syntax_known_range(
+                    p,
+                    False,
+                    a_7,
+                    b_7,
+                    "t-string: lambda expressions are not allowed without parentheses"
+                );
                 return res;
             }
         }
@@ -8065,7 +9103,9 @@ def rule_invalid_factor(p: peg_parser) -> object | None {
         if a is not None {
             b = rule_factor(p);
             if b is not None {
-                res = pa_raise_syntax_known_range(p, False, a, b, "'not' after an operator must be parenthesized");
+                res = pa_raise_syntax_known_range(
+                    p, False, a, b, "'not' after an operator must be parenthesized"
+                );
                 return res;
             }
         }
@@ -8087,7 +9127,11 @@ def rule_invalid_finally_stmt(p: peg_parser) -> object | None {
             _newline = peg_expect_token(p, NEWLINE);
             if _newline is not None {
                 if (peg_negative_lookahead_token(p, INDENT)) {
-                    res = pa_raise_syntax(p, False, "expected an indented block after 'finally' statement on line %d");
+                    res = pa_raise_syntax(
+                        p,
+                        False,
+                        "expected an indented block after 'finally' statement on line %d"
+                    );
                     return res;
                 }
             }
@@ -8109,7 +9153,9 @@ def rule_invalid_for_if_clause(p: peg_parser) -> object | None {
         rhs = rule__tmp_58(p);
         if rhs is not None {
             if (peg_negative_lookahead_token(p, 672)) {
-                res = pa_raise_syntax(p, False, "'in' expected after for-loop variables");
+                res = pa_raise_syntax(
+                    p, False, "'in' expected after for-loop variables"
+                );
                 return res;
             }
         }
@@ -8157,7 +9203,11 @@ def rule_invalid_for_stmt(p: peg_parser) -> object | None {
                         _newline = peg_expect_token(p, NEWLINE);
                         if _newline is not None {
                             if (peg_negative_lookahead_token(p, INDENT)) {
-                                res = pa_raise_syntax(p, False, "expected an indented block after 'for' statement on line %d");
+                                res = pa_raise_syntax(
+                                    p,
+                                    False,
+                                    "expected an indented block after 'for' statement on line %d"
+                                );
                                 return res;
                             }
                         }
@@ -8197,7 +9247,9 @@ def rule_invalid_fstring_conversion_character(p: peg_parser) -> object | None {
     res: object | None = None;
     lit = peg_expect_token(p, 54);
     if lit is not None {
-        if ((peg_positive_lookahead_token(p, 11) or peg_positive_lookahead_token(p, 26))) {
+        if (
+            (peg_positive_lookahead_token(p, 11) or peg_positive_lookahead_token(p, 26))
+        ) {
             res = pa_raise_syntax(p, True, "f-string: missing conversion character");
             return res;
         }
@@ -8224,7 +9276,9 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 22);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "f-string: valid expression required before '='");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "f-string: valid expression required before '='"
+            );
             return res;
         }
     }
@@ -8233,7 +9287,9 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 54);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "f-string: valid expression required before '!'");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "f-string: valid expression required before '!'"
+            );
             return res;
         }
     }
@@ -8242,7 +9298,9 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 11);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "f-string: valid expression required before ':'");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "f-string: valid expression required before ':'"
+            );
             return res;
         }
     }
@@ -8251,7 +9309,9 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 26);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "f-string: valid expression required before '}'");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "f-string: valid expression required before '}'"
+            );
             return res;
         }
     }
@@ -8259,7 +9319,9 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
     lit = peg_expect_token(p, 25);
     if lit is not None {
         if ((rule_annotated_rhs(p) is None)) {
-            res = pa_raise_syntax(p, True, "f-string: expecting a valid expression after '{'");
+            res = pa_raise_syntax(
+                p, True, "f-string: expecting a valid expression after '{'"
+            );
             return res;
         }
     }
@@ -8268,8 +9330,21 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         annotated_rhs = rule_annotated_rhs(p);
         if annotated_rhs is not None {
-            if ((peg_negative_lookahead_token(p, 22) and peg_negative_lookahead_token(p, 54) and peg_negative_lookahead_token(p, 11) and peg_negative_lookahead_token(p, 26))) {
-                res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "f-string: expecting '=', or '!', or ':', or '}'"));
+            if (
+                (
+                    peg_negative_lookahead_token(p, 22)
+                    and peg_negative_lookahead_token(p, 54)
+                    and peg_negative_lookahead_token(p, 11)
+                    and peg_negative_lookahead_token(p, 26)
+                )
+            ) {
+                res = (
+                    None
+                        if pa_err_occurred(p) is not None
+                        else pa_raise_syntax(
+                            p, True, "f-string: expecting '=', or '!', or ':', or '}'"
+                        )
+                );
                 return res;
             }
         }
@@ -8281,8 +9356,20 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
         if annotated_rhs is not None {
             lit_1 = peg_expect_token(p, 22);
             if lit_1 is not None {
-                if ((peg_negative_lookahead_token(p, 54) and peg_negative_lookahead_token(p, 11) and peg_negative_lookahead_token(p, 26))) {
-                    res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "f-string: expecting '!', or ':', or '}'"));
+                if (
+                    (
+                        peg_negative_lookahead_token(p, 54)
+                        and peg_negative_lookahead_token(p, 11)
+                        and peg_negative_lookahead_token(p, 26)
+                    )
+                ) {
+                    res = (
+                        None
+                            if pa_err_occurred(p) is not None
+                            else pa_raise_syntax(
+                                p, True, "f-string: expecting '!', or ':', or '}'"
+                            )
+                    );
                     return res;
                 }
             }
@@ -8294,7 +9381,9 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
         annotated_rhs = rule_annotated_rhs(p);
         if annotated_rhs is not None {
             lit_1 = peg_expect_token(p, 22);
-            invalid_fstring_conversion_character = rule_invalid_fstring_conversion_character(p);
+            invalid_fstring_conversion_character = rule_invalid_fstring_conversion_character(
+                p
+            );
             if invalid_fstring_conversion_character is not None {
                 res = [lit, annotated_rhs, lit_1, invalid_fstring_conversion_character];
                 return res;
@@ -8308,8 +9397,17 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
         if annotated_rhs is not None {
             lit_1 = peg_expect_token(p, 22);
             rhs = rule__tmp_60(p);
-            if ((peg_negative_lookahead_token(p, 11) and peg_negative_lookahead_token(p, 26))) {
-                res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "f-string: expecting ':' or '}'"));
+            if (
+                (
+                    peg_negative_lookahead_token(p, 11)
+                    and peg_negative_lookahead_token(p, 26)
+                )
+            ) {
+                res = (
+                    None
+                        if pa_err_occurred(p) is not None
+                        else pa_raise_syntax(p, True, "f-string: expecting ':' or '}'")
+                );
                 return res;
             }
         }
@@ -8326,7 +9424,13 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
                 seq = rule__loop0_29(p);
                 if seq is not None {
                     if (peg_negative_lookahead_token(p, 26)) {
-                        res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "f-string: expecting '}', or format specs"));
+                        res = (
+                            None
+                                if pa_err_occurred(p) is not None
+                                else pa_raise_syntax(
+                                    p, True, "f-string: expecting '}', or format specs"
+                                )
+                        );
                         return res;
                     }
                 }
@@ -8341,7 +9445,11 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
             lit_1 = peg_expect_token(p, 22);
             rhs = rule__tmp_60(p);
             if (peg_negative_lookahead_token(p, 26)) {
-                res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "f-string: expecting '}'"));
+                res = (
+                    None
+                        if pa_err_occurred(p) is not None
+                        else pa_raise_syntax(p, True, "f-string: expecting '}'")
+                );
                 return res;
             }
         }
@@ -8362,7 +9470,9 @@ def rule_invalid_group(p: peg_parser) -> object | None {
         if a is not None {
             lit_1 = peg_expect_token(p, 8);
             if lit_1 is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "cannot use starred expression here");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "cannot use starred expression here"
+                );
                 return res;
             }
         }
@@ -8376,7 +9486,9 @@ def rule_invalid_group(p: peg_parser) -> object | None {
             if expression is not None {
                 lit_1 = peg_expect_token(p, 8);
                 if lit_1 is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a_2, "cannot use double starred expression here");
+                    res = pa_raise_syntax_known_expr(
+                        p, False, a_2, "cannot use double starred expression here"
+                    );
                     return res;
                 }
             }
@@ -8413,7 +9525,11 @@ def rule_invalid_if_stmt(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after 'if' statement on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after 'if' statement on line %d"
+                        );
                         return res;
                     }
                 }
@@ -8438,7 +9554,12 @@ def rule_invalid_import(p: peg_parser) -> object | None {
             if kw is not None {
                 dotted_name = rule_dotted_name(p);
                 if dotted_name is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a, "Did you mean to use 'from ... import ...' instead?");
+                    res = pa_raise_syntax_known_expr(
+                        p,
+                        False,
+                        a,
+                        "Did you mean to use 'from ... import ...' instead?"
+                    );
                     return res;
                 }
             }
@@ -8449,7 +9570,9 @@ def rule_invalid_import(p: peg_parser) -> object | None {
     if kw is not None {
         token = peg_expect_token(p, NEWLINE);
         if token is not None {
-            res = pa_raise_syntax_known_expr(p, False, token, "Expected one or more names after 'import'");
+            res = pa_raise_syntax_known_expr(
+                p, False, token, "Expected one or more names after 'import'"
+            );
             return res;
         }
     }
@@ -8470,7 +9593,9 @@ def rule_invalid_import_from_as_name(p: peg_parser) -> object | None {
             if ((rule__tmp_51(p) is None)) {
                 a = rule_expression(p);
                 if a is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a, "cannot use %s as import target");
+                    res = pa_raise_syntax_known_expr(
+                        p, False, a, "cannot use %s as import target"
+                    );
                     return res;
                 }
             }
@@ -8492,7 +9617,11 @@ def rule_invalid_import_from_targets(p: peg_parser) -> object | None {
         if lit is not None {
             _newline = peg_expect_token(p, NEWLINE);
             if _newline is not None {
-                res = pa_raise_syntax(p, False, "trailing comma not allowed without surrounding parentheses");
+                res = pa_raise_syntax(
+                    p,
+                    False,
+                    "trailing comma not allowed without surrounding parentheses"
+                );
                 return res;
             }
         }
@@ -8500,7 +9629,9 @@ def rule_invalid_import_from_targets(p: peg_parser) -> object | None {
     peg_reset(p, mark);
     token = peg_expect_token(p, NEWLINE);
     if token is not None {
-        res = pa_raise_syntax_known_expr(p, False, token, "Expected one or more names after 'import'");
+        res = pa_raise_syntax_known_expr(
+            p, False, token, "Expected one or more names after 'import'"
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -8529,7 +9660,12 @@ def rule_invalid_kvpair(p: peg_parser) -> object | None {
             if a_2 is not None {
                 bitwise_or = rule_bitwise_or(p);
                 if bitwise_or is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a_2, "cannot use a_2 starred expression in a_2 dictionary value");
+                    res = pa_raise_syntax_known_expr(
+                        p,
+                        False,
+                        a_2,
+                        "cannot use a_2 starred expression in a_2 dictionary value"
+                    );
                     return res;
                 }
             }
@@ -8540,8 +9676,15 @@ def rule_invalid_kvpair(p: peg_parser) -> object | None {
     if expression is not None {
         a_3 = peg_expect_token(p, 11);
         if a_3 is not None {
-            if ((peg_positive_lookahead_token(p, 26) or peg_positive_lookahead_token(p, 12))) {
-                res = pa_raise_syntax_known_expr(p, False, a_3, "expression expected after dictionary key and ':'");
+            if (
+                (
+                    peg_positive_lookahead_token(p, 26)
+                    or peg_positive_lookahead_token(p, 12)
+                )
+            ) {
+                res = pa_raise_syntax_known_expr(
+                    p, False, a_3, "expression expected after dictionary key and ':'"
+                );
                 return res;
             }
         }
@@ -8573,7 +9716,13 @@ def rule_invalid_kwarg(p: peg_parser) -> object | None {
             if expression is not None {
                 for_if_clauses = rule_for_if_clauses(p);
                 if for_if_clauses is not None {
-                    res = pa_raise_syntax_known_range(p, False, a_2, b, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?");
+                    res = pa_raise_syntax_known_range(
+                        p,
+                        False,
+                        a_2,
+                        b,
+                        "invalid syntax. Maybe you meant '==' or ':=' instead of '='?"
+                    );
                     return res;
                 }
             }
@@ -8585,7 +9734,13 @@ def rule_invalid_kwarg(p: peg_parser) -> object | None {
         if a_3 is not None {
             b = peg_expect_token(p, 22);
             if b is not None {
-                res = pa_raise_syntax_known_range(p, False, a_3, b, "expression cannot contain assignment, perhaps you meant \\\"==\\\"?");
+                res = pa_raise_syntax_known_range(
+                    p,
+                    False,
+                    a_3,
+                    b,
+                    "expression cannot contain assignment, perhaps you meant \\\"==\\\"?"
+                );
                 return res;
             }
         }
@@ -8599,7 +9754,9 @@ def rule_invalid_kwarg(p: peg_parser) -> object | None {
             if lit is not None {
                 b_4 = rule_expression(p);
                 if b_4 is not None {
-                    res = pa_raise_syntax_known_range(p, False, a, b_4, "cannot assign to keyword argument unpacking");
+                    res = pa_raise_syntax_known_range(
+                        p, False, a, b_4, "cannot assign to keyword argument unpacking"
+                    );
                     return res;
                 }
             }
@@ -8621,7 +9778,9 @@ def rule_invalid_kwds(p: peg_parser) -> object | None {
         if param is not None {
             a = peg_expect_token(p, 22);
             if a is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "var-keyword argument cannot have default value");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "var-keyword argument cannot have default value"
+                );
                 return res;
             }
         }
@@ -8635,7 +9794,9 @@ def rule_invalid_kwds(p: peg_parser) -> object | None {
             if lit_1 is not None {
                 a_2 = rule_param(p);
                 if a_2 is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a_2, "arguments cannot follow var-keyword argument");
+                    res = pa_raise_syntax_known_expr(
+                        p, False, a_2, "arguments cannot follow var-keyword argument"
+                    );
                     return res;
                 }
             }
@@ -8650,7 +9811,9 @@ def rule_invalid_kwds(p: peg_parser) -> object | None {
             if lit_1 is not None {
                 a = rule__tmp_65(p);
                 if a is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a, "arguments cannot follow var-keyword argument");
+                    res = pa_raise_syntax_known_expr(
+                        p, False, a, "arguments cannot follow var-keyword argument"
+                    );
                     return res;
                 }
             }
@@ -8672,7 +9835,9 @@ def rule_invalid_lambda_kwds(p: peg_parser) -> object | None {
         if lambda_param is not None {
             a = peg_expect_token(p, 22);
             if a is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "var-keyword argument cannot have default value");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "var-keyword argument cannot have default value"
+                );
                 return res;
             }
         }
@@ -8686,7 +9851,9 @@ def rule_invalid_lambda_kwds(p: peg_parser) -> object | None {
             if lit_1 is not None {
                 a_2 = rule_lambda_param(p);
                 if a_2 is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a_2, "arguments cannot follow var-keyword argument");
+                    res = pa_raise_syntax_known_expr(
+                        p, False, a_2, "arguments cannot follow var-keyword argument"
+                    );
                     return res;
                 }
             }
@@ -8701,7 +9868,9 @@ def rule_invalid_lambda_kwds(p: peg_parser) -> object | None {
             if lit_1 is not None {
                 a = rule__tmp_65(p);
                 if a is not None {
-                    res = pa_raise_syntax_known_expr(p, False, a, "arguments cannot follow var-keyword argument");
+                    res = pa_raise_syntax_known_expr(
+                        p, False, a, "arguments cannot follow var-keyword argument"
+                    );
                     return res;
                 }
             }
@@ -8721,7 +9890,9 @@ def rule_invalid_lambda_parameters(p: peg_parser) -> object | None {
     if a is not None {
         lit = peg_expect_token(p, 12);
         if lit is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "at least one argument must precede /");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "at least one argument must precede /"
+            );
             return res;
         }
     }
@@ -8745,7 +9916,12 @@ def rule_invalid_lambda_parameters(p: peg_parser) -> object | None {
         if invalid_lambda_parameters_helper is not None {
             a_3 = rule_lambda_param_no_default(p);
             if a_3 is not None {
-                res = pa_raise_syntax_known_expr(p, False, a_3, "parameter without a_3 default follows parameter with a_3 default");
+                res = pa_raise_syntax_known_expr(
+                    p,
+                    False,
+                    a_3,
+                    "parameter without a_3 default follows parameter with a_3 default"
+                );
                 return res;
             }
         }
@@ -8760,7 +9936,13 @@ def rule_invalid_lambda_parameters(p: peg_parser) -> object | None {
                 lit = peg_expect_token(p, 12);
                 b = peg_expect_token(p, 8);
                 if b is not None {
-                    res = pa_raise_syntax_known_range(p, False, a, b, "Lambda expression parameters cannot be parenthesized");
+                    res = pa_raise_syntax_known_range(
+                        p,
+                        False,
+                        a,
+                        b,
+                        "Lambda expression parameters cannot be parenthesized"
+                    );
                     return res;
                 }
             }
@@ -8778,7 +9960,9 @@ def rule_invalid_lambda_parameters(p: peg_parser) -> object | None {
                 if seq_1 is not None {
                     a = peg_expect_token(p, 17);
                     if a is not None {
-                        res = pa_raise_syntax_known_expr(p, False, a, "/ must be ahead of *");
+                        res = pa_raise_syntax_known_expr(
+                            p, False, a, "/ must be ahead of *"
+                        );
                         return res;
                     }
                 }
@@ -8792,7 +9976,9 @@ def rule_invalid_lambda_parameters(p: peg_parser) -> object | None {
         if lit is not None {
             a = peg_expect_token(p, 16);
             if a is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "expected comma between / and *");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "expected comma between / and *"
+                );
                 return res;
             }
         }
@@ -8843,7 +10029,9 @@ def rule_invalid_lambda_star_etc(p: peg_parser) -> object | None {
         if lambda_param is not None {
             a = peg_expect_token(p, 22);
             if a is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "var-positional argument cannot have default value");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "var-positional argument cannot have default value"
+                );
                 return res;
             }
         }
@@ -8859,7 +10047,9 @@ def rule_invalid_lambda_star_etc(p: peg_parser) -> object | None {
                 if a is not None {
                     rhs_3_1 = rule__tmp_76(p);
                     if rhs_3_1 is not None {
-                        res = pa_raise_syntax_known_expr(p, False, a, "* argument may appear only once");
+                        res = pa_raise_syntax_known_expr(
+                            p, False, a, "* argument may appear only once"
+                        );
                         return res;
                     }
                 }
@@ -8881,7 +10071,15 @@ def rule_invalid_legacy_expression(p: peg_parser) -> object | None {
         if (peg_negative_lookahead_token(p, 7)) {
             b = rule_star_expressions(p);
             if b is not None {
-                res = pa_raise_syntax_known_range(p, False, a, b, "Missing parentheses in call to '%U'. Did you mean %U(...)?") if pa_check_legacy_stmt(p, a) else None;
+                res = pa_raise_syntax_known_range(
+                    p,
+                    False,
+                    a,
+                    b,
+                    "Missing parentheses in call to '%U'. Did you mean %U(...)?"
+                )
+                    if pa_check_legacy_stmt(p, a)
+                    else None;
                 return res;
             }
         }
@@ -8917,7 +10115,11 @@ def rule_invalid_match_stmt(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after 'match' statement on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after 'match' statement on line %d"
+                        );
                         return res;
                     }
                 }
@@ -8944,7 +10146,9 @@ def rule_invalid_named_expression(p: peg_parser) -> object | None {
         if lit is not None {
             expression = rule_expression(p);
             if expression is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "cannot use assignment expressions with %s");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "cannot use assignment expressions with %s"
+                );
                 peg_insert_memo(p, mark, RULE_invalid_named_expression, res);
                 return res;
             }
@@ -8957,8 +10161,19 @@ def rule_invalid_named_expression(p: peg_parser) -> object | None {
         if lit is not None {
             b = rule_bitwise_or(p);
             if b is not None {
-                if ((peg_negative_lookahead_token(p, 22) and peg_negative_lookahead_token(p, 53))) {
-                    res = pa_raise_syntax_known_range(p, False, a_2, b, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?");
+                if (
+                    (
+                        peg_negative_lookahead_token(p, 22)
+                        and peg_negative_lookahead_token(p, 53)
+                    )
+                ) {
+                    res = pa_raise_syntax_known_range(
+                        p,
+                        False,
+                        a_2,
+                        b,
+                        "invalid syntax. Maybe you meant '==' or ':=' instead of '='?"
+                    );
                     peg_insert_memo(p, mark, RULE_invalid_named_expression, res);
                     return res;
                 }
@@ -8973,8 +10188,18 @@ def rule_invalid_named_expression(p: peg_parser) -> object | None {
             if b_3 is not None {
                 bitwise_or = rule_bitwise_or(p);
                 if bitwise_or is not None {
-                    if ((peg_negative_lookahead_token(p, 22) and peg_negative_lookahead_token(p, 53))) {
-                        res = pa_raise_syntax_known_expr(p, False, a, "cannot assign to %s here. Maybe you meant '==' instead of '='?");
+                    if (
+                        (
+                            peg_negative_lookahead_token(p, 22)
+                            and peg_negative_lookahead_token(p, 53)
+                        )
+                    ) {
+                        res = pa_raise_syntax_known_expr(
+                            p,
+                            False,
+                            a,
+                            "cannot assign to %s here. Maybe you meant '==' instead of '='?"
+                        );
                         peg_insert_memo(p, mark, RULE_invalid_named_expression, res);
                         return res;
                     }
@@ -8997,7 +10222,9 @@ def rule_invalid_parameters(p: peg_parser) -> object | None {
     if a is not None {
         lit = peg_expect_token(p, 12);
         if lit is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "at least one argument must precede /");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "at least one argument must precede /"
+            );
             return res;
         }
     }
@@ -9021,7 +10248,12 @@ def rule_invalid_parameters(p: peg_parser) -> object | None {
         if invalid_parameters_helper is not None {
             a_3 = rule_param_no_default(p);
             if a_3 is not None {
-                res = pa_raise_syntax_known_expr(p, False, a_3, "parameter without a_3 default follows parameter with a_3 default");
+                res = pa_raise_syntax_known_expr(
+                    p,
+                    False,
+                    a_3,
+                    "parameter without a_3 default follows parameter with a_3 default"
+                );
                 return res;
             }
         }
@@ -9036,7 +10268,9 @@ def rule_invalid_parameters(p: peg_parser) -> object | None {
                 lit = peg_expect_token(p, 12);
                 b = peg_expect_token(p, 8);
                 if b is not None {
-                    res = pa_raise_syntax_known_range(p, False, a, b, "Function parameters cannot be parenthesized");
+                    res = pa_raise_syntax_known_range(
+                        p, False, a, b, "Function parameters cannot be parenthesized"
+                    );
                     return res;
                 }
             }
@@ -9054,7 +10288,9 @@ def rule_invalid_parameters(p: peg_parser) -> object | None {
                 if seq_1 is not None {
                     a = peg_expect_token(p, 17);
                     if a is not None {
-                        res = pa_raise_syntax_known_expr(p, False, a, "/ must be ahead of *");
+                        res = pa_raise_syntax_known_expr(
+                            p, False, a, "/ must be ahead of *"
+                        );
                         return res;
                     }
                 }
@@ -9068,7 +10304,9 @@ def rule_invalid_parameters(p: peg_parser) -> object | None {
         if lit is not None {
             a = peg_expect_token(p, 16);
             if a is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "expected comma between / and *");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "expected comma between / and *"
+                );
                 return res;
             }
         }
@@ -9108,7 +10346,9 @@ def rule_invalid_star_etc(p: peg_parser) -> object | None {
     if a is not None {
         rhs = rule__tmp_85(p);
         if rhs is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "named arguments must follow bare *");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "named arguments must follow bare *"
+            );
             return res;
         }
     }
@@ -9131,7 +10371,9 @@ def rule_invalid_star_etc(p: peg_parser) -> object | None {
         if param is not None {
             a = peg_expect_token(p, 22);
             if a is not None {
-                res = pa_raise_syntax_known_expr(p, False, a, "var-positional argument cannot have default value");
+                res = pa_raise_syntax_known_expr(
+                    p, False, a, "var-positional argument cannot have default value"
+                );
                 return res;
             }
         }
@@ -9147,7 +10389,9 @@ def rule_invalid_star_etc(p: peg_parser) -> object | None {
                 if a is not None {
                     rhs_4_1 = rule__tmp_87(p);
                     if rhs_4_1 is not None {
-                        res = pa_raise_syntax_known_expr(p, False, a, "* argument may appear only once");
+                        res = pa_raise_syntax_known_expr(
+                            p, False, a, "* argument may appear only once"
+                        );
                         return res;
                     }
                 }
@@ -9187,7 +10431,9 @@ def rule_invalid_starred_expression_unpacking(p: peg_parser) -> object | None {
             if lit is not None {
                 b = rule_expression(p);
                 if b is not None {
-                    res = pa_raise_syntax_known_range(p, False, a, b, "cannot assign to iterable argument unpacking");
+                    res = pa_raise_syntax_known_range(
+                        p, False, a, b, "cannot assign to iterable argument unpacking"
+                    );
                     return res;
                 }
             }
@@ -9207,7 +10453,13 @@ def rule_invalid_string_tstring_concat(p: peg_parser) -> object | None {
     if a is not None {
         b = rule_tstring(p);
         if b is not None {
-            res = pa_raise_syntax_known_range(p, False, pa_seq_last(a), b, "cannot mix t-string literals with string or bytes literals");
+            res = pa_raise_syntax_known_range(
+                p,
+                False,
+                pa_seq_last(a),
+                b,
+                "cannot mix t-string literals with string or bytes literals"
+            );
             return res;
         }
     }
@@ -9216,7 +10468,13 @@ def rule_invalid_string_tstring_concat(p: peg_parser) -> object | None {
     if a is not None {
         b = rule__tmp_90(p);
         if b is not None {
-            res = pa_raise_syntax_known_range(p, False, pa_seq_last(a), b, "cannot mix t-string literals with string or bytes literals");
+            res = pa_raise_syntax_known_range(
+                p,
+                False,
+                pa_seq_last(a),
+                b,
+                "cannot mix t-string literals with string or bytes literals"
+            );
             return res;
         }
     }
@@ -9237,7 +10495,11 @@ def rule_invalid_try_stmt(p: peg_parser) -> object | None {
             _newline = peg_expect_token(p, NEWLINE);
             if _newline is not None {
                 if (peg_negative_lookahead_token(p, INDENT)) {
-                    res = pa_raise_syntax(p, False, "expected an indented block after 'try' statement on line %d");
+                    res = pa_raise_syntax(
+                        p,
+                        False,
+                        "expected an indented block after 'try' statement on line %d"
+                    );
                     return res;
                 }
             }
@@ -9250,8 +10512,15 @@ def rule_invalid_try_stmt(p: peg_parser) -> object | None {
         if lit is not None {
             block = rule_block(p);
             if block is not None {
-                if ((peg_negative_lookahead_token(p, 642) and peg_negative_lookahead_token(p, 637))) {
-                    res = pa_raise_syntax(p, False, "expected 'except' or 'finally' block");
+                if (
+                    (
+                        peg_negative_lookahead_token(p, 642)
+                        and peg_negative_lookahead_token(p, 637)
+                    )
+                ) {
+                    res = pa_raise_syntax(
+                        p, False, "expected 'except' or 'finally' block"
+                    );
                     return res;
                 }
             }
@@ -9275,7 +10544,13 @@ def rule_invalid_try_stmt(p: peg_parser) -> object | None {
                                 rhs = rule__tmp_19(p);
                                 lit_1 = peg_expect_token(p, 11);
                                 if lit_1 is not None {
-                                    res = pa_raise_syntax_known_range(p, False, a, b, "cannot have both 'except' and 'except*' on the same 'try'");
+                                    res = pa_raise_syntax_known_range(
+                                        p,
+                                        False,
+                                        a,
+                                        b,
+                                        "cannot have both 'except' and 'except*' on the same 'try'"
+                                    );
                                     return res;
                                 }
                             }
@@ -9299,7 +10574,12 @@ def rule_invalid_try_stmt(p: peg_parser) -> object | None {
                         rhs_4 = rule__tmp_94(p);
                         lit_1 = peg_expect_token(p, 11);
                         if lit_1 is not None {
-                            res = pa_raise_syntax_known_expr(p, False, a, "cannot have both 'except' and 'except*' on the same 'try'");
+                            res = pa_raise_syntax_known_expr(
+                                p,
+                                False,
+                                a,
+                                "cannot have both 'except' and 'except*' on the same 'try'"
+                            );
                             return res;
                         }
                     }
@@ -9319,7 +10599,9 @@ def rule_invalid_tstring_conversion_character(p: peg_parser) -> object | None {
     res: object | None = None;
     lit = peg_expect_token(p, 54);
     if lit is not None {
-        if ((peg_positive_lookahead_token(p, 11) or peg_positive_lookahead_token(p, 26))) {
+        if (
+            (peg_positive_lookahead_token(p, 11) or peg_positive_lookahead_token(p, 26))
+        ) {
             res = pa_raise_syntax(p, True, "t-string: missing conversion character");
             return res;
         }
@@ -9346,7 +10628,9 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 22);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "t-string: valid expression required before '='");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "t-string: valid expression required before '='"
+            );
             return res;
         }
     }
@@ -9355,7 +10639,9 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 54);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "t-string: valid expression required before '!'");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "t-string: valid expression required before '!'"
+            );
             return res;
         }
     }
@@ -9364,7 +10650,9 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 11);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "t-string: valid expression required before ':'");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "t-string: valid expression required before ':'"
+            );
             return res;
         }
     }
@@ -9373,7 +10661,9 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         a = peg_expect_token(p, 26);
         if a is not None {
-            res = pa_raise_syntax_known_expr(p, False, a, "t-string: valid expression required before '}'");
+            res = pa_raise_syntax_known_expr(
+                p, False, a, "t-string: valid expression required before '}'"
+            );
             return res;
         }
     }
@@ -9381,7 +10671,9 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
     lit = peg_expect_token(p, 25);
     if lit is not None {
         if ((rule_annotated_rhs(p) is None)) {
-            res = pa_raise_syntax(p, True, "t-string: expecting a valid expression after '{'");
+            res = pa_raise_syntax(
+                p, True, "t-string: expecting a valid expression after '{'"
+            );
             return res;
         }
     }
@@ -9390,8 +10682,21 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
     if lit is not None {
         annotated_rhs = rule_annotated_rhs(p);
         if annotated_rhs is not None {
-            if ((peg_negative_lookahead_token(p, 22) and peg_negative_lookahead_token(p, 54) and peg_negative_lookahead_token(p, 11) and peg_negative_lookahead_token(p, 26))) {
-                res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "t-string: expecting '=', or '!', or ':', or '}'"));
+            if (
+                (
+                    peg_negative_lookahead_token(p, 22)
+                    and peg_negative_lookahead_token(p, 54)
+                    and peg_negative_lookahead_token(p, 11)
+                    and peg_negative_lookahead_token(p, 26)
+                )
+            ) {
+                res = (
+                    None
+                        if pa_err_occurred(p) is not None
+                        else pa_raise_syntax(
+                            p, True, "t-string: expecting '=', or '!', or ':', or '}'"
+                        )
+                );
                 return res;
             }
         }
@@ -9403,8 +10708,20 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
         if annotated_rhs is not None {
             lit_1 = peg_expect_token(p, 22);
             if lit_1 is not None {
-                if ((peg_negative_lookahead_token(p, 54) and peg_negative_lookahead_token(p, 11) and peg_negative_lookahead_token(p, 26))) {
-                    res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "t-string: expecting '!', or ':', or '}'"));
+                if (
+                    (
+                        peg_negative_lookahead_token(p, 54)
+                        and peg_negative_lookahead_token(p, 11)
+                        and peg_negative_lookahead_token(p, 26)
+                    )
+                ) {
+                    res = (
+                        None
+                            if pa_err_occurred(p) is not None
+                            else pa_raise_syntax(
+                                p, True, "t-string: expecting '!', or ':', or '}'"
+                            )
+                    );
                     return res;
                 }
             }
@@ -9416,7 +10733,9 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
         annotated_rhs = rule_annotated_rhs(p);
         if annotated_rhs is not None {
             lit_1 = peg_expect_token(p, 22);
-            invalid_tstring_conversion_character = rule_invalid_tstring_conversion_character(p);
+            invalid_tstring_conversion_character = rule_invalid_tstring_conversion_character(
+                p
+            );
             if invalid_tstring_conversion_character is not None {
                 res = [lit, annotated_rhs, lit_1, invalid_tstring_conversion_character];
                 return res;
@@ -9430,8 +10749,17 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
         if annotated_rhs is not None {
             lit_1 = peg_expect_token(p, 22);
             rhs = rule__tmp_60(p);
-            if ((peg_negative_lookahead_token(p, 11) and peg_negative_lookahead_token(p, 26))) {
-                res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "t-string: expecting ':' or '}'"));
+            if (
+                (
+                    peg_negative_lookahead_token(p, 11)
+                    and peg_negative_lookahead_token(p, 26)
+                )
+            ) {
+                res = (
+                    None
+                        if pa_err_occurred(p) is not None
+                        else pa_raise_syntax(p, True, "t-string: expecting ':' or '}'")
+                );
                 return res;
             }
         }
@@ -9448,7 +10776,13 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
                 seq = rule__loop0_29(p);
                 if seq is not None {
                     if (peg_negative_lookahead_token(p, 26)) {
-                        res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "t-string: expecting '}', or format specs"));
+                        res = (
+                            None
+                                if pa_err_occurred(p) is not None
+                                else pa_raise_syntax(
+                                    p, True, "t-string: expecting '}', or format specs"
+                                )
+                        );
                         return res;
                     }
                 }
@@ -9463,7 +10797,11 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
             lit_1 = peg_expect_token(p, 22);
             rhs = rule__tmp_60(p);
             if (peg_negative_lookahead_token(p, 26)) {
-                res = (None if pa_err_occurred(p) is not None else pa_raise_syntax(p, True, "t-string: expecting '}'"));
+                res = (
+                    None
+                        if pa_err_occurred(p) is not None
+                        else pa_raise_syntax(p, True, "t-string: expecting '}'")
+                );
                 return res;
             }
         }
@@ -9521,7 +10859,9 @@ def rule_invalid_type_params(p: peg_parser) -> object | None {
     if lit is not None {
         token = peg_expect_token(p, 10);
         if token is not None {
-            res = pa_raise_syntax_known_expr(p, False, token, "Type parameter list cannot be empty");
+            res = pa_raise_syntax_known_expr(
+                p, False, token, "Type parameter list cannot be empty"
+            );
             return res;
         }
     }
@@ -9556,7 +10896,11 @@ def rule_invalid_while_stmt(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after 'while' statement on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after 'while' statement on line %d"
+                        );
                         return res;
                     }
                 }
@@ -9579,7 +10923,13 @@ def rule_invalid_with_item(p: peg_parser) -> object | None {
         if kw is not None {
             a = rule_expression(p);
             if a is not None {
-                if ((peg_positive_lookahead_token(p, 12) or peg_positive_lookahead_token(p, 8) or peg_positive_lookahead_token(p, 11))) {
+                if (
+                    (
+                        peg_positive_lookahead_token(p, 12)
+                        or peg_positive_lookahead_token(p, 8)
+                        or peg_positive_lookahead_token(p, 11)
+                    )
+                ) {
                     res = pa_raise_invalid_target(p, STAR_TARGETS, a);
                     return res;
                 }
@@ -9648,7 +10998,11 @@ def rule_invalid_with_stmt_indent(p: peg_parser) -> object | None {
                 _newline = peg_expect_token(p, NEWLINE);
                 if _newline is not None {
                     if (peg_negative_lookahead_token(p, INDENT)) {
-                        res = pa_raise_syntax(p, False, "expected an indented block after 'with' statement on line %d");
+                        res = pa_raise_syntax(
+                            p,
+                            False,
+                            "expected an indented block after 'with' statement on line %d"
+                        );
                         return res;
                     }
                 }
@@ -9671,7 +11025,11 @@ def rule_invalid_with_stmt_indent(p: peg_parser) -> object | None {
                         _newline = peg_expect_token(p, NEWLINE);
                         if _newline is not None {
                             if (peg_negative_lookahead_token(p, INDENT)) {
-                                res = pa_raise_syntax(p, False, "expected an indented block after 'with' statement on line %d");
+                                res = pa_raise_syntax(
+                                    p,
+                                    False,
+                                    "expected an indented block after 'with' statement on line %d"
+                                );
                                 return res;
                             }
                         }
@@ -9712,7 +11070,9 @@ def rule_inversion(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_unaryop(Not(), a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_unaryop(
+                Not(), a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_inversion, res);
             return res;
         }
@@ -9792,7 +11152,14 @@ def rule_key_value_pattern(p: peg_parser) -> kp_pair | None {
         if lit is not None {
             pattern = rule_pattern(p);
             if pattern is not None {
-                res = pa_key_pattern_pair(key, pattern, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_key_pattern_pair(
+                    key,
+                    pattern,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -9819,7 +11186,14 @@ def rule_keyword_pattern(p: peg_parser) -> kp_pair | None {
         if lit is not None {
             value = rule_pattern(p);
             if value is not None {
-                res = pa_key_pattern_pair(arg, value, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_key_pattern_pair(
+                    arg,
+                    value,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -9858,7 +11232,9 @@ def rule_kvpair(p: peg_parser) -> kv_pair | None {
         if lit is not None {
             b = rule_expression(p);
             if b is not None {
-                res = pa_key_value_pair(a, b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_key_value_pair(
+                    a, b, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -9899,7 +11275,23 @@ def rule_kwarg_or_double_starred(p: peg_parser) -> keyword_or_starred_node | Non
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_keyword_or_starred(pa_check(keyword(arg=pa_name_id(a), value=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset)) as keyword, 1, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_keyword_or_starred(
+                    pa_check(
+                        keyword(
+                            arg=pa_name_id(a),
+                            value=b,
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        )
+                    ) as keyword,
+                    1,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -9917,7 +11309,23 @@ def rule_kwarg_or_double_starred(p: peg_parser) -> keyword_or_starred_node | Non
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_keyword_or_starred(pa_check(keyword(arg=None, value=a_3, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset)) as keyword, 1, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_keyword_or_starred(
+                pa_check(
+                    keyword(
+                        arg=None,
+                        value=a_3,
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    )
+                ) as keyword,
+                1,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -9957,7 +11365,23 @@ def rule_kwarg_or_starred(p: peg_parser) -> keyword_or_starred_node | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_keyword_or_starred(pa_check(keyword(arg=pa_name_id(a), value=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset)) as keyword, 1, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_keyword_or_starred(
+                    pa_check(
+                        keyword(
+                            arg=pa_name_id(a),
+                            value=b,
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        )
+                    ) as keyword,
+                    1,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -9965,7 +11389,9 @@ def rule_kwarg_or_starred(p: peg_parser) -> keyword_or_starred_node | None {
     peg_reset(p, mark);
     a_3 = rule_starred_expression(p);
     if a_3 is not None {
-        res = pa_keyword_or_starred(a_3, 0, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_keyword_or_starred(
+            a_3, 0, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10066,7 +11492,15 @@ def rule_lambda_param(p: peg_parser) -> arg | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = arg(arg=pa_name_id(a), annotation=None, type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = arg(
+            arg=pa_name_id(a),
+            annotation=None,
+            type_comment=None,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10090,7 +11524,9 @@ def rule_lambda_param_maybe_default(p: peg_parser) -> name_default_pair | None {
         c = rule_default(p);
         lit = peg_expect_token(p, 12);
         if lit is not None {
-            res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_name_default_pair(
+                a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -10099,7 +11535,9 @@ def rule_lambda_param_maybe_default(p: peg_parser) -> name_default_pair | None {
     if a is not None {
         c = rule_default(p);
         if (peg_positive_lookahead_token(p, 11)) {
-            res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_name_default_pair(
+                a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -10148,7 +11586,9 @@ def rule_lambda_param_with_default(p: peg_parser) -> name_default_pair | None {
         if c is not None {
             lit = peg_expect_token(p, 12);
             if lit is not None {
-                res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_name_default_pair(
+                    a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -10159,7 +11599,9 @@ def rule_lambda_param_with_default(p: peg_parser) -> name_default_pair | None {
         c = rule_default(p);
         if c is not None {
             if (peg_positive_lookahead_token(p, 11)) {
-                res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_name_default_pair(
+                    a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -10187,7 +11629,17 @@ def rule_lambda_parameters(p: peg_parser) -> arguments | None {
             c = rule__loop0_109(p);
             if c is not None {
                 d = rule_lambda_star_etc(p);
-                res = pa_make_arguments(a, None, b, c, d, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_make_arguments(
+                    a,
+                    None,
+                    b,
+                    c,
+                    d,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -10198,7 +11650,17 @@ def rule_lambda_parameters(p: peg_parser) -> arguments | None {
         b_2 = rule__loop0_109(p);
         if b_2 is not None {
             c_2 = rule_lambda_star_etc(p);
-            res = pa_make_arguments(None, a_2, None, b_2, c_2, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_make_arguments(
+                None,
+                a_2,
+                None,
+                b_2,
+                c_2,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -10208,7 +11670,17 @@ def rule_lambda_parameters(p: peg_parser) -> arguments | None {
         b_3 = rule__loop0_109(p);
         if b_3 is not None {
             c_3 = rule_lambda_star_etc(p);
-            res = pa_make_arguments(None, None, a, b_3, c_3, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_make_arguments(
+                None,
+                None,
+                a,
+                b_3,
+                c_3,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -10216,13 +11688,33 @@ def rule_lambda_parameters(p: peg_parser) -> arguments | None {
     a_4 = rule__loop1_73(p);
     if a_4 is not None {
         b_4 = rule_lambda_star_etc(p);
-        res = pa_make_arguments(None, None, None, a_4, b_4, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_make_arguments(
+            None,
+            None,
+            None,
+            a_4,
+            b_4,
+            start_lineno,
+            start_col_offset,
+            end_lineno,
+            end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
     a_5 = rule_lambda_star_etc(p);
     if a_5 is not None {
-        res = pa_make_arguments(None, None, None, None, a_5, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_make_arguments(
+            None,
+            None,
+            None,
+            None,
+            a_5,
+            start_lineno,
+            start_col_offset,
+            end_lineno,
+            end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10296,7 +11788,9 @@ def rule_lambda_slash_with_default(p: peg_parser) -> object | None {
             if lit is not None {
                 lit_1 = peg_expect_token(p, 12);
                 if lit_1 is not None {
-                    res = pa_slash_with_default(a, b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_slash_with_default(
+                        a, b, start_lineno, start_col_offset, end_lineno, end_col_offset
+                    );
                     return res;
                 }
             }
@@ -10310,7 +11804,9 @@ def rule_lambda_slash_with_default(p: peg_parser) -> object | None {
             lit = peg_expect_token(p, 17);
             if lit is not None {
                 if (peg_positive_lookahead_token(p, 11)) {
-                    res = pa_slash_with_default(a, b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_slash_with_default(
+                        a, b, start_lineno, start_col_offset, end_lineno, end_col_offset
+                    );
                     return res;
                 }
             }
@@ -10345,7 +11841,9 @@ def rule_lambda_star_etc(p: peg_parser) -> object | None {
             b = rule__loop0_67(p);
             if b is not None {
                 c = rule_lambda_kwds(p);
-                res = pa_star_etc(a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_star_etc(
+                    a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -10358,7 +11856,15 @@ def rule_lambda_star_etc(p: peg_parser) -> object | None {
             b = rule__loop1_72(p);
             if b is not None {
                 c = rule_lambda_kwds(p);
-                res = pa_star_etc(None, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_star_etc(
+                    None,
+                    b,
+                    c,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -10366,7 +11872,9 @@ def rule_lambda_star_etc(p: peg_parser) -> object | None {
     peg_reset(p, mark);
     a = rule_lambda_kwds(p);
     if a is not None {
-        res = pa_star_etc(None, None, a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_star_etc(
+            None, None, a, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10400,7 +11908,18 @@ def rule_lambdef(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = Lambda(args=(a if a is not None else pa_check(pa_empty_arguments()) as arguments), body=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = Lambda(
+                    args=(
+                        a
+                            if a is not None
+                            else pa_check(pa_empty_arguments()) as arguments
+                    ),
+                    body=b,
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -10434,7 +11953,14 @@ def rule_list(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = List(elts=(a if a is not None else []), ctx=Load(), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = List(
+                elts=(a if a is not None else []),
+                ctx=Load(),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -10470,7 +11996,14 @@ def rule_listcomp(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = ListComp(elt=a, generators=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = ListComp(
+                        elt=a,
+                        generators=(b if b is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -10500,7 +12033,12 @@ def rule_literal_expr(p: peg_parser) -> expr | None {
     res: expr | None = None;
     signed_number = rule_signed_number(p);
     if signed_number is not None {
-        if ((peg_negative_lookahead_token(p, 14) and peg_negative_lookahead_token(p, 15))) {
+        if (
+            (
+                peg_negative_lookahead_token(p, 14)
+                and peg_negative_lookahead_token(p, 15)
+            )
+        ) {
             res = signed_number;
             return res;
         }
@@ -10512,7 +12050,13 @@ def rule_literal_expr(p: peg_parser) -> expr | None {
         return res;
     }
     peg_reset(p, mark);
-    if ((peg_positive_lookahead_token(p, STRING) or peg_positive_lookahead_token(p, FSTRING_START) or peg_positive_lookahead_token(p, TSTRING_START))) {
+    if (
+        (
+            peg_positive_lookahead_token(p, STRING)
+            or peg_positive_lookahead_token(p, FSTRING_START)
+            or peg_positive_lookahead_token(p, TSTRING_START)
+        )
+    ) {
         strings = rule_strings(p);
         if strings is not None {
             res = strings;
@@ -10530,7 +12074,9 @@ def rule_literal_expr(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_none(start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_none(
+            start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10544,7 +12090,9 @@ def rule_literal_expr(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_bool(True, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_bool(
+            True, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10558,7 +12106,9 @@ def rule_literal_expr(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_bool(False, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_bool(
+            False, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10579,7 +12129,12 @@ def rule_literal_pattern(p: peg_parser) -> pattern | None {
     res: pattern | None = None;
     value = rule_signed_number(p);
     if value is not None {
-        if ((peg_negative_lookahead_token(p, 14) and peg_negative_lookahead_token(p, 15))) {
+        if (
+            (
+                peg_negative_lookahead_token(p, 14)
+                and peg_negative_lookahead_token(p, 15)
+            )
+        ) {
             end_tok = peg_get_last_nonnwhitespace_token(p);
             if end_tok is None {
                 p.error_indicator = True;
@@ -10588,7 +12143,13 @@ def rule_literal_pattern(p: peg_parser) -> pattern | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = MatchValue(value=value, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = MatchValue(
+                value=value,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -10603,7 +12164,13 @@ def rule_literal_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = MatchValue(value=value, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = MatchValue(
+            value=value,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10617,7 +12184,13 @@ def rule_literal_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = MatchValue(value=value, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = MatchValue(
+            value=value,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10631,7 +12204,9 @@ def rule_literal_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_match_singleton(None, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_match_singleton(
+            None, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10645,7 +12220,9 @@ def rule_literal_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_match_singleton(True, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_match_singleton(
+            True, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10659,7 +12236,9 @@ def rule_literal_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_match_singleton(False, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_match_singleton(
+            False, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -10720,7 +12299,15 @@ def rule_mapping_pattern(p: peg_parser) -> pattern | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = MatchMapping(keys=[], patterns=[], rest=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = MatchMapping(
+                keys=[],
+                patterns=[],
+                rest=None,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -10740,7 +12327,15 @@ def rule_mapping_pattern(p: peg_parser) -> pattern | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = MatchMapping(keys=[], patterns=[], rest=pa_name_id(rest), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = MatchMapping(
+                    keys=[],
+                    patterns=[],
+                    rest=pa_name_id(rest),
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -10765,7 +12360,27 @@ def rule_mapping_pattern(p: peg_parser) -> pattern | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = MatchMapping(keys=(pa_check(pa_get_pattern_keys(items)) as list[expr] if pa_check(pa_get_pattern_keys(items)) as list[expr] is not None else []), patterns=(pa_check(pa_get_patterns(items)) as list[pattern] if pa_check(pa_get_patterns(items)) as list[pattern] is not None else []), rest=pa_name_id(rest), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = MatchMapping(
+                            keys=(
+                                pa_check(pa_get_pattern_keys(items)) as list[expr]
+                                    if pa_check(pa_get_pattern_keys(items)) as list[
+                                        expr
+                                    ]
+                                        is not None
+                                    else []
+                            ),
+                            patterns=(
+                                pa_check(pa_get_patterns(items)) as list[pattern]
+                                    if pa_check(pa_get_patterns(items)) as list[pattern]
+                                        is not None
+                                    else []
+                            ),
+                            rest=pa_name_id(rest),
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -10788,7 +12403,25 @@ def rule_mapping_pattern(p: peg_parser) -> pattern | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = MatchMapping(keys=(pa_check(pa_get_pattern_keys(items)) as list[expr] if pa_check(pa_get_pattern_keys(items)) as list[expr] is not None else []), patterns=(pa_check(pa_get_patterns(items)) as list[pattern] if pa_check(pa_get_patterns(items)) as list[pattern] is not None else []), rest=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = MatchMapping(
+                    keys=(
+                        pa_check(pa_get_pattern_keys(items)) as list[expr]
+                            if pa_check(pa_get_pattern_keys(items)) as list[expr]
+                                is not None
+                            else []
+                    ),
+                    patterns=(
+                        pa_check(pa_get_patterns(items)) as list[pattern]
+                            if pa_check(pa_get_patterns(items)) as list[pattern]
+                                is not None
+                            else []
+                    ),
+                    rest=None,
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -10831,7 +12464,14 @@ def rule_match_stmt(p: peg_parser) -> stmt | None {
                                 }
                                 end_lineno = end_tok.end_lineno;
                                 end_col_offset = end_tok.end_col_offset;
-                                res = Match(subject=subject, cases=(cases if cases is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                                res = Match(
+                                    subject=subject,
+                                    cases=(cases if cases is not None else []),
+                                    lineno=start_lineno,
+                                    col_offset=start_col_offset,
+                                    end_lineno=end_lineno,
+                                    end_col_offset=end_col_offset
+                                );
                                 return res;
                             }
                         }
@@ -10953,7 +12593,17 @@ def rule_nonlocal_stmt(p: peg_parser) -> stmt | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = Nonlocal(names=(pa_check(pa_map_names_to_ids(a)) as list[str] if pa_check(pa_map_names_to_ids(a)) as list[str] is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = Nonlocal(
+                names=(
+                    pa_check(pa_map_names_to_ids(a)) as list[str]
+                        if pa_check(pa_map_names_to_ids(a)) as list[str] is not None
+                        else []
+                ),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -11032,7 +12682,9 @@ def rule_or_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_or_pattern_singleton(patterns, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_or_pattern_singleton(
+            patterns, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -11062,7 +12714,15 @@ def rule_param(p: peg_parser) -> arg | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = arg(arg=pa_name_id(a), annotation=b, type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = arg(
+            arg=pa_name_id(a),
+            annotation=b,
+            type_comment=None,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -11087,7 +12747,9 @@ def rule_param_maybe_default(p: peg_parser) -> name_default_pair | None {
         lit = peg_expect_token(p, 12);
         if lit is not None {
             tc = peg_expect_token(p, TYPE_COMMENT);
-            res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_name_default_pair(
+                a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -11097,7 +12759,9 @@ def rule_param_maybe_default(p: peg_parser) -> name_default_pair | None {
         c = rule_default(p);
         tc = peg_expect_token(p, TYPE_COMMENT);
         if (peg_positive_lookahead_token(p, 8)) {
-            res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_name_default_pair(
+                a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -11179,7 +12843,15 @@ def rule_param_star_annotation(p: peg_parser) -> arg | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = arg(arg=pa_name_id(a), annotation=b, type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = arg(
+                arg=pa_name_id(a),
+                annotation=b,
+                type_comment=None,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -11206,7 +12878,9 @@ def rule_param_with_default(p: peg_parser) -> name_default_pair | None {
             lit = peg_expect_token(p, 12);
             if lit is not None {
                 tc = peg_expect_token(p, TYPE_COMMENT);
-                res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_name_default_pair(
+                    a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -11218,7 +12892,9 @@ def rule_param_with_default(p: peg_parser) -> name_default_pair | None {
         if c is not None {
             tc = peg_expect_token(p, TYPE_COMMENT);
             if (peg_positive_lookahead_token(p, 8)) {
-                res = pa_name_default_pair(a, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_name_default_pair(
+                    a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -11246,7 +12922,17 @@ def rule_parameters(p: peg_parser) -> arguments | None {
             c = rule__loop0_116(p);
             if c is not None {
                 d = rule_star_etc(p);
-                res = pa_make_arguments(a, None, b, c, d, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_make_arguments(
+                    a,
+                    None,
+                    b,
+                    c,
+                    d,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -11257,7 +12943,17 @@ def rule_parameters(p: peg_parser) -> arguments | None {
         b_2 = rule__loop0_116(p);
         if b_2 is not None {
             c_2 = rule_star_etc(p);
-            res = pa_make_arguments(None, a_2, None, b_2, c_2, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_make_arguments(
+                None,
+                a_2,
+                None,
+                b_2,
+                c_2,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -11267,7 +12963,17 @@ def rule_parameters(p: peg_parser) -> arguments | None {
         b_3 = rule__loop0_116(p);
         if b_3 is not None {
             c_3 = rule_star_etc(p);
-            res = pa_make_arguments(None, None, a, b_3, c_3, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_make_arguments(
+                None,
+                None,
+                a,
+                b_3,
+                c_3,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -11275,13 +12981,33 @@ def rule_parameters(p: peg_parser) -> arguments | None {
     a_4 = rule__loop1_84(p);
     if a_4 is not None {
         b_4 = rule_star_etc(p);
-        res = pa_make_arguments(None, None, None, a_4, b_4, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_make_arguments(
+            None,
+            None,
+            None,
+            a_4,
+            b_4,
+            start_lineno,
+            start_col_offset,
+            end_lineno,
+            end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
     a_5 = rule_star_etc(p);
     if a_5 is not None {
-        res = pa_make_arguments(None, None, None, None, a_5, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_make_arguments(
+            None,
+            None,
+            None,
+            None,
+            a_5,
+            start_lineno,
+            start_col_offset,
+            end_lineno,
+            end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -11359,7 +13085,13 @@ def rule_pattern_capture_target(p: peg_parser) -> expr | None {
     if ((peg_expect_soft_keyword(p, "_") is None)) {
         name = pa_name_from_token(peg_expect_token(p, NAME));
         if name is not None {
-            if ((peg_negative_lookahead_token(p, 23) and peg_negative_lookahead_token(p, 7) and peg_negative_lookahead_token(p, 22))) {
+            if (
+                (
+                    peg_negative_lookahead_token(p, 23)
+                    and peg_negative_lookahead_token(p, 7)
+                    and peg_negative_lookahead_token(p, 22)
+                )
+            ) {
                 res = pa_set_context(name, Store());
                 return res;
             }
@@ -11392,7 +13124,13 @@ def rule_patterns(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = MatchSequence(patterns=pa_pattern_list(patterns), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = MatchSequence(
+            patterns=pa_pattern_list(patterns),
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -11443,7 +13181,15 @@ def rule_power(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, Pow(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    Pow(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -11508,7 +13254,15 @@ def rule_primary_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_attribute(a, pa_name_id(b), Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_attribute(
+                    a,
+                    pa_name_id(b),
+                    Load(),
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -11526,7 +13280,15 @@ def rule_primary_raw(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_call(a, pa_check(pa_singleton_seq_expr(b_2)) as list[expr], None, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_call(
+                a,
+                pa_check(pa_singleton_seq_expr(b_2)) as list[expr],
+                None,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -11546,7 +13308,15 @@ def rule_primary_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_call(a, (pa_call_args(b_3) if b_3 is not None else []), (pa_call_keywords(b_3) if b_3 is not None else []), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_call(
+                    a,
+                    (pa_call_args(b_3) if b_3 is not None else []),
+                    (pa_call_keywords(b_3) if b_3 is not None else []),
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -11568,7 +13338,15 @@ def rule_primary_raw(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = pa_ast_subscript(a, b_4, Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_ast_subscript(
+                        a,
+                        b_4,
+                        Load(),
+                        start_lineno,
+                        start_col_offset,
+                        end_lineno,
+                        end_col_offset
+                    );
                     return res;
                 }
             }
@@ -11609,7 +13387,14 @@ def rule_raise_stmt(p: peg_parser) -> stmt | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = Raise(exc=a, cause=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = Raise(
+                exc=a,
+                cause=b,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -11624,7 +13409,14 @@ def rule_raise_stmt(p: peg_parser) -> stmt | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = Raise(exc=None, cause=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = Raise(
+            exc=None,
+            cause=None,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -11666,7 +13458,9 @@ def rule_return_stmt(p: peg_parser) -> stmt | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_ast_return(a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_ast_return(
+            a, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -11698,7 +13492,13 @@ def rule_sequence_pattern(p: peg_parser) -> pattern | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = MatchSequence(patterns=pa_pattern_list(patterns), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = MatchSequence(
+                patterns=pa_pattern_list(patterns),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -11716,7 +13516,13 @@ def rule_sequence_pattern(p: peg_parser) -> pattern | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = MatchSequence(patterns=pa_pattern_list(patterns), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = MatchSequence(
+                patterns=pa_pattern_list(patterns),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -11750,7 +13556,13 @@ def rule_set(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = Set(elts=(a if a is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = Set(
+                    elts=(a if a is not None else []),
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -11787,7 +13599,14 @@ def rule_setcomp(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = SetComp(elt=a, generators=(b if b is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = SetComp(
+                        elt=a,
+                        generators=(b if b is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -11853,7 +13672,15 @@ def rule_shift_expr_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, LShift(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    LShift(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -11873,7 +13700,15 @@ def rule_shift_expr_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, RShift(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    RShift(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -11924,7 +13759,14 @@ def rule_signed_number(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_unaryop(USub(), number, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_unaryop(
+                USub(),
+                number,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -11962,7 +13804,9 @@ def rule_signed_real_number(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_unaryop(USub(), real, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_unaryop(
+                USub(), real, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -12037,12 +13881,16 @@ def rule_simple_stmt(p: peg_parser) -> stmt | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_ast_expr_stmt(e, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_ast_expr_stmt(
+            e, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         peg_insert_memo(p, mark, RULE_simple_stmt, res);
         return res;
     }
     peg_reset(p, mark);
-    if ((peg_positive_lookahead_token(p, 681) or peg_positive_lookahead_token(p, 702))) {
+    if (
+        (peg_positive_lookahead_token(p, 681) or peg_positive_lookahead_token(p, 702))
+    ) {
         import_stmt = rule_import_stmt(p);
         if import_stmt is not None {
             res = import_stmt;
@@ -12184,7 +14032,15 @@ def rule_single_subscript_attribute_target(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = pa_ast_attribute(a, pa_name_id(b), Store(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_ast_attribute(
+                        a,
+                        pa_name_id(b),
+                        Store(),
+                        start_lineno,
+                        start_col_offset,
+                        end_lineno,
+                        end_col_offset
+                    );
                     return res;
                 }
             }
@@ -12208,7 +14064,15 @@ def rule_single_subscript_attribute_target(p: peg_parser) -> expr | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = pa_ast_subscript(a, b_2, Store(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                        res = pa_ast_subscript(
+                            a,
+                            b_2,
+                            Store(),
+                            start_lineno,
+                            start_col_offset,
+                            end_lineno,
+                            end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -12298,7 +14162,9 @@ def rule_slash_with_default(p: peg_parser) -> object | None {
             if lit is not None {
                 lit_1 = peg_expect_token(p, 12);
                 if lit_1 is not None {
-                    res = pa_slash_with_default(a, b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_slash_with_default(
+                        a, b, start_lineno, start_col_offset, end_lineno, end_col_offset
+                    );
                     return res;
                 }
             }
@@ -12312,7 +14178,9 @@ def rule_slash_with_default(p: peg_parser) -> object | None {
             lit = peg_expect_token(p, 17);
             if lit is not None {
                 if (peg_positive_lookahead_token(p, 8)) {
-                    res = pa_slash_with_default(a, b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_slash_with_default(
+                        a, b, start_lineno, start_col_offset, end_lineno, end_col_offset
+                    );
                     return res;
                 }
             }
@@ -12347,7 +14215,9 @@ def rule_slice(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_ast_slice(a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_ast_slice(
+            a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -12391,7 +14261,9 @@ def rule_slices(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_ast_tuple(a_2, Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_ast_tuple(
+            a_2, Load(), start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -12456,7 +14328,9 @@ def rule_star_atom(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(a_3, Store(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                a_3, Store(), start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -12474,7 +14348,14 @@ def rule_star_atom(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = List(elts=(a_4 if a_4 is not None else []), ctx=Store(), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = List(
+                elts=(a_4 if a_4 is not None else []),
+                ctx=Store(),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -12507,7 +14388,9 @@ def rule_star_etc(p: peg_parser) -> object | None {
             b = rule__loop0_79(p);
             if b is not None {
                 c = rule_kwds(p);
-                res = pa_star_etc(a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_star_etc(
+                    a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -12520,7 +14403,9 @@ def rule_star_etc(p: peg_parser) -> object | None {
             b = rule__loop0_79(p);
             if b is not None {
                 c = rule_kwds(p);
-                res = pa_star_etc(a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_star_etc(
+                    a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 return res;
             }
         }
@@ -12533,7 +14418,15 @@ def rule_star_etc(p: peg_parser) -> object | None {
             b = rule__loop1_83(p);
             if b is not None {
                 c = rule_kwds(p);
-                res = pa_star_etc(None, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_star_etc(
+                    None,
+                    b,
+                    c,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -12541,7 +14434,9 @@ def rule_star_etc(p: peg_parser) -> object | None {
     peg_reset(p, mark);
     a = rule_kwds(p);
     if a is not None {
-        res = pa_star_etc(None, None, a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_star_etc(
+            None, None, a, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -12576,7 +14471,9 @@ def rule_star_expression(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_starred(a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_starred(
+                a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_star_expression, res);
             return res;
         }
@@ -12618,7 +14515,14 @@ def rule_star_expressions(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_seq_insert_front_expr(a, b)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                pa_check(pa_seq_insert_front_expr(a, b)) as list[expr],
+                Load(),
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -12635,7 +14539,14 @@ def rule_star_expressions(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_singleton_seq_expr(a)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                pa_check(pa_singleton_seq_expr(a)) as list[expr],
+                Load(),
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -12673,7 +14584,9 @@ def rule_star_named_expression(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_starred(a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_starred(
+                a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -12728,7 +14641,13 @@ def rule_star_pattern(p: peg_parser) -> pattern | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = MatchStar(name=pa_name_id(target), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = MatchStar(
+                name=pa_name_id(target),
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_star_pattern, res);
             return res;
         }
@@ -12746,7 +14665,13 @@ def rule_star_pattern(p: peg_parser) -> pattern | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = MatchStar(name=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = MatchStar(
+                name=None,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_star_pattern, res);
             return res;
         }
@@ -12784,7 +14709,13 @@ def rule_star_target(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_starred(pa_check(pa_set_context(a, Store())) as expr, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_starred(
+                pa_check(pa_set_context(a, Store())) as expr,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_star_target, res);
             return res;
         }
@@ -12834,7 +14765,14 @@ def rule_star_targets(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_seq_insert_front_expr(a, b)) as list[expr], Store(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                pa_check(pa_seq_insert_front_expr(a, b)) as list[expr],
+                Store(),
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -12910,7 +14848,9 @@ def rule_starred_expression(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_starred(a, start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_starred(
+                a, start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -12979,7 +14919,11 @@ def rule_statement_newline(p: peg_parser) -> list[stmt] | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_singleton_seq_stmt(pa_check(pa_ast_pass(start_lineno, start_col_offset, end_lineno, end_col_offset)) as stmt);
+        res = pa_singleton_seq_stmt(
+            pa_check(
+                pa_ast_pass(start_lineno, start_col_offset, end_lineno, end_col_offset)
+            ) as stmt
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -13098,7 +15042,14 @@ def rule_subject_expr(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(pa_check(pa_seq_insert_front_expr(value, values)) as list[expr], Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                pa_check(pa_seq_insert_front_expr(value, values)) as list[expr],
+                Load(),
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
+            );
             return res;
         }
     }
@@ -13162,7 +15113,15 @@ def rule_sum_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, Add(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    Add(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13182,7 +15141,15 @@ def rule_sum_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, Sub(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    Sub(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13275,7 +15242,15 @@ def rule_t_primary_raw(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = pa_ast_attribute(a, pa_name_id(b), Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_ast_attribute(
+                        a,
+                        pa_name_id(b),
+                        Load(),
+                        start_lineno,
+                        start_col_offset,
+                        end_lineno,
+                        end_col_offset
+                    );
                     return res;
                 }
             }
@@ -13299,7 +15274,15 @@ def rule_t_primary_raw(p: peg_parser) -> expr | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = pa_ast_subscript(a, b_2, Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                        res = pa_ast_subscript(
+                            a,
+                            b_2,
+                            Load(),
+                            start_lineno,
+                            start_col_offset,
+                            end_lineno,
+                            end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -13320,7 +15303,15 @@ def rule_t_primary_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_call(a, pa_check(pa_singleton_seq_expr(b_3)) as list[expr], None, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_call(
+                    a,
+                    pa_check(pa_singleton_seq_expr(b_3)) as list[expr],
+                    None,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13342,7 +15333,15 @@ def rule_t_primary_raw(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = pa_ast_call(a, (pa_call_args(b_4) if b_4 is not None else []), (pa_call_keywords(b_4) if b_4 is not None else []), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_ast_call(
+                        a,
+                        (pa_call_args(b_4) if b_4 is not None else []),
+                        (pa_call_keywords(b_4) if b_4 is not None else []),
+                        start_lineno,
+                        start_col_offset,
+                        end_lineno,
+                        end_col_offset
+                    );
                     return res;
                 }
             }
@@ -13391,7 +15390,15 @@ def rule_target_with_star_atom(p: peg_parser) -> expr | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = pa_ast_attribute(a, pa_name_id(b), Store(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                    res = pa_ast_attribute(
+                        a,
+                        pa_name_id(b),
+                        Store(),
+                        start_lineno,
+                        start_col_offset,
+                        end_lineno,
+                        end_col_offset
+                    );
                     peg_insert_memo(p, mark, RULE_target_with_star_atom, res);
                     return res;
                 }
@@ -13416,7 +15423,15 @@ def rule_target_with_star_atom(p: peg_parser) -> expr | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = pa_ast_subscript(a, b_2, Store(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+                        res = pa_ast_subscript(
+                            a,
+                            b_2,
+                            Store(),
+                            start_lineno,
+                            start_col_offset,
+                            end_lineno,
+                            end_col_offset
+                        );
                         peg_insert_memo(p, mark, RULE_target_with_star_atom, res);
                         return res;
                     }
@@ -13486,7 +15501,15 @@ def rule_term_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, Mult(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    Mult(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13506,7 +15529,15 @@ def rule_term_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, Div(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    Div(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13526,7 +15557,15 @@ def rule_term_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, FloorDiv(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    FloorDiv(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13546,7 +15585,15 @@ def rule_term_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, Mod(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    Mod(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13566,7 +15613,15 @@ def rule_term_raw(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_ast_binop(a, MatMult(), b, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_ast_binop(
+                    a,
+                    MatMult(),
+                    b,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13621,7 +15676,16 @@ def rule_try_stmt(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = Try(body=(b if b is not None else []), handlers=[], orelse=pa_stmt_list_or_empty(None), finalbody=(f if f is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = Try(
+                        body=(b if b is not None else []),
+                        handlers=[],
+                        orelse=pa_stmt_list_or_empty(None),
+                        finalbody=(f if f is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -13646,7 +15710,16 @@ def rule_try_stmt(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = Try(body=(b if b is not None else []), handlers=(ex if ex is not None else []), orelse=pa_stmt_list_or_empty(el), finalbody=(f if f is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = Try(
+                        body=(b if b is not None else []),
+                        handlers=(ex if ex is not None else []),
+                        orelse=pa_stmt_list_or_empty(el),
+                        finalbody=(f if f is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -13671,7 +15744,16 @@ def rule_try_stmt(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = TryStar(body=(b if b is not None else []), handlers=(ex if ex is not None else []), orelse=pa_stmt_list_or_empty(el), finalbody=(f if f is not None else []), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = TryStar(
+                        body=(b if b is not None else []),
+                        handlers=(ex if ex is not None else []),
+                        orelse=pa_stmt_list_or_empty(el),
+                        finalbody=(f if f is not None else []),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -13703,7 +15785,9 @@ def rule_tstring(p: peg_parser) -> expr | None {
         if b is not None {
             c = peg_expect_token(p, TSTRING_END);
             if c is not None {
-                res = pa_template_str(a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_template_str(
+                    a, b, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                );
                 peg_insert_memo(p, mark, RULE_tstring, res);
                 return res;
             }
@@ -13723,7 +15807,9 @@ def rule_tstring_format_spec(p: peg_parser) -> expr | None {
         return res;
     }
     peg_reset(p, mark);
-    tstring_format_spec_replacement_field = rule_tstring_format_spec_replacement_field(p);
+    tstring_format_spec_replacement_field = rule_tstring_format_spec_replacement_field(
+        p
+    );
     if tstring_format_spec_replacement_field is not None {
         res = tstring_format_spec_replacement_field;
         return res;
@@ -13761,7 +15847,17 @@ def rule_tstring_format_spec_replacement_field(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_formatted_value(a, debug_expr, conversion, format, rbrace, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_formatted_value(
+                    a,
+                    debug_expr,
+                    conversion,
+                    format,
+                    rbrace,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13857,7 +15953,17 @@ def rule_tstring_replacement_field(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = pa_interpolation(a, debug_expr, conversion, format, rbrace, start_lineno, start_col_offset, end_lineno, end_col_offset);
+                res = pa_interpolation(
+                    a,
+                    debug_expr,
+                    conversion,
+                    format,
+                    rbrace,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
+                );
                 return res;
             }
         }
@@ -13897,7 +16003,9 @@ def rule_tuple(p: peg_parser) -> expr | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = pa_ast_tuple(a, Load(), start_lineno, start_col_offset, end_lineno, end_col_offset);
+            res = pa_ast_tuple(
+                a, Load(), start_lineno, start_col_offset, end_lineno, end_col_offset
+            );
             return res;
         }
     }
@@ -13934,7 +16042,15 @@ def rule_type_alias(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = TypeAlias(name=pa_check(pa_set_context(n, Store())) as expr, type_params=(t if t is not None else []), value=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = TypeAlias(
+                        name=pa_check(pa_set_context(n, Store())) as expr,
+                        type_params=(t if t is not None else []),
+                        value=b,
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -13961,7 +16077,12 @@ def rule_type_expressions(p: peg_parser) -> list[expr] | None {
                         if lit_3 is not None {
                             c = rule_expression(p);
                             if c is not None {
-                                res = pa_seq_append_to_end_expr(pa_check(pa_seq_append_to_end_expr(a, b)) as list[expr], c);
+                                res = pa_seq_append_to_end_expr(
+                                    pa_check(pa_seq_append_to_end_expr(a, b)) as list[
+                                        expr
+                                    ],
+                                    c
+                                );
                                 return res;
                             }
                         }
@@ -14011,7 +16132,9 @@ def rule_type_expressions(p: peg_parser) -> list[expr] | None {
                 if lit_2 is not None {
                     b = rule_expression(p);
                     if b is not None {
-                        res = pa_seq_append_to_end_expr(pa_check(pa_singleton_seq_expr(a_4)) as list[expr], b);
+                        res = pa_seq_append_to_end_expr(
+                            pa_check(pa_singleton_seq_expr(a_4)) as list[expr], b
+                        );
                         return res;
                     }
                 }
@@ -14074,7 +16197,15 @@ def rule_type_param(p: peg_parser) -> type_param | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = TypeVar(name=pa_name_id(a), bound=b, default_value=c, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = TypeVar(
+            name=pa_name_id(a),
+            bound=b,
+            default_value=c,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         peg_insert_memo(p, mark, RULE_type_param, res);
         return res;
     }
@@ -14099,7 +16230,14 @@ def rule_type_param(p: peg_parser) -> type_param | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = TypeVarTuple(name=pa_name_id(a), default_value=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = TypeVarTuple(
+                name=pa_name_id(a),
+                default_value=b,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_type_param, res);
             return res;
         }
@@ -14118,7 +16256,14 @@ def rule_type_param(p: peg_parser) -> type_param | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = ParamSpec(name=pa_name_id(a), default_value=b, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = ParamSpec(
+                name=pa_name_id(a),
+                default_value=b,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             peg_insert_memo(p, mark, RULE_type_param, res);
             return res;
         }
@@ -14224,7 +16369,13 @@ def rule_value_pattern(p: peg_parser) -> pattern | None {
     res: pattern | None = None;
     attr = rule_attr(p);
     if attr is not None {
-        if ((peg_negative_lookahead_token(p, 23) and peg_negative_lookahead_token(p, 7) and peg_negative_lookahead_token(p, 22))) {
+        if (
+            (
+                peg_negative_lookahead_token(p, 23)
+                and peg_negative_lookahead_token(p, 7)
+                and peg_negative_lookahead_token(p, 22)
+            )
+        ) {
             end_tok = peg_get_last_nonnwhitespace_token(p);
             if end_tok is None {
                 p.error_indicator = True;
@@ -14233,7 +16384,13 @@ def rule_value_pattern(p: peg_parser) -> pattern | None {
             }
             end_lineno = end_tok.end_lineno;
             end_col_offset = end_tok.end_col_offset;
-            res = MatchValue(value=attr, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+            res = MatchValue(
+                value=attr,
+                lineno=start_lineno,
+                col_offset=start_col_offset,
+                end_lineno=end_lineno,
+                end_col_offset=end_col_offset
+            );
             return res;
         }
     }
@@ -14276,7 +16433,15 @@ def rule_while_stmt(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = While(`test=a, body=(b if b is not None else []), orelse=pa_stmt_list_or_empty(c), lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = While(
+                        `test=a,
+                        body=(b if b is not None else []),
+                        orelse=pa_stmt_list_or_empty(c),
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -14308,7 +16473,14 @@ def rule_wildcard_pattern(p: peg_parser) -> pattern | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = MatchAs(pattern=None, name=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = MatchAs(
+            pattern=None,
+            name=None,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -14324,7 +16496,13 @@ def rule_with_item(p: peg_parser) -> withitem | None {
         if kw is not None {
             t = rule_star_target(p);
             if t is not None {
-                if ((peg_positive_lookahead_token(p, 12) or peg_positive_lookahead_token(p, 8) or peg_positive_lookahead_token(p, 11))) {
+                if (
+                    (
+                        peg_positive_lookahead_token(p, 12)
+                        or peg_positive_lookahead_token(p, 8)
+                        or peg_positive_lookahead_token(p, 11)
+                    )
+                ) {
                     res = withitem(context_expr=e, optional_vars=t);
                     return res;
                 }
@@ -14387,7 +16565,15 @@ def rule_with_stmt(p: peg_parser) -> stmt | None {
                             }
                             end_lineno = end_tok.end_lineno;
                             end_col_offset = end_tok.end_col_offset;
-                            res = With(items=(a if a is not None else []), body=(b if b is not None else []), type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                            res = With(
+                                items=(a if a is not None else []),
+                                body=(b if b is not None else []),
+                                type_comment=None,
+                                lineno=start_lineno,
+                                col_offset=start_col_offset,
+                                end_lineno=end_lineno,
+                                end_col_offset=end_col_offset
+                            );
                             return res;
                         }
                     }
@@ -14413,7 +16599,15 @@ def rule_with_stmt(p: peg_parser) -> stmt | None {
                     }
                     end_lineno = end_tok.end_lineno;
                     end_col_offset = end_tok.end_col_offset;
-                    res = With(items=(a if a is not None else []), body=(b if b is not None else []), type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                    res = With(
+                        items=(a if a is not None else []),
+                        body=(b if b is not None else []),
+                        type_comment=None,
+                        lineno=start_lineno,
+                        col_offset=start_col_offset,
+                        end_lineno=end_lineno,
+                        end_col_offset=end_col_offset
+                    );
                     return res;
                 }
             }
@@ -14443,7 +16637,15 @@ def rule_with_stmt(p: peg_parser) -> stmt | None {
                                 }
                                 end_lineno = end_tok.end_lineno;
                                 end_col_offset = end_tok.end_col_offset;
-                                res = AsyncWith(items=(a if a is not None else []), body=(b if b is not None else []), type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                                res = AsyncWith(
+                                    items=(a if a is not None else []),
+                                    body=(b if b is not None else []),
+                                    type_comment=None,
+                                    lineno=start_lineno,
+                                    col_offset=start_col_offset,
+                                    end_lineno=end_lineno,
+                                    end_col_offset=end_col_offset
+                                );
                                 return res;
                             }
                         }
@@ -14472,7 +16674,15 @@ def rule_with_stmt(p: peg_parser) -> stmt | None {
                         }
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
-                        res = AsyncWith(items=(a if a is not None else []), body=(b if b is not None else []), type_comment=None, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                        res = AsyncWith(
+                            items=(a if a is not None else []),
+                            body=(b if b is not None else []),
+                            type_comment=None,
+                            lineno=start_lineno,
+                            col_offset=start_col_offset,
+                            end_lineno=end_lineno,
+                            end_col_offset=end_col_offset
+                        );
                         return res;
                     }
                 }
@@ -14515,7 +16725,13 @@ def rule_yield_expr(p: peg_parser) -> expr | None {
                 }
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
-                res = YieldFrom(value=a, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+                res = YieldFrom(
+                    value=a,
+                    lineno=start_lineno,
+                    col_offset=start_col_offset,
+                    end_lineno=end_lineno,
+                    end_col_offset=end_col_offset
+                );
                 return res;
             }
         }
@@ -14532,7 +16748,13 @@ def rule_yield_expr(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = Yield(value=a, lineno=start_lineno, col_offset=start_col_offset, end_lineno=end_lineno, end_col_offset=end_col_offset);
+        res = Yield(
+            value=a,
+            lineno=start_lineno,
+            col_offset=start_col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
@@ -14561,14 +16783,16 @@ def rule_yield_stmt(p: peg_parser) -> stmt | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_ast_expr_stmt(y, start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_ast_expr_stmt(
+            y, start_lineno, start_col_offset, end_lineno, end_col_offset
+        );
         return res;
     }
     peg_reset(p, mark);
     return None;
 }
 
-def _build_keyword_lists() -> list[list[peg_keyword_entry]] {
+def _build_keyword_lists -> list[list[peg_keyword_entry]] {
     lists: list[list[peg_keyword_entry]] = [];
     i = 0;
     while i <= 8 {
@@ -14612,6 +16836,7 @@ def _build_keyword_lists() -> list[list[peg_keyword_entry]] {
     lists[8].append(peg_keyword_entry(spelling="nonlocal", tok_type=689));
     return lists;
 }
+
 glob SOFT_KEYWORDS: list[str] = ["_", "case", "match", "type"];
 
 def parse_eval_module(p: peg_parser) -> mod | None {
@@ -14629,7 +16854,11 @@ def parse_eval_source(source: str, filename: str) -> mod | None {
     p = peg_parser_from_source(source, filename, True);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
-    result = parse_eval_module(p);
+    try {
+        result = parse_eval_module(p);
+    } except SyntaxError as error {
+        raise_source_error(p, error);
+    }
     return finish_parse(p, result, "eval");
 }
 
@@ -14659,7 +16888,11 @@ def parse_file_source(source: str, filename: str) -> mod | None {
     p = peg_parser_from_source(source, filename, True);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
-    result = parse_file_module(p);
+    try {
+        result = parse_file_module(p);
+    } except SyntaxError as error {
+        raise_source_error(p, error);
+    }
     return finish_parse(p, result, "exec");
 }
 
@@ -14678,7 +16911,11 @@ def parse_interactive(source: str, filename: str) -> Interactive | None {
     p = peg_parser_from_source(source, filename, True);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
-    body = rule_statement(p);
+    try {
+        body = rule_statement(p);
+    } except SyntaxError as error {
+        raise_source_error(p, error);
+    }
     if body is None or peg_expect_token(p, ENDMARKER) is None {
         return finish_parse(p, None, "single");
     }
@@ -14686,13 +16923,60 @@ def parse_interactive(source: str, filename: str) -> Interactive | None {
     # interactive mode. An indented suite supplies its own logical boundary.
     if not source.endswith(("\n", "\r")) and len(body) == 1 {
         first = body[0];
-        if isinstance(first, (FunctionDef, AsyncFunctionDef, ClassDef, If, While,
-                              For, AsyncFor, With, AsyncWith, Try, TryStar, Match))
+        if isinstance(
+            first,
+            (
+                FunctionDef,
+                AsyncFunctionDef,
+                ClassDef,
+                If,
+                While,
+                For,
+                AsyncFor,
+                With,
+                AsyncWith,
+                Try,
+                TryStar,
+                Match
+            )
+        )
             and first.lineno == first.end_lineno {
             return None;
         }
     }
     return Interactive(body=body);
+}
+
+def source_column(lines: list[str], line: int, column: int) -> int {
+    if line > 0 and line <= len(lines) {
+        return len(
+            lines[line - 1].encode("utf-8")[:column].decode("utf-8", errors="ignore")
+        );
+    }
+    return column;
+}
+
+def raise_source_error(p: peg_parser, error: any) {
+    token = p.tokens[-1] if p.tokens else None;
+    line = error.lineno or (token.lineno if token is not None else 1);
+    column = error.offset - 1
+        if error.offset is not None
+        else (token.col_offset if token is not None else 0);
+    end_line = error.end_lineno or line;
+    end_column = error.end_offset - 1 if error.end_offset is not None else column + 1;
+    lines = p.tok.source.splitlines(keepends=True);
+    text = lines[line - 1] if line <= len(lines) else None;
+    raise type(error)(
+        error.msg,
+        (
+            p.filename,
+            line,
+            source_column(lines, line, column) + 1,
+            text,
+            end_line,
+            source_column(lines, end_line, end_column) + 1
+        )
+    ) from None;
 }
 
 def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
@@ -14728,7 +17012,11 @@ def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
     }
     lines = p.tok.source.splitlines(keepends=True);
     text = lines[line - 1] if line > 0 and line <= len(lines) else "";
+    column = source_column(lines, line, column);
+    end_column = source_column(lines, end_line, end_column);
     import builtins;
     error_type = getattr(builtins, kind, SyntaxError);
-    raise error_type(message, (p.filename, line, column + 1, text, end_line, end_column + 1));
+    raise error_type(
+        message, (p.filename, line, column + 1, text, end_line, end_column + 1)
+    );
 }

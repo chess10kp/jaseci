@@ -265,7 +265,7 @@ def _is_id_start(ch: str) -> bool {
     if ch == "_" {
         return True;
     }
-    return False;
+    return ch.isidentifier();
 }
 
 def _is_id_continue(ch: str) -> bool {
@@ -275,7 +275,7 @@ def _is_id_continue(ch: str) -> bool {
     if ch >= "0" and ch <= "9" {
         return True;
     }
-    return False;
+    return ch != "" and ("_" + ch).isidentifier();
 }
 
 def:priv _is_digit(ch: str) -> bool {
@@ -295,7 +295,17 @@ def _advance(st: tok_state) -> str {
     }
     ch = st.source[st.pos];
     st.pos = st.pos + 1;
-    st.col_offset = st.col_offset + 1;
+    if ch == "\n" {
+        st.lineno += 1;
+        st.col_offset = 0;
+        st.line_start = st.pos;
+    } else {
+        # Python AST columns are UTF-8 byte offsets, even for decoded source.
+        point = ord(ch);
+        st.col_offset += 1
+            if point < 128
+            else (2 if point < 2048 else (3 if point < 65536 else 4));
+    }
     return ch;
 }
 
@@ -454,6 +464,31 @@ def _read_number(st: tok_state) -> tok_token {
         }
     }
     spell = st.source[start:st.pos];
+    if _is_id_start(_peek(st)) {
+        for keyword in ("and", "else", "for", "if", "in", "is", "or", "not") {
+            end = st.pos + len(keyword);
+            if st.source[st.pos:end] == keyword
+                and (end == len(st.source) or not _is_id_continue(st.source[end])) {
+                import from jaclang.compiler.frontend.python.compiler_diagnostics {
+                    syntax_warning
+                }
+                kind = "decimal";
+                if spell.lower().startswith("0x") {
+                    kind = "hexadecimal";
+                } elif spell.lower().startswith("0o") {
+                    kind = "octal";
+                } elif spell.lower().startswith("0b") {
+                    kind = "binary";
+                } elif spell.endswith(("j", "J")) {
+                    kind = "imaginary";
+                }
+                syntax_warning(
+                    f"invalid {kind} literal", st.filename, st.lineno, start_col
+                );
+                break;
+            }
+        }
+    }
     return tok_token(
         tok_type=NUMBER,
         spelling=spell,
@@ -535,23 +570,21 @@ def _string_syntax_error(st: tok_state, msg: str, start_col: int) -> tok_diag {
 }
 
 def _fstring_emit_middle(
-    st: tok_state,
-    text: str,
-    lineno: int,
-    col_offset: int,
-    end_col_offset: int
+    st: tok_state, text: str, lineno: int, col_offset: int, end_col_offset: int
 ) -> tok_token {
     return tok_token(
         tok_type=FSTRING_MIDDLE,
         spelling=text,
         lineno=lineno,
         col_offset=col_offset,
-        end_lineno=lineno,
+        end_lineno=st.lineno,
         end_col_offset=end_col_offset
     );
 }
 
-def _fstring_emit_end(st: tok_state, spelling: str, lineno: int, col_offset: int) -> tok_token {
+def _fstring_emit_end(
+    st: tok_state, spelling: str, lineno: int, col_offset: int
+) -> tok_token {
     st.fstring_active = False;
     st.fstring_quote = "";
     st.fstring_qlen = 1;
@@ -605,7 +638,9 @@ def _fstring_scan_format_spec(st: tok_state) -> tok_token | tok_diag | None {
         if ch == "{" or ch == "}" {
             if len(buf) > 0 {
                 st.fstring_resume = True;
-                return _fstring_emit_middle(st, buf, start_lineno, start_col, st.col_offset);
+                return _fstring_emit_middle(
+                    st, buf, start_lineno, start_col, st.col_offset
+                );
             }
             # Let the operator path emit LBRACE (nested field) or RBRACE
             # (field terminator) so fstring_expr_depth tracking applies.
@@ -648,7 +683,9 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
                 end_col = st.col_offset;
                 if len(buf) > 0 {
                     st.fstring_resume = True;
-                    return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+                    return _fstring_emit_middle(
+                        st, buf, start_lineno, start_col, end_col
+                    );
                 }
                 _advance(st);
                 return _fstring_emit_end(st, quote, start_lineno, start_col);
@@ -667,7 +704,9 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
                 end_col = st.col_offset;
                 if len(buf) > 0 {
                     st.fstring_resume = True;
-                    return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+                    return _fstring_emit_middle(
+                        st, buf, start_lineno, start_col, end_col
+                    );
                 }
                 j = 0;
                 while j < qlen {
@@ -713,12 +752,7 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
 }
 
 def _read_fstring_start(
-    st: tok_state,
-    start: int,
-    start_col: int,
-    raw: bool,
-    quote: str,
-    qlen: int
+    st: tok_state, start: int, start_col: int, raw: bool, quote: str, qlen: int
 ) -> tok_token | tok_diag {
     spell = st.source[start:st.pos];
     st.fstring_active = True;
@@ -742,6 +776,7 @@ def _read_fstring_start(
 
 def _read_string(st: tok_state) -> tok_token | tok_diag {
     start = st.pos;
+    start_lineno = st.lineno;
     start_col = st.col_offset;
     raw = False;
     has_f = False;
@@ -791,7 +826,7 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
                 tok = tok_token(
                     tok_type=STRING,
                     spelling=spell,
-                    lineno=st.lineno,
+                    lineno=start_lineno,
                     col_offset=start_col,
                     end_lineno=st.lineno,
                     end_col_offset=st.col_offset
@@ -837,7 +872,7 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
                 tok = tok_token(
                     tok_type=STRING,
                     spelling=spell,
-                    lineno=st.lineno,
+                    lineno=start_lineno,
                     col_offset=start_col,
                     end_lineno=st.lineno,
                     end_col_offset=st.col_offset
@@ -953,17 +988,11 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             } else {
                 _advance(st);
             }
-            st.line_start = st.pos;
-            st.lineno = st.lineno + 1;
-            st.col_offset = 0;
             continue;
         }
         if ch == "\n" {
             start_col = st.col_offset;
             _advance(st);
-            st.line_start = st.pos;
-            st.lineno = st.lineno + 1;
-            st.col_offset = 0;
             if st.paren_level > 0 {
                 # Implicit line join inside (), [], {}: newline is non-significant
                 # (NL), no NEWLINE token and no indentation processing.
@@ -985,9 +1014,6 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             if _peek(st) == "\n" {
                 _advance(st);
             }
-            st.line_start = st.pos;
-            st.lineno = st.lineno + 1;
-            st.col_offset = 0;
             if st.paren_level > 0 {
                 continue;
             }
@@ -1042,7 +1068,9 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
                         st.fstring_field_paren = st.paren_level + 1;
                     }
                 }
-                if op.tok_type == COLON and st.fstring_expr_depth == 1 and st.paren_level == st.fstring_field_paren {
+                if op.tok_type == COLON
+                    and st.fstring_expr_depth == 1
+                    and st.paren_level == st.fstring_field_paren {
                     # Top-level ':' in a replacement field starts the format
                     # spec (PEP 701); following text scans as FSTRING_MIDDLE.
                     st.fstring_in_spec = True;
@@ -1053,8 +1081,7 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
                     if st.fstring_expr_depth == 0 {
                         st.fstring_resume = True;
                         st.fstring_in_spec = False;
-                    }
-                    elif st.fstring_in_spec {
+                    } elif st.fstring_in_spec {
                         # Closing a nested field inside a spec returns to the
                         # spec text.
                         st.fstring_resume = True;
@@ -1076,7 +1103,10 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     }
     if not st.eof_newline_done and len(st.source) > 0 {
         last = st.source[len(st.source) - 1];
-        if last != "\n" and last != "\r" and st.line_has_code and not st.source.rstrip().endswith("\\") {
+        if last != "\n"
+            and last != "\r"
+            and st.line_has_code
+            and not st.source.rstrip().endswith("\\") {
             st.eof_newline_done = True;
             return tok_token(
                 tok_type=NEWLINE,

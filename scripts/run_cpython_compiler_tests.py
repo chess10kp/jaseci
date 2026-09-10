@@ -3,8 +3,9 @@
 Run through the checkout's Jac binary, for example:
     jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")'
 
-Test definitions and reference ASTs still use the host compiler. This runner
-does not prove replacement of imports, C entry points or bootstrap compilation.
+With --runtime, the patched runtime dispatches built-in compilation and source
+imports to JacPython. Test definitions are loaded before activation; bootstrap
+compilation and complete C API coverage are separate gates.
 Tests with no call to the replacement are reported as skipped, not coverage.
 No CPython test corpus is checked into this repository.
 """
@@ -54,6 +55,10 @@ def main() -> int:
     parser.add_argument(
         "--tests", nargs="+",
         help="TestSpecifics method names; default: entire class",
+    )
+    parser.add_argument(
+        "--runtime", action="store_true",
+        help="Exercise the patched C runtime instead of module-local wrappers",
     )
     args = parser.parse_args()
     sys.path.insert(0, str(fetch_tests(args.cache)))
@@ -110,9 +115,23 @@ def main() -> int:
         name: test_compile.__dict__.get(name)
         for name in ("compile", "eval", "exec")
     }
-    test_compile.compile = replacement_compile
-    test_compile.eval = replacement_eval
-    test_compile.exec = replacement_exec
+    if args.runtime:
+        import ctypes
+
+        try:
+            bridge_version = ctypes.pythonapi._PyJac_CompilerBridgeVersion
+        except AttributeError as error:
+            raise RuntimeError("Rebuild the Python runtime with the JacPython bridge") from error
+        if bridge_version() != 1:
+            raise RuntimeError("Unsupported JacPython runtime bridge version")
+        if getattr(sys, "_jacpython_compile", None) is not None:
+            raise RuntimeError("JacPython runtime dispatch is already enabled")
+        sys._jacpython_compile = replacement_compile
+    else:
+        test_compile.compile = replacement_compile
+        test_compile.eval = replacement_eval
+        test_compile.exec = replacement_exec
+    print("Compiler path:", "C runtime dispatch" if args.runtime else "direct API", flush=True)
     try:
         if args.tests:
             suite = unittest.TestSuite(
@@ -125,6 +144,8 @@ def main() -> int:
         result = unittest.TextTestRunner(verbosity=2, resultclass=Result).run(suite)
         return int(not result.wasSuccessful())
     finally:
+        if args.runtime:
+            del sys._jacpython_compile
         for name, value in original.items():
             if value is None:
                 test_compile.__dict__.pop(name, None)

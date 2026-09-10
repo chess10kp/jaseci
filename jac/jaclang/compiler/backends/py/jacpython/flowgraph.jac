@@ -74,11 +74,15 @@ import from jaclang.runtime.python.opcode_meta {
 import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     unverified_cfg,
     basicblock,
+    except_region,
     cinstr,
     mk_instr,
     instr_size_codeunits,
 }
-import from jaclang.compiler.frontend.python.compiler_diagnostics { compiler_diagnostic, internal_compiler_diagnostic, }
+import from jaclang.compiler.frontend.python.compiler_diagnostics {
+    compiler_diagnostic,
+    internal_compiler_diagnostic,
+}
 
 # Verified CFG: flat instruction stream with stack depth, ready for assembly.
 # Phase 3 adds hard errors on underflow and inconsistent joins via diag.
@@ -1125,7 +1129,8 @@ def optimize_load_fast(u: unverified_cfg) {
         ij = 0;
         while ij < len(bjt.instrs) {
             inj = bjt.instrs[ij];
-            if is_conditional_jump(inj.opcode) or is_unconditional_jump_opcode(inj.opcode) {
+            if is_conditional_jump(inj.opcode)
+                or is_unconditional_jump_opcode(inj.opcode) {
                 jump_targets.append(inj.target_block);
             }
             ij = ij + 1;
@@ -1363,7 +1368,9 @@ def ac_innermost_handler(u: unverified_cfg, pos: list[int], bid: int) -> int {
     ri = 0;
     while ri < len(u.except_regions) {
         r = u.except_regions[ri];
-        if r.start_block < 0 or r.end_block < 0 or r.start_block >= len(pos)
+        if r.start_block < 0
+            or r.end_block < 0
+            or r.start_block >= len(pos)
             or r.end_block >= len(pos) {
             ri = ri + 1;
             continue;
@@ -1429,7 +1436,8 @@ def ac_scan_block(
         # subject to the single-local oparg bound. Scoped pre-fusion (match
         # arms, bind seams) can produce them before this pass runs.
         op = ins.opcode;
-        if op == OP_STORE_FAST_STORE_FAST or op == OP_STORE_FAST_LOAD_FAST
+        if op == OP_STORE_FAST_STORE_FAST
+            or op == OP_STORE_FAST_LOAD_FAST
             or op == OP_LOAD_FAST_LOAD_FAST
             or op == OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW {
             f_lo = oparg & 15;
@@ -1465,8 +1473,8 @@ def ac_scan_block(
                         cinstr(
                             opcode=(
                                 OP_LOAD_FAST_CHECK
-                                if mask & (1 << f_lo)
-                                else OP_LOAD_FAST
+                                    if mask & (1 << f_lo)
+                                    else OP_LOAD_FAST
                             ),
                             oparg=f_lo,
                             loc=ins.loc,
@@ -1483,7 +1491,8 @@ def ac_scan_block(
         if oparg >= 0 and oparg < 64 and oparg < nlocals {
             bit = 1 << oparg;
             op = ins.opcode;
-            if op == OP_DELETE_FAST or op == OP_LOAD_FAST_AND_CLEAR
+            if op == OP_DELETE_FAST
+                or op == OP_LOAD_FAST_AND_CLEAR
                 or op == OP_STORE_FAST_MAYBE_NULL {
                 mask = mask | bit;
             } elif op == OP_STORE_FAST or op == OP_LOAD_FAST_CHECK {
@@ -1505,8 +1514,12 @@ def ac_scan_block(
         }
     }
     last = block_last_instr(b);
-    if last is not None and last.target_block >= 0
-        and (is_conditional_jump(last.opcode) or is_unconditional_jump_opcode(last.opcode)) {
+    if last is not None
+        and last.target_block >= 0
+        and (
+            is_conditional_jump(last.opcode)
+            or is_unconditional_jump_opcode(last.opcode)
+        ) {
         tb = find_block(u, last.target_block);
         if tb is not None {
             ac_maybe_push(tb.id, mask, masks, onstack, blocks_by_id, worklist);
@@ -1583,8 +1596,15 @@ def add_checks_for_uninitialized(u: unverified_cfg) {
     bi = 0;
     while bi < len(u.blocks) {
         ac_scan_block(
-            u, u.blocks[bi], pos, masks[u.blocks[bi].id], masks, onstack,
-            blocks_by_id, worklist, nlocals
+            u,
+            u.blocks[bi],
+            pos,
+            masks[u.blocks[bi].id],
+            masks,
+            onstack,
+            blocks_by_id,
+            worklist,
+            nlocals
         );
         bi = bi + 1;
     }
@@ -1592,7 +1612,9 @@ def add_checks_for_uninitialized(u: unverified_cfg) {
         b = worklist[len(worklist) - 1];
         worklist.pop();
         onstack[b.id] = False;
-        ac_scan_block(u, b, pos, masks[b.id], masks, onstack, blocks_by_id, worklist, nlocals);
+        ac_scan_block(
+            u, b, pos, masks[b.id], masks, onstack, blocks_by_id, worklist, nlocals
+        );
     }
 }
 
@@ -1669,10 +1691,74 @@ def remove_unused_consts(u: unverified_cfg, flat: list[cinstr]) {
     }
 }
 
+def normalize_except_regions(u: unverified_cfg) {
+    # CPython's exception lookup requires disjoint, sorted ranges. A nested
+    # cleanup can sit inside an enclosing handler's protected span: select the
+    # innermost span at every boundary instead of serializing overlapping rows.
+    pos = build_layout_pos(u);
+    spans: list[tuple[int, int, except_region]] = [];
+    boundaries: set[int] = set();
+    for reg in u.except_regions {
+        start = layout_pos(pos, reg.start_block);
+        end = layout_pos(pos, reg.end_block);
+        if start < 0 or end <= start or layout_pos(pos, reg.handler_block) < 0 {
+            continue;
+        }
+        spans.append((start, end, reg));
+        boundaries.add(start);
+        boundaries.add(end);
+    }
+    ordered = sorted(boundaries);
+    result: list[except_region] = [];
+    for index in range(len(ordered) - 1) {
+        start = ordered[index];
+        end = ordered[index + 1];
+        chosen: except_region | None = None;
+        chosen_start = -1;
+        chosen_end = len(u.blocks);
+        for (left, right, reg) in spans {
+            if left <= start
+                and end <= right
+                and (
+                    left > chosen_start or (left == chosen_start and right < chosen_end)
+                ) {
+                chosen = reg;
+                chosen_start = left;
+                chosen_end = right;
+            }
+        }
+        if chosen is None {
+            continue;
+        }
+        reg = chosen as except_region;
+        start_id = u.blocks[start].id;
+        end_id = u.blocks[end].id;
+        if result
+            and result[-1].end_block == start_id
+            and result[-1].handler_block == reg.handler_block
+            and result[-1].stack_depth == reg.stack_depth
+            and result[-1].preserve_lasti == reg.preserve_lasti {
+            result[-1].end_block = end_id;
+        } else {
+            result.append(
+                except_region(
+                    start_block=start_id,
+                    end_block=end_id,
+                    handler_block=reg.handler_block,
+                    stack_depth=reg.stack_depth,
+                    preserve_lasti=reg.preserve_lasti
+                )
+            );
+        }
+    }
+    u.except_regions = result;
+}
+
 def verify_cfg(u: unverified_cfg) -> verified_cfg {
     # Every code unit, including lambdas and comprehensions, must resolve its
     # staged constants before optimization or operand encoding.
     u.flush_late_consts();
+    normalize_except_regions(u);
     optimize_cfg(u);
     add_checks_for_uninitialized(u);
     fuse_flagged_stores(u);
@@ -1694,10 +1780,33 @@ def verify_cfg(u: unverified_cfg) -> verified_cfg {
     optimize_load_fast(u);
     fr = flatten_blocks(u);
     flat = fr.flat;
-    block_starts = fr.block_starts;
-    resolve_jump_offsets(flat, block_starts);
     rewrite_small_ints(u, flat);
     remove_unused_consts(u, flat);
+    # Constant remapping and LOAD_SMALL_INT change instruction widths. Resolve
+    # jumps only after those passes, then repeat while EXTENDED_ARG growth moves
+    # block boundaries. Exception tables must use this same final layout.
+    changed = True;
+    while changed {
+        fr = flatten_blocks(u);
+        flat = fr.flat;
+        block_starts = fr.block_starts;
+        sizes = [instr_size_codeunits(ins) for ins in flat];
+        resolve_jump_offsets(flat, block_starts);
+        changed = False;
+        for (index, ins) in enumerate(flat) {
+            if ins.oparg < 0 or ins.oparg > 0xFFFFFFFF {
+                return verified_cfg(
+                    unit=u,
+                    flat=[],
+                    stacksize=0,
+                    diag=stackdepth_diag("SystemError", "invalid instruction operand")
+                );
+            }
+            if instr_size_codeunits(ins) != sizes[index] {
+                changed = True;
+            }
+        }
+    }
     return verified_cfg(
         unit=u, flat=flat, block_starts=block_starts, stacksize=stacksize
     );

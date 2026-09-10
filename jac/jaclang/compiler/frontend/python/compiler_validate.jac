@@ -6,6 +6,10 @@
 # only via product_compile.jac.
 
 import from jaclang.compiler.frontend.python.ast_nodes {
+    ast_node,
+    Is,
+    IsNot,
+    Assert,
     expr,
     stmt,
     Constant,
@@ -54,6 +58,64 @@ import from jaclang.compiler.frontend.python.compiler_diagnostics {
     compiler_diagnostic,
     validation_diagnostic,
     compiler_diag_kind,
+    syntax_warning,
+}
+
+# Diagnose the source AST once, before lowering duplicates finally bodies or
+# folds constant branches. Traversal follows only AST fields, never Jac anchors.
+def check_ast_warnings(tree: ast_node, filename: str) {
+    pending = [tree];
+    while pending {
+        item_node = pending.pop();
+        if isinstance(item_node, Compare) {
+            left = item_node.left;
+            for (op, right) in zip(item_node.ops, item_node.comparators) {
+                if isinstance(op, (Is, IsNot)) {
+                    literal = None;
+                    for candidate in (left, right) {
+                        if isinstance(candidate, Constant)
+                            and candidate.value.t not in ("none", "bool", "ellipsis") {
+                            literal = candidate.value.t;
+                            break;
+                        }
+                    }
+                    if literal is not None {
+                        spelling = "is" if isinstance(op, Is) else "is not";
+                        comparison = "==" if isinstance(op, Is) else "!=";
+                        syntax_warning(
+                            f'"{spelling}" with \'{literal}\' literal. Did you mean "{comparison}"?',
+                            filename,
+                            item_node.lineno,
+                            item_node.col_offset
+                        );
+                    }
+                }
+                left = right;
+            }
+        } elif isinstance(item_node, Assert)
+            and isinstance(item_node.`test, Tuple)
+            and item_node.`test.elts {
+            syntax_warning(
+                "assertion is always true, perhaps remove parentheses?",
+                filename,
+                item_node.lineno,
+                item_node.col_offset
+            );
+        }
+        children = [];
+        for value in vars(item_node).values() {
+            if isinstance(value, ast_node) {
+                children.append(value);
+            } elif isinstance(value, list) {
+                children.extend(
+                    item
+                    for item in value
+                    if isinstance(item, ast_node)
+                );
+            }
+        }
+        pending.extend(reversed(children));
+    }
 }
 
 obj validation_result {

@@ -146,7 +146,7 @@ jobs:
           path: jac/.python-build/**/*.log
           include-hidden-files: true
 
-  # Direct-API coverage for the source-only JacPython implementation. Expand
+  # Direct-API and C-runtime coverage for the JacPython implementation. Expand
   # this upstream subset as compatibility lands; it is not the C-removal gate.
   jacpython:
     needs: [changes, build-kit]
@@ -158,18 +158,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/jac-kit
-      - name: Run pinned CPython tests through the JacPython compile API
+      - name: Run pinned CPython tests through the direct API and C runtime
         run: |
-          jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' --tests \
-            test_argument_handling test_argument_order test_bad_single_statement \
-            test_compile_filename test_compile_filename_refleak \
-            test_compile_invalid_namedexpr test_compile_invalid_typealias \
-            test_docstring test_docstring_interactive_mode test_docstring_omitted \
-            test_dont_merge_constants test_merge_constants test_encoding \
-            test_float_literals test_literals_with_leading_zeroes \
-            test_multi_line_lambda_as_argument test_none_assignment \
-            test_same_filename_used test_single_statement \
-            test_compile_redundant_jumps_and_nops_after_moving_cold_blocks
+          for bridge_mode in "" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --tests \
+              test_argument_handling test_argument_order test_bad_single_statement \
+              test_compile_filename test_compile_filename_refleak \
+              test_compile_invalid_namedexpr test_compile_invalid_typealias \
+              test_docstring test_docstring_interactive_mode test_docstring_omitted \
+              test_dont_merge_constants test_merge_constants test_encoding \
+              test_float_literals test_literals_with_leading_zeroes \
+              test_multi_line_lambda_as_argument test_none_assignment \
+              test_same_filename_used test_single_statement \
+              test_big_dict_literal test_remove_unused_consts_extended_args \
+              test_compile_warnings test_compile_warning_in_finally test_int_literals_too_long \
+              test_condition_expression_with_redundant_comparisons_compiles \
+              test_compare_positions test_other_newlines \
+              test_compile_redundant_jumps_and_nops_after_moving_cold_blocks
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

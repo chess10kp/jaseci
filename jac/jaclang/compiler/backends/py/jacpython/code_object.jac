@@ -3,8 +3,19 @@ import os;
 import operator;
 import from types { CodeType }
 import from jaclang.runtime.python.objects {
-    PyObj, PyNoneType, PyBool, PyInt, PyFloat, PyComplex, PyStr,
-    PyBytes, PyTuple, PySet, PySlice, PyCode, PyEllipsis
+    PyObj,
+    PyNoneType,
+    PyBool,
+    PyInt,
+    PyFloat,
+    PyComplex,
+    PyStr,
+    PyBytes,
+    PyTuple,
+    PySet,
+    PySlice,
+    PyCode,
+    PyEllipsis
 }
 
 def constant_value(value: PyObj, constants: dict[str, any] | None = None) -> any {
@@ -48,11 +59,14 @@ def _constant_value(value: PyObj, constants: dict[str, any]) -> any {
         return tuple(constant_value(item, constants) for item in value.items);
     }
     if isinstance(value, PySet) and value.frozen {
-        return frozenset(constant_value(item, constants) for item in value.items.values());
+        return frozenset(
+            constant_value(item, constants) for item in value.items.values()
+        );
     }
     if isinstance(value, PySlice) {
         return slice(
-            constant_value(value.start, constants), constant_value(value.stop, constants),
+            constant_value(value.start, constants),
+            constant_value(value.stop, constants),
             constant_value(value.step, constants)
         );
     }
@@ -70,26 +84,44 @@ def code_object(code: PyCode, constants: dict[str, any] | None = None) -> CodeTy
         constants = {};
     }
     return CodeType(
-        code.argcount, code.posonlyargcount, code.kwonlyargcount,
-        len(code.varnames), code.stacksize, code.flags,
+        code.argcount,
+        code.posonlyargcount,
+        code.kwonlyargcount,
+        len(code.varnames),
+        code.stacksize,
+        code.flags,
         bytes(code.co_code),
         constant_value(PyTuple(t="tuple", items=code.consts), constants),
-        tuple(code.names), tuple(code.varnames),
-        code.filename, code.name, code.qualname, code.firstlineno,
-        bytes(code.linetable), bytes(code.exceptiontable),
-        tuple(code.freevars), tuple(code.cellvars)
+        tuple(code.names),
+        tuple(code.varnames),
+        code.filename,
+        code.name,
+        code.qualname,
+        code.firstlineno,
+        bytes(code.linetable),
+        bytes(code.exceptiontable),
+        tuple(code.freevars),
+        tuple(code.cellvars)
     );
 }
 
 def compile_python(
-    source: any, filename: any, mode: str, flags: int = 0,
-    dont_inherit: bool = False, optimize: int = -1
+    source: any,
+    filename: any,
+    mode: str,
+    flags: int = 0,
+    dont_inherit: bool = False,
+    optimize: int = -1
 ) -> any {
     import ast;
     import builtins;
-    import from jaclang.compiler.frontend.python.ast_bridge { from_python_ast, to_python_ast }
+    import from jaclang.compiler.frontend.python.ast_bridge {
+        from_python_ast,
+        to_python_ast
+    }
     import from jaclang.compiler.backends.py.jacpython.product_compile {
-        compile_source, compile_ast
+        compile_source,
+        compile_ast
     }
     import from jaclang.runtime.python.objects { PyError }
     filename = os.fsdecode(os.fspath(filename));
@@ -101,7 +133,10 @@ def compile_python(
     }
     flags = operator.index(flags);
     optimize = operator.index(optimize);
-    if flags < -(1 << 31) or flags >= (1 << 31) or optimize < -(1 << 31) or optimize >= (1 << 31) {
+    if flags < -(1 << 31)
+        or flags >= (1 << 31)
+        or optimize < -(1 << 31)
+        or optimize >= (1 << 31) {
         raise OverflowError("Python int too large to convert to C int");
     }
     dont_inherit = bool(dont_inherit);
@@ -127,7 +162,9 @@ def compile_python(
             try {
                 raw = bytes(memoryview(source));
             } except TypeError {
-                raise TypeError("compile() arg 1 must be a string, bytes or AST object");
+                raise TypeError(
+                    "compile() arg 1 must be a string, bytes or AST object"
+                );
             }
             if b"\x00" in raw {
                 raise SyntaxError("source code string cannot contain null bytes");
@@ -148,7 +185,9 @@ def compile_python(
         }
         if flags & ast.PyCF_ONLY_AST {
             import from jaclang.compiler.frontend.python.parser {
-                parse_file, parse_eval_source, parse_interactive
+                parse_file,
+                parse_eval_source,
+                parse_interactive
             }
             if mode == "exec" {
                 tree = parse_file(source, filename);
@@ -166,6 +205,21 @@ def compile_python(
     }
     if isinstance(result, PyError) {
         error_type = getattr(builtins, result.exception.type_name, RuntimeError);
+        if issubclass(error_type, SyntaxError)
+            and "lineno" in result.exception.type_fields {
+            line = constant_value(result.exception.type_fields["lineno"]);
+            column = constant_value(result.exception.type_fields["offset"]) - 1;
+            lines = source.splitlines(keepends=True) if isinstance(source, str) else [];
+            text = lines[line - 1] if line <= len(lines) else None;
+            if text is not None {
+                column = len(
+                    text.encode("utf-8")[:column].decode("utf-8", errors="ignore")
+                );
+            }
+            raise error_type(
+                result.exception.message, (filename, line, column + 1, text)
+            );
+        }
         raise error_type(result.exception.message);
     }
     if not isinstance(result, PyCode) {

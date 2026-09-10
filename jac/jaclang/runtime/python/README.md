@@ -41,8 +41,18 @@ compiler-specific values and helpers are separated from interpreter behavior.
 still needs adaptation to CPython's result objects.
 
 The Jac interpreter, standard-library replacements, guest import machinery and
-host-compiler subprocess bridge have been removed. Runtime compilation APIs,
-source imports, C entry points and bootstrap loading still need integration.
+host-compiler subprocess bridge have been removed. The source-built CPython now
+includes an opt-in C adapter in `bootstrap/python/compiler-bridge.patch`.
+After loading the Jac compiler, setting `sys._jacpython_compile = compile_python`
+routes built-in source/AST compilation, `eval`, `exec`, source imports and the
+C string/file compilation APIs through it. Adapter errors propagate to callers;
+covered entry points do not retry with the C compiler. Removing the callback
+restores the default compiler. This development switch requires the source
+checkout; replacement sources are still excluded from the sealed runtime.
+
+Interactive C entry points, internal AST compilation and cold bootstrap loading
+still need integration. The adapter preserves CPython's execution engine and
+does not remove its C compiler from the build.
 The development API does not yet implement the complete compile-flag, future,
 diagnostic and syntax contracts. No CPython source allowlist entries have been
 retired by this bridge.
@@ -59,12 +69,14 @@ checkout.
 
 Bundled JacPython test suites and fixtures have been removed. The `jacpython` CI
 job fetches the checksum-pinned upstream CPython tests and runs a focused subset
-through the explicit compile API. `scripts/run_cpython_compiler_tests.py` runs the
+through both the explicit compile API and the patched C runtime (`--runtime`).
+`scripts/run_cpython_compiler_tests.py` runs the
 whole `TestSpecifics` class when invoked without `--tests`; compatibility gaps
 remain in that broader suite. Tests with no replacement calls are reported as
-skipped. Test definitions and reference ASTs still use CPython, so this does not
-prove replacement of C entry points or bootstrap. Jac's own compiler and runtime
-regression suites remain.
+skipped. Test definitions load before runtime dispatch is enabled. The direct
+path also retains CPython for reference ASTs; the runtime path routes those AST
+requests through JacPython. Neither lane proves cold bootstrap or full language
+compatibility. Jac's own compiler and runtime regression suites remain.
 
 [`LICENSE.cpython`](LICENSE.cpython) applies to CPython-derived code and generated
 sources across these packages. File headers identify their upstream origins.

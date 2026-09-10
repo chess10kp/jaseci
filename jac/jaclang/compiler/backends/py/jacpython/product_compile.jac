@@ -1,12 +1,32 @@
 # Python source/AST -> PyCode through Jac validation, codegen and assembly.
 
 import from jaclang.runtime.python.objects { PyObj, py_error, is_error }
-import from jaclang.compiler.frontend.python.parser { parse_eval_expr, parse_file, parse_interactive }
-import from jaclang.compiler.frontend.python.ast_nodes { expr, mod, Expr, Expression, Module, Interactive }
-import from jaclang.compiler.frontend.python.compiler_validate { validate_eval_expr, validate_module_body }
+import from jaclang.compiler.frontend.python.parser {
+    parse_eval_expr,
+    parse_file,
+    parse_interactive
+}
+import from jaclang.compiler.frontend.python.ast_nodes {
+    expr,
+    mod,
+    Expr,
+    Expression,
+    Module,
+    Interactive
+}
+import from jaclang.compiler.frontend.python.compiler_validate {
+    validate_eval_expr,
+    validate_module_body,
+    check_ast_warnings
+}
 import from jaclang.compiler.frontend.python.compiler_symtable { build_module_symtable }
-import from jaclang.compiler.frontend.python.compiler_diagnostics { compiler_diag_to_pyobj }
-import from jaclang.compiler.backends.py.jacpython.compiler_codegen { compile_eval, compile_exec }
+import from jaclang.compiler.frontend.python.compiler_diagnostics {
+    compiler_diag_to_pyobj
+}
+import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
+    compile_eval,
+    compile_exec
+}
 # Statement-dispatch siblings: imported for their load-time registration into
 # the compiler_dispatch leaf (see compiler_dispatch.jac); without these edges
 # a compile of any compound statement would call an unwired handler slot.
@@ -39,7 +59,9 @@ def compile_source(source: str, filename: str, mode: str, optimize: int) -> PyOb
             if tree is None {
                 result = py_error("SyntaxError", "invalid syntax");
             } else {
-                result = compile_exec_ast(Module(body=tree.body, type_ignores=[]), filename, True);
+                result = compile_exec_ast(
+                    Module(body=tree.body, type_ignores=[]), filename, True
+                );
             }
         } else {
             result = compile_exec_path(source, filename, mode);
@@ -65,7 +87,9 @@ def compile_ast(tree: mod, filename: str, mode: str, optimize: int = 0) -> PyObj
         } elif mode == "exec" and isinstance(tree, Module) {
             result = compile_exec_ast(tree, filename);
         } elif mode == "single" and isinstance(tree, Interactive) {
-            result = compile_exec_ast(Module(body=tree.body, type_ignores=[]), filename, True);
+            result = compile_exec_ast(
+                Module(body=tree.body, type_ignores=[]), filename, True
+            );
         } else {
             result = py_error("TypeError", "AST root does not match compilation mode");
         }
@@ -96,10 +120,18 @@ def compile_eval_ast(e: expr, filename: str) -> PyObj {
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
     }
-    sr = build_module_symtable([
-        Expr(value=e, lineno=e.lineno, col_offset=e.col_offset,
-             end_lineno=e.end_lineno, end_col_offset=e.end_col_offset)
-    ]);
+    check_ast_warnings(e, filename);
+    sr = build_module_symtable(
+        [
+            Expr(
+                value=e,
+                lineno=e.lineno,
+                col_offset=e.col_offset,
+                end_lineno=e.end_lineno,
+                end_col_offset=e.end_col_offset
+            )
+        ]
+    );
     if sr.diag is not None {
         return compiler_diag_to_pyobj(sr.diag);
     }
@@ -135,6 +167,7 @@ def compile_exec_ast(m: Module, filename: str, interactive: bool = False) -> PyO
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
     }
+    check_ast_warnings(m, filename);
     sr = build_module_symtable(m.body);
     if sr.diag is not None {
         return compiler_diag_to_pyobj(sr.diag);
