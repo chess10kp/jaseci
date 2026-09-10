@@ -13,5 +13,5 @@
 #
 # A dict holder rather than per-slot scalar globs -- a glob rebound inside a
 # function is scoped local and never persists; item assignment mutates the
-# holder in place (see the layer3_flag note in ceval.jac).
+# holder in place so imported references observe the registration.
 glob stmt_handlers: dict[str, any] = {};

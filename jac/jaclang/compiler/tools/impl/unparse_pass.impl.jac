@@ -77,10 +77,6 @@ impl UnparsePass.exit_float with uni.Float exit {
     here.gen.jac = here.value;
 }
 
-impl UnparsePass.exit_complex(nd: uni.Complex) -> None {
-    nd.gen.jac = nd.value;
-}
-
 impl UnparsePass.exit_bool with uni.Bool exit {
     here.gen.jac = here.value;
 }

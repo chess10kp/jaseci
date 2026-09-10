@@ -12,19 +12,6 @@ impl TypeEvaluator._walk_compr_clauses(comprs: list[InnerCompr]) -> None {
     }
 }
 
-# Resolve a universal identity/introspection dunder (`__class__`, `__doc__`,
-# ...) from `object` when the concrete type doesn't declare it itself. CPython
-# answers these on every object -- None included -- so `exc.__cause__.__class__`
-# (typed `BaseException | None`) must not report NoneType as missing the attr.
-impl TypeEvaluator._universal_attr_member(attr: str) -> ClassMember | None {
-    if attr not in _universal_attr_names() or self.prefetch.object_class is None {
-        return None;
-    }
-    return self._lookup_object_member(
-        self.prefetch.object_class.clone_as_instance(), attr
-    );
-}
-
 impl TypeEvaluator._null_ok_attr_type(
     expr: AtomTrailer, base_type: (TypeBase | None) = None
 ) -> TypeBase {
@@ -167,11 +154,6 @@ impl TypeEvaluator._get_type_of_expression_core(
         case Float():
             if self.prefetch {
                 return self._convert_to_instance(self.get_type_of_float(expr));
-            }
-
-        case Complex():
-            if self.prefetch {
-                return self._convert_to_instance(self.get_type_of_complex(expr));
             }
 
         case Null():
@@ -1188,25 +1170,6 @@ impl TypeEvaluator._get_type_of_expression_core(
                                     decl_for_ide = member.symbol.decl;
                                 }
                                 continue;
-                            } elif member
-                                := self._universal_attr_member(expr.right.value) {
-                                # Universal dunder on a member that doesn't
-                                # declare it (NoneType.__class__, ...): resolve
-                                # from `object` rather than flagging missing.
-                                if prop_ret
-                                    := self.get_getter_type_from_property(
-                                        member.symbol
-                                    ) {
-                                    member_types.append(prop_ret);
-                                } else {
-                                    member_types.append(
-                                        self.get_type_of_symbol(member.symbol)
-                                    );
-                                }
-                                if decl_for_ide is None {
-                                    decl_for_ide = member.symbol.decl;
-                                }
-                                continue;
                             }
                         }
                         missing_types.append(str(union_member));
@@ -1321,13 +1284,32 @@ impl TypeEvaluator._get_type_of_expression_core(
                             return UnknownType();
                         }
                     }
-                    if member := self._universal_attr_member(attr_name) {
-                        self._set_symbol_to_expr(expr.right, member.symbol);
-                        if prop_ret
-                            := self.get_getter_type_from_property(member.symbol) {
-                            return prop_ret;
+                    universal_attrs = {
+                        "__class__",
+                        "__doc__",
+                        "__dict__",
+                        "__module__",
+                        "__sizeof__",
+                        "__str__",
+                        "__repr__",
+                        "__hash__",
+                        "__eq__",
+                        "__ne__",
+                        "__init__",
+                        "__new__"
+                    };
+                    if attr_name in universal_attrs {
+                        if self.prefetch.object_class {
+                            if member
+                                := self._lookup_object_member(
+                                    self.prefetch.object_class.clone_as_instance(),
+                                    attr_name
+                                ) {
+                                self._set_symbol_to_expr(expr.right, member.symbol);
+                                return self.get_type_of_symbol(member.symbol);
+                            }
                         }
-                        return self.get_type_of_symbol(member.symbol);
+                        return UnknownType();
                     }
                     self.emit_diag(E1031, expr, attr=attr_name, type=base_type.name);
                     return UnknownType();
@@ -2661,12 +2643,6 @@ impl TypeEvaluator._get_type_of_symbol_decl(
             if isinstance(node_.parent, (InForStmt, InnerCompr)) {
                 collection_type = self.get_type_of_expression(node_.parent.collection);
 
-                if isinstance(collection_type, AnyType)
-                    and collection_type.is_foreign {
-                    node_.type = collection_type;
-                    return collection_type;
-                }
-
                 if self.is_any_type(collection_type)
                     and self.prefetch.any_class is not None {
                     node_.type = self.prefetch.any_class;
@@ -3056,9 +3032,6 @@ impl TypeEvaluator.get_type_of_magic_method_call(
             return UnionType(types=result_types);
         }
         return None;
-    }
-    if isinstance(obj_type, AnyType) and obj_type.is_foreign {
-        return AnyType(is_foreign=True);
     }
     if obj_type.category == TypeCategory.Class {
         assert isinstance(obj_type, ClassType);
@@ -4202,29 +4175,6 @@ impl TypeEvaluator._init_prelude_from_sources -> list[Module] {
         na_builtins_mod,
         js_globals_mod
     ];
-}
-
-# CPython answers these identity/introspection dunders on EVERY object --
-# None included -- so attribute access on a union like
-# `exc.__cause__.__class__` (typed `BaseException | None`) must resolve them
-# on the NoneType half instead of reporting "attribute is missing".
-def _universal_attr_names -> frozenset[str] {
-    return frozenset(
-        {
-            "__class__",
-            "__doc__",
-            "__dict__",
-            "__module__",
-            "__sizeof__",
-            "__str__",
-            "__repr__",
-            "__hash__",
-            "__eq__",
-            "__ne__",
-            "__init__",
-            "__new__"
-        }
-    );
 }
 
 def _find_cfg_node_for(at_node: UniNode) -> UniCFGNode | None {

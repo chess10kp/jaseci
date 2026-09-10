@@ -484,16 +484,6 @@ impl Lexer.scan_number -> LexToken {
                 and (self.is_hex_digit(self.current()) or self.current() == "_") {
                 value += self.advance();
             }
-            if self.current() == "j" or self.current() == "J" {
-                self.error(
-                    "complex suffix 'j' is not allowed on hexadecimal literals",
-                    start_line,
-                    start_col,
-                    start_pos,
-                    code_str="E0002"
-                );
-                self.advance();
-            }
             return self.make_token(kind, value, start_line, start_col, start_pos);
         } elif self.current() == "b" or self.current() == "B" {
             value += self.advance();
@@ -506,16 +496,6 @@ impl Lexer.scan_number -> LexToken {
                 ) {
                 value += self.advance();
             }
-            if self.current() == "j" or self.current() == "J" {
-                self.error(
-                    "complex suffix 'j' is not allowed on binary literals",
-                    start_line,
-                    start_col,
-                    start_pos,
-                    code_str="E0002"
-                );
-                self.advance();
-            }
             return self.make_token(kind, value, start_line, start_col, start_pos);
         } elif self.current() == "o" or self.current() == "O" {
             value += self.advance();
@@ -527,16 +507,6 @@ impl Lexer.scan_number -> LexToken {
                     or self.current() == "_"
                 ) {
                 value += self.advance();
-            }
-            if self.current() == "j" or self.current() == "J" {
-                self.error(
-                    "complex suffix 'j' is not allowed on octal literals",
-                    start_line,
-                    start_col,
-                    start_pos,
-                    code_str="E0002"
-                );
-                self.advance();
             }
             return self.make_token(kind, value, start_line, start_col, start_pos);
         }
@@ -567,11 +537,6 @@ impl Lexer.scan_number -> LexToken {
             value += self.advance();
         }
     }
-
-    if self.current() == "j" or self.current() == "J" {
-        kind = TokenKind.IMAG;
-        value += self.advance();
-    }
     return self.make_token(kind, value, start_line, start_col, start_pos);
 }
 
@@ -595,13 +560,7 @@ impl Lexer.scan_leading_dot_float -> LexToken {
             value += self.advance();
         }
     }
-
-    kind = TokenKind.FLOAT;
-    if self.current() == "j" or self.current() == "J" {
-        kind = TokenKind.IMAG;
-        value += self.advance();
-    }
-    return self.make_token(kind, value, start_line, start_col, start_pos);
+    return self.make_token(TokenKind.FLOAT, value, start_line, start_col, start_pos);
 }
 
 impl Lexer.scan_string(quote: str) -> LexToken {

@@ -24,7 +24,6 @@ import from jaclang.compiler.frontend.unitree {
     CfgExpr,
     CodeBlockStmt,
     CompareExpr,
-    Complex,
     ConcurrentExpr,
     CtrlStmt,
     DictCompr,
@@ -39,11 +38,11 @@ import from jaclang.compiler.frontend.unitree {
     Except,
     Expr,
     ExprStmt,
+    FString,
     FilterCompr,
     Float,
     ForeverStmt,
     FormattedValue,
-    FString,
     FuncCall,
     FuncSignature,
     GenCompr,
@@ -52,8 +51,8 @@ import from jaclang.compiler.frontend.unitree {
     IfStmt,
     ImplDef,
     Import,
-    IndexSlice,
     InForStmt,
+    IndexSlice,
     InnerCompr,
     Int,
     IterForStmt,
@@ -111,7 +110,7 @@ import from jaclang.compiler.frontend.unitree {
     UniScopeNode,
     WhileStmt,
     WithStmt,
-    YieldExpr,
+    YieldExpr
 }
 import from jaclang.compiler.frontend.constant {
     TOKEN_MAP,
@@ -592,7 +591,6 @@ walker TypeEvaluator {
     ) -> TypeBase;
 
     def _walk_compr_clauses(comprs: list[InnerCompr]) -> None;
-    def _universal_attr_member(attr: str) -> ClassMember | None;
     def _null_ok_attr_type(
         expr: AtomTrailer, base_type: (TypeBase | None) = None
     ) -> TypeBase;

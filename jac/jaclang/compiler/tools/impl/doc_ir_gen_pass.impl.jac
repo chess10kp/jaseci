@@ -340,10 +340,6 @@ impl DocIRGenPass.exit_float with uni.Float exit {
     here.gen.doc_ir = self.text(here.value, source_token=here);
 }
 
-impl DocIRGenPass.exit_complex(nd: uni.Complex) -> None {
-    nd.gen.doc_ir = self.text(nd.value, source_token=nd);
-}
-
 impl DocIRGenPass.exit_builtin_type with uni.BuiltinType exit {
     here.gen.doc_ir = self.text(here.value, source_token=here);
 }
@@ -2190,9 +2186,7 @@ impl DocIRGenPass.exit_import with uni.Import exit {
             parts.append(i.gen.doc_ir);
         } elif (isinstance(i, uni.Token) and (i.name == Tok.RBRACE)) {
             is_in_items = False;
-            if mod_items {
-                mod_items.pop();
-            }
+            mod_items.pop();
             parts.append(
                 self.group(
                     self.concat(
@@ -2404,20 +2398,6 @@ impl DocIRGenPass.is_within(
     return (first and last);
 }
 
-impl DocIRGenPass.is_body_member(
-    kid_node: uni.UniNode, block: Sequence[uni.UniNode]
-) -> bool {
-    if not block {
-        return False;
-    }
-    for member in block {
-        if kid_node is member {
-            return True;
-        }
-    }
-    return False;
-}
-
 impl DocIRGenPass.add_body_stmt_with_spacing(
     body_parts: list[doc.DocType], current: uni.UniNode, previous: (uni.UniNode | None)
 ) -> None {
@@ -2472,7 +2452,7 @@ impl DocIRGenPass.format_simple_stmt_with_body(
     body_parts: list[doc.DocType] = [self.hard_line()];
     prev_body_item: (uni.UniNode | None) = None;
     for i in nd.kid {
-        if (isinstance(body, Sequence) and self.is_body_member(i, body)) {
+        if (isinstance(body, Sequence) and self.is_within(i, body)) {
             if (body and (i == body[0])) {
                 parts.append(self.indent(self.concat(body_parts), ast_node=nd));
                 parts.append(self.hard_line());
@@ -2579,7 +2559,7 @@ impl DocIRGenPass._assign_else_doc_ir(
     parts: list[doc.DocType] = [];
     body_parts: list[doc.DocType] = [self.hard_line()];
     for i in nd.kid {
-        if (isinstance(body, Sequence) and self.is_body_member(i, body)) {
+        if (isinstance(body, Sequence) and self.is_within(i, body)) {
             if (i == body[0]) {
                 parts.append(self.indent(self.concat(body_parts), ast_node=nd));
                 parts.append(self.hard_line());

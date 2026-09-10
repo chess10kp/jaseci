@@ -22,7 +22,6 @@ import from jaclang.compiler.frontend.unitree {
     CodeBlockStmt,
     CommentToken,
     CompareExpr,
-    Complex,
     ConcurrentExpr,
     ConnectOp,
     ContextAwareNode,
@@ -569,7 +568,6 @@ walker JcirGenPass(BaseAstGenPass[CgItem]) {
     can exit_binary_expr with BinaryExpr exit;
     def translate_jac_bin_op(nd: BinaryExpr) -> list;
     can exit_compare_expr with CompareExpr exit;
-    can exit_complex with Complex exit;
     can exit_cfg_expr with CfgExpr exit;
     can exit_bool_expr with BoolExpr exit;
     can enter_lambda_expr with LambdaExpr entry;

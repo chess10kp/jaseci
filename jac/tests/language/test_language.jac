@@ -295,18 +295,6 @@ test "tuple unpack" {
     assert "[2, 3, 4]" in lines[1];
 }
 
-test "complex number literals" {
-    output = run_jac(os.path.join(FIXTURES, "complex_literals.jac"));
-    lines = output.split("\n");
-    assert lines[0] == "1j";
-    assert lines[1] == "0.5j";
-    assert lines[2] == "0.001";
-    assert lines[3] == "10000j";
-    assert lines[4] == "0.0";
-    assert lines[5] == "(-0-2j)";
-    assert lines[6] == "(-4+3j)";
-}
-
 test "trailing comma" {
     output = run_jac(os.path.join(FIXTURES, "trailing_comma.jac"));
     assert "Code compiled and ran successfully!" in output;
@@ -725,19 +713,6 @@ test "unicode string literals" {
     assert "Raw string with ✓ and ○" in lines[4];
     assert "Tab ✓" in lines[5];
     assert "Newline ○" in lines[6];
-}
-
-test "lone surrogate string literals" {
-    output = run_jac(os.path.join(FIXTURES, "lone_surrogate_strings.jac"));
-    lines = output.split("\n");
-    assert lines[0] == "1";
-    assert lines[1] == "True";
-    assert lines[2] == "2";
-    assert lines[3] == "True";
-    assert lines[4] == "3";
-    assert lines[5] == "True";
-    assert lines[6] == "True";
-    assert lines[7] == "True";
 }
 
 test "spawn loc list" {

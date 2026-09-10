@@ -2,8 +2,8 @@
 #
 # Holds compilation-scoped mutable state (pending_break_finishes, active flag)
 # so failed or nested compiles cannot leak process-global residue. Stack slots
-# use the list-holder idiom from layer3_flag in ceval.jac; registry validation
-# runs once before the first product compile.
+# use list holders for shared state; registry validation runs once before
+# the first product compile.
 
 import from jaclang.runtime.python.objects { py_error, PyObj, py_none }
 import from jaclang.compiler.backends.py.jacpython.compiler_ir {

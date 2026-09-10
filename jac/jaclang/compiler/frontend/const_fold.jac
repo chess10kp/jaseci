@@ -2,7 +2,6 @@ import from jaclang.compiler.frontend.unitree {
     AtomUnit,
     BinaryExpr,
     Bool,
-    Complex,
     Float,
     Int,
     MultiString,
@@ -15,7 +14,7 @@ def fold_const(expr: (UniNode | None)) -> tuple[(bool, any)] {
     if expr is None {
         return (False, None);
     }
-    if isinstance(expr, Int) or isinstance(expr, Float) or isinstance(expr, Complex) {
+    if isinstance(expr, Int) or isinstance(expr, Float) {
         return (True, expr.lit_value);
     }
     if isinstance(expr, Bool) {

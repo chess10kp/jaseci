@@ -1,14 +1,9 @@
-# jacpython object core -- the na-clean leaf (the original development plan §5, §4 module note).
+# Shared values, diagnostics and code objects for the Python compiler.
 #
-# This module is the acyclic base of the runtime: the PyObj hierarchy's DATA
-# types and their value/container slots, plus pure helpers. It has NO imports,
-# NO host calls, and NO eval -- so it is native-compilable (T7). The callable/
-# heap/proxy types (PyFunction/PyClass/PyUserObj/PyHostProxy) live in the ceval
-# module and OVERRIDE these slots via cross-module inheritance; the marshal
-# reader and ceval import FROM here. Jac forbids import cycles, so anything that
-# reaches the host or re-enters the interpreter must stay out of this file.
-# The one allowed import is opcode_meta -- itself a na-clean leaf (no imports,
-# no host calls) -- so the NB_* binop kinds have a single named definition.
+# The frontend and backend still use this PyObj hierarchy and its constant
+# helpers. It was shared with the removed Jac interpreter; retain its behavior
+# until compiler values can be separated from the remaining object slots.
+# Its only import is opcode_meta, which defines the NB_* operation kinds.
 import from jaclang.runtime.python.opcode_meta {
     NB_ADD,
     NB_AND,

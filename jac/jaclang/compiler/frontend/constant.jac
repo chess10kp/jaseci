@@ -385,7 +385,6 @@ class Tokens(StrEnum) {
         HEX = 'HEX';
         BIN = 'BIN';
         OCT = 'OCT';
-        IMAG = 'IMAG';
         NULL = 'NULL';
         NAME = 'NAME';
         KWESC_NAME = 'KWESC_NAME';
@@ -645,7 +644,6 @@ glob TOKEN_MAP: dict[str, str] = {
          'GT': '>',
          'GTE': '>=',
          'HEX': '0x',
-         'IMAG': '0j',
          'INT': '0',
          'JSX_CLOSE_START': '</',
          'JSX_FRAG_CLOSE': '</>',

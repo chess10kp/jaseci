@@ -315,20 +315,6 @@ impl Parser.make_float(tok: LexToken) -> Float {
     );
 }
 
-impl Parser.make_complex(tok: LexToken) -> Complex {
-    return Complex(
-        orig_src=self.source,
-        name=Tok.IMAG.value,
-        value=tok.value,
-        line=tok.loc.line,
-        end_line=tok.loc.end_line,
-        col_start=tok.loc.col_start,
-        col_end=tok.loc.col_end,
-        pos_start=tok.loc.pos_start,
-        pos_end=tok.loc.pos_end
-    );
-}
-
 impl Parser.make_bool(tok: LexToken) -> Bool {
     return Bool(
         orig_src=self.source,
@@ -845,15 +831,6 @@ impl Parser.parse_term -> Expr {
 }
 
 impl Parser.parse_power -> Expr {
-    # Match Python grammar: u_expr ::= power | "-" u_expr | "+" u_expr | "~" u_expr
-    # and power ::= primary ["**" u_expr], so `**` binds tighter than unary
-    # operators (e.g. -2**100 parses as -(2**100)).
-    if self.check_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS) {
-        tok = self.expect_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS);
-        op = self.make_uni_token(tok);
-        operand = self.parse_power();
-        return UnaryExpr(operand=operand, op=op, kid=[op, operand]);
-    }
     left = self.parse_factor();
     if self.match_tok(TokenKind.STAR_POW) {
         op = self.make_uni_token(self.previous());
@@ -864,6 +841,12 @@ impl Parser.parse_power -> Expr {
 }
 
 impl Parser.parse_factor -> Expr {
+    if self.check_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS) {
+        tok = self.expect_any(TokenKind.BW_NOT, TokenKind.MINUS, TokenKind.PLUS);
+        op = self.make_uni_token(tok);
+        operand = self.parse_factor();
+        return UnaryExpr(operand=operand, op=op, kid=[op, operand]);
+    }
     return self.parse_connect();
 }
 
@@ -1651,10 +1634,6 @@ impl Parser.parse_atom_literal -> Expr | None {
         tok = self.expect(TokenKind.FLOAT);
         return self.make_float(tok);
     }
-    if self.check(TokenKind.IMAG) {
-        tok = self.expect(TokenKind.IMAG);
-        return self.make_complex(tok);
-    }
     if self.check(TokenKind.BOOL) {
         tok = self.expect(TokenKind.BOOL);
         return self.make_bool(tok);
@@ -1845,7 +1824,6 @@ impl Parser.parse_atom -> Expr {
         TokenKind.BIN,
         TokenKind.OCT,
         TokenKind.FLOAT,
-        TokenKind.IMAG,
         TokenKind.BOOL,
         TokenKind.NULL,
         TokenKind.ELLIPSIS
@@ -4424,7 +4402,7 @@ impl Parser.parse_single_pattern -> MatchPattern {
         return MatchSingleton(value=nval, kid=[nval]);
     }
 
-    if self.check_any(TokenKind.INT, TokenKind.FLOAT, TokenKind.IMAG, TokenKind.MINUS)
+    if self.check_any(TokenKind.INT, TokenKind.FLOAT, TokenKind.MINUS)
         or self.check(TokenKind.STRING) {
         return self.parse_literal_pattern();
     }
@@ -4488,16 +4466,6 @@ impl Parser.parse_literal_pattern -> MatchValue {
                 kid=[self.make_uni_token(minus_tok), fnum]
             );
             return MatchValue(value=mfval, kid=[mfval]);
-        }
-        if self.check(TokenKind.IMAG) {
-            tok = self.expect(TokenKind.IMAG);
-            cnum = self.make_complex(tok);
-            mcval = UnaryExpr(
-                operand=cnum,
-                op=self.make_uni_token(minus_tok),
-                kid=[self.make_uni_token(minus_tok), cnum]
-            );
-            return MatchValue(value=mcval, kid=[mcval]);
         }
     }
 
@@ -4693,16 +4661,6 @@ impl Parser.parse_literal_for_mapping -> MatchPattern | NameAtom | None {
                 kid=[self.make_uni_token(minus_tok), fnum]
             );
             return MatchValue(value=mfval, kid=[mfval]);
-        }
-        if self.check(TokenKind.IMAG) {
-            tok = self.expect(TokenKind.IMAG);
-            cnum = self.make_complex(tok);
-            mcval = UnaryExpr(
-                operand=cnum,
-                op=self.make_uni_token(minus_tok),
-                kid=[self.make_uni_token(minus_tok), cnum]
-            );
-            return MatchValue(value=mcval, kid=[mcval]);
         }
     }
 

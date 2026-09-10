@@ -29,7 +29,6 @@ import from jaclang.compiler.frontend.unitree {
     CfgExpr,
     CodeBlockStmt,
     CompareExpr,
-    Complex,
     ConcurrentExpr,
     ConnectOp,
     ContextAwareNode,
@@ -156,7 +155,6 @@ glob TOKEN_KIND_TO_TOK: dict[TokenKind, str] = {
          TokenKind.BIN: Tok.BIN.value,
          TokenKind.OCT: Tok.OCT.value,
          TokenKind.FLOAT: Tok.FLOAT.value,
-         TokenKind.IMAG: Tok.IMAG.value,
          TokenKind.STRING: Tok.STRING.value,
          TokenKind.BOOL: Tok.BOOL.value,
          TokenKind.NULL: Tok.NULL.value,
@@ -430,7 +428,6 @@ obj Parser {
     def make_string_from_value(value: str) -> String;
     def make_int(tok: LexToken) -> Int;
     def make_float(tok: LexToken) -> Float;
-    def make_complex(tok: LexToken) -> Complex;
     def make_bool(tok: LexToken) -> Bool;
     def make_null(tok: LexToken) -> Null;
     def make_ellipsis(tok: LexToken) -> EllipsisLit;
