@@ -323,19 +323,23 @@ jobs:
           restore-keys: |
             jac-precompiled-${{ runner.os }}-${{ runner.arch }}-c${{ steps.compiler-fp.outputs.fp }}-
 
-      # pbs + bun: the two read-mostly runtime trees `zig build` otherwise
-      # re-downloads and re-extracts on every push to main (the ~600 MB
-      # python-build-standalone tree is the slow one; measured at several
-      # minutes per leg). Keys mirror setup-jac verbatim so the Linux-x86_64
-      # leg shares the entry main seeds; the other legs self-seed here (no
-      # other workflow runs on their runners). Dev channel only: the release
-      # channel builds cold on purpose.
-      - name: Restore cached python-build-standalone tree (dev channel)
+      # Share the source-built Python cache with setup-jac. Its key excludes
+      # Jac compiler edits and includes all pinned C inputs and the recipe.
+      # Release builds remain cold to verify reproducibility.
+      - name: Resolve Python SDK cache input
+        id: python-sdk
+        shell: bash
+        run: |
+          sdk=zig-libc
+          if [ "$RUNNER_OS" = macOS ]; then sdk=$(xcrun --sdk macosx --show-sdk-version); fi
+          echo "version=$sdk" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached source-built Python (dev channel)
         if: inputs.channel == 'dev'
         uses: actions/cache@v4
         with:
-          path: jac/.pbs-build
-          key: pbs-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/bootstrap/pins.json') }}
+          path: jac/.python-build
+          key: python-build-v1-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**') }}
 
       - name: Restore cached bun runtime (dev channel)
         if: inputs.channel == 'dev'

@@ -1,0 +1,20 @@
+# Paths excluded from the CPython source tree used by the release build.
+# Keep generated headers, Tools/build, platform configuration, and licenses.
+.github
+.azure-pipelines
+.devcontainer
+Android
+Doc
+PC
+PCbuild
+iOS
+Misc/NEWS.d
+Tools/android
+Tools/ios
+Tools/msi
+Tools/nuget
+Tools/wasm
+Lib/test
+Lib/idlelib
+Lib/tkinter
+Lib/turtledemo

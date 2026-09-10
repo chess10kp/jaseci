@@ -40,12 +40,18 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       installer: ${{ steps.filter.outputs.installer }}
       native: ${{ steps.filter.outputs.native }}
+      python: ${{ steps.filter.outputs.python }}
     steps:
       - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
+            python:
+              - 'jac/bootstrap/build_python.zig'
+              - 'jac/bootstrap/seed.zig'
+              - 'jac/bootstrap/python/**'
+              - '.github/workflows/ci.yml'
             core:
               - 'jac/**'
               - 'jac-py/**'
@@ -91,6 +97,51 @@ jobs:
               - 'jac/jaclang/cli/commands/precompile.jac'
               - 'jac/jaclang/cli/commands/impl/precompile.impl.jac'
               - '.github/actions/**'
+
+  # Linux x86-64 is exercised by build-kit. Source changes also validate the
+  # other release platforms without rebuilding Jac on every platform.
+  python-runtime:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm, macos-14, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+          use-cache: false
+      - name: Resolve Python SDK cache input
+        id: python-sdk
+        shell: bash
+        run: |
+          sdk=zig-libc
+          if [ "$RUNNER_OS" = macOS ]; then sdk=$(xcrun --sdk macosx --show-sdk-version); fi
+          echo "version=$sdk" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache/restore@v4
+        id: python-cache
+        with:
+          path: jac/.python-build
+          key: python-build-v1-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**') }}
+      - name: Build and verify relocatable Python
+        working-directory: jac
+        run: zig build build-python --summary all
+      - uses: actions/cache/save@v4
+        if: github.ref == 'refs/heads/main' && steps.python-cache.outputs.cache-hit != 'true'
+        with:
+          path: jac/.python-build
+          key: python-build-v1-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**') }}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: python-build-logs-${{ runner.os }}-${{ runner.arch }}
+          path: jac/.python-build/**/*.log
+          include-hidden-files: true
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite
@@ -1716,6 +1767,7 @@ jobs:
     needs:
       - changes
       - build-kit
+      - python-runtime
       - macos-native
       - jac-check
       - contribution-checks

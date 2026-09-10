@@ -5,7 +5,6 @@ import from jaclang.dist.payload.assemble { mk_payload }
 import from jaclang.dist.payload.fetch {
     fetch_bun,
     fetch_llvm,
-    fetch_pbs,
     fetch_typeshed,
     typeshed_sha
 }
@@ -41,10 +40,7 @@ impl dispatch(argv: list[str]) {
     if cmd not in SUBCOMMANDS {
         die(f"unknown subcommand '{cmd}'");
     }
-    if cmd == "fetch-pbs" {
-        _need(argv, 3, "usage: payload fetch-pbs <os-arch> <dest-dir>");
-        fetch_pbs(argv[1], argv[2]);
-    } elif cmd == "fetch-llvm" {
+    if cmd == "fetch-llvm" {
         _need(argv, 2, "usage: payload fetch-llvm <dest-dir>");
         fetch_llvm(argv[1]);
     } elif cmd == "fetch-bun" {
@@ -76,7 +72,7 @@ impl dispatch(argv: list[str]) {
         _need(argv, 2, "usage: payload typeshed-sha <commit>");
         typeshed_sha(argv[1]);
     } elif cmd == "stubcat" {
-        _need(argv, 4, "usage: payload stubcat <pbs-python-dir> <site-dir> <out.bin>");
+        _need(argv, 4, "usage: payload stubcat <python-dir> <site-dir> <out.bin>");
         import from jaclang.dist.payload.assemble { resolve_python, run_stubcat }
         if not run_stubcat(resolve_python(argv[1]), argv[1], argv[2], argv[3]) {
             die("stubcat: build failed (see log above)");
@@ -133,7 +129,7 @@ impl check_host_python{
     have = host_py_minor();
     if want != have {
         die(
-            f"mkpayload: must run on the bundled CPython {want} (this interpreter is {have}); invoke it with the pbs python"
+            f"mkpayload: must run on the bundled CPython {want} (this interpreter is {have}); invoke it with the source-built python"
         );
     }
 }

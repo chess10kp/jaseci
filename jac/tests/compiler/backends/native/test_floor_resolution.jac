@@ -4,7 +4,7 @@
 time. `resolve_floor_dir` (in `compiler.backends.native.linker_common`) and
 `_resolve_ca_bundle` map the jaclang package root + a
 target triple to that archive dir (and the CA bundle) under either the dev
-`.pbs-build` tree or the installed `python/floor` payload layout (staged into the
+`.python-build` tree or the installed `python/floor` payload layout (staged into the
 runtime cache by `mkpayload`). These build each layout synthetically in a temp
 dir so the resolution is covered without a real pbs build or a relocated jaclang
 -- the production lookups (`floor_lib_dir` / `_floor_ca_bundle`) just feed the real
@@ -47,10 +47,10 @@ test "installed payload: cross-arch target does not match host floor (#6978 0.2)
 }
 
 
-test "dev tree: .pbs-build/<osarch>/python/build/lib resolves (#6978 0.2)" {
+test "dev tree: .python-build/<osarch>/python/build/lib resolves (#6978 0.2)" {
     base = tempfile.mkdtemp();
     libdir = _mk(
-        os.path.join(base, ".pbs-build", "linux-x86_64", "python", "build", "lib")
+        os.path.join(base, ".python-build", "linux-x86_64", "python", "build", "lib")
     );
     got = resolve_floor_dir(base, "x86_64-unknown-linux-gnu");
     assert got == libdir , f"expected {libdir}, got {got}";

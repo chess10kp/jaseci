@@ -60,11 +60,11 @@ def resolve_floor_dir(pkg_root: str, triple: str) -> (str | None) {
     import from jaclang.runtime.graph_utils { triple_arch }
     want = triple_arch(triple);
 
-    pbs = os.path.join(pkg_root, ".pbs-build");
+    python_build = os.path.join(pkg_root, ".python-build");
     fallback: (str | None) = None;
-    if os.path.isdir(pbs) {
-        for d in sorted(os.listdir(pbs)) {
-            libdir = os.path.join(pbs, d, "python", "build", "lib");
+    if os.path.isdir(python_build) {
+        for d in sorted(os.listdir(python_build)) {
+            libdir = os.path.join(python_build, d, "python", "build", "lib");
             if os.path.isdir(libdir) {
                 if fallback is None {
                     fallback = libdir;

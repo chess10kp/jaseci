@@ -8,8 +8,8 @@ Python, uv, or pip** at install or runtime. Both halves are Jac:
 |---|---|---|
 | Launcher stub (`launcher.jac`) | this directory | native (`jac build --as native` / `nacompile`) |
 | Fused-runtime library | `jaclang/dist/fused/` | native, shipped in the payload |
-| Payload tool (fetch, stage, precompile, pack) | `jaclang/dist/payload/` | Python tier, run on the pbs CPython |
-| Bootstrap seeds (`fetch_pbs.zig`, `fetch_typeshed.zig`), `pins.json` | `bootstrap/` | Zig + the pin files |
+| Payload tool (fetch, stage, precompile, pack) | `jaclang/dist/payload/` | Python tier, run on source-built CPython |
+| Bootstrap seeds (`build_python.zig`, `fetch_typeshed.zig`), `pins.json` | `bootstrap/` | Zig + the pin files |
 | `build.zig` | `jac/` | the one-command entry; also the C/C++ cross-compiler for the LLVM shim and the vendored runtimes |
 
 Instead of statically linking CPython, the launcher **`dlopen`s the bundled
@@ -84,24 +84,32 @@ zig build -Dpayload=/tmp/p.tar.zst   # pack a prebuilt payload (skip fetch+assem
 zig build -Ddev                      # editable dev binary: link the compiler from this tree
 ```
 
-`zig build` first runs the two Zig seeds: `bootstrap/fetch_pbs.zig` (download,
-verify and extract the pinned python-build-standalone tree) and
-`bootstrap/fetch_typeshed.zig` (the pinned typeshed stdlib stubs into
-`jaclang/vendor/typeshed/`). Those are the steps that run before any Jac does:
-the tooling needs the interpreter to run ON and the stubs to type-check
-AGAINST, so neither can be fetched by a Jac tool without the bootstrap eating
-its own tail (#8785). `JacTool.run` in `build.zig` depends on both, so the
-ordering holds for every tool invocation the build adds. Every other step runs
-the in-checkout compiler on that interpreter through the small boot program in
-`build.zig` (`JACBOOT_SRC`):
-`payload <subcommand>` for the Jac payload tool and `jac <args>` for the CLI,
-which is how the stub itself is built (`jac build --native --strict launcher/launcher.jac`). No prior jac binary is needed; jaclang
-has no third-party runtime dependencies. The pins (pbs release, LLVM slices) live
-in `bootstrap/pins.json`, read by both `build.zig` and the Jac tool.
+`zig build` first builds CPython from the checksum-pinned sources in
+`bootstrap/python/sources.json` and fetches the pinned typeshed stubs. The
+Python seed uses Zig for C compilation and archiving, with the upstream
+configure/make recipes retained for platform probes and generated files.
+No installed Python, Jac, or python-build-standalone distribution is needed.
+Build hosts need Zig 0.16.0, make, Perl, a POSIX shell, and network access.
+macOS also needs the SDK provided by Xcode command line tools.
 
-Build-time host deps: `zig` + network (plus an optional, best-effort `strip`).
+`zig build build-python` builds only the Python distribution. Its cache in
+`.python-build/<platform>` contains the interpreter, shared library, stdlib,
+licenses, CA certificates, and static archives for Jac's native backend.
+A content fingerprint covers the source checksums, pruning rules, recipes,
+Zig version, target, and macOS SDK version. A cache hit skips compilation; a miss builds from
+source and checks relocation before marking the distribution complete.
+`JAC_PYTHON_JOBS` controls build parallelism (default 4).
 
-## Debugging
+Each supported release platform builds on its matching runner. Linux targets
+retain the glibc 2.17 floor; Intel macOS targets 12.0 and ARM macOS targets 11.0.
+The existing launcher still loads the shared CPython library from its payload.
+The source-built runtime excludes Tk, curses, readline, dbm, and CPython test
+extensions. Documentation, test suites, and unsupported platform packaging
+are pruned according to `bootstrap/python/prune.txt`; generated build inputs
+and license notices are retained. The separate JacPython reference checkout
+and its conversion and conformance tooling remain available for development.
+The initial source recipe uses `-O2` without PBS's PGO/LTO optimizations;
+performance parity has not been established.
 
 * `JAC_NA_DEBUG=1 jac build --native launcher/launcher.jac` prints why a function in
   the stub's closure would be demoted to Python-only; the stub must lower in

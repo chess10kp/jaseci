@@ -6,7 +6,7 @@ description: >
 
   The binary is an OUTPUT cache keyed on the content that goes into it (jaclang
   source, build.zig, and the launcher -- including bootstrap/pins.json, which pins the
-  pbs tag / python version / bundled pip deps). Merges to main seed the cache;
+  LLVM pin and the separate Python source manifest). Merges to main seed the cache;
   every other job and workflow restores the prebuilt binary in seconds instead
   of rebuilding (PR branches cross-restore main's entry, and build their own on
   a miss). Exact-key match only (no restore-keys), so a stale binary can never
@@ -61,7 +61,7 @@ runs:
     # neither jaclang nor the launcher would hit it) yet a high pool cost
     # (~0.1-0.2 GB each). Left unbounded it dominated the 10 GB pool -- dozens of
     # per-branch binaries -- and its LRU churn evicted the Linux read-mostly
-    # caches (pbs/bun) this action relies on. PR jobs still build their own
+    # caches (Python/bun) this action relies on. PR jobs still build their own
     # binary on a miss (and ci.yml publishes it as an artifact for the same-run
     # test jobs); only trusted refs seed the shared copy. Exact-key match only (no
     # restore-keys), so a stale binary can never be served.
@@ -85,7 +85,7 @@ runs:
         path: jac/jaclang/vendor/typeshed/stdlib
         key: typeshed-stdlib-${{ hashFiles('jac/jaclang/vendor/typeshed/PIN', 'jac/jaclang/vendor/typeshed/TARBALL_SHA256', 'jac/launcher/payload.zig') }}
 
-    # The four caches below (pbs, shim, LLVM, bun) are big (0.2-0.6 GB each) and
+    # The four caches below (Python, shim, LLVM, bun) are big (0.2-0.6 GB each) and
     # read-mostly: their keys only change on a pin bump, not on ordinary code
     # pushes. They use restore/save split with SAVES GATED TO TRUSTED REFS: PR
     # branches read main's entries (cross-branch restore from the default
@@ -94,18 +94,24 @@ runs:
     # made every "stable" entry a recurring miss. Main runs and explicitly
     # trusted jac-python campaign runs seed and refresh the shared copies.
 
-    # Avoid re-downloading + re-decoding the ~600 MB python-build-standalone tree
-    # on every binary-cache miss (the std zstd decode of the 122 MB archive is
-    # slow): cache the extracted .pbs-build, keyed on the pbs pin (PBS_TAG /
-    # the pbs pins live in bootstrap/pins.json). Only engaged on a binary miss
-    # (when we actually build); a pins.json edit re-fetches.
-    - name: Restore cached python-build-standalone tree
-      id: pbs-cache
+    # The runtime cache depends only on its source pins, recipe, target and
+    # Zig version. Jac compiler edits reuse it. The bootstrap verifies the
+    # same inputs before reuse; no PBS distribution is fetched.
+    - name: Resolve Python SDK cache input
+      id: python-sdk
+      shell: bash
+      run: |
+        sdk=zig-libc
+        if [ "$RUNNER_OS" = macOS ]; then sdk=$(xcrun --sdk macosx --show-sdk-version); fi
+        echo "version=$sdk" >> "$GITHUB_OUTPUT"
+
+    - name: Restore cached source-built Python
+      id: python-cache
       if: steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/restore@v4
       with:
-        path: jac/.pbs-build
-        key: pbs-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/bootstrap/pins.json') }}
+        path: jac/.python-build
+        key: python-build-v1-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**') }}
 
     # The LLVMPY_* shim is the single most expensive build artifact (statically
     # links ~0.5 GB of LLVM archives; several minutes) and depends only on
@@ -126,7 +132,7 @@ runs:
     # The native (na) backend statically links a pinned LLVM into the LLVMPY_*
     # shim, so `zig build` needs that LLVM extracted first (there is no llvmlite
     # wheel anymore). Cache the pruned ~0.5 GB tree, keyed on the single-sourced
-    # slice pin (bootstrap/pins.json) so unrelated payload-tool churn (bun/pbs/pip
+    # slice pin (bootstrap/pins.json) so unrelated payload-tool churn (bun/Python/pip
     # pins) does not orphan a 0.5 GB entry. Only engaged on a binary miss AND a
     # shim miss (a cached shim needs no LLVM at all).
     - name: Restore cached LLVM (jacllvm shim deps)
@@ -214,7 +220,7 @@ runs:
     # frame and VERIFIES it by decompress + byte-compare before reuse, so like
     # the precompile tree a stale restore can only miss, never mis-serve --
     # restore-keys is safe. The key names every pinned input that feeds the
-    # layer (pbs/pip/bun pins in bootstrap/pins.json, the launcher and payload tool, shim inputs in
+    # layer (Python sources and pins, the launcher and payload tool, shim inputs in
     # native/** + build.zig, the zon-pinned packages in build.zig.zon, the
     # wasm_rt floor); unpinned pip releases can still drift the content
     # mid-key, which just recompresses until the key next rolls.
@@ -332,15 +338,15 @@ runs:
     # Seed the shared read-mostly caches from trusted refs only (see the note
     # above the restore steps). Main and explicitly trusted campaign runs seed
     # pin bumps; PR runs never duplicate these entries.
-    - name: Save pbs cache (trusted refs only)
+    - name: Save source Python cache (trusted refs only)
       if: >-
         steps.cache-writer.outputs.enabled == 'true' &&
         steps.cache.outputs.cache-hit != 'true' &&
-        steps.pbs-cache.outputs.cache-hit != 'true'
+        steps.python-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
-        path: jac/.pbs-build
-        key: pbs-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/bootstrap/pins.json') }}
+        path: jac/.python-build
+        key: python-build-v1-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**') }}
 
     - name: Save LLVMPY shim cache (trusted refs only)
       if: >-

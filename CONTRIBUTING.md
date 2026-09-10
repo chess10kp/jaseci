@@ -26,7 +26,7 @@ git remote -v
 
 **1. Install Zig**
 
-The binary is built with [Zig](https://ziglang.org/) **0.16.0** (the version is pinned -- newer/older majors will fail to build). Zig plus a network connection are the only build-time deps: `launcher/payload.zig` does all the HTTP fetching, integrity checks, and (de)compression in Zig's std, so there's nothing else to install (the old `curl`/`git`/`zstd`/`tar` shellouts are gone).
+The binary is built with [Zig](https://ziglang.org/) **0.16.0** (the version is pinned -- newer/older majors will fail to build). Building the bundled Python from source also requires **make, Perl, a POSIX shell, and network access**; macOS needs the SDK from Xcode command line tools. No installed Python or Jac is required. The Zig bootstrap downloads and verifies pinned source archives, then uses Zig's C compiler with the retained upstream configure/make recipes. See [the launcher build guide](jac/launcher/README.md#build) for runtime caching and supported targets.
 
 ```bash
 # Zig: download the 0.16.0 tarball for your platform and put it on PATH
@@ -35,7 +35,7 @@ The binary is built with [Zig](https://ziglang.org/) **0.16.0** (the version is 
 zig version          # must print 0.16.0
 ```
 
-(One optional host tool: if `strip` is on PATH the build shrinks the bundled libpython from ~245 MiB to ~20 MiB; without it the build still succeeds, the binary is just larger.)
+(One optional host tool: if `strip` is on PATH the build removes debug symbols from the bundled libpython; without it the build still succeeds, the binary is larger.)
 
 (The vendored typeshed stdlib stubs are not committed -- `zig build` fetches them at the pinned commit on first build, so there is nothing to check out manually.)
 
