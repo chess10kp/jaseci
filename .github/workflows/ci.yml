@@ -1227,7 +1227,7 @@ jobs:
         run: jac test jac/tests/client/test_fused_runtime_boot.jac
 
   # Bootstrap unit tests: the Zig seed that fetches the pbs CPython before any
-  # Python exists (bootstrap/fetch_pbs.zig). Cross-platform on purpose. The
+  # Python exists (bootstrap/build_python.zig). Cross-platform on purpose. The
   # launcher itself is Jac; its trailer codec, payload tool and boot path are
   # covered by `jac test` in the kit lanes below.
   test-bootstrap:
