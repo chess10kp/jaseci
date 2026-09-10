@@ -21,6 +21,7 @@
 Grammar/
 LICENSE
 Makefile.pre.in
+Misc/platform_triplet.c
 Misc/python-config.in
 Misc/python-config.sh.in
 Misc/python-embed.pc.in

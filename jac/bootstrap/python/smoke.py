@@ -5,6 +5,7 @@ import decimal
 import hashlib
 import lzma
 import multiprocessing
+import platform
 from pathlib import Path
 import sqlite3
 import ssl
@@ -32,6 +33,10 @@ callback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int)(lambda value: value + 1)
 assert callback(41) == 42
 assert sysconfig.get_config_var("Py_ENABLE_SHARED") == 1
 assert sysconfig.get_config_var("CC") == "cc"
+# configure needs Misc/platform_triplet.c to produce wheel-compatible names.
+# An empty platform silently builds a runtime that cannot import tagged wheels.
+abi_platform = "darwin" if sys.platform == "darwin" else f"{platform.machine()}-linux-gnu"
+assert sysconfig.get_config_var("SOABI") == f"cpython-314-{abi_platform}"
 ca = Path(sys.executable).resolve().parents[2] / "build" / "cacert.pem"
 assert ssl.create_default_context(cafile=str(ca)).cert_store_stats()["x509_ca"] > 0
 for library in ("ssl", "crypto", "sqlite3", "mpdec", "lzma", "bz2", "expat", "z", "zstd", "ffi"):

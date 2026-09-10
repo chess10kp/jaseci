@@ -36,7 +36,7 @@ esac
 cat > "$work/bin/cc" <<'SH'
 #!/bin/sh
 if [ -n "${JAC_PYTHON_SDK:-}" ]; then
-    exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -Wno-unused-command-line-argument "$@"
+    exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument "$@"
 fi
 exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -Wno-unused-command-line-argument "$@"
 SH
@@ -152,7 +152,7 @@ SH
         macos-*)
             cat > "$work/bin/pycc" <<'SH'
 #!/bin/sh
-exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -Wno-unused-command-line-argument -Wno-error=date-time '-Wl,-rpath,@loader_path/../lib' "$@"
+exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument -Wno-error=date-time '-Wl,-rpath,@loader_path/../lib' "$@"
 SH
             # CPython otherwise writes its temporary prefix into the dylib ID.
             sed 's|-Wl,-install_name,$(prefix)/lib/|-Wl,-install_name,@rpath/|' \
