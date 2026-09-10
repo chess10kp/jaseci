@@ -8,7 +8,6 @@ the execution engine, object runtime and standard library.
 | `jac/jaclang/compiler/frontend/python/` | Python tokens, tokenizer, PEG parser, AST, validation and symbol tables |
 | `jac/jaclang/compiler/backends/py/jacpython/` | Python bytecode generation, control flow and assembly |
 | `jac/jaclang/runtime/python/` | Compiler values and code objects, opcode metadata and the symbol-table adapter |
-| `scripts/python/` | Generators for AST nodes, tokens, grammar and opcode metadata |
 
 Imports use the `jaclang` package paths; no `JACPATH` setting is required.
 These are development implementations. They ship as source and are excluded
@@ -28,19 +27,15 @@ compiler to CPython code objects, runtime compilation APIs and bootstrap loading
 is future work. No CPython C source can be retired on the strength of this
 cleanup alone.
 
-To regenerate sources from the pinned CPython reference, run from the repository
-root:
+The AST, token model, PEG parser and opcode metadata were originally generated
+from CPython 3.14.6 and are now maintained directly in Jac. Their generators and
+reference-checkout helper have been removed. When updating Python compatibility,
+review these files against the corresponding upstream definitions, especially
+opcode values, inline-cache widths and stack effects.
 
-```sh
-python3 scripts/python/fetch_cpython_reference.py
-python3 scripts/python/asdl2jac.py
-python3 scripts/python/tokens2jac.py
-python3 scripts/python/grammar2jac.py
-python3 scripts/python/opcode_meta2jac.py
-```
-
-Each generator accepts `--check` to verify its checked-in output. The ignored
-`reference/cpython` checkout is a generator input, not a release build input.
+Release builds continue to download checksum-pinned CPython sources through
+`jac/bootstrap/python/`; they do not use the optional local `reference/cpython`
+checkout.
 
 Bundled JacPython test suites, fixtures and test-only helpers have been removed.
 A future CI workflow will run CPython's upstream compiler tests against the

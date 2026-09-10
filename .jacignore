@@ -74,5 +74,5 @@ jac/jaclang/compiler/backends/es/esast_gen_pass.impl/view.impl.jac
 
 # Example apps.
 
-# Generated Python grammar.
+# CPython-derived Python grammar.
 jac/jaclang/compiler/frontend/python/parser.jac

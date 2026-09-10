@@ -2,7 +2,7 @@
 #
 # Token mark/reset, per-position memoization, left-recursion growth hooks,
 # keyword/soft-keyword promotion, invalid-rule two-pass gating, and stable
-# syntax-error locations. Generated parsers (grammar2jac, P0.7) call these
+# syntax-error locations. The Python parser calls these
 # primitives with explicit rule dispatch — no lambdas or function-value tables.
 #
 # Product module: imports token_model + tokenizer only.

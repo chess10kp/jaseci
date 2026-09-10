@@ -71,7 +71,7 @@ demo/
 .zig-cache/
 zig-out/
 
-# CPython sources for optional regeneration and local conversion output.
+# Local CPython reference sources.
 reference/
 
 # Agent / IDE working notes (not repo artifacts)

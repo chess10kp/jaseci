@@ -54,7 +54,6 @@ jobs:
               - '.github/workflows/ci.yml'
             core:
               - 'jac/**'
-              - 'scripts/python/**'
               - '.github/workflows/ci.yml'
               - '.github/actions/**'
             scale:
