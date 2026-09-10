@@ -1170,16 +1170,17 @@ def visit_match(
             terminated = True;
         }
     }
-    if owns_join and join_blk is not None and tail is not None {
+    if owns_join and join_blk is not None {
         g.use(join_blk);
-        tail_more = exec_tail_emits_code(tail, tail_idx);
-        tail_cont = visit_stmt_tail(
-            g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
-        return stmt_cont(
-            loc=tail_cont.loc,
-            next_si=len(tail as list[stmt]),
-            terminated=terminated or tail_cont.terminated
-        );
+        if tail is not None and tail_idx < len(tail) {
+            tail_cont = visit_stmt_tail(
+                g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+            return stmt_cont(
+                loc=tail_cont.loc,
+                next_si=len(tail as list[stmt]),
+                terminated=terminated or tail_cont.terminated
+            );
+        }
     }
     return stmt_cont(loc=mloc, terminated=terminated);
 }
@@ -1192,4 +1193,3 @@ def visit_match(
 with entry {
     stmt_handlers["visit_match"] = visit_match;
 }
-

@@ -31,6 +31,7 @@ import from jaclang.compiler.frontend.python.tokenizer { tok_state, tokenizer_fr
 
 # Keyword token ids start at 500 in CPython's pegen generator (parser_generator.py).
 glob PEG_KEYWORD_TYPE_BASE: int = 500;
+glob STAR_TARGETS: int = 0, DEL_TARGETS: int = 1, FOR_TARGETS: int = 2;
 
 # ---------------- parser token + memo ----------------
 obj peg_memo {

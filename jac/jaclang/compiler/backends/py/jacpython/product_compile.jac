@@ -1,12 +1,8 @@
-# P4 product compilation entry (PLAN.md P0.3 / P0.13).
-#
-# source -> PyCode. It MUST NOT import bootstrap compilation helpers, marshal transport, or host
-# tokenize/ast/compile. The eval-mode path is fully native: tokenizer -> parser
-# -> validation -> codegen -> flowgraph -> assembler. exec/single (statement)
-# modes are Phase C and fail loudly rather than falling back to the host.
+# Python source/AST -> PyCode through Jac validation, codegen and assembly.
 
 import from jaclang.runtime.python.objects { PyObj, py_error, is_error }
-import from jaclang.compiler.frontend.python.parser { parse_eval_expr, parse_file }
+import from jaclang.compiler.frontend.python.parser { parse_eval_expr, parse_file, parse_interactive }
+import from jaclang.compiler.frontend.python.ast_nodes { expr, mod, Expr, Expression, Module, Interactive }
 import from jaclang.compiler.frontend.python.compiler_validate { validate_eval_expr, validate_module_body }
 import from jaclang.compiler.frontend.python.compiler_symtable { build_module_symtable }
 import from jaclang.compiler.frontend.python.compiler_diagnostics { compiler_diag_to_pyobj }
@@ -23,19 +19,28 @@ import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
 import from jaclang.compiler.backends.py.jacpython.compiler_context {
     enter_compile_context,
     exit_compile_context,
-    product_compile_active,
     ensure_compile_registries_wired,
 }
 
 def compile_source(source: str, filename: str, mode: str, optimize: int) -> PyObj {
+    if optimize not in (0, 1, 2) {
+        return py_error("ValueError", "compile(): invalid optimize value");
+    }
     reg = ensure_compile_registries_wired();
     if is_error(reg) {
         return reg;
     }
-    enter_compile_context();
+    enter_compile_context(optimize);
     try {
         if mode == "eval" {
             result = compile_eval_path(source, filename, mode);
+        } elif mode == "single" {
+            tree = parse_interactive(source, filename);
+            if tree is None {
+                result = py_error("SyntaxError", "invalid syntax");
+            } else {
+                result = compile_exec_ast(Module(body=tree.body, type_ignores=[]), filename, True);
+            }
         } else {
             result = compile_exec_path(source, filename, mode);
         }
@@ -45,11 +50,31 @@ def compile_source(source: str, filename: str, mode: str, optimize: int) -> PyOb
     return result;
 }
 
-# eval-mode native front end. Connects the already byte-exact-verified modules
-# (parse_eval_expr -> validate -> compile_eval -> verify_cfg -> assemble).
-# `optimize` is accepted for the public contract but does not affect eval
-# expressions (no docstrings/asserts to strip); it threads through to Phase C
-# statement compilation unchanged.
+def compile_ast(tree: mod, filename: str, mode: str, optimize: int = 0) -> PyObj {
+    if optimize not in (0, 1, 2) {
+        return py_error("ValueError", "compile(): invalid optimize value");
+    }
+    reg = ensure_compile_registries_wired();
+    if is_error(reg) {
+        return reg;
+    }
+    enter_compile_context(optimize);
+    try {
+        if mode == "eval" and isinstance(tree, Expression) {
+            result = compile_eval_ast(tree.body, filename);
+        } elif mode == "exec" and isinstance(tree, Module) {
+            result = compile_exec_ast(tree, filename);
+        } elif mode == "single" and isinstance(tree, Interactive) {
+            result = compile_exec_ast(Module(body=tree.body, type_ignores=[]), filename, True);
+        } else {
+            result = py_error("TypeError", "AST root does not match compilation mode");
+        }
+    } finally {
+        exit_compile_context();
+    }
+    return result;
+}
+
 def compile_eval_path(source: str, filename: str, mode: str) -> PyObj {
     if mode != "eval" {
         return py_error(
@@ -63,11 +88,22 @@ def compile_eval_path(source: str, filename: str, mode: str) -> PyObj {
             "SyntaxError", "compile_source: failed to parse eval expression"
         );
     }
+    return compile_eval_ast(e, filename);
+}
+
+def compile_eval_ast(e: expr, filename: str) -> PyObj {
     vr = validate_eval_expr(e);
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
     }
-    u = compile_eval(e, filename, "<module>", 1);
+    sr = build_module_symtable([
+        Expr(value=e, lineno=e.lineno, col_offset=e.col_offset,
+             end_lineno=e.end_lineno, end_col_offset=e.end_col_offset)
+    ]);
+    if sr.diag is not None {
+        return compiler_diag_to_pyobj(sr.diag);
+    }
+    u = compile_eval(e, filename, "<module>", 1, sr.top);
     if u.diag is not None {
         return compiler_diag_to_pyobj(u.diag);
     }
@@ -91,6 +127,10 @@ def compile_exec_path(source: str, filename: str, mode: str) -> PyObj {
     if m is None {
         return py_error("SyntaxError", "compile_source: failed to parse exec module");
     }
+    return compile_exec_ast(m, filename);
+}
+
+def compile_exec_ast(m: Module, filename: str, interactive: bool = False) -> PyObj {
     vr = validate_module_body(m.body);
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
@@ -99,7 +139,7 @@ def compile_exec_path(source: str, filename: str, mode: str) -> PyObj {
     if sr.diag is not None {
         return compiler_diag_to_pyobj(sr.diag);
     }
-    u = compile_exec(m.body, filename, "<module>", 1, sr.top);
+    u = compile_exec(m.body, filename, "<module>", 1, sr.top, interactive);
     if u.diag is not None {
         return compiler_diag_to_pyobj(u.diag);
     }

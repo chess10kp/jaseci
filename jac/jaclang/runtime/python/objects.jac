@@ -733,6 +733,12 @@ obj PyNoneType(PyObj) {
     }
 }
 
+obj PyEllipsis(PyObj) {
+    def tp_hashkey -> PyObj {
+        return PyStr(t="str", val="ellipsis");
+    }
+}
+
 # Complex-tower arithmetic kernels (pure doubles, na-clean): shared by
 # PyComplex.nb_binop (complex-on-left) and ._reflected_binop (complex-on-right
 # via the py_binop bridge). Formulas mirror Objects/complexobject.c.

@@ -6,6 +6,7 @@
 # the first product compile.
 
 import from jaclang.runtime.python.objects { py_error, PyObj, py_none }
+import from contextvars { ContextVar }
 import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     pending_break_finish,
     basicblock,
@@ -14,33 +15,39 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
 import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
 
 obj compile_context {
-    has pending_break_finishes: list[pending_break_finish] = [];
+    has pending_break_finishes: list[pending_break_finish] = [],
+        optimize: int = 0;
 }
 
-glob _compile_ctx_stack: list[compile_context] = [];
+glob _compile_contexts: any = ContextVar("jacpython_compile_contexts", `default=());
 glob _registries_validated: list[bool] = [False];
 
 def product_compile_active -> bool {
-    return len(_compile_ctx_stack) > 0;
+    return bool(_compile_contexts.get());
 }
 
-def enter_compile_context {
-    _compile_ctx_stack.append(compile_context());
+def enter_compile_context(optimize: int = 0) {
+    _compile_contexts.set(_compile_contexts.get() + (compile_context(optimize=optimize),));
+}
+
+def current_optimization_level -> int {
+    stack = _compile_contexts.get();
+    return stack[-1].optimize if stack else 0;
 }
 
 def exit_compile_context {
-    n = len(_compile_ctx_stack);
-    if n > 0 {
-        _compile_ctx_stack = _compile_ctx_stack[0:n - 1];
+    stack = _compile_contexts.get();
+    if stack {
+        _compile_contexts.set(stack[:-1]);
     }
 }
 
 def current_pending_break_finishes -> list[pending_break_finish] {
-    n = len(_compile_ctx_stack);
-    if n == 0 {
+    stack = _compile_contexts.get();
+    if not stack {
         return [];
     }
-    return (_compile_ctx_stack[n - 1] as compile_context).pending_break_finishes;
+    return (stack[-1] as compile_context).pending_break_finishes;
 }
 
 def push_pending_break_finish(

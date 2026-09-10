@@ -341,6 +341,16 @@ def nested_code_qualname(
 }
 
 # AST class name for unsupported-node diagnostics (ordered isinstance chain).
+def body_docstring(body: list[stmt]) -> PyStr | None {
+    if body and isinstance(body[0], Expr) {
+        value = (body[0] as Expr).value;
+        if isinstance(value, Constant) and isinstance(value.value, PyStr) {
+            return value.value;
+        }
+    }
+    return None;
+}
+
 def ast_node_name(n: ast_node) -> str {
     if isinstance(n, BoolOp) {
         return "BoolOp";

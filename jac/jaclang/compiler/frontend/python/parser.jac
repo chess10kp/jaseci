@@ -18,13 +18,15 @@ import from jaclang.compiler.frontend.python.peg_runtime {
     peg_get_last_nonnwhitespace_token,
     peg_positive_lookahead_token, peg_negative_lookahead_token,
     peg_left_rec_finish, peg_token,
+    peg_reset_for_error_pass,
+    STAR_TARGETS, DEL_TARGETS, FOR_TARGETS,
 }
 import from jaclang.compiler.frontend.python.parser_actions {
     kv_pair, kp_pair, keyword_or_starred_node, name_default_pair,
     pa_cmpop_expr_pair, pa_key_value_pair, pa_key_pattern_pair, pa_keyword_or_starred,
     pa_name_default_pair, pa_make_cmpop_pair, pa_name_from_token, pa_name_id, pa_number_from_token,
     pa_ast_expression, pa_ast_binop, pa_ast_unaryop, pa_ast_boolop, pa_ast_compare, pa_ast_call,
-    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_from_expr, pa_match_singleton, pa_pattern_list, pa_singleton_seq, pa_singleton_seq_expr, pa_singleton_seq_stmt, pa_singleton_seq_alias, pa_stmt_list_or_empty,
+    pa_ast_ifexp, pa_constant_bool, pa_constant_none, pa_constant_ellipsis, pa_constant_from_expr, pa_match_singleton, pa_pattern_list, pa_singleton_seq, pa_singleton_seq_expr, pa_singleton_seq_stmt, pa_singleton_seq_alias, pa_stmt_list_or_empty,
     pa_seq_insert_front_expr, pa_seq_insert_front_pattern, pa_seq_insert_front_stmt,
     pa_seq_insert_front_alias, pa_seq_insert_front_type_param, pa_seq_insert_front_withitem,
     pa_seq_insert_front_arg, pa_seq_insert_front_kw_or_starred, pa_seq_insert_front_kvpair,
@@ -3702,7 +3704,7 @@ def rule_atom(p: peg_parser) -> expr | None {
         }
         end_lineno = end_tok.end_lineno;
         end_col_offset = end_tok.end_col_offset;
-        res = pa_constant_none(start_lineno, start_col_offset, end_lineno, end_col_offset);
+        res = pa_constant_ellipsis(start_lineno, start_col_offset, end_lineno, end_col_offset);
         return res;
     }
     peg_reset(p, mark);
@@ -6945,6 +6947,9 @@ def rule_interactive(p: peg_parser) -> mod | None {
 }
 
 def rule_invalid_ann_assign_target(p: peg_parser) -> expr | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: expr | None = None;
     list = rule_list(p);
@@ -6975,6 +6980,9 @@ def rule_invalid_ann_assign_target(p: peg_parser) -> expr | None {
 }
 
 def rule_invalid_arguments(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     rhs = rule__tmp_39(p);
@@ -7069,6 +7077,9 @@ def rule_invalid_arguments(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_arithmetic(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     sum = rule_sum(p);
@@ -7090,6 +7101,9 @@ def rule_invalid_arithmetic(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_as_pattern(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     or_pattern = rule_or_pattern(p);
@@ -7120,6 +7134,9 @@ def rule_invalid_as_pattern(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_assignment(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = rule_invalid_ann_assign_target(p);
@@ -7204,6 +7221,9 @@ def rule_invalid_assignment(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_block(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     _newline = peg_expect_token(p, NEWLINE);
@@ -7218,6 +7238,9 @@ def rule_invalid_block(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_case_block(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     soft = peg_expect_soft_keyword(p, "case");
@@ -7255,6 +7278,9 @@ def rule_invalid_case_block(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_class_argument_pattern(p: peg_parser) -> list[pattern] | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: list[pattern] | None = None;
     rhs = rule__tmp_48(p);
@@ -7274,6 +7300,9 @@ def rule_invalid_class_argument_pattern(p: peg_parser) -> list[pattern] | None {
 }
 
 def rule_invalid_class_def_raw(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 570);
@@ -7313,6 +7342,9 @@ def rule_invalid_class_def_raw(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_class_pattern(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     name_or_attr = rule_name_or_attr(p);
@@ -7331,6 +7363,9 @@ def rule_invalid_class_pattern(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_comprehension(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     rhs = rule__tmp_49(p);
@@ -7382,6 +7417,9 @@ def rule_invalid_comprehension(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_def_raw(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 699);
@@ -7441,6 +7479,9 @@ def rule_invalid_def_raw(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_default(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 22);
@@ -7455,6 +7496,9 @@ def rule_invalid_default(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_del_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 680);
@@ -7470,6 +7514,9 @@ def rule_invalid_del_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_dict_comprehension(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 25);
@@ -7494,6 +7541,9 @@ def rule_invalid_dict_comprehension(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_dotted_as_name(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     dotted_name = rule_dotted_name(p);
@@ -7514,6 +7564,9 @@ def rule_invalid_dotted_as_name(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_double_starred_kvpairs(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     gather = rule__gather_23(p);
@@ -7558,6 +7611,9 @@ def rule_invalid_double_starred_kvpairs(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_double_type_comments(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     type_comment_tok = peg_expect_token(p, TYPE_COMMENT);
@@ -7582,6 +7638,9 @@ def rule_invalid_double_type_comments(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_elif_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 581);
@@ -7617,6 +7676,9 @@ def rule_invalid_elif_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_else_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 606);
@@ -7652,6 +7714,9 @@ def rule_invalid_else_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_except_star_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 642);
@@ -7737,6 +7802,9 @@ def rule_invalid_except_star_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_except_star_stmt_indent(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 642);
@@ -7764,6 +7832,9 @@ def rule_invalid_except_star_stmt_indent(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_except_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 642);
@@ -7837,6 +7908,9 @@ def rule_invalid_except_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_except_stmt_indent(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 642);
@@ -7875,6 +7949,9 @@ def rule_invalid_except_stmt_indent(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_expression(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     string_var = peg_expect_token(p, STRING);
@@ -7977,6 +8054,9 @@ def rule_invalid_expression(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_factor(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     rhs = rule__tmp_57(p);
@@ -7995,6 +8075,9 @@ def rule_invalid_factor(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_finally_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 637);
@@ -8015,6 +8098,9 @@ def rule_invalid_finally_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_for_if_clause(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 699);
@@ -8033,6 +8119,9 @@ def rule_invalid_for_if_clause(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_for_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 699);
@@ -8082,6 +8171,9 @@ def rule_invalid_for_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_for_target(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 699);
@@ -8098,6 +8190,9 @@ def rule_invalid_for_target(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_fstring_conversion_character(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 54);
@@ -8120,6 +8215,9 @@ def rule_invalid_fstring_conversion_character(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 25);
@@ -8253,6 +8351,9 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_group(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 7);
@@ -8286,6 +8387,9 @@ def rule_invalid_group(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_if_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 623);
@@ -8321,6 +8425,9 @@ def rule_invalid_if_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_import(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 681);
@@ -8351,6 +8458,9 @@ def rule_invalid_import(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_import_from_as_name(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     name_var = pa_name_from_token(peg_expect_token(p, NAME));
@@ -8371,6 +8481,9 @@ def rule_invalid_import_from_as_name(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_import_from_targets(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     import_from_as_names = rule_import_from_as_names(p);
@@ -8395,6 +8508,9 @@ def rule_invalid_import_from_targets(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_kvpair(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = rule_expression(p);
@@ -8435,6 +8551,9 @@ def rule_invalid_kvpair(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_kwarg(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = rule__tmp_63(p);
@@ -8491,6 +8610,9 @@ def rule_invalid_kwarg(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_kwds(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 35);
@@ -8539,6 +8661,9 @@ def rule_invalid_kwds(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_lambda_kwds(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 35);
@@ -8587,6 +8712,9 @@ def rule_invalid_lambda_kwds(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_lambda_parameters(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 17);
@@ -8674,6 +8802,9 @@ def rule_invalid_lambda_parameters(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_lambda_parameters_helper(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = rule_lambda_slash_with_default(p);
@@ -8692,6 +8823,9 @@ def rule_invalid_lambda_parameters_helper(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_lambda_star_etc(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 16);
@@ -8737,6 +8871,9 @@ def rule_invalid_lambda_star_etc(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_legacy_expression(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = pa_name_from_token(peg_expect_token(p, NAME));
@@ -8754,6 +8891,9 @@ def rule_invalid_legacy_expression(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_match_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     soft = peg_expect_soft_keyword(p, "match");
@@ -8789,6 +8929,9 @@ def rule_invalid_match_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_named_expression(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     hit = peg_check_memo(p, RULE_invalid_named_expression);
     if hit.hit {
         return hit.result as object;
@@ -8845,6 +8988,9 @@ def rule_invalid_named_expression(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_parameters(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 17);
@@ -8932,6 +9078,9 @@ def rule_invalid_parameters(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_parameters_helper(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = rule_slash_with_default(p);
@@ -8950,6 +9099,9 @@ def rule_invalid_parameters_helper(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_star_etc(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 16);
@@ -9007,6 +9159,9 @@ def rule_invalid_star_etc(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_starred_expression(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 16);
@@ -9019,6 +9174,9 @@ def rule_invalid_starred_expression(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_starred_expression_unpacking(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 16);
@@ -9040,6 +9198,9 @@ def rule_invalid_starred_expression_unpacking(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_string_tstring_concat(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = rule__loop1_88(p);
@@ -9064,6 +9225,9 @@ def rule_invalid_string_tstring_concat(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_try_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     a = peg_expect_token(p, 692);
@@ -9148,6 +9312,9 @@ def rule_invalid_try_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_tstring_conversion_character(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 54);
@@ -9170,6 +9337,9 @@ def rule_invalid_tstring_conversion_character(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 25);
@@ -9303,6 +9473,9 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_type_param(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 16);
@@ -9339,6 +9512,9 @@ def rule_invalid_type_param(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_type_params(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     lit = peg_expect_token(p, 9);
@@ -9354,6 +9530,9 @@ def rule_invalid_type_params(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_while_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 693);
@@ -9389,6 +9568,9 @@ def rule_invalid_while_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_with_item(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     expression = rule_expression(p);
@@ -9409,6 +9591,9 @@ def rule_invalid_with_item(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_with_stmt(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 699);
@@ -9448,6 +9633,9 @@ def rule_invalid_with_stmt(p: peg_parser) -> object | None {
 }
 
 def rule_invalid_with_stmt_indent(p: peg_parser) -> object | None {
+    if not p.call_invalid_rules {
+        return None;
+    }
     mark = peg_mark(p);
     res: object | None = None;
     kw = peg_expect_token(p, 699);
@@ -14441,7 +14629,8 @@ def parse_eval_source(source: str, filename: str) -> mod | None {
     p = peg_parser_from_source(source, filename, True);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
-    return parse_eval_module(p);
+    result = parse_eval_module(p);
+    return finish_parse(p, result, "eval");
 }
 
 def parse_eval_expr(source: str, filename: str) -> expr | None {
@@ -14470,7 +14659,8 @@ def parse_file_source(source: str, filename: str) -> mod | None {
     p = peg_parser_from_source(source, filename, True);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
-    return parse_file_module(p);
+    result = parse_file_module(p);
+    return finish_parse(p, result, "exec");
 }
 
 def parse_file(source: str, filename: str) -> Module | None {
@@ -14482,4 +14672,63 @@ def parse_file(source: str, filename: str) -> Module | None {
         return mod as Module;
     }
     return None;
+}
+
+def parse_interactive(source: str, filename: str) -> Interactive | None {
+    p = peg_parser_from_source(source, filename, True);
+    peg_set_keywords(p, _build_keyword_lists());
+    peg_set_soft_keywords(p, SOFT_KEYWORDS);
+    body = rule_statement(p);
+    if body is None or peg_expect_token(p, ENDMARKER) is None {
+        return finish_parse(p, None, "single");
+    }
+    # An inline compound statement needs an explicit terminal newline in
+    # interactive mode. An indented suite supplies its own logical boundary.
+    if not source.endswith(("\n", "\r")) and len(body) == 1 {
+        first = body[0];
+        if isinstance(first, (FunctionDef, AsyncFunctionDef, ClassDef, If, While,
+                              For, AsyncFor, With, AsyncWith, Try, TryStar, Match))
+            and first.lineno == first.end_lineno {
+            return None;
+        }
+    }
+    return Interactive(body=body);
+}
+
+def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
+    if result is not None and not p.error_indicator {
+        return result;
+    }
+    # The first pass only recognizes valid syntax. Diagnostic productions run
+    # once on failure, with memoized first-pass failures cleared.
+    first_bad = p.tokens[-1] if p.tokens else None;
+    if p.error is None {
+        peg_reset_for_error_pass(p);
+        if mode == "eval" {
+            parse_eval_module(p);
+        } elif mode == "exec" {
+            parse_file_module(p);
+        } else {
+            rule_statement(p);
+        }
+    }
+    kind = "SyntaxError";
+    message = "invalid syntax";
+    line = first_bad.lineno if first_bad is not None else 1;
+    column = first_bad.col_offset if first_bad is not None else 0;
+    end_line = line;
+    end_column = column + 1;
+    if p.error is not None {
+        kind = p.error.kind;
+        message = p.error.message;
+        line = max(1, p.error.loc.lineno);
+        column = max(0, p.error.loc.col_offset);
+        end_line = max(line, p.error.loc.end_lineno);
+        end_column = max(column + 1, p.error.loc.end_col_offset);
+    }
+    lines = p.tok.source.splitlines(keepends=True);
+    text = lines[line - 1] if line > 0 and line <= len(lines) else "";
+    import builtins;
+    error_type = getattr(builtins, kind, SyntaxError);
+    raise error_type(message, (p.filename, line, column + 1, text, end_line, end_column + 1));
 }

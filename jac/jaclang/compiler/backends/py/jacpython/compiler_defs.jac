@@ -14,6 +14,7 @@ import from jaclang.runtime.python.opcode_meta {
     CO_ASYNC_GENERATOR,
     CO_COROUTINE,
     CO_GENERATOR,
+    CO_HAS_DOCSTRING,
     CO_NESTED,
     CO_NEWLOCALS,
     CO_OPTIMIZED,
@@ -93,6 +94,8 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     visit_expr,
 }
 import from jaclang.compiler.backends.py.jacpython.codegen_util {
+    body_docstring,
+    stmt_loc,
     async_function_def_loc,
     class_effective_bases,
     class_effective_keywords,
@@ -554,6 +557,16 @@ def compile_class_cfg(
         cd.col_offset, cd.end_col_offset));
     last = loc(0, cd.lineno, 0, 0);
     bi = 0;
+    doc = body_docstring(cd.body);
+    if doc is not None {
+        import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+        if current_optimization_level() < 2 {
+            last = stmt_loc(cd.body[0]);
+            g.emit_op(OP_LOAD_CONST, u.add_const(doc), last);
+            emit_name_store(g, "__doc__", last);
+        }
+        bi = 1;
+    }
     while bi < len(cd.body) {
         s = cd.body[bi];
         cont = visit_stmt(
@@ -754,6 +767,15 @@ def compile_fn_cfg(
     last = loc(0, body_firstlineno, 0, 0);
     terminated = False;
     bi = 0;
+    doc = body_docstring(body);
+    if doc is not None {
+        import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+        if current_optimization_level() < 2 {
+            u.add_const(doc);
+            u.flags = u.flags | CO_HAS_DOCSTRING;
+        }
+        bi = 1;
+    }
     while bi < len(body) {
         s = body[bi];
         cont = visit_stmt(g, s, exec_tail_emits_code(body, bi + 1), body, bi + 1);
@@ -1155,4 +1177,3 @@ with entry {
     stmt_handlers["visit_async_function_def"] = visit_async_function_def;
     stmt_handlers["visit_type_alias"] = visit_type_alias;
 }
-

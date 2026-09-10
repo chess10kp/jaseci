@@ -20,6 +20,11 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     Call,
     Compare,
     BoolOp,
+    IfExp,
+    JoinedStr,
+    FormattedValue,
+    TemplateStr,
+    Interpolation,
     Assign,
     Expr,
     Pass,
@@ -198,6 +203,10 @@ def sym_sorted_names(d: dict[str, int]) -> list[str] {
     return sorted(list(d.keys()));
 }
 
+def sym_block_tuple_names(d: dict[str, int], pred_scope: int) -> list[str] {
+    return [name for name in sym_sorted_names(d) if sym_scope_of(d[name]) == pred_scope];
+}
+
 def mangle_name(private: str | None, name: str) -> str {
     # CPython _Py_Mangle: only __spam forms (>=2 leading underscores, at most 1
     # trailing underscore) mangle inside a class scope; dunders (__x__) and
@@ -244,8 +253,17 @@ obj sym_builder {
     }
 
     def add_def(name: str, flags: int, lineno: int, col_offset: int) -> bool {
+        if name == "__debug__" and (flags & (DEF_LOCAL | DEF_PARAM)) != 0 {
+            return self.fail("SyntaxError", "cannot assign to __debug__", lineno, col_offset);
+        }
         mangled = mangle_name(self.private, name);
         cur_flags = self.lookup(mangled);
+        if sym_flag_set(cur_flags, DEF_PARAM) and sym_flag_set(flags, DEF_PARAM) {
+            return self.fail(
+                "SyntaxError", "duplicate argument '" + name + "' in function definition",
+                lineno, col_offset
+            );
+        }
         if sym_flag_set(cur_flags, DEF_PARAM) and sym_flag_set(flags, DEF_GLOBAL) {
             return self.fail(
                 "SyntaxError",
@@ -503,6 +521,11 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
             }
             ai = ai + 1;
         }
+        for kw in ca.keywords {
+            if not sym_visit_load_expr(b, kw.value) {
+                return False;
+            }
+        }
         return True;
     }
     if isinstance(e, BoolOp) {
@@ -515,6 +538,25 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
             vi = vi + 1;
         }
         return True;
+    }
+    if isinstance(e, IfExp) {
+        return sym_visit_load_expr(b, e.test)
+            and sym_visit_load_expr(b, e.body)
+            and sym_visit_load_expr(b, e.orelse);
+    }
+    if isinstance(e, JoinedStr) or isinstance(e, TemplateStr) {
+        for value in e.values {
+            if not sym_visit_load_expr(b, value) {
+                return False;
+            }
+        }
+        return True;
+    }
+    if isinstance(e, FormattedValue) or isinstance(e, Interpolation) {
+        if not sym_visit_load_expr(b, e.value) {
+            return False;
+        }
+        return e.format_spec is None or sym_visit_load_expr(b, e.format_spec);
     }
     if isinstance(e, Tuple) or isinstance(e, List) {
         elts: list[expr];

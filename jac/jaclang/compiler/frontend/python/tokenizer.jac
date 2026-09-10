@@ -64,7 +64,8 @@ obj tok_state {
         fstring_resume: bool = False,
         fstring_in_spec: bool = False,
         fstring_field_paren: int = 0,
-        eof_newline_done: bool = False;
+        eof_newline_done: bool = False,
+        line_has_code: bool = False;
 }
 
 def _indent_error(st: tok_state, msg: str) -> tok_diag {
@@ -299,7 +300,7 @@ def _advance(st: tok_state) -> str {
 }
 
 def _match_operator(st: tok_state) -> tok_token | None {
-    rest = st.source[st.pos:];
+    rest = st.source[st.pos:st.pos + 3];
     # Longest match first (CPython _PyToken_ThreeChars / TwoChars / OneChar).
     if len(rest) >= 3 {
         spell = rest[0:3];
@@ -859,7 +860,7 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
 
 def tokenizer_from_string(source: str, filename: str, exec_input: bool) -> tok_state {
     # Eval/single input: ensure a trailing newline like decode_str(single=1).
-    buf = source;
+    buf = source.replace("\r\n", "\n").replace("\r", "\n");
     if not exec_input {
         if len(buf) == 0 or buf[len(buf) - 1] != "\n" {
             buf = buf + "\n";
@@ -876,33 +877,7 @@ def _endmarker_lineno(st: tok_state) -> int {
     return lineno;
 }
 
-def _last_line_has_token_content(st: tok_state) -> bool {
-    # Inspect the unterminated final physical line: strip trailing whitespace
-    # and a trailing comment; whatever remains must hold at least one token
-    # character for CPython's implicit EOF NEWLINE to apply. A trailing line
-    # continuation ('\\') means the logical line is incomplete at EOF; CPython
-    # rejects that, so suppress the virtual NEWLINE and let the parse fail.
-    i = len(st.source) - 1;
-    while i >= 0 and (st.source[i] == " " or st.source[i] == "\t" or st.source[i] == "\f") {
-        i = i - 1;
-    }
-    if i < 0 {
-        return False;
-    }
-    if st.source[i] == "\\" {
-        return False;
-    }
-    j = i;
-    while j >= 0 and st.source[j] != "\n" and st.source[j] != "\r" {
-        if st.source[j] == "#" {
-            return False;
-        }
-        j = j - 1;
-    }
-    return True;
-}
-
-def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
+def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     if st.done {
         em = _endmarker_lineno(st);
         return tok_token(
@@ -947,6 +922,9 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             if pending is not None {
                 return pending;
             }
+        }
+        if st.pos >= len(st.source) {
+            break;
         }
         ch = _peek(st);
         if ch == " " or ch == "\t" or ch == "\f" {
@@ -1098,7 +1076,7 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     }
     if not st.eof_newline_done and len(st.source) > 0 {
         last = st.source[len(st.source) - 1];
-        if last != "\n" and last != "\r" and _last_line_has_token_content(st) {
+        if last != "\n" and last != "\r" and st.line_has_code and not st.source.rstrip().endswith("\\") {
             st.eof_newline_done = True;
             return tok_token(
                 tok_type=NEWLINE,
@@ -1125,6 +1103,18 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         end_lineno=em,
         end_col_offset=TOK_NO_COLUMN
     );
+}
+
+def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
+    token = _tokenizer_next(st);
+    if isinstance(token, tok_token) {
+        if token.tok_type == NEWLINE {
+            st.line_has_code = False;
+        } elif token.tok_type not in (ENDMARKER, INDENT, DEDENT) {
+            st.line_has_code = True;
+        }
+    }
+    return token;
 }
 
 def tokenize_all(

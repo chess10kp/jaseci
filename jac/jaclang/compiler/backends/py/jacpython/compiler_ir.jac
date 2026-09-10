@@ -7,10 +7,56 @@
 # na-clean leaf: no host calls, no import cycles. Location encoding matches
 # CPython 3.14 (PEP 626); col offsets are 0-based byte offsets, NO_COLUMN = -1.
 
-import from jaclang.runtime.python.objects { PyObj, py_none, hashkey_equal }
+import from jaclang.runtime.python.objects {
+    PyObj, PyInt, PyBool, PyFloat, PyComplex, PyStr, PyBytes,
+    PyTuple, PySet, PySlice, PyCode, py_none
+}
 import from jaclang.runtime.python.opcode_meta { opcode_cache_count, OP_LOAD_CONST }
 import from jaclang.compiler.frontend.python.compiler_diagnostics { compiler_diagnostic }
 import from jaclang.compiler.frontend.python.compiler_symtable { sym_block }
+
+def constant_key(value: PyObj) -> str {
+    if isinstance(value, PyCode) {
+        return "code:" + str(id(value));
+    }
+    if isinstance(value, PyTuple) {
+        keys = [constant_key(item) for item in value.items];
+        return "tuple:" + "".join(str(len(key)) + ":" + key for key in keys);
+    }
+    if isinstance(value, PySet) and value.frozen {
+        keys = sorted([constant_key(item) for item in value.items.values()]);
+        return "frozenset:" + "".join(str(len(key)) + ":" + key for key in keys);
+    }
+    if isinstance(value, PySlice) {
+        keys = [constant_key(value.start), constant_key(value.stop), constant_key(value.step)];
+        return "slice:" + "".join(str(len(key)) + ":" + key for key in keys);
+    }
+    if isinstance(value, PyFloat) {
+        if value.val != value.val {
+            return "nan:" + str(id(value));
+        }
+        return "float:" + repr(value.val);
+    }
+    if isinstance(value, PyComplex) {
+        if value.real != value.real or value.imag != value.imag {
+            return "complex-nan:" + str(id(value));
+        }
+        return "complex:" + repr(value.real) + ":" + repr(value.imag);
+    }
+    if isinstance(value, PyInt) {
+        return "int:" + str(value.val);
+    }
+    if isinstance(value, PyBool) {
+        return "bool:" + str(value.val);
+    }
+    if isinstance(value, PyStr) {
+        return "str:" + value.val;
+    }
+    if isinstance(value, PyBytes) {
+        return "bytes:" + str(value.val);
+    }
+    return value.t;
+}
 
 # A source location. lineno/end_lineno are 1-based; col_offset/end_col_offset are
 # 0-based. Matches CPython's `location` struct (Python/compile.c).
@@ -380,11 +426,16 @@ obj unverified_cfg {
         param_count: int = 0,
         kwonlyargcount: int = 0,
         flags: int = 0,
+        interactive: bool = False,
         varnames: list[str] = [],
         cellvars: list[str] = [],
         freevars: list[str] = [],
         consts: list[PyObj] = [],
+        const_indices: dict[str, int] = {},
+        indexed_consts: int = 0,
+        late_const_indices: dict[str, int] = {},
         names: list[str] = [],
+        name_indices: dict[str, int] = {},
         blocks: list[basicblock] = [],
         next_block_id: int = 0,
         # Per-block entry stack depth (indexed by block id), stashed by
@@ -456,48 +507,47 @@ obj unverified_cfg {
         return b;
     }
 
-    # Const dedup by value (tp_hashkey collapses numeric/value equality the same
-    # way CPython's const table dedups). Append-first-seen preserves CPython's
-    # deterministic ordering.
     def add_const(c: PyObj) -> int {
-        key = c.tp_hashkey();
-        i = 0;
-        while i < len(self.consts) {
-            if hashkey_equal(self.consts[i].tp_hashkey(), key) {
-                return i;
-            }
-            i = i + 1;
+        while self.indexed_consts < len(self.consts) {
+            idx = self.indexed_consts;
+            self.const_indices[constant_key(self.consts[idx])] = idx;
+            self.indexed_consts += 1;
+        }
+        key = constant_key(c);
+        if key in self.const_indices {
+            return self.const_indices[key];
         }
         self.consts.append(c);
-        return len(self.consts) - 1;
+        idx = len(self.consts) - 1;
+        self.const_indices[key] = idx;
+        self.indexed_consts += 1;
+        return idx;
     }
 
     def add_name(n: str) -> int {
-        i = 0;
-        while i < len(self.names) {
-            if self.names[i] == n {
-                return i;
-            }
-            i = i + 1;
+        if len(self.name_indices) != len(self.names) {
+            self.name_indices = {name: i for (i, name) in enumerate(self.names)};
+        }
+        if n in self.name_indices {
+            return self.name_indices[n];
         }
         self.names.append(n);
-        return len(self.names) - 1;
+        self.name_indices[n] = len(self.names) - 1;
+        return self.name_indices[n];
     }
 
     # Stage a folded display const for interning at flush time. Returns a
     # negative placeholder oparg; flush_late_consts patches it to the final
     # index. Dedup within the staged set mirrors add_const.
     def stage_late_const(c: PyObj) -> int {
-        key = c.tp_hashkey();
-        k = 0;
-        while k < len(self.late_consts) {
-            if hashkey_equal(self.late_consts[k].tp_hashkey(), key) {
-                return -(k + 1);
-            }
-            k = k + 1;
+        key = constant_key(c);
+        if key in self.late_const_indices {
+            return self.late_const_indices[key];
         }
         self.late_consts.append(c);
-        return -len(self.late_consts);
+        idx = -len(self.late_consts);
+        self.late_const_indices[key] = idx;
+        return idx;
     }
 
     # Intern staged consts after every visit-time const (CPython interns them

@@ -4,7 +4,7 @@
 # objects. Generated parser rules call these helpers; this file is hand-written
 # and grows with each grammar profile.
 
-import from jaclang.runtime.python.objects { PyObj, PyInt, PyBool, PyStr, PyBytes, PyFloat, PyComplex, py_none }
+import from jaclang.runtime.python.objects { PyObj, PyInt, PyBool, PyStr, PyBytes, PyFloat, PyComplex, PyEllipsis, py_none }
 import from jaclang.compiler.frontend.python.ast_nodes {
     ast_node,
     expr,
@@ -153,240 +153,53 @@ def pa_name_from_token(tok: peg_token | None) -> Name | None {
     );
 }
 
-def _pa_digit_val(c: str) -> int {
-    if c >= "0" and c <= "9" {
-        return ord(c) - ord("0");
-    }
-    return -1;
-}
-
-def _strip_underscores(spelling: str) -> str {
-    out = "";
-    i = 0;
-    while i < len(spelling) {
-        if spelling[i] != "_" {
-            out = out + spelling[i];
-        }
-        i = i + 1;
-    }
-    return out;
-}
-
-def _pa_digit_val_base(c: str, base: int) -> int {
-    d = -1;
-    if c >= "0" and c <= "9" {
-        d = ord(c) - ord("0");
-    } elif base == 16 {
-        if c >= "a" and c <= "f" {
-            d = ord(c) - ord("a") + 10;
-        } elif c >= "A" and c <= "F" {
-            d = ord(c) - ord("A") + 10;
-        }
-    }
-    if d < 0 or d >= base {
-        return -1;
-    }
-    return d;
-}
-
-def _fold_radix(s: str, start: int, base: int) -> int {
-    # Tokenizer-guaranteed valid spellings; a bad digit means a lexer bug.
-    n = 0;
-    i = start;
-    while i < len(s) {
-        d = _pa_digit_val_base(s[i], base);
-        if d < 0 {
-            return -1;
-        }
-        n = n * base + d;
-        i = i + 1;
-    }
-    return n;
-}
-
-def pa_parse_int_spelling(spelling: str) -> int {
-    s = _strip_underscores(spelling);
-    if len(s) >= 3 and s[0] == "0" and (s[1] == "x" or s[1] == "X") {
-        return _fold_radix(s, 2, 16);
-    }
-    if len(s) >= 3 and s[0] == "0" and (s[1] == "o" or s[1] == "O") {
-        return _fold_radix(s, 2, 8);
-    }
-    if len(s) >= 3 and s[0] == "0" and (s[1] == "b" or s[1] == "B") {
-        return _fold_radix(s, 2, 2);
-    }
-    return _fold_radix(s, 0, 10);
-}
-
-def _pa_hex_digit_val(c: str) -> int {
-    d = _pa_digit_val(c);
-    if d >= 0 {
-        return d;
-    }
-    if c >= "a" and c <= "f" {
-        return ord(c) - ord("a") + 10;
-    }
-    if c >= "A" and c <= "F" {
-        return ord(c) - ord("A") + 10;
-    }
-    return -1;
-}
-
+# Escape decoding uses the retained string/bytes object runtime, just as
+# CPython's string_parser.c does. No parser or compiler API is called here.
 def pa_decode_escape_body(body: str) -> str {
-    out = "";
+    import codecs;
+    encoded: list[str] = [];
     i = 0;
     while i < len(body) {
-        c = body[i];
-        if c != "\\" {
-            out = out + c;
-            i = i + 1;
-            continue;
-        }
-        i = i + 1;
-        if i >= len(body) {
-            out = out + "\\";
-            break;
-        }
-        e = body[i];
-        if e == "n" {
-            out = out + "\n";
-            i = i + 1;
-            continue;
-        }
-        if e == "t" {
-            out = out + "\t";
-            i = i + 1;
-            continue;
-        }
-        if e == "r" {
-            out = out + "\r";
-            i = i + 1;
-            continue;
-        }
-        if e == "\\" {
-            out = out + "\\";
-            i = i + 1;
-            continue;
-        }
-        if e == "'" {
-            out = out + "'";
-            i = i + 1;
-            continue;
-        }
-        if e == "\"" {
-            out = out + "\"";
-            i = i + 1;
-            continue;
-        }
-        if e == "x" or e == "u" or e == "U" {
-            width = 2 if e == "x" else (4 if e == "u" else 8);
-            if i + width < len(body) {
-                value = 0;
-                valid = True;
-                j = i + 1;
-                while j <= i + width {
-                    digit = _pa_hex_digit_val(body[j]);
-                    if digit < 0 {
-                        valid = False;
-                        break;
-                    }
-                    value = value * 16 + digit;
-                    j = j + 1;
-                }
-                if valid {
-                    out = out + chr(value);
-                    i = i + width + 1;
-                    continue;
-                }
+        ch = body[i];
+        if ch == "\\" and i + 1 < len(body) {
+            following = body[i + 1];
+            if ord(following) < 128 {
+                encoded.append(ch + following);
+                i += 2;
+                continue;
             }
+            # A backslash before a literal non-ASCII character must not consume
+            # the escape we introduce when encoding that character below.
+            encoded.append("\\u005c");
+        } elif ord(ch) >= 128 {
+            encoded.append("\\U" + format(ord(ch), "08x"));
+        } else {
+            encoded.append(ch);
         }
-        out = out + e;
-        i = i + 1;
+        i += 1;
     }
-    return out;
+    try {
+        return codecs.decode("".join(encoded).encode("ascii"), "unicode_escape");
+    } except UnicodeError as error {
+        raise SyntaxError(str(error));
+    }
 }
 
 def pa_decode_bytes_escape_body(body: str, raw: bool) -> list[int] {
-    out: list[int] = [];
-    i = 0;
-    while i < len(body) {
-        c = body[i];
-        if raw or c != "\\" or i + 1 >= len(body) {
-            out.append(ord(c));
-            i = i + 1;
-            continue;
-        }
-        e = body[i + 1];
-        if e == "n" {
-            out.append(10);
-            i = i + 2;
-            continue;
-        }
-        if e == "t" {
-            out.append(9);
-            i = i + 2;
-            continue;
-        }
-        if e == "r" {
-            out.append(13);
-            i = i + 2;
-            continue;
-        }
-        if e == "b" {
-            out.append(8);
-            i = i + 2;
-            continue;
-        }
-        if e == "f" {
-            out.append(12);
-            i = i + 2;
-            continue;
-        }
-        if e == "v" {
-            out.append(11);
-            i = i + 2;
-            continue;
-        }
-        if e == "a" {
-            out.append(7);
-            i = i + 2;
-            continue;
-        }
-        if e == "\\" or e == "'" or e == "\"" {
-            out.append(ord(e));
-            i = i + 2;
-            continue;
-        }
-        if e >= "0" and e <= "7" {
-            j = i + 1;
-            limit = i + 4 if i + 4 <= len(body) else len(body);
-            while j < limit and body[j] >= "0" and body[j] <= "7" {
-                j = j + 1;
-            }
-            value = 0;
-            k = i + 1;
-            while k < j {
-                value = value * 8 + ord(body[k]) - ord("0");
-                k = k + 1;
-            }
-            out.append(value % 256);
-            i = j;
-            continue;
-        }
-        if e == "x" and i + 3 < len(body) {
-            h1 = _pa_hex_digit_val(body[i + 2]);
-            h2 = _pa_hex_digit_val(body[i + 3]);
-            if h1 >= 0 and h2 >= 0 {
-                out.append(h1 * 16 + h2);
-                i = i + 4;
-                continue;
-            }
-        }
-        out.append(92);
-        out.append(ord(e));
-        i = i + 2;
+    import codecs;
+    try {
+        data = body.encode("ascii");
+    } except UnicodeEncodeError {
+        raise SyntaxError("bytes can only contain ASCII literal characters");
     }
-    return out;
+    if raw {
+        return list(data);
+    }
+    try {
+        return list(codecs.escape_decode(data)[0]);
+    } except ValueError as error {
+        raise SyntaxError(str(error));
+    }
 }
 
 def pa_decode_string_literal_spelling(spelling: str) -> str | list[int] | None {
@@ -643,87 +456,23 @@ def _has_float_marker(s: str) -> bool {
     return False;
 }
 
-def _parse_decimal_float(s: str) -> float {
-    # strtod-equivalent for tokenizer-valid non-prefixed spellings
-    # (optional sign, digits, optional fraction, optional exponent).
-    # NOTE: accumulate-and-scale rounding may differ from correctly-rounded
-    # strtod by <=1 ULP on adversarially long literals.
-    val = 0.0;
-    i = 0;
-    neg = False;
-    if s[i] == "+" or s[i] == "-" {
-        neg = s[i] == "-";
-        i = i + 1;
-    }
-    while i < len(s) and s[i] >= "0" and s[i] <= "9" {
-        val = val * 10.0 + (ord(s[i]) - ord("0"));
-        i = i + 1;
-    }
-    if i < len(s) and s[i] == "." {
-        i = i + 1;
-        scale = 0.1;
-        while i < len(s) and s[i] >= "0" and s[i] <= "9" {
-            val = val + (ord(s[i]) - ord("0")) * scale;
-            scale = scale / 10.0;
-            i = i + 1;
-        }
-    }
-    e = 0;
-    if i < len(s) and (s[i] == "e" or s[i] == "E") {
-        i = i + 1;
-        exp_neg = False;
-        if i < len(s) and (s[i] == "+" or s[i] == "-") {
-            exp_neg = s[i] == "-";
-            i = i + 1;
-        }
-        while i < len(s) and s[i] >= "0" and s[i] <= "9" {
-            e = e * 10 + (ord(s[i]) - ord("0"));
-            i = i + 1;
-        }
-        if exp_neg {
-            e = -e;
-        }
-    }
-    if e >= 0 {
-        k = 0;
-        while k < e {
-            val = val * 10.0;
-            k = k + 1;
-        }
-    } else {
-        k = 0;
-        while k > e {
-            val = val / 10.0;
-            k = k - 1;
-        }
-    }
-    if neg {
-        return -val;
-    }
-    return val;
-}
-
 def pa_py_number_from_spelling(spelling: str) -> PyObj {
-    # Mirrors CPython pegen number_token: prefixed ints first (they never
-    # carry a j suffix or float markers), then imaginary, then float.
-    s = _strip_underscores(spelling);
-    if _is_prefixed_int(s) {
-        return PyInt(t="int", val=pa_parse_int_spelling(s));
-    }
-    last = s[len(s) - 1];
-    if last == "j" or last == "J" {
-        body = "";
-        i = 0;
-        while i < len(s) - 1 {
-            body = body + s[i];
-            i = i + 1;
+    # Number conversion belongs to the retained numeric object runtime. Keep
+    # underscores intact so its converters reject invalid literal spellings.
+    try {
+        if _is_prefixed_int(spelling) {
+            return PyInt(t="int", val=int(spelling, 0));
         }
-        return PyComplex(t="complex", real=0.0, imag=_parse_decimal_float(body));
+        if spelling.endswith(("j", "J")) {
+            return PyComplex(t="complex", real=0.0, imag=float(spelling[:-1]));
+        }
+        if _has_float_marker(spelling) {
+            return PyFloat(t="float", val=float(spelling));
+        }
+        return PyInt(t="int", val=int(spelling, 0));
+    } except ValueError as error {
+        raise SyntaxError(str(error));
     }
-    if _has_float_marker(s) {
-        return PyFloat(t="float", val=_parse_decimal_float(s));
-    }
-    return PyInt(t="int", val=pa_parse_int_spelling(s));
 }
 
 def pa_number_from_token(tok: peg_token | None) -> Constant | None {
@@ -751,6 +500,16 @@ def pa_constant_none(
         col_offset=col_offset,
         end_lineno=end_lineno,
         end_col_offset=end_col_offset
+    );
+}
+
+def pa_constant_ellipsis(
+    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+) -> Constant {
+    return Constant(
+        value=PyEllipsis(t="ellipsis"), kind=None,
+        lineno=lineno, col_offset=col_offset,
+        end_lineno=end_lineno, end_col_offset=end_col_offset
     );
 }
 
@@ -1852,6 +1611,9 @@ def pa_or_pattern_singleton(
     end_lineno: int,
     end_col_offset: int
 ) -> pattern {
+    if len(patterns) == 1 {
+        return patterns[0];
+    }
     return MatchOr(
         patterns=patterns,
         lineno=lineno,

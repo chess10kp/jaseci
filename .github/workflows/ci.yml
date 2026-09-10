@@ -54,6 +54,7 @@ jobs:
               - '.github/workflows/ci.yml'
             core:
               - 'jac/**'
+              - 'scripts/run_cpython_compiler_tests.py'
               - '.github/workflows/ci.yml'
               - '.github/actions/**'
             scale:
@@ -144,6 +145,31 @@ jobs:
           name: python-build-logs-${{ runner.os }}-${{ runner.arch }}
           path: jac/.python-build/**/*.log
           include-hidden-files: true
+
+  # Direct-API coverage for the source-only JacPython implementation. Expand
+  # this upstream subset as compatibility lands; it is not the C-removal gate.
+  jacpython:
+    needs: [changes, build-kit]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.core == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    env:
+      JAC_NO_DEV_SOURCE: ""
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/jac-kit
+      - name: Run pinned CPython tests through the JacPython compile API
+        run: |
+          jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' --tests \
+            test_argument_handling test_argument_order test_bad_single_statement \
+            test_compile_filename test_compile_filename_refleak \
+            test_compile_invalid_namedexpr test_compile_invalid_typealias \
+            test_docstring test_docstring_interactive_mode test_docstring_omitted \
+            test_dont_merge_constants test_merge_constants test_encoding \
+            test_float_literals test_literals_with_leading_zeroes \
+            test_multi_line_lambda_as_argument test_none_assignment \
+            test_same_filename_used test_single_statement \
+            test_compile_redundant_jumps_and_nops_after_moving_cold_blocks
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

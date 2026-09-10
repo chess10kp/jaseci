@@ -1657,6 +1657,8 @@ def remove_unused_consts(u: unverified_cfg, flat: list[cinstr]) {
         i = i + 1;
     }
     u.consts = kept;
+    u.const_indices.clear();
+    u.indexed_consts = 0;
     for ins in flat {
         if opcode_has_const(ins.opcode) {
             a = ins.oparg;
@@ -1668,6 +1670,9 @@ def remove_unused_consts(u: unverified_cfg, flat: list[cinstr]) {
 }
 
 def verify_cfg(u: unverified_cfg) -> verified_cfg {
+    # Every code unit, including lambdas and comprehensions, must resolve its
+    # staged constants before optimization or operand encoding.
+    u.flush_late_consts();
     optimize_cfg(u);
     add_checks_for_uninitialized(u);
     fuse_flagged_stores(u);

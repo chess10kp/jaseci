@@ -26,6 +26,7 @@ import from jaclang.runtime.python.objects {
 # Statement-dispatch handler registry (leaf module; see compiler_dispatch.jac).
 import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
 import from jaclang.runtime.python.opcode_meta {
+    is_scope_exit_opcode, is_unconditional_jump_opcode,
     OP_RESUME,
     OP_RETURN_GENERATOR,
     OP_RETURN_VALUE,
@@ -379,6 +380,7 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     visit_test_expr,
 }
 import from jaclang.compiler.backends.py.jacpython.codegen_util {
+    body_docstring,
     args_have_kw_defaults,
     function_argcounts,
     function_code_flags,
@@ -586,13 +588,17 @@ def emit_compare_cleanup(g: cfg_builder, cleanup: basicblock, lc: cloc) {
 # scope: lineno 0), the expression, then RETURN_VALUE carrying the expression's
 # span. addNone is false for eval (no trailing None push).
 def compile_eval(
-    e: expr, filename: str, name: str, firstlineno: int
+    e: expr, filename: str, name: str, firstlineno: int,
+    sym_top: sym_block | None = None
 ) -> unverified_cfg {
     u = unverified_cfg(
         filename=filename, name=name, qualname=name, firstlineno=firstlineno
     );
+    if sym_top is not None {
+        u.varnames = fast_varnames_from_sym(sym_top);
+    }
     entry_blk = u.add_block();
-    g = new_cfg_builder(u, entry_blk);
+    g = new_cfg_builder(u, entry_blk, sym_top);
     g.emit_op(OP_RESUME, 0, loc(0, firstlineno, 0, 0));
     cleanup = visit_expr(g, e, false_shortcircuit_returns=True);
     if codegen_busy(g) {
@@ -855,6 +861,12 @@ def visit_delete_target(g: cfg_builder, t: expr) -> stmt_cont {
 
 # Module-level epilogue (LOAD_CONST None; RETURN_VALUE).
 def emit_module_return(g: cfg_builder, lc: cloc) {
+    if g.cur.instrs {
+        last = g.cur.instrs[-1].opcode;
+        if is_scope_exit_opcode(last) or is_unconditional_jump_opcode(last) {
+            return;
+        }
+    }
     none_idx = g.u.stage_late_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, lc);
     g.emit_op(OP_RETURN_VALUE, 0, lc);
@@ -889,6 +901,10 @@ def emit_unit_loop_exit_epilogue(
 # Lower assert (test + optional message).
 def visit_assert_stmt(g: cfg_builder, a: Assert) -> stmt_cont {
     aloc = nloc(a.lineno, a.end_lineno, a.col_offset, a.end_col_offset);
+    import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+    if current_optimization_level() > 0 {
+        return stmt_cont(loc=aloc);
+    }
     test_loc = expr_loc(a.`test);
     kind = visit_test_expr(g, a.`test, test_loc);
     if codegen_busy(g) {
@@ -1067,6 +1083,13 @@ def emit_tail_and_finish(
 
 
 # Lower one statement into the builder's current block.
+def finish_expression(g: cfg_builder, lc: cloc) {
+    if g.u.interactive {
+        g.emit_op(OP_CALL_INTRINSIC_1, 1, lc);
+    }
+    g.emit_op(OP_POP_TOP, 0, lc);
+}
+
 def visit_stmt(
     g: cfg_builder,
     s: stmt,
@@ -1240,7 +1263,7 @@ def visit_stmt(
             cloc_call = nloc(
                 ca.lineno, ca.end_lineno, ca.col_offset, ca.end_col_offset
             );
-            g.emit_op(OP_POP_TOP, 0, eloc);
+            finish_expression(g, eloc);
             after = g.new_block();
             g.emit_jump(OP_JUMP_FORWARD, after.id, eloc);
             emit_compare_cleanup(g, cmp_cleanup, cloc_call);
@@ -1248,25 +1271,25 @@ def visit_stmt(
                 emit_call_keyword_values(g, ca, cloc_call);
             }
             emit_call_instruction(g, ca, cloc_call);
-            g.emit_op(OP_POP_TOP, 0, eloc);
+            finish_expression(g, eloc);
             g.use(after);
         } elif cmp_cleanup is not None {
-            g.emit_op(OP_POP_TOP, 0, eloc);
+            finish_expression(g, eloc);
             after = g.new_block();
             g.emit_jump(OP_JUMP_FORWARD, after.id, eloc);
             emit_compare_cleanup(g, cmp_cleanup, eloc);
-            g.emit_op(OP_POP_TOP, 0, eloc);
+            finish_expression(g, eloc);
             g.use(after);
         } else {
             if isinstance(x.value, YieldFrom) {
-                g.emit_op(OP_POP_TOP, 0, eloc);
+                finish_expression(g, eloc);
                 if more_code_follows {
                     resume = g.new_deferred_block();
                     g.emit_jump(OP_JUMP_FORWARD, resume.id, eloc);
                     g.yield_from_resume = resume;
                 }
             } else {
-                g.emit_op(OP_POP_TOP, 0, eloc);
+                finish_expression(g, eloc);
             }
         }
         return stmt_cont(loc=eloc);
@@ -1486,7 +1509,8 @@ def compile_exec(
     filename: str,
     name: str,
     firstlineno: int,
-    sym_top: sym_block | None = None
+    sym_top: sym_block | None = None,
+    interactive: bool = False
 ) -> unverified_cfg {
     # PEP 649: module-scope annotated assignments defer into the __annotate__
     # machinery. The plan is collected up front because the setup bytes emit
@@ -1506,6 +1530,7 @@ def compile_exec(
             filename=filename, name=name, qualname=name, firstlineno=firstlineno
         );
     }
+    u.interactive = interactive;
     if sym_top is not None {
         u.varnames = fast_varnames_from_sym(sym_top);
     }
@@ -1526,6 +1551,16 @@ def compile_exec(
     last = loc(0, firstlineno, 0, 0);
     terminated = False;
     si = 0;
+    doc = body_docstring(body) if not interactive else None;
+    if doc is not None {
+        import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+        if current_optimization_level() < 2 {
+            last = expr_loc((body[0] as Expr).value);
+            g.emit_op(OP_LOAD_CONST, u.add_const(doc), last);
+            emit_name_store(g, "__doc__", last);
+        }
+        si = 1;
+    }
     while si < len(body) {
         s = body[si];
         cont = visit_stmt(

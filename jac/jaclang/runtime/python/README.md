@@ -15,17 +15,37 @@ from the compiler bootstrap and sealed release runtime. Releases still build
 CPython's C sources through `jac/bootstrap/python/`.
 
 `product_compile.jac` connects the frontend and backend and produces the
-`PyCode` representation in `objects.jac`. The compiler directly depends on
+`PyCode` representation in `objects.jac`. `code_object.jac` converts that result,
+including nested code, constants, locations and exception tables, into CPython
+3.14 code objects. Its `compile_python` development API accepts source or an AST
+in `exec`, `eval` and `single` modes, and can return an AST with `PyCF_ONLY_AST`.
+`codegen_shim.compile_ir(..., python_compiler=compile_python)` routes Jac's generated
+AST and inline Python source splices through the replacement during development.
+The default release path still uses CPython's compiler.
+
+For a warm development loop, use the checkout's Jac binary:
+
+```sh
+jac -c 'from jaclang.compiler.backends.py.jacpython.code_object import compile_python; exec(compile_python("print(6 * 7)", "example.py", "exec"))'
+```
+
+These source-only modules have ordinary source/interface cache dependencies.
+Editing one no longer changes the global producing-compiler generation. Active
+compiler edits still invalidate that generation; source-only exclusions must be
+removed when the replacement becomes part of the running compiler.
+
+The compiler directly depends on
 `objects.jac` and `opcode_meta.jac`; their shared support is retained while
 compiler-specific values and helpers are separated from interpreter behavior.
 `symtable.jac` is a starting point for the public symbol-table interface and
 still needs adaptation to CPython's result objects.
 
 The Jac interpreter, standard-library replacements, guest import machinery and
-host-compiler subprocess bridge have been removed. Connecting the retained
-compiler to CPython code objects, runtime compilation APIs and bootstrap loading
-is future work. No CPython C source can be retired on the strength of this
-cleanup alone.
+host-compiler subprocess bridge have been removed. Runtime compilation APIs,
+source imports, C entry points and bootstrap loading still need integration.
+The development API does not yet implement the complete compile-flag, future,
+diagnostic and syntax contracts. No CPython source allowlist entries have been
+retired by this bridge.
 
 The AST, token model, PEG parser and opcode metadata were originally generated
 from CPython 3.14.6 and are now maintained directly in Jac. Their generators and
@@ -37,10 +57,14 @@ Release builds continue to download checksum-pinned CPython sources through
 `jac/bootstrap/python/`; they do not use the optional local `reference/cpython`
 checkout.
 
-Bundled JacPython test suites, fixtures and test-only helpers have been removed.
-A future CI workflow will run CPython's upstream compiler tests against the
-replacement; that workflow is not implemented here. Jac's own compiler and
-runtime regression suites remain.
+Bundled JacPython test suites and fixtures have been removed. The `jacpython` CI
+job fetches the checksum-pinned upstream CPython tests and runs a focused subset
+through the explicit compile API. `scripts/run_cpython_compiler_tests.py` runs the
+whole `TestSpecifics` class when invoked without `--tests`; compatibility gaps
+remain in that broader suite. Tests with no replacement calls are reported as
+skipped. Test definitions and reference ASTs still use CPython, so this does not
+prove replacement of C entry points or bootstrap. Jac's own compiler and runtime
+regression suites remain.
 
 [`LICENSE.cpython`](LICENSE.cpython) applies to CPython-derived code and generated
 sources across these packages. File headers identify their upstream origins.

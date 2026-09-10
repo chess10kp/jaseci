@@ -7,7 +7,9 @@
 # module only imports lower layers (no cycles).
 
 import from jaclang.runtime.python.objects {
+    PyFloat, PyComplex,
     PyObj,
+    PyBool,
     PyInt,
     PyStr,
     py_none,
@@ -1576,6 +1578,12 @@ def visit_expr(
     }
     if isinstance(e, Name) {
         n = e as Name;
+        if n.id == "__debug__" {
+            import from jaclang.compiler.backends.py.jacpython.compiler_context { current_optimization_level }
+            value = PyBool(t="bool", val=current_optimization_level() == 0);
+            g.emit_op(OP_LOAD_CONST, g.u.add_const(value), expr_loc(n));
+            return None;
+        }
         emit_name_load(
             g, n.id, nloc(n.lineno, n.end_lineno, n.col_offset, n.end_col_offset)
         );
@@ -1614,6 +1622,16 @@ def visit_expr(
         # lowers to LOAD_CONST <late>, never LOAD_SMALL_INT + UNARY_NEGATIVE.
         if isinstance(un.op, USub) and isinstance(un.operand, Constant) {
             cv = (un.operand as Constant).value;
+            if isinstance(cv, PyFloat) or isinstance(cv, PyComplex) {
+                if isinstance(cv, PyFloat) {
+                    negated = PyFloat(t="float", val=-cv.val);
+                } else {
+                    negated = PyComplex(t="complex", real=-cv.real, imag=-cv.imag);
+                }
+                idx = g.u.add_const(negated);
+                g.emit_op(OP_LOAD_CONST, idx, expr_loc(un));
+                return None;
+            }
             if isinstance(cv, PyInt) {
                 uloc = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
                 # The operand's own const is removed by CPython's optimizer
@@ -1901,6 +1919,21 @@ def visit_expr(
             return None;
         }
         emit_send_delegation_loop(g, OP_GET_AWAITABLE, 0, 3, aloc);
+        return None;
+    }
+    if isinstance(e, Slice) {
+        sloc = expr_loc(e);
+        folded = fold_slice_const(e);
+        if folded is not None {
+            g.emit_op(OP_LOAD_CONST, g.u.add_const(folded), sloc);
+        } else {
+            emit_slice_bound(g, e.lower, sloc);
+            emit_slice_bound(g, e.upper, sloc);
+            if e.step is not None {
+                visit_expr(g, e.step);
+            }
+            g.emit_op(OP_BUILD_SLICE, 3 if e.step is not None else 2, sloc);
+        }
         return None;
     }
     if isinstance(e, Tuple) {
