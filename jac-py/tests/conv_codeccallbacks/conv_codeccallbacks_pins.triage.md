@@ -58,81 +58,101 @@
 ## Expected vs got
 
 ### CodecCallbackTest.test_backslashescape (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: iso-8859-15'">
 
 ### CodecCallbackTest.test_badandgoodbackslashreplaceexceptions (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC TypeError 'UnicodeTranslateError constructor takes exactly 5 arguments'">
 
 ### CodecCallbackTest.test_badandgoodignoreexceptions (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC TypeError 'UnicodeTranslateError constructor takes exactly 5 arguments'">
 
 ### CodecCallbackTest.test_badandgoodreplaceexceptions (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC TypeError 'UnicodeTranslateError constructor takes exactly 5 arguments'">
 
 ### CodecCallbackTest.test_badandgoodstrictexceptions (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC TypeError 'UnicodeTranslateError constructor takes exactly 5 arguments'">
 
 ### CodecCallbackTest.test_badandgoodsurrogateescapeexceptions (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\\\\x80\', 2), (b\'\\\\x80\', 2))"'>
 
 ### CodecCallbackTest.test_badandgoodsurrogatepassexceptions (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16le'">
 
 ### CodecCallbackTest.test_badhandlerresults (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'test.badhandler\'"'>
 
 ### CodecCallbackTest.test_callbacks (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'test.handler1\'"'>
 
 ### CodecCallbackTest.test_decodehelper_bug36819 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16be'">
 
 ### CodecCallbackTest.test_encode_bytes_replacement (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'test.replacing\'"'>
 
 ### CodecCallbackTest.test_encodehelper (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'test.badencodereturn1\'"'>
 
 ### CodecCallbackTest.test_longstrings (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: iso-8859-15'">
 
 ### CodecCallbackTest.test_nameescape (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'namereplace\'"'>
 
 ### CodecCallbackTest.test_unicodedecodeerror (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError \'(\\\'assertEqual\\\', "(ascii, bytearray(b\\\'g\\\\\\\\xfcrk\\\'), 1, 2, ouch)", "\\\'ascii\\\' codec can\\\'t decode byte 0xfc in position 1: ouch")\''>
 
 ### CodecCallbackTest.test_unicodeencodeerror (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError \'(\\\'assertEqual\\\', "\\\'ascii\\\' codec can\\\'t encode character \\\\\\\\u00fc in position 1: ouch", "\\\'ascii\\\' codec can\\\'t encode character \\\'\\\\\\\\xfc\\\' in position 1: ouch")\''>
 
 ### CodecCallbackTest.test_unicodetranslateerror (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC TypeError 'UnicodeTranslateError constructor takes exactly 5 arguments'">
 
 ### CodecCallbackTest.test_uninamereplace (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'test.uninamereplace\'"'>
 
 ### CodecCallbackTest.test_xmlcharnamereplace (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'test.xmlcharnamereplace\'"'>
 
 ### CodecCallbackTest.test_xmlcharrefvalues (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'test.xmlcharrefreplace\'"'>

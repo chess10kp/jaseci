@@ -1,6 +1,7 @@
 # DESK state — pass 2026-09-08 (evening)
 
 ## gotchas (standing — read first)
+
 - **Cache isolation is mandatory**: sibling sessions share `~/.cache/jac` and
   poison bootstrap entries mid-run (hangs at every commit, VM spins). Run all
   jac commands with `XDG_CACHE_HOME=$REPO/.xdg-cache`. Full writeup:
@@ -10,6 +11,7 @@
   locally.
 
 ## gates
+
 - **upstream merge LANDED**: fa0e4dbd5 = 075453d07 + upstream/main (147
   commits, #9022 semantics/native migration). Merge `fa0e4dbd5` pushed.
 - 185 LANDED @d23b36e80 + repair @c2bc9ada4: oracle parity reached
@@ -34,7 +36,7 @@
   spins 98% CPU importing host stdlib through the layer3 shim path
   (set_layer3_active(True) + IMPORT_NAME routing). Prime suspect: the same
   commit's ceval_bridge_guest stand-in recovery path (host-created guest
-  stand-ins, e.g. namedtuple via tuple.__new__) re-entering trampolines.
+  stand-ins, e.g. namedtuple via tuple.**new**) re-entering trampolines.
   Layer lanes don't cover the intersection (layer3 shim routing × bridge
   recovery) — that's the census gap. Fix owner: VM/bridge debugging
   session; instrument ceval find_handler + stand-in trampoline entry.
@@ -43,17 +45,21 @@
   pattern in this file's history; zero mismatches remain.
 
 ## in-flight
+
 | worker | lane | task |
 |--------|------|------|
 | w3 | exceptions | 185-loop-try-break-inline-v2 (hb-fresh) |
 
 ## idle (no real pending)
+
 w2 objects, w4 mech, w6 converter, w7 typesys, w8 census
 
 ## failed
+
 50/50 HOLD — 49 backup drain-only (do not requeue) + 900 SUPERSEDED (baselines on origin).
 
 ## recent landed (awaiting CI / merge gate on branch push)
+
 | lane | branch@sha | task |
 |------|------------|------|
 | mech | wp4/250-tail-codegen-audit@085501473 | 250 done |
@@ -64,6 +70,7 @@ w2 objects, w4 mech, w6 converter, w7 typesys, w8 census
 | typesys | worker7/230-class-mro-surface@19d797a63 | 230 done |
 
 ## next
+
 1. w3 lands 185 → verify branch CI → merge exceptions family.
 2. w4 lands 250/240 branches → verify CI → merge mech family.
 3. Full gates green on tip → GATES_GREEN=1 hold-failed requeue (skip 900).

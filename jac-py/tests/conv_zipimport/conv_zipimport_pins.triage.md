@@ -64,29 +64,36 @@
 ## Expected vs got
 
 ### BadFileZipImportTestCase.testEmptyFile (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AttributeError 'create_empty_file'">
 
 ### CompressedZipImportTestCase.testGetDataExplicitDirectories (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">
 
 ### CompressedZipImportTestCase.testGetDataImplicitDirectories (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">
 
 ### CompressedZipImportTestCase.testNamespacePackageExplicitDirectories (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">
 
 ### CompressedZipImportTestCase.testNamespacePackageImplicitDirectories (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">
 
 ### CompressedZipImportTestCase.testPackageExplicitDirectories (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">
 
 ### CompressedZipImportTestCase.testPackageImplicitDirectories (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">

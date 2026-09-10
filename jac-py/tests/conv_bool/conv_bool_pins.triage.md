@@ -46,9 +46,11 @@
 ## Expected vs got
 
 ### BoolTest.test_fileclosed (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: `GOT<"ORACLE_EXC TypeError 'TextIOWrapper.__enter__() takes no arguments (1 given)'">`
 
 ### BoolTest.test_subclass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AssertionError 'bool should not be subclassable'">

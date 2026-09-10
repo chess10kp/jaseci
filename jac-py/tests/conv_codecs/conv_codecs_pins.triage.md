@@ -294,481 +294,601 @@
 ## Expected vs got
 
 ### ASCIITest.test_encode_error (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogateescape\'"'>
 
 ### ASCIITest.test_encode_surrogateescape_error (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogateescape\'"'>
 
 ### BasicUnicodeTest.test_basics (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### BasicUnicodeTest.test_decoder_state (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### BasicUnicodeTest.test_seek (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: big5'">
 
 ### BomTest.test_seek0 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: `GOT<"ORACLE_EXC TypeError 'StreamReaderWriter.__enter__() takes 1 positional argument but 2 were given'">`
 
 ### CodecCacheTest.test_cache_bounded (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC TypeError "\'NoneType\' object is not callable"'>
 
 ### CodecsModuleTest.test_copy (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', None, \'utf-8\')"'>
 
 ### CodecsModuleTest.test_deepcopy (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', None, \'utf-8\')"'>
 
 ### CodecsModuleTest.test_file_closes_if_lookup_error_raised (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">
 
 ### CodecsModuleTest.test_unregister (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: RUN<"ImportError: cannot import name 'nlargest' from '<unknown>'">
 
 ### EscapeDecodeTest.test_empty (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### EscapeDecodeTest.test_errors (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'[]\', 6), (b\'[]\', 6))"'>
 
 ### EscapeDecodeTest.test_raw (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\\\\x000\', 2), (b\'\\\\x000\', 2))"'>
 
 ### EscapeEncodeTest.test_escape_encode (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### IDNACodecTest.test_builtin_encode (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: idna'">
 
 ### IDNACodecTest.test_errors (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: idna'">
 
 ### Latin1Test.test_encode_errors (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogateescape\'"'>
 
 ### Latin1Test.test_encode_surrogateescape_error (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogateescape\'"'>
 
 ### PunycodeTest.test_encode (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: punycode'">
 
 ### RawUnicodeEscapeTest.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'">
 
 ### RawUnicodeEscapeTest.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'">
 
 ### RawUnicodeEscapeTest.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'">
 
 ### RawUnicodeEscapeTest.test_empty (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### RawUnicodeEscapeTest.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'">
 
 ### RawUnicodeEscapeTest.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'">
 
 ### RawUnicodeEscapeTest.test_raw_encode (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\\\\x00\', 1), (b\'\\\\x00\', 1))"'>
 
 ### RawUnicodeEscapeTest.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: raw-unicode-escape'">
 
 ### RawUnicodeEscapeTest.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### ReadBufferTest.test_array (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'spam\', 4), (b\'spam\', 4))"'>
 
 ### ReadBufferTest.test_empty (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### StreamRecoderTest.test_copy (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AttributeError 'ascii'">
 
 ### StreamRecoderTest.test_pickle (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AttributeError 'ascii'">
 
 ### StreamRecoderTest.test_seeking_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### StreamRecoderTest.test_seeking_write (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### StreamRecoderTest.test_write (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AttributeError 'utf_8'">
 
 ### StreamRecoderTest.test_writelines (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AttributeError 'ascii'">
 
 ### SurrogateEscapeTest.test_ascii (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogateescape\'"'>
 
 ### SurrogateEscapeTest.test_charmap (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: iso-8859-3'">
 
 ### SurrogateEscapeTest.test_latin1 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogateescape\'"'>
 
 ### SurrogateEscapeTest.test_utf8 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogateescape\'"'>
 
 ### TransformCodecTest.test_text_to_binary_denylists_text_transforms (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AssertionError 'assertRaisesRegex: message mismatch'">
 
 ### UTF16BETest.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_lone_surrogates (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_nonbmp (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-be'">
 
 ### UTF16BETest.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF16LETest.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_lone_surrogates (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_nonbmp (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16-le'">
 
 ### UTF16LETest.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF16Test.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16'">
 
 ### UTF16Test.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16'">
 
 ### UTF16Test.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16'">
 
 ### UTF16Test.test_bug691291 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16'">
 
 ### UTF16Test.test_decoder_state (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### UTF16Test.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16'">
 
 ### UTF16Test.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16'">
 
 ### UTF16Test.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-16'">
 
 ### UTF16Test.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF32BETest.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32BETest.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32BETest.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32BETest.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32BETest.test_lone_surrogates (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32BETest.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32BETest.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32BETest.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF32BETest.test_simple (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-be'">
 
 ### UTF32LETest.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32LETest.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32LETest.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32LETest.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32LETest.test_lone_surrogates (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32LETest.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32LETest.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32LETest.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF32LETest.test_simple (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32-le'">
 
 ### UTF32Test.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32'">
 
 ### UTF32Test.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32'">
 
 ### UTF32Test.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32'">
 
 ### UTF32Test.test_decoder_state (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### UTF32Test.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32'">
 
 ### UTF32Test.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32'">
 
 ### UTF32Test.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-32'">
 
 ### UTF32Test.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF7Test.test_ascii (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_nonbmp (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-7'">
 
 ### UTF7Test.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF8SigTest.test_bom (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: utf-8-sig'">
 
 ### UTF8SigTest.test_decoder_state (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### UTF8SigTest.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogatepass\'"'>
 
 ### UTF8SigTest.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### UTF8SigTest.test_surrogatepass_handler (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC LookupError "unknown error handler name \'surrogatepass\'"'>
 
 ### UnicodeEscapeTest.test_bug1098990_a (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'">
 
 ### UnicodeEscapeTest.test_bug1098990_b (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'">
 
 ### UnicodeEscapeTest.test_bug1175396 (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'">
 
 ### UnicodeEscapeTest.test_empty (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\'\', 0), (b\'\', 0))"'>
 
 ### UnicodeEscapeTest.test_incremental_surrogatepass (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'">
 
 ### UnicodeEscapeTest.test_mixed_readline_and_read (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'">
 
 ### UnicodeEscapeTest.test_raw_encode (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertEqual\', (b\' \', 1), (b\' \', 1))"'>
 
 ### UnicodeEscapeTest.test_readline (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC LookupError 'unknown encoding: unicode-escape'">
 
 ### UnicodeEscapeTest.test_readlinequeue (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AttributeError "\'Queue\' object has no attribute \'write\'"'>
 
 ### WithStmtTest.test_encodedfile (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: `GOT<"ORACLE_EXC TypeError 'StreamRecoder.__enter__() takes 1 positional argument but 2 were given'">`
 
 ### WithStmtTest.test_streamreaderwriter (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: `GOT<"ORACLE_EXC TypeError 'StreamReaderWriter.__enter__() takes 1 positional argument but 2 were given'">`

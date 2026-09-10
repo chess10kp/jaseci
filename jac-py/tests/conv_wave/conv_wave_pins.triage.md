@@ -28,5 +28,6 @@
 ## Expected vs got
 
 ### WaveLowLevelTest.test_open_in_write_raises (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<"ORACLE_EXC AttributeError 'catch_unraisable_exception'">

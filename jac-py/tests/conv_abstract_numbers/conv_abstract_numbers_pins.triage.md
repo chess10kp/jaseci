@@ -17,25 +17,31 @@
 ## Expected vs got
 
 ### TestNumbers.test_complex (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertIsSubclass\', <class \'complex\'>, <class \'numbers.Complex\'>)"'>
 
 ### TestNumbers.test_float (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertIsSubclass\', <class \'float\'>, <class \'numbers.Real\'>)"'>
 
 ### TestNumbers.test_int (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertIsSubclass\', <class \'int\'>, <class \'numbers.Integral\'>)"'>
 
 ### TestNumbersDefaultMethods.test_complex (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC AssertionError "(\'assertFalse\', True)"'>
 
 ### TestNumbersDefaultMethods.test_integral (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC TypeError "\'MyIntegral\' object cannot be interpreted as an integer"'>
 
 ### TestNumbersDefaultMethods.test_real (GUEST-WRONG-OUTPUT)
+
 - expected: host oracle = `ok`
 - got: GOT<'ORACLE_EXC TypeError "unsupported operand type(s) for divmod(): \'MyReal\' and \'int\'"'>
