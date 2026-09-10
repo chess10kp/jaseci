@@ -163,6 +163,7 @@ jobs:
           for bridge_mode in "" "--runtime"; do
             jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --tests \
               test_argument_handling test_argument_order test_bad_single_statement \
+              test_compile_ast \
               test_compile_filename test_compile_filename_refleak \
               test_compile_invalid_namedexpr test_compile_invalid_typealias \
               test_docstring test_docstring_interactive_mode test_docstring_omitted \
@@ -175,6 +176,11 @@ jobs:
               test_condition_expression_with_redundant_comparisons_compiles \
               test_compare_positions test_other_newlines \
               test_compile_redundant_jumps_and_nops_after_moving_cold_blocks
+          done
+      - name: Compile and run upstream context-manager tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_with
           done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the

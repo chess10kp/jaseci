@@ -143,7 +143,11 @@ test "a zero TTL disables the sweep" {
 
 test "source-only modules invalidate themselves without changing the producing compiler" {
     import from jaclang.bootstrap_manifest { SOURCE_ONLY_PATHS }
-    import from jaclang.compiler.driver.jir { compute_module_key, compiler_source_digest, _manifest_compiler_digest }
+    import from jaclang.compiler.driver.jir {
+        compute_module_key,
+        compiler_source_digest,
+        _manifest_compiler_digest
+    }
     original = "def f() -> int { return 1; }\n";
     body_edit = "def f() -> int { return 2; }\n";
     with tempfile.TemporaryDirectory() as pkg {

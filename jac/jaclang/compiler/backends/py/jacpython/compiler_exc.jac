@@ -2849,252 +2849,153 @@ def visit_with(
     tail_join: basicblock | None = None,
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
-    wloc = stmt_loc(w);
-    if len(w.items) < 1 {
+    if not w.items {
         codegen_fail(g, "SyntaxError", "with requires at least one item");
+        return stmt_cont(loc=stmt_loc(w));
+    }
+    return visit_with_item(g, w, 0, ann_ctx);
+}
+
+# Each item owns one lexical cleanup frame. Recursive item lowering makes
+# nested and comma-separated context managers use the same exception paths.
+def visit_with_item(
+    g: cfg_builder, w: With, index: int, ann_ctx: ann_scope_plan | None
+) -> stmt_cont {
+    it = w.items[index];
+    cl = expr_loc(it.context_expr);
+    wloc = cl;
+    base_depth = g.handler_nest_depth
+        + sum(
+            1
+            for fr in g.loop_stack
+            if fr.pops_iter
+        );
+    visit_expr(g, it.context_expr);
+    if codegen_busy(g) {
         return stmt_cont(loc=wloc);
     }
-    noloc = no_loc();
-    n = len(w.items);
-    # --- enters: for each item, emit context-manager setup + bind target ---
-    store_ids: list[int] = [];
-    ei = 0;
-    while ei < n {
-        it = w.items[ei];
-        cl = expr_loc(it.context_expr);
-        visit_expr(g, it.context_expr);
-        if codegen_busy(g) {
-            return stmt_cont(loc=wloc);
-        }
-        g.emit_op(OP_COPY, 1, cl);
-        g.emit_op(OP_LOAD_SPECIAL, 1, cl);
-        g.emit_op(OP_SWAP, 2, cl);
-        g.emit_op(OP_SWAP, 3, cl);
-        g.emit_op(OP_LOAD_SPECIAL, 0, cl);
-        g.emit_op(OP_CALL, 0, cl);
-        if codegen_busy(g) {
-            return stmt_cont(loc=wloc);
-        }
-        bind_blk = g.new_block();
-        g.use(bind_blk);
+    g.emit_op(OP_COPY, 1, cl);
+    g.emit_op(OP_LOAD_SPECIAL, 1, cl);
+    g.emit_op(OP_SWAP, 2, cl);
+    g.emit_op(OP_SWAP, 3, cl);
+    g.emit_op(OP_LOAD_SPECIAL, 0, cl);
+    g.emit_op(OP_CALL, 0, cl);
+    start = g.new_block();
+    g.use(start);
+    handler = g.new_deferred_block();
+    cleanup = g.new_deferred_block();
+    unwind = g.new_deferred_block();
+    join = g.new_deferred_block();
+    frame = with_fblock(
+        is_async=False,
+        protect_region=-1,
+        frame_idx=len(g.with_fblocks),
+        loop_depth=len(g.loop_stack)
+    );
+    enclosing = g.with_fblocks[:];
+    old_depth = g.handler_nest_depth;
+    g.with_fblocks.append(frame);
+    g.handler_nest_depth += 2;
+    try {
         if it.optional_vars is None {
             g.emit_op(OP_POP_TOP, 0, cl);
         } else {
             visit_store_target_tos(g, it.optional_vars);
-            if codegen_busy(g) {
-                return stmt_cont(loc=wloc);
-            }
         }
-        store_ids.append(g.cur.id);
-        ei = ei + 1;
+        if index + 1 < len(w.items) {
+            cont = visit_with_item(g, w, index + 1, ann_ctx);
+        } else {
+            cont = visit_cleanup_stmts(g, w.body, ann_ctx);
+        }
+    } finally {
+        g.with_fblocks = enclosing;
+        g.handler_nest_depth = old_depth;
     }
-    # Single-item: open the frame's protect region now so a return inside the
-    # body can close it at its unwind boundary.
-    prot0_region = -1;
-    if n == 1 {
-        prot0_region = len(g.u.except_regions);
-        g.u.except_regions.append(
-            except_region(
-                start_block=store_ids[0],
-                end_block=-1,
-                handler_block=-1,
-                stack_depth=4,
-                preserve_lasti=True
-            )
-        );
-        g.with_fblocks.append(
-            with_fblock(is_async=False, protect_region=prot0_region, frame_idx=0)
-        );
-    }
-    # --- body ---
-    with_body = g.new_block();
-    g.use(with_body);
-    with_follows = more_code_follows;
-    if not with_follows and tail is not None and tail_idx < len(tail) {
-        with_follows = True;
-    }
-    body_cont = visit_stmts(
-        g, w.body, 0, with_follows, tail, tail_idx, tail_join, ann_ctx
-    );
     if codegen_busy(g) {
         return stmt_cont(loc=wloc);
     }
-    body_exits = not body_cont.terminated;
-    if n == 1 and body_exits {
-        # Frame unwinds via the inline __exit__ call below.
-        g.with_fblocks = [];
-    }
-    # --- inline __exit__ calls, innermost first (xs[k] is frame n-1-k). ---
-    # A body that always terminates already unwound every frame inline during
-    # its return/raise; the tail path is unreachable and CPython drops it.
-    none_idx = g.u.add_const(py_none());
-    xs: list[basicblock] = [];
-    if body_exits {
-        k = 0;
-        while k < n {
-            xblk = g.new_block();
-            g.use(xblk);
+    end = g.new_block();
+    g.use(end);
+    if not cont.terminated {
+        none_idx = g.u.add_const(py_none());
+        for unused in range(3) {
             g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-            g.emit_op(OP_CALL, 3, wloc);
-            g.emit_op(OP_POP_TOP, 0, wloc);
-            xs.append(xblk);
-            k = k + 1;
         }
-        if with_follows and tail is not None {
-            exit_join = g.new_block();
-            g.use(exit_join);
-            tail_more = False;
-            if tail_idx + 1 < len(tail) {
-                tail_more = exec_tail_emits_code(tail, tail_idx + 1);
-            }
-            tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=body_cont.loc);
-            }
-            if not tail_cont.terminated {
-                emit_module_return(g, tail_cont.loc);
-            }
-            exit_join_id = exit_join.id;
-        } else {
-            emit_module_return(g, body_cont.loc);
-            exit_join_id = -1;
-        }
-    } else {
-        exit_join_id = -1;
+        g.emit_op(OP_CALL, 3, wloc);
+        g.emit_op(OP_POP_TOP, 0, wloc);
+        g.emit_jump(OP_JUMP_FORWARD, join.id, wloc);
     }
-    # --- cleanup handlers, innermost first (ws/ends/uns[k] is frame n-1-k) ---
-    ws: list[basicblock] = [];
-    ends: list[basicblock] = [];
-    uns: list[basicblock] = [];
-    k = 0;
-    while k < n {
-        i_frame = n - 1 - k;
-        with_except = g.new_block();
-        g.use(with_except);
-        g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
-        g.emit_op(OP_WITH_EXCEPT_START, 0, noloc);
-        g.emit_op(OP_TO_BOOL, 0, noloc);
-        suppressed = g.new_block();
-        g.emit_jump(OP_POP_JUMP_IF_TRUE, suppressed.id, noloc);
-        g.emit_op(OP_RERAISE, 2, noloc);
-        g.use(suppressed);
+    g.use(handler);
+    noloc = no_loc();
+    g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
+    g.emit_op(OP_WITH_EXCEPT_START, 0, wloc);
+    g.emit_op(OP_TO_BOOL, 0, noloc);
+    suppressed = g.new_deferred_block();
+    g.emit_jump(OP_POP_JUMP_IF_TRUE, suppressed.id, noloc);
+    g.emit_op(OP_RERAISE, 2, noloc);
+    g.use(suppressed);
+    g.emit_op(OP_POP_TOP, 0, noloc);
+    g.use(cleanup);
+    g.emit_op(OP_POP_EXCEPT, 0, noloc);
+    for unused in range(3) {
         g.emit_op(OP_POP_TOP, 0, noloc);
-        cleanup_end = g.new_block();
-        g.use(cleanup_end);
-        g.emit_op(OP_POP_EXCEPT, 0, noloc);
-        g.emit_op(OP_POP_TOP, 0, noloc);
-        g.emit_op(OP_POP_TOP, 0, noloc);
-        g.emit_op(OP_POP_TOP, 0, noloc);
-        if i_frame > 0 {
-            # fall back to the enclosing frame's inline __exit__ (xs[k+1] = X_{i-1})
-            g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, xs[k + 1].id, wloc);
-        } elif exit_join_id >= 0 {
-            # Outermost frame: CPython's handler success jumps back to the
-            # shared `exit` block (laid out before the handler section).
-            g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, exit_join_id, wloc);
-        } else {
-            emit_module_return(g, wloc);
-        }
-        unwind = g.new_block();
-        g.use(unwind);
-        g.emit_op(OP_COPY, 3, noloc);
-        g.emit_op(OP_POP_EXCEPT, 0, noloc);
-        g.emit_op(OP_RERAISE, 1, noloc);
-        ws.append(with_except);
-        ends.append(cleanup_end);
-        uns.append(unwind);
-        k = k + 1;
     }
-    if prot0_region >= 0 {
-        if body_exits {
-            g.u.except_regions[prot0_region].end_block = xs[n - 1].id;
-        }
-        g.u.except_regions[prot0_region].handler_block = ws[n - 1].id;
-    }
-    # --- exception regions (carved so the assembler emits them verbatim) ---
-    if not body_exits and (n != 1 or prot0_region < 0) {
-        codegen_fail(
-            g,
-            "NotImplementedError",
-            "always-terminating body inside multi-item with not supported"
-        );
-        return stmt_cont(loc=wloc);
-    }
-    i = 0;
-    while i < n {
-        s_i = store_ids[i];
-        w_i = ws[n - 1 - i];
-        e_i = ends[n - 1 - i];
-        u_i = uns[n - 1 - i];
-        x_i = -1;
-        if body_exits {
-            x_i = xs[n - 1 - i].id;
-        }
-        if i == n - 1 {
-            if body_exits and prot0_region < 0 {
-                # innermost: protected body
-                g.u.except_regions.append(
-                    except_region(
-                        start_block=s_i,
-                        end_block=x_i,
-                        handler_block=w_i.id,
-                        stack_depth=4 + 2 * i,
-                        preserve_lasti=True
-                    )
-                );
-            }
-        } else {
-            s_next = store_ids[i + 1];
-            x_next = xs[n - 2 - i];
-            e_next = ends[n - 2 - i];
-            # enter of the next-inner item
+    g.emit_jump(OP_JUMP_FORWARD, join.id, wloc);
+    g.use(unwind);
+    g.emit_op(OP_COPY, 3, noloc);
+    g.emit_op(OP_POP_EXCEPT, 0, noloc);
+    g.emit_op(OP_RERAISE, 1, noloc);
+    g.use(join);
+
+    # Return/break/continue invoke __exit__ outside this frame's protected
+    # range. Keep the frame available for other branches while carving those
+    # emitted unwind paths out of its exception table.
+    pos = build_layout_pos(g.u);
+    spans = sorted(
+        frame.unwind_spans,
+        key=lambda (span: tuple[int, int]) { layout_pos(pos, span[0]); }
+    );
+    current = start.id;
+    for (left, right) in spans {
+        if layout_pos(pos, current) < layout_pos(pos, left) {
             g.u.except_regions.append(
                 except_region(
-                    start_block=s_i,
-                    end_block=s_next,
-                    handler_block=w_i.id,
-                    stack_depth=4 + 2 * i,
-                    preserve_lasti=True
-                )
-            );
-            # inline __exit__ of the next-inner frame
-            g.u.except_regions.append(
-                except_region(
-                    start_block=x_next.id,
-                    end_block=x_i,
-                    handler_block=w_i.id,
-                    stack_depth=4 + 2 * i,
-                    preserve_lasti=True
-                )
-            );
-            # cleanup tail + unwind of the next-inner frame
-            g.u.except_regions.append(
-                except_region(
-                    start_block=e_next.id,
-                    end_block=w_i.id,
-                    handler_block=w_i.id,
-                    stack_depth=4 + 2 * i,
+                    start_block=current,
+                    end_block=left,
+                    handler_block=handler.id,
+                    stack_depth=base_depth + 4,
                     preserve_lasti=True
                 )
             );
         }
-        # this frame's own cleanup handler
+        if layout_pos(pos, right) > layout_pos(pos, current) {
+            current = right;
+        }
+    }
+    if layout_pos(pos, current) < layout_pos(pos, end.id) {
         g.u.except_regions.append(
             except_region(
-                start_block=w_i.id,
-                end_block=e_i.id,
-                handler_block=u_i.id,
-                stack_depth=6 + 2 * i,
+                start_block=current,
+                end_block=end.id,
+                handler_block=handler.id,
+                stack_depth=base_depth + 4,
                 preserve_lasti=True
             )
         );
-        i = i + 1;
     }
-    return stmt_cont(loc=wloc, terminated=True);
+    g.u.except_regions.append(
+        except_region(
+            start_block=handler.id,
+            end_block=cleanup.id,
+            handler_block=unwind.id,
+            stack_depth=base_depth + 6,
+            preserve_lasti=True
+        )
+    );
+    # Exception suppression can reach the join even when every normal path
+    # through the body returns or raises.
+    return stmt_cont(loc=wloc);
 }
-
 
 def visit_async_with(
     g: cfg_builder,

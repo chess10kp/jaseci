@@ -86,8 +86,15 @@ import from jaclang.compiler.backends.py.jacpython.codegen_util {
     nloc,
     stmt_loc,
 }
-import from jaclang.compiler.backends.py.jacpython.compiler_annotations { ann_scope_plan }
-import from jaclang.compiler.backends.py.jacpython.compiler_codegen { emit_module_return, emit_name_store, visit_stmt_tail, visit_stmts }
+import from jaclang.compiler.backends.py.jacpython.compiler_annotations {
+    ann_scope_plan
+}
+import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
+    emit_module_return,
+    emit_name_store,
+    visit_stmt_tail,
+    visit_stmts
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
 obj match_pat_ctx {
     has stores: list[str],
@@ -498,8 +505,12 @@ def match_emit_sequence_capture_stores(
 ) {
     n = len(patterns);
     if n == 2 {
-        na = codegen_mangle(g, (match_pattern_unwrap_or(patterns[0]) as MatchAs).name as str);
-        nb = codegen_mangle(g, (match_pattern_unwrap_or(patterns[1]) as MatchAs).name as str);
+        na = codegen_mangle(
+            g, (match_pattern_unwrap_or(patterns[0]) as MatchAs).name as str
+        );
+        nb = codegen_mangle(
+            g, (match_pattern_unwrap_or(patterns[1]) as MatchAs).name as str
+        );
         fa = fast_local_index(g, na);
         fb = fast_local_index(g, nb);
         if fa >= 0 and fb >= 0 {
@@ -573,7 +584,9 @@ def match_emit_star_capture_stores(
     # STORE_FAST_STORE_FAST peephole, e.g. `[a,*mid,b]` -> (a,mid) + b).
     pi = 0;
     while pi < n {
-        emit_name_store(g, match_star_capture_name(patterns, pi, star_idx) as str, ploc);
+        emit_name_store(
+            g, match_star_capture_name(patterns, pi, star_idx) as str, ploc
+        );
         pi = pi + 1;
     }
 }
@@ -1127,7 +1140,9 @@ def visit_match(
         if ci != loop_end - 1 {
             g.emit_op(OP_POP_TOP, 0, ploc);
         }
-        body_cont = visit_stmts(g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx);
+        body_cont = visit_stmts(
+            g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=mloc);
         }
@@ -1155,7 +1170,9 @@ def visit_match(
             }
             emit_branch_if_test_false(g, guard_kind, match_end.id, gloc);
         }
-        body_cont = visit_stmts(g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx);
+        body_cont = visit_stmts(
+            g, arm.body, 0, body_follows, tail, tail_idx, join_blk, ann_ctx
+        );
         if codegen_busy(g) {
             return stmt_cont(loc=mloc);
         }
@@ -1174,7 +1191,8 @@ def visit_match(
         g.use(join_blk);
         if tail is not None and tail_idx < len(tail) {
             tail_cont = visit_stmt_tail(
-                g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx);
+                g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx
+            );
             return stmt_cont(
                 loc=tail_cont.loc,
                 next_si=len(tail as list[stmt]),

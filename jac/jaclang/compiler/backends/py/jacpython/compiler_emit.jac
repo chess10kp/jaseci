@@ -825,7 +825,60 @@ def emit_await_send_except_regions(
     }
 }
 
-def emit_with_return_unwind(g: cfg_builder, wloc: cloc) {
+def emit_sync_with_unwind(
+    g: cfg_builder, wloc: cloc, preserve_value: bool, stop_depth: int = 0
+) -> basicblock | None {
+    frames = g.with_fblocks[stop_depth:];
+    if not frames {
+        return None;
+    }
+    end = g.new_deferred_block();
+    loop_index = len(g.loop_stack);
+    for fb in reversed(frames) {
+        if fb.is_async {
+            codegen_fail(g, "NotImplementedError", "async with loop-exit cleanup");
+            return None;
+        }
+        boundary = g.new_block();
+        g.use(boundary);
+        fb.unwind_spans.append((boundary.id, end.id));
+        # A return may cross loops entered inside this context manager. Their
+        # iterators sit between the exit callable and the return value.
+        if preserve_value {
+            while loop_index > fb.loop_depth {
+                loop_index -= 1;
+                if g.loop_stack[loop_index].pops_iter {
+                    g.emit_op(OP_SWAP, 2, wloc);
+                    g.emit_op(OP_POP_TOP, 0, wloc);
+                }
+            }
+            g.emit_op(OP_SWAP, 3, wloc);
+            g.emit_op(OP_SWAP, 2, wloc);
+        }
+        none_idx = g.u.add_const(py_none());
+        for unused in range(3) {
+            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+        }
+        g.emit_op(OP_CALL, 3, wloc);
+        g.emit_op(OP_POP_TOP, 0, wloc);
+    }
+    return end;
+}
+
+def finish_with_unwind(g: cfg_builder, end: basicblock | None) {
+    if end is not None {
+        # Place the protection boundary after the return/jump, while leaving
+        # the caller on its terminated block for ordinary CFG bookkeeping.
+        terminated = g.cur;
+        g.use(end);
+        g.use(terminated);
+    }
+}
+
+def emit_with_return_unwind(g: cfg_builder, wloc: cloc) -> basicblock | None {
+    if all(not frame.is_async for frame in g.with_fblocks) {
+        return emit_sync_with_unwind(g, wloc, True);
+    }
     g.with_unwind_used = True;
     while len(g.with_fblocks) > 0 {
         fb = g.with_fblocks[len(g.with_fblocks) - 1];
@@ -862,6 +915,7 @@ def emit_with_return_unwind(g: cfg_builder, wloc: cloc) {
         }
         g.emit_op(OP_POP_TOP, 0, wloc);
     }
+    return None;
 }
 
 # GET_ANEXT + SEND loop blocks for async-for (footer emitted after the loop body).
@@ -1767,10 +1821,14 @@ def visit_expr(
         } elif isinstance(ca.func, Attribute) {
             attr = ca.func as Attribute;
             aloc = expr_loc(attr);
-            if not try_load_super_attr(g, attr.value, attr.attr, True, aloc) {
+            method_form = not call_has_unpacking(ca);
+            if not try_load_super_attr(g, attr.value, attr.attr, method_form, aloc) {
                 visit_expr(g, attr.value);
                 idx = g.u.add_name(codegen_mangle(g, attr.attr));
-                g.emit_op(OP_LOAD_ATTR, (idx << 1) | 1, aloc);
+                g.emit_op(OP_LOAD_ATTR, (idx << 1) | int(method_form), aloc);
+            }
+            if not method_form {
+                g.emit_op(OP_PUSH_NULL, 0, floc);
             }
         } else {
             visit_expr(g, ca.func);

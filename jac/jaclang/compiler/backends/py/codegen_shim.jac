@@ -201,9 +201,13 @@ def cir_bind_keys(key_names: list) -> list {
     return out;
 }
 
-def _parse_splice(src: str, line_offset: int, python_compiler: any = None) -> CirSplice {
+def _parse_splice(
+    src: str, line_offset: int, python_compiler: any = None
+) -> CirSplice {
     compiler = python_compiler if python_compiler is not None else compile;
-    tree = compiler(src, "<unknown>", "exec", flags=ast.PyCF_ONLY_AST, dont_inherit=True);
+    tree = compiler(
+        src, "<unknown>", "exec", flags=ast.PyCF_ONLY_AST, dont_inherit=True
+    );
     if line_offset {
         for w in ast.walk(tree) {
             for field in ("lineno", "end_lineno") {
@@ -234,7 +238,10 @@ def _pop_values(stack: list, n: int, what: str) -> list {
 }
 
 def transcribe_module(
-    mod: CirModule, classes: list, keys: list, container: CirContainer,
+    mod: CirModule,
+    classes: list,
+    keys: list,
+    container: CirContainer,
     python_compiler: any = None
 ) -> any {
     ops = decode_ops(mod.code, container);
@@ -366,9 +373,13 @@ def compile_ir(ir_bytes: bytes, python_compiler: any = None) -> CirResult {
     modules: list = [];
     compile_ast = python_compiler if python_compiler is not None else compile;
     for m in container.modules {
-        built_root: ast.Module = transcribe_module(m, classes, keys, container, python_compiler);
+        built_root: ast.Module = transcribe_module(
+            m, classes, keys, container, python_compiler
+        );
         try {
-            code_obj: types.CodeType = compile_ast(built_root, m.mod_path, "exec", dont_inherit=True);
+            code_obj: types.CodeType = compile_ast(
+                built_root, m.mod_path, "exec", dont_inherit=True
+            );
         } except (ValueError, SyntaxError, TypeError) as e {
             diags.append(
                 CirDiag(

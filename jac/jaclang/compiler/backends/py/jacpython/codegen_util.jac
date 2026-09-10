@@ -2,7 +2,15 @@
 # no visit_*/emit_* calls) so the recursive codegen core is smaller to read.
 # Imports mirror the header of compiler_codegen.jac (foundational modules only).
 
-import from jaclang.runtime.python.objects { PyObj, PyInt, PyStr, py_none, PySlice, PyCode, PyTuple }
+import from jaclang.runtime.python.objects {
+    PyObj,
+    PyInt,
+    PyStr,
+    py_none,
+    PySlice,
+    PyCode,
+    PyTuple
+}
 import from jaclang.runtime.python.opcode_meta {
     OP_RESUME,
     OP_RETURN_GENERATOR,

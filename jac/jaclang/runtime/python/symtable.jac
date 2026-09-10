@@ -23,7 +23,10 @@
 import from jaclang.compiler.frontend.python.ast_nodes { stmt, Expr }
 import from jaclang.compiler.frontend.python.compiler_diagnostics { symbol_diagnostic }
 import from jaclang.compiler.frontend.python.parser { parse_file, parse_eval_expr }
-import from jaclang.compiler.frontend.python.compiler_symtable { build_module_symtable, sym_block }
+import from jaclang.compiler.frontend.python.compiler_symtable {
+    build_module_symtable,
+    sym_block
+}
 
 
 glob USE: int = 16,
@@ -38,7 +41,6 @@ glob USE: int = 16,
      DEF_ANNOT: int = 256,
      DEF_COMP_ITER: int = 512,
      DEF_COMP_CELL: int = 2048,
-
      TYPE_FUNCTION: int = 0,
      TYPE_CLASS: int = 1,
      TYPE_MODULE: int = 2,
@@ -46,13 +48,11 @@ glob USE: int = 16,
      TYPE_TYPE_ALIAS: int = 4,
      TYPE_TYPE_PARAMETERS: int = 5,
      TYPE_TYPE_VARIABLE: int = 6,
-
      LOCAL: int = 1,
      GLOBAL_EXPLICIT: int = 2,
      GLOBAL_IMPLICIT: int = 3,
      FREE: int = 4,
      CELL: int = 5,
-
      SCOPE_OFF: int = 12,
      SCOPE_MASK: int = 15;
 
@@ -101,6 +101,7 @@ def _entry_to_dict(b: sym_block) -> dict[str, any] {
         "symbols": symbols,
         "varnames": list(b.varnames),
         "children": children,
+
     };
 }
 
@@ -116,9 +117,7 @@ def _start_input(startstr: str) -> int {
     if startstr == "single" {
         return 2;
     }
-    raise ValueError(
-        "symtable() arg 3 must be 'exec' or 'eval' or 'single'"
-    );
+    raise ValueError("symtable() arg 3 must be 'exec' or 'eval' or 'single'");
 }
 
 
@@ -156,12 +155,9 @@ def symtable(source: any, filename: str, startstr: str) -> dict[str, any] {
         # expression node inside keeps whatever positions the parser recorded.
         body = [
             Expr(
-                value=e,
-                lineno=1,
-                col_offset=0,
-                end_lineno=None,
-                end_col_offset=None,
+                value=e, lineno=1, col_offset=0, end_lineno=None, end_col_offset=None,
             ),
+
         ];
     }
     sr = build_module_symtable(body);

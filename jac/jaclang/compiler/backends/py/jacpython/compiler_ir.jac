@@ -154,6 +154,7 @@ obj loop_frame {
         # FOR-loop family: unwinding the loop on break pops the iterator
         # (CPython codegen_unwind_fblock, COMPILE_FBLOCK_FOR_LOOP).
         pops_iter: bool = False,
+        with_depth: int = 0,
         # Per-break emission sites recorded by visit_stmt (Break).
         break_sites: list[break_site] = [];
 }
@@ -175,7 +176,9 @@ obj pending_break_finish {
 obj with_fblock {
     has is_async: bool,
         protect_region: int,
-        frame_idx: int;
+        frame_idx: int,
+        loop_depth: int = 0,
+        unwind_spans: list[tuple[int, int]] = [];
 }
 
 # One async-with frame's return-unwind await loop (emitted inline at the
@@ -318,13 +321,18 @@ obj cfg_builder {
     }
 
     def push_loop(
-        continue_blk: basicblock, break_blk: basicblock, break_is_stub: bool
+        continue_blk: basicblock,
+        break_blk: basicblock,
+        break_is_stub: bool,
+        pops_iter: bool = False
     ) {
         self.loop_stack.append(
             loop_frame(
                 continue_blk=continue_blk,
                 break_blk=break_blk,
-                break_is_stub=break_is_stub
+                break_is_stub=break_is_stub,
+                pops_iter=pops_iter,
+                with_depth=len(self.with_fblocks)
             )
         );
     }

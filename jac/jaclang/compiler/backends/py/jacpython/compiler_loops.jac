@@ -42,6 +42,7 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     loc,
     loop_frame,
     mk_instr,
+    mk_jump,
     no_loc,
     pending_break_finish,
     same_loc,
@@ -257,9 +258,16 @@ def finish_break_sites(
             ci = ci + 1;
         }
         if not tail_terminated {
-            none_idx = g.u.add_const(py_none());
-            copies.append(mk_instr(OP_LOAD_CONST, none_idx, tail_loc));
-            copies.append(mk_instr(OP_RETURN_VALUE, 0, tail_loc));
+            if g.fallthrough_target is not None {
+                g.fallthrough_target.fallthrough_used = True;
+                copies.append(
+                    mk_jump(OP_JUMP_FORWARD, g.fallthrough_target.id, tail_loc)
+                );
+            } else {
+                none_idx = g.u.add_const(py_none());
+                copies.append(mk_instr(OP_LOAD_CONST, none_idx, tail_loc));
+                copies.append(mk_instr(OP_RETURN_VALUE, 0, tail_loc));
+            }
         }
     } elif join_artificial_tail(join) {
         copies = [];
@@ -857,11 +865,11 @@ def visit_for(
         # `end` label): break must skip the else clause.
         if has_break {
             join = g.new_deferred_block();
-            g.push_loop(loop_hdr, join, True);
+            g.push_loop(loop_hdr, join, True, True);
             break_frame = g.current_loop() as loop_frame;
             break_frame.pops_iter = True;
         } else {
-            g.push_loop(loop_hdr, after, False);
+            g.push_loop(loop_hdr, after, False, True);
         }
         g.emit_jump(OP_FOR_ITER, after.id, iter_loc);
         store = visit_store_target_tos(g, f.target);
@@ -945,11 +953,11 @@ def visit_for(
         g.loop_except_depth_bump = g.loop_except_depth_bump + 1;
         if has_break {
             join = g.new_deferred_block();
-            g.push_loop(loop_hdr, join, True);
+            g.push_loop(loop_hdr, join, True, True);
             break_frame = g.current_loop() as loop_frame;
             break_frame.pops_iter = True;
         } else {
-            g.push_loop(loop_hdr, after, False);
+            g.push_loop(loop_hdr, after, False, True);
         }
         g.emit_jump(OP_FOR_ITER, after.id, iter_loc);
         store = visit_store_target_tos(g, f.target);
@@ -1014,17 +1022,17 @@ def visit_for(
     }
     if has_break {
         if try_in_body {
-            g.push_loop(loop_hdr, try_exit_blk as basicblock, True);
+            g.push_loop(loop_hdr, try_exit_blk as basicblock, True, True);
             break_frame = g.current_loop() as loop_frame;
             break_frame.pops_iter = True;
         } else {
             join = g.new_deferred_block();
-            g.push_loop(loop_hdr, join, True);
+            g.push_loop(loop_hdr, join, True, True);
             break_frame = g.current_loop() as loop_frame;
             break_frame.pops_iter = True;
         }
     } else {
-        g.push_loop(loop_hdr, after, False);
+        g.push_loop(loop_hdr, after, False, True);
         join = after;
     }
     g.emit_jump(OP_FOR_ITER, after.id, iter_loc);
@@ -1095,7 +1103,7 @@ def visit_for(
         exhausted = after.placed and block_is_terminated(after);
         return stmt_cont(loc=iter_loc, terminated=else_terminated or exhausted);
     }
-    if epilogue_done {
+    if epilogue_done and block_is_terminated(g.cur) {
         return stmt_cont(loc=iter_loc, terminated=True);
     }
     if else_terminated {
@@ -1131,7 +1139,7 @@ def visit_async_for(
         if has_break {
             break_tgt = g.new_block();
         }
-        g.push_loop(loop_hdr, break_tgt, has_break);
+        g.push_loop(loop_hdr, break_tgt, has_break, True);
         if has_break {
             # Break sites emit the iterator POP_TOP themselves (CPython unwind).
             af_frame = g.current_loop() as loop_frame;
@@ -1219,7 +1227,7 @@ def visit_async_for(
     if needs_break_stub {
         break_tgt = g.new_block();
     }
-    g.push_loop(loop_hdr, break_tgt, needs_break_stub);
+    g.push_loop(loop_hdr, break_tgt, needs_break_stub, True);
     if needs_break_stub {
         # Break sites emit the iterator POP_TOP themselves (CPython unwind).
         af_frame = g.current_loop() as loop_frame;

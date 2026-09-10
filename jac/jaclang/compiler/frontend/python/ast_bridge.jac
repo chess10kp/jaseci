@@ -1,8 +1,18 @@
 import ast;
+import from types { GenericAlias, UnionType }
 import jaclang.compiler.frontend.python.ast_nodes as nodes;
 import from jaclang.runtime.python.objects {
-    PyObj, PyBool, PyInt, PyFloat, PyComplex, PyStr, PyBytes,
-    PyTuple, PySet, PyEllipsis, py_none
+    PyObj,
+    PyBool,
+    PyInt,
+    PyFloat,
+    PyComplex,
+    PyStr,
+    PyBytes,
+    PyTuple,
+    PySet,
+    PyEllipsis,
+    py_none
 }
 
 def constant_from_python(value: any) -> PyObj {
@@ -35,11 +45,23 @@ def constant_from_python(value: any) -> PyObj {
     }
     if isinstance(value, frozenset) {
         return PySet(
-            t="frozenset", frozen=True,
+            t="frozenset",
+            frozen=True,
             items={str(i): constant_from_python(item) for (i, item) in enumerate(value)}
         );
     }
     raise TypeError(f"Invalid AST constant: {type(value).__name__}");
+}
+
+def field_matches(value: any, expected: any) -> bool {
+    if isinstance(expected, UnionType) {
+        return any(field_matches(value, item) for item in expected.__args__);
+    }
+    if isinstance(expected, GenericAlias) {
+        return isinstance(value, expected.__origin__)
+            and all(field_matches(item, expected.__args__[0]) for item in value);
+    }
+    return isinstance(value, expected);
 }
 
 def from_python_ast(value: any) -> any {
@@ -48,6 +70,17 @@ def from_python_ast(value: any) -> any {
     }
     if not isinstance(value, ast.AST) {
         return value;
+    }
+    for (key, expected) in value._field_types.items() {
+        if not hasattr(value, key) {
+            raise TypeError(
+                f'required field "{key}" missing from {type(value).__name__}'
+            );
+        }
+        child = getattr(value, key);
+        if not field_matches(child, expected) {
+            raise TypeError(f'expected {expected} for field "{key}", got {child!r}');
+        }
     }
     if isinstance(value, ast.NamedExpr) and not isinstance(value.target, ast.Name) {
         raise TypeError("NamedExpr target must be a Name");

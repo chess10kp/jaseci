@@ -343,6 +343,8 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     emit_await_send_loop_footer,
     emit_await_send_loop_header,
     emit_with_return_unwind,
+    emit_sync_with_unwind,
+    finish_with_unwind,
     emit_branch_if_test_false,
     emit_branch_if_test_true,
     emit_call_instruction,
@@ -1227,6 +1229,7 @@ def visit_stmt(
             codegen_fail(g, "SyntaxError", "'break' outside loop");
             return stmt_cont(loc=bloc);
         }
+        unwind_end = emit_sync_with_unwind(g, bloc, False, frame.with_depth);
         if frame.break_is_stub {
             # CPython codegen_break: unwind the loop (POP_TOP for the FOR
             # family, nothing for WHILE), then jump to the loop's exit anchor.
@@ -1241,6 +1244,7 @@ def visit_stmt(
         } else {
             emit_module_return(g, bloc);
         }
+        finish_with_unwind(g, unwind_end);
         return stmt_cont(loc=bloc, terminated=True);
     }
     if isinstance(s, Continue) {
@@ -1251,7 +1255,9 @@ def visit_stmt(
             codegen_fail(g, "SyntaxError", "'continue' not properly in loop");
             return stmt_cont(loc=cloc_stmt);
         }
+        unwind_end = emit_sync_with_unwind(g, cloc_stmt, False, frame.with_depth);
         g.emit_jump(OP_JUMP_BACKWARD, frame.continue_blk.id, cloc_stmt);
+        finish_with_unwind(g, unwind_end);
         return stmt_cont(loc=cloc_stmt, terminated=True);
     }
     if isinstance(s, Return) {
@@ -1346,6 +1352,7 @@ def visit_return_stmt(
     # keep the Name node's own span.
     rloc = nloc(r.lineno, r.end_lineno, r.col_offset, r.end_col_offset);
     has_fblocks = len(g.with_fblocks) > 0;
+    unwind_end: basicblock | None = None;
     if r.value is not None {
         if isinstance(r.value, Name) {
             n = r.value as Name;
@@ -1363,9 +1370,10 @@ def visit_return_stmt(
                     g.emit_op(OP_LOAD_FAST, fi, nloc_name);
                 }
                 if has_fblocks {
-                    emit_with_return_unwind(g, rloc);
+                    unwind_end = emit_with_return_unwind(g, rloc);
                 }
                 g.emit_op(OP_RETURN_VALUE, 0, rloc);
+                finish_with_unwind(g, unwind_end);
                 return;
             }
         }
@@ -1375,17 +1383,19 @@ def visit_return_stmt(
             ret_loc = expr_loc(r.value);
         }
         if has_fblocks {
-            emit_with_return_unwind(g, rloc);
+            unwind_end = emit_with_return_unwind(g, rloc);
         }
         g.emit_op(OP_RETURN_VALUE, 0, ret_loc);
+        finish_with_unwind(g, unwind_end);
         return;
     }
     none_idx = g.u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, rloc);
     if has_fblocks {
-        emit_with_return_unwind(g, rloc);
+        unwind_end = emit_with_return_unwind(g, rloc);
     }
     g.emit_op(OP_RETURN_VALUE, 0, rloc);
+    finish_with_unwind(g, unwind_end);
 }
 
 

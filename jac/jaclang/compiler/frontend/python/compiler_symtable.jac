@@ -204,7 +204,11 @@ def sym_sorted_names(d: dict[str, int]) -> list[str] {
 }
 
 def sym_block_tuple_names(d: dict[str, int], pred_scope: int) -> list[str] {
-    return [name for name in sym_sorted_names(d) if sym_scope_of(d[name]) == pred_scope];
+    return [
+        name
+        for name in sym_sorted_names(d)
+        if sym_scope_of(d[name]) == pred_scope
+    ];
 }
 
 def mangle_name(private: str | None, name: str) -> str {
@@ -254,14 +258,18 @@ obj sym_builder {
 
     def add_def(name: str, flags: int, lineno: int, col_offset: int) -> bool {
         if name == "__debug__" and (flags & (DEF_LOCAL | DEF_PARAM)) != 0 {
-            return self.fail("SyntaxError", "cannot assign to __debug__", lineno, col_offset);
+            return self.fail(
+                "SyntaxError", "cannot assign to __debug__", lineno, col_offset
+            );
         }
         mangled = mangle_name(self.private, name);
         cur_flags = self.lookup(mangled);
         if sym_flag_set(cur_flags, DEF_PARAM) and sym_flag_set(flags, DEF_PARAM) {
             return self.fail(
-                "SyntaxError", "duplicate argument '" + name + "' in function definition",
-                lineno, col_offset
+                "SyntaxError",
+                "duplicate argument '" + name + "' in function definition",
+                lineno,
+                col_offset
             );
         }
         if sym_flag_set(cur_flags, DEF_PARAM) and sym_flag_set(flags, DEF_GLOBAL) {
@@ -1345,6 +1353,20 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
                 return False;
             }
             di = di + 1;
+        }
+        if cd.bases is not None {
+            for base in cd.bases {
+                if not sym_visit_load_expr(b, base) {
+                    return False;
+                }
+            }
+        }
+        if cd.keywords is not None {
+            for kw in cd.keywords {
+                if not sym_visit_load_expr(b, kw.value) {
+                    return False;
+                }
+            }
         }
         saved_private = b.private;
         nested = b.cur.block_type != "module";

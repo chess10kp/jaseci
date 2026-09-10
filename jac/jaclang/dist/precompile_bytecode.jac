@@ -108,12 +108,11 @@ def find_jac_files(package_dir: str) -> list[str] {
         rel_path = jac_file.relative_to(pkg);
         rel = str(rel_path);
 
-        # JacPython sources ship for development, but do not yet replace the
-        # release runtime. Relocation must not enroll them in the sealed image.
-        if pkg.name == "jaclang" and any(
-            rel.replace(os.sep, "/").startswith(prefix)
-            for prefix in SOURCE_ONLY_PATHS
-        ) {
+        if pkg.name == "jaclang"
+            and any(
+                rel.replace(os.sep, "/").startswith(prefix)
+                for prefix in SOURCE_ONLY_PATHS
+            ) {
             continue;
         }
 

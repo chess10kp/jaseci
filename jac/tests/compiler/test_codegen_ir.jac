@@ -183,10 +183,17 @@ test "python inline splice lands with offset line numbers" {
     assert ns["X"] == 40;
     assert ns["Y"] == 42;
     inputs: list[bool] = [];
-    def tracked_compile(source: any, filename: str, mode: str, flags: int = 0,
-                        dont_inherit: bool = False) -> any {
+    def tracked_compile(
+        source: any,
+        filename: str,
+        mode: str,
+        flags: int = 0,
+        dont_inherit: bool = False
+    ) -> any {
         inputs.append(isinstance(source, str));
-        return pycompile(source, filename, mode, flags=flags, dont_inherit=dont_inherit);
+        return pycompile(
+            source, filename, mode, flags=flags, dont_inherit=dont_inherit
+        );
     }
     result = compile_ir(blob, python_compiler=tracked_compile);
     assert inputs == [True, False] , "the selected compiler must handle both source splices and ASTs";

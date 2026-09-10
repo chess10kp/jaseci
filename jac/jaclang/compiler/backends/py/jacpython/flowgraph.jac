@@ -219,6 +219,15 @@ def resolve_jump_offsets(flat: list[cinstr], block_starts: list[int]) {
         if ins.target_block >= 0 {
             target = block_starts[ins.target_block];
             next_ip = offsets[i] + instr_size_codeunits(ins);
+            # Cleanup and shared-tail layout can move an unconditional target
+            # across its source. Resolve direction from the final layout.
+            if is_unconditional_jump_opcode(ins.opcode) {
+                if target >= next_ip {
+                    ins.opcode = OP_JUMP_FORWARD;
+                } elif ins.opcode == OP_JUMP_FORWARD {
+                    ins.opcode = OP_JUMP_BACKWARD_NO_INTERRUPT;
+                }
+            }
             if ins.opcode == OP_JUMP_BACKWARD
                 or ins.opcode == OP_JUMP_BACKWARD_NO_INTERRUPT
                 or ins.opcode == OP_END_ASYNC_FOR {
