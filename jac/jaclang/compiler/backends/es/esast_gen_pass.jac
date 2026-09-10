@@ -471,7 +471,9 @@ walker EsastGenPass(BaseAstGenPass[es.Statement]) {
         acc_name: str, value: es.Expression, anchor: uni.UniNode
     ) -> es.ExpressionStatement;
 
-    def _jsx_fragment(children: es.Expression, anchor: uni.UniNode) -> es.Expression;
+    def _jsx_fragment(
+        children: es.Expression, anchor: uni.UniNode
+    ) -> es.CallExpression;
 
     def _view_alloc_index(acc_name: str) -> int;
     def _view_assign_stmt(
@@ -516,8 +518,6 @@ walker EsastGenPass(BaseAstGenPass[es.Statement]) {
     def _target_to_pattern(target: es.Node, loc: uni.UniNode) -> es.Node;
     can exit_try_stmt with uni.TryStmt exit;
     can exit_except with uni.Except exit;
-    def _try_exit_except_view_awaiting(nd: uni.Except) -> bool;
-    def _try_exit_try_stmt_view_awaiting(nd: uni.TryStmt) -> bool;
     can exit_finally_stmt with uni.FinallyStmt exit;
     can exit_raise_stmt with uni.RaiseStmt exit;
     can exit_assert_stmt with uni.AssertStmt exit;
@@ -617,17 +617,6 @@ walker EsastGenPass(BaseAstGenPass[es.Statement]) {
         args: list[(es.Expression | es.SpreadElement)],
         props: list[(es.Property | es.SpreadElement)]
     ) -> es.Expression;
-
-    def _try_lower_component_props_destructure_call(
-        nd: uni.FuncCall,
-        ability_node_resolved: uni.Ability,
-        callee_expr: es.Expression,
-        args: list[(es.Expression | es.SpreadElement)],
-        props: list[(es.Property | es.SpreadElement)],
-        call_args: list[(es.Expression | es.SpreadElement)],
-        spread_arg: (es.Expression | None),
-        use_kwargs_temp: bool
-    ) -> (es.Expression | None);
 
     def _pos_params_from_ability(ability_node: uni.Ability) -> list[uni.ParamVar];
     def _param_names_from_ability(ability_node: uni.Ability) -> list[str];

@@ -1,12 +1,6 @@
 """P2 wave 21 itertools parity: islice/zip_longest/groupby/batched/takewhile/dropwhile.
 
-jac-py/Modules/itertoolsmodule.{c,jac} grew the wave-12 kernel set with the
-wave-21 slices (islice skip/stop ladder, zip_longest numactive countdown,
-groupby head-run scan, batched short-batch decision, takewhile/dropwhile
-sticky flips); this file gates the product-path facade behaviors those
-kernels mirror, against the host itertools oracle. Expected values were
-verified against real python3 at authoring time (see
-tools/p2_corpus_wave21/probes/mutation_probe.py).
+Checks the retained Jac implementation against CPython behavior.
 """
 
 import itertools as host_it;

@@ -441,7 +441,10 @@ impl _run_harness(
         staged: dict[str, str] = {};
 
         if ("@jac/runtime" in imports) or ("@jac/runtime" in dep_imports) {
-            module_js = _point_at_staged_runtime(module_js);
+            import from jaclang.client.client_surface { prepend_active_runtime_globals }
+            module_js = _point_at_staged_runtime(
+                prepend_active_runtime_globals(module_js)
+            );
             for dep_name in list(dep_files.keys()) {
                 dep_files[dep_name] = _point_at_staged_runtime(dep_files[dep_name]);
             }

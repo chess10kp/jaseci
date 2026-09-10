@@ -781,7 +781,6 @@ impl install(
         return run_npm_add(packages, dev, install_global);
     }
     import from pathlib { Path }
-    import from jaclang.cli.commands.cli_helpers { flatten_append }
     import from jaclang.project.config { get_config }
     import from jaclang.project.pyvenv {
         ensure_venv,
@@ -938,7 +937,7 @@ impl install(
         return 0;
     }
 
-    editable = flatten_append(editable);
+    editable = [p for group in (editable or []) for p in group];
     if editable {
         import from jaclang.dist.publish.builder { WheelBuilder }
 

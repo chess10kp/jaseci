@@ -285,8 +285,7 @@ def length_hint(`obj: any, `default: int = 0) -> int {
         }
     }
     if not isinstance(hint, int) or isinstance(hint, bool) {
-        raise TypeError("__length_hint__() must be an int, not "
-            + type(hint).__name__);
+        raise TypeError("__length_hint__() must be an int, not " + type(hint).__name__);
     }
     if hint < 0 {
         raise ValueError("__length_hint__() should return >= 0");
@@ -294,7 +293,7 @@ def length_hint(`obj: any, `default: int = 0) -> int {
     return hint;
 }
 
-def call(`obj: any, *args: list, **kwargs: dict) -> any {
+def call(`obj: any, *args: any, **kwargs: any) -> any {
     return `obj(*args, **kwargs);
 }
 
@@ -339,8 +338,9 @@ def _tscmp_str(a: str, b: str) -> bool {
 def _compare_digest(a: any, b: any) -> bool {
     if isinstance(a, str) and isinstance(b, str) {
         if not _str_is_ascii(a) or not _str_is_ascii(b) {
-            raise TypeError("comparing strings with non-ASCII characters is "
-                "not supported");
+            raise TypeError(
+                "comparing strings with non-ASCII characters is " "not supported"
+            );
         }
         return _tscmp_str(a, b);
     }
@@ -349,8 +349,13 @@ def _compare_digest(a: any, b: any) -> bool {
     if a_bytes and b_bytes {
         return _tscmp_bytes(bytes(a), bytes(b));
     }
-    raise TypeError("unsupported operand types(s) or combination of types: '"
-        + type(a).__name__ + "' and '" + type(b).__name__ + "'");
+    raise TypeError(
+        "unsupported operand types(s) or combination of types: '"
+            + type(a).__name__
+            + "' and '"
+            + type(b).__name__
+            + "'"
+    );
 }
 
 # ---- itemgetter ---------------------------------------------------------------
@@ -380,13 +385,13 @@ obj _OpItemgetter {
 
     def __reduce__ -> any {
         if len(self.items) == 1 {
-            return (type(self), (self.items[0],));
+            return (type(self), (self.items[0], ));
         }
         return (type(self), self.items);
     }
 }
 
-def itemgetter(*items: list) -> _OpItemgetter {
+def itemgetter(*items: any) -> _OpItemgetter {
     if len(items) == 0 {
         raise TypeError("itemgetter expected 1 argument, got 0");
     }
@@ -434,8 +439,7 @@ obj _OpAttrgetter {
         # Mirrors attrgetter_repr: single name bare, several as the joined
         # tuple form.
         if len(self.attrs) == 1 {
-            return type(self).__name__ + "("
-                + repr(_dotjoinattr(self.attrs[0])) + ")";
+            return type(self).__name__ + "(" + repr(_dotjoinattr(self.attrs[0])) + ")";
         }
         names: list = [];
         for attr in self.attrs {
@@ -450,13 +454,13 @@ obj _OpAttrgetter {
             names.append(_dotjoinattr(attr));
         }
         if len(names) == 1 {
-            return (type(self), (names[0],));
+            return (type(self), (names[0], ));
         }
         return (type(self), tuple(names));
     }
 }
 
-def attrgetter(*attrs: list) -> _OpAttrgetter {
+def attrgetter(*attrs: any) -> _OpAttrgetter {
     if len(attrs) == 0 {
         raise TypeError("attrgetter expected 1 argument, got 0");
     }
@@ -525,7 +529,7 @@ obj _OpMethodcaller {
     }
 }
 
-def methodcaller(name: any, *args: list, **kwargs: dict) -> _OpMethodcaller {
+def methodcaller(name: any, *args: any, **kwargs: any) -> _OpMethodcaller {
     # Mirrors methodcaller_new validation order.
     if not isinstance(name, str) {
         raise TypeError("method name must be a string");
@@ -541,62 +545,109 @@ def methodcaller(name: any, *args: list, **kwargs: dict) -> _OpMethodcaller {
 # Lib/operator.py exposes every plain name under its dunder spelling; keep both
 # surfaces importable so converted suites can reach either spelling.
 
-glob __abs__: any = abs;
-glob __add__: any = add;
-glob __and__: any = and_;
-glob __concat__: any = concat;
-glob __contains__: any = contains;
-glob __delitem__: any = delitem;
-glob __eq__: any = eq;
-glob __floordiv__: any = floordiv;
-glob __ge__: any = ge;
-glob __getitem__: any = getitem;
-glob __gt__: any = gt;
-glob __iadd__: any = iadd;
-glob __iand__: any = iand;
-glob __iconcat__: any = iconcat;
-glob __ifloordiv__: any = ifloordiv;
-glob __ilshift__: any = ilshift;
-glob __imatmul__: any = imatmul;
-glob __imod__: any = imod;
-glob __imul__: any = imul;
-glob __index__: any = index;
-glob __inv__: any = invert;
-glob __invert__: any = invert;
-glob __ior__: any = ior;
-glob __ipow__: any = ipow;
-glob __irshift__: any = irshift;
-glob __isub__: any = isub;
-glob __itruediv__: any = itruediv;
-glob __ixor__: any = ixor;
-glob __le__: any = le;
-glob __lshift__: any = lshift;
-glob __lt__: any = lt;
-glob __matmul__: any = matmul;
-glob __mod__: any = mod;
-glob __mul__: any = mul;
-glob __ne__: any = ne;
-glob __neg__: any = neg;
-glob __not__: any = not_;
-glob __or__: any = or_;
-glob __pos__: any = pos;
-glob __pow__: any = pow;
-glob __rshift__: any = rshift;
-glob __setitem__: any = setitem;
-glob __sub__: any = sub;
-glob __truediv__: any = truediv;
-glob __truth__: any = truth;
-glob __xor__: any = xor;
+glob __abs__: any = abs,
+     __add__: any = add,
+     __and__: any = and_,
+     __concat__: any = concat,
+     __contains__: any = contains,
+     __delitem__: any = delitem,
+     __eq__: any = eq,
+     __floordiv__: any = floordiv,
+     __ge__: any = ge,
+     __getitem__: any = getitem,
+     __gt__: any = gt,
+     __iadd__: any = iadd,
+     __iand__: any = iand,
+     __iconcat__: any = iconcat,
+     __ifloordiv__: any = ifloordiv,
+     __ilshift__: any = ilshift,
+     __imatmul__: any = imatmul,
+     __imod__: any = imod,
+     __imul__: any = imul,
+     __index__: any = index,
+     __inv__: any = invert,
+     __invert__: any = invert,
+     __ior__: any = ior,
+     __ipow__: any = ipow,
+     __irshift__: any = irshift,
+     __isub__: any = isub,
+     __itruediv__: any = itruediv,
+     __ixor__: any = ixor,
+     __le__: any = le,
+     __lshift__: any = lshift,
+     __lt__: any = lt,
+     __matmul__: any = matmul,
+     __mod__: any = mod,
+     __mul__: any = mul,
+     __ne__: any = ne,
+     __neg__: any = neg,
+     __not__: any = not_,
+     __or__: any = or_,
+     __pos__: any = pos,
+     __pow__: any = pow,
+     __rshift__: any = rshift,
+     __setitem__: any = setitem,
+     __sub__: any = sub,
+     __truediv__: any = truediv,
+     __truth__: any = truth,
+     __xor__: any = xor,
+     __all__: list = [
+         "abs",
+         "add",
+         "and_",
+         "attrgetter",
+         "call",
+         "concat",
+         "contains",
+         "countOf",
+         "delitem",
+         "eq",
+         "floordiv",
+         "ge",
+         "getitem",
+         "gt",
+         "iadd",
+         "iand",
+         "iconcat",
+         "ifloordiv",
+         "ilshift",
+         "imatmul",
+         "imod",
+         "imul",
+         "index",
+         "indexOf",
+         "ior",
+         "ipow",
+         "irshift",
+         "is_",
+         "is_not",
+         "is_none",
+         "is_not_none",
+         "isub",
+         "itruediv",
+         "itemgetter",
+         "ixor",
+         "le",
+         "length_hint",
+         "lshift",
+         "lt",
+         "matmul",
+         "methodcaller",
+         "mod",
+         "mul",
+         "ne",
+         "neg",
+         "not_",
+         "or_",
+         "pos",
+         "pow",
+         "rshift",
+         "setitem",
+         "sub",
+         "truediv",
+         "truth",
+         "xor",
+         "_compare_digest",
 
+     ];
 # ---- __all__ ------------------------------------------------------------------
-
-glob __all__: list = [
-    "abs", "add", "and_", "attrgetter", "call", "concat", "contains",
-    "countOf", "delitem", "eq", "floordiv", "ge", "getitem", "gt", "iadd",
-    "iand", "iconcat", "ifloordiv", "ilshift", "imatmul", "imod", "imul",
-    "index", "indexOf", "ior", "ipow", "irshift", "is_", "is_not",
-    "is_none", "is_not_none", "isub", "itruediv", "itemgetter", "ixor",
-    "le", "length_hint", "lshift", "lt", "matmul", "methodcaller", "mod",
-    "mul", "ne", "neg", "not_", "or_", "pos", "pow", "rshift", "setitem",
-    "sub", "truediv", "truth", "xor", "_compare_digest",
-];

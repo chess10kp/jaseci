@@ -93,8 +93,8 @@ impl ViteCompiler._emit_wasm_module(self: ViteCompiler, module_path: Path) -> bo
 
     try {
         import json;
-        import from jaclang.compiler.passes.native.wasm_build { wasm_import_map }
-        import from jaclang.compiler.passes.native.wasm_host_abi { WASM_HOST_MODULE }
+        import from jaclang.compiler.backends.native.wasm_build { wasm_import_map }
+        import from jaclang.compiler.backends.native.wasm_host_abi { WASM_HOST_MODULE }
         imports = wasm_import_map(wasm);
         manifest_path = dist / f"{stem}.wasm.imports.json";
         manifest_path.write_text(
@@ -120,7 +120,7 @@ impl ViteCompiler._emit_wasm_module(self: ViteCompiler, module_path: Path) -> bo
 }
 
 impl ViteCompiler.create_entry_file(self: ViteCompiler, module_path: Path) -> None {
-    import from jaclang.compiler.passes.ecmascript.backends.registry {
+    import from jaclang.compiler.backends.es.backends.registry {
         resolve_active_backend
     }
     backend = resolve_active_backend();
@@ -147,12 +147,12 @@ impl ViteCompiler.create_entry_file(self: ViteCompiler, module_path: Path) -> No
 impl ViteCompiler._create_pages_entry_content(
     self: ViteCompiler, module_path: Path
 ) -> str {
-    import from jaclang.compiler.passes.ecmascript.backends.registry {
+    import from jaclang.compiler.backends.es.backends.registry {
         resolve_active_backend
     }
     auth_redirect = "/login";
     try {
-        import from jaclang.runtimelib.client.config_loader { JacClientConfig }
+        import from jaclang.client.config_loader { JacClientConfig }
         config = JacClientConfig(project_dir=self.project_dir);
         routing = config.get_section('routing');
         if routing {
@@ -225,7 +225,7 @@ impl ViteCompiler.compile_runtime_utils(self: ViteCompiler) -> tuple[str, list[s
 }
 
 impl ViteCompiler.compile_desktop_sdk(self: ViteCompiler) {
-    import from jaclang.jac0core.modresolver { resolve_jac_virtual_module_path }
+    import from jaclang.compiler.driver.modresolver { resolve_jac_virtual_module_path }
     desktop_src = resolve_jac_virtual_module_path('@jac/desktop');
     if not desktop_src {
         return;
@@ -245,7 +245,9 @@ impl ViteCompiler.compile_desktop_sdk(self: ViteCompiler) {
     all_names = sorted(set(desktop_exports + list(desktop_globals.keys())));
 
     if not all_names {
-        import from jaclang.jac0core.modresolver { resolve_jac_virtual_module_exports }
+        import from jaclang.compiler.driver.modresolver {
+            resolve_jac_virtual_module_exports
+        }
         all_names = sorted(resolve_jac_virtual_module_exports('@jac/desktop'));
     }
     if all_names {

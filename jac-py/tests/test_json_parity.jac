@@ -1,8 +1,6 @@
 """P2 wave 15 facade parity: native _json scanner/encoder vs host stdlib.
 
-jac-py/Modules/jsonmodule.{c,jac} stay the staged c2jac corpus pair
-(staging=lift); this file gates the product-path facade semantics in
-jac-py/jacpython/_jsonmodule.jac against the pinned host oracle.
+Checks the retained Jac implementation against CPython behavior.
 Expected values and error strings were verified against the host
 CPython 3.14.6 ``_json`` C accelerator (and Lib/json glue) at
 authoring time.

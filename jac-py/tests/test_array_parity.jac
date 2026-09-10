@@ -1,8 +1,6 @@
 """P2 wave 14 facade parity: native array vs host stdlib array.
 
-jac-py/Modules/arraymodule.{c,jac} stay the staged c2jac corpus pair
-(staging=lift); this file gates the product-path facade semantics in
-jacpython/arrayobject.jac against the pinned host oracle (CPython 3.14).
+Checks the retained Jac implementation against CPython behavior.
 Run with JACPATH=jac-py/jacpython (same pattern as test_p2_facade_parity).
 """
 

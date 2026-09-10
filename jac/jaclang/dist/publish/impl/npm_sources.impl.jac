@@ -5,10 +5,6 @@ import from jaclang.project.config { JacConfig }
 import from jaclang.dist.publish.sources { EXCLUDED_DIRS }
 import from jaclang.dist.publish.jsdoc { jsdoc_for_module, inject_jsdoc }
 import from jaclang.dist.publish.dts { dts_for_module }
-import from jaclang.client.runtime_import_policy {
-    imported_symbols_from,
-    remap_runtime_imports
-}
 import from jaclang.dist.publish.runtime_npm { runtime_api_names }
 
 glob _DEFAULT_RUNTIME_PKG: str = "@jaseci/runtime";
@@ -34,28 +30,25 @@ def _top_level_decls(js: str) -> set[str] {
 
 def _wire_externals(js: str, runtime_pkg: str) -> tuple[str, list[str]] {
     externals: list[str] = [];
-    out = remap_runtime_imports(js, runtime_pkg);
-    local = _top_level_decls(out);
+    local = _top_level_decls(js);
     api = runtime_api_names();
-    already_imported = imported_symbols_from(out, runtime_pkg);
 
     used: list[str] = [];
     for name in sorted(api) {
-        if name in local or name in already_imported {
+        if name in local {
             continue;
         }
-        if re.search(r"\b" + re.escape(name) + r"\b", out) {
+        if re.search(r"\b" + re.escape(name) + r"\b", js) {
             used.append(name);
         }
     }
+    out = js;
     if used {
         out = f'import {{ {", ".join(used)} }} from "{runtime_pkg}";\n' + out;
-    }
-    if used or already_imported {
         externals.append(runtime_pkg);
     }
 
-    for m in re.finditer(r'from\s+["\']([^"\']+)["\']', out) {
+    for m in re.finditer(r'from\s+["\']([^"\']+)["\']', js) {
         spec = m.group(1);
         base = spec;
         if spec.startswith("react/") {

@@ -268,13 +268,6 @@ def _forget_handle(st: _SvStore, h: int) {
     if h > 0 {
         st.forgotten.add(h);
         _graph.osp_disconnect(h);
-        # Release the handle slot: `_obj_of_h` is a process-global strong
-        # root, so a retained entry would pin the anchor (and through
-        # `anchor.archetype` the archetype object) against gc forever.
-        if h < len(_obj_of_h) {
-            _obj_of_h[h] = None;
-            _h_free.append(h);
-        }
     }
 }
 

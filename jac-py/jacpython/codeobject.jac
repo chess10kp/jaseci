@@ -1,5 +1,5 @@
 # P3.2d — code flag / argcount helpers.
-# Lift: Objects/_lifted/codeobject_core.jac
+# CPython source: Objects/codeobject.c.
 #
 # ======================================================================
 # PyCode front<->back binary contract -- FROZEN (PLAN.md P4 next-steps a)

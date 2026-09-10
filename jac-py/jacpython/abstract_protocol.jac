@@ -1,7 +1,6 @@
 # P3.1e — PyObject_* protocol helpers (hash / iter).
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/abstract_protocol.c``
-# (lift: ``jac-py/Objects/_lifted/abstract_protocol.jac``). Runtime uses Jac
+# CPython source: ``Objects/abstract.c``. Runtime uses Jac
 # virtual slots on ``PyObj`` instead of C ``tp_*`` function pointers.
 #
 # The comparison half (PyObject_RichCompare / PyObject_RichCompareBool /
@@ -62,8 +61,11 @@ def PyObject_Hash(v: PyObj) -> PyObj {
 
 # ``abstract.c`` iterator surface: ``tp_iter`` + iterator-type check.
 def PyIter_Check(value: PyObj) -> bool {
-    return value.t == "iter" or value.t == "generator" or value.t == "dictiter"
-        or value.t == "rangeiter" or value.t == "seqiter";
+    return value.t == "iter"
+        or value.t == "generator"
+        or value.t == "dictiter"
+        or value.t == "rangeiter"
+        or value.t == "seqiter";
 }
 
 def PyObject_GetIter(o: PyObj) -> PyObj {

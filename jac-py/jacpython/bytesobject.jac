@@ -1,7 +1,6 @@
 # P3.2a — bytes core algorithms (hash, richcompare, contains, repr).
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/bytesobject_core.c``
-# (lift: ``jac-py/Objects/_lifted/bytesobject_core.jac``).
+# CPython source: ``Objects/bytesobject.c``.
 import from objects {
     PyObj,
     PyBytes,

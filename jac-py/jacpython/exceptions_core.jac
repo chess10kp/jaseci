@@ -1,7 +1,6 @@
 # P3.2a — exception matching + BaseException str/repr.
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/exceptions_core.c``
-# (lift: ``jac-py/Objects/_lifted/exceptions_core.jac``).
+# CPython source: ``Objects/exceptions.c``.
 import from objects {
     PyObj,
     PyException,
@@ -185,13 +184,18 @@ def exc_group_repr(exc: PyExcGroup, repr_fn: any) -> PyStr {
     }
     return PyStr(
         t="str",
-        val=exc.type_name + "(" + str_repr_text(exc.message) + ", ["
-            + ", ".join(parts) + "])",
+        val=exc.type_name
+            + "("
+            + str_repr_text(exc.message)
+            + ", ["
+            + ", ".join(parts)
+            + "])",
     );
 }
 
-def baseexception_str(exc: PyException, repr_fn: any = None,
-    str_fn: any = None) -> PyStr {
+def baseexception_str(
+    exc: PyException, repr_fn: any = None, str_fn: any = None
+) -> PyStr {
     # Group instances carry their own str slot regardless of type_name.
     if isinstance(exc, PyExcGroup) {
         return exc_group_str(exc as PyExcGroup);
@@ -476,8 +480,14 @@ def unicode_decode_error_str(exc: PyException) -> str {
     if enc == "" or byte_val < 0 {
         return "";
     }
-    return "'" + enc + "' codec can't decode byte 0x" + _hex_padded(byte_val, 2)
-        + " in position " + str(start) + ": " + reason;
+    return "'"
+        + enc
+        + "' codec can't decode byte 0x"
+        + _hex_padded(byte_val, 2)
+        + " in position "
+        + str(start)
+        + ": "
+        + reason;
 }
 
 def unicode_encode_error_str(exc: PyException) -> str {
@@ -495,9 +505,15 @@ def unicode_encode_error_str(exc: PyException) -> str {
         esc = "\\U";
         width = 8;
     }
-    return "'" + enc + "' codec can't encode character " + esc
+    return "'"
+        + enc
+        + "' codec can't encode character "
+        + esc
         + _hex_padded(cp, width)
-        + " in position " + str(start) + ": " + reason;
+        + " in position "
+        + str(start)
+        + ": "
+        + reason;
 }
 
 def unicode_translate_error_str(exc: PyException) -> str {
@@ -514,8 +530,13 @@ def unicode_translate_error_str(exc: PyException) -> str {
         esc = "\\U";
         width = 8;
     }
-    return "can't translate character " + esc + _hex_padded(cp, width)
-        + " in position " + str(start) + ": " + reason;
+    return "can't translate character "
+        + esc
+        + _hex_padded(cp, width)
+        + " in position "
+        + str(start)
+        + ": "
+        + reason;
 }
 
 # BaseExceptionGroup instance check -- seam for the group-object lane. The

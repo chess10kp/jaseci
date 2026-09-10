@@ -1,1 +1,0 @@
-../../../../jac/tests/compiler/c2jac/fixtures/cpython/rotatingtree.c

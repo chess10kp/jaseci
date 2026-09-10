@@ -1,7 +1,6 @@
 # P3.2a — tuple core algorithms (xxHash + richcompare).
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/tupleobject_core.c``
-# (lift: ``jac-py/Objects/_lifted/tupleobject_core.jac``).
+# CPython source: ``Objects/tupleobject.c``.
 import from objects { PyObj, PyTuple, PyInt, is_error, _signed_hash, }
 import from pyhash { xx_hash_mix, _PyHASH_XXPRIME_5, }
 import from hash_dispatch { hash_element, }

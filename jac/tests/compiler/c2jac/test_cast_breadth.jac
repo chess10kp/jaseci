@@ -14,6 +14,7 @@ CPython real-world files, module-scope globals/typedefs, reserved-keyword
 identifiers).
 """
 
+import from jaclang.compiler.tools.unparse_pass { unparse_module }
 import from jaclang.compiler.cfront.lift { lift_c_str, lift_c_file }
 import from tests.compiler.c2jac.support {
     BREADTH,
@@ -25,7 +26,7 @@ test "every fixture lifts to Jac that recompiles with zero errors" {
     broken: list = [];
     for (name, _) in BREADTH {
         res = lift_c_str(_read(name), name);
-        out = res.module.unparse(requires_format=True);
+        out = unparse_module(res.module, requires_format=True);
         errs = _recompile(out, name);
         if errs {
             broken.append((name, [str(e).splitlines()[0] for e in errs]));
@@ -48,7 +49,7 @@ test "every fixture emits exactly its expected faithfulness diagnostics" {
 
 test "minilib/vec2.c lifts through the .c preprocess path (struct methods)" {
     res = lift_c_file(_read_path("minilib/vec2.c"));
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "obj Vec2 {" in out , out;
     assert "def vec2_add(a: Vec2, b: Vec2) -> Vec2 {" in out;
     assert res.diags == [] , res.diags;
@@ -63,7 +64,7 @@ def _read_path(name: str) -> str {
 # ---- targeted faithful-output locks (constructs not in test_cast_slice) ----
 test "for_continue.c promotes descending for-with-continue to IterForStmt" {
     res = lift_c_str(_read("for_continue.c"), "for_continue.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     # `>`/`>=` are promotable; Jac IterForStmt runs count_by on continue, so
     # the C `for` step is faithful and no W4208 quarantine is needed.
     assert "for i = n while i > 0 with" in out , out;
@@ -74,14 +75,14 @@ test "for_continue.c promotes descending for-with-continue to IterForStmt" {
 
 test "for_comma.c promotes past a pure comma-init and flags a dropped operand" {
     res = lift_c_str(_read("for_comma.c"), "for_comma.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "for i = 0 while i < n with i += 1 {" in out , out;
     assert res.diags[0][0] == "W4204";
 }
 
 test "for_cast.c elides a cast (W4201) and lowers signed `/` to a C-semantics helper" {
     res = lift_c_str(_read("for_cast.c"), "for_cast.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     codes = [d[0] for d in res.diags];
     # The `(int)` cast is elided (W4201, style band). The signed `/` cannot use
     # Jac `//` directly (C truncates toward zero, Jac floors), so it lowers
@@ -98,14 +99,14 @@ test "for_cast.c elides a cast (W4201) and lowers signed `/` to a C-semantics he
 
 test "for_ternary.c lifts a body ternary to a Jac if-else expression" {
     res = lift_c_str(_read("for_ternary.c"), "for_ternary.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "s += hi if (i > hi) else i;" in out , out;
     assert res.diags == [] , res.diags;
 }
 
 test "switch_fallthrough.c flags fall-through and quarantines the function" {
     res = lift_c_str(_read("switch_fallthrough.c"), "switch_fallthrough.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     # W4202 is behavior-band: containing function becomes a call-time trap
     assert res.diags[0][0] == "W4202";
     assert res.quarantined_functions;
@@ -115,7 +116,7 @@ test "switch_fallthrough.c flags fall-through and quarantines the function" {
 
 test "do_while_continue.c flags W4203 and quarantines the function" {
     res = lift_c_str(_read("do_while_continue.c"), "do_while_continue.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     codes = [d[0] for d in res.diags];
     # The `n % 2` parity test lowers faithfully to a `c_imod` call (C truncates
     # toward zero); only the do-while `continue` (W4203) is behavior-band and
@@ -128,7 +129,7 @@ test "do_while_continue.c flags W4203 and quarantines the function" {
 
 test "struct_array.c lifts an object array + subscript member assign" {
     res = lift_c_str(_read("struct_array.c"), "struct_array.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "has x: int = 0;" in out , out;
     assert "a: list[S] = [S() for _ in range(2)];" in out , out;
     assert "a[0].x = 1;" in out;
@@ -137,7 +138,7 @@ test "struct_array.c lifts an object array + subscript member assign" {
 
 test "for_funcall_step.c lifts a module-scope global as `glob`" {
     res = lift_c_str(_read("for_funcall_step.c"), "for_funcall_step.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     # C BSS-zeroed globals become `glob` with an explicit zero. Jac `glob`
     # binds at module scope, so a function that assigns it mutates the global
     # directly -- no `global name;` redeclaration (unlike CPython Python).
@@ -148,13 +149,13 @@ test "for_funcall_step.c lifts a module-scope global as `glob`" {
 
 test "nonascii_str.c lifts module string globals with `glob`" {
     res = lift_c_str(_read("nonascii_str.c"), "nonascii_str.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert 'glob cafe: str = "café";' in out , out;
 }
 
 test "cpython/pystrcmp.c lifts a real-world file (walrus loop cond, ternary)" {
     res = lift_c_str(_read("cpython/pystrcmp.c"), "cpython/pystrcmp.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "def py_tolower(c: int) -> int {" in out , out;
     # a comma-operator loop condition folds the assignment into a walrus
     assert "(size := size - 1)" in out;
@@ -166,7 +167,7 @@ test "cpython/pystrcmp.c lifts a real-world file (walrus loop cond, ternary)" {
 
 test "cpython/mysnprintf.c lifts a scalar typedef to `glob` + flags its variadic" {
     res = lift_c_str(_read("cpython/mysnprintf.c"), "cpython/mysnprintf.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     # `typedef ... va_list` -> a module `glob` alias (not a bare assignment)
     assert "glob va_list = " in out , out;
     # `PyOS_snprintf(..., ...)` is variadic -> the one faithful hole (W4207)
@@ -175,10 +176,11 @@ test "cpython/mysnprintf.c lifts a scalar typedef to `glob` + flags its variadic
 
 test "cpython/rotatingtree.c escapes reserved-keyword C identifiers" {
     res = lift_c_str(_read("cpython/rotatingtree.c"), "cpython/rotatingtree.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     # C params named `root` / `node` collide with reserved Jac keywords: they
     # are escaped with a single leading backtick so the lift stays valid Jac.
-    assert "def RotatingTree_Add(`root: rotating_node_t, `node: rotating_node_t)" in out , out;
+    assert "def RotatingTree_Add(`root: rotating_node_t, `node: rotating_node_t)"
+        in out , out;
     assert "obj rotating_node_t {" in out , out;
     assert "has key: object" in out , out;
     assert "obj rotating_node_s" not in out , out;
@@ -189,7 +191,7 @@ test "cpython/rotatingtree.c escapes reserved-keyword C identifiers" {
 
 test "goto_error.c lifts a forward error ladder to try/finally + raise (GOTO_LIFTER)" {
     res = lift_c_str(_read("goto_error.c"), "goto_error.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     # The `if (rc < 0) goto error;` guards become `raise`; the shared `error:`
     # cleanup becomes a `finally`. Promotes the whole function from Tier-B
     # (goto/label quarantine) to a faithful Tier-A lift -- no diags, no
@@ -205,7 +207,7 @@ test "goto_error.c lifts a forward error ladder to try/finally + raise (GOTO_LIF
 test "backward goto lifts to a while loop (GOTO_LOOP)" {
     src = "int h(int n) { int i = 0;\nloop: i++; if (i < n) goto loop; return i; }\n";
     res = lift_c_str(src, "backward_goto.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "while True {" in out , out;
     assert "i += 1;" in out , out;
     assert "break;" in out , out;

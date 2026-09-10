@@ -17,7 +17,7 @@ for historical reasons.
   - `support.jac` - lift-side test helpers (`BREADTH`, `recompile_errors`, ...).
 
 - **jac2c (emit): Jac to C** (code under `jac/jaclang/compiler/passes/c/` and
-  the shared products in `jac/jaclang/compiler/passes/main/`)
+  the shared products in `jac/jaclang/compiler/passes/`)
   - `test_jac2c_differential.jac` - emitted C vs stock interpreter.
   - `test_jac2c_multimodule.jac`, `test_jac2c_transitive.jac`,
     `test_jac2c_xmod_vdispatch.jac` - cross-module emit / vtable dispatch.
@@ -31,4 +31,5 @@ for historical reasons.
   and emit fixtures. Fixtures are excluded from `jac-format` and from the deslop
   lint rules.
 
-See `IMPLEMENTATION.md` at the repo root for the architecture of both legs.
+See `jac-py/README.md` for the retained CPython replacement implementation and
+generator layout.

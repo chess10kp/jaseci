@@ -1,6 +1,6 @@
 """Ensure the pinned CPython reference checkout exists for jac-py generators.
 
-Policy pin: CURRENT.md (CPython 3.14.6, tag v3.14.6).
+Reference pin: CPython 3.14.6, tag v3.14.6.
 
 Usage:
     python jac-py/tools/fetch_cpython_reference.py

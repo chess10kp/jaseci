@@ -12,7 +12,6 @@ import type from jaclang.compiler.backends.es.view_ir { ViewElement }
 
 obj ReactBackend(FrameworkBackend) {
     def name -> str;
-    def runtime_module -> str;
     def lower_state_field(s: StateField) -> list[es.Statement];
     def lower_ref_field(r: RefField) -> list[es.Statement];
     def lower_state_update(u: StateUpdate) -> es.Expression;
@@ -26,8 +25,6 @@ obj ReactBackend(FrameworkBackend) {
     def effect_symbols(e: Effect) -> list[str];
     def async_boundary_symbols(a: AsyncBoundary) -> list[str];
     def view_runtime_symbols(view: ViewElement) -> list[str];
-    def jsx_factory_name -> str;
-    def lowers_fragments_natively -> bool;
     def import_source(symbol: str) -> str;
     def required_globals -> list[str];
     def runtime_source_basename -> str;

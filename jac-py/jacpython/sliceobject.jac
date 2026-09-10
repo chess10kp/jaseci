@@ -1,5 +1,5 @@
 # P3.1c — slice core runtime (``PySlice_AdjustIndices`` lane).
-# Hand runtime mirrors ``Objects/_lifted/sliceobject.jac`` and ``objects.jac``.
+# CPython source: Objects/sliceobject.c; storage lives in objects.jac.
 import from objects { PySlice, slice_indices, }
 
 # Re-export for runtime probes; slicing behavior lives in ``objects.jac``.

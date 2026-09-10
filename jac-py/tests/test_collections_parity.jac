@@ -1,8 +1,6 @@
 """P2 wave 19 facade parity: native deque + defaultdict vs host stdlib.
 
-Staged ``jac-py/Modules/collectionsmodule.{c,jac}`` stay the c2jac corpus
-pair (staging=lift); this file gates the product-path facade semantics in
-jac-py/jacpython/_collectionsmodule.jac against the pinned host oracle.
+Checks the retained Jac implementation against CPython behavior.
 Expected values and error messages were verified against the host stdlib
 ``_collections`` at authoring time.
 """

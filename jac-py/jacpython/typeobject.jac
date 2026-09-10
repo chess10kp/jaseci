@@ -1,7 +1,6 @@
 # P3.2a — type core helpers (name, repr, identity richcompare, ready stub).
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/typeobject_core.c``
-# (lift: ``jac-py/Objects/_lifted/typeobject_core.jac``).
+# CPython source: ``Objects/typeobject.c``.
 #
 # ``type_ready`` / ``type_hash_unimplemented`` are reference stubs until heap
 # types (P5) wire ``PyType_Ready`` into class construction.

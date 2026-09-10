@@ -1,8 +1,6 @@
 """P2 wave 13 facade parity: native _struct pack/unpack/calcsize vs host stdlib.
 
-jac-py/Modules/structmodule.{c,jac} stay the staged c2jac corpus pair
-(staging=lift); this file gates the product-path facade semantics in
-jac-py/jacpython/_structmodule.jac against the pinned host oracle.
+Checks the retained Jac implementation against CPython behavior.
 Expected values were verified against the host stdlib ``struct`` (the
 pinned CPython on this LP64 little-endian host) at authoring time.
 """

@@ -64,8 +64,10 @@ def resolve_cpython() -> Path:
 
     for root in roots:
         candidates.append(root / ".venv" / "bin" / f"python{CPYTHON_MINOR}")
-        candidates.append(
-            root / "jac" / ".pbs-build" / "install" / "bin" / f"python{CPYTHON_MINOR}"
+        candidates.extend(
+            sorted((root / "jac" / ".python-build").glob(
+                f"*/python/install/bin/python{CPYTHON_MINOR}"
+            ))
         )
 
     seen: set[Path] = set()

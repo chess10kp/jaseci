@@ -54,7 +54,7 @@ def repeat(element: any, times: any = None) -> any {
 obj _ChainNamespace {
     # ``chain`` is a namespace-like callable in CPython (a type with a
     # classmethod); here one shared instance carries both entry points.
-    def __call__(*iterables: list) -> any {
+    def __call__(*iterables: any) -> any {
         return _p2_chain(*iterables);
     }
 
@@ -78,7 +78,7 @@ def permutations(iterable: any, r: any = None) -> any {
 }
 
 # product(*iterables, repeat=1)
-def product(*iterables: list, **kwargs: dict) -> any {
+def product(*iterables: any, **kwargs: any) -> any {
     rep: int = 1;
     if "repeat" in kwargs {
         rep = kwargs["repeat"] as int;
@@ -119,7 +119,7 @@ def batched(iterable: any, n: int, strict: bool = False) -> any {
 }
 
 # zip_longest(*iterables, fillvalue=None)
-def zip_longest(*iterables: list, **kwargs: dict) -> any {
+def zip_longest(*iterables: any, **kwargs: any) -> any {
     fillvalue: any = None;
     if "fillvalue" in kwargs {
         fillvalue = kwargs["fillvalue"];
@@ -129,7 +129,9 @@ def zip_longest(*iterables: list, **kwargs: dict) -> any {
 
 # ---- slicing / accumulation --------------------------------------------------
 
-def accumulate(iterable: any, func: any = None, initial: any = ACC_INITIAL_MISSING) -> any {
+def accumulate(
+    iterable: any, func: any = None, initial: any = ACC_INITIAL_MISSING
+) -> any {
     return _p2_accumulate(iterable, func, initial);
 }
 

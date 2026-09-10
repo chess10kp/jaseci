@@ -8,6 +8,7 @@ emittable subset. This file covers the complementary POD half: c2jac stamps
 and the linked binary must agree with the original `.c` under `cc`.
 """
 
+import from jaclang.compiler.tools.unparse_pass { unparse_module }
 import os;
 import tempfile;
 import from tests.support { JAC_ROOT }
@@ -40,7 +41,7 @@ def _lift_emit_units(c_path: str, include_dirs: list[str], run_src: str) -> list
     assert not lift_prog.errors_had , f"lift errors: {[
         str(e) for e in lift_prog.errors_had
     ]}";
-    jac_src = lifted.unparse() + run_src;
+    jac_src = unparse_module(lifted) + run_src;
 
     out_dir = tempfile.mkdtemp();
     jac_path = os.path.join(out_dir, "vec2.jac");

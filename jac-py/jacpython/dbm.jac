@@ -1,7 +1,7 @@
 # Product-path facade for _dbm (Modules/_dbmmodule.c): the ndbm-style
 # DBM mapping with open/close, bytes keys/values, and file persistence.
 #
-# Staged ``jac-py/Modules/`` c2jac lifts remain the corpus oracles; this
+# This
 # module carries the runtime truth. Semantics mirror CPython 3.14
 # ``Modules/_dbmmodule.c``:
 #
@@ -42,19 +42,16 @@
 
 import os;
 
-glob library = "GNU gdbm";
+glob library = "GNU gdbm",
+     error = OSError,
+     _tables: dict[str, dict[bytes, bytes]] = {},
+     _HEXDIGITS = "0123456789abcdef";
 
-glob error = OSError;
 
 # Resolved-filename -> live table. Reopening replaces the entry; handles
 # opened before that keep their (now stale) dict reference, matching the
 # snapshot semantics of separate ndbm descriptors closely enough for the
 # supported access patterns.
-glob _tables: dict[str, dict[bytes, bytes]] = {};
-
-glob _HEXDIGITS = "0123456789abcdef";
-
-
 def _hex_encode(data: bytes) -> str {
     out = "";
     for octet in data {
@@ -111,7 +108,9 @@ def _write_file(path: str, wflags: int, data: bytes) {
 def _table_dump(table: dict[bytes, bytes]) -> bytes {
     parts: list[bytes] = [];
     for k in table {
-        parts.append((_hex_encode(k) + ":" + _hex_encode(table[k]) + "\n").encode("ascii"));
+        parts.append(
+            (_hex_encode(k) + ":" + _hex_encode(table[k]) + "\n").encode("ascii")
+        );
     }
     return b"".join(parts);
 }
@@ -183,13 +182,11 @@ obj Dbm {
         table: dict[bytes, bytes] = {},
         closed: bool = False;
 
-
     def _require_open {
         if self.closed {
             raise OSError("DBM object has already been closed");
         }
     }
-
 
     def _flush(wflags: int, fail_msg: str) {
         try {
@@ -199,25 +196,21 @@ obj Dbm {
         }
     }
 
-
     def __len__ -> int {
         self._require_open();
         return len(self.table);
     }
-
 
     def __bool__ -> bool {
         self._require_open();
         return len(self.table) > 0;
     }
 
-
     def __contains__(key: any) -> bool {
         self._require_open();
         kb = _key_bytes(key);
         return kb in self.table;
     }
-
 
     def __getitem__(key: any) -> any {
         self._require_open();
@@ -228,7 +221,6 @@ obj Dbm {
         return self.table[kb];
     }
 
-
     def __setitem__(key: any, value: any) {
         self._require_open();
         kb = _key_bytes(key);
@@ -236,7 +228,6 @@ obj Dbm {
         self.table[kb] = vb;
         self._flush(self.wflags, "cannot add item to database");
     }
-
 
     def __delitem__(key: any) {
         self._require_open();
@@ -253,12 +244,10 @@ obj Dbm {
         self._flush(self.wflags, "cannot delete item from database");
     }
 
-
     def keys -> list {
         self._require_open();
         return list(self.table.keys());
     }
-
 
     def get(key: any, default_value: any = None) -> any {
         self._require_open();
@@ -268,7 +257,6 @@ obj Dbm {
         }
         return default_value;
     }
-
 
     def setdefault(key: any, default_value: any = b"") -> any {
         self._require_open();
@@ -283,7 +271,6 @@ obj Dbm {
         return default_value;
     }
 
-
     def clear {
         self._require_open();
         # A read-only handle only fails once there is something to delete
@@ -297,16 +284,13 @@ obj Dbm {
         }
     }
 
-
     def close {
         self.closed = True;
     }
 
-
     def __enter__ -> Dbm {
         return self;
     }
-
 
     def __exit__(exc_type: any, exc_val: any, exc_tb: any) {
         self.close();

@@ -1,2 +1,0 @@
----
-lrwxrwxrwx 1 jac jac 93 Aug 29 21:32 jac/jaclang/vendor/typeshed/stdlib -> /home/jac/.cache/jac/rt/553c250071fd962f-c152554fd6e7fdad/site/jaclang/vendor/typeshed/stdlib

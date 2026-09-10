@@ -8,6 +8,7 @@ fed to the Jac reader. That makes C a first-class source language rather than a
 CLI-only sidecar transpile.
 """
 
+import from jaclang.compiler.tools.unparse_pass { unparse_module }
 import os;
 import tempfile;
 import from jaclang.compiler.driver.program { JacProgram }
@@ -28,7 +29,7 @@ def _compile_src(basename: str, src: str) -> tuple {
 test "a .c file compiles through the front-end as C (parse_str dispatch)" {
     (prog, mod) = _compile_src("add.c", "int add(int a, int b) { return a + b; }\n");
     assert not prog.errors_had , f"errors: {[str(e) for e in prog.errors_had]}";
-    out = mod.unparse();
+    out = unparse_module(mod);
     # lifted to a Jac ability, not parsed as (invalid) Jac source
     assert "def add(a: int, b: int) -> int" in out , out;
 }
@@ -39,7 +40,7 @@ test "a .c file is preprocessed on the way in (system include resolves)" {
     # <stddef.h> resolves through the LP64 porting include tree (ahead of fake
     # libc); without preprocessing pycparser would choke on the directive.
     assert not prog.errors_had , f"errors: {[str(e) for e in prog.errors_had]}";
-    assert "def two() -> int" in mod.unparse();
+    assert "def two() -> int" in unparse_module(mod);
 }
 
 test "LP64 porting size_t / uint64_t / Py_ssize_t lift as Jac int" {
@@ -50,7 +51,7 @@ test "LP64 porting size_t / uint64_t / Py_ssize_t lift as Jac int" {
     assert LP64_SCALARS["Py_ssize_t"] == "i64";
     path = os.path.join(FIXTURES, "porting_widths.c");
     res = lift_c_file(path);
-    out = res.module.unparse();
+    out = unparse_module(res.module);
     assert "def port_add_size(a: int, b: int) -> int" in out , out;
     assert "def port_widen(x: int) -> int" in out , out;
     assert "def port_ssize(n: int) -> int" in out , out;
@@ -59,7 +60,7 @@ test "LP64 porting size_t / uint64_t / Py_ssize_t lift as Jac int" {
 test "a .i file is taken as already-preprocessed C" {
     (prog, mod) = _compile_src("mul.i", "int mul(int a, int b) { return a * b; }\n");
     assert not prog.errors_had , f"errors: {[str(e) for e in prog.errors_had]}";
-    assert "def mul(a: int, b: int) -> int" in mod.unparse();
+    assert "def mul(a: int, b: int) -> int" in unparse_module(mod);
 }
 
 test "an unfaithful C construct lifts leniently (warning, still a usable module)" {
@@ -70,7 +71,7 @@ test "an unfaithful C construct lifts leniently (warning, still a usable module)
     assert not prog.errors_had , f"lenient ingest should not error: {[
         str(e) for e in prog.errors_had
     ]}";
-    assert "def sum(" in mod.unparse();
+    assert "def sum(" in unparse_module(mod);
     assert any([w.code and w.code.code == "W4207" for w in prog.warnings_had]) , f"expected a W4207 variadic warning, got {[
         str(w) for w in prog.warnings_had
     ]}";

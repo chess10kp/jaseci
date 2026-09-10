@@ -90,5 +90,5 @@ def float_hash_obj(v: PyFloat) -> PyObj {
 }
 
 # P3.2c — float core helpers (hash entry + EQ lane).
-# Lift: Objects/_lifted/floatobject_core.jac
+# CPython source: Objects/floatobject.c.
 # Full shortest-repr / SipHash live in floatobject.jac + pyhash.jac already.

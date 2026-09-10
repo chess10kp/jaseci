@@ -35,7 +35,7 @@ from pathlib import Path
 
 from jac_subprocess import subprocess_env
 
-# Policy pin: CURRENT.md / fetch_cpython_reference.py
+# Reference pin: fetch_cpython_reference.py
 CPYTHON_PIN = "3.14.6"
 CPYTHON_MINOR = "3.14"
 
@@ -810,7 +810,9 @@ def resolve_pinned_cpython(root: Path) -> Path:
             f"JACPYTHON_CPYTHON={env_override!r} is not CPython {CPYTHON_PIN}"
         )
     candidates: list[Path] = [
-        root / "jac" / ".pbs-build" / "install" / "bin" / f"python{CPYTHON_MINOR}",
+        *sorted((root / "jac" / ".python-build").glob(
+            f"*/python/install/bin/python{CPYTHON_MINOR}"
+        )),
         root / ".venv" / "bin" / f"python{CPYTHON_MINOR}",
     ]
     which = shutil.which(f"python{CPYTHON_MINOR}")
@@ -828,7 +830,7 @@ def resolve_pinned_cpython(root: Path) -> Path:
             return candidate
     raise RuntimeError(
         f"pinned CPython {CPYTHON_PIN} not found "
-        f"(need python{CPYTHON_MINOR} on PATH or jac/.pbs-build install tree)"
+        f"(need python{CPYTHON_MINOR} on PATH or jac/.python-build install tree)"
     )
 
 

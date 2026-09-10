@@ -2,8 +2,6 @@
 # scanstring, encode_basestring(_ascii), make_scanner (JSONDecoder
 # raw_decode paths) and make_encoder (JSONEncoder iterencode one-shot
 # semantics).
-# Staged ``jac-py/Modules/jsonmodule.{c,jac}`` remain the wave-15 c2jac
-# corpus oracle pair (staging=lift); this module carries the runtime truth.
 # Semantics mirror CPython 3.14 ``Modules/_json.c`` on the pinned host,
 # verified against the host stdlib ``_json``/``json``.
 #
@@ -47,8 +45,14 @@ def _s_char(c: int) -> bool {
 def _decode_error_msg(msg: str, doc: str, pos: int) -> str {
     lineno = doc.count("\n", 0, pos) + 1;
     colno = pos - doc.rfind("\n", 0, pos);
-    return msg + ": line " + str(lineno) + " column " + str(colno)
-        + " (char " + str(pos) + ")";
+    return msg
+        + ": line "
+        + str(lineno)
+        + " column "
+        + str(colno)
+        + " (char "
+        + str(pos)
+        + ")";
 }
 
 def _decode_error(msg: str, doc: str, pos: int) {
@@ -83,8 +87,11 @@ def _escape_short(c: int) -> any {
 }
 
 def _hex4(v: int) -> str {
-    return "" + _HEX[(v >> 12) & 0xF] + _HEX[(v >> 8) & 0xF]
-        + _HEX[(v >> 4) & 0xF] + _HEX[v & 0xF];
+    return ""
+        + _HEX[(v >> 12) & 0xF]
+        + _HEX[(v >> 8) & 0xF]
+        + _HEX[(v >> 4) & 0xF]
+        + _HEX[v & 0xF];
 }
 
 # ascii_escape_unichar(): one escaped unit for encode_basestring_ascii.
@@ -116,8 +123,7 @@ def _plain_escape_unichar(c: int) -> str {
 
 def _check_string_arg(pystr: any) {
     if not isinstance(pystr, str) {
-        raise TypeError("first argument must be a string, not "
-                        + _type_name(pystr));
+        raise TypeError("first argument must be a string, not " + _type_name(pystr));
     }
 }
 
@@ -235,8 +241,11 @@ def _scanstring_unicode(s: str, end: int, strict: bool) -> tuple[any, int] {
                 next_i = next_i + 1;
             }
             # Surrogate pair
-            if c >= 0xD800 and c <= 0xDBFF and uesc_end + 6 < length
-               and s[next_i] == "\\" and s[next_i + 1] == "u" {
+            if c >= 0xD800
+                and c <= 0xDBFF
+                and uesc_end + 6 < length
+                and s[next_i] == "\\"
+                and s[next_i + 1] == "u" {
                 next_i = next_i + 2;
                 uesc_end = uesc_end + 6;
                 end = uesc_end;
@@ -245,8 +254,7 @@ def _scanstring_unicode(s: str, end: int, strict: bool) -> tuple[any, int] {
                     digit = ord(s[next_i]);
                     hv = _hex_value(digit);
                     if hv < 0 {
-                        _decode_error("Invalid \\uXXXX escape", s,
-                                      uesc_end - 5);
+                        _decode_error("Invalid \\uXXXX escape", s, uesc_end - 5);
                     }
                     c2 = (c2 << 4) | hv;
                     next_i = next_i + 1;
@@ -379,8 +387,10 @@ obj _Scanner {
         }
 
         # '.' must be followed by a digit
-        if idx < end_idx and s[idx] == "." and s[idx + 1] >= "0"
-           and s[idx + 1] <= "9" {
+        if idx < end_idx
+            and s[idx] == "."
+            and s[idx + 1] >= "0"
+            and s[idx + 1] <= "9" {
             is_float = True;
             idx = idx + 2;
             while idx <= end_idx and s[idx] >= "0" and s[idx] <= "9" {
@@ -434,8 +444,8 @@ obj _Scanner {
                 # read key
                 if idx > end_idx or s[idx] != "\"" {
                     _decode_error(
-                        "Expecting property name enclosed in double quotes",
-                        s, idx);
+                        "Expecting property name enclosed in double quotes", s, idx
+                    );
                 }
                 (key, next_idx) = _scanstring_unicode(s, idx + 1, self.strict);
                 memokey = memo.setdefault(key, key);
@@ -484,8 +494,8 @@ obj _Scanner {
                 }
                 if idx <= end_idx and s[idx] == "}" {
                     _decode_error(
-                        "Illegal trailing comma before end of object",
-                        s, comma_idx);
+                        "Illegal trailing comma before end of object", s, comma_idx
+                    );
                 }
             }
         }
@@ -533,8 +543,8 @@ obj _Scanner {
                 }
                 if idx <= end_idx and s[idx] == "]" {
                     _decode_error(
-                        "Illegal trailing comma before end of array",
-                        s, comma_idx);
+                        "Illegal trailing comma before end of array", s, comma_idx
+                    );
                 }
             }
         }
@@ -588,7 +598,7 @@ obj _Encoder {
             self.indent_cache = [];
         }
         self._listencode_obj(writer, enc_obj, 0);
-        return ("".join(writer),);
+        return ("".join(writer), );
     }
 
     # get_item_separator() with update_indent_cache() growth policy:
@@ -637,8 +647,9 @@ obj _Encoder {
     def _encode_float(v: float) -> str {
         if v != v or v == float("inf") or v == float("-inf") {
             if not self.allow_nan {
-                raise ValueError("Out of range float values are not JSON"
-                                 + " compliant: " + repr(v));
+                raise ValueError(
+                    "Out of range float values are not JSON" + " compliant: " + repr(v)
+                );
             }
             if v == float("inf") {
                 return "Infinity";
@@ -657,8 +668,9 @@ obj _Encoder {
     def _encode_string(sval: any) -> str {
         encoded = (self.encoder)(sval);
         if not isinstance(encoded, str) {
-            raise TypeError("encoder() must return a string, not "
-                            + _type_name(encoded));
+            raise TypeError(
+                "encoder() must return a string, not " + _type_name(encoded)
+            );
         }
         return encoded as str;
     }
@@ -714,9 +726,15 @@ obj _Encoder {
 
     # encoder_encode_key_value(); first_ref[0] boxes the "first item"
     # flag. Returns False when skipkeys dropped the entry.
-    def _encode_key_value(writer: list, dct: any, key: any, value: any,
-                          indent_level: int, separator: str,
-                          first_ref: list) -> bool {
+    def _encode_key_value(
+        writer: list,
+        dct: any,
+        key: any,
+        value: any,
+        indent_level: int,
+        separator: str,
+        first_ref: list
+    ) -> bool {
         keystr: str;
         if isinstance(key, str) {
             keystr = key as str;
@@ -730,8 +748,9 @@ obj _Encoder {
         } elif self.skipkeys {
             return False;
         } else {
-            raise TypeError("keys must be str, int, float, bool or None, not "
-                            + _type_name(key));
+            raise TypeError(
+                "keys must be str, int, float, bool or None, not " + _type_name(key)
+            );
         }
 
         if first_ref[0] {
@@ -777,8 +796,9 @@ obj _Encoder {
                 items.sort();
             }
             for kv in items {
-                self._encode_key_value(writer, dct, kv[0], kv[1], level,
-                                       separator, first_ref);
+                self._encode_key_value(
+                    writer, dct, kv[0], kv[1], level, separator, first_ref
+                );
             }
             if self.indent is not None and not first_ref[0] {
                 self._write_newline_indent(writer, level - 1);
@@ -835,12 +855,21 @@ obj _Encoder {
     }
 }
 
-def make_encoder(markers: any, defaultfn: any, encoder: any, indent: any,
-                 key_separator: str, item_separator: str, sort_keys: bool,
-                 skipkeys: bool, allow_nan: bool) -> _Encoder {
+def make_encoder(
+    markers: any,
+    defaultfn: any,
+    encoder: any,
+    indent: any,
+    key_separator: str,
+    item_separator: str,
+    sort_keys: bool,
+    skipkeys: bool,
+    allow_nan: bool
+) -> _Encoder {
     if markers is not None and not isinstance(markers, dict) {
-        raise TypeError("make_encoder() argument 1 must be dict or None, not "
-                        + _type_name(markers));
+        raise TypeError(
+            "make_encoder() argument 1 must be dict or None, not " + _type_name(markers)
+        );
     }
     e = _Encoder();
     e.markers = markers;
@@ -877,8 +906,7 @@ def _parse_const_default(name: str) -> any {
 
 # JSONEncoder.default when no default= was supplied.
 def _default_not_serializable(v: any) -> any {
-    raise TypeError("Object of type " + _type_name(v)
-                    + " is not JSON serializable");
+    raise TypeError("Object of type " + _type_name(v) + " is not JSON serializable");
 }
 
 obj _DecoderCtx {
@@ -890,9 +918,14 @@ obj _DecoderCtx {
         parse_constant: any = None;
 }
 
-def loads(sval: any, object_hook: any = None, parse_float: any = None,
-          parse_int: any = None, parse_constant: any = None,
-          object_pairs_hook: any = None) -> any {
+def loads(
+    sval: any,
+    object_hook: any = None,
+    parse_float: any = None,
+    parse_int: any = None,
+    parse_constant: any = None,
+    object_pairs_hook: any = None
+) -> any {
     text: str;
     if isinstance(sval, str) {
         text = sval as str;
@@ -903,8 +936,9 @@ def loads(sval: any, object_hook: any = None, parse_float: any = None,
         # explicitly so the error surfaces identically for bad bytes.
         text = bytes(sval).decode("utf-8");
     } else {
-        raise TypeError("the JSON object must be str, bytes or bytearray, not "
-                        + _type_name(sval));
+        raise TypeError(
+            "the JSON object must be str, bytes or bytearray, not " + _type_name(sval)
+        );
     }
 
     ctx = _DecoderCtx();
@@ -912,8 +946,9 @@ def loads(sval: any, object_hook: any = None, parse_float: any = None,
     ctx.object_pairs_hook = object_pairs_hook;
     ctx.parse_float = float if parse_float is None else parse_float;
     ctx.parse_int = int if parse_int is None else parse_int;
-    ctx.parse_constant = (_parse_const_default if parse_constant is None
-                          else parse_constant);
+    ctx.parse_constant = (
+        _parse_const_default if parse_constant is None else parse_constant
+    );
 
     idx = 0;
     length = len(text);
@@ -924,8 +959,7 @@ def loads(sval: any, object_hook: any = None, parse_float: any = None,
     try {
         (rval, end_idx) = scanner(text, idx);
     } except StopIteration as e {
-        raise ValueError(_decode_error_msg("Expecting value", text,
-                                           e.value as int));
+        raise ValueError(_decode_error_msg("Expecting value", text, e.value as int));
     }
     while end_idx < length and _is_ws_char(ord(text[end_idx])) {
         end_idx = end_idx + 1;
@@ -939,10 +973,17 @@ def loads(sval: any, object_hook: any = None, parse_float: any = None,
 import from exceptions_core { register_module_exception }
 
 
-def dumps(obj_val: any, skipkeys: bool = False, ensure_ascii: bool = True,
-          check_circular: bool = True, allow_nan: bool = True,
-          indent: any = None, separators: any = None, `default: any = None,
-          sort_keys: bool = False) -> str {
+def dumps(
+    obj_val: any,
+    skipkeys: bool = False,
+    ensure_ascii: bool = True,
+    check_circular: bool = True,
+    allow_nan: bool = True,
+    indent: any = None,
+    separators: any = None,
+    `default: any = None,
+    sort_keys: bool = False
+) -> str {
     ind = indent;
     if ind is not None and not isinstance(ind, str) {
         ind = " " * (ind as int);
@@ -956,11 +997,11 @@ def dumps(obj_val: any, skipkeys: bool = False, ensure_ascii: bool = True,
         item_sep = ",";
     }
     enc_str = encode_basestring_ascii if ensure_ascii else encode_basestring;
-    dflt = (_default_not_serializable if `default is None
-            else `default);
+    dflt = _default_not_serializable if `default is None else `default;
     markers: any = {} if check_circular else None;
-    enc = make_encoder(markers, dflt, enc_str, ind, key_sep, item_sep,
-                       sort_keys, skipkeys, allow_nan);
+    enc = make_encoder(
+        markers, dflt, enc_str, ind, key_sep, item_sep, sort_keys, skipkeys, allow_nan
+    );
     return enc(obj_val, None)[0];
 }
 

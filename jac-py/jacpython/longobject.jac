@@ -1,12 +1,10 @@
 # P3.2a — long core algorithms (digit vector ops, compare, hash).
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/longobject_core.c``
-# (lift: ``jac-py/Objects/_lifted/longobject_core.jac``).
+# CPython source: ``Objects/longobject.c``.
 #
 # Runtime ``ceval`` uses ``PyInt.val`` (host bignum) for arithmetic; int
 # compares route through PyInt.tp_richcompare. Only the CPython ``long_hash``
-# digit-rotation port and ``int_repr`` are wired; the digit-vector arithmetic
-# reference lives in ``Objects/_lifted/longobject_core.jac``.
+# digit-rotation port and ``int_repr`` are wired.
 import from objects { PyObj, PyInt, PyStr, is_error, _bool_from_cmp, }
 
 glob PyLong_SHIFT: int = 30,

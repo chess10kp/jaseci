@@ -8,6 +8,7 @@ makes a real extern call through the JIT, and the compact `clib(...)` form
 round-trips through `unparse`.
 """
 
+import from jaclang.compiler.tools.unparse_pass { unparse_module }
 import os;
 import ctypes;
 import tempfile;
@@ -148,7 +149,7 @@ test "the compact clib(...) form round-trips through unparse" {
     app = 'import from clib("m", header="hdr.h") { sqrt }\n';
     (prog, ir) = _build(hdr, app);
     assert not prog.errors_had , f"errors: {[str(e) for e in prog.errors_had]}";
-    out = ir.unparse();
+    out = unparse_module(ir);
     # the sugar is preserved (not expanded to the full binding decls) and is
     # rendered tight (no loose spaces around the parens/`=`), like a call.
     assert 'clib("m", header="hdr.h")' in out , out;

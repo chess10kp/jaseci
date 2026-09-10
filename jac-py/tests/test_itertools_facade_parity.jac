@@ -1,7 +1,6 @@
 """P2 wave 12 facade parity: native itertools count/cycle/repeat/chain vs host stdlib.
 
-jac-py/Modules/itertoolsmodule.{c,jac} stay the staged c2jac corpus pair
-(staging=lift); this file gates the product-path facade semantics.
+Checks the retained Jac implementation against CPython behavior.
 """
 
 import itertools as host_it;

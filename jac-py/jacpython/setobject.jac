@@ -1,12 +1,9 @@
 # P3.2a — set core algorithms (frozenset hash + richcompare).
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/setobject_core.c``
-# (lift: ``jac-py/Objects/_lifted/setobject_core.jac``).
+# CPython source: ``Objects/setobject.c``.
 import from objects { PyObj, PySet, PyInt, is_error, _signed_hash, }
 import from hash_dispatch { hash_element, }
-import from abstract_protocol {
-    PyObject_HashNotImplemented,
-}
+import from abstract_protocol { PyObject_HashNotImplemented, }
 
 glob _PySet_MASK: int = 0xFFFFFFFFFFFFFFFF;
 

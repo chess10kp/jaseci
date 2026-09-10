@@ -1,6 +1,4 @@
 # Product-path facade for heapq (native list algorithms).
-# Staged ``jac-py/Modules/_heapqmodule.jac`` remains the C-API hand oracle
-# (PyObj stubs) for cc differential tests - not byte-identical to this facade.
 # Semantics mirror CPython 3.14 ``Lib/heapq.py`` / ``Modules/_heapqmodule.c``.
 
 def _siftdown(heap: list, startpos: int, pos: int) {

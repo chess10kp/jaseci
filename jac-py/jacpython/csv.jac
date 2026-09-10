@@ -75,7 +75,9 @@ def _validate_dialect(src: any) {
     # Dialect._validate(): run the C-side DIASET validation over the
     # carrier's attributes; only TypeError converts to Error.
     try {
-        _build_dialect(src, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET);
+        _build_dialect(
+            src, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET, _UNSET
+        );
         src._valid = True;
     } except TypeError as e {
         raise Exception(str(e));
@@ -87,16 +89,16 @@ def _validate_dialect(src: any) {
 # Dialect carriers (Lib/csv.py class hierarchy, placeholder defaults)
 
 obj Dialect {
-    has delimiter: any = None;
-    has doublequote: any = None;
-    has escapechar: any = None;
-    has lineterminator: any = None;
-    has quotechar: any = None;
-    has quoting: any = None;
-    has skipinitialspace: any = None;
-    has strict: any = None;
-    has _name: str = "";
-    has _valid: bool = False;
+    has delimiter: any = None,
+        doublequote: any = None,
+        escapechar: any = None,
+        lineterminator: any = None,
+        quotechar: any = None,
+        quoting: any = None,
+        skipinitialspace: any = None,
+        strict: any = None,
+        _name: str = "",
+        _valid: bool = False;
 
     def validate {
         _validate_dialect(self);
@@ -104,12 +106,12 @@ obj Dialect {
 }
 
 obj excel(Dialect) {
-    has delimiter: any = ",";
-    has doublequote: any = True;
-    has quotechar: any = "\"";
-    has skipinitialspace: any = False;
-    has lineterminator: any = "\r\n";
-    has quoting: any = QUOTE_MINIMAL;
+    has delimiter: any = ",",
+        doublequote: any = True,
+        quotechar: any = "\"",
+        skipinitialspace: any = False,
+        lineterminator: any = "\r\n",
+        quoting: any = QUOTE_MINIMAL;
 }
 
 obj excel_tab(excel) {
@@ -117,12 +119,12 @@ obj excel_tab(excel) {
 }
 
 obj unix_dialect(Dialect) {
-    has delimiter: any = ",";
-    has doublequote: any = True;
-    has quotechar: any = "\"";
-    has skipinitialspace: any = False;
-    has lineterminator: any = "\n";
-    has quoting: any = QUOTE_ALL;
+    has delimiter: any = ",",
+        doublequote: any = True,
+        quotechar: any = "\"",
+        skipinitialspace: any = False,
+        lineterminator: any = "\n",
+        quoting: any = QUOTE_ALL;
 }
 
 
@@ -137,12 +139,12 @@ with entry {
 # Dict views (Lib/csv.py DictReader / DictWriter)
 
 obj _DictReader {
-    has fieldnames: any = None;
-    has restkey: any = None;
-    has restval: any = None;
-    has reader: any = None;
-    has dialect: any = None;
-    has line_num: int = 0;
+    has fieldnames: any = None,
+        restkey: any = None,
+        restval: any = None,
+        reader: any = None,
+        dialect: any = None,
+        line_num: int = 0;
 
     def __iter__ -> any {
         return self;
@@ -192,9 +194,15 @@ obj _DictReader {
     }
 }
 
-def DictReader(f: any, fieldnames: any = None, restkey: any = None,
-               restval: any = None, dialect: any = "excel",
-               *args: list, **kwds: dict) -> _DictReader {
+def DictReader(
+    f: any,
+    fieldnames: any = None,
+    restkey: any = None,
+    restval: any = None,
+    dialect: any = "excel",
+    *args: any,
+    **kwds: any
+) -> _DictReader {
     dr = _DictReader();
     if fieldnames is not None and iter(fieldnames) is fieldnames {
         fieldnames = list(fieldnames);
@@ -209,10 +217,10 @@ def DictReader(f: any, fieldnames: any = None, restkey: any = None,
 }
 
 obj _DictWriter {
-    has fieldnames: any = None;
-    has restval: any = "";
-    has extrasaction: str = "";
-    has writer: any = None;
+    has fieldnames: any = None,
+        restval: any = "",
+        extrasaction: str = "",
+        writer: any = None;
 
     def writeheader -> any {
         header = dict(zip(self.fieldnames, self.fieldnames));
@@ -225,8 +233,8 @@ obj _DictWriter {
             if wrong_fields {
                 names = [repr(x) for x in wrong_fields];
                 raise ValueError(
-                    "dict contains fields not in fieldnames: "
-                    + ", ".join(names));
+                    "dict contains fields not in fieldnames: " + ", ".join(names)
+                );
             }
         }
         return [rowdict.get(key, self.restval) for key in self.fieldnames];
@@ -245,9 +253,15 @@ obj _DictWriter {
     }
 }
 
-def DictWriter(f: any, fieldnames: any, restval: any = "",
-               extrasaction: any = "raise", dialect: any = "excel",
-               *args: list, **kwds: dict) -> _DictWriter {
+def DictWriter(
+    f: any,
+    fieldnames: any,
+    restval: any = "",
+    extrasaction: any = "raise",
+    dialect: any = "excel",
+    *args: any,
+    **kwds: any
+) -> _DictWriter {
     dw = _DictWriter();
     if fieldnames is not None and iter(fieldnames) is fieldnames {
         fieldnames = list(fieldnames);
@@ -257,7 +271,8 @@ def DictWriter(f: any, fieldnames: any, restval: any = "",
     extrasaction = extrasaction.lower();
     if extrasaction != "raise" and extrasaction != "ignore" {
         raise ValueError(
-            "extrasaction (" + extrasaction + ") must be 'raise' or 'ignore'");
+            "extrasaction (" + extrasaction + ") must be 'raise' or 'ignore'"
+        );
     }
     dw.extrasaction = extrasaction;
     dw.writer = writer(f, dialect, *args, **kwds);
@@ -311,6 +326,7 @@ obj Sniffer {
             r'(?:^|\n)(?P<quote>["\']).*?(?P=quote)(?P<delim>[^\w\n"\'])(?P<space> ?)',
             r'(?P<delim>[^\w\n"\'])(?P<space> ?)(?P<quote>["\']).*?(?P=quote)(?:$|\n)',
             r'(?:^|\n)(?P<quote>["\']).*?(?P=quote)(?:$|\n)',
+
         ];
         matches: list = [];
         regexp: any = None;
@@ -375,7 +391,8 @@ obj Sniffer {
             r"((%(delim)s)|^)\W*%(quote)s[^%(delim)s\n]*%(quote)s"
             r"[^%(delim)s\n]*%(quote)s\W*((%(delim)s)|$)"
                 % {"delim": _re.escape(delim), "quote": quotechar},
-            _re.MULTILINE);
+            _re.MULTILINE
+        );
 
         if dq_regexp.search(data) {
             doublequote = True;
@@ -391,7 +408,11 @@ obj Sniffer {
         # malformed data earns small variations. Build per-character
         # frequency tables chunk-wise, take the mode of the meta-frequency
         # and pick the character that best meets its expected frequency.
-        lines: list[str] = [ln for ln in data.split("\n") if ln];
+        lines: list[str] = [
+            ln
+            for ln in data.split("\n")
+            if ln
+        ];
 
         ascii_chars = [chr(c) for c in range(127)];
 
@@ -458,8 +479,7 @@ obj Sniffer {
 
             if len(delims) == 1 {
                 delim = list(delims.keys())[0];
-                skipinitialspace = (
-                    lines[0].count(delim) == lines[0].count(delim + " "));
+                skipinitialspace = lines[0].count(delim) == lines[0].count(delim + " ");
                 return (delim, skipinitialspace);
             }
 
@@ -476,8 +496,7 @@ obj Sniffer {
         if len(delims) > 1 {
             for d in self.preferred {
                 if d in delims.keys() {
-                    skipinitialspace = (
-                        lines[0].count(d) == lines[0].count(d + " "));
+                    skipinitialspace = lines[0].count(d) == lines[0].count(d + " ");
                     return (d, skipinitialspace);
                 }
             }
@@ -491,8 +510,7 @@ obj Sniffer {
         pairs.sort();
         delim = pairs[-1][1];
 
-        skipinitialspace = (
-            lines[0].count(delim) == lines[0].count(delim + " "));
+        skipinitialspace = lines[0].count(delim) == lines[0].count(delim + " ");
         return (delim, skipinitialspace);
     }
 

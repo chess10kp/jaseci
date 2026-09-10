@@ -1,6 +1,6 @@
 # P3.2c — complex core (hash, repr, string parsing).
 #
-# Lift: Objects/_lifted/complexobject_core.jac. Pure-arithmetic pieces live in
+# CPython source: Objects/complexobject.c. Pure-arithmetic pieces live in
 # objects.jac next to the PyComplex slots; this module adds what needs float
 # formatting / text scanning, mirroring CPython 3.14 byte-for-byte.
 import from objects { PyComplex, PyInt, PyObj, _signed_hash, }
@@ -344,6 +344,7 @@ def complex_parse_text(src: str) -> tuple[bool, str, float, float] {
             "could not convert string to complex: '" + src + "'",
             0.0,
             0.0,
+
         );
     }
     if err != "" {
@@ -368,6 +369,7 @@ def complex_parse_text(src: str) -> tuple[bool, str, float, float] {
             "could not convert string to complex: '" + src + "'",
             0.0,
             0.0,
+
         );
     }
     if err != "" or not im2 or i != len(s) {

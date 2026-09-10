@@ -1,8 +1,6 @@
 """P2 wave 16 facade parity: native binascii vs host stdlib.
 
-Staged ``jac-py/Modules/binasciimodule.{c,jac}`` stay the c2jac corpus
-pair (staging=lift); this file gates the product-path facade semantics in
-jac-py/jacpython/binasciimodule.jac against the pinned host oracle.
+Checks the retained Jac implementation against CPython behavior.
 Expected values and error messages were verified against the host stdlib
 ``binascii`` (the pinned CPython on this LP64 little-endian host) at
 authoring time.

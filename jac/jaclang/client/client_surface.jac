@@ -64,32 +64,23 @@ def _required_runtime_globals(
     return (default_names, "@jac/runtime");
 }
 
-# String-level runtime import injection for non-codegen paths (jsdom harnesses).
-# Jac2js emission injects @jac/runtime imports via EsastGenPass._inject_runtime_import.
 def with_runtime_globals(
     js_code: str, backend: (FrameworkBackend | None) = None
 ) -> str {
     import re;
     (names, src) = _required_runtime_globals(backend);
-    missing: list[str] = [];
-    for name in names {
-        if re.search(r"\b" + re.escape(name) + r"\b", js_code) is None {
-            continue;
-        }
-        if re.search(
-            r"(?m)^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+"
-                + re.escape(name)
-                + r"\b",
-            js_code
-        ) {
-            continue;
-        }
-
-        if re.search('import\\s*\\{[^}]*\\b' + re.escape(name) + '\\b', js_code) {
-            continue;
-        }
-        missing.append(name);
-    }
+    missing = [
+        name
+        for name in names
+        if re.search(r"\b" + re.escape(name) + r"\b", js_code) is not None
+            and re.search(
+                r"(?m)^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+"
+                    + re.escape(name)
+                    + r"\b",
+                js_code
+            )
+                is None
+    ];
     if not missing {
         return js_code;
     }
@@ -100,7 +91,6 @@ def with_runtime_globals(
     return line + '\n' + js_code;
 }
 
-# Deprecated: prefer codegen-injected imports. Kept for HMR/jac_to_js legacy finalizers.
 def prepend_active_runtime_globals(js_code: str) -> str {
     import from jaclang.compiler.backends.es.backends.registry {
         resolve_active_backend

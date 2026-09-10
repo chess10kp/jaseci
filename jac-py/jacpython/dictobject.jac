@@ -1,12 +1,19 @@
 # P3.2a — dict core algorithms (richcompare / equality on hashkey buckets).
 #
-# c2jac-assisted from ``jac-py/tools/p3_object_core/corpus/dictobject_core.c``
-# (lift: ``jac-py/Objects/_lifted/dictobject_core.jac``).
+# CPython source: ``Objects/dictobject.c``.
 #
 # Runtime dicts use hashkey-backed ``dict[str, DictEntry]`` in ``objects.jac``;
-# CPython's open-addressing table is not modeled. The c2jac reference lives in
-# ``Objects/_lifted/dictobject_core.jac`` if a native table lands later.
-import from objects { PyObj, PyDict, PyStr, is_error, py_error, expect_str, Py_EQ, Py_NE, }
+# CPython's open-addressing table is not modeled.
+import from objects {
+    PyObj,
+    PyDict,
+    PyStr,
+    is_error,
+    py_error,
+    expect_str,
+    Py_EQ,
+    Py_NE,
+}
 import from abstract_protocol { _richcompare_truth, }
 
 # Pure alias kept for lifted dictobject_core callers (PR#6973 B.2).

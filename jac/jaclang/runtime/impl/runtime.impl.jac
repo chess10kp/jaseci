@@ -1441,7 +1441,6 @@ impl JacPersistence.destroy(objs: any, strict: bool = False) -> None {
         if anchor.destroyed {
             continue;
         }
-
         if JacRuntimeInterface.check_write_access(anchor, op_hint="delete") {
             match anchor {
                 case NodeAnchor():
@@ -1457,9 +1456,6 @@ impl JacPersistence.destroy(objs: any, strict: bool = False) -> None {
                             JacRuntimeInterface.get_context().mem.delete(eid);
                         }
                     }
-
-                    import from jaclang.runtime.osp_graph_sv { sv_forget_by_id }
-                    sv_forget_by_id(anchor.id);
 
                 case EdgeAnchor():
                     anchor.detach();

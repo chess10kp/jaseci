@@ -1,8 +1,6 @@
 """P2 wave 18 facade parity: native _random MT19937 vs host stdlib.
 
-jac-py/Modules/randommodule.{c,jac} stay the staged c2jac corpus pair
-(staging=lift); this file gates the product-path facade semantics in
-jac-py/jacpython/_randommodule.jac against the pinned host oracle.
+Checks the retained Jac implementation against CPython behavior.
 Expected streams were captured from the host stdlib ``_random``
 (CPython 3.14.x; the MT19937 kernel is unchanged since 3.11) at
 authoring time and are bit-exact: uint32 words, 53-bit doubles, the

@@ -14,4 +14,6 @@ obj JacToJSCompiler {
     def extract_globals(
         manifest: (ClientManifest | None), module: (ModuleType | None)
     ) -> dict[str, any];
+
+    def add_runtime_imports(js_code: str) -> str;
 }

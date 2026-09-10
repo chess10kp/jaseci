@@ -1,5 +1,5 @@
 # P3.2e — vectorcall nargs helpers.
-# Lift: Objects/_lifted/call_core.jac
+# CPython source: Objects/call.c.
 
 def vectorcall_nargs_plain(nargs: int) -> int {
     return nargs;

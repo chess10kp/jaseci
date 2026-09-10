@@ -7,6 +7,7 @@ Covers:
   - --project multi-TU lift with cross-TU import wiring + aggregate report
 """
 
+import from jaclang.compiler.tools.unparse_pass { unparse_module }
 import json;
 import os;
 import tempfile;
@@ -22,10 +23,7 @@ import from jaclang.compiler.cfront.fidelity {
     fidelity_band,
     band_quarantines
 }
-import from tests.compiler.c2jac.support {
-    FIXTURES,
-    recompile_errors as _recompile
-}
+import from tests.compiler.c2jac.support { FIXTURES, recompile_errors as _recompile }
 
 test "fidelity band table splits style behavior and hole" {
     assert fidelity_band(4201) == FidelityBand.STYLE;
@@ -55,7 +53,7 @@ loop:
 }
 """;
     res = lift_c_str(src, "quarantine_hole.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "def clean(" in out;
     assert "return (x + 1)" in out or "return x + 1" in out;
     assert "def dirty(" in out;
@@ -70,7 +68,7 @@ loop:
 test "style cast elision does not quarantine the function" {
     src = "int f(int a){ char c = (char)a; return c; }\n";
     res = lift_c_str(src, "style_cast.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert res.quarantined_functions == [];
     assert len(res.diags) == 1;
     assert res.diags[0][0] == "W4201";
@@ -82,7 +80,7 @@ test "style cast elision does not quarantine the function" {
 test "behavior static-local persistence quarantines the function" {
     src = "int counter(void){ static int n = 0; n = n + 1; return n; }\n";
     res = lift_c_str(src, "behavior_static.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert res.quarantined_functions == ["counter"];
     assert res.diags[0][0] == "W4206";
     assert res.sites[0].band == "behavior";
@@ -93,7 +91,7 @@ test "behavior static-local persistence quarantines the function" {
 test "behavior volatile drop quarantines the function" {
     src = "int load(int *p){ volatile int v = *p; return v; }\n";
     res = lift_c_str(src, "behavior_volatile.c");
-    out = res.module.unparse(requires_format=True);
+    out = unparse_module(res.module, requires_format=True);
     assert "W4205" in [d[0] for d in res.diags] , res.diags;
     assert "load" in res.quarantined_functions;
     assert "quarantined function 'load'" in out;
@@ -105,7 +103,7 @@ test "sidecar JSON records band and quarantined functions" {
     out_dir = tempfile.mkdtemp();
     jac_path = os.path.join(out_dir, "side.jac");
     with open(jac_path, "w") as f {
-        f.write(res.module.unparse(requires_format=True));
+        f.write(unparse_module(res.module, requires_format=True));
     }
     rep = build_c2jac_report(
         source="side.c",
@@ -123,9 +121,8 @@ test "sidecar JSON records band and quarantined functions" {
     assert data["sites"][0]["band"] in ("hole", "behavior");
     assert data["sites"][0]["quarantined"] == True;
     # human header still renders
-    assert "[W4290]" in render_c2jac_report(res.diags) or "[W" in render_c2jac_report(
-        res.diags
-    );
+    assert "[W4290]" in render_c2jac_report(res.diags)
+        or "[W" in render_c2jac_report(res.diags);
 }
 
 test "project mode wires cross-TU imports and writes aggregate report" {

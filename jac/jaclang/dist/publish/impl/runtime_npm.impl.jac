@@ -2,11 +2,6 @@ import re;
 import json;
 import jaclang;
 import from pathlib { Path }
-import from jaclang.client.runtime_import_policy {
-    remap_runtime_imports,
-    runtime_import_symbols,
-    strip_runtime_imports
-}
 import from jaclang.dist.publish.npm_tarball { pack_tarball }
 
 glob _api_names_cache: dict[str, set[str]] = {},
@@ -187,21 +182,6 @@ def _relative_dep_specs(js: str) -> list[str] {
     return specs;
 }
 
-def _index_import_spec(from_rel: str) -> str {
-    import posixpath;
-    dirpart = posixpath.dirname(from_rel);
-    if not dirpart or dirpart == "." {
-        return "./index.js";
-    }
-    depth = 0;
-    for part in dirpart.split("/") {
-        if part {
-            depth += 1;
-        }
-    }
-    return ("../" * depth) + "index.js";
-}
-
 def _collect_dep_modules(
     entry_js: str, entry_dir: str = ""
 ) -> tuple[str, list[tuple[str, str]]] {
@@ -273,37 +253,6 @@ impl build_runtime_tarball(
         Path(resolve_client_runtime_cl_path()).relative_to(base).as_posix()
     );
     (entry_js, deps) = _collect_dep_modules(entry_js, entry_dir);
-
-    bundle_symbols: set[str] = set();
-    for (_, dep_js) in deps {
-        bundle_symbols.update(runtime_import_symbols(dep_js));
-    }
-
-    entry_js = strip_runtime_imports(entry_js);
-    if bundle_symbols {
-        api = runtime_api_names(framework);
-        missing_exports = sorted(
-            sym
-            for sym in bundle_symbols
-            if sym in api and sym not in _already_exported(entry_js)
-        );
-        if missing_exports {
-            entry_js = (
-                entry_js.rstrip("\n")
-                + "\nexport { "
-                + ", ".join(missing_exports)
-                + " };\n"
-            );
-        }
-    }
-
-    rewritten_deps: list[tuple[str, str]] = [];
-    for (rel, dep_js) in deps {
-        rewritten_deps.append(
-            (rel, remap_runtime_imports(dep_js, _index_import_spec(rel)))
-        );
-    }
-    deps = rewritten_deps;
 
     exports = runtime_export_names(entry_js, framework);
     if exports {

@@ -15,17 +15,6 @@ from pathlib import Path
 
 from jac_subprocess import REPO_ROOT
 
-# ``jac tool …`` drivers (compiler lift/py2jac) do not exercise jacpython ceval.
-JAC_TOOL_ONLY = frozenset(
-    {
-        "jac-py/tools/py2jac_batch.py",
-        "jac-py/tools/lift_p1_corpus.py",
-        "jac-py/tools/lift_p2_corpus.py",
-        "jac-py/tools/lift_p2_corpus_wave.py",
-        "jac-py/tools/lift_p3_objects.py",
-    }
-)
-
 SCAN_ROOT = Path("jac-py/tools")
 
 
@@ -81,8 +70,6 @@ def jac_run_test_subprocess_files(path: Path) -> bool:
 
 
 def check_file(rel: str, repo_root: Path | None = None) -> list[str]:
-    if rel in JAC_TOOL_ONLY:
-        return []
     root = repo_root or REPO_ROOT
     path = root / rel
     if not path.is_file():

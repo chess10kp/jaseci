@@ -1,6 +1,4 @@
 # Product-path facade for bisect (native list algorithms).
-# Staged ``jac-py/Modules/_bisectmodule.jac`` remains the C-API hand oracle
-# (PyObj stubs) for cc differential tests - not byte-identical to this facade.
 # Semantics mirror CPython 3.14 ``Lib/bisect.py`` / ``Modules/_bisectmodule.c``.
 
 def _p2_bisect_right(data: list, item: any, lo: int = 0, hi: int | None = None) -> int {

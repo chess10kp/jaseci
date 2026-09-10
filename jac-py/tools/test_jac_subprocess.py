@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 import unittest
 import unittest.mock
 from pathlib import Path
@@ -12,7 +13,7 @@ _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from jac_subprocess import REPO_ROOT, ensure_jacpath, jacpath_entries, subprocess_env
+from jac_subprocess import ensure_jacpath, jacpath_entries, subprocess_env
 from jac_subprocess_gate import check_file, jac_run_test_subprocess_files
 
 
@@ -42,18 +43,36 @@ class JacSubprocessEnvTests(unittest.TestCase):
         self.assertNotIn("JAC_DEV_SOURCE", env)
 
     def test_gate_requires_subprocess_env_for_jac_run_drivers(self) -> None:
-        errors = check_file("jac-py/tools/p3_object_core/replay_gate.py")
-        self.assertEqual(errors, [])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "driver.py").write_text(
+                "import subprocess\n"
+                "from jac_subprocess import subprocess_env\n"
+                "subprocess.run(['jac', 'run', 'example.jac'], env=subprocess_env())\n"
+            )
+            self.assertEqual(check_file("driver.py", root), [])
 
     def test_gate_flags_missing_helper(self) -> None:
-        errors = check_file("jac-py/tools/bisect_native_compile.py")
-        self.assertEqual(errors, [])
-        # Synthetic: a driver without subprocess_env would fail — use exempt tool driver.
-        self.assertFalse(
-            jac_run_test_subprocess_files(
-                REPO_ROOT / "jac-py/tools/lift_p2_corpus_wave.py"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "driver.py").write_text(
+                "import subprocess\n"
+                "subprocess.run(['jac', 'test', 'example.jac'])\n"
             )
-        )
+            errors = check_file("driver.py", root)
+            self.assertEqual(len(errors), 1)
+            self.assertIn("never calls subprocess_env()", errors[0])
+
+    def test_gate_ignores_compiler_tool_invocations(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "driver.py"
+            path.write_text(
+                "import subprocess\n"
+                "subprocess.run(['jac', 'tool', 'py2jac', 'example.py'])\n"
+            )
+            self.assertFalse(jac_run_test_subprocess_files(path))
+            self.assertEqual(check_file("driver.py", root), [])
 
 
 if __name__ == "__main__":

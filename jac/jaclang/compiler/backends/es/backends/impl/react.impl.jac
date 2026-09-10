@@ -11,18 +11,6 @@ impl ReactBackend.name -> str {
     return "react";
 }
 
-impl ReactBackend.runtime_module -> str {
-    return "@jac/runtime";
-}
-
-impl ReactBackend.jsx_factory_name -> str {
-    return "__jacJsx";
-}
-
-impl ReactBackend.lowers_fragments_natively -> bool {
-    return False;
-}
-
 impl ReactBackend.import_source(symbol: str) -> str {
     if symbol in {"useRef", "forwardRef"} {
         return "react";
@@ -121,7 +109,7 @@ impl ReactBackend.async_boundary_symbols(a: AsyncBoundary) -> list[str] {
 }
 
 impl ReactBackend.view_runtime_symbols(view: ViewElement) -> list[str] {
-    return [self.jsx_factory_name()];
+    return [];
 }
 
 impl ReactBackend.lower_state_field(s: StateField) -> list[es.Statement] {

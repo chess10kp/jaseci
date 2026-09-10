@@ -1,7 +1,5 @@
 # Product-path facade for _struct (wave 13): pack/unpack/calcsize over
 # struct format strings.
-# Staged ``jac-py/Modules/structmodule.{c,jac}`` remain the wave-13 c2jac
-# corpus oracle pair (staging=lift); this module carries the runtime truth.
 # Semantics mirror CPython 3.14 ``Modules/_struct.c`` on an LP64
 # little-endian host, verified against the pinned host stdlib.
 #
@@ -279,10 +277,27 @@ def _table_for(endian: str) -> list[_FmtDef] {
         # Standard sizes, no alignment ('<', '>', '=', '!').
         t: list[_FmtDef] = [];
         std_rows: list[tuple] = [
-            ("x", 1), ("b", 1), ("B", 1), ("c", 1), ("s", 1), ("p", 1),
-            ("h", 2), ("H", 2), ("i", 4), ("I", 4), ("l", 4), ("L", 4),
-            ("q", 8), ("Q", 8), ("?", 1), ("e", 2), ("f", 4), ("d", 8),
-            ("F", 8), ("D", 16),
+            ("x", 1),
+            ("b", 1),
+            ("B", 1),
+            ("c", 1),
+            ("s", 1),
+            ("p", 1),
+            ("h", 2),
+            ("H", 2),
+            ("i", 4),
+            ("I", 4),
+            ("l", 4),
+            ("L", 4),
+            ("q", 8),
+            ("Q", 8),
+            ("?", 1),
+            ("e", 2),
+            ("f", 4),
+            ("d", 8),
+            ("F", 8),
+            ("D", 16),
+
         ];
         for row in std_rows {
             t.append(_FmtDef(ch=row[0], size=row[1], align=0));
@@ -291,11 +306,30 @@ def _table_for(endian: str) -> list[_FmtDef] {
     }
     nt: list[_FmtDef] = [];
     native_rows: list[tuple] = [
-        ("x", 1, 0), ("b", 1, 0), ("B", 1, 0), ("c", 1, 0), ("s", 1, 0),
-        ("p", 1, 0), ("h", 2, 2), ("H", 2, 2), ("i", 4, 4), ("I", 4, 4),
-        ("l", 8, 8), ("L", 8, 8), ("n", 8, 8), ("N", 8, 8), ("q", 8, 8),
-        ("Q", 8, 8), ("?", 1, 1), ("e", 2, 2), ("f", 4, 4), ("d", 8, 8),
-        ("F", 8, 4), ("D", 16, 8), ("P", 8, 8),
+        ("x", 1, 0),
+        ("b", 1, 0),
+        ("B", 1, 0),
+        ("c", 1, 0),
+        ("s", 1, 0),
+        ("p", 1, 0),
+        ("h", 2, 2),
+        ("H", 2, 2),
+        ("i", 4, 4),
+        ("I", 4, 4),
+        ("l", 8, 8),
+        ("L", 8, 8),
+        ("n", 8, 8),
+        ("N", 8, 8),
+        ("q", 8, 8),
+        ("Q", 8, 8),
+        ("?", 1, 1),
+        ("e", 2, 2),
+        ("f", 4, 4),
+        ("d", 8, 8),
+        ("F", 8, 4),
+        ("D", 16, 8),
+        ("P", 8, 8),
+
     ];
     for row in native_rows {
         nt.append(_FmtDef(ch=row[0], size=row[1], align=row[2]));
@@ -398,8 +432,12 @@ obj _StructObj {
             for _j in range(reps) {
                 if i >= len(args) {
                     _struct_error(
-                        "pack expected " + str(self.count)
-                        + " items for packing (got " + str(len(args)) + ")");
+                        "pack expected "
+                            + str(self.count)
+                            + " items for packing (got "
+                            + str(len(args))
+                            + ")"
+                    );
                 }
                 v: any = args[i];
                 i = i + 1;
@@ -409,8 +447,12 @@ obj _StructObj {
         }
         if len(args) != self.count {
             _struct_error(
-                "pack expected " + str(self.count)
-                + " items for packing (got " + str(len(args)) + ")");
+                "pack expected "
+                    + str(self.count)
+                    + " items for packing (got "
+                    + str(len(args))
+                    + ")"
+            );
         }
     }
 
@@ -420,17 +462,14 @@ obj _StructObj {
             src_ok = isinstance(v, bytes) or isinstance(v, bytearray);
             if not src_ok {
                 if c == "c" {
-                    _struct_error(
-                        "char format requires a bytes object of length 1");
+                    _struct_error("char format requires a bytes object of length 1");
                 }
-                _struct_error(
-                    "argument for '" + c + "' must be a bytes object");
+                _struct_error("argument for '" + c + "' must be a bytes object");
             }
             data = _buffer_bytes(v);
             if c == "c" {
                 if len(data) != 1 {
-                    _struct_error(
-                        "char format requires a bytes object of length 1");
+                    _struct_error("char format requires a bytes object of length 1");
                 }
                 buf[off] = data[0];
             } elif c == "s" {
@@ -469,8 +508,9 @@ obj _StructObj {
             }
             fv = float(v);
             fv = float(v);
-            bits = _f64_bits(fv) if c == "d" else (
-                _f32_bits(fv) if c == "f" else _f16_bits(fv));
+            bits = _f64_bits(fv)
+                if c == "d"
+                else (_f32_bits(fv) if c == "f" else _f16_bits(fv));
             nbytes = 8 if c == "d" else (4 if c == "f" else 2);
             _write_int_bits(buf, off, nbytes, bits, little);
             return;
@@ -490,10 +530,8 @@ obj _StructObj {
                 }
             }
             half = cd.size // 2;
-            bits_re = _f64_bits(float(re_v)) if c == "D" else _f32_bits(
-                float(re_v));
-            bits_im = _f64_bits(float(im_v)) if c == "D" else _f32_bits(
-                float(im_v));
+            bits_re = _f64_bits(float(re_v)) if c == "D" else _f32_bits(float(re_v));
+            bits_im = _f64_bits(float(im_v)) if c == "D" else _f32_bits(float(im_v));
             _write_int_bits(buf, off, half, bits_re, little);
             _write_int_bits(buf, off + half, half, bits_im, little);
             return;
@@ -504,8 +542,8 @@ obj _StructObj {
         (lo, hi) = _range_bounds(cd.size, unsigned);
         if iv < lo or iv > hi {
             _struct_error(
-                "'" + c + "' format requires " + str(lo)
-                + " <= number <= " + str(hi));
+                "'" + c + "' format requires " + str(lo) + " <= number <= " + str(hi)
+            );
         }
         _write_int_bits(buf, off, cd.size, iv, little);
     }
@@ -549,11 +587,9 @@ obj _StructObj {
                     bits_re = _read_int_bits(data, off, half, little);
                     bits_im = _read_int_bits(data, off + half, half, little);
                     if c == "D" {
-                        out.append(complex(_bits_f64(bits_re),
-                                           _bits_f64(bits_im)));
+                        out.append(complex(_bits_f64(bits_re), _bits_f64(bits_im)));
                     } else {
-                        out.append(complex(_bits_f32(bits_re),
-                                           _bits_f32(bits_im)));
+                        out.append(complex(_bits_f32(bits_re), _bits_f32(bits_im)));
                     }
                 } else {
                     unsigned = c in ("B", "H", "I", "L", "N", "Q", "P");
@@ -583,8 +619,7 @@ obj _StructObj {
     def unpack(buffer: any) -> tuple {
         data = _buffer_bytes(buffer);
         if len(data) != self.size {
-            _struct_error(
-                "unpack requires a buffer of " + str(self.size) + " bytes");
+            _struct_error("unpack requires a buffer of " + str(self.size) + " bytes");
         }
         return self._unpack_from_list(data, 0);
     }
@@ -595,22 +630,35 @@ obj _StructObj {
         if offset < 0 {
             if offset + self.size > 0 {
                 _struct_error(
-                    "not enough data to unpack " + str(self.size)
-                    + " bytes at offset " + str(offset));
+                    "not enough data to unpack "
+                        + str(self.size)
+                        + " bytes at offset "
+                        + str(offset)
+                );
             }
             if offset + blen < 0 {
                 _struct_error(
-                    "offset " + str(offset) + " out of range for "
-                    + str(blen) + "-byte buffer");
+                    "offset "
+                        + str(offset)
+                        + " out of range for "
+                        + str(blen)
+                        + "-byte buffer"
+                );
             }
             offset = offset + blen;
         }
         if blen - offset < self.size {
             _struct_error(
                 "unpack_from requires a buffer of at least "
-                + str(self.size + offset) + " bytes for unpacking "
-                + str(self.size) + " bytes at offset " + str(offset)
-                + " (actual buffer size is " + str(blen) + ")");
+                    + str(self.size + offset)
+                    + " bytes for unpacking "
+                    + str(self.size)
+                    + " bytes at offset "
+                    + str(offset)
+                    + " (actual buffer size is "
+                    + str(blen)
+                    + ")"
+            );
         }
         return self._unpack_from_list(data, offset);
     }
@@ -618,13 +666,14 @@ obj _StructObj {
     def iter_unpack(buffer: any) -> any {
         data = _buffer_bytes(buffer);
         if self.size == 0 {
-            _struct_error(
-                "cannot iteratively unpack with a struct of length 0");
+            _struct_error("cannot iteratively unpack with a struct of length 0");
         }
         if len(data) % self.size != 0 {
             _struct_error(
                 "iterative unpacking requires a buffer of a multiple of "
-                + str(self.size) + " bytes");
+                    + str(self.size)
+                    + " bytes"
+            );
         }
         return _UnpackIter(so=self, data=data, index=0);
     }
@@ -633,28 +682,42 @@ obj _StructObj {
         if not isinstance(buffer, bytearray) {
             raise TypeError(
                 "pack_into() requires a writable bytes-like object, not "
-                + _type_name(buffer));
+                    + _type_name(buffer)
+            );
         }
         blen = len(buffer);
         if offset < 0 {
             if offset + self.size > 0 {
                 _struct_error(
-                    "no space to pack " + str(self.size)
-                    + " bytes at offset " + str(offset));
+                    "no space to pack "
+                        + str(self.size)
+                        + " bytes at offset "
+                        + str(offset)
+                );
             }
             if offset + blen < 0 {
                 _struct_error(
-                    "offset " + str(offset) + " out of range for "
-                    + str(blen) + "-byte buffer");
+                    "offset "
+                        + str(offset)
+                        + " out of range for "
+                        + str(blen)
+                        + "-byte buffer"
+                );
             }
             offset = offset + blen;
         }
         if blen - offset < self.size {
             _struct_error(
                 "pack_into requires a buffer of at least "
-                + str(self.size + offset) + " bytes for packing "
-                + str(self.size) + " bytes at offset " + str(offset)
-                + " (actual buffer size is " + str(blen) + ")");
+                    + str(self.size + offset)
+                    + " bytes for packing "
+                    + str(self.size)
+                    + " bytes at offset "
+                    + str(offset)
+                    + " (actual buffer size is "
+                    + str(blen)
+                    + ")"
+            );
         }
         staging: list[int] = [0] * self.size;
         self._pack_into_list(args, staging, 0);
@@ -743,8 +806,8 @@ def _buffer_bytes(buffer: any) -> list[int] {
             probe = len(buffer);
         } except Exception {
             raise TypeError(
-                "a bytes-like object is required, not '" + _type_name(buffer)
-                + "'");
+                "a bytes-like object is required, not '" + _type_name(buffer) + "'"
+            );
         }
         if probe < 0 {
             raise TypeError("a bytes-like object is required");
@@ -787,12 +850,13 @@ def compile(fmt_arg: any) -> _StructObj {
     } else {
         raise TypeError(
             "Struct() argument 1 must be a str or bytes object, not "
-            + _type_name(fmt_arg));
+                + _type_name(fmt_arg)
+        );
     }
 
     endian = "@";
     body = fmt;
-    if len(fmt) > 0 and ("<>!=@" .find(fmt[0]) >= 0) {
+    if len(fmt) > 0 and ("<>!=@".find(fmt[0]) >= 0) {
         endian = fmt[0];
         body = fmt[1:];
     }
@@ -848,24 +912,22 @@ def compile(fmt_arg: any) -> _StructObj {
         } else {
             if num > 0 {
                 count = count + num;
-                codes.append(
-                    _Code(ch=c, offset=size, size=itemsize, repeat=num));
+                codes.append(_Code(ch=c, offset=size, size=itemsize, repeat=num));
             }
             size = size + num * itemsize;
         }
     }
     return _StructObj(
-        fmt=fmt, format=fmt, endian=endian, codes=codes, size=size,
-        count=count);
+        fmt=fmt, format=fmt, endian=endian, codes=codes, size=size, count=count
+    );
 }
 
 # ---------------------------------------------------------------------------
 # Module-level API with the compiled-format cache (MAXCACHE semantics:
 # clear the whole cache when it reaches MAXCACHE entries).
 
-glob _CACHE_MAX: int = 100;
-
-glob _cache: dict = {};
+glob _CACHE_MAX: int = 100,
+     _cache: dict = {};
 
 def _cached(fmt: any) -> _StructObj {
     key: str;
@@ -917,7 +979,7 @@ def iter_unpack(fmt: any, buffer: any) -> any {
     return (_cached(fmt) as _StructObj).iter_unpack(buffer);
 }
 
-def _clearcache() {
+def _clearcache {
     _cache.clear();
 }
 

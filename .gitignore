@@ -71,32 +71,9 @@ demo/
 .zig-cache/
 zig-out/
 
-# c2jac code-reading clones (CPython + pycparser sources, ~194MB) and the P0
-# spike -- read-only provenance, never imported by shipping code (pycparser is a
-# real jac.toml dependency). Must not land in the repo.
+# CPython sources for optional regeneration and local conversion output.
 reference/
-
-# Lifted-stub reference corpus: stub modules moved out of the jac-py/jacpython
-# import graph (zero callers) but kept verbatim as c2jac reference lifts.
-!jac-py/Modules/_lifted/reference/
-!jac-py/Modules/_lifted/reference/*.jac
-
-# c2jac sidecar reports are generated next to each input by `jac c2jac` (and by
-# running the transpiler over test fixtures) -- generated output, never tracked.
-# Baseline sidecar reports are reviewed provenance and stay tracked wherever a
-# baseline/ dir or lifted-module dir holds one; everything else is generated
-# output next to the transpiler input.
 *.c2jac.report.json
-!jac-py/tools/**/baseline/project.c2jac.report.json
-!jac-py/Modules/_lifted/p1_corpus_slice1b/project.c2jac.report.json
-!jac-py/Modules/_lifted/p2_corpus_wave*/project.c2jac.report.json
-!jac-py/Objects/_lifted/*.c2jac.report.json
-!jac-py/Modules/_lifted/p2_corpus_wave1/*.jac
-
-# P2 corpus lift staging (ephemeral copies of manifest sources)
-jac-py/tools/p2_corpus/_staging/
-jac-py/tools/p2_corpus_wave*/_staging/
-jac-py/tools/p2_corpus_wave*/_gate_lift/
 
 # Agent / IDE working notes (not repo artifacts)
 AGENTS.md
@@ -132,22 +109,4 @@ jactastic/**
 # Zig 0.16 project-local package cache (fetched, hash-pinned deps)
 zig-pkg/
 
-# Seal-time generated materializer root (see jaclang/dist/gen_native_materialize.jac)
-jac/jaclang/compiler/native_materialize.jac
-
-# Pi subagent session artifacts
-.pi-subagents/
-
-# Throwaway debug/repro drivers under jac-py/jacpython (underscore-prefixed
-# scratch files; lifted C-module ports like _statmodule.jac do NOT match these
-# prefixed patterns and stay trackable).
-jac-py/jacpython/_tmp_*.jac
-jac-py/jacpython/_repro*.jac
-jac-py/jacpython/_smoke_*.jac
-jac-py/jacpython/_fuzz_*.jac
-# Sanctioned pinned-corpus replay driver: consumed by tools/fuzz_run.py to run
-# tools/fuzz_corpus_pinned.json; without it every pin reports MISSING.
-!jac-py/jacpython/_fuzz_smoke.jac
-jac-py/jacpython/_t[0-9]*.jac
-jac-py/jacpython/zz_*tmp*.jac
 .xdg-cache/

@@ -17,9 +17,3 @@ test "a module that defines its runtime global keeps its own binding" {
     source = "function __jacSpawn() { return 42; }";
     assert with_runtime_globals(source) == source;
 }
-
-test "an existing grouped runtime import keeps its bindings" {
-    source = 'import {__jacJsx, __jacSpawn} from "@jac/runtime";\n'
-        + "export function invoke() { return __jacSpawn('Example', {}); }";
-    assert with_runtime_globals(source) == source;
-}

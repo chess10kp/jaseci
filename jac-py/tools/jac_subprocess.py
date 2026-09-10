@@ -20,12 +20,11 @@ from typing import Literal
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-JacSubprocessProfile = Literal["jacpython", "jac_lang", "jacpython_modules"]
+JacSubprocessProfile = Literal["jacpython", "jac_lang"]
 
 _PROFILE_ENTRIES: dict[JacSubprocessProfile, tuple[str, ...]] = {
     "jacpython": ("jac-py/jacpython",),
     "jac_lang": ("jac",),
-    "jacpython_modules": ("jac-py/jacpython", "jac-py/Modules"),
 }
 
 

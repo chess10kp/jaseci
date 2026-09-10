@@ -1,9 +1,6 @@
 """P2 facade parity: native struct public-name assembly vs host stdlib.
 
-jac-py/Modules/structmodule.{c,jac} stay the staged c2jac corpus pair
-(staging=lift); jac-py/jacpython/_structmodule.jac carries the accelerator
-truth (wave 13). This file gates the Lib/struct.py layer -- the public-name
-assembly in jac-py/jacpython/struct.jac -- against the pinned host oracle.
+Checks the retained Jac implementation against CPython behavior.
 Expected values verified against the host stdlib ``struct`` at authoring time.
 Run with JACPATH=jac-py/jacpython (same pattern as test_p2_facade_parity).
 """
