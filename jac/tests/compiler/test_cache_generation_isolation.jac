@@ -140,3 +140,53 @@ test "a zero TTL disables the sweep" {
     assert removed == 0 , "a zero TTL still swept a generation";
     assert gen.is_dir();
 }
+
+test "source-only modules invalidate themselves without changing the producing compiler" {
+    import from jaclang.bootstrap_manifest { SOURCE_ONLY_PATHS }
+    import from jaclang.compiler.driver.jir { compute_module_key, compiler_source_digest, _manifest_compiler_digest }
+    original = "def f() -> int { return 1; }\n";
+    body_edit = "def f() -> int { return 2; }\n";
+    with tempfile.TemporaryDirectory() as pkg {
+        active = Path(pkg) / "compiler" / "active.jac";
+        active.parent.mkdir(parents=True);
+        active.write_text(original);
+        before = compiler_source_digest(pkg);
+        for prefix in SOURCE_ONLY_PATHS {
+            src = Path(pkg) / prefix / "module.jac";
+            src.parent.mkdir(parents=True, exist_ok=True);
+            src.write_text(original);
+            key = compute_module_key(str(src));
+            src.write_text(body_edit);
+            assert compute_module_key(str(src)) != key;
+            assert compiler_source_digest(pkg) == before;
+            assert _manifest_compiler_digest(pkg) == before;
+            src.unlink();
+            assert compiler_source_digest(pkg) == before;
+        }
+        active.write_text(body_edit);
+        assert compiler_source_digest(pkg) != before;
+    }
+}
+
+test "source-only compiler modules retain ordinary dependency edges" {
+    import jaclang;
+    import from jaclang.compiler.driver.program { JacProgram }
+    import from jaclang.bootstrap_manifest { SOURCE_ONLY_PATHS }
+    import from jaclang.compiler.driver.ifacecache { IfaceRegistry }
+    import from jaclang.compiler.driver.jir { is_compiler_tree_path }
+    pkg = Path(str(jaclang.__file__)).parent;
+    registry = IfaceRegistry(prog=JacProgram());
+    importer = str(pkg / "compiler" / "backends" / "py" / "codegen_shim.jac");
+    registry.frame_push(importer);
+    for prefix in SOURCE_ONLY_PATHS {
+        dep = os.path.realpath(str(pkg / prefix / "__init__.jac"));
+        assert not is_compiler_tree_path(dep);
+        registry.note_dep(dep);
+        assert dep in registry.direct_deps[importer];
+    }
+    active = str(pkg / "compiler" / "driver" / "jir.jac");
+    assert is_compiler_tree_path(active);
+    registry.note_dep(active);
+    assert active not in registry.direct_deps[importer];
+    registry.frame_pop();
+}
