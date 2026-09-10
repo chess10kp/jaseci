@@ -744,9 +744,6 @@ jobs:
           JACPATH: jac-py/jacpython
         run: jac test jac-py/jacpython/test_tstring_arms.jac
 
-  # Compiler suite, one chunk per runner. Chunking is load-bearing: the
-  # materializer crossing leaks its native parse tree per compile, so one long
-  # run OOMs; fresh runners bound the accumulation and parallelize the suite.
   # Compiler suite, one chunk per runner; chunking parallelizes the suite.
   # The native-backend chunk and the na/sv equivalence pins are chunks here.
   # The swap steps and worker caps these lanes used to carry treated real
@@ -813,16 +810,8 @@ jobs:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
-     # Bound the runtime suite so a wedged server test fails fast instead of
-     # burning the 6h GitHub default (this suite runs in ~10-15 min).
-     timeout-minutes: 30
-     env:
-       JAC_NO_DEV_SOURCE: "1"
-     # Bound the client suite so a wedged dev-server test fails fast instead of
-     # burning the 6h GitHub default (this suite runs in ~5 min on main).
-     timeout-minutes: 25
-     env:
-       JAC_NO_DEV_SOURCE: "1"
+    env:
+      JAC_NO_DEV_SOURCE: "1"
     steps:
       - uses: actions/checkout@v5
       # The deps installed below with --global land in the binary's runtime
@@ -925,16 +914,8 @@ jobs:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
-     # Bound the runtime suite so a wedged server test fails fast instead of
-     # burning the 6h GitHub default (this suite runs in ~10-15 min).
-     timeout-minutes: 30
-     env:
-       JAC_NO_DEV_SOURCE: "1"
-     # Bound the client suite so a wedged dev-server test fails fast instead of
-     # burning the 6h GitHub default (this suite runs in ~5 min on main).
-     timeout-minutes: 25
-     env:
-       JAC_NO_DEV_SOURCE: "1"
+    env:
+      JAC_NO_DEV_SOURCE: "1"
     steps:
       - uses: actions/checkout@v5
         with:
