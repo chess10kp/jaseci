@@ -680,8 +680,6 @@ node Module(AstDocNode, UniScopeNode) {
         stub_only: bool = False,
         src_terminals: list[Token] = [],
         is_raised_from_py: bool = False,
-        has_synthesized_tokens: bool = False,
-        decided_codespace: str = "",
         parse_failed: bool = False,
         mobui_enforced_root: (str | None) = None,
         jac_project_root: (str | None) = None,
@@ -860,7 +858,6 @@ obj ImportBoundaryFacts {
 node Import(ContextAwareNode, ElementStmt, CodeBlockStmt) {
     has is_absorb: bool,
         is_typed: bool = False,
-        clib_header: (String | None) = None,
         is_comptime: bool = False,
         jac_detected: (bool | None) postinit,
         boundary_facts: (ImportBoundaryFacts | None) postinit,
@@ -880,7 +877,6 @@ node Import(ContextAwareNode, ElementStmt, CodeBlockStmt) {
         is_absorb: bool,
         is_typed: bool = False,
         clib_decls: (Sequence[UniNode] | None) = None,
-        clib_header: (String | None) = None,
         is_comptime: bool = False,
         kid: Sequence[UniNode] = []
     ) -> None;
@@ -2774,14 +2770,6 @@ def decode_string_literal(text: str) -> str | bytes {
         return body;
     }
     return _decode_str_escapes(body);
-}
-
-obj CModuleAst(EmptyToken) {
-    has ast: object postinit,
-        orig_src: Source postinit,
-        file_path: str postinit;
-
-    def init(ast: object, orig_src: Source) -> None;
 }
 
 def is_identifier_slot(nd: UniNode) -> bool;

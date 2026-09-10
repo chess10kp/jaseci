@@ -431,8 +431,7 @@ import_stmt ::=
     )? ";"
 
 from_path ::=
-    (NAME | KWESC_NAME) NAME
-    | (ELLIPSIS | ".")* (STRING | (NAME | KWESC_NAME) ("." (NAME | KWESC_NAME))*)?
+    (ELLIPSIS | ".")* (STRING | (NAME | KWESC_NAME) ("." (NAME | KWESC_NAME))*)?
 
 import_items ::=
     "{" (

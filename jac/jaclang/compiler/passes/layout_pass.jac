@@ -29,8 +29,6 @@ import from jaclang.compiler.frontend.constant { OwnershipKind, Tokens as Tok }
 import from jaclang.compiler.frontend.diagnostics { E5030, W5031, W5032 }
 import from jaclang.compiler.type_registry { JAC_TYPE_REGISTRY }
 
-import type from jaclang.compiler.passes.type_facts_pass { TypeIdIndex }
-
 glob LAYOUT_COMPATIBLE_PRIMITIVES: set[str] = {
          "int",
          "float",
@@ -137,16 +135,6 @@ def get_layout_registry(module: Module, prog: any = None) -> LayoutRegistry {
     import from jaclang.compiler.driver.pass_driver { run_pass }
     run_pass(LayoutPass, module, prog);
     return module.gen.layout_registry or LayoutRegistry();
-}
-
-def get_shared_layout_registry(
-    modules: list[Module], prog: any = None
-) -> LayoutRegistry {
-    if not modules {
-        return LayoutRegistry();
-    }
-    pass_inst = LayoutPass(ir_in=modules[0], prog=prog);
-    return pass_inst.build_shared_registry(modules);
 }
 
 def layout_slot_count(lay: ArchetypeLayout) -> int {
@@ -613,7 +601,6 @@ obj LayoutRegistry {
     def resolve_method_owner(arch_name: str, method_name: str) -> (str | None);
     def get_mro(name: str) -> list[str];
     def get_topo_order -> list[str];
-    def get_method_slot(class_name: str, method_name: str) -> (int | None);
     def dependency_order(names: list[str]) -> list[str];
     def is_primary_ancestor(child: str, ancestor: str) -> bool;
 }
@@ -621,26 +608,14 @@ obj LayoutRegistry {
 walker LayoutPass(Transform) {
     has ir_in: Module,
         cancel_token: any = None,
-        tid_index: (TypeIdIndex | None) = None,
-        mod_scopes: dict[str, dict[str, str]] = {},
         registry: LayoutRegistry postinit,
         isinstance_targets: set[str] postinit;
 
     def postinit -> None;
     def transform(ir_in: Module) -> Module;
-    def build_shared_registry(modules: list[Module]) -> LayoutRegistry;
-    def arch_tid(arch: Archetype) -> str;
-    def resolve_ref(arch: Archetype, name: str) -> str;
-    def resolve_type_tag(arch: Archetype, tag: str) -> str;
     def _run_impl(ir_in: Module) -> Module;
     can run_walk with Module entry;
     def _collect_archetypes(module: Module) -> dict[str, Archetype];
-    def _merge_archetypes(
-        module: Module, arch_map: dict[str, Archetype]
-    ) -> None;
-    def _build_registry_over(
-        arch_map: dict[str, Archetype], modules: list[Module]
-    ) -> None;
     def _collect_isinstance_targets(module: Module) -> None;
     def _build_hierarchy(archetypes: dict[str, Archetype]) -> None;
     def _compute_c3_mro(class_name: str) -> list[str];

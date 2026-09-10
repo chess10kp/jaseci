@@ -73,7 +73,6 @@ zig-out/
 
 # CPython sources for optional regeneration and local conversion output.
 reference/
-*.c2jac.report.json
 
 # Agent / IDE working notes (not repo artifacts)
 AGENTS.md

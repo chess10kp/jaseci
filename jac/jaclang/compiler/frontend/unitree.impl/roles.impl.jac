@@ -1708,8 +1708,6 @@ impl Module.init(
     stub_only: bool = False,
     src_terminals: list[Token] = [],
     is_raised_from_py: bool = False,
-    has_synthesized_tokens: bool = False,
-    decided_codespace: str = "",
     parse_failed: bool = False,
     mobui_enforced_root: (str | None) = None,
     jac_project_root: (str | None) = None,
@@ -1725,8 +1723,6 @@ impl Module.init(
     self.stub_only = stub_only;
     self.src_terminals = src_terminals;
     self.is_raised_from_py = is_raised_from_py;
-    self.has_synthesized_tokens = has_synthesized_tokens;
-    self.decided_codespace = decided_codespace;
     self.parse_failed = parse_failed;
     self.mobui_enforced_root = mobui_enforced_root;
     self.jac_project_root = jac_project_root;
@@ -1872,7 +1868,6 @@ impl Import.init(
     is_absorb: bool,
     is_typed: bool = False,
     clib_decls: (Sequence[UniNode] | None) = None,
-    clib_header: (String | None) = None,
     is_comptime: bool = False,
     kid: Sequence[UniNode] = []
 ) -> None {
@@ -1880,7 +1875,6 @@ impl Import.init(
     self.is_absorb = is_absorb;
     self.is_typed = is_typed;
     self.is_comptime = is_comptime;
-    self.clib_header = clib_header;
     self._link(
         kid,
         {

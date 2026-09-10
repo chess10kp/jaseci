@@ -2171,10 +2171,6 @@ impl DocIRGenPass.exit_module_item with uni.ModuleItem exit {
 }
 
 impl DocIRGenPass.exit_import with uni.Import exit {
-    if here.clib_header is not None and here.from_loc {
-        self._gen_clib_import(here);
-        return;
-    }
     parts: list[doc.DocType] = [];
     mod_items: list[doc.DocType] = [];
     is_in_items: bool = False;
@@ -2220,65 +2216,6 @@ impl DocIRGenPass.exit_import with uni.Import exit {
         }
     }
     here.gen.doc_ir = self.group(self.concat(parts, ast_node=here), ast_node=here);
-}
-
-impl DocIRGenPass._gen_clib_import(nd: uni.Import) -> None {
-    strings = [
-        k
-        for k in nd.kid
-        if isinstance(k, uni.Token) and k.name == Tok.STRING
-    ];
-    lib_doc = strings[0].gen.doc_ir if strings else self.text('""');
-    hdr_doc = strings[1].gen.doc_ir if len(strings) > 1 else self.text('""');
-    head = self.concat(
-        [
-            self.text("import"),
-            self.space(),
-            self.text("from"),
-            self.space(),
-            self.text("clib"),
-            self.text("("),
-            lib_doc,
-            self.text(","),
-            self.space(),
-            self.text("header"),
-            self.text("="),
-            hdr_doc,
-            self.text(")"),
-            self.space(),
-            self.text("{")
-        ]
-    );
-    mod_items: list[doc.DocType] = [];
-    seen_lbrace = False;
-    for i in nd.kid {
-        if isinstance(i, uni.Token) and i.name == Tok.LBRACE {
-            seen_lbrace = True;
-            continue;
-        }
-        if not seen_lbrace or (isinstance(i, uni.Token) and i.name == Tok.RBRACE) {
-            continue;
-        }
-        if isinstance(i, uni.Token) and i.name == Tok.COMMA {
-            if mod_items {
-                mod_items.pop();
-            }
-            mod_items.append(i.gen.doc_ir);
-            mod_items.append(self.line());
-        } else {
-            mod_items.append(i.gen.doc_ir);
-            mod_items.append(self.space());
-        }
-    }
-    if mod_items {
-        mod_items.pop();
-    }
-    items_block = self.group(
-        self.concat([self.indent(self.concat([self.line(), *mod_items])), self.line()])
-    );
-    nd.gen.doc_ir = self.group(
-        self.concat([head, items_block, self.text("}")], ast_node=nd), ast_node=nd
-    );
 }
 
 impl DocIRGenPass.exit_module with uni.Module exit {

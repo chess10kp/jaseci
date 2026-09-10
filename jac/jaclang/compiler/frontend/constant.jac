@@ -585,8 +585,6 @@ class Tokens(StrEnum) {
     }
 }
 
-glob VALUE_ARCH_DECORATOR: str = '__jac_value__';
-
 glob TOKEN_MAP: dict[str, str] = {
          'ADD_EQ': '+=',
          'ARROW_BI': '<-->',

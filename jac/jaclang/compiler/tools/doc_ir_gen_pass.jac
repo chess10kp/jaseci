@@ -193,5 +193,4 @@ walker DocIRGenPass(UniPass) {
     can exit_jsx_comment with uni.JsxComment exit;
     can doc_ir_default_exit with uni.UniNode exit;
     can finish_doc_comments with uni.UniNode exit;
-    def _gen_clib_import(nd: uni.Import) -> None;
 }

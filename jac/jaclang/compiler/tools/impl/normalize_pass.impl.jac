@@ -176,36 +176,6 @@ impl NormalizePass.enter_import with uni.Import entry {
     if here.doc {
         new_kid.append(here.doc);
     }
-    if here.clib_header is not None and here.from_loc and here.from_loc.path {
-        new_kid.append(here.gen_token(Tok.KW_IMPORT));
-        new_kid.append(here.gen_token(Tok.KW_FROM));
-        new_kid.append(here.gen_token(Tok.NAME, "clib"));
-        new_kid.append(here.gen_token(Tok.LPAREN));
-        new_kid.append(here.gen_token(Tok.STRING, here.from_loc.path[0].value));
-        new_kid.append(here.gen_token(Tok.COMMA));
-        new_kid.append(here.gen_token(Tok.NAME, "header"));
-        new_kid.append(here.gen_token(Tok.EQ));
-        new_kid.append(here.gen_token(Tok.STRING, here.clib_header.value));
-        new_kid.append(here.gen_token(Tok.RPAREN));
-        new_kid.append(here.gen_token(Tok.LBRACE));
-        names: list[str] = [];
-        for decl in (here.clib_decls or []) {
-            if isinstance(decl, uni.Ability) and decl.name_ref {
-                names.append(decl.name_ref.sym_name);
-            } elif isinstance(decl, uni.Archetype) {
-                names.append(decl.name.sym_name);
-            }
-        }
-        for idx in range(len(names)) {
-            new_kid.append(here.gen_token(Tok.NAME, names[idx]));
-            if idx < len(names) - 1 {
-                new_kid.append(here.gen_token(Tok.COMMA));
-            }
-        }
-        new_kid.append(here.gen_token(Tok.RBRACE));
-        here.set_kids(nodes=new_kid);
-        return;
-    }
     if here.is_comptime {
         new_kid.append(here.gen_token(Tok.KW_COMPTIME));
     }
@@ -226,11 +196,6 @@ impl NormalizePass.enter_import with uni.Import entry {
         new_kid.append(here.items[idx]);
         if idx < len(here.items) - 1 {
             new_kid.append(here.gen_token(Tok.COMMA));
-        }
-    }
-    if here.clib_decls {
-        for decl in here.clib_decls {
-            new_kid.append(decl);
         }
     }
     if here.from_loc {

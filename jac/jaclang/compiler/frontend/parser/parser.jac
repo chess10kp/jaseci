@@ -562,7 +562,7 @@ obj Parser {
 
     def parse_ownership_prefix(kids: list[UniNode]) -> tuple[OwnershipKind, bool];
     def parse_import_stmt -> Import;
-    def parse_from_path -> tuple[(ModulePath | None, bool, String | None)];
+    def parse_from_path -> tuple[(ModulePath | None, bool)];
     def parse_import_items(
         kid: list[UniNode], is_clib_import: bool
     ) -> tuple[(list, list)];

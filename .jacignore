@@ -74,6 +74,5 @@ jac/jaclang/compiler/backends/es/esast_gen_pass.impl/view.impl.jac
 
 # Example apps.
 
-# Generated Python grammar and dynamic C project metadata.
+# Generated Python grammar.
 jac-py/jacpython/parser.jac
-jac/jaclang/compiler/cfront/project.jac
