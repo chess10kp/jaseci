@@ -6,7 +6,7 @@ const seed = @import("seed.zig");
 const Io = std.Io;
 const inputs = [_][]const u8{
     "bootstrap/build_python.zig",    "bootstrap/seed.zig",
-    "bootstrap/python/sources.json", "bootstrap/python/prune.txt",
+    "bootstrap/python/sources.json", "bootstrap/python/cpython-sources.txt",
     "bootstrap/python/build.sh",     "bootstrap/python/smoke.py",
     "bootstrap/python/finalize.py",
 };
@@ -88,7 +88,7 @@ pub fn main(init: std.process.Init) !void {
             seed.die("build-python: checksum mismatch for {s}", .{name});
         const source_dir = try std.fs.path.join(a, &.{ work, "src", name });
         try Io.Dir.cwd().createDirPath(io, source_dir);
-        var dir = try Io.Dir.cwd().openDir(io, source_dir, .{});
+        var dir = try Io.Dir.cwd().openDir(io, source_dir, .{ .iterate = true });
         defer dir.close(io);
         const window = try init.gpa.alloc(u8, std.compress.flate.max_window_len);
         defer init.gpa.free(window);
@@ -99,14 +99,9 @@ pub fn main(init: std.process.Init) !void {
             .strip_components = 1,
         });
         if (std.mem.eql(u8, name, "cpython")) {
-            const prune_path = try std.fs.path.join(a, &.{ root, "bootstrap/python/prune.txt" });
-            const prune = try Io.Dir.cwd().readFileAlloc(io, prune_path, a, .limited(8192));
-            var lines = std.mem.tokenizeScalar(u8, prune, '\n');
-            while (lines.next()) |line| {
-                if (line[0] == '#') continue;
-                if (!safePath(line)) return error.UnsafePrunePath;
-                try dir.deleteTree(io, line);
-            }
+            const list_path = try std.fs.path.join(a, &.{ root, "bootstrap/python/cpython-sources.txt" });
+            const list = try Io.Dir.cwd().readFileAlloc(io, list_path, a, .limited(128 * 1024));
+            try retainSources(io, a, dir, list);
         }
     }
     const recipe = try std.fs.path.join(a, &.{ root, "bootstrap/python" });
@@ -135,11 +130,67 @@ fn runSmoke(io: Io, python: []const u8, smoke: []const u8) !void {
 
 fn safePath(path: []const u8) bool {
     if (path.len == 0 or std.fs.path.isAbsolute(path)) return false;
+    if (std.mem.indexOfAny(u8, path, "\\:*?[]\t\r\n") != null) return false;
     var parts = std.mem.splitScalar(u8, path, '/');
     while (parts.next()) |part| {
-        if (std.mem.eql(u8, part, "..") or std.mem.eql(u8, part, ".")) return false;
+        if (part.len == 0 or std.mem.eql(u8, part, "..") or std.mem.eql(u8, part, ".")) return false;
     }
     return true;
+}
+
+fn covered(path: []const u8, entries: []const []const u8) bool {
+    for (entries) |entry| {
+        if (std.mem.eql(u8, path, std.mem.trimEnd(u8, entry, "/"))) return true;
+        if (std.mem.endsWith(u8, entry, "/") and std.mem.startsWith(u8, path, entry)) return true;
+    }
+    return false;
+}
+
+fn needed(path: []const u8, directory: bool, entries: []const []const u8) bool {
+    if (covered(path, entries)) return true;
+    if (directory) for (entries) |entry| {
+        if (entry.len > path.len and entry[path.len] == '/' and std.mem.startsWith(u8, entry, path)) return true;
+    };
+    return false;
+}
+
+// Validate every entry before changing the extracted tree. Directory entries
+// end in '/', files are exact paths, and overlapping entries are rejected so
+// removing a line cannot be silently defeated by a broader directory entry.
+fn retainSources(io: Io, a: std.mem.Allocator, dir: Io.Dir, manifest: []const u8) !void {
+    var entries: std.ArrayList([]const u8) = .empty;
+    defer entries.deinit(a);
+    var lines = std.mem.splitScalar(u8, manifest, '\n');
+    while (lines.next()) |raw| {
+        const entry = std.mem.trim(u8, raw, " \t\r");
+        if (entry.len == 0 or entry[0] == '#') continue;
+        const directory = std.mem.endsWith(u8, entry, "/");
+        const path = if (directory) entry[0 .. entry.len - 1] else entry;
+        if (!safePath(path)) return error.UnsafeSourcePath;
+        if (covered(path, entries.items)) return error.OverlappingSourceEntries;
+        for (entries.items) |previous| {
+            if (covered(std.mem.trimEnd(u8, previous, "/"), &.{entry})) return error.OverlappingSourceEntries;
+        }
+        const stat = dir.statFile(io, path, .{ .follow_symlinks = false }) catch |err| {
+            seed.log("build-python: source entry {s}: {s}", .{ entry, @errorName(err) });
+            return err;
+        };
+        const expected_kind: Io.File.Kind = if (directory) .directory else .file;
+        if (stat.kind != expected_kind) return error.SourceEntryKindMismatch;
+        try entries.append(a, entry);
+    }
+    if (entries.items.len == 0) return error.EmptySourceManifest;
+
+    var walker = try dir.walkSelectively(a);
+    defer walker.deinit();
+    while (try walker.next(io)) |entry| {
+        if (!needed(entry.path, entry.kind == .directory, entries.items)) {
+            try entry.dir.deleteTree(io, entry.basename);
+        } else if (entry.kind == .directory and !covered(entry.path, entries.items)) {
+            try walker.enter(io, entry);
+        }
+    }
+    seed.log("build-python: retained {d} CPython source entries", .{entries.items.len});
 }
 
 test "only release targets are accepted" {
@@ -148,9 +199,47 @@ test "only release targets are accepted" {
     try std.testing.expect(!supported("windows-x86_64"));
 }
 
-test "pruning stays inside the vendored tree" {
+test "source paths stay inside the extracted tree" {
     try std.testing.expect(safePath("Tools/msi"));
     try std.testing.expect(!safePath("../LICENSE"));
     try std.testing.expect(!safePath("/tmp"));
     try std.testing.expect(!safePath("."));
+    try std.testing.expect(!safePath("Modules//main.c"));
+    try std.testing.expect(!safePath("Modules/*.c"));
+    try std.testing.expect(!safePath("..\\outside"));
+}
+
+test "source allowlist preserves exact files and subtrees and removes an entry on the next build" {
+    const io = std.testing.io;
+    const a = std.testing.allocator;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    for ([_][]const u8{ "Objects", "Lib/re", "Lib/regex", "Lib/test" }) |path| try tmp.dir.createDirPath(io, path);
+    for ([_][]const u8{ "Objects/listobject.c", "Objects/dictobject.c", "Objects/listobject.c.bak", "Lib/re/__init__.py", "Lib/regex/probe.py", "Lib/test/test_list.py", "LICENSE" }) |path| {
+        try tmp.dir.writeFile(io, .{ .sub_path = path, .data = "source\n" });
+    }
+    try retainSources(io, a, tmp.dir, "# CPython inputs\n\nObjects/listobject.c\nObjects/dictobject.c\nLib/re/\r\nLICENSE\n");
+    _ = try tmp.dir.statFile(io, "Objects/listobject.c", .{});
+    _ = try tmp.dir.statFile(io, "Lib/re/__init__.py", .{});
+    try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Objects/listobject.c.bak", .{}));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Lib/regex", .{}));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Lib/test", .{}));
+    try retainSources(io, a, tmp.dir, "Objects/dictobject.c\nLib/re/\nLICENSE\n");
+    try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Objects/listobject.c", .{}));
+}
+
+test "invalid source manifests fail before pruning" {
+    const io = std.testing.io;
+    const a = std.testing.allocator;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDirPath(io, "Include");
+    try tmp.dir.writeFile(io, .{ .sub_path = "Include/Python.h", .data = "header\n" });
+    try std.testing.expectError(error.EmptySourceManifest, retainSources(io, a, tmp.dir, "# empty\n"));
+    try std.testing.expectError(error.UnsafeSourcePath, retainSources(io, a, tmp.dir, "../outside\n"));
+    try std.testing.expectError(error.FileNotFound, retainSources(io, a, tmp.dir, "missing.c\n"));
+    try std.testing.expectError(error.SourceEntryKindMismatch, retainSources(io, a, tmp.dir, "Include\n"));
+    try std.testing.expectError(error.OverlappingSourceEntries, retainSources(io, a, tmp.dir, "Include/\nInclude/Python.h\n"));
+    try std.testing.expectError(error.OverlappingSourceEntries, retainSources(io, a, tmp.dir, "Include/Python.h\nInclude/\n"));
+    _ = try tmp.dir.statFile(io, "Include/Python.h", .{});
 }

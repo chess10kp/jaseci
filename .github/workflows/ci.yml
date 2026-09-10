@@ -99,7 +99,9 @@ jobs:
               - '.github/actions/**'
 
   # Linux x86-64 is exercised by build-kit. Source changes also validate the
-  # regular release platforms without rebuilding Jac on every platform.
+  # regular release platforms without rebuilding Jac on every platform. The
+  # bootstrap/python/** cache input includes the CPython source allowlist;
+  # removing a source entry therefore triggers a new runtime build and smoke.
   # Intel macOS is verified by its manually selected build-binaries release leg.
   python-runtime:
     needs: changes

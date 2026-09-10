@@ -432,6 +432,7 @@ pub fn build(b: *std.Build) void {
         // The pins (Python/bun/LLVM) and the tool itself; a bump must repack.
         mk.addFileInput(b.path(pins.PINS_PATH));
         mk.addFileInput(b.path("bootstrap/python/sources.json"));
+        mk.addFileInput(b.path("bootstrap/python/cpython-sources.txt"));
         // Repack when any runtime source or recipe changes, even in dev mode.
         mk.addFileInput(.{ .cwd_relative = b.fmt("{s}/build-key", .{python_dir}) });
         break :payload out;

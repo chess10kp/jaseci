@@ -95,7 +95,7 @@ macOS also needs the SDK provided by Xcode command line tools.
 `zig build build-python` builds only the Python distribution. Its cache in
 `.python-build/<platform>` contains the interpreter, shared library, stdlib,
 licenses, CA certificates, and static archives for Jac's native backend.
-A content fingerprint covers the source checksums, pruning rules, recipes,
+A content fingerprint covers the source checksums, source allowlist, recipes,
 Zig version, target, and macOS SDK version. A cache hit skips compilation; a miss builds from
 source and checks relocation before marking the distribution complete.
 `JAC_PYTHON_JOBS` controls build parallelism (default 4).
@@ -104,10 +104,27 @@ Each supported release platform builds on its matching runner. Linux targets
 retain the glibc 2.17 floor; Intel macOS targets 12.0 and ARM macOS targets 11.0.
 The existing launcher still loads the shared CPython library from its payload.
 The source-built runtime excludes Tk, curses, readline, dbm, and CPython test
-extensions. Documentation, test suites, and unsupported platform packaging
-are pruned according to `bootstrap/python/prune.txt`; generated build inputs
-and license notices are retained. The separate JacPython reference checkout
-and its conversion and conformance tooling remain available for development.
+extensions. `bootstrap/python/cpython-sources.txt` is the source allowlist:
+each line names a file or a directory ending in `/`, relative to the pinned
+CPython archive. Only those paths survive extraction into the build tree.
+Blank lines and full-line comments are allowed; globs, missing paths, and
+overlapping entries fail the build. The archive is still downloaded and
+checksum-verified as a whole. Other dependency archives use `sources.json`.
+
+The list starts with the C implementations needed by the Linux/macOS release
+builds, their headers/generated tables, the Python standard library, and the
+upstream configure/make inputs and license notices. Tests and unsupported GUI
+packages are excluded. Upstream's default make target still requires
+`Programs/_testembed.c`; it is a build prerequisite, not a retained test suite.
+Generated files created by configure/make do not need their own source entries.
+
+When a Jac implementation replaces a C component, connect it to the runtime,
+update the build recipe, and remove the corresponding source entries and any
+unused headers. Split a directory entry into its remaining files before
+retiring only part of it. The runtime fingerprint and CI cache keys include
+the list, so every change rebuilds and verifies the resulting Python runtime.
+Deleting an entry alone does not substitute Jac code for a CPython C API.
+The separate ignored CPython reference checkout remains a generator input.
 The initial source recipe uses `-O2` without PBS's PGO/LTO optimizations;
 performance parity has not been established.
 
