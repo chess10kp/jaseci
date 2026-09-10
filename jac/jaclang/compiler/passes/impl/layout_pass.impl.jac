@@ -146,16 +146,7 @@ impl LayoutPass.build_shared_registry(modules: list[Module]) -> LayoutRegistry {
 }
 
 impl LayoutPass._collect_isinstance_targets(module: Module) -> None {
-    import from jaclang.compiler.frontend.module_facts { ModuleFacts }
-    import from jaclang.compiler.frontend.constant { CodeContext }
-    calls: list = [];
-    for stmt in ModuleFacts.iter_context_stmts(module, CodeContext.NATIVE) {
-        if isinstance(stmt, FuncCall) {
-            calls.append(stmt);
-        }
-        calls.extend(stmt.get_all_sub_nodes(typ=FuncCall));
-    }
-    for call in calls {
+    for call in module.get_all_sub_nodes(FuncCall) {
         tgt = call.target;
         if not (isinstance(tgt, Name) and tgt.value == "isinstance") {
             continue;
