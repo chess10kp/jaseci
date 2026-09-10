@@ -54,7 +54,7 @@ jobs:
               - '.github/workflows/ci.yml'
             core:
               - 'jac/**'
-              - 'jac-py/**'
+              - 'scripts/python/**'
               - '.github/workflows/ci.yml'
               - '.github/actions/**'
             scale:
@@ -512,66 +512,6 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: bash scripts/check-release-notes.sh
-
-  jac-py-gates:
-    name: JacPython regressions
-    needs: [changes, build-kit]
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 45
-    env:
-      JAC_NO_DEV_SOURCE: "1"
-      JAC_TEST_NATIVE: "1"
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/jac-kit
-
-      - name: Set up CPython oracle
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14.6"
-
-      - name: Fetch generator reference and select oracle
-        run: |
-          python3 jac-py/tools/fetch_cpython_reference.py
-          echo "JACPYTHON_CPYTHON=$(command -v python3)" >> "$GITHUB_ENV"
-
-      - name: Check runtime dependency boundaries
-        run: |
-          python3 jac-py/tools/p4_import_gate.py
-          python3 jac-py/tools/p3_import_cycle_gate.py
-          python3 jac-py/tools/jac_subprocess_gate.py
-
-      - name: Check generated sources
-        run: |
-          for generator in asdl2jac tokens2jac grammar2jac opcode_meta2jac; do
-            python3 "jac-py/tools/$generator.py" --check
-          done
-
-      - name: Test generators and subprocess helpers
-        run: |
-          python3 -m unittest \
-            jac-py/tools/test_grammar2jac.py \
-            jac-py/tools/test_opcode_meta2jac.py \
-            jac-py/tools/test_jac_subprocess.py
-
-      - name: Compiler and interpreter regressions
-        env:
-          JACPATH: jac-py/jacpython
-        run: |
-          for suite in \
-            layer5_token_model layer5_tokenizer layer6_peg_runtime \
-            layer7_parser_expr layer8_product_expr layer9_product_exec \
-            layer10_product_controlflow layer_vm_conformance \
-            test_conv_exceptions test_conv_protocols test_conv_classes \
-            test_exc_hierarchy; do
-            jac test --verbose "jac-py/jacpython/$suite.jac"
-          done
-
-      - name: Module replacement parity
-        env:
-          JACPATH: jac-py/jacpython
-        run: jac test --verbose jac-py/tests
 
   test-compiler:
     needs: [changes, build-kit]
@@ -1540,7 +1480,6 @@ jobs:
       - macos-native
       - jac-check
       - contribution-checks
-      - jac-py-gates
       - test-compiler
       - test-runtime
       - test-in-package-sealed

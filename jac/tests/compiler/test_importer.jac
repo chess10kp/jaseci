@@ -116,12 +116,11 @@ test "import with jacpath" {
 test "jacpath does not shadow stdlib in host import hook" {
     # JacPython facades (weakref.jac, types.jac, ...) share stdlib names.
     # JACPATH must still resolve them for guest imports, but the host
-    # meta_importer must keep stdlib for jaclang bootstrap (sealed-kit
-    # gates set JACPATH=jac-py/jacpython).
+    # meta_importer must keep stdlib for jaclang bootstrap.
     import importlib;
     old_jacpath = os.environ.get("JACPATH");
     jacpython_dir = os.path.realpath(
-        os.path.join(os.path.dirname(JAC_ROOT), "jac-py", "jacpython")
+        os.path.join(JAC_ROOT, "jaclang", "runtime", "python")
     );
     os.environ["JACPATH"] = jacpython_dir;
     try {
@@ -132,7 +131,7 @@ test "jacpath does not shadow stdlib in host import hook" {
         import jaclang.runtime.runtime;
         pyhash_mod = importlib.import_module("pyhash");
         pyhash_file = pyhash_mod.__file__;
-        assert pyhash_file is not None and "jacpython" in pyhash_file.replace("\\\\", "/") , pyhash_file;
+        assert pyhash_file is not None and "jaclang/runtime/python/" in pyhash_file.replace("\\\\", "/") , pyhash_file;
     } finally {
         if old_jacpath is None {
             os.environ.pop("JACPATH", None);

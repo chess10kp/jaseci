@@ -1,0 +1,1146 @@
+# P0.5 source-string tokenizer (PLAN.md) — expression eval slice.
+#
+# Re-hosts the CPython 3.14 UTF-8 string tokenizer state machine for the P4
+# expression fixtures. Full indentation/f-string/encoding coverage lands in
+# follow-on slices; this module accepts UTF-8 source text directly (file I/O
+# and decoding stay outside the scanner).
+#
+# Product module: imports token_model only.
+
+import from jaclang.compiler.frontend.python.token_model {
+    ENDMARKER,
+    NAME,
+    NUMBER,
+    STRING,
+    NEWLINE,
+    INDENT,
+    DEDENT,
+    ERRORTOKEN,
+    LPAR,
+    RPAR,
+    LSQB,
+    RSQB,
+    LBRACE,
+    RBRACE,
+    COMMA,
+    COLON,
+    FSTRING_START,
+    FSTRING_MIDDLE,
+    FSTRING_END,
+    TOK_NO_COLUMN,
+    EXACT_TOKEN_TYPES,
+    exact_token_type,
+    tok_token,
+    tok_diag,
+    mk_diag,
+    tok_loc_span,
+    tok_no_loc,
+}
+
+glob TABSIZE: int = 8,
+     MAXINDENT: int = 100;
+
+# ---------------- tokenizer state ----------------
+obj tok_state {
+    has source: str,
+        pos: int = 0,
+        lineno: int = 1,
+        col_offset: int = 0,
+        line_start: int = 0,
+        filename: str = "<unknown>",
+        exec_input: bool = False,
+        done: bool = False,
+        error: tok_diag | None = None,
+        at_bol: bool = True,
+        indent: int = 0,
+        indstack: list[int] = [0],
+        pending: int = 0,
+        paren_level: int = 0,
+        fstring_active: bool = False,
+        fstring_quote: str = "",
+        fstring_qlen: int = 1,
+        fstring_raw: bool = False,
+        fstring_expr_depth: int = 0,
+        fstring_resume: bool = False,
+        fstring_in_spec: bool = False,
+        fstring_field_paren: int = 0,
+        eof_newline_done: bool = False;
+}
+
+def _indent_error(st: tok_state, msg: str) -> tok_diag {
+    bad = mk_diag(
+        "IndentationError",
+        msg,
+        tok_loc_span(st.lineno, st.lineno, st.col_offset, st.col_offset),
+        st.filename
+    );
+    st.error = bad;
+    st.done = True;
+    return bad;
+}
+
+def _flush_pending_indent(st: tok_state) -> tok_token | None {
+    if st.pending < 0 {
+        st.pending = st.pending + 1;
+        return tok_token(
+            tok_type=DEDENT,
+            spelling="",
+            lineno=st.lineno,
+            col_offset=TOK_NO_COLUMN,
+            end_lineno=st.lineno,
+            end_col_offset=TOK_NO_COLUMN
+        );
+    }
+    if st.pending > 0 {
+        st.pending = st.pending - 1;
+        return tok_token(
+            tok_type=INDENT,
+            spelling="",
+            lineno=st.lineno,
+            col_offset=TOK_NO_COLUMN,
+            end_lineno=st.lineno,
+            end_col_offset=TOK_NO_COLUMN
+        );
+    }
+    return None;
+}
+
+def _skip_comment_line(st: tok_state) -> bool {
+    i = st.pos;
+    while i < len(st.source) {
+        ch = st.source[i];
+        if ch == "\n" or ch == "\r" {
+            return False;
+        }
+        if ch == "#" {
+            while i < len(st.source) {
+                ch2 = st.source[i];
+                if ch2 == "\n" or ch2 == "\r" {
+                    break;
+                }
+                i = i + 1;
+            }
+            st.pos = i;
+            return True;
+        }
+        if ch != " " and ch != "\t" and ch != "\f" {
+            return False;
+        }
+        i = i + 1;
+    }
+    return False;
+}
+
+def _measure_indent(st: tok_state) -> int {
+    col = 0;
+    while st.pos < len(st.source) {
+        ch = st.source[st.pos];
+        if ch == " " {
+            col = col + 1;
+            st.pos = st.pos + 1;
+            st.col_offset = st.col_offset + 1;
+            continue;
+        }
+        if ch == "\t" {
+            col = (col // TABSIZE + 1) * TABSIZE;
+            st.pos = st.pos + 1;
+            st.col_offset = st.col_offset + 1;
+            continue;
+        }
+        if ch == "\f" {
+            col = 0;
+            st.pos = st.pos + 1;
+            st.col_offset = st.col_offset + 1;
+            continue;
+        }
+        break;
+    }
+    return col;
+}
+
+def _consume_bol_newline(st: tok_state) -> None {
+    if st.pos >= len(st.source) {
+        return;
+    }
+    ch = st.source[st.pos];
+    if ch == "\r" {
+        st.pos = st.pos + 1;
+        if st.pos < len(st.source) and st.source[st.pos] == "\n" {
+            st.pos = st.pos + 1;
+        }
+    } elif ch == "\n" {
+        st.pos = st.pos + 1;
+    } else {
+        return;
+    }
+    st.lineno = st.lineno + 1;
+    st.col_offset = 0;
+    st.line_start = st.pos;
+    st.at_bol = True;
+}
+
+def _process_bol_indent(st: tok_state) -> int {
+    # Returns 0 ok, 1 blank line consumed, -1 error.
+    if not st.exec_input or st.paren_level > 0 {
+        st.at_bol = False;
+        return 0;
+    }
+    col = _measure_indent(st);
+    if st.pos < len(st.source) {
+        ch = st.source[st.pos];
+        if ch == "#" {
+            if _skip_comment_line(st) {
+                _consume_bol_newline(st);
+                return 1;
+            }
+        }
+        if ch == "\n" or ch == "\r" {
+            _consume_bol_newline(st);
+            return 1;
+        }
+    }
+    # EOF with only whitespace on this logical line.
+    if st.pos >= len(st.source) {
+        st.at_bol = False;
+        return 0;
+    }
+    cur = st.indstack[st.indent];
+    if col == cur {
+        st.at_bol = False;
+        return 0;
+    }
+    if col > cur {
+        if st.indent + 1 >= MAXINDENT {
+            _indent_error(st, "maximum indentation depth exceeded");
+            return -1;
+        }
+        st.pending = st.pending + 1;
+        st.indent = st.indent + 1;
+        st.indstack.append(col);
+        st.at_bol = False;
+        return 0;
+    }
+    while st.indent > 0 and col < st.indstack[st.indent] {
+        st.pending = st.pending - 1;
+        st.indent = st.indent - 1;
+        st.indstack.pop();
+    }
+    if col != st.indstack[st.indent] {
+        _indent_error(st, "unindent does not match any outer indentation level");
+        return -1;
+    }
+    st.at_bol = False;
+    return 0;
+}
+
+def _begin_eof_dedents(st: tok_state) -> None {
+    if not st.exec_input {
+        return;
+    }
+    while st.indent > 0 {
+        st.pending = st.pending - 1;
+        st.indent = st.indent - 1;
+        st.indstack.pop();
+    }
+}
+
+def _track_paren_delta(tok_type: int) -> int {
+    if tok_type == LPAR or tok_type == LSQB or tok_type == LBRACE {
+        return 1;
+    }
+    if tok_type == RPAR or tok_type == RSQB or tok_type == RBRACE {
+        return -1;
+    }
+    return 0;
+}
+
+def _is_id_start(ch: str) -> bool {
+    if ch >= "a" and ch <= "z" {
+        return True;
+    }
+    if ch >= "A" and ch <= "Z" {
+        return True;
+    }
+    if ch == "_" {
+        return True;
+    }
+    return False;
+}
+
+def _is_id_continue(ch: str) -> bool {
+    if _is_id_start(ch) {
+        return True;
+    }
+    if ch >= "0" and ch <= "9" {
+        return True;
+    }
+    return False;
+}
+
+def:priv _is_digit(ch: str) -> bool {
+    return ch >= "0" and ch <= "9";
+}
+
+def _peek(st: tok_state) -> str {
+    if st.pos >= len(st.source) {
+        return "";
+    }
+    return st.source[st.pos];
+}
+
+def _advance(st: tok_state) -> str {
+    if st.pos >= len(st.source) {
+        return "";
+    }
+    ch = st.source[st.pos];
+    st.pos = st.pos + 1;
+    st.col_offset = st.col_offset + 1;
+    return ch;
+}
+
+def _match_operator(st: tok_state) -> tok_token | None {
+    rest = st.source[st.pos:];
+    # Longest match first (CPython _PyToken_ThreeChars / TwoChars / OneChar).
+    if len(rest) >= 3 {
+        spell = rest[0:3];
+        if spell in EXACT_TOKEN_TYPES {
+            start_col = st.col_offset;
+            st.pos = st.pos + 3;
+            st.col_offset = st.col_offset + 3;
+            return tok_token(
+                tok_type=EXACT_TOKEN_TYPES[spell],
+                spelling=spell,
+                lineno=st.lineno,
+                col_offset=start_col,
+                end_lineno=st.lineno,
+                end_col_offset=st.col_offset
+            );
+        }
+    }
+    if len(rest) >= 2 {
+        spell = rest[0:2];
+        if spell in EXACT_TOKEN_TYPES {
+            start_col = st.col_offset;
+            st.pos = st.pos + 2;
+            st.col_offset = st.col_offset + 2;
+            return tok_token(
+                tok_type=EXACT_TOKEN_TYPES[spell],
+                spelling=spell,
+                lineno=st.lineno,
+                col_offset=start_col,
+                end_lineno=st.lineno,
+                end_col_offset=st.col_offset
+            );
+        }
+    }
+    if len(rest) >= 1 {
+        spell = rest[0:1];
+        typ = exact_token_type(spell);
+        start_col = st.col_offset;
+        st.pos = st.pos + 1;
+        st.col_offset = st.col_offset + 1;
+        return tok_token(
+            tok_type=typ,
+            spelling=spell,
+            lineno=st.lineno,
+            col_offset=start_col,
+            end_lineno=st.lineno,
+            end_col_offset=st.col_offset
+        );
+    }
+    return None;
+}
+
+def _read_number(st: tok_state) -> tok_token {
+    start = st.pos;
+    start_col = st.col_offset;
+    based = False;
+    ch = _peek(st);
+    if ch == "0" {
+        _advance(st);
+        nxt = _peek(st);
+        if nxt == "x"
+            or nxt == "X"
+            or nxt == "b"
+            or nxt == "B"
+            or nxt == "o"
+            or nxt == "O" {
+            based = True;
+            _advance(st);
+            while st.pos < len(st.source) {
+                c = _peek(st);
+                if c == "_" {
+                    _advance(st);
+                    continue;
+                }
+                if _is_digit(c) or c >= "a" and c <= "f" or c >= "A" and c <= "F" {
+                    _advance(st);
+                    continue;
+                }
+                break;
+            }
+        } else {
+            while st.pos < len(st.source) {
+                c = _peek(st);
+                if c == "_" {
+                    _advance(st);
+                    continue;
+                }
+                if _is_digit(c) {
+                    _advance(st);
+                    continue;
+                }
+                break;
+            }
+        }
+    } else {
+        while st.pos < len(st.source) {
+            c = _peek(st);
+            if c == "_" {
+                _advance(st);
+                continue;
+            }
+            if _is_digit(c) {
+                _advance(st);
+                continue;
+            }
+            break;
+        }
+    }
+    if not based {
+        # Fractional/exponent/imaginary apply to ANY decimal literal, including
+        # zero-leading floats (0.0, 0.5, 0e10) — the '0' integer branch above only
+        # reads the integer part.
+        if _peek(st) == "." {
+            _advance(st);
+            while st.pos < len(st.source) {
+                c = _peek(st);
+                if c == "_" {
+                    _advance(st);
+                    continue;
+                }
+                if _is_digit(c) {
+                    _advance(st);
+                    continue;
+                }
+                break;
+            }
+        }
+        c = _peek(st);
+        if c == "e" or c == "E" {
+            _advance(st);
+            c2 = _peek(st);
+            if c2 == "+" or c2 == "-" {
+                _advance(st);
+            }
+            while st.pos < len(st.source) {
+                c3 = _peek(st);
+                if c3 == "_" {
+                    _advance(st);
+                    continue;
+                }
+                if _is_digit(c3) {
+                    _advance(st);
+                    continue;
+                }
+                break;
+            }
+        }
+        # Imaginary suffix on a decimal int/float (3j, 3.5j, 1e10j, 0.5j).
+        jc = _peek(st);
+        if jc == "j" or jc == "J" {
+            _advance(st);
+        }
+    }
+    spell = st.source[start:st.pos];
+    return tok_token(
+        tok_type=NUMBER,
+        spelling=spell,
+        lineno=st.lineno,
+        col_offset=start_col,
+        end_lineno=st.lineno,
+        end_col_offset=st.col_offset
+    );
+}
+
+def _read_name(st: tok_state) -> tok_token {
+    start = st.pos;
+    start_col = st.col_offset;
+    _advance(st);
+    while st.pos < len(st.source) {
+        c = _peek(st);
+        if not _is_id_continue(c) {
+            break;
+        }
+        _advance(st);
+    }
+    spell = st.source[start:st.pos];
+    return tok_token(
+        tok_type=NAME,
+        spelling=spell,
+        lineno=st.lineno,
+        col_offset=start_col,
+        end_lineno=st.lineno,
+        end_col_offset=st.col_offset
+    );
+}
+
+def _is_string_prefix_char(ch: str) -> bool {
+    if ch == "b" or ch == "B" {
+        return True;
+    }
+    if ch == "r" or ch == "R" {
+        return True;
+    }
+    if ch == "f" or ch == "F" {
+        return True;
+    }
+    if ch == "u" or ch == "U" {
+        return True;
+    }
+    return False;
+}
+
+def _is_string_start(st: tok_state) -> bool {
+    ch = _peek(st);
+    if ch == "'" or ch == "\"" {
+        return True;
+    }
+    if not _is_string_prefix_char(ch) {
+        return False;
+    }
+    p = st.pos + 1;
+    while p < len(st.source) {
+        c = st.source[p];
+        if _is_string_prefix_char(c) {
+            p = p + 1;
+            continue;
+        }
+        return c == "'" or c == "\"";
+    }
+    return False;
+}
+
+def _string_syntax_error(st: tok_state, msg: str, start_col: int) -> tok_diag {
+    bad = mk_diag(
+        "SyntaxError",
+        msg,
+        tok_loc_span(st.lineno, st.lineno, start_col, st.col_offset),
+        st.filename
+    );
+    st.error = bad;
+    st.done = True;
+    return bad;
+}
+
+def _fstring_emit_middle(
+    st: tok_state,
+    text: str,
+    lineno: int,
+    col_offset: int,
+    end_col_offset: int
+) -> tok_token {
+    return tok_token(
+        tok_type=FSTRING_MIDDLE,
+        spelling=text,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=lineno,
+        end_col_offset=end_col_offset
+    );
+}
+
+def _fstring_emit_end(st: tok_state, spelling: str, lineno: int, col_offset: int) -> tok_token {
+    st.fstring_active = False;
+    st.fstring_quote = "";
+    st.fstring_qlen = 1;
+    st.fstring_raw = False;
+    st.fstring_expr_depth = 0;
+    st.fstring_resume = False;
+    st.fstring_in_spec = False;
+    tok = tok_token(
+        tok_type=FSTRING_END,
+        spelling=spelling,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=st.lineno,
+        end_col_offset=st.col_offset
+    );
+    st.paren_level = st.paren_level + _track_paren_delta(FSTRING_END);
+    return tok;
+}
+
+def _fstring_scan_format_spec(st: tok_state) -> tok_token | tok_diag | None {
+    # Format-spec mode (PEP 701): after the terminating ':' of a replacement
+    # field, text up to the field's '}' scans as FSTRING_MIDDLE. '{{'/'}}'
+    # double; a lone '{' opens a nested replacement field (the operator path
+    # emits its LBRACE); a lone '}' terminates the field (emitted via the
+    # operator path as RBRACE so the parser and depth tracking see it).
+    quote = st.fstring_quote;
+    qlen = st.fstring_qlen;
+    start_lineno = st.lineno;
+    start_col = st.col_offset;
+    buf = "";
+    while st.pos < len(st.source) {
+        ch = _peek(st);
+        if ch == quote {
+            return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+        }
+        if qlen == 1 and (ch == "\n" or ch == "\r") {
+            return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+        }
+        if ch == "{" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "{" {
+            buf = buf + "{";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "}" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "}" {
+            buf = buf + "}";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "{" or ch == "}" {
+            if len(buf) > 0 {
+                st.fstring_resume = True;
+                return _fstring_emit_middle(st, buf, start_lineno, start_col, st.col_offset);
+            }
+            # Let the operator path emit LBRACE (nested field) or RBRACE
+            # (field terminator) so fstring_expr_depth tracking applies.
+            return None;
+        }
+        if ch == "\\" and not st.fstring_raw {
+            buf = buf + ch;
+            _advance(st);
+            if st.pos < len(st.source) {
+                buf = buf + st.source[st.pos];
+                _advance(st);
+            }
+            continue;
+        }
+        buf = buf + ch;
+        _advance(st);
+    }
+    return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+}
+
+def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
+    st.fstring_resume = False;
+    if st.fstring_in_spec {
+        return _fstring_scan_format_spec(st);
+    }
+    if st.fstring_expr_depth > 0 {
+        col = st.col_offset;
+        return _fstring_emit_middle(st, "", st.lineno, col, col);
+    }
+    quote = st.fstring_quote;
+    qlen = st.fstring_qlen;
+    raw = st.fstring_raw;
+    start_lineno = st.lineno;
+    start_col = st.col_offset;
+    buf = "";
+    while st.pos < len(st.source) {
+        ch = _peek(st);
+        if qlen == 1 {
+            if ch == quote {
+                end_col = st.col_offset;
+                if len(buf) > 0 {
+                    st.fstring_resume = True;
+                    return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+                }
+                _advance(st);
+                return _fstring_emit_end(st, quote, start_lineno, start_col);
+            }
+            if ch == "\n" or ch == "\r" {
+                return _string_syntax_error(
+                    st, "EOL while scanning string literal", start_col
+                );
+            }
+        } else {
+            if ch == quote
+                and st.pos + 1 < len(st.source)
+                and st.source[st.pos + 1] == quote
+                and st.pos + 2 < len(st.source)
+                and st.source[st.pos + 2] == quote {
+                end_col = st.col_offset;
+                if len(buf) > 0 {
+                    st.fstring_resume = True;
+                    return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+                }
+                j = 0;
+                while j < qlen {
+                    _advance(st);
+                    j = j + 1;
+                }
+                triple = quote + quote + quote;
+                return _fstring_emit_end(st, triple, start_lineno, start_col);
+            }
+        }
+        if ch == "{" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "{" {
+            buf = buf + "{";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "}" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "}" {
+            buf = buf + "}";
+            _advance(st);
+            _advance(st);
+            continue;
+        }
+        if ch == "{" {
+            if len(buf) > 0 {
+                end_col = st.col_offset;
+                return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
+            }
+            return None;
+        }
+        if ch == "\\" and not raw {
+            buf = buf + ch;
+            _advance(st);
+            if st.pos < len(st.source) {
+                buf = buf + st.source[st.pos];
+                _advance(st);
+            }
+            continue;
+        }
+        buf = buf + ch;
+        _advance(st);
+    }
+    return _string_syntax_error(st, "EOL while scanning string literal", start_col);
+}
+
+def _read_fstring_start(
+    st: tok_state,
+    start: int,
+    start_col: int,
+    raw: bool,
+    quote: str,
+    qlen: int
+) -> tok_token | tok_diag {
+    spell = st.source[start:st.pos];
+    st.fstring_active = True;
+    st.fstring_quote = quote;
+    st.fstring_qlen = qlen;
+    st.fstring_raw = raw;
+    st.fstring_expr_depth = 0;
+    st.fstring_resume = True;
+    st.fstring_in_spec = False;
+    tok = tok_token(
+        tok_type=FSTRING_START,
+        spelling=spell,
+        lineno=st.lineno,
+        col_offset=start_col,
+        end_lineno=st.lineno,
+        end_col_offset=st.col_offset
+    );
+    st.paren_level = st.paren_level + _track_paren_delta(FSTRING_START);
+    return tok;
+}
+
+def _read_string(st: tok_state) -> tok_token | tok_diag {
+    start = st.pos;
+    start_col = st.col_offset;
+    raw = False;
+    has_f = False;
+    while st.pos < len(st.source) {
+        c = _peek(st);
+        if c == "r" or c == "R" {
+            raw = True;
+            _advance(st);
+            continue;
+        }
+        if c == "f" or c == "F" {
+            has_f = True;
+            _advance(st);
+            continue;
+        }
+        if _is_string_prefix_char(c) {
+            _advance(st);
+            continue;
+        }
+        break;
+    }
+    quote = _peek(st);
+    if quote != "'" and quote != "\"" {
+        return _string_syntax_error(st, "invalid syntax", start_col);
+    }
+    qlen = 1;
+    _advance(st);
+    # Triple-quote only when the NEXT TWO chars are both the quote. For `''`/`""`
+    # the second quote is the CLOSING quote of an empty single-quoted string, not
+    # part of a 2-char opener (Python has no 2-quote delimiter).
+    if _peek(st) == quote
+        and st.pos + 1 < len(st.source)
+        and st.source[st.pos + 1] == quote {
+        _advance(st);
+        _advance(st);
+        qlen = 3;
+    }
+    if has_f {
+        return _read_fstring_start(st, start, start_col, raw, quote, qlen);
+    }
+    while st.pos < len(st.source) {
+        ch = _peek(st);
+        if qlen == 1 {
+            if ch == quote {
+                _advance(st);
+                spell = st.source[start:st.pos];
+                tok = tok_token(
+                    tok_type=STRING,
+                    spelling=spell,
+                    lineno=st.lineno,
+                    col_offset=start_col,
+                    end_lineno=st.lineno,
+                    end_col_offset=st.col_offset
+                );
+                st.paren_level = st.paren_level + _track_paren_delta(STRING);
+                return tok;
+            }
+            if ch == "\n" or ch == "\r" {
+                return _string_syntax_error(
+                    st, "EOL while scanning string literal", start_col
+                );
+            }
+            if ch == "\\" {
+                # Backslash escapes the next char for TERMINATION scanning in raw
+                # strings too (r'\'' is not closed by the escaped quote); the raw
+                # flag only affects decoding, handled later.
+                _advance(st);
+                if st.pos < len(st.source) {
+                    _advance(st);
+                }
+                continue;
+            }
+            _advance(st);
+            continue;
+        }
+        if ch == quote {
+            matched = 1;
+            i = 1;
+            while i < qlen {
+                if st.pos + i >= len(st.source) or st.source[st.pos + i] != quote {
+                    matched = 0;
+                    break;
+                }
+                i = i + 1;
+            }
+            if matched {
+                j = 0;
+                while j < qlen {
+                    _advance(st);
+                    j = j + 1;
+                }
+                spell = st.source[start:st.pos];
+                tok = tok_token(
+                    tok_type=STRING,
+                    spelling=spell,
+                    lineno=st.lineno,
+                    col_offset=start_col,
+                    end_lineno=st.lineno,
+                    end_col_offset=st.col_offset
+                );
+                st.paren_level = st.paren_level + _track_paren_delta(STRING);
+                return tok;
+            }
+        }
+        if ch == "\\" and not raw {
+            _advance(st);
+            if st.pos < len(st.source) {
+                _advance(st);
+            }
+            continue;
+        }
+        _advance(st);
+    }
+    return _string_syntax_error(st, "EOL while scanning string literal", start_col);
+}
+
+def tokenizer_from_string(source: str, filename: str, exec_input: bool) -> tok_state {
+    # Eval/single input: ensure a trailing newline like decode_str(single=1).
+    buf = source;
+    if not exec_input {
+        if len(buf) == 0 or buf[len(buf) - 1] != "\n" {
+            buf = buf + "\n";
+        }
+    }
+    return tok_state(source=buf, filename=filename, exec_input=exec_input);
+}
+
+def _endmarker_lineno(st: tok_state) -> int {
+    lineno = st.lineno;
+    if st.col_offset == 0 and lineno > 1 {
+        return lineno - 1;
+    }
+    return lineno;
+}
+
+def _last_line_has_token_content(st: tok_state) -> bool {
+    # Inspect the unterminated final physical line: strip trailing whitespace
+    # and a trailing comment; whatever remains must hold at least one token
+    # character for CPython's implicit EOF NEWLINE to apply. A trailing line
+    # continuation ('\\') means the logical line is incomplete at EOF; CPython
+    # rejects that, so suppress the virtual NEWLINE and let the parse fail.
+    i = len(st.source) - 1;
+    while i >= 0 and (st.source[i] == " " or st.source[i] == "\t" or st.source[i] == "\f") {
+        i = i - 1;
+    }
+    if i < 0 {
+        return False;
+    }
+    if st.source[i] == "\\" {
+        return False;
+    }
+    j = i;
+    while j >= 0 and st.source[j] != "\n" and st.source[j] != "\r" {
+        if st.source[j] == "#" {
+            return False;
+        }
+        j = j - 1;
+    }
+    return True;
+}
+
+def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
+    if st.done {
+        em = _endmarker_lineno(st);
+        return tok_token(
+            tok_type=ENDMARKER,
+            spelling="",
+            lineno=em,
+            col_offset=TOK_NO_COLUMN,
+            end_lineno=em,
+            end_col_offset=TOK_NO_COLUMN
+        );
+    }
+    if st.error is not None {
+        return st.error;
+    }
+    pending = _flush_pending_indent(st);
+    if pending is not None {
+        return pending;
+    }
+    if st.fstring_active and st.fstring_resume {
+        fseg = _fstring_next_segment(st);
+        if fseg is not None {
+            if isinstance(fseg, tok_diag) {
+                return fseg;
+            }
+            return fseg as tok_token;
+        }
+    }
+    while st.pos < len(st.source) {
+        if st.at_bol {
+            bol = _process_bol_indent(st);
+            if bol < 0 {
+                return st.error as tok_diag;
+            }
+            if bol > 0 {
+                pending = _flush_pending_indent(st);
+                if pending is not None {
+                    return pending;
+                }
+                continue;
+            }
+            pending = _flush_pending_indent(st);
+            if pending is not None {
+                return pending;
+            }
+        }
+        ch = _peek(st);
+        if ch == " " or ch == "\t" or ch == "\f" {
+            _advance(st);
+            continue;
+        }
+        if ch == "#" {
+            # Comment: consume to end of line (not the newline itself, which the
+            # newline branch handles). Matches CPython's comment-then-NEWLINE.
+            while st.pos < len(st.source) and _peek(st) != "\n" and _peek(st) != "\r" {
+                _advance(st);
+            }
+            continue;
+        }
+        if ch == "\\"
+            and st.pos + 1 < len(st.source)
+            and (st.source[st.pos + 1] == "\n" or st.source[st.pos + 1] == "\r") {
+            # Explicit line continuation: backslash-newline joins physical lines,
+            # emitting no NEWLINE and doing no indentation processing.
+            _advance(st);
+            if _peek(st) == "\r" {
+                _advance(st);
+                if _peek(st) == "\n" {
+                    _advance(st);
+                }
+            } else {
+                _advance(st);
+            }
+            st.line_start = st.pos;
+            st.lineno = st.lineno + 1;
+            st.col_offset = 0;
+            continue;
+        }
+        if ch == "\n" {
+            start_col = st.col_offset;
+            _advance(st);
+            st.line_start = st.pos;
+            st.lineno = st.lineno + 1;
+            st.col_offset = 0;
+            if st.paren_level > 0 {
+                # Implicit line join inside (), [], {}: newline is non-significant
+                # (NL), no NEWLINE token and no indentation processing.
+                continue;
+            }
+            st.at_bol = True;
+            return tok_token(
+                tok_type=NEWLINE,
+                spelling="",
+                lineno=st.lineno - 1,
+                col_offset=start_col,
+                end_lineno=st.lineno - 1,
+                end_col_offset=start_col
+            );
+        }
+        if ch == "\r" {
+            start_col = st.col_offset;
+            _advance(st);
+            if _peek(st) == "\n" {
+                _advance(st);
+            }
+            st.line_start = st.pos;
+            st.lineno = st.lineno + 1;
+            st.col_offset = 0;
+            if st.paren_level > 0 {
+                continue;
+            }
+            st.at_bol = True;
+            return tok_token(
+                tok_type=NEWLINE,
+                spelling="",
+                lineno=st.lineno - 1,
+                col_offset=start_col,
+                end_lineno=st.lineno - 1,
+                end_col_offset=start_col
+            );
+        }
+        # CPython tokenizes '.' as NUMBER when digits follow (.5 == 0.5);
+        # anything else ('.', '..', '...') falls through to the operator path.
+        if ch == "." {
+            nxt = st.pos + 1;
+            if nxt < len(st.source) and _is_digit(st.source[nxt]) {
+                tok = _read_number(st);
+                st.paren_level = st.paren_level + _track_paren_delta(tok.tok_type);
+                return tok;
+            }
+        }
+        if _is_digit(ch) {
+            tok = _read_number(st);
+            st.paren_level = st.paren_level + _track_paren_delta(tok.tok_type);
+            return tok;
+        }
+        # String-start MUST precede identifier: a prefixed string (b'', r'', u'',
+        # f'') begins with an id-start char; _is_string_start only matches when a
+        # quote follows the prefix, so a plain identifier still falls through.
+        if _is_string_start(st) {
+            str_tok = _read_string(st);
+            if isinstance(str_tok, tok_diag) {
+                return str_tok;
+            }
+            return str_tok as tok_token;
+        }
+        if _is_id_start(ch) {
+            tok = _read_name(st);
+            st.paren_level = st.paren_level + _track_paren_delta(tok.tok_type);
+            return tok;
+        }
+        op = _match_operator(st);
+        if op is not None {
+            if st.fstring_active {
+                if op.tok_type == LBRACE {
+                    st.fstring_expr_depth = st.fstring_expr_depth + 1;
+                    if st.fstring_expr_depth == 1 {
+                        # Paren level right after the field's own '{': a colon
+                        # at this level (and depth 1) is a format-spec start.
+                        st.fstring_field_paren = st.paren_level + 1;
+                    }
+                }
+                if op.tok_type == COLON and st.fstring_expr_depth == 1 and st.paren_level == st.fstring_field_paren {
+                    # Top-level ':' in a replacement field starts the format
+                    # spec (PEP 701); following text scans as FSTRING_MIDDLE.
+                    st.fstring_in_spec = True;
+                    st.fstring_resume = True;
+                }
+                if op.tok_type == RBRACE and st.fstring_expr_depth > 0 {
+                    st.fstring_expr_depth = st.fstring_expr_depth - 1;
+                    if st.fstring_expr_depth == 0 {
+                        st.fstring_resume = True;
+                        st.fstring_in_spec = False;
+                    }
+                    elif st.fstring_in_spec {
+                        # Closing a nested field inside a spec returns to the
+                        # spec text.
+                        st.fstring_resume = True;
+                    }
+                }
+            }
+            st.paren_level = st.paren_level + _track_paren_delta(op.tok_type);
+            return op;
+        }
+        bad = mk_diag(
+            "SyntaxError",
+            "invalid character in identifier",
+            tok_loc_span(st.lineno, st.lineno, st.col_offset, st.col_offset + 1),
+            st.filename
+        );
+        st.error = bad;
+        st.done = True;
+        return bad;
+    }
+    if not st.eof_newline_done and len(st.source) > 0 {
+        last = st.source[len(st.source) - 1];
+        if last != "\n" and last != "\r" and _last_line_has_token_content(st) {
+            st.eof_newline_done = True;
+            return tok_token(
+                tok_type=NEWLINE,
+                spelling="",
+                lineno=st.lineno,
+                col_offset=st.col_offset,
+                end_lineno=st.lineno,
+                end_col_offset=st.col_offset
+            );
+        }
+    }
+    _begin_eof_dedents(st);
+    pending = _flush_pending_indent(st);
+    if pending is not None {
+        return pending;
+    }
+    st.done = True;
+    em = _endmarker_lineno(st);
+    return tok_token(
+        tok_type=ENDMARKER,
+        spelling="",
+        lineno=em,
+        col_offset=TOK_NO_COLUMN,
+        end_lineno=em,
+        end_col_offset=TOK_NO_COLUMN
+    );
+}
+
+def tokenize_all(
+    source: str, filename: str, exec_input: bool
+) -> list[tok_token | tok_diag] {
+    st = tokenizer_from_string(source, filename, exec_input);
+    out: list[tok_token | tok_diag] = [];
+    while True {
+        tok = tokenizer_next(st);
+        out.append(tok);
+        if isinstance(tok, tok_diag) {
+            break;
+        }
+        if tok.tok_type == ENDMARKER {
+            break;
+        }
+    }
+    return out;
+}

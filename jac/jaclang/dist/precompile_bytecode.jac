@@ -98,6 +98,7 @@ def _nested_project_dirs(package_dir: str) -> list[str] {
 }
 
 def find_jac_files(package_dir: str) -> list[str] {
+    import from jaclang.bootstrap_manifest { SOURCE_ONLY_PATHS }
     result: list[str] = [];
     pkg = Path(package_dir);
     for jac_file in sorted(pkg.rglob("*.jac")) {
@@ -106,6 +107,15 @@ def find_jac_files(package_dir: str) -> list[str] {
         }
         rel_path = jac_file.relative_to(pkg);
         rel = str(rel_path);
+
+        # JacPython sources ship for development, but do not yet replace the
+        # release runtime. Relocation must not enroll them in the sealed image.
+        if pkg.name == "jaclang" and any(
+            rel.replace(os.sep, "/").startswith(prefix)
+            for prefix in SOURCE_ONLY_PATHS
+        ) {
+            continue;
+        }
 
         if any(
             part.startswith(".") or part == "__pycache__" for part in rel_path.parts

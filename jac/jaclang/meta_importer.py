@@ -184,7 +184,7 @@ def _jacpath_stdlib_shadow_blocked(fullname: str, origin: str) -> bool:
     JacPython ships product-path facades named like stdlib modules (``weakref``,
     ``types``, ...). ``JACPATH`` must expose those to the *guest* import hook,
     not to the host ``meta_importer`` that bootstraps ``jaclang`` -- otherwise a
-    sealed-kit ``jac test`` with ``JACPATH=jac-py/jacpython`` re-enters the full
+    ``JACPATH`` pointing at those facades re-enters the full
     compiler while ``runtime.jac`` is still initializing and dies on a circular
     ``JacRuntime`` import.
     """
