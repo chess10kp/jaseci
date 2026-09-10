@@ -99,14 +99,15 @@ jobs:
               - '.github/actions/**'
 
   # Linux x86-64 is exercised by build-kit. Source changes also validate the
-  # other release platforms without rebuilding Jac on every platform.
+  # regular release platforms without rebuilding Jac on every platform.
+  # Intel macOS is verified by its manually selected build-binaries release leg.
   python-runtime:
     needs: changes
     if: needs.changes.outputs.python == 'true'
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04-arm, macos-14, macos-15-intel]
+        os: [ubuntu-24.04-arm, macos-14]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
