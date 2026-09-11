@@ -1253,7 +1253,7 @@ def optimize_load_fast(u: unverified_cfg) {
                 } elif op == OP_LOAD_FAST_LOAD_FAST {
                     lf_push(s, i, arg // 16);
                     lf_push(s, i, arg % 16);
-                } elif op == OP_STORE_FAST {
+                } elif op == OP_STORE_FAST or op == OP_STORE_FAST_MAYBE_NULL {
                     r = lf_pop(s);
                     lf_store_local(flags, s, arg, r[0]);
                 } elif op == OP_STORE_FAST_LOAD_FAST {
@@ -1532,7 +1532,7 @@ def ac_scan_block(
             i = i + 1;
             continue;
         }
-        if oparg >= 0 and oparg < 64 and oparg < nlocals {
+        if oparg >= 0 and oparg < nlocals {
             bit = 1 << oparg;
             op = ins.opcode;
             if op == OP_DELETE_FAST
@@ -1826,6 +1826,15 @@ def verify_cfg(u: unverified_cfg) -> verified_cfg {
     # are known (published on u by calculate_stackdepth). Preserves stack effects,
     # so the stacksize computed above stays valid.
     optimize_load_fast(u);
+    # Preserve nullable restores through initialization and borrow analysis.
+    # The pseudo instruction becomes STORE_FAST only when those passes finish.
+    for block in u.blocks {
+        for ins in block.instrs {
+            if ins.opcode == OP_STORE_FAST_MAYBE_NULL {
+                ins.opcode = OP_STORE_FAST;
+            }
+        }
+    }
     fr = flatten_blocks(u);
     flat = fr.flat;
     rewrite_small_ints(u, flat);

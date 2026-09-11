@@ -181,7 +181,7 @@ jobs:
       - name: Compile and run upstream cleanup tests with JacPython
         run: |
           for bridge_mode in "" "--runtime"; do
-            for test_module in test.test_with test.test_exception_variations test.test_except_star; do
+            for test_module in test.test_with test.test_exception_variations test.test_except_star test.test_coroutines; do
               jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
             done
           done

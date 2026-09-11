@@ -127,6 +127,7 @@ import from jaclang.runtime.python.opcode_meta {
     OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW,
     OP_LOAD_FAST_AND_CLEAR,
     OP_STORE_FAST,
+    OP_STORE_FAST_MAYBE_NULL,
     OP_DELETE_FAST,
     OP_STORE_FAST_STORE_FAST,
     OP_STORE_FAST_LOAD_FAST,
@@ -578,7 +579,7 @@ def emit_send_delegation_loop(
     get_iter_arg: int,
     resume_after_yield_arg: int,
     yloc: cloc
-) {
+) -> int {
     als = emit_await_send_loop_header(
         g, get_iter_op, get_iter_arg, resume_after_yield_arg, yloc
     );
@@ -603,6 +604,7 @@ def emit_send_delegation_loop(
             depth_offset=1
         )
     );
+    return als.end_send_blk.id;
 }
 
 # Place every still-queued await CLEANUP_THROW footer after all warm code
@@ -849,10 +851,6 @@ def emit_control_unwind(
     try {
         for frame_index in range(len(frames) - 1, stop_depth - 1, -1) {
             fb = frames[frame_index];
-            if fb.is_async {
-                codegen_fail(g, "NotImplementedError", "async with loop-exit cleanup");
-                return control_unwind(end=end);
-            }
             boundary = g.new_block();
             g.use(boundary);
             fb.unwind_spans.append((boundary.id, end.id));
@@ -913,6 +911,9 @@ def emit_control_unwind(
                     g.emit_op(OP_LOAD_CONST, none_idx, wloc);
                 }
                 g.emit_op(OP_CALL, 3, wloc);
+                if fb.is_async {
+                    emit_send_delegation_loop(g, OP_GET_AWAITABLE, 2, 3, wloc);
+                }
                 g.emit_op(OP_POP_TOP, 0, wloc);
                 g.handler_nest_depth -= 2;
             }
@@ -934,46 +935,7 @@ def finish_control_unwind(g: cfg_builder, result: control_unwind) {
 }
 
 def emit_return_unwind(g: cfg_builder, wloc: cloc) -> control_unwind {
-    if all(not frame.is_async for frame in g.cleanup_stack) {
-        return emit_control_unwind(g, wloc, True);
-    }
-    g.with_unwind_used = True;
-    while len(g.cleanup_stack) > 0 {
-        fb = g.cleanup_stack[len(g.cleanup_stack) - 1];
-        g.cleanup_stack = g.cleanup_stack[0:len(g.cleanup_stack) - 1];
-        boundary = g.new_block();
-        g.use(boundary);
-        if fb.protect_region >= 0
-            and g.u.except_regions[fb.protect_region].end_block < 0 {
-            g.u.except_regions[fb.protect_region].end_block = boundary.id;
-        }
-        g.emit_op(OP_SWAP, 3, wloc);
-        g.emit_op(OP_SWAP, 2, wloc);
-        none_idx = g.u.add_const(py_none());
-        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-        g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-        g.emit_op(OP_CALL, 3, wloc);
-        if fb.is_async {
-            als = emit_await_send_loop_header(g, OP_GET_AWAITABLE, 2, 3, wloc);
-            ct = g.new_deferred_block();
-            cj = g.new_deferred_block();
-            g.with_unwind_recs.append(
-                with_unwind_rec(
-                    send_blk=als.send_blk.id,
-                    yield_blk=als.yield_blk.id,
-                    after_resume_blk=als.after_resume_blk.id,
-                    end_send_blk=als.end_send_blk.id,
-                    boundary=boundary.id,
-                    depth=4 + 2 * fb.frame_idx,
-                    ct=ct,
-                    cj=cj
-                )
-            );
-        }
-        g.emit_op(OP_POP_TOP, 0, wloc);
-    }
-    return control_unwind();
+    return emit_control_unwind(g, wloc, True);
 }
 
 # GET_ANEXT + SEND loop blocks for async-for (footer emitted after the loop body).
@@ -3291,738 +3253,195 @@ def comp_emit_setup(
     return (start_blk, loop_hdr, for_iter_idx);
 }
 
-# Inline async list comprehension `[elt async for target in aiter]` inside an
-# `async def`. The comprehension's implicit function is inlined (PEP 709): the
-# loop uses GET_AITER / GET_ANEXT / SEND / END_ASYNC_FOR (mirroring statement
-# async-for) in place of GET_ITER / FOR_ITER, while the list-build / append /
-# loop-var save-restore scaffolding matches the sync inline listcomp. Single
-# generator only.
-def visit_list_comp_async(
-    g: cfg_builder,
-    lc: ListComp,
-    gen: comprehension,
-    bound_names: list[str],
-    slots: list[int]
-) {
-    cloc_comp = expr_loc(lc);
-    iter_loc = expr_loc(gen.iter);
-    elt_loc = expr_loc(lc.elt);
-    handler_group = g.u.comp_handler_group;
-    g.u.comp_handler_group = handler_group + 1;
-    `protect = g.generator_protect_start;
-
-    swap_depth = 2;
-    if len(slots) == 2 {
-        swap_depth = 3;
+# PEP 709 comprehensions keep the outer iterator evaluation outside the
+# temporary binding scope. Every saved local is restored on success or error;
+# exception depths come from the actual operand prefix at the protected entry.
+def comp_target_names(target: expr) -> list[str] {
+    if isinstance(target, Name) {
+        return [target.id];
     }
-
-    # --- setup: evaluate iterable, GET_AITER, clear+save loop-var slot(s) ---
-    visit_expr(g, gen.iter);
-    if codegen_busy(g) {
-        return;
+    if isinstance(target, Starred) {
+        return comp_target_names(target.value);
     }
-    g.emit_op(OP_GET_AITER, 0, iter_loc);
-    si = 0;
-    while si < len(slots) {
-        g.emit_op(OP_LOAD_FAST_AND_CLEAR, slots[si], cloc_comp);
-        si = si + 1;
+    if isinstance(target, Tuple) or isinstance(target, List) {
+        names: list[str] = [];
+        for item in target.elts {
+            names.extend(comp_target_names(item));
+        }
+        return names;
     }
-    comp_emit_cell_init(g, gen.target, slots, cloc_comp);
-    g.emit_op(OP_SWAP, swap_depth, cloc_comp);
+    return [];
+}
 
-    # --- comp body block: BUILD_LIST, SWAP (protected list-build) ---
-    comp_body = g.new_block();
-    g.use(comp_body);
-    g.emit_op(OP_BUILD_LIST, 0, cloc_comp);
-    g.emit_op(OP_SWAP, 2, cloc_comp);
-
-    # --- async loop header: GET_ANEXT/LOAD_CONST/SEND/YIELD/RESUME/END_SEND ---
-    loop_hdr = g.new_block();
-    als = emit_anext_send_loop_header(g, loop_hdr, 3, iter_loc);
-
-    # --- store/append block (kept separate: it is an exception-region edge) ---
-    store_blk = g.new_block();
-    g.use(store_blk);
-    g.u.comp_depth = g.u.comp_depth + 1;
-    comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, lc.elt, bound_names)
-    );
-    if codegen_busy(g) {
-        g.u.comp_depth = g.u.comp_depth - 1;
-        return;
-    }
-    comp_emit_single_elt(g, lc.elt, bound_names, OP_LIST_APPEND, elt_loc, False);
-    if codegen_busy(g) {
-        g.u.comp_depth = g.u.comp_depth - 1;
-        return;
-    }
-    g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, elt_loc);
-    g.u.comp_depth = g.u.comp_depth - 1;
-
-    # --- footer: CLEANUP_THROW / JUMP_BACKWARD_NO_INTERRUPT + END_ASYNC_FOR ---
-    (cleanup_throw, cleanup_jump) = emit_anext_send_loop_footer(g, als, iter_loc);
-    end_async_handler = g.new_block();
-    g.use(end_async_handler);
-    g.emit_jump(OP_END_ASYNC_FOR, als.end_send_blk.id, iter_loc);
-
-    # --- after loop: restore outer loop-var, leaving the built list on TOS ---
-    after = g.new_block();
-    g.use(after);
-    comp_emit_cleanup(g, slots, cloc_comp, swap_depth);
-
-    # ---------------- exception regions (non-overlapping, CPython order) -------
-    # Comprehension save/restore handler (SWAP/POP + restore loop-var + RERAISE),
-    # covering the three ranges not owned by the async-loop handlers.
-    comp_append_handler(
-        g, comp_body.id, loop_hdr.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    # async loop: GET_ANEXT..SEND -> END_ASYNC_FOR
-    g.u.except_regions.append(
-        except_region(
-            start_block=loop_hdr.id,
-            end_block=als.yield_blk.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    # YIELD_VALUE -> CLEANUP_THROW
-    g.u.except_regions.append(
-        except_region(
-            start_block=als.yield_blk.id,
-            end_block=als.after_resume_blk.id,
-            handler_block=cleanup_throw.id,
-            stack_depth=6,
-            preserve_lasti=False
-        )
-    );
-    # RESUME..END_SEND -> END_ASYNC_FOR
-    g.u.except_regions.append(
-        except_region(
-            start_block=als.after_resume_blk.id,
-            end_block=store_blk.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    comp_append_handler(
-        g, store_blk.id, cleanup_throw.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    # CLEANUP_THROW -> END_ASYNC_FOR
-    g.u.except_regions.append(
-        except_region(
-            start_block=cleanup_throw.id,
-            end_block=cleanup_jump.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    comp_append_handler(
-        g, end_async_handler.id, after.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    # PEP 479 wrap: tail (after loop through RETURN_VALUE) and head (setup before
-    # BUILD_LIST). Handlers/ends resolved by emit_generator_except_handler.
-    g.u.except_regions.append(
-        except_region(
-            start_block=after.id,
-            end_block=-1,
-            handler_block=-1,
-            stack_depth=2,
-            preserve_lasti=True
-        )
-    );
-    g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-    if `protect >= 0 {
-        g.u.except_regions.append(
-            except_region(
-                start_block=`protect,
-                end_block=comp_body.id,
-                handler_block=-1,
-                stack_depth=2,
-                preserve_lasti=True
-            )
-        );
-        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+def comp_restore_slots(g: cfg_builder, slots: list[int], lc: cloc) {
+    for slot in reversed(slots) {
+        g.emit_op(OP_SWAP, 2, lc);
+        g.emit_op(OP_STORE_FAST_MAYBE_NULL, slot, lc);
     }
 }
 
-# Inline async set comprehension `{elt async for target in aiter}` inside an
-# `async def`. Same shape as visit_list_comp_async with BUILD_SET/SET_ADD.
-def visit_set_comp_async(
+def emit_comprehension_loop(
     g: cfg_builder,
-    sc: SetComp,
-    gen: comprehension,
-    bound_names: list[str],
-    slots: list[int]
+    generators: list[comprehension],
+    index: int,
+    element: expr,
+    value: expr | None,
+    add_op: int
 ) {
-    cloc_comp = expr_loc(sc);
-    iter_loc = expr_loc(gen.iter);
-    elt_loc = expr_loc(sc.elt);
-    handler_group = g.u.comp_handler_group;
-    g.u.comp_handler_group = handler_group + 1;
-    `protect = g.generator_protect_start;
-
-    swap_depth = 2;
-    if len(slots) == 2 {
-        swap_depth = 3;
+    import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
+        visit_store_target_tos
     }
-
-    visit_expr(g, gen.iter);
-    if codegen_busy(g) {
-        return;
+    gen = generators[index];
+    iloc = expr_loc(gen.iter);
+    if index > 0 {
+        visit_expr(g, gen.iter);
+        g.emit_op(OP_GET_AITER if gen.is_async else OP_GET_ITER, 0, iloc);
     }
-    g.emit_op(OP_GET_AITER, 0, iter_loc);
-    si = 0;
-    while si < len(slots) {
-        g.emit_op(OP_LOAD_FAST_AND_CLEAR, slots[si], cloc_comp);
-        si = si + 1;
+    head = g.new_block();
+    after = g.new_deferred_block();
+    g.use(head);
+    end_send = -1;
+    if gen.is_async {
+        end_send = emit_send_delegation_loop(g, OP_GET_ANEXT, 0, 3, iloc);
+    } else {
+        g.emit_jump(OP_FOR_ITER, after.id, iloc);
     }
-    comp_emit_cell_init(g, gen.target, slots, cloc_comp);
-    g.emit_op(OP_SWAP, swap_depth, cloc_comp);
-
-    comp_body = g.new_block();
-    g.use(comp_body);
-    g.emit_op(OP_BUILD_SET, 0, cloc_comp);
-    g.emit_op(OP_SWAP, 2, cloc_comp);
-
-    loop_hdr = g.new_block();
-    als = emit_anext_send_loop_header(g, loop_hdr, 3, iter_loc);
-
-    store_blk = g.new_block();
-    g.use(store_blk);
-    g.u.comp_depth = g.u.comp_depth + 1;
-    comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, sc.elt, bound_names)
-    );
-    if codegen_busy(g) {
-        g.u.comp_depth = g.u.comp_depth - 1;
-        return;
+    body = g.new_block();
+    g.use(body);
+    visit_store_target_tos(g, gen.target);
+    for condition in gen.ifs {
+        test_loc = expr_loc(condition);
+        kind = visit_test_expr(g, condition, test_loc, True);
+        passed = g.new_deferred_block();
+        emit_branch_if_test_true(g, kind, passed.id, test_loc);
+        g.emit_jump(OP_JUMP_BACKWARD, head.id, test_loc);
+        g.use(passed);
     }
-    comp_emit_single_elt(g, sc.elt, bound_names, OP_SET_ADD, elt_loc, False);
-    if codegen_busy(g) {
-        g.u.comp_depth = g.u.comp_depth - 1;
-        return;
+    if index + 1 < len(generators) {
+        emit_comprehension_loop(g, generators, index + 1, element, value, add_op);
+    } else {
+        visit_expr(g, element);
+        if value is not None {
+            visit_expr(g, value);
+        }
+        if add_op == OP_YIELD_VALUE {
+            if g.u.flags & CO_ASYNC_GENERATOR {
+                g.emit_op(OP_CALL_INTRINSIC_1, 4, expr_loc(element));
+            }
+            g.emit_op(OP_YIELD_VALUE, 0, expr_loc(element));
+            g.emit_op(OP_RESUME, 5, expr_loc(element));
+            g.emit_op(OP_POP_TOP, 0, expr_loc(element));
+        } else {
+            g.emit_op(add_op, len(generators) + 1, expr_loc(element));
+        }
     }
-    g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, elt_loc);
-    g.u.comp_depth = g.u.comp_depth - 1;
-
-    (cleanup_throw, cleanup_jump) = emit_anext_send_loop_footer(g, als, iter_loc);
-    end_async_handler = g.new_block();
-    g.use(end_async_handler);
-    g.emit_jump(OP_END_ASYNC_FOR, als.end_send_blk.id, iter_loc);
-
-    after = g.new_block();
+    g.emit_jump(OP_JUMP_BACKWARD, head.id, iloc);
     g.use(after);
-    comp_emit_cleanup(g, slots, cloc_comp, swap_depth);
-
-    comp_append_handler(
-        g, comp_body.id, loop_hdr.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=loop_hdr.id,
-            end_block=als.yield_blk.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=als.yield_blk.id,
-            end_block=als.after_resume_blk.id,
-            handler_block=cleanup_throw.id,
-            stack_depth=6,
-            preserve_lasti=False
-        )
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=als.after_resume_blk.id,
-            end_block=store_blk.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    comp_append_handler(
-        g, store_blk.id, cleanup_throw.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=cleanup_throw.id,
-            end_block=cleanup_jump.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    comp_append_handler(
-        g, end_async_handler.id, after.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=after.id,
-            end_block=-1,
-            handler_block=-1,
-            stack_depth=2,
-            preserve_lasti=True
-        )
-    );
-    g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-    if `protect >= 0 {
+    if gen.is_async {
+        g.emit_jump(OP_END_ASYNC_FOR, end_send, iloc);
         g.u.except_regions.append(
             except_region(
-                start_block=`protect,
-                end_block=comp_body.id,
-                handler_block=-1,
-                stack_depth=2,
-                preserve_lasti=True
+                start_block=head.id,
+                end_block=body.id,
+                handler_block=after.id,
+                stack_depth=0,
+                depth_from_block=head.id,
+                depth_offset=1
             )
         );
-        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
+    } else {
+        g.emit_op(OP_END_FOR, 0, iloc);
+        g.emit_op(OP_POP_ITER, 0, iloc);
     }
 }
 
-# Inline async dict comprehension `{k: v async for target in aiter}` inside an
-# `async def`. Same shape as visit_list_comp_async with BUILD_MAP/MAP_ADD.
-def visit_dict_comp_async(
+def visit_inline_comprehension(
     g: cfg_builder,
-    dc: DictComp,
-    gen: comprehension,
-    bound_names: list[str],
-    slots: list[int]
+    generators: list[comprehension],
+    element: expr,
+    value: expr | None,
+    build_op: int,
+    add_op: int,
+    lc: cloc
 ) {
-    cloc_comp = expr_loc(dc);
-    iter_loc = expr_loc(gen.iter);
-    map_loc = comp_dict_map_loc(dc);
-    handler_group = g.u.comp_handler_group;
-    g.u.comp_handler_group = handler_group + 1;
-    `protect = g.generator_protect_start;
-
-    swap_depth = 2;
-    if len(slots) == 2 {
-        swap_depth = 3;
-    }
-
-    visit_expr(g, gen.iter);
-    if codegen_busy(g) {
+    if not generators {
+        codegen_fail(g, "ValueError", "comprehension with no generators");
         return;
     }
-    g.emit_op(OP_GET_AITER, 0, iter_loc);
-    si = 0;
-    while si < len(slots) {
-        g.emit_op(OP_LOAD_FAST_AND_CLEAR, slots[si], cloc_comp);
-        si = si + 1;
+    first = generators[0];
+    visit_expr(g, first.iter);
+    g.emit_op(OP_GET_AITER if first.is_async else OP_GET_ITER, 0, expr_loc(first.iter));
+    slots: list[int] = [];
+    cells: list[int] = [];
+    for gen in generators {
+        for name in comp_target_names(gen.target) {
+            slot = comp_target_slot_index(g, codegen_mangle(g, name));
+            if slot < 0 {
+                codegen_fail(
+                    g, "SystemError", "missing comprehension binding: " + name
+                );
+                return;
+            }
+            if slot not in slots {
+                slots.append(slot);
+                g.emit_op(OP_LOAD_FAST_AND_CLEAR, slot, lc);
+                if comp_name_is_cell(g, codegen_mangle(g, name)) {
+                    cells.append(slot);
+                }
+            }
+        }
     }
-    comp_emit_cell_init(g, gen.target, slots, cloc_comp);
-    g.emit_op(OP_SWAP, swap_depth, cloc_comp);
-
-    comp_body = g.new_block();
-    g.use(comp_body);
-    g.emit_op(OP_BUILD_MAP, 0, cloc_comp);
-    g.emit_op(OP_SWAP, 2, cloc_comp);
-
-    loop_hdr = g.new_block();
-    als = emit_anext_send_loop_header(g, loop_hdr, 3, iter_loc);
-
-    store_blk = g.new_block();
-    g.use(store_blk);
-    g.u.comp_depth = g.u.comp_depth + 1;
-    comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, dc.key, bound_names)
-    );
-    if codegen_busy(g) {
-        g.u.comp_depth = g.u.comp_depth - 1;
-        return;
+    # Move the outer iterator above all saved bindings, retaining their order.
+    for depth in range(2, len(slots) + 2) {
+        g.emit_op(OP_SWAP, depth, lc);
     }
-    visit_comp_dict_kv(g, dc, bound_names, False);
-    if codegen_busy(g) {
-        g.u.comp_depth = g.u.comp_depth - 1;
-        return;
+    start = g.new_block();
+    g.use(start);
+    for slot in cells {
+        g.emit_op(OP_MAKE_CELL, slot, lc);
     }
-    g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, map_loc);
-    g.u.comp_depth = g.u.comp_depth - 1;
-
-    (cleanup_throw, cleanup_jump) = emit_anext_send_loop_footer(g, als, iter_loc);
-    end_async_handler = g.new_block();
-    g.use(end_async_handler);
-    g.emit_jump(OP_END_ASYNC_FOR, als.end_send_blk.id, iter_loc);
-
-    after = g.new_block();
-    g.use(after);
-    comp_emit_cleanup(g, slots, cloc_comp, swap_depth);
-
-    comp_append_handler(
-        g, comp_body.id, loop_hdr.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
+    g.emit_op(build_op, 0, lc);
+    g.emit_op(OP_SWAP, 2, lc);
+    emit_comprehension_loop(g, generators, 0, element, value, add_op);
+    end = g.new_block();
+    g.use(end);
+    comp_restore_slots(g, slots, lc);
+    join = g.new_deferred_block();
+    g.emit_jump(OP_JUMP_FORWARD, join.id, lc);
+    handler = g.new_block();
+    g.use(handler);
+    comp_restore_slots(g, slots, lc);
+    g.emit_op(OP_RERAISE, 0, lc);
+    g.use(join);
     g.u.except_regions.append(
         except_region(
-            start_block=loop_hdr.id,
-            end_block=als.yield_blk.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
+            start_block=start.id,
+            end_block=end.id,
+            handler_block=handler.id,
+            stack_depth=0,
+            depth_from_block=start.id
         )
     );
-    g.u.except_regions.append(
-        except_region(
-            start_block=als.yield_blk.id,
-            end_block=als.after_resume_blk.id,
-            handler_block=cleanup_throw.id,
-            stack_depth=6,
-            preserve_lasti=False
-        )
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=als.after_resume_blk.id,
-            end_block=store_blk.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    comp_append_handler(
-        g, store_blk.id, cleanup_throw.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=cleanup_throw.id,
-            end_block=cleanup_jump.id,
-            handler_block=end_async_handler.id,
-            stack_depth=4,
-            preserve_lasti=False
-        )
-    );
-    comp_append_handler(
-        g, end_async_handler.id, after.id, 3, slots[0], cloc_comp, handler_group, -1, 2
-    );
-    g.u.except_regions.append(
-        except_region(
-            start_block=after.id,
-            end_block=-1,
-            handler_block=-1,
-            stack_depth=2,
-            preserve_lasti=True
-        )
-    );
-    g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-    if `protect >= 0 {
-        g.u.except_regions.append(
-            except_region(
-                start_block=`protect,
-                end_block=comp_body.id,
-                handler_block=-1,
-                stack_depth=2,
-                preserve_lasti=True
-            )
-        );
-        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-    }
 }
 
-# Inline list comprehension (module-level / expression context).
 def visit_list_comp(g: cfg_builder, lc: ListComp) {
-    if len(lc.generators) == 0 {
-        codegen_fail(g, "NotImplementedError", "empty list comprehension");
-        return;
-    }
-    gen = lc.generators[0];
-    bound_names = comp_bound_names_from_target(gen.target);
-    slots = comp_target_slots(g, gen.target);
-    if bound_names is None or slots is None {
-        codegen_fail(g, "NotImplementedError", "unsupported list comprehension target");
-        return;
-    }
-    if gen.is_async == 1 {
-        if len(lc.generators) != 1 {
-            codegen_fail(
-                g,
-                "NotImplementedError",
-                "async list comprehension with multiple generators"
-            );
-            return;
-        }
-        visit_list_comp_async(g, lc, gen, bound_names, slots);
-        return;
-    }
-    cloc_comp = expr_loc(lc);
-    iter_loc = expr_loc(gen.iter);
-    elt_loc = expr_loc(lc.elt);
-    filter_jump_loc = expr_loc(lc.elt);
-    handler_group = g.u.comp_handler_group;
-    g.u.comp_handler_group = handler_group + 1;
-    setup = comp_emit_setup(g, gen, slots, OP_BUILD_LIST, cloc_comp, iter_loc);
-    if codegen_busy(g) {
-        return;
-    }
-    g.u.comp_depth = g.u.comp_depth + 1;
-    start_blk = setup[0];
-    loop_hdr = setup[1];
-    for_iter_idx = setup[2];
-    swap_depth = 2;
-    stack_depth = 3;
-    second_fast = -1;
-    if len(slots) == 2 {
-        swap_depth = 3;
-        stack_depth = 4;
-        second_fast = slots[1];
-    }
-    comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, lc.elt, bound_names)
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    filt = comp_emit_filters(
-        g,
-        gen.ifs,
-        bound_names,
-        loop_hdr,
-        stack_depth,
-        cloc_comp,
-        slots[0],
-        start_blk,
-        handler_group,
-        filter_jump_loc,
-        second_fast,
-        swap_depth
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    region_start = filt[1];
-    comp_emit_single_elt(
-        g,
-        lc.elt,
-        bound_names,
-        OP_LIST_APPEND,
-        elt_loc,
-        len(gen.ifs) > 0,
-        filter_jump_loc
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    if len(gen.ifs) > 0 {
-        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, filter_jump_loc);
-    } else {
-        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, elt_loc);
-    }
-    g.u.comp_depth = g.u.comp_depth - 1;
-    comp_finish_loop(
-        g,
-        loop_hdr,
-        for_iter_idx,
-        region_start,
-        iter_loc,
-        stack_depth,
-        slots,
-        cloc_comp,
-        handler_group,
-        second_fast,
-        swap_depth
+    visit_inline_comprehension(
+        g, lc.generators, lc.elt, None, OP_BUILD_LIST, OP_LIST_APPEND, expr_loc(lc)
     );
 }
 
-# Inline set comprehension.
 def visit_set_comp(g: cfg_builder, sc: SetComp) {
-    if len(sc.generators) == 0 {
-        codegen_fail(g, "NotImplementedError", "empty set comprehension");
-        return;
-    }
-    gen = sc.generators[0];
-    bound_names = comp_bound_names_from_target(gen.target);
-    slots = comp_target_slots(g, gen.target);
-    if bound_names is None or slots is None {
-        codegen_fail(g, "NotImplementedError", "unsupported set comprehension target");
-        return;
-    }
-    if gen.is_async == 1 {
-        if len(sc.generators) != 1 {
-            codegen_fail(
-                g,
-                "NotImplementedError",
-                "async set comprehension with multiple generators"
-            );
-            return;
-        }
-        visit_set_comp_async(g, sc, gen, bound_names, slots);
-        return;
-    }
-    cloc_comp = expr_loc(sc);
-    iter_loc = expr_loc(gen.iter);
-    elt_loc = expr_loc(sc.elt);
-    filter_jump_loc = expr_loc(sc.elt);
-    handler_group = g.u.comp_handler_group;
-    g.u.comp_handler_group = handler_group + 1;
-    setup = comp_emit_setup(g, gen, slots, OP_BUILD_SET, cloc_comp, iter_loc);
-    if codegen_busy(g) {
-        return;
-    }
-    g.u.comp_depth = g.u.comp_depth + 1;
-    start_blk = setup[0];
-    loop_hdr = setup[1];
-    for_iter_idx = setup[2];
-    swap_depth = 2;
-    stack_depth = 3;
-    second_fast = -1;
-    if len(slots) == 2 {
-        swap_depth = 3;
-        stack_depth = 4;
-        second_fast = slots[1];
-    }
-    comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, sc.elt, bound_names)
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    filt = comp_emit_filters(
-        g,
-        gen.ifs,
-        bound_names,
-        loop_hdr,
-        stack_depth,
-        cloc_comp,
-        slots[0],
-        start_blk,
-        handler_group,
-        filter_jump_loc,
-        second_fast,
-        swap_depth
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    region_start = filt[1];
-    comp_emit_single_elt(
-        g, sc.elt, bound_names, OP_SET_ADD, elt_loc, len(gen.ifs) > 0, filter_jump_loc
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    if len(gen.ifs) > 0 {
-        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, filter_jump_loc);
-    } else {
-        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, elt_loc);
-    }
-    g.u.comp_depth = g.u.comp_depth - 1;
-    comp_finish_loop(
-        g,
-        loop_hdr,
-        for_iter_idx,
-        region_start,
-        iter_loc,
-        stack_depth,
-        slots,
-        cloc_comp,
-        handler_group,
-        second_fast,
-        swap_depth
+    visit_inline_comprehension(
+        g, sc.generators, sc.elt, None, OP_BUILD_SET, OP_SET_ADD, expr_loc(sc)
     );
 }
 
-# Inline dict comprehension.
 def visit_dict_comp(g: cfg_builder, dc: DictComp) {
-    if len(dc.generators) == 0 {
-        codegen_fail(g, "NotImplementedError", "empty dict comprehension");
-        return;
-    }
-    gen = dc.generators[0];
-    bound_names = comp_bound_names_from_target(gen.target);
-    slots = comp_target_slots(g, gen.target);
-    if bound_names is None or slots is None {
-        codegen_fail(g, "NotImplementedError", "unsupported dict comprehension target");
-        return;
-    }
-    if gen.is_async == 1 {
-        if len(dc.generators) != 1 {
-            codegen_fail(
-                g,
-                "NotImplementedError",
-                "async dict comprehension with multiple generators"
-            );
-            return;
-        }
-        visit_dict_comp_async(g, dc, gen, bound_names, slots);
-        return;
-    }
-    cloc_comp = expr_loc(dc);
-    iter_loc = expr_loc(gen.iter);
-    filter_jump_loc = comp_dict_map_loc(dc);
-    handler_group = g.u.comp_handler_group;
-    g.u.comp_handler_group = handler_group + 1;
-    setup = comp_emit_setup(g, gen, slots, OP_BUILD_MAP, cloc_comp, iter_loc);
-    if codegen_busy(g) {
-        return;
-    }
-    g.u.comp_depth = g.u.comp_depth + 1;
-    start_blk = setup[0];
-    loop_hdr = setup[1];
-    for_iter_idx = setup[2];
-    swap_depth = 2;
-    stack_depth = 3;
-    second_fast = -1;
-    if len(slots) == 2 {
-        swap_depth = 3;
-        stack_depth = 4;
-        second_fast = slots[1];
-    }
-    comp_emit_bind_target(
-        g, gen.target, slots, comp_lead_loopvar_slot(g, gen, dc.key, bound_names)
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    filt = comp_emit_filters(
-        g,
-        gen.ifs,
-        bound_names,
-        loop_hdr,
-        stack_depth,
-        cloc_comp,
-        slots[0],
-        start_blk,
-        handler_group,
-        filter_jump_loc,
-        second_fast,
-        swap_depth
-    );
-    if codegen_busy(g) {
-        return;
-    }
-    region_start = filt[1];
-    visit_comp_dict_kv(g, dc, bound_names, len(gen.ifs) > 0);
-    if codegen_busy(g) {
-        return;
-    }
-    if len(gen.ifs) > 0 {
-        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, filter_jump_loc);
-    } else {
-        g.emit_jump(OP_JUMP_BACKWARD, loop_hdr.id, comp_dict_map_loc(dc));
-    }
-    g.u.comp_depth = g.u.comp_depth - 1;
-    comp_finish_loop(
-        g,
-        loop_hdr,
-        for_iter_idx,
-        region_start,
-        iter_loc,
-        stack_depth,
-        slots,
-        cloc_comp,
-        handler_group,
-        second_fast,
-        swap_depth
+    visit_inline_comprehension(
+        g, dc.generators, dc.key, dc.value, OP_BUILD_MAP, OP_MAP_ADD, expr_loc(dc)
     );
 }
 
-# Lower an if/while test (CPython bool context): single Compare uses COMPARE_OP
-# with bool oparg; other expressions use TO_BOOL after visit_expr.
 # visit_test_expr return kinds. NORMAL leaves a bool on the stack, consumed by a
 # POP_JUMP_IF_FALSE. IS_NONE / IS_NOT_NONE leave the bare operand on the stack;
 # the caller must consume it with POP_JUMP_IF_NOT_NONE / POP_JUMP_IF_NONE (the
@@ -4269,7 +3688,7 @@ def visit_genexp(g: cfg_builder, ge: GeneratorExp) -> None {
     if codegen_busy(g) {
         return;
     }
-    g.emit_op(OP_GET_ITER, 0, iloc);
+    g.emit_op(OP_GET_AITER if gen0.is_async else OP_GET_ITER, 0, iloc);
     g.emit_op(OP_CALL, 0, gloc);
 }
 
@@ -4285,7 +3704,8 @@ def compile_genexp_cfg(
     );
     u.argcount = 1;
     u.param_count = 1;
-    u.flags = CO_OPTIMIZED | CO_NEWLOCALS | CO_GENERATOR;
+    u.flags = CO_OPTIMIZED | CO_NEWLOCALS;
+    u.flags |= CO_ASYNC_GENERATOR if sym_fn.coroutine else CO_GENERATOR;
     if sym_fn.nested {
         u.flags = u.flags | CO_NESTED;
     }
@@ -4293,124 +3713,12 @@ def compile_genexp_cfg(
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_fn, private);
     protect_start = emit_function_prologue(g, sym_fn, ge.lineno, True);
-    gens = ge.generators;
-    nloops = len(gens);
-    dot0_loc = expr_loc(gens[0].target);
-    g.emit_op(OP_LOAD_FAST, 0, dot0_loc);
-
-    hdrs: list[basicblock] = [];
-    fidxs: list[int] = [];
-    inner_names: list[str] | None = None;
-    g.u.comp_depth = g.u.comp_depth + 1;
-    gi = 0;
-    while gi < nloops {
-        gen = gens[gi];
-        iloc = expr_loc(gen.iter);
-        if gi > 0 {
-            visit_expr(g, gen.iter);
-            if codegen_busy(g) {
-                u.flush_late_consts();
-                return u;
-            }
-            g.emit_op(OP_GET_ITER, 0, iloc);
-        }
-        hdr = g.new_block();
-        g.use(hdr);
-        fidx = len(hdr.instrs);
-        g.emit_jump(OP_FOR_ITER, 0, iloc);
-        hdrs.append(hdr);
-        fidxs.append(fidx);
-        bound_names = comp_bound_names_from_target(gen.target);
-        slots = comp_target_slots(g, gen.target);
-        if bound_names is None or slots is None {
-            codegen_fail(
-                g, "NotImplementedError", "unsupported generator expression target"
-            );
-            u.flush_late_consts();
-            return u;
-        }
-        if gi == nloops - 1 {
-            inner_names = bound_names;
-            lead_slot = comp_lead_loopvar_slot(g, gen, ge.elt, bound_names);
-        } else {
-            lead_slot = -1;
-        }
-        comp_emit_bind_target(g, gen.target, slots, lead_slot);
-        fj = 0;
-        while fj < len(gen.ifs) {
-            fexpr = gen.ifs[fj];
-            floc = expr_loc(fexpr);
-            # Same codegen_jump_if lowering as statement filters: fold `not`
-            # into the branch polarity; TO_BOOL unless a single comparison.
-            fe = fexpr;
-            invert = False;
-            while isinstance(fe, UnaryOp) and isinstance((fe as UnaryOp).op, Not) {
-                invert = not invert;
-                fe = (fe as UnaryOp).operand;
-            }
-            is_single_cmp_gx = isinstance(fe, Compare)
-                and len((fe as Compare).ops) == 1;
-            visit_comp_elt(g, fe, bound_names, True);
-            if codegen_busy(g) {
-                u.flush_late_consts();
-                return u;
-            }
-            if not is_single_cmp_gx {
-                g.emit_op(OP_TO_BOOL, 0, expr_loc(fe));
-            }
-            pass_blk = g.new_block();
-            jump_op_gx = OP_POP_JUMP_IF_TRUE;
-            if invert {
-                jump_op_gx = OP_POP_JUMP_IF_FALSE;
-            }
-            g.emit_jump(jump_op_gx, pass_blk.id, floc);
-            g.emit_jump(OP_JUMP_BACKWARD, hdr.id, floc);
-            g.use(pass_blk);
-            fj = fj + 1;
-        }
-        gi = gi + 1;
-    }
-
+    g.emit_op(OP_LOAD_FAST, 0, expr_loc(ge.generators[0].target));
+    emit_comprehension_loop(g, ge.generators, 0, ge.elt, None, OP_YIELD_VALUE);
     elt_loc = expr_loc(ge.elt);
-    visit_comp_elt(g, ge.elt, inner_names as list[str]);
-    if codegen_busy(g) {
-        u.flush_late_consts();
-        return u;
-    }
-    g.emit_op(OP_YIELD_VALUE, 0, elt_loc);
-    g.emit_op(OP_RESUME, 5, elt_loc);
-    g.emit_op(OP_POP_TOP, 0, elt_loc);
-    g.u.comp_depth = g.u.comp_depth - 1;
-    g.emit_jump(OP_JUMP_BACKWARD, hdrs[nloops - 1].id, elt_loc);
-
-    # Natural exhaustion unwinds one loop level at a time, innermost first.
-    k = nloops - 1;
-    while k >= 0 {
-        exit_blk = g.new_block();
-        hdrs[k].instrs[fidxs[k]].target_block = exit_blk.id;
-        g.use(exit_blk);
-        xloc = expr_loc(gens[k].iter);
-        g.emit_op(OP_END_FOR, 0, xloc);
-        g.emit_op(OP_POP_ITER, 0, xloc);
-        if k > 0 {
-            g.emit_jump(OP_JUMP_BACKWARD, hdrs[k - 1].id, xloc);
-        }
-        k = k - 1;
-    }
-    none_idx = u.add_const(py_none());
-    g.emit_op(OP_LOAD_CONST, none_idx, elt_loc);
+    g.emit_op(OP_LOAD_CONST, u.add_const(py_none()), elt_loc);
     g.emit_op(OP_RETURN_VALUE, 0, elt_loc);
-
-    if len(g.u.comp_handlers) > 0 {
-        # An inline comprehension in the body registers save/restore handlers
-        # that only compiler_exc resolves at statement level; keep the nested
-        # unit unsupported rather than emitting dangling handler refs.
-        codegen_fail(
-            g, "NotImplementedError", "inline comprehension inside generator expression"
-        );
-        u.flush_late_consts();
-        return u;
-    }
+    stmt_handlers["deferred_comp_handlers"](g);
     emit_generator_except_handler(g, protect_start);
     u.flush_late_consts();
     return u;

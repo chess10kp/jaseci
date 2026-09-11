@@ -54,6 +54,12 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     TypeAlias,
     AsyncFor,
     AsyncWith,
+    Await,
+    Lambda,
+    ListComp,
+    SetComp,
+    DictComp,
+    GeneratorExp,
 }
 import from jaclang.compiler.frontend.python.compiler_diagnostics {
     compiler_diagnostic,
@@ -802,7 +808,110 @@ def validate_except_star_exits(body: list[stmt]) -> validation_result {
     return validation_ok();
 }
 
+# Suspension legality follows lexical scopes, including expression fields
+# such as defaults, decorators, annotations and comprehension filters.
+def validate_suspensions(roots: list[ast_node]) -> validation_result {
+    pending: list[tuple[ast_node, bool, bool, bool, bool]] = [
+        (item, False, False, False, False) for item in reversed(roots)
+    ];
+    while pending {
+        (item, in_function, in_async, in_comp, in_annotation) = pending.pop();
+        message: str | None = None;
+        if isinstance(item, Await) {
+            if in_annotation {
+                message = "await expression cannot be used within an annotation";
+            } elif not in_async {
+                message = "'await' outside async function"
+                    if in_function
+                    else "'await' outside function";
+            }
+        } elif isinstance(item, (Yield, YieldFrom)) {
+            if in_annotation {
+                message = "yield expression cannot be used within an annotation";
+            } elif in_comp {
+                message = "'yield' inside comprehension";
+            } elif not in_function {
+                message = "'yield' outside function";
+            } elif in_async and isinstance(item, YieldFrom) {
+                message = "'yield from' inside async function";
+            }
+        }
+        if message is not None {
+            located = item as expr;
+            return validation_error(
+                "SyntaxError", message, located.lineno, located.col_offset
+            );
+        }
+        if isinstance(item, (ListComp, SetComp, DictComp, GeneratorExp)) {
+            is_gen = isinstance(item, GeneratorExp);
+            if not is_gen
+                and not in_async
+                and any(gen.is_async for gen in item.generators) {
+                return validation_error(
+                    "SyntaxError",
+                    "asynchronous comprehension outside of an asynchronous function",
+                    item.lineno,
+                    item.col_offset
+                );
+            }
+            comp_async = in_async or is_gen;
+            for (index, gen) in enumerate(item.generators) {
+                pending.append(
+                    (
+                        gen.iter,
+                        in_function if index == 0 else True,
+                        in_async if index == 0 else comp_async,
+                        in_comp if index == 0 else True,
+                        in_annotation
+                    )
+                );
+                pending.append((gen.target, True, comp_async, True, in_annotation));
+                pending.extend(
+                    (condition, True, comp_async, True, in_annotation)
+                    for condition in gen.ifs
+                );
+            }
+            if isinstance(item, DictComp) {
+                pending.append((item.key, True, comp_async, True, in_annotation));
+                pending.append((item.value, True, comp_async, True, in_annotation));
+            } else {
+                pending.append((item.elt, True, comp_async, True, in_annotation));
+            }
+            continue;
+        }
+        children: list[tuple[ast_node, bool, bool, bool, bool]] = [];
+        for (field, value) in vars(item).items() {
+            fn = in_function;
+            asynchronous = in_async;
+            comp = in_comp;
+            annotation = in_annotation or field in ("annotation", "returns");
+            if isinstance(item, (FunctionDef, AsyncFunctionDef, Lambda, ClassDef))
+                and field == "body" {
+                fn = not isinstance(item, ClassDef);
+                asynchronous = isinstance(item, AsyncFunctionDef);
+                comp = False;
+                annotation = False;
+            }
+            if isinstance(value, ast_node) {
+                children.append((value, fn, asynchronous, comp, annotation));
+            } elif isinstance(value, list) {
+                children.extend(
+                    (child, fn, asynchronous, comp, annotation)
+                    for child in value
+                    if isinstance(child, ast_node)
+                );
+            }
+        }
+        pending.extend(reversed(children));
+    }
+    return validation_ok();
+}
+
 def validate_module_body(body: list[stmt]) -> validation_result {
+    result = validate_suspensions([item for item in body]);
+    if result.diag is not None {
+        return result;
+    }
     result = validate_except_star_exits(body);
     if result.diag is not None {
         return result;
@@ -811,5 +920,9 @@ def validate_module_body(body: list[stmt]) -> validation_result {
 }
 
 def validate_eval_expr(e: expr) -> validation_result {
+    result = validate_suspensions([e]);
+    if result.diag is not None {
+        return result;
+    }
     return validate_load_expr(e, False);
 }

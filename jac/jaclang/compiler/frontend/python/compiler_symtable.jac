@@ -359,6 +359,9 @@ def sym_visit_comprehension_generators(
     gi = 0;
     while gi < len(generators) {
         g = generators[gi];
+        if g.is_async {
+            b.cur.coroutine = True;
+        }
         if gi > 0 {
             if not sym_visit_load_expr(b, g.iter) {
                 return False;
@@ -407,6 +410,7 @@ def sym_visit_genexp(b: sym_builder, e: GeneratorExp) -> bool {
         return False;
     }
     b.cur.comprehension = "gen";
+    b.cur.coroutine = any(gen.is_async for gen in e.generators);
     dot0 = arg(
         arg=".0",
         annotation=None,
@@ -676,6 +680,7 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
         return sym_visit_load_expr(b, (e as YieldFrom).value);
     }
     if isinstance(e, Await) {
+        b.cur.coroutine = True;
         return sym_visit_load_expr(b, (e as Await).value);
     }
     return True;

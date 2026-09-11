@@ -378,13 +378,10 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     visit_comp_elt,
     visit_compare,
     visit_dict_comp,
-    visit_dict_comp_async,
     visit_expr,
     visit_lambda,
     visit_list_comp,
-    visit_list_comp_async,
     visit_set_comp,
-    visit_set_comp_async,
     visit_subscript_index,
     visit_test_expr,
 }

@@ -81,6 +81,7 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     emit_await_send_loop_footer,
     emit_await_send_loop_header,
     emit_return_unwind,
+    emit_send_delegation_loop,
     visit_expr,
 }
 import from jaclang.compiler.backends.py.jacpython.codegen_util {
@@ -1238,8 +1239,9 @@ def visit_with(
 # Each item owns one lexical cleanup frame. Recursive item lowering makes
 # nested and comma-separated context managers use the same exception paths.
 def visit_with_item(
-    g: cfg_builder, w: With, index: int, ann_ctx: ann_scope_plan | None
+    g: cfg_builder, w: With | AsyncWith, index: int, ann_ctx: ann_scope_plan | None
 ) -> stmt_cont {
+    is_async = isinstance(w, AsyncWith);
     it = w.items[index];
     cl = expr_loc(it.context_expr);
     wloc = cl;
@@ -1254,11 +1256,14 @@ def visit_with_item(
         return stmt_cont(loc=wloc);
     }
     g.emit_op(OP_COPY, 1, cl);
-    g.emit_op(OP_LOAD_SPECIAL, 1, cl);
+    g.emit_op(OP_LOAD_SPECIAL, 3 if is_async else 1, cl);
     g.emit_op(OP_SWAP, 2, cl);
     g.emit_op(OP_SWAP, 3, cl);
-    g.emit_op(OP_LOAD_SPECIAL, 0, cl);
+    g.emit_op(OP_LOAD_SPECIAL, 2 if is_async else 0, cl);
     g.emit_op(OP_CALL, 0, cl);
+    if is_async {
+        emit_send_delegation_loop(g, OP_GET_AWAITABLE, 1, 3, cl);
+    }
     start = g.new_block();
     g.use(start);
     handler = g.new_deferred_block();
@@ -1266,7 +1271,7 @@ def visit_with_item(
     unwind = g.new_deferred_block();
     join = g.new_deferred_block();
     frame = cleanup_frame(
-        is_async=False,
+        is_async=is_async,
         protect_region=-1,
         frame_idx=len(g.cleanup_stack),
         loop_depth=len(g.loop_stack)
@@ -1301,6 +1306,9 @@ def visit_with_item(
             g.emit_op(OP_LOAD_CONST, none_idx, wloc);
         }
         g.emit_op(OP_CALL, 3, wloc);
+        if is_async {
+            emit_send_delegation_loop(g, OP_GET_AWAITABLE, 2, 3, wloc);
+        }
         g.emit_op(OP_POP_TOP, 0, wloc);
         g.emit_jump(OP_JUMP_FORWARD, join.id, wloc);
     }
@@ -1308,6 +1316,9 @@ def visit_with_item(
     noloc = no_loc();
     g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
     g.emit_op(OP_WITH_EXCEPT_START, 0, wloc);
+    if is_async {
+        emit_send_delegation_loop(g, OP_GET_AWAITABLE, 2, 3, wloc);
+    }
     g.emit_op(OP_TO_BOOL, 0, noloc);
     suppressed = g.new_deferred_block();
     g.emit_jump(OP_POP_JUMP_IF_TRUE, suppressed.id, noloc);
@@ -1385,656 +1396,11 @@ def visit_async_with(
     tail_join: basicblock | None = None,
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
-    wloc = stmt_loc(w);
-    noloc = no_loc();
-    if len(w.items) < 1 {
+    if not w.items {
         codegen_fail(g, "SyntaxError", "async with requires at least one item");
-        return stmt_cont(loc=wloc);
+        return stmt_cont(loc=stmt_loc(w));
     }
-    n = len(w.items);
-    cloc = expr_loc(w.items[0].context_expr);
-    # --- enters: CM setup + __aenter__ await loop + bind, one per item ---
-    enters: list[await_send_loop] = [];
-    binds: list[basicblock] = [];
-    prots: list[int] = [];
-    ei = 0;
-    while ei < n {
-        it = w.items[ei];
-        cl = expr_loc(it.context_expr);
-        visit_expr(g, it.context_expr);
-        if codegen_busy(g) {
-            return stmt_cont(loc=wloc);
-        }
-        g.emit_op(OP_COPY, 1, cl);
-        g.emit_op(OP_LOAD_SPECIAL, 3, cl);
-        g.emit_op(OP_SWAP, 2, cl);
-        g.emit_op(OP_SWAP, 3, cl);
-        g.emit_op(OP_LOAD_SPECIAL, 2, cl);
-        g.emit_op(OP_CALL, 0, cl);
-        if codegen_busy(g) {
-            return stmt_cont(loc=wloc);
-        }
-        als = emit_await_send_loop_header(g, OP_GET_AWAITABLE, 1, 3, cl);
-        bind_blk = g.new_block();
-        g.use(bind_blk);
-        if it.optional_vars is None {
-            g.emit_op(OP_POP_TOP, 0, cl);
-        } else {
-            visit_store_target_tos(g, it.optional_vars);
-            if codegen_busy(g) {
-                return stmt_cont(loc=wloc);
-            }
-        }
-        prot = len(g.u.except_regions);
-        g.u.except_regions.append(
-            except_region(
-                start_block=bind_blk.id,
-                end_block=-1,
-                handler_block=-1,
-                stack_depth=4,
-                preserve_lasti=True
-            )
-        );
-        g.cleanup_stack.append(
-            cleanup_frame(is_async=True, protect_region=prot, frame_idx=ei)
-        );
-        enters.append(als);
-        binds.append(bind_blk);
-        prots.append(prot);
-        ei = ei + 1;
-    }
-    # Mark bind seams so verify_cfg fuses STORE_FAST(target_i) with the next
-    # item's leading LOAD_FAST (same line) AFTER the uninitialized-locals
-    # dataflow pass, matching CPython's pass order.
-    ei = 0;
-    while ei < n - 1 {
-        if w.items[ei].optional_vars is not None {
-            binds[ei].fuse_store_ok = True;
-        }
-        ei = ei + 1;
-    }
-    # --- body ---
-    with_body = g.new_block();
-    g.use(with_body);
-    with_follows = more_code_follows;
-    if not with_follows and tail is not None and tail_idx < len(tail) {
-        with_follows = True;
-    }
-    # Body awaits queue their CLEANUP_THROW footers instead of placing them
-    # eagerly: CPython groups every cleanup pair (enter -> body awaits ->
-    # exit/unwind) after the construct's final RETURN, never adjacent to the
-    # end_send block.
-    prev_defer_footer = g.defer_await_footer_placement;
-    footer_base = len(g.pending_await_footers);
-    g.defer_await_footer_placement = True;
-    body_cont = visit_stmts(
-        g, w.body, 0, with_follows, tail, tail_idx, tail_join, ann_ctx
-    );
-    if codegen_busy(g) {
-        return stmt_cont(loc=wloc);
-    }
-    if g.with_unwind_used and not body_cont.terminated {
-        codegen_fail(
-            g,
-            "NotImplementedError",
-            "return inside async with followed by more statements not supported"
-        );
-        return stmt_cont(loc=wloc);
-    }
-    body_exits = not body_cont.terminated;
-    if body_exits {
-        # Frames unwind via the inline __aexit__ calls below.
-        g.cleanup_stack = [];
-    }
-    # --- inline __aexit__ awaits, innermost first (xs[k] is frame n-1-k) ---
-    xs: list[basicblock] = [];
-    exit_alss: list[await_send_loop] = [];
-    if body_exits {
-        none_idx = g.u.add_const(py_none());
-        k = 0;
-        while k < n {
-            xblk = g.new_block();
-            g.use(xblk);
-            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-            g.emit_op(OP_CALL, 3, wloc);
-            eals = emit_await_send_loop_header(g, OP_GET_AWAITABLE, 2, 3, wloc);
-            g.emit_op(OP_POP_TOP, 0, wloc);
-            xs.append(xblk);
-            exit_alss.append(eals);
-            k = k + 1;
-        }
-        if with_follows {
-            tail_more = False;
-            if tail is not None and tail_idx + 1 < len(tail) {
-                tail_more = exec_tail_emits_code(tail, tail_idx + 1);
-            }
-            if tail is not None and tail_idx < len(tail) {
-                ts = tail[tail_idx];
-                if isinstance(ts, Return) {
-                    visit_return_stmt(g, ts as Return);
-                } else {
-                    tail_cont = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-                    if codegen_busy(g) {
-                        return stmt_cont(loc=body_cont.loc);
-                    }
-                    if not tail_cont.terminated {
-                        emit_module_return(g, tail_cont.loc);
-                    }
-                }
-            } else {
-                emit_module_return(g, body_cont.loc);
-            }
-        } else {
-            emit_module_return(g, body_cont.loc);
-        }
-    }
-    g.defer_await_footer_placement = prev_defer_footer;
-    # --- enter-loop CT footers, grouped after the tail in item order ---
-    ect: list[basicblock] = [];
-    ecj: list[basicblock] = [];
-    i = 0;
-    while i < n {
-        (ct, cj) = emit_await_send_loop_footer(g, enters[i], cloc);
-        if i == 0 {
-            emit_await_send_except_regions(
-                g, enters[0], ct, cj, 5, -1, -1, binds[0].id, 2, True
-            );
-        } else {
-            # Inner enter loops sit inside the previous frame's protect span;
-            # only the yield point gets its own carve.
-            g.u.except_regions.append(
-                except_region(
-                    start_block=enters[i].yield_blk.id,
-                    end_block=enters[i].after_resume_blk.id,
-                    handler_block=ct.id,
-                    stack_depth=5 + 2 * i,
-                    preserve_lasti=False
-                )
-            );
-        }
-        ect.append(ct);
-        ecj.append(cj);
-        i = i + 1;
-    }
-    # Body-await cleanup pairs queued during the body visit: place them here,
-    # after the enter footers and before the return-unwind footers, matching
-    # CPython's grouping (each CT follows the enclosing construct's RETURN).
-    fq = footer_base;
-    while fq < len(g.pending_await_footers) {
-        pf = g.pending_await_footers[fq] as await_footer_job;
-        g.use(pf.ct);
-        g.emit_op(OP_CLEANUP_THROW, 0, pf.loc);
-        g.use(pf.cj);
-        g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, pf.end_send.id, pf.loc);
-        fq = fq + 1;
-    }
-    g.pending_await_footers = g.pending_await_footers[0:footer_base];
-    # Position the return-unwind await footers (one per unwound async-with
-    # frame, innermost first). Each gets its own carve row; spans of inner
-    # frames are protected by the previous frame's region, the outermost keeps
-    # its generator-level pattern. After-resume of the outermost unwind ends
-    # where the enter-0 footer's jump block begins.
-    ur = 0;
-    while ur < len(g.with_unwind_recs) {
-        rec = g.with_unwind_recs[ur];
-        uals = await_send_loop(
-            send_blk=find_block(g.u, rec.send_blk) as basicblock,
-            yield_blk=find_block(g.u, rec.yield_blk) as basicblock,
-            after_resume_blk=find_block(g.u, rec.after_resume_blk) as basicblock,
-            end_send_blk=find_block(g.u, rec.end_send_blk) as basicblock
-        );
-        if ur == len(g.with_unwind_recs) - 1 {
-            emit_await_send_except_regions(
-                g, uals, rec.ct, rec.cj, rec.depth, -1, rec.boundary, ecj[0].id, 2, True
-            );
-        } else {
-            g.u.except_regions.append(
-                except_region(
-                    start_block=uals.yield_blk.id,
-                    end_block=uals.after_resume_blk.id,
-                    handler_block=rec.ct.id,
-                    stack_depth=rec.depth,
-                    preserve_lasti=False
-                )
-            );
-        }
-        g.use(rec.ct);
-        g.emit_op(OP_CLEANUP_THROW, 0, wloc);
-        g.use(rec.cj);
-        g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, uals.end_send_blk.id, wloc);
-        ur = ur + 1;
-    }
-    # --- exit-loop footers + cleanup handlers, innermost frame first ---
-    ws: list[basicblock] = [];
-    uns: list[basicblock] = [];
-    xcts: list[basicblock] = [];
-    xcjs: list[basicblock] = [];
-    iwalss: list[await_send_loop] = [];
-    icts: list[basicblock] = [];
-    nts: list[basicblock] = [];
-    rrs: list[basicblock] = [];
-    ces: list[basicblock] = [];
-    fcs: list[basicblock] = [];
-    fcalss: list[await_send_loop] = [];
-    ficts: list[basicblock] = [];
-    # Fresh exit-copy lead blocks are allocated up front (their jumps are
-    # emitted earlier than their placement) and laid out at first use.
-    fk = 0;
-    while fk < n - 1 {
-        fcs.append(g.new_deferred_block());
-        fk = fk + 1;
-    }
-    k = 0;
-    while k < n {
-        f = n - 1 - k;
-        if body_exits {
-            (xct, xcj) = emit_await_send_loop_footer(g, exit_alss[k], wloc);
-            xcts.append(xct);
-            xcjs.append(xcj);
-        }
-        with_except = g.new_block();
-        g.use(with_except);
-        g.emit_op(OP_PUSH_EXC_INFO, 0, noloc);
-        g.emit_op(OP_WITH_EXCEPT_START, 0, noloc);
-        (iwals, ict, icj_unused) = emit_await_send_loop_inline_footer(
-            g, OP_GET_AWAITABLE, 2, 3, noloc
-        );
-        g.use(iwals.end_send_blk);
-        g.emit_op(OP_END_SEND, 0, noloc);
-        g.emit_op(OP_TO_BOOL, 0, noloc);
-        not_taken_blk = g.new_block();
-        reraise_blk = g.new_block();
-        suppressed = g.new_block();
-        g.emit_jump(OP_POP_JUMP_IF_TRUE, suppressed.id, noloc);
-        g.use(not_taken_blk);
-        g.emit_op(OP_NOT_TAKEN, 0, noloc);
-        g.use(reraise_blk);
-        g.emit_op(OP_RERAISE, 2, noloc);
-        g.use(suppressed);
-        g.emit_op(OP_POP_TOP, 0, noloc);
-        cleanup_end = g.new_block();
-        g.use(cleanup_end);
-        g.emit_op(OP_POP_EXCEPT, 0, noloc);
-        g.emit_op(OP_POP_TOP, 0, noloc);
-        g.emit_op(OP_POP_TOP, 0, noloc);
-        g.emit_op(OP_POP_TOP, 0, noloc);
-        if f > 0 {
-            if body_exits {
-                # Suppressed: fall back to the outer frame's shared inline exit.
-                g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, xs[n - f].id, wloc);
-            } else {
-                # Suppressed: continue unwinding via the fresh copy of the
-                # outer frame's exit (created below, after this handler).
-                g.emit_jump(OP_JUMP_FORWARD, fcs[k].id, wloc);
-            }
-        } elif with_follows and tail is not None and tail_idx < len(tail) {
-            ts = tail[tail_idx];
-            if isinstance(ts, Return) {
-                visit_return_stmt(g, ts as Return, True);
-            } else {
-                emit_module_return(g, wloc);
-            }
-        } else {
-            emit_module_return(g, wloc);
-        }
-        unwind = g.new_block();
-        g.use(unwind);
-        g.emit_op(OP_COPY, 3, noloc);
-        g.emit_op(OP_POP_EXCEPT, 0, noloc);
-        g.emit_op(OP_RERAISE, 1, noloc);
-        ws.append(with_except);
-        uns.append(unwind);
-        iwalss.append(iwals);
-        icts.append(ict);
-        nts.append(not_taken_blk);
-        rrs.append(reraise_blk);
-        ces.append(cleanup_end);
-        if not body_exits and k < n - 1 {
-            # Fresh copy of the outer frame's inline exit (CPython duplicates
-            # the remaining exit bodies between handlers on the suppressed
-            # success path; they end in JUMP_FORWARD to the next copy or in an
-            # implicit LOAD_CONST None / RETURN_VALUE).
-            fc_blk = fcs[k];
-            g.use(fc_blk);
-            none_idx2 = g.u.add_const(py_none());
-            g.emit_op(OP_LOAD_CONST, none_idx2, wloc);
-            g.emit_op(OP_LOAD_CONST, none_idx2, wloc);
-            g.emit_op(OP_LOAD_CONST, none_idx2, wloc);
-            g.emit_op(OP_CALL, 3, wloc);
-            (fc_als, fc_ict, fc_end) = emit_await_send_loop_inline_footer(
-                g, OP_GET_AWAITABLE, 2, 3, noloc
-            );
-            g.use(fc_als.end_send_blk);
-            g.emit_op(OP_END_SEND, 0, noloc);
-            g.emit_op(OP_POP_TOP, 0, noloc);
-            if k < n - 2 {
-                g.emit_jump(OP_JUMP_FORWARD, fcs[k + 1].id, wloc);
-            } else {
-                emit_module_return(g, wloc);
-            }
-            fcalss.append(fc_als);
-            ficts.append(fc_ict);
-        }
-        k = k + 1;
-    }
-    # --- exception-table carving (rows are emitted verbatim, sorted by
-    # start offset; spans are hand-partitioned non-overlapping) ---
-    # A_f protect regions around inner awaits.
-    f = 0;
-    while f < n {
-        d_f = 4 + 2 * f;
-        w_f = ws[n - 1 - f].id;
-        if f == n - 1 {
-            if body_exits {
-                g.u.except_regions[prots[f]].end_block = xs[0].id;
-            } elif len(g.with_unwind_recs) > 0 {
-                g.u.except_regions[prots[f]].end_block = g.with_unwind_recs[0].boundary;
-            }
-            g.u.except_regions[prots[f]].handler_block = w_f;
-            g.u.except_regions[prots[f]].stack_depth = d_f;
-        } else {
-            g.u.except_regions[prots[f]].end_block = enters[f + 1].yield_blk.id;
-            g.u.except_regions[prots[f]].handler_block = w_f;
-            g.u.except_regions[prots[f]].stack_depth = d_f;
-            g.u.except_regions.append(
-                except_region(
-                    start_block=enters[f + 1].after_resume_blk.id,
-                    end_block=binds[f + 1].id,
-                    handler_block=w_f,
-                    stack_depth=d_f,
-                    preserve_lasti=True
-                )
-            );
-            if body_exits {
-                kk = n - 2 - f;
-                g.u.except_regions.append(
-                    except_region(
-                        start_block=xs[kk].id,
-                        end_block=exit_alss[kk].yield_blk.id,
-                        handler_block=w_f,
-                        stack_depth=d_f,
-                        preserve_lasti=True
-                    )
-                );
-                g.u.except_regions.append(
-                    except_region(
-                        start_block=exit_alss[kk].after_resume_blk.id,
-                        end_block=xs[kk + 1].id,
-                        handler_block=w_f,
-                        stack_depth=d_f,
-                        preserve_lasti=True
-                    )
-                );
-            } else {
-                # Return-unwind span of frame f+1, then (if present) the fresh
-                # exit copy of that frame on the suppressed success path.
-                kk = n - 2 - f;
-                urec = g.with_unwind_recs[kk];
-                g.u.except_regions.append(
-                    except_region(
-                        start_block=urec.boundary,
-                        end_block=urec.yield_blk,
-                        handler_block=w_f,
-                        stack_depth=d_f,
-                        preserve_lasti=True
-                    )
-                );
-                g.u.except_regions.append(
-                    except_region(
-                        start_block=urec.after_resume_blk,
-                        end_block=g.with_unwind_recs[n - 1 - f].boundary,
-                        handler_block=w_f,
-                        stack_depth=d_f,
-                        preserve_lasti=True
-                    )
-                );
-                if kk <= len(fcs) - 1 and f <= n - 3 {
-                    kc = n - 3 - f;
-                    g.u.except_regions.append(
-                        except_region(
-                            start_block=fcs[kc].id,
-                            end_block=fcalss[kc].yield_blk.id,
-                            handler_block=w_f,
-                            stack_depth=d_f,
-                            preserve_lasti=True
-                        )
-                    );
-                    g.u.except_regions.append(
-                        except_region(
-                            start_block=fcalss[kc].yield_blk.id,
-                            end_block=fcalss[kc].after_resume_blk.id,
-                            handler_block=ficts[kc].id,
-                            stack_depth=3 + 2 * (n - 2 - kc),
-                            preserve_lasti=False
-                        )
-                    );
-                    g.u.except_regions.append(
-                        except_region(
-                            start_block=fcalss[kc].after_resume_blk.id,
-                            end_block=ws[kc + 1].id,
-                            handler_block=w_f,
-                            stack_depth=d_f,
-                            preserve_lasti=True
-                        )
-                    );
-                }
-            }
-        }
-        f = f + 1;
-    }
-    if body_exits {
-        # Exit-loop yield carves for inner frames; the outermost loop keeps
-        # its generator-level pattern via emit_await_send_except_regions below.
-        k = 0;
-        while k < n - 1 {
-            f2 = n - 1 - k;
-            g.u.except_regions.append(
-                except_region(
-                    start_block=exit_alss[k].yield_blk.id,
-                    end_block=exit_alss[k].after_resume_blk.id,
-                    handler_block=xcts[k].id,
-                    stack_depth=3 + 2 * f2,
-                    preserve_lasti=False
-                )
-            );
-            k = k + 1;
-        }
-        emit_await_send_except_regions(
-            g,
-            exit_alss[n - 1],
-            xcts[n - 1],
-            xcjs[n - 1],
-            3,
-            -1,
-            xs[n - 1].id,
-            ecj[0].id,
-            2,
-            True
-        );
-    }
-    # Enter-footer self-regions route to the nearest outer handler.
-    i = 1;
-    while i < n {
-        g.u.except_regions.append(
-            except_region(
-                start_block=ect[i].id,
-                end_block=ecj[i].id,
-                handler_block=ws[n - i].id,
-                stack_depth=4 + 2 * (i - 1),
-                preserve_lasti=True
-            )
-        );
-        i = i + 1;
-    }
-    # Return-unwind footer self-regions follow the same routing rules.
-    ur = 0;
-    while ur < len(g.with_unwind_recs) {
-        rec = g.with_unwind_recs[ur];
-        uf = n - 1 - ur;
-        if uf > 0 {
-            g.u.except_regions.append(
-                except_region(
-                    start_block=rec.ct.id,
-                    end_block=rec.cj.id,
-                    handler_block=ws[ur + 1].id,
-                    stack_depth=4 + 2 * (uf - 1),
-                    preserve_lasti=True
-                )
-            );
-        } else {
-            g.u.except_regions.append(
-                except_region(
-                    start_block=rec.ct.id,
-                    end_block=rec.cj.id,
-                    handler_block=-1,
-                    stack_depth=2,
-                    preserve_lasti=True
-                )
-            );
-            g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-        }
-        ur = ur + 1;
-    }
-    if body_exits {
-        k = 0;
-        while k < n {
-            f2 = n - 1 - k;
-            if k < n - 1 {
-                g.u.except_regions.append(
-                    except_region(
-                        start_block=xcts[k].id,
-                        end_block=xcjs[k].id,
-                        handler_block=ws[k + 1].id,
-                        stack_depth=4 + 2 * (f2 - 1),
-                        preserve_lasti=True
-                    )
-                );
-            } else {
-                g.u.except_regions.append(
-                    except_region(
-                        start_block=xcts[k].id,
-                        end_block=xcjs[k].id,
-                        handler_block=-1,
-                        stack_depth=2,
-                        preserve_lasti=True
-                    )
-                );
-                g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-            }
-            k = k + 1;
-        }
-    }
-    # Handler internals B_f + post-suppress routing.
-    k = 0;
-    while k < n {
-        f2 = n - 1 - k;
-        wsd = 6 + 2 * f2;
-        g.u.except_regions.append(
-            except_region(
-                start_block=ws[k].id,
-                end_block=iwalss[k].yield_blk.id,
-                handler_block=uns[k].id,
-                stack_depth=wsd,
-                preserve_lasti=True
-            )
-        );
-        g.u.except_regions.append(
-            except_region(
-                start_block=iwalss[k].yield_blk.id,
-                end_block=iwalss[k].after_resume_blk.id,
-                handler_block=icts[k].id,
-                stack_depth=8 + 2 * f2,
-                preserve_lasti=False
-            )
-        );
-        g.u.except_regions.append(
-            except_region(
-                start_block=iwalss[k].after_resume_blk.id,
-                end_block=nts[k].id,
-                handler_block=uns[k].id,
-                stack_depth=wsd,
-                preserve_lasti=True
-            )
-        );
-        g.u.except_regions.append(
-            except_region(
-                start_block=rrs[k].id,
-                end_block=ces[k].id,
-                handler_block=uns[k].id,
-                stack_depth=wsd,
-                preserve_lasti=True
-            )
-        );
-        if f2 > 0 {
-            fc_end_blk: int = -1;
-            if body_exits {
-                fc_end_blk = xcts[k + 1].id;
-            } else {
-                fc_end_blk = fcs[k].id;
-            }
-            g.u.except_regions.append(
-                except_region(
-                    start_block=ces[k].id,
-                    end_block=fc_end_blk,
-                    handler_block=ws[k + 1].id,
-                    stack_depth=4 + 2 * (f2 - 1),
-                    preserve_lasti=True
-                )
-            );
-        } else {
-            g.u.except_regions.append(
-                except_region(
-                    start_block=ces[k].id,
-                    end_block=-1,
-                    handler_block=-1,
-                    stack_depth=2,
-                    preserve_lasti=True
-                )
-            );
-            g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-        }
-        k = k + 1;
-    }
-    if not body_exits and len(fcs) > 0 {
-        # The last fresh exit copy (outermost frame) keeps generator-level
-        # protection instead of routing into a handler region.
-        kl = len(fcs) - 1;
-        g.u.except_regions.append(
-            except_region(
-                start_block=fcs[kl].id,
-                end_block=fcalss[kl].yield_blk.id,
-                handler_block=-1,
-                stack_depth=2,
-                preserve_lasti=True
-            )
-        );
-        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-        g.u.except_regions.append(
-            except_region(
-                start_block=fcalss[kl].yield_blk.id,
-                end_block=fcalss[kl].after_resume_blk.id,
-                handler_block=ficts[kl].id,
-                stack_depth=3,
-                preserve_lasti=False
-            )
-        );
-        g.u.except_regions.append(
-            except_region(
-                start_block=fcalss[kl].after_resume_blk.id,
-                end_block=ws[n - 1].id,
-                handler_block=-1,
-                stack_depth=2,
-                preserve_lasti=True
-            )
-        );
-        g.u.pending_pep479_regions.append(len(g.u.except_regions) - 1);
-    }
-    if with_follows {
-        return stmt_cont(loc=wloc, next_si=len(tail as list[stmt]), terminated=True);
-    }
-    return stmt_cont(loc=wloc, terminated=True);
+    return visit_with_item(g, w, 0, ann_ctx);
 }
 
 
