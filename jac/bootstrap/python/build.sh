@@ -25,6 +25,8 @@ export JAC_PYTHON_ZIG="$zig" JAC_PYTHON_TARGET="$target"
 case "$platform" in
     macos-*)
         JAC_PYTHON_SDK=$(xcrun --sdk macosx --show-sdk-path)
+        # Framework stubs reexport libraries from the SDK, including libobjc.
+        # Zig needs the SDK library search path as well as header/framework paths.
         export JAC_PYTHON_SDK
         case "$platform" in
             macos-x86_64) export MACOSX_DEPLOYMENT_TARGET=12.0 ;;
@@ -36,7 +38,7 @@ esac
 cat > "$work/bin/cc" <<'SH'
 #!/bin/sh
 if [ -n "${JAC_PYTHON_SDK:-}" ]; then
-    exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument "$@"
+    exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -L "$JAC_PYTHON_SDK/usr/lib" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument "$@"
 fi
 exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -Wno-unused-command-line-argument "$@"
 SH
@@ -157,7 +159,7 @@ SH
             export BLDSHARED="$LDSHARED"
             cat > "$work/bin/pycc" <<'SH'
 #!/bin/sh
-exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument -Wno-error=date-time '-Wl,-rpath,@loader_path/../lib' "$@"
+exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -L "$JAC_PYTHON_SDK/usr/lib" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument -Wno-error=date-time '-Wl,-rpath,@loader_path/../lib' "$@"
 SH
             # CPython otherwise writes its temporary prefix into the dylib ID.
             sed 's|-Wl,-install_name,$(prefix)/lib/|-Wl,-install_name,@rpath/|' \
