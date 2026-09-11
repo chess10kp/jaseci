@@ -7,6 +7,11 @@ zig=$3
 recipe=$4
 host=${5:-}
 root=$6
+mode=$7
+case "$mode:$host" in
+    cpython:|host:|jacpython:?*) ;;
+    *) echo "Invalid Python build mode/host: $mode" >&2; exit 1 ;;
+esac
 jobs=${JAC_PYTHON_JOBS:-4}
 case "$jobs" in ''|*[!0-9]*|0) echo 'JAC_PYTHON_JOBS must be a positive integer' >&2; exit 1;; esac
 case "$platform" in
@@ -148,7 +153,7 @@ cpython() {
         cp "$work/seed/jac_seed.h" Python/jac_seed.h
         # The seed is compressed data; this archive contains only zlib.
         export LIBS="$deps/lib/libz.a"
-    else
+    elif [ "$mode" = host ]; then
         patch -f -F0 -p1 -i "$recipe/host-compiler.patch"
     fi
     # The shared interpreter must survive relocation into the Jac payload.
@@ -277,7 +282,7 @@ else
     cp -R "$deps/include" "$work/python/build/include"
     cp "$src/certifi/certifi/cacert.pem" "$work/python/build/cacert.pem"
 fi
-step smoke "$prefix/bin/python3.14" -I "$recipe/smoke.py"
+step smoke "$prefix/bin/python3.14" -I "$recipe/smoke.py" "$mode"
 # No compiled test modules, docs, or configuration machinery in the runtime.
 rm -rf "$prefix/share" "$prefix/lib/python3.14/test" \
     "$prefix/lib/python3.14/idlelib" "$prefix/lib/python3.14/tkinter" \

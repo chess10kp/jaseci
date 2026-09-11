@@ -1,5 +1,5 @@
 //! Build the release Python before any Jac tooling can run. Sources are
-//! checksum-pinned. A separate build-time interpreter produces the JacPython seed.
+//! checksum-pinned. JacPython is opt-in; its separate host produces the seed.
 const std = @import("std");
 const builtin = @import("builtin");
 const seed = @import("seed.zig");
@@ -14,6 +14,16 @@ const inputs = [_][]const u8{
     "bootstrap/python/seed_runtime.py",
 };
 const Source = struct { url: []const u8, sha256: []const u8, version: ?[]const u8 = null };
+const Mode = enum { cpython, host, jacpython };
+
+fn parseMode(args: []const []const u8) !Mode {
+    if (args.len == 5) return .cpython;
+    if (args.len == 6) {
+        if (std.mem.eql(u8, args[5], "--host")) return .host;
+        if (std.mem.eql(u8, args[5], "--jacpython")) return .jacpython;
+    }
+    return error.InvalidBuildMode;
+}
 
 pub fn supported(platform: []const u8) bool {
     for ([_][]const u8{ "linux-x86_64", "linux-aarch64", "macos-x86_64", "macos-aarch64" }) |p| {
@@ -42,9 +52,7 @@ pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const a = init.arena.allocator();
     const args = try init.minimal.args.toSlice(a);
-    if (args.len != 5 and args.len != 6) seed.die("usage: build_python <os-arch> <destination> <jac-root> <zig> [--host]", .{});
-    const host_mode = args.len == 6 and std.mem.eql(u8, args[5], "--host");
-    if (args.len == 6 and !host_mode) seed.die("build-python: unknown stage", .{});
+    const mode = parseMode(args) catch seed.die("usage: build_python <os-arch> <destination> <jac-root> <zig> [--jacpython|--host]", .{});
     const platform = args[1];
     if (!supported(platform)) seed.die("build-python: unsupported platform {s}", .{platform});
     if (!std.mem.eql(u8, platform, hostPlatform()))
@@ -52,18 +60,18 @@ pub fn main(init: std.process.Init) !void {
     const dest = args[2];
     const root = args[3];
     const host_dest = try std.fmt.allocPrint(a, "{s}.host", .{dest});
-    if (!host_mode) {
+    if (mode == .jacpython) {
         var host_build = try std.process.spawn(io, .{ .argv = &.{ args[0], platform, host_dest, root, args[4], "--host" } });
         const result = try host_build.wait(io);
         if (result != .exited or result.exited != 0) return error.HostPythonBuildFailed;
     }
     const smoke = try std.fs.path.join(a, &.{ root, "bootstrap/python/smoke.py" });
-    const key = try buildKey(io, a, platform, root, host_dest, host_mode);
+    const key = try buildKey(io, a, platform, root, host_dest, mode);
     const stamp_path = try std.fs.path.join(a, &.{ dest, "build-key" });
     const old = Io.Dir.cwd().readFileAlloc(io, stamp_path, a, .limited(128)) catch "";
     const python = try std.fs.path.join(a, &.{ dest, "python/install/bin/python3.14" });
     if (std.mem.eql(u8, old, &key) and seed.fileExists(io, python)) {
-        try runSmoke(io, python, smoke);
+        try runSmoke(io, python, smoke, mode);
         seed.log("build-python: cached {s} ({s})", .{ platform, key[0..16] });
         return;
     }
@@ -75,7 +83,7 @@ pub fn main(init: std.process.Init) !void {
     const manifest = try Io.Dir.cwd().readFileAlloc(io, manifest_path, a, .unlimited);
     const sources = try std.json.parseFromSliceLeaky(std.json.ArrayHashMap(Source), a, manifest, .{});
     for (sources.map.keys(), sources.map.values()) |name, source| {
-        if (!host_mode and !std.mem.eql(u8, name, "cpython")) continue;
+        if (mode == .jacpython and !std.mem.eql(u8, name, "cpython")) continue;
         seed.log("build-python: fetch {s}", .{name});
         const gz = try seed.httpGetAlloc(io, init.gpa, source.url);
         defer init.gpa.free(gz);
@@ -97,12 +105,12 @@ pub fn main(init: std.process.Init) !void {
         if (std.mem.eql(u8, name, "cpython")) {
             const list_path = try std.fs.path.join(a, &.{ root, "bootstrap/python/cpython-sources.txt" });
             const list = try Io.Dir.cwd().readFileAlloc(io, list_path, a, .limited(128 * 1024));
-            try retainSources(io, a, dir, if (host_mode) try hostSourceManifest(a, list) else list);
+            try retainSources(io, a, dir, if (mode == .jacpython) list else try cSourceManifest(a, list));
         }
     }
     const recipe = try std.fs.path.join(a, &.{ root, "bootstrap/python" });
     const script = try std.fs.path.join(a, &.{ recipe, "build.sh" });
-    var child = try std.process.spawn(io, .{ .argv = &.{ "sh", script, platform, work, args[4], recipe, if (host_mode) "" else host_dest, root } });
+    var child = try std.process.spawn(io, .{ .argv = &.{ "sh", script, platform, work, args[4], recipe, if (mode == .jacpython) host_dest else "", root, @tagName(mode) } });
     const term = try child.wait(io);
     if (term != .exited or term.exited != 0) seed.die("build-python: build failed; logs at {s}/logs", .{work});
     // Cache only the runtime and link archives, not intermediate objects or sources.
@@ -112,13 +120,13 @@ pub fn main(init: std.process.Init) !void {
     try Io.Dir.cwd().deleteTree(io, dest);
     try Io.Dir.cwd().rename(work, Io.Dir.cwd(), dest, io);
     // Verify relocation before allowing a cache hit on the next invocation.
-    try runSmoke(io, python, smoke);
+    try runSmoke(io, python, smoke, mode);
     try Io.Dir.cwd().writeFile(io, .{ .sub_path = stamp_path, .data = &key });
 }
 
-fn buildKey(io: Io, a: std.mem.Allocator, platform: []const u8, root: []const u8, host_dest: []const u8, host_mode: bool) ![64]u8 {
+fn buildKey(io: Io, a: std.mem.Allocator, platform: []const u8, root: []const u8, host_dest: []const u8, mode: Mode) ![64]u8 {
     var hash = std.crypto.hash.sha2.Sha256.init(.{});
-    hash.update(if (host_mode) "build-time-host" else "jacpython-runtime");
+    hash.update(@tagName(mode));
     hash.update(platform);
     hash.update(builtin.zig_version_string);
     if (builtin.os.tag == .macos) {
@@ -127,7 +135,8 @@ fn buildKey(io: Io, a: std.mem.Allocator, platform: []const u8, root: []const u8
         hash.update(std.mem.trim(u8, sdk.stdout, " \r\n"));
     }
     for (inputs) |path| {
-        if (host_mode and (std.mem.endsWith(u8, path, "/compiler-bridge.patch") or
+        if (mode == .cpython and std.mem.endsWith(u8, path, "/host-compiler.patch")) continue;
+        if (mode != .jacpython and (std.mem.endsWith(u8, path, "/compiler-bridge.patch") or
             std.mem.endsWith(u8, path, "/compiler_bridge.c") or std.mem.endsWith(u8, path, "/compiler_bridge.h") or
             std.mem.endsWith(u8, path, "/prepare_seed.py") or std.mem.endsWith(u8, path, "/seed_runtime.py"))) continue;
         const full = try std.fs.path.join(a, &.{ root, path });
@@ -135,7 +144,7 @@ fn buildKey(io: Io, a: std.mem.Allocator, platform: []const u8, root: []const u8
         hash.update(path);
         hash.update(content);
     }
-    if (!host_mode) {
+    if (mode == .jacpython) {
         // The producing compiler and its Jac/Python inputs are part of the
         // embedded seed. Source edits must invalidate the reduced runtime.
         for ([_][]const u8{ "jaclang/vendor/typeshed/PIN", "jaclang/vendor/typeshed/TARBALL_SHA256" }) |path| {
@@ -174,9 +183,9 @@ fn buildKey(io: Io, a: std.mem.Allocator, platform: []const u8, root: []const u8
     return std.fmt.bytesToHex(digest, .lower);
 }
 
-// Only the explicitly separate build-time interpreter retains these inputs.
-// The runtime always consumes the manifest unchanged, including its comments.
-fn hostSourceManifest(a: std.mem.Allocator, manifest: []const u8) ![]const u8 {
+// The default CPython runtime and JacPython's build-time host retain the C
+// compiler. Only the opt-in JacPython runtime applies the marked exclusions.
+fn cSourceManifest(a: std.mem.Allocator, manifest: []const u8) ![]const u8 {
     var out: std.ArrayList(u8) = .empty;
     var lines = std.mem.splitScalar(u8, manifest, '\n');
     while (lines.next()) |line| {
@@ -190,8 +199,8 @@ fn hostSourceManifest(a: std.mem.Allocator, manifest: []const u8) ![]const u8 {
     return out.toOwnedSlice(a);
 }
 
-fn runSmoke(io: Io, python: []const u8, smoke: []const u8) !void {
-    var check = try std.process.spawn(io, .{ .argv = &.{ python, "-I", smoke } });
+fn runSmoke(io: Io, python: []const u8, smoke: []const u8, mode: Mode) !void {
+    var check = try std.process.spawn(io, .{ .argv = &.{ python, "-I", smoke, @tagName(mode) } });
     const result = try check.wait(io);
     if (result != .exited or result.exited != 0) {
         return error.RelocationFailed;
@@ -269,6 +278,23 @@ test "only release targets are accepted" {
     try std.testing.expect(!supported("windows-x86_64"));
 }
 
+test "CPython is the default and JacPython must be explicitly selected" {
+    const args = [_][]const u8{ "build_python", "linux-x86_64", "out", "root", "zig" };
+    try std.testing.expectEqual(Mode.cpython, try parseMode(&args));
+    try std.testing.expectEqual(Mode.jacpython, try parseMode(&(args ++ .{"--jacpython"})));
+    try std.testing.expectEqual(Mode.host, try parseMode(&(args ++ .{"--host"})));
+    try std.testing.expectError(error.InvalidBuildMode, parseMode(&(args ++ .{"--typo"})));
+    try std.testing.expectError(error.InvalidBuildMode, parseMode(args[0..4]));
+}
+
+test "C compiler builds restore only marked replacement exclusions" {
+    const a = std.testing.allocator;
+    const source = "# source allowlist\n# Parser/parser.c  # removed: 100 source lines\n# unused.c\nPython/ceval.c\n";
+    const restored = try cSourceManifest(a, source);
+    defer a.free(restored);
+    try std.testing.expectEqualStrings("# source allowlist\nParser/parser.c\n# unused.c\nPython/ceval.c\n\n", restored);
+}
+
 test "source paths stay inside the extracted tree" {
     try std.testing.expect(safePath("Tools/msi"));
     try std.testing.expect(!safePath("../LICENSE"));
@@ -314,7 +340,7 @@ test "invalid source manifests fail before pruning" {
     _ = try tmp.dir.statFile(io, "Include/Python.h", .{});
 }
 
-test "seed edits invalidate only the runtime; shared recipes invalidate both stages" {
+test "compiler modes isolate caches; seed edits invalidate only JacPython" {
     const io = std.testing.io;
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
@@ -334,22 +360,26 @@ test "seed edits invalidate only the runtime; shared recipes invalidate both sta
     try tmp.dir.writeFile(io, .{ .sub_path = "jaclang/compiler.jac", .data = "compiler" });
     const root = try tmp.dir.realPathFileAlloc(io, ".", a);
     const host = try std.fs.path.join(a, &.{ root, "host" });
-    const before_host = try buildKey(io, a, hostPlatform(), root, host, true);
-    const before_runtime = try buildKey(io, a, hostPlatform(), root, host, false);
+    const before_cpython = try buildKey(io, a, hostPlatform(), root, host, .cpython);
+    const before_host = try buildKey(io, a, hostPlatform(), root, host, .host);
+    const before_runtime = try buildKey(io, a, hostPlatform(), root, host, .jacpython);
+    try std.testing.expect(!std.mem.eql(u8, &before_cpython, &before_host));
+    try std.testing.expect(!std.mem.eql(u8, &before_host, &before_runtime));
     try tmp.dir.writeFile(io, .{ .sub_path = "jaclang/compiler.jac", .data = "changed compiler" });
-    const changed_runtime = try buildKey(io, a, hostPlatform(), root, host, false);
+    const changed_runtime = try buildKey(io, a, hostPlatform(), root, host, .jacpython);
     try std.testing.expect(!std.mem.eql(u8, &before_runtime, &changed_runtime));
-    try std.testing.expectEqual(before_host, try buildKey(io, a, hostPlatform(), root, host, true));
+    try std.testing.expectEqual(before_host, try buildKey(io, a, hostPlatform(), root, host, .host));
     try tmp.dir.writeFile(io, .{ .sub_path = "jaclang/vendor/generated.py", .data = "materialized vendor data" });
-    try std.testing.expectEqual(changed_runtime, try buildKey(io, a, hostPlatform(), root, host, false));
+    try std.testing.expectEqual(changed_runtime, try buildKey(io, a, hostPlatform(), root, host, .jacpython));
     try tmp.dir.writeFile(io, .{ .sub_path = "bootstrap/python/seed_runtime.py", .data = "changed seed loader" });
-    try std.testing.expect(!std.mem.eql(u8, &changed_runtime, &(try buildKey(io, a, hostPlatform(), root, host, false))));
-    try std.testing.expectEqual(before_host, try buildKey(io, a, hostPlatform(), root, host, true));
-    const before_recipe = try buildKey(io, a, hostPlatform(), root, host, false);
+    try std.testing.expect(!std.mem.eql(u8, &changed_runtime, &(try buildKey(io, a, hostPlatform(), root, host, .jacpython))));
+    try std.testing.expectEqual(before_host, try buildKey(io, a, hostPlatform(), root, host, .host));
+    try std.testing.expectEqual(before_cpython, try buildKey(io, a, hostPlatform(), root, host, .cpython));
+    const before_recipe = try buildKey(io, a, hostPlatform(), root, host, .jacpython);
     try tmp.dir.writeFile(io, .{ .sub_path = "bootstrap/python/cpython-sources.txt", .data = "changed C source selection" });
-    try std.testing.expect(!std.mem.eql(u8, &before_host, &(try buildKey(io, a, hostPlatform(), root, host, true))));
-    try std.testing.expect(!std.mem.eql(u8, &before_recipe, &(try buildKey(io, a, hostPlatform(), root, host, false))));
-    const before_host_key = try buildKey(io, a, hostPlatform(), root, host, false);
+    try std.testing.expect(!std.mem.eql(u8, &before_host, &(try buildKey(io, a, hostPlatform(), root, host, .host))));
+    try std.testing.expect(!std.mem.eql(u8, &before_recipe, &(try buildKey(io, a, hostPlatform(), root, host, .jacpython))));
+    const before_host_key = try buildKey(io, a, hostPlatform(), root, host, .jacpython);
     try tmp.dir.writeFile(io, .{ .sub_path = "host/build-key", .data = "rebuilt host" });
-    try std.testing.expect(!std.mem.eql(u8, &before_host_key, &(try buildKey(io, a, hostPlatform(), root, host, false))));
+    try std.testing.expect(!std.mem.eql(u8, &before_host_key, &(try buildKey(io, a, hostPlatform(), root, host, .jacpython))));
 }

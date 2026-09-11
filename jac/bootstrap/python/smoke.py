@@ -28,11 +28,21 @@ assert sqlite3.connect(":memory:").execute("select 6 * 7").fetchone() == (42,)
 assert str(decimal.Decimal("0.1") + decimal.Decimal("0.2")) == "0.3"
 assert hashlib.sha256(sample).digest()
 assert ctypes.pythonapi.PyInitConfig_Create
-assert ctypes.pythonapi._PyJac_CompilerBridgeVersion() == 2
+mode = sys.argv[1] if len(sys.argv) > 1 else None
+if mode in ("host", "jacpython"):
+    assert ctypes.pythonapi._PyJac_CompilerBridgeVersion() == 2
 try:
     required_compiler = ctypes.pythonapi._PyJac_CompilerRequired
 except AttributeError:
-    required_compiler = None  # The separate build-time interpreter retains C.
+    required_compiler = None  # Default CPython and the seed host retain C.
+if mode == "jacpython":
+    assert required_compiler is not None, "JacPython was requested but is missing"
+elif mode in ("cpython", "host"):
+    assert required_compiler is None, "Unexpected JacPython runtime"
+    assert getattr(sys, "_jacpython_compile", None) is None
+    assert not hasattr(sys, "_jacpython_image"), "Unexpected embedded seed"
+    if mode == "cpython":
+        assert not hasattr(ctypes.pythonapi, "_PyJac_CompilerBridgeVersion")
 if required_compiler is not None:
     assert required_compiler() == 1
     assert sys._jacpython_compile.__module__.startswith("_jacpython_seed.")

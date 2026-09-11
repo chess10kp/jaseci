@@ -62,9 +62,18 @@ def resolve_floor_dir(pkg_root: str, triple: str) -> (str | None) {
 
     python_build = os.path.join(pkg_root, ".python-build");
     fallback: (str | None) = None;
-    if os.path.isdir(python_build) {
-        for d in sorted(os.listdir(python_build)) {
-            libdir = os.path.join(python_build, d, "python", "build", "lib");
+    # Both variants build the same C dependency archives. Prefer the default
+    # cache, then JacPython, and retain the previous layout for existing trees.
+    for build_root in [
+        os.path.join(python_build, "cpython"),
+        os.path.join(python_build, "jacpython"),
+        python_build
+    ] {
+        if not os.path.isdir(build_root) {
+            continue;
+        }
+        for d in sorted(os.listdir(build_root)) {
+            libdir = os.path.join(build_root, d, "python", "build", "lib");
             if os.path.isdir(libdir) {
                 if fallback is None {
                     fallback = libdir;

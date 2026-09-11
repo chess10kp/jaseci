@@ -77,6 +77,7 @@ cd jac
 zig build test                       # bootstrap unit tests (no network needed)
 zig build stub                       # just the launcher stub (no payload)
 zig build                            # -> zig-out/bin/jac
+zig build -Djacpython=true            # opt in to the experimental JacPython compiler
 ./zig-out/bin/jac --version
 
 zig build -Dpayload-progress         # stream the payload build live
@@ -92,8 +93,11 @@ No installed Python, Jac, or python-build-standalone distribution is needed.
 Build hosts need Zig 0.16.0, make, Perl, a POSIX shell, and network access.
 macOS also needs the SDK provided by Xcode command line tools.
 
-`zig build build-python` builds only the Python distribution. Its cache in
-`.python-build/<platform>` contains the interpreter, shared library, stdlib,
+`zig build` defaults to CPython's C parser/compiler. `-Djacpython=true` replaces
+that compiler with JacPython and embeds its bootstrap seed; the CPython VM and
+object runtime are retained in both variants. The flag also applies to
+`zig build build-python`, which builds only the Python distribution.
+Its cache in `.python-build/<cpython|jacpython>/<platform>` contains the interpreter, shared library, stdlib,
 licenses, CA certificates, and static archives for Jac's native backend.
 A content fingerprint covers the source checksums, source allowlist, recipes,
 Zig version, target, and macOS SDK version. A cache hit skips compilation; a miss builds from
@@ -106,10 +110,21 @@ The existing launcher still loads the shared CPython library from its payload.
 The source-built runtime excludes Tk, curses, readline, dbm, and CPython test
 extensions. `bootstrap/python/cpython-sources.txt` is the source allowlist:
 each line names a file or a directory ending in `/`, relative to the pinned
-CPython archive. Only those paths survive extraction into the build tree.
+CPython archive. Only those paths survive extraction into the build tree;
+the default CPython build also restores the entries marked `# removed:`.
+Those marked exclusions apply only with `-Djacpython=true`. Its separate
+build-time host restores them to generate the seed, then the reduced runtime
+build omits them. JacPython source changes invalidate that runtime's cache;
+they do not invalidate the default CPython distribution.
 Blank lines and full-line comments are allowed; globs, missing paths, and
 overlapping entries fail the build. The archive is still downloaded and
 checksum-verified as a whole. Other dependency archives use `sources.json`.
+
+Stable and rolling dev releases build both variants for each selected platform.
+The standard `jac-<version>-<platform>` (or `jac-dev-<platform>`) asset uses
+CPython; the opt-in asset appends `-jacpython`. Each has its own checksum.
+Installers and Docker images consume the standard CPython asset. Intel Mac
+remains a manual release target and builds both variants when selected.
 
 The list starts with the C implementations needed by the Linux/macOS release
 builds, their headers/generated tables, the Python standard library, and the

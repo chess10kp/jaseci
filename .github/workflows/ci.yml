@@ -50,11 +50,13 @@ jobs:
             python:
               - 'jac/bootstrap/build_python.zig'
               - 'jac/bootstrap/seed.zig'
-              - 'jac/bootstrap/python/**'
-              - 'jac/jaclang/**/*.jac'
-              - 'jac/jaclang/**/*.py'
-              - 'jac/jaclang/vendor/typeshed/PIN'
-              - 'jac/jaclang/vendor/typeshed/TARBALL_SHA256'
+              - 'jac/build.zig'
+              - 'jac/bootstrap/python/sources.json'
+              - 'jac/bootstrap/python/cpython-sources.txt'
+              - 'jac/bootstrap/python/build.sh'
+              - 'jac/bootstrap/python/finalize.py'
+              - 'jac/bootstrap/python/smoke.py'
+              - '.github/actions/setup-jac/action.yml'
               - '.github/workflows/ci.yml'
             core:
               - 'jac/**'
@@ -133,18 +135,18 @@ jobs:
       - uses: actions/cache/restore@v4
         id: python-cache
         with:
-          path: jac/.python-build
-          key: python-build-v2-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**', 'jac/jaclang/**/*.jac', 'jac/jaclang/**/*.py', 'jac/jaclang/vendor/typeshed/PIN', 'jac/jaclang/vendor/typeshed/TARBALL_SHA256') }}
+          path: jac/.python-build/cpython
+          key: python-build-v3-cpython-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/sources.json', 'jac/bootstrap/python/cpython-sources.txt', 'jac/bootstrap/python/build.sh', 'jac/bootstrap/python/finalize.py', 'jac/bootstrap/python/smoke.py') }}
           restore-keys: |
-            python-build-v2-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-
+            python-build-v3-cpython-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-
       - name: Build and verify relocatable Python
         working-directory: jac
         run: zig build build-python --summary all
       - uses: actions/cache/save@v4
         if: github.ref == 'refs/heads/main' && steps.python-cache.outputs.cache-hit != 'true'
         with:
-          path: jac/.python-build
-          key: python-build-v2-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**', 'jac/jaclang/**/*.jac', 'jac/jaclang/**/*.py', 'jac/jaclang/vendor/typeshed/PIN', 'jac/jaclang/vendor/typeshed/TARBALL_SHA256') }}
+          path: jac/.python-build/cpython
+          key: python-build-v3-cpython-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/sources.json', 'jac/bootstrap/python/cpython-sources.txt', 'jac/bootstrap/python/build.sh', 'jac/bootstrap/python/finalize.py', 'jac/bootstrap/python/smoke.py') }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -152,185 +154,10 @@ jobs:
           path: jac/.python-build/**/*.log
           include-hidden-files: true
 
-  # Direct-API and C-runtime coverage for the JacPython implementation. Expand
-  # this upstream subset as compatibility lands. Both paths run on the reduced runtime.
-  jacpython:
-    needs: [changes, build-kit]
-    if: github.event_name != 'pull_request' || needs.changes.outputs.core == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 30
-    env:
-      JAC_NO_DEV_SOURCE: ""
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/jac-kit
-      - name: Run pinned CPython tests through the direct API and C runtime
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --tests \
-              test_argument_handling test_argument_order test_bad_single_statement \
-              test_compile_ast \
-              test_compile_filename test_compile_filename_refleak \
-              test_compile_invalid_namedexpr test_compile_invalid_typealias \
-              test_docstring test_docstring_interactive_mode test_docstring_omitted \
-              test_dont_merge_constants test_merge_constants test_encoding \
-              test_float_literals test_literals_with_leading_zeroes test_folding_type_param \
-              test_multi_line_lambda_as_argument test_none_assignment \
-              test_same_filename_used test_single_statement test_stack_overflow \
-              test_big_dict_literal test_remove_unused_consts_extended_args \
-              test_compile_warnings test_compile_warning_in_finally test_int_literals_too_long \
-              test_pep_765_warnings test_pep_765_no_warnings \
-              test_condition_expression_with_redundant_comparisons_compiles \
-              test_compare_positions test_other_newlines \
-              test_compile_redundant_jumps_and_nops_after_moving_cold_blocks
-          done
-      - name: Compile and run upstream cleanup tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            for test_module in test.test_with test.test_exception_variations test.test_except_star test.test_coroutines; do
-              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
-            done
-          done
-      - name: Compile and run upstream generator unit tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_generators --tests \
-              SignalAndYieldFromTest FinalizationTest GeneratorTest \
-              ModifyUnderlyingIterableTest ExceptionTest GeneratorCloseTest \
-              GeneratorDeallocTest GeneratorThrowTest GeneratorStackTraceTest YieldFromTests
-          done
-      - name: Compile and run upstream comprehension unit tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_listcomps --tests ListComprehensionTest
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_dictcomps
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_setcomps --tests SetComprehensionTest
-          done
-      - name: Compile and run upstream string syntax tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            for test_module in test.test_fstring test.test_tstring; do
-              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
-            done
-          done
-      - name: Compile and run upstream future-import tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            for test_module in test.test_future_stmt.test_future test.test_future_stmt.test_future_flags; do
-              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
-            done
-          done
-      - name: Run upstream top-level await compiler tests
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_builtin --tests \
-              BuiltinTest.test_compile_top_level_await_no_coro \
-              BuiltinTest.test_compile_top_level_await \
-              BuiltinTest.test_compile_top_level_await_invalid_cases \
-              BuiltinTest.test_compile_async_generator
-          done
-      - name: Run upstream type-comment and grammar-version tests
-        run: |
-          for bridge_mode in "--ast-api" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_type_comments
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_ast.test_ast --tests \
-              AST_Tests.test_positional_only_feature_version \
-              AST_Tests.test_assignment_expression_feature_version \
-              AST_Tests.test_pep750_tstring \
-              AST_Tests.test_pep758_except_without_parens \
-              AST_Tests.test_pep758_except_with_single_expr \
-              AST_Tests.test_pep758_except_star_without_parens \
-              AST_Tests.test_conditional_context_managers_parse_with_low_feature_version \
-              AST_Tests.test_exception_groups_feature_version \
-              AST_Tests.test_type_params_feature_version \
-              AST_Tests.test_type_params_default_feature_version
-          done
-      - name: Run upstream AST preprocessing tests
-        run: |
-          for bridge_mode in "--ast-api" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_ast.test_ast --tests \
-              ASTOptimizationTests \
-              AST_Tests.test_optimization_levels__debug__ \
-              AST_Tests.test_docstring_optimization_single_node \
-              AST_Tests.test_docstring_optimization_multiple_nodes \
-              AST_Tests.test_non_interned_future_from_ast
-          done
-
-      - name: Run upstream AST validation and round-trip tests
-        run: |
-          for bridge_mode in "--ast-api" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_ast.test_ast --tests \
-              ASTValidatorTests \
-              AST_Tests.test_snippets AST_Tests.test_ast_validation \
-              AST_Tests.test_parse_invalid_ast \
-              AST_Tests.test_invalid_position_information \
-              AST_Tests.test_compilation_of_ast_nodes_with_default_end_position_values \
-              AST_Tests.test_negative_locations_for_compile \
-              AST_Tests.test_slice \
-              AST_Tests.test_from_import \
-              AST_Tests.test_alias \
-              AST_Tests.test_invalid_sum \
-              AST_Tests.test_invalid_identifier \
-              AST_Tests.test_invalid_constant \
-              AST_Tests.test_empty_yield_from \
-              AST_Tests.test_issue31592 \
-              AST_Tests.test_issue18374_binop_col_offset \
-              AST_Tests.test_issue39579_dotted_name_end_col_offset \
-              AST_Tests.test_compare_basics \
-              AST_Tests.test_compare_modified_ast \
-              AST_Tests.test_compare_modes \
-              AST_Tests.test_compare_attributes_option \
-              AST_Tests.test_constant_as_name \
-              AST_Tests.test_constant_as_unicode_name \
-              AST_Tests.test_null_bytes \
-              AST_Tests.test_none_checks \
-              AST_Tests.test_repr \
-              AST_Tests.test_repr_large_input_crash \
-              AST_Tests.test_tstring \
-              ConstantTests
-          done
-      - name: Compile and run upstream pattern-matching tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_patma
-          done
-      - name: Compile and run upstream generic definition tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            for test_module in test.test_type_aliases test.test_type_params; do
-              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
-            done
-          done
-      - name: Compile and run upstream annotation tests with JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_type_annotations
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_grammar --tests \
-              GrammarTests.test_var_annot_basics GrammarTests.test_var_annot_syntax_errors \
-              GrammarTests.test_var_annot_basic_semantics GrammarTests.test_annotations_inheritance \
-              GrammarTests.test_var_annot_module_semantics GrammarTests.test_var_annot_in_module \
-              GrammarTests.test_var_annot_simple_exec GrammarTests.test_var_annot_rhs
-          done
-      - name: Compile and run upstream interactive compiler tests with JacPython
-        run: |
-          jac run scripts/run_cpython_compiler_tests.jac --runtime --compile-tests --module test.test_codeop
-      - name: Run upstream symbol-table API tests through JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --symtable-api --compile-tests --module test.test_symtable --tests SymtableTest ComprehensionTests
-          done
-      - name: Run upstream tokenization API tests through JacPython
-        run: |
-          for bridge_mode in "" "--runtime"; do
-            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --tokenize-api --compile-tests --module test.test_tokenize --tests \
-              TokenizeTest GenerateTokensTest TestMisc TestTokenizerAdheresToPep0263 Test_Tokenize \
-              TestDetectEncoding TestTokenize UntokenizeTest TestRoundtrip InvalidPythonTests \
-              CTokenizeTest CTokenizerBufferTests StringPrefixTest
-          done
-
-  # The kit lane: build the binary from this checkout, smoke it, vendor the
-  # runtime trees, publish the kit. Every test lane waits on it, so the suite
-  # runs through the binary a PR would ship.
+  # The kit lane builds this checkout and publishes it for every test lane.
+  # CI exercises the default CPython build. JacPython variants are built
+  # and smoke-tested by build-binaries.yml; its upstream compatibility runner
+  # remains available as scripts/run_cpython_compiler_tests.jac.
   build-kit:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
