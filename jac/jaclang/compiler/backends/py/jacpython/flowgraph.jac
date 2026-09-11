@@ -282,17 +282,6 @@ def block_has_fallthrough(b: basicblock) -> bool {
     return True;
 }
 
-def find_block(u: unverified_cfg, block_id: int) -> basicblock | None {
-    i = 0;
-    while i < len(u.blocks) {
-        if u.blocks[i].id == block_id {
-            return u.blocks[i];
-        }
-        i = i + 1;
-    }
-    return None;
-}
-
 def stackdepth_diag(kind: str, message: str) -> internal_compiler_diagnostic {
     return internal_compiler_diagnostic(kind=kind, message=message);
 }
@@ -394,6 +383,7 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
         return (0, None);
     }
     n = len(u.blocks);
+    blocks_by_id = {block.id: block for block in u.blocks};
     # startdepths is indexed by block id. Ids are sparse once the optimizer prunes
     # unreachable blocks, so size to the id space (next_block_id), not the block
     # count, or a surviving high-id block indexes out of range.
@@ -425,7 +415,7 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
         if reg.depth_from_block >= 0 {
             continue;
         }
-        handler = find_block(u, reg.handler_block);
+        handler = blocks_by_id.get(reg.handler_block);
         if handler is not None
             and not stackdepth_push(startdepths, work, handler, reg.stack_depth) {
             return (
@@ -438,9 +428,8 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
         }
     }
     while len(work) > 0 {
-        bid = work[len(work) - 1];
-        work = work[0:len(work) - 1];
-        b = find_block(u, bid);
+        bid = work.pop();
+        b = blocks_by_id.get(bid);
         if b is None {
             return (
                 0,
@@ -451,7 +440,7 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
         for reg in u.except_regions {
             if reg.depth_from_block == bid {
                 reg.stack_depth = depth + reg.depth_offset;
-                handler = find_block(u, reg.handler_block);
+                handler = blocks_by_id.get(reg.handler_block);
                 if handler is not None
                     and not stackdepth_push(
                         startdepths, work, handler, reg.stack_depth
@@ -517,7 +506,7 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
                         )
                     );
                 }
-                target = find_block(u, ins.target_block);
+                target = blocks_by_id.get(ins.target_block);
                 if target is None {
                     return (
                         0,
@@ -876,6 +865,7 @@ def is_inlinable_jump(op: int) -> bool {
 # Tail-duplicate small scope-exit targets into their forward-jump sources.
 def inline_small_exit_blocks(u: unverified_cfg) -> bool {
     changed = False;
+    blocks_by_id = {block.id: block for block in u.blocks};
     bi = 0;
     while bi < len(u.blocks) {
         b = u.blocks[bi];
@@ -883,7 +873,7 @@ def inline_small_exit_blocks(u: unverified_cfg) -> bool {
         if last is not None
             and is_inlinable_jump(last.opcode)
             and last.target_block >= 0 {
-            target = find_block(u, last.target_block);
+            target = blocks_by_id.get(last.target_block);
             if target is not None
                 and target.id != b.id
                 and target.exit_inline_ok
@@ -953,8 +943,7 @@ def mark_reachable(u: unverified_cfg) -> list[int] {
         ri = ri + 1;
     }
     while len(stack) > 0 {
-        idx = stack[len(stack) - 1];
-        stack = stack[0:len(stack) - 1];
+        idx = stack.pop();
         b = u.blocks[idx];
         ii = 0;
         while ii < len(b.instrs) {
@@ -1165,7 +1154,7 @@ def optimize_load_fast(u: unverified_cfg) {
     # of blocks as one virtual block, exactly matching CPython's granularity:
     # a chain breaks at any jump target, jump, or scope exit.
     sds = u.block_startdepths;
-    jump_targets: list[int] = [];
+    jump_targets: set[int] = set();
     bj = 0;
     while bj < len(u.blocks) {
         bjt = u.blocks[bj];
@@ -1174,7 +1163,7 @@ def optimize_load_fast(u: unverified_cfg) {
             inj = bjt.instrs[ij];
             if is_conditional_jump(inj.opcode)
                 or is_unconditional_jump_opcode(inj.opcode) {
-                jump_targets.append(inj.target_block);
+                jump_targets.add(inj.target_block);
             }
             ij = ij + 1;
         }
@@ -1556,8 +1545,9 @@ def ac_scan_block(
     }
     # Fallthrough successor.
     if block_has_fallthrough(b) {
-        nb = layout_next_block_from(u, b);
-        if nb is not None {
+        index = pos[b.id];
+        if index >= 0 and index + 1 < len(u.blocks) {
+            nb = u.blocks[index + 1];
             ac_maybe_push(nb.id, mask, masks, onstack, blocks_by_id, worklist);
         }
     }
@@ -1568,25 +1558,13 @@ def ac_scan_block(
             is_conditional_jump(last.opcode)
             or is_unconditional_jump_opcode(last.opcode)
         ) {
-        tb = find_block(u, last.target_block);
+        tb = blocks_by_id[last.target_block]
+            if last.target_block < len(blocks_by_id)
+            else None;
         if tb is not None {
             ac_maybe_push(tb.id, mask, masks, onstack, blocks_by_id, worklist);
         }
     }
-}
-
-def layout_next_block_from(u: unverified_cfg, b: basicblock) -> basicblock | None {
-    bi = 0;
-    while bi < len(u.blocks) {
-        if u.blocks[bi].id == b.id {
-            if bi + 1 < len(u.blocks) {
-                return u.blocks[bi + 1];
-            }
-            return None;
-        }
-        bi = bi + 1;
-    }
-    return None;
 }
 
 def add_checks_for_uninitialized(u: unverified_cfg) {

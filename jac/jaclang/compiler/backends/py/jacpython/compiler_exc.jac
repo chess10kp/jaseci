@@ -68,7 +68,6 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     try_await_frame,
 }
 import from jaclang.compiler.backends.py.jacpython.flowgraph {
-    find_block,
     build_layout_pos,
     layout_pos
 }

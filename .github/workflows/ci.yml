@@ -170,7 +170,7 @@ jobs:
               test_dont_merge_constants test_merge_constants test_encoding \
               test_float_literals test_literals_with_leading_zeroes \
               test_multi_line_lambda_as_argument test_none_assignment \
-              test_same_filename_used test_single_statement \
+              test_same_filename_used test_single_statement test_stack_overflow \
               test_big_dict_literal test_remove_unused_consts_extended_args \
               test_compile_warnings test_compile_warning_in_finally test_int_literals_too_long \
               test_pep_765_warnings test_pep_765_no_warnings \
