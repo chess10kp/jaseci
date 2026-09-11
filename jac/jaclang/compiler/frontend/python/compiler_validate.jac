@@ -953,20 +953,19 @@ def validate_suspensions(
                         in_function if index == 0 else True,
                         in_async if index == 0 else comp_async,
                         in_comp if index == 0 else True,
-                        in_annotation
+                        in_annotation if index == 0 else False
                     )
                 );
-                pending.append((gen.target, True, comp_async, True, in_annotation));
+                pending.append((gen.target, True, comp_async, True, False));
                 pending.extend(
-                    (condition, True, comp_async, True, in_annotation)
-                    for condition in gen.ifs
+                    (condition, True, comp_async, True, False) for condition in gen.ifs
                 );
             }
             if isinstance(item, DictComp) {
-                pending.append((item.key, True, comp_async, True, in_annotation));
-                pending.append((item.value, True, comp_async, True, in_annotation));
+                pending.append((item.key, True, comp_async, True, False));
+                pending.append((item.value, True, comp_async, True, False));
             } else {
-                pending.append((item.elt, True, comp_async, True, in_annotation));
+                pending.append((item.elt, True, comp_async, True, False));
             }
             continue;
         }

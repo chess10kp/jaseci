@@ -1187,7 +1187,6 @@ def stringify_future_annotations(tree: ast_node, filename: str) {
         for field in fields {
             value = vars(item).get(field);
             if isinstance(value, expr) {
-                validate_future_annotation(value, filename);
                 rendered = annotation_unparser().visit(
                     to_python_ast(value, constant_value)
                 ) as str;
@@ -1201,51 +1200,6 @@ def stringify_future_annotations(tree: ast_node, filename: str) {
                 );
                 setattr(item, field, replacement);
             }
-        }
-        for value in vars(item).values() {
-            if isinstance(value, ast_node) {
-                pending.append(value);
-            } elif isinstance(value, list) {
-                pending.extend(
-                    child
-                    for child in value
-                    if isinstance(child, ast_node)
-                );
-            }
-        }
-    }
-}
-
-def validate_future_annotation(annotation: expr, filename: str) {
-    pending: list[ast_node] = [annotation];
-    while pending {
-        item = pending.pop();
-        kind = "";
-        if isinstance(item, Yield) {
-            kind = "yield";
-        } elif isinstance(item, YieldFrom) {
-            kind = "yield from";
-        } elif isinstance(item, Await) {
-            kind = "await";
-        } elif isinstance(item, NamedExpr) {
-            kind = "named";
-        }
-        if kind and isinstance(item, expr) {
-            raise SyntaxError(
-                kind + " expression cannot be used within an annotation",
-                (filename, item.lineno, item.col_offset + 1, None)
-            );
-        }
-        # Lambda bodies and comprehension bodies have their own scopes.
-        if isinstance(item, Lambda) {
-            pending.append(item.args);
-            continue;
-        }
-        if isinstance(item, (ListComp, SetComp, DictComp, GeneratorExp)) {
-            if item.generators {
-                pending.append(item.generators[0].iter);
-            }
-            continue;
         }
         for value in vars(item).values() {
             if isinstance(value, ast_node) {

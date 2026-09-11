@@ -196,9 +196,6 @@ def compile_exec_ast(m: Module, filename: str, interactive: bool = False) -> PyO
         return compiler_diag_to_pyobj(future_result.diag);
     }
     add_future_flags(features);
-    if current_compile_flags() & 0x1000000 {
-        stringify_future_annotations(m, filename);
-    }
     vr = validate_module_body(m.body, bool(current_compile_flags() & 0x2000));
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
@@ -211,6 +208,11 @@ def compile_exec_ast(m: Module, filename: str, interactive: bool = False) -> PyO
     sr = build_module_symtable(m.body);
     if sr.diag is not None {
         return compiler_diag_to_pyobj(sr.diag);
+    }
+    # Scope analysis still validates annotation expressions and their binding
+    # forms before the future flag turns those expressions into strings.
+    if current_compile_flags() & 0x1000000 {
+        stringify_future_annotations(m, filename);
     }
     u = compile_exec(m.body, filename, "<module>", 1, sr.top, interactive);
     if u.diag is not None {

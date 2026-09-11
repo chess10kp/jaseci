@@ -138,6 +138,7 @@ obj sym_block {
         type_parameter_key: int = 0,
         function_annotation_key: int = 0,
         annotation_scope: sym_block | None = None,
+        unevaluated_annotation: bool = False,
         generic_parameters: bool = False,
         annotation_kind: str = "",
         mangled_names: set[str] | None = None;
@@ -566,6 +567,9 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
         );
     }
     if isinstance(e, Name) {
+        if b.cur.unevaluated_annotation {
+            return True;
+        }
         ok = b.add_use((e as Name).id);
         # Special-case super: it counts as a use of __class__
         # (CPython symtable.c Name_kind Load rule).
@@ -741,7 +745,7 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
                             ne.col_offset
                         );
                     }
-                } else {
+                } elif block.annotation_kind != "an annotation" {
                     owner = block;
                     break;
                 }
@@ -1242,22 +1246,18 @@ def sym_visit_type_parameters(b: sym_builder, parameters: list[type_param]) -> b
     return True;
 }
 
-# Module/class assignments share a deferred annotation scope. Re-enter it
-# for each expression so nested comprehensions and closures bind correctly.
+# Assignments share an annotation scope, including unevaluated annotations.
+# The future flag retains its checks and outer bindings but excludes the
+# annotation scope from closure analysis because no expression will execute.
 def sym_visit_assignment_annotation(b: sym_builder, an: AnnAssign) -> bool {
     import from jaclang.compiler.backends.py.jacpython.compiler_context {
         current_compile_flags
     }
-    if current_compile_flags() & 0x1000000
-        or b.cur.block_type == "function"
-        or not an.simple
-        or not isinstance(an.target, Name) {
-        return True;
-    }
+    future = bool(current_compile_flags() & 0x1000000);
     owner = b.cur;
     scope = owner.annotation_scope;
     if scope is None {
-        in_class = owner.block_type == "class";
+        in_class = owner.block_type == "class" and not future;
         if not b.push_block(
             "function",
             "__annotate__",
@@ -1269,6 +1269,9 @@ def sym_visit_assignment_annotation(b: sym_builder, an: AnnAssign) -> bool {
             return False;
         }
         owner.annotation_scope = b.cur;
+        if future {
+            owner.children.pop();
+        }
         b.cur.annotation_kind = "an annotation";
         if not b.add_def(".format", DEF_PARAM, an.lineno, an.col_offset) {
             return False;
@@ -1280,9 +1283,11 @@ def sym_visit_assignment_annotation(b: sym_builder, an: AnnAssign) -> bool {
         b.stack.append(owner);
         b.cur = scope;
     }
+    b.cur.unevaluated_annotation = owner.block_type == "function";
     if not sym_visit_load_expr(b, an.annotation) {
         return False;
     }
+    b.cur.unevaluated_annotation = False;
     return b.pop_block();
 }
 
@@ -1293,9 +1298,7 @@ def sym_visit_function_annotations(
     import from jaclang.compiler.backends.py.jacpython.compiler_context {
         current_compile_flags
     }
-    if current_compile_flags() & 0x1000000 {
-        return True;
-    }
+    future = bool(current_compile_flags() & 0x1000000);
     parameters = fd.args.posonlyargs + fd.args.args;
     if fd.args.vararg is not None {
         parameters.append(fd.args.vararg);
@@ -1317,6 +1320,7 @@ def sym_visit_function_annotations(
         return True;
     }
     in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+    owner = b.cur;
     nested = sym_compute_nested(b);
     if not b.push_block(
         "function", "__annotate__", fd.lineno, nested, in_class, fd.col_offset
@@ -1324,6 +1328,9 @@ def sym_visit_function_annotations(
         return False;
     }
     b.cur.function_annotation_key = id(fd);
+    if future {
+        owner.children.pop();
+    }
     b.cur.annotation_kind = "an annotation";
     if not b.add_def(".format", DEF_PARAM, fd.lineno, fd.col_offset) {
         return False;
