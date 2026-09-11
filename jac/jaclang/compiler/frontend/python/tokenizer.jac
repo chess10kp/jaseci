@@ -1,11 +1,8 @@
-# P0.5 source-string tokenizer (PLAN.md) — expression eval slice.
-#
-# Re-hosts the CPython 3.14 UTF-8 string tokenizer state machine for the P4
-# expression fixtures. Full indentation/f-string/encoding coverage lands in
-# follow-on slices; this module accepts UTF-8 source text directly (file I/O
-# and decoding stay outside the scanner).
-#
-# Product module: imports token_model only.
+"""Python scanner shared by the parser and public tokenization adapter.
+
+Source decoding stays outside the scanner. An optional refill callback supplies
+decoded lines for streaming tokenization; parsing uses an existing source string.
+"""
 
 import from jaclang.compiler.frontend.python.token_model {
     ENDMARKER,
@@ -15,6 +12,8 @@ import from jaclang.compiler.frontend.python.token_model {
     NEWLINE,
     INDENT,
     DEDENT,
+    COMMENT,
+    NL,
     ERRORTOKEN,
     TYPE_COMMENT,
     TYPE_IGNORE,
@@ -73,12 +72,16 @@ obj tok_state {
         exec_input: bool = False,
         single_input: bool = False,
         type_comments: bool = False,
+        extra_tokens: bool = False,
+        refill: any = None,
+        blankline: bool = False,
         done: bool = False,
         eof_reached: bool = False,
         error: tok_diag | None = None,
         at_bol: bool = True,
         indent: int = 0,
         indstack: list[int] = [0],
+        altindstack: list[int] = [0],
         pending: int = 0,
         paren_level: int = 0,
         paren_stack: list[str] = [],
@@ -86,10 +89,10 @@ obj tok_state {
         string_modes: list[string_mode] = [];
 }
 
-def _indent_error(st: tok_state, msg: str) -> tok_diag {
+def _indent_error(st: tok_state, msg: str, kind: str = "IndentationError") -> tok_diag {
     st.eof_reached = False;
     bad = mk_diag(
-        "IndentationError",
+        kind,
         msg,
         tok_loc_span(st.lineno, st.lineno, st.col_offset, st.col_offset),
         st.filename
@@ -106,20 +109,20 @@ def _flush_pending_indent(st: tok_state) -> tok_token | None {
             tok_type=DEDENT,
             spelling="",
             lineno=st.lineno,
-            col_offset=TOK_NO_COLUMN,
+            col_offset=st.col_offset if st.extra_tokens else TOK_NO_COLUMN,
             end_lineno=st.lineno,
-            end_col_offset=TOK_NO_COLUMN
+            end_col_offset=st.col_offset if st.extra_tokens else TOK_NO_COLUMN
         );
     }
     if st.pending > 0 {
         st.pending = st.pending - 1;
         return tok_token(
             tok_type=INDENT,
-            spelling="",
+            spelling=st.source[st.line_start:st.pos] if st.extra_tokens else "",
             lineno=st.lineno,
-            col_offset=TOK_NO_COLUMN,
+            col_offset=0 if st.extra_tokens else TOK_NO_COLUMN,
             end_lineno=st.lineno,
-            end_col_offset=TOK_NO_COLUMN
+            end_col_offset=st.col_offset if st.extra_tokens else TOK_NO_COLUMN
         );
     }
     return None;
@@ -171,31 +174,49 @@ def _type_comment_start(st: tok_state) -> int {
     return pos;
 }
 
-def _measure_indent(st: tok_state) -> int {
+def _measure_indent(st: tok_state) -> tuple[int, int] {
     col = 0;
-    while st.pos < len(st.source) {
+    altcol = 0;
+    continuation_col = 0;
+    while _has_source(st) {
         ch = st.source[st.pos];
         if ch == " " {
             col = col + 1;
+            altcol += 1;
             st.pos = st.pos + 1;
             st.col_offset = st.col_offset + 1;
             continue;
         }
         if ch == "\t" {
             col = (col // TABSIZE + 1) * TABSIZE;
+            altcol += 1;
             st.pos = st.pos + 1;
             st.col_offset = st.col_offset + 1;
             continue;
         }
         if ch == "\f" {
             col = 0;
+            altcol = 0;
             st.pos = st.pos + 1;
             st.col_offset = st.col_offset + 1;
             continue;
         }
+        if st.source.startswith("\\\n", st.pos) {
+            # The first nonzero indentation before a continuation determines
+            # the logical line's indentation. Blank continuations stay blank.
+            continuation_col = continuation_col or col;
+            _advance(st);
+            _advance(st);
+            if not _has_source(st) {
+                _string_syntax_error(st, "unexpected EOF while parsing", st.col_offset);
+                st.eof_reached = True;
+                break;
+            }
+            continue;
+        }
         break;
     }
-    return col;
+    return (continuation_col or col, continuation_col or altcol);
 }
 
 def _consume_bol_newline(st: tok_state) -> None {
@@ -221,16 +242,21 @@ def _consume_bol_newline(st: tok_state) -> None {
 
 def _process_bol_indent(st: tok_state) -> int {
     # Returns 0 ok, 1 blank line consumed, -1 error.
+    st.blankline = False;
     if st.paren_level > 0 {
         st.at_bol = False;
         return 0;
     }
-    col = _measure_indent(st);
+    (col, altcol) = _measure_indent(st);
+    if st.error is not None {
+        return -1;
+    }
     if st.pos < len(st.source) {
         ch = st.source[st.pos];
         if ch == "#" {
-            if _type_comment_start(st) >= 0 {
+            if st.extra_tokens or _type_comment_start(st) >= 0 {
                 st.at_bol = False;
+                st.blankline = True;
                 return 0;
             }
             if _skip_comment_line(st) {
@@ -239,6 +265,11 @@ def _process_bol_indent(st: tok_state) -> int {
             }
         }
         if ch == "\n" or ch == "\r" {
+            if st.extra_tokens {
+                st.at_bol = False;
+                st.blankline = True;
+                return 0;
+            }
             _consume_bol_newline(st);
             return 1;
         }
@@ -246,17 +277,30 @@ def _process_bol_indent(st: tok_state) -> int {
     _peek(st);
     cur = st.indstack[st.indent];
     if col == cur {
+        if altcol != st.altindstack[st.indent] {
+            _indent_error(
+                st, "inconsistent use of tabs and spaces in indentation", "TabError"
+            );
+            return -1;
+        }
         st.at_bol = False;
         return 0;
     }
     if col > cur {
         if st.indent + 1 >= MAXINDENT {
-            _indent_error(st, "maximum indentation depth exceeded");
+            _indent_error(st, "too many levels of indentation");
+            return -1;
+        }
+        if altcol <= st.altindstack[st.indent] {
+            _indent_error(
+                st, "inconsistent use of tabs and spaces in indentation", "TabError"
+            );
             return -1;
         }
         st.pending = st.pending + 1;
         st.indent = st.indent + 1;
         st.indstack.append(col);
+        st.altindstack.append(altcol);
         st.at_bol = False;
         return 0;
     }
@@ -264,9 +308,16 @@ def _process_bol_indent(st: tok_state) -> int {
         st.pending = st.pending - 1;
         st.indent = st.indent - 1;
         st.indstack.pop();
+        st.altindstack.pop();
     }
     if col != st.indstack[st.indent] {
         _indent_error(st, "unindent does not match any outer indentation level");
+        return -1;
+    }
+    if altcol != st.altindstack[st.indent] {
+        _indent_error(
+            st, "inconsistent use of tabs and spaces in indentation", "TabError"
+        );
         return -1;
     }
     st.at_bol = False;
@@ -310,8 +361,15 @@ def:priv _is_digit(ch: str) -> bool {
     return ch >= "0" and ch <= "9";
 }
 
+def _has_source(st: tok_state) -> bool {
+    if st.pos < len(st.source) {
+        return True;
+    }
+    return st.refill is not None and bool(st.refill());
+}
+
 def _peek(st: tok_state) -> str {
-    if st.pos >= len(st.source) {
+    if not _has_source(st) {
         st.eof_reached = True;
         return "";
     }
@@ -319,7 +377,7 @@ def _peek(st: tok_state) -> str {
 }
 
 def _advance(st: tok_state) -> str {
-    if st.pos >= len(st.source) {
+    if not _has_source(st) {
         return "";
     }
     ch = st.source[st.pos];
@@ -425,7 +483,7 @@ def _read_number(st: tok_state) -> tok_token | tok_diag {
             or nxt == "O" {
             based = True;
             _advance(st);
-            while st.pos < len(st.source) {
+            while _has_source(st) {
                 c = _peek(st);
                 if c == "_" {
                     _advance(st);
@@ -438,7 +496,7 @@ def _read_number(st: tok_state) -> tok_token | tok_diag {
                 break;
             }
         } else {
-            while st.pos < len(st.source) {
+            while _has_source(st) {
                 c = _peek(st);
                 if c == "_" {
                     _advance(st);
@@ -452,7 +510,7 @@ def _read_number(st: tok_state) -> tok_token | tok_diag {
             }
         }
     } else {
-        while st.pos < len(st.source) {
+        while _has_source(st) {
             c = _peek(st);
             if c == "_" {
                 _advance(st);
@@ -471,7 +529,7 @@ def _read_number(st: tok_state) -> tok_token | tok_diag {
         # reads the integer part.
         if _peek(st) == "." {
             _advance(st);
-            while st.pos < len(st.source) {
+            while _has_source(st) {
                 c = _peek(st);
                 if c == "_" {
                     _advance(st);
@@ -491,7 +549,7 @@ def _read_number(st: tok_state) -> tok_token | tok_diag {
             if c2 == "+" or c2 == "-" {
                 _advance(st);
             }
-            while st.pos < len(st.source) {
+            while _has_source(st) {
                 c3 = _peek(st);
                 if c3 == "_" {
                     _advance(st);
@@ -511,7 +569,7 @@ def _read_number(st: tok_state) -> tok_token | tok_diag {
         }
     }
     spell = st.source[start:st.pos];
-    if _is_id_start(_peek(st)) {
+    if _is_id_start(_peek(st)) and not st.extra_tokens {
         kind = "decimal";
         if spell.lower().startswith("0x") {
             kind = "hexadecimal";
@@ -555,9 +613,9 @@ def _read_name(st: tok_state) -> tok_token {
     start = st.pos;
     start_col = st.col_offset;
     _advance(st);
-    while st.pos < len(st.source) {
+    while _has_source(st) {
         c = _peek(st);
-        if not _is_id_continue(c) {
+        if not _is_id_continue(c) and not (st.extra_tokens and ord(c) >= 128) {
             break;
         }
         _advance(st);
@@ -691,7 +749,7 @@ def _fstring_scan_format_spec(st: tok_state) -> tok_token | tok_diag | None {
     start_lineno = st.lineno;
     start_col = st.col_offset;
     buf = "";
-    while st.pos < len(st.source) {
+    while _has_source(st) {
         ch = _peek(st);
         if ch == quote {
             return _string_syntax_error(
@@ -724,7 +782,7 @@ def _fstring_scan_format_spec(st: tok_state) -> tok_token | tok_diag | None {
         if ch == "\\" {
             buf += _advance(st);
             if not mode.raw and st.source.startswith("N{", st.pos) {
-                while st.pos < len(st.source) {
+                while _has_source(st) {
                     if st.source.startswith(mode.quote * mode.qlen, st.pos) {
                         break;
                     }
@@ -759,7 +817,7 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
     start_lineno = st.lineno;
     start_col = st.col_offset;
     buf = "";
-    while st.pos < len(st.source) {
+    while _has_source(st) {
         ch = _peek(st);
         if qlen == 1 {
             if ch == quote {
@@ -803,14 +861,18 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
         if ch == "{" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "{" {
             buf = buf + "{";
             _advance(st);
+            end_col = st.col_offset;
             _advance(st);
-            continue;
+            mode.resume = True;
+            return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
         }
         if ch == "}" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "}" {
             buf = buf + "}";
             _advance(st);
+            end_col = st.col_offset;
             _advance(st);
-            continue;
+            mode.resume = True;
+            return _fstring_emit_middle(st, buf, start_lineno, start_col, end_col);
         }
         if ch == "}" {
             return _string_syntax_error(
@@ -830,7 +892,7 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
         if ch == "\\" {
             buf += _advance(st);
             if not mode.raw and st.source.startswith("N{", st.pos) {
-                while st.pos < len(st.source) {
+                while _has_source(st) {
                     if st.source.startswith(mode.quote * mode.qlen, st.pos) {
                         break;
                     }
@@ -885,7 +947,7 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
     start_col = st.col_offset;
     raw = False;
     has_f = False;
-    while st.pos < len(st.source) {
+    while _has_source(st) {
         c = _peek(st);
         if c == "r" or c == "R" {
             raw = True;
@@ -927,7 +989,7 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
     if has_f or "t" in st.source[start:st.pos].lower() {
         return _read_fstring_start(st, start, start_col, raw, quote, qlen);
     }
-    while st.pos < len(st.source) {
+    while _has_source(st) {
         ch = _peek(st);
         if qlen == 1 {
             if ch == quote {
@@ -1059,7 +1121,7 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             return fseg as tok_token;
         }
     }
-    while st.pos < len(st.source) {
+    while _has_source(st) {
         if st.at_bol {
             bol = _process_bol_indent(st);
             if bol < 0 {
@@ -1092,12 +1154,22 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             start_pos = st.pos;
             type_start = _type_comment_start(st);
             blankline = not st.source[st.line_start:st.pos].strip();
-            while st.pos < len(st.source) and _peek(st) != "\n" and _peek(st) != "\r" {
+            while _has_source(st) and _peek(st) != "\n" and _peek(st) != "\r" {
                 _advance(st);
             }
             st.comments.setdefault(st.lineno, []).append(
                 (comment_start, st.col_offset)
             );
+            if st.extra_tokens {
+                return tok_token(
+                    tok_type=COMMENT,
+                    spelling=st.source[start_pos:st.pos],
+                    lineno=st.lineno,
+                    col_offset=comment_start,
+                    end_lineno=st.lineno,
+                    end_col_offset=st.col_offset
+                );
+            }
             if type_start >= 0 {
                 payload = st.source[type_start:st.pos];
                 kind = TYPE_COMMENT;
@@ -1142,7 +1214,7 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             } else {
                 _advance(st);
             }
-            if st.pos >= len(st.source) {
+            if not _has_source(st) {
                 bad = _string_syntax_error(
                     st, "unexpected EOF while parsing", st.col_offset
                 );
@@ -1154,6 +1226,17 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         if ch == "\n" {
             start_col = st.col_offset;
             _advance(st);
+            if st.extra_tokens {
+                st.at_bol = True;
+                return tok_token(
+                    tok_type=NL if st.blankline or st.paren_level > 0 else NEWLINE,
+                    spelling="\n",
+                    lineno=st.lineno - 1,
+                    col_offset=start_col,
+                    end_lineno=st.lineno - 1,
+                    end_col_offset=start_col + 1
+                );
+            }
             if st.paren_level > 0 {
                 # Implicit line join inside (), [], {}: newline is non-significant
                 # (NL), no NEWLINE token and no indentation processing.
@@ -1209,7 +1292,7 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             }
             return str_tok as tok_token;
         }
-        if _is_id_start(ch) {
+        if _is_id_start(ch) or (st.extra_tokens and ord(ch) >= 128) {
             tok = _read_name(st);
             st.paren_level = st.paren_level + _track_paren_delta(tok.tok_type);
             return tok;
@@ -1225,7 +1308,8 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
                 st.paren_stack.append(op.spelling);
             } elif op.spelling in (")", "]", "}") {
                 opener = {")": "(", "]": "[", "}": "{"}[op.spelling];
-                if not st.paren_stack or st.paren_stack[-1] != opener {
+                if (not st.paren_stack or st.paren_stack[-1] != opener)
+                    and not st.extra_tokens {
                     at_field = st.string_modes
                         and st.string_modes[-1].fields
                         and st.paren_level == st.string_modes[-1].fields[-1].paren;
@@ -1245,7 +1329,9 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
                     }
                     return _string_syntax_error(st, message, op.col_offset);
                 }
-                st.paren_stack.pop();
+                if st.paren_stack {
+                    st.paren_stack.pop();
+                }
             }
 
             if st.string_modes {

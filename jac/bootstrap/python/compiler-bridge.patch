@@ -336,3 +336,37 @@
      struct symtable *st;
      PyObject *t;
      int start;
+--- a/Python/Python-tokenize.c
++++ b/Python/Python-tokenize.c
+@@ -6,6 +6,8 @@
+ #include "../Parser/tokenizer/tokenizer.h"
+ #include "../Parser/pegen.h"                    // _PyPegen_byte_offset_to_character_offset()
+
++PyAPI_FUNC(int) _PyJac_TokenizeBridgeVersion(void) { return 1; }
++
+ static struct PyModuleDef _tokenizemodule;
+
+ typedef struct {
+@@ -57,6 +59,22 @@
+                        int extra_tokens, const char *encoding)
+ /*[clinic end generated code: output=7501a1211683ce16 input=f7dddf8a613ae8bd]*/
+ {
++    /* The callback is opt-in until the bootstrap and replacement gates pass. */
++    PyObject *factory = PySys_GetObject("_jacpython_tokenize");
++    if (factory != NULL && factory != Py_None) {
++        Py_INCREF(factory);
++        PyObject *args = PyTuple_Pack(1, readline);
++        PyObject *kwargs = encoding == NULL
++            ? Py_BuildValue("{s:O}", "extra_tokens", extra_tokens ? Py_True : Py_False)
++            : Py_BuildValue("{s:O,s:s}", "extra_tokens", extra_tokens ? Py_True : Py_False,
++                            "encoding", encoding);
++        PyObject *result = args != NULL && kwargs != NULL
++            ? PyObject_Call(factory, args, kwargs) : NULL;
++        Py_XDECREF(args);
++        Py_XDECREF(kwargs);
++        Py_DECREF(factory);
++        return result;
++    }
+     tokenizeriterobject *self = (tokenizeriterobject *)type->tp_alloc(type, 0);
+     if (self == NULL) {
+         return NULL;

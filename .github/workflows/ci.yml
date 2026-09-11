@@ -313,6 +313,14 @@ jobs:
           for bridge_mode in "" "--runtime"; do
             jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --symtable-api --compile-tests --module test.test_symtable --tests SymtableTest ComprehensionTests
           done
+      - name: Run upstream tokenization API tests through JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --tokenize-api --compile-tests --module test.test_tokenize --tests \
+              TokenizeTest GenerateTokensTest TestMisc TestTokenizerAdheresToPep0263 Test_Tokenize \
+              TestDetectEncoding TestTokenize UntokenizeTest TestRoundtrip InvalidPythonTests \
+              CTokenizeTest CTokenizerBufferTests StringPrefixTest
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

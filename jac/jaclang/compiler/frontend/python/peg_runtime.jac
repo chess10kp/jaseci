@@ -207,6 +207,7 @@ def peg_fill_token(p: peg_parser) -> bool {
             p.tok.pending = -p.tok.indent;
             p.tok.indent = 0;
             p.tok.indstack = [0];
+            p.tok.altindstack = [0];
         }
     } else {
         p.parsing_started = True;

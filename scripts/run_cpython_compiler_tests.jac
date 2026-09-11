@@ -7,8 +7,8 @@ With --runtime, the patched runtime dispatches built-in compilation and source
 imports to JacPython. Test definitions are loaded before activation; bootstrap
 compilation and complete C API coverage are separate gates. --compile-tests
 also compiles every definition in the chosen upstream module with JacPython.
---symtable-api additionally routes symbol-table calls, including module-level
-fixtures, through Jac's adapter or the patched C entry point.
+--symtable-api and --tokenize-api additionally route those public APIs, including
+module-level fixtures, through Jac adapters or the patched C entry points.
 Without it, tests with no call to the replacement are reported as skipped.
 No CPython test corpus is checked into this repository.
 """
@@ -95,51 +95,95 @@ def main -> int {
         action="store_true",
         help="Route symbol-table construction through JacPython, including fixtures"
     );
+    parser.add_argument(
+        "--tokenize-api",
+        action="store_true",
+        help="Route the public streaming tokenizer through JacPython"
+    );
     args = parser.parse_args();
     calls: list[int] = [0];
-    if not args.symtable_api {
+    restorations: list[tuple[any, str, bool, any]] = [];
+    try {
+        if args.symtable_api {
+            import _symtable;
+            import from jaclang.runtime.python.symtable { symtable }
+            def replacement_symtable(
+                source: any, filename: any, mode: any, /
+            ) -> object {
+                calls[0] += 1;
+                return symtable(source, filename, mode);
+            }
+            restorations.append(
+                install_api(
+                    _symtable,
+                    "symtable",
+                    replacement_symtable,
+                    "_jacpython_symtable",
+                    "_PyJac_SymtableBridgeVersion",
+                    args.runtime
+                )
+            );
+        }
+        if args.tokenize_api {
+            import _tokenize;
+            import from jaclang.runtime.python.tokenize { TokenizerIter }
+            def replacement_tokenizer(readline: any, /, **kwargs: any) -> object {
+                calls[0] += 1;
+                return TokenizerIter(readline, **kwargs);
+            }
+            restorations.append(
+                install_api(
+                    _tokenize,
+                    "TokenizerIter",
+                    replacement_tokenizer,
+                    "_jacpython_tokenize",
+                    "_PyJac_TokenizeBridgeVersion",
+                    args.runtime
+                )
+            );
+        }
         return run_tests(args, calls);
+    } finally {
+        for (target, name, existed, original) in reversed(restorations) {
+            if existed {
+                setattr(target, name, original);
+            } else {
+                delattr(target, name);
+            }
+        }
     }
-    import _symtable;
-    import from jaclang.runtime.python.symtable { symtable }
-    def replacement_symtable(source: any, filename: any, mode: any, /) -> object {
-        calls[0] += 1;
-        return symtable(source, filename, mode);
-    }
-    original = _symtable.symtable;
-    had_hook = hasattr(sys, "_jacpython_symtable");
-    if args.runtime {
+}
+
+def install_api(
+    module: any,
+    name: str,
+    replacement: any,
+    hook: str,
+    version_symbol: str,
+    runtime: bool
+) -> tuple[any, str, bool, any] {
+    target = module;
+    if runtime {
         import ctypes;
         try {
-            bridge_version = ctypes.pythonapi._PyJac_SymtableBridgeVersion;
+            bridge_version = getattr(ctypes.pythonapi, version_symbol);
         } except AttributeError as error {
             raise RuntimeError(
-                "Rebuild the runtime with the JacPython symtable bridge"
+                f"Rebuild the runtime with the {hook} bridge"
             ) from error;
         }
         if bridge_version() != 1 {
-            raise RuntimeError("Unsupported JacPython symtable bridge version");
+            raise RuntimeError(f"Unsupported {hook} bridge version");
         }
-        if (sys?._jacpython_symtable is not None) {
-            raise RuntimeError("JacPython symtable dispatch is already enabled");
-        }
-        setattr(sys, "_jacpython_symtable", replacement_symtable);
-    } else {
-        setattr(_symtable, "symtable", replacement_symtable);
-    }
-    try {
-        return run_tests(args, calls);
-    } finally {
-        if args.runtime {
-            if had_hook {
-                setattr(sys, "_jacpython_symtable", None);
-            } else {
-                delattr(sys, "_jacpython_symtable");
-            }
-        } else {
-            setattr(_symtable, "symtable", original);
+        target = sys;
+        name = hook;
+        if getattr(target, name, None) is not None {
+            raise RuntimeError(f"{hook} dispatch is already enabled");
         }
     }
+    restoration = (target, name, hasattr(target, name), getattr(target, name, None));
+    setattr(target, name, replacement);
+    return restoration;
 }
 
 def run_tests(args: any, calls: list[int]) -> int {
@@ -185,8 +229,8 @@ def run_tests(args: any, calls: list[int]) -> int {
         }
         print(f"JACPYTHON_TEST_MODULE {args.module}", flush=True);
     }
-    if args.symtable_api {
-        print(f"JACPYTHON_SYMTABLE_FIXTURE_CALLS {calls[0]}", flush=True);
+    if args.symtable_api or args.tokenize_api {
+        print(f"JACPYTHON_API_FIXTURE_CALLS {calls[0]}", flush=True);
     }
     if (args.module == "test.test_ast.test_ast") {
         test_module.STDLIB = str(library);
