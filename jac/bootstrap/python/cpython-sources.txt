@@ -5,9 +5,14 @@
 # Unlisted archive contents are discarded before configure/make. Missing,
 # overlapping, or incorrectly typed entries fail the build.
 #
-# To retire C code: connect its Jac replacement to the runtime, update the build
-# recipe, then remove its file entries (and any now-unused headers). Split a
-# directory entry into the files still needed before removing part of it.
+# Commented source paths record exclusions for the JacPython replacement.
+# Counts use pinned CPython 3.14.6 source lines, including comments and blanks.
+# Excluded: 26 C files / 65,217 lines; 10 headers / 1,076 lines.
+# Total: 36 files / 66,293 source lines excluded from the runtime build tree.
+# Only the separate build-time interpreter restores these marked entries to
+# produce the frozen JacPython seed; its C compiler is never shipped.
+# Keep build dependencies and ABI adapters aligned with these exclusions.
+# Split a directory entry before removing only part of its contents.
 # CI hashes this manifest and rebuilds/verifies Python when it changes.
 # This list covers CPython; sources.json also pins its external dependencies.
 # Generated headers, build prerequisites and licenses remain necessary even
@@ -51,41 +56,41 @@ pyconfig.h.in
 Include/
 
 # Parser and tokenizer
-Parser/action_helpers.c
-Parser/lexer/buffer.c
-Parser/lexer/buffer.h
-Parser/lexer/lexer.c
-Parser/lexer/lexer.h
-Parser/lexer/state.c
-Parser/lexer/state.h
+# Parser/action_helpers.c  # removed: 1,953 source lines
+# Parser/lexer/buffer.c  # removed: 76 source lines
+# Parser/lexer/buffer.h  # removed: 10 source lines
+# Parser/lexer/lexer.c  # removed: 1,635 source lines
+# Parser/lexer/lexer.h  # removed: 10 source lines
+# Parser/lexer/state.c  # removed: 154 source lines
+# Parser/lexer/state.h  # removed: 151 source lines
 Parser/myreadline.c
-Parser/parser.c
-Parser/peg_api.c
-Parser/pegen.c
-Parser/pegen.h
-Parser/pegen_errors.c
-Parser/string_parser.c
-Parser/string_parser.h
-Parser/token.c
-Parser/tokenizer/file_tokenizer.c
-Parser/tokenizer/helpers.c
-Parser/tokenizer/helpers.h
-Parser/tokenizer/readline_tokenizer.c
-Parser/tokenizer/string_tokenizer.c
-Parser/tokenizer/tokenizer.h
-Parser/tokenizer/utf8_tokenizer.c
+# Parser/parser.c  # removed: 38,073 source lines
+# Parser/peg_api.c  # removed: 40 source lines
+# Parser/pegen.c  # removed: 1,083 source lines
+# Parser/pegen.h  # removed: 388 source lines
+# Parser/pegen_errors.c  # removed: 462 source lines
+# Parser/string_parser.c  # removed: 339 source lines
+# Parser/string_parser.h  # removed: 11 source lines
+# Parser/token.c  # removed: 250 source lines
+# Parser/tokenizer/file_tokenizer.c  # removed: 494 source lines
+# Parser/tokenizer/helpers.c  # removed: 583 source lines
+# Parser/tokenizer/helpers.h  # removed: 37 source lines
+# Parser/tokenizer/readline_tokenizer.c  # removed: 135 source lines
+# Parser/tokenizer/string_tokenizer.c  # removed: 148 source lines
+# Parser/tokenizer/tokenizer.h  # removed: 14 source lines
+# Parser/tokenizer/utf8_tokenizer.c  # removed: 55 source lines
 
 # Interpreter and compiler
 Python/Python-ast.c
-Python/Python-tokenize.c
+# Python/Python-tokenize.c  # removed: 445 source lines
 Python/_contextvars.c
 Python/_warnings.c
 Python/asdl.c
 Python/asm_trampoline.S
 Python/asm_trampoline_aarch64.h
-Python/assemble.c
-Python/ast.c
-Python/ast_preprocess.c
+# Python/assemble.c  # removed: 802 source lines
+# Python/ast.c  # removed: 1,091 source lines
+# Python/ast_preprocess.c  # removed: 990 source lines
 Python/ast_unparse.c
 Python/bltinmodule.c
 Python/bootstrap_hash.c
@@ -94,20 +99,20 @@ Python/bytecodes.c
 Python/ceval.c
 Python/ceval_gil.c
 Python/ceval_macros.h
-Python/clinic/Python-tokenize.c.h
+# Python/clinic/Python-tokenize.c.h  # removed: 86 source lines
 Python/clinic/_contextvars.c.h
 Python/clinic/_warnings.c.h
 Python/clinic/bltinmodule.c.h
 Python/clinic/context.c.h
 Python/clinic/import.c.h
-Python/clinic/instruction_sequence.c.h
+# Python/clinic/instruction_sequence.c.h  # removed: 313 source lines
 Python/clinic/instrumentation.c.h
 Python/clinic/marshal.c.h
 Python/clinic/sysmodule.c.h
 Python/clinic/traceback.c.h
 Python/codecs.c
-Python/codegen.c
-Python/compile.c
+# Python/codegen.c  # removed: 6,485 source lines
+# Python/compile.c  # removed: 1,753 source lines
 Python/condvar.h
 Python/config_common.h
 Python/context.c
@@ -121,13 +126,13 @@ Python/dynload_shlib.c
 Python/errors.c
 Python/executor_cases.c.h
 Python/fileutils.c
-Python/flowgraph.c
+# Python/flowgraph.c  # removed: 4,167 source lines
 Python/formatter_unicode.c
 Python/frame.c
 Python/frozen.c
 Python/frozen_modules/
 Python/frozenmain.c
-Python/future.c
+# Python/future.c  # removed: 119 source lines
 Python/gc.c
 Python/gc_free_threading.c
 Python/gc_gil.c
@@ -144,7 +149,7 @@ Python/import.c
 Python/importdl.c
 Python/index_pool.c
 Python/initconfig.c
-Python/instruction_sequence.c
+# Python/instruction_sequence.c  # removed: 483 source lines
 Python/instrumentation.c
 Python/interpconfig.c
 Python/intrinsics.c
@@ -186,7 +191,7 @@ Python/stackrefs.c
 Python/stdlib_module_names.h
 Python/structmember.c
 Python/suggestions.c
-Python/symtable.c
+# Python/symtable.c  # removed: 3,272 source lines
 Python/sysmodule.c
 Python/thread.c
 Python/thread_nt.h
@@ -540,7 +545,7 @@ Modules/clinic/sha2module.c.h
 Modules/clinic/sha3module.c.h
 Modules/clinic/signalmodule.c.h
 Modules/clinic/socketmodule.c.h
-Modules/clinic/symtablemodule.c.h
+# Modules/clinic/symtablemodule.c.h  # removed: 56 source lines
 Modules/clinic/syslogmodule.c.h
 Modules/clinic/termios.c.h
 Modules/clinic/timemodule.c.h
@@ -582,7 +587,7 @@ Modules/sha3module.c
 Modules/signalmodule.c
 Modules/socketmodule.c
 Modules/socketmodule.h
-Modules/symtablemodule.c
+# Modules/symtablemodule.c  # removed: 130 source lines
 Modules/syslogmodule.c
 Modules/termios.c
 Modules/timemodule.c

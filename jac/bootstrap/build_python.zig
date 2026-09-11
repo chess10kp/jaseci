@@ -1,14 +1,17 @@
 //! Build the release Python before any Jac tooling can run. Sources are
-//! checksum-pinned; the completed distribution is cached independently of Jac.
+//! checksum-pinned. A separate build-time interpreter produces the JacPython seed.
 const std = @import("std");
 const builtin = @import("builtin");
 const seed = @import("seed.zig");
 const Io = std.Io;
 const inputs = [_][]const u8{
-    "bootstrap/build_python.zig",    "bootstrap/seed.zig",
-    "bootstrap/python/sources.json", "bootstrap/python/cpython-sources.txt",
-    "bootstrap/python/build.sh",     "bootstrap/python/smoke.py",
-    "bootstrap/python/finalize.py",  "bootstrap/python/compiler-bridge.patch",
+    "bootstrap/build_python.zig",           "bootstrap/seed.zig",
+    "bootstrap/python/sources.json",        "bootstrap/python/cpython-sources.txt",
+    "bootstrap/python/build.sh",            "bootstrap/python/smoke.py",
+    "bootstrap/python/finalize.py",         "bootstrap/python/compiler-bridge.patch",
+    "bootstrap/python/host-compiler.patch", "bootstrap/python/compiler_bridge.c",
+    "bootstrap/python/compiler_bridge.h",   "bootstrap/python/prepare_seed.py",
+    "bootstrap/python/seed_runtime.py",
 };
 const Source = struct { url: []const u8, sha256: []const u8, version: ?[]const u8 = null };
 
@@ -39,15 +42,24 @@ pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const a = init.arena.allocator();
     const args = try init.minimal.args.toSlice(a);
-    if (args.len != 5) seed.die("usage: build_python <os-arch> <destination> <jac-root> <zig>", .{});
+    if (args.len != 5 and args.len != 6) seed.die("usage: build_python <os-arch> <destination> <jac-root> <zig> [--host]", .{});
+    const host_mode = args.len == 6 and std.mem.eql(u8, args[5], "--host");
+    if (args.len == 6 and !host_mode) seed.die("build-python: unknown stage", .{});
     const platform = args[1];
     if (!supported(platform)) seed.die("build-python: unsupported platform {s}", .{platform});
     if (!std.mem.eql(u8, platform, hostPlatform()))
         seed.die("build-python: build {s} on its matching release runner (host is {s})", .{ platform, hostPlatform() });
     const dest = args[2];
     const root = args[3];
+    const host_dest = try std.fmt.allocPrint(a, "{s}.host", .{dest});
+    if (!host_mode) {
+        var host_build = try std.process.spawn(io, .{ .argv = &.{ args[0], platform, host_dest, root, args[4], "--host" } });
+        const result = try host_build.wait(io);
+        if (result != .exited or result.exited != 0) return error.HostPythonBuildFailed;
+    }
     const smoke = try std.fs.path.join(a, &.{ root, "bootstrap/python/smoke.py" });
     var hash = std.crypto.hash.sha2.Sha256.init(.{});
+    hash.update(if (host_mode) "build-time-host" else "jacpython-runtime");
     hash.update(platform);
     hash.update(builtin.zig_version_string);
     if (builtin.os.tag == .macos) {
@@ -56,10 +68,47 @@ pub fn main(init: std.process.Init) !void {
         hash.update(std.mem.trim(u8, sdk.stdout, " \r\n"));
     }
     for (inputs) |path| {
+        if (host_mode and (std.mem.endsWith(u8, path, "/compiler-bridge.patch") or
+            std.mem.endsWith(u8, path, "/compiler_bridge.c") or std.mem.endsWith(u8, path, "/compiler_bridge.h") or
+            std.mem.endsWith(u8, path, "/prepare_seed.py") or std.mem.endsWith(u8, path, "/seed_runtime.py"))) continue;
         const full = try std.fs.path.join(a, &.{ root, path });
         const content = try Io.Dir.cwd().readFileAlloc(io, full, a, .unlimited);
         hash.update(path);
         hash.update(content);
+    }
+    if (!host_mode) {
+        // The producing compiler and its Jac/Python inputs are part of the
+        // embedded seed. Source edits must invalidate the reduced runtime.
+        for ([_][]const u8{ "jaclang/vendor/typeshed/PIN", "jaclang/vendor/typeshed/TARBALL_SHA256" }) |path| {
+            hash.update(path);
+            hash.update(try Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(a, &.{ root, path }), a, .limited(1024)));
+        }
+        const package_path = try std.fs.path.join(a, &.{ root, "jaclang" });
+        var package = try Io.Dir.cwd().openDir(io, package_path, .{ .iterate = true });
+        defer package.close(io);
+        var walker = try package.walkSelectively(a);
+        defer walker.deinit();
+        var paths: std.ArrayList([]const u8) = .empty;
+        while (try walker.next(io)) |entry| {
+            if (entry.kind == .directory) {
+                if (!std.mem.startsWith(u8, entry.basename, ".") and
+                    !std.mem.eql(u8, entry.basename, "node_modules") and
+                    !std.mem.eql(u8, entry.basename, "__pycache__") and
+                    !std.mem.eql(u8, entry.basename, "vendor")) try walker.enter(io, entry);
+            } else if (entry.kind == .file and (std.mem.endsWith(u8, entry.path, ".jac") or std.mem.endsWith(u8, entry.path, ".py"))) {
+                try paths.append(a, try a.dupe(u8, entry.path));
+            }
+        }
+        std.mem.sort([]const u8, paths.items, {}, struct {
+            fn less(_: void, left: []const u8, right: []const u8) bool {
+                return std.mem.lessThan(u8, left, right);
+            }
+        }.less);
+        for (paths.items) |path| {
+            hash.update(path);
+            hash.update(try package.readFileAlloc(io, path, a, .unlimited));
+        }
+        hash.update(try Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(a, &.{ host_dest, "build-key" }), a, .limited(128)));
     }
     var digest: [32]u8 = undefined;
     hash.final(&digest);
@@ -80,6 +129,7 @@ pub fn main(init: std.process.Init) !void {
     const manifest = try Io.Dir.cwd().readFileAlloc(io, manifest_path, a, .unlimited);
     const sources = try std.json.parseFromSliceLeaky(std.json.ArrayHashMap(Source), a, manifest, .{});
     for (sources.map.keys(), sources.map.values()) |name, source| {
+        if (!host_mode and !std.mem.eql(u8, name, "cpython")) continue;
         seed.log("build-python: fetch {s}", .{name});
         const gz = try seed.httpGetAlloc(io, init.gpa, source.url);
         defer init.gpa.free(gz);
@@ -101,12 +151,12 @@ pub fn main(init: std.process.Init) !void {
         if (std.mem.eql(u8, name, "cpython")) {
             const list_path = try std.fs.path.join(a, &.{ root, "bootstrap/python/cpython-sources.txt" });
             const list = try Io.Dir.cwd().readFileAlloc(io, list_path, a, .limited(128 * 1024));
-            try retainSources(io, a, dir, list);
+            try retainSources(io, a, dir, if (host_mode) try hostSourceManifest(a, list) else list);
         }
     }
     const recipe = try std.fs.path.join(a, &.{ root, "bootstrap/python" });
     const script = try std.fs.path.join(a, &.{ recipe, "build.sh" });
-    var child = try std.process.spawn(io, .{ .argv = &.{ "sh", script, platform, work, args[4], recipe } });
+    var child = try std.process.spawn(io, .{ .argv = &.{ "sh", script, platform, work, args[4], recipe, if (host_mode) "" else host_dest, root } });
     const term = try child.wait(io);
     if (term != .exited or term.exited != 0) seed.die("build-python: build failed; logs at {s}/logs", .{work});
     // Cache only the runtime and link archives, not intermediate objects or sources.
@@ -118,6 +168,22 @@ pub fn main(init: std.process.Init) !void {
     // Verify relocation before allowing a cache hit on the next invocation.
     try runSmoke(io, python, smoke);
     try Io.Dir.cwd().writeFile(io, .{ .sub_path = stamp_path, .data = &key });
+}
+
+// Only the explicitly separate build-time interpreter retains these inputs.
+// The runtime always consumes the manifest unchanged, including its comments.
+fn hostSourceManifest(a: std.mem.Allocator, manifest: []const u8) ![]const u8 {
+    var out: std.ArrayList(u8) = .empty;
+    var lines = std.mem.splitScalar(u8, manifest, '\n');
+    while (lines.next()) |line| {
+        var value = line;
+        if (std.mem.startsWith(u8, line, "# ")) {
+            if (std.mem.indexOf(u8, line, "  # removed:")) |end| value = line[2..end];
+        }
+        try out.appendSlice(a, value);
+        try out.append(a, '\n');
+    }
+    return out.toOwnedSlice(a);
 }
 
 fn runSmoke(io: Io, python: []const u8, smoke: []const u8) !void {
@@ -224,7 +290,7 @@ test "source allowlist preserves exact files and subtrees and removes an entry o
     try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Objects/listobject.c.bak", .{}));
     try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Lib/regex", .{}));
     try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Lib/test", .{}));
-    try retainSources(io, a, tmp.dir, "Objects/dictobject.c\nLib/re/\nLICENSE\n");
+    try retainSources(io, a, tmp.dir, "# Objects/listobject.c  # removed: 1 source lines\nObjects/dictobject.c\nLib/re/\nLICENSE\n");
     try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "Objects/listobject.c", .{}));
 }
 

@@ -5,6 +5,8 @@ platform=$1
 work=$2
 zig=$3
 recipe=$4
+host=${5:-}
+root=$6
 jobs=${JAC_PYTHON_JOBS:-4}
 case "$jobs" in ''|*[!0-9]*|0) echo 'JAC_PYTHON_JOBS must be a positive integer' >&2; exit 1;; esac
 case "$platform" in
@@ -139,7 +141,16 @@ openssl() {
 }
 cpython() {
     cd "$src/cpython"
-    patch -f -F0 -p1 -i "$recipe/compiler-bridge.patch"
+    if [ -n "$host" ]; then
+        patch -f -F0 -p1 -i "$recipe/compiler-bridge.patch"
+        cp "$recipe/compiler_bridge.c" Python/jac_compile.c
+        cp "$recipe/compiler_bridge.h" Python/jac_compile.h
+        cp "$work/seed/jac_seed.h" Python/jac_seed.h
+        # The seed is compressed data; this archive contains only zlib.
+        export LIBS="$deps/lib/libz.a"
+    else
+        patch -f -F0 -p1 -i "$recipe/host-compiler.patch"
+    fi
     # The shared interpreter must survive relocation into the Jac payload.
     case "$platform" in
         linux-*)
@@ -201,33 +212,71 @@ SETUP
     # Embed the same core objects in the executable: venv --copies must run
     # without a libpython next to the copied executable. Jac's launcher still
     # uses the separately built shared library. Neither needs libpython3.so.
-    make -j"$jobs" PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)'
+    python_make -j"$jobs" PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)'
     # CPython's install targets create overlapping directories. BSD install
     # fails if another target creates the same directory after its check.
-    make -j1 PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)' install
+    python_make -j1 PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)' "COMPILEALL_OPTS=-j$jobs" install
+    if [ -n "$host" ]; then
+        # Check the completed build, including generated sources and objects.
+        sed -n 's/^# \([^ ]*\)  # removed:.*/\1/p' "$recipe/cpython-sources.txt" |
+        while IFS= read -r excluded; do
+            if [ -e "$excluded" ] || { [ "${excluded%.c}" != "$excluded" ] && [ -e "${excluded%.c}.o" ]; }; then
+                echo "Excluded compiler input reappeared: $excluded" >&2
+                exit 1
+            fi
+        done
+    fi
 }
-# Preserve notices before discarding each dependency's installed build tree.
-mkdir -p "$work/python/licenses"
-find "$src" -type f \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'Copyright*' \) |
-while IFS= read -r notice; do
-    relative=${notice#"$src/"}
-    mkdir -p "$work/python/licenses/$(dirname "$relative")"
-    cp "$notice" "$work/python/licenses/$relative"
-done
-step zlib zlib
-step bzip2 bzip2
-step zstd zstd
-step sqlite sqlite
-step xz xz
-step libffi libffi
-step mpdecimal mpdecimal
-step expat expat
-step openssl openssl
+python_make() {
+    if [ -n "$host" ]; then
+        # Freeze with the explicit build-time interpreter. Neither helper
+        # executable links the reduced runtime before its seed is available.
+        freezer="$host/python/install/bin/python3.14 $src/cpython/Programs/_freeze_module.py"
+        make "$@" "FREEZE_MODULE_BOOTSTRAP=$freezer" FREEZE_MODULE_BOOTSTRAP_DEPS= \
+            "FREEZE_MODULE=$freezer" FREEZE_MODULE_DEPS=
+    else
+        make "$@"
+    fi
+}
+
+if [ -n "$host" ]; then
+    cp -R "$host/python/build/include/." "$deps/include/"
+    cp "$host/python/build/lib/"*.a "$deps/lib/"
+    cp -R "$host/python/licenses" "$work/python/licenses"
+    step seed "$host/python/install/bin/python3.14" -I "$recipe/prepare_seed.py" prepare "$root" "$work/seed"
+else
+    # Preserve notices before discarding each dependency's installed build tree.
+    mkdir -p "$work/python/licenses"
+    find "$src" -type f \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'Copyright*' \) |
+    while IFS= read -r notice; do
+        relative=${notice#"$src/"}
+        mkdir -p "$work/python/licenses/$(dirname "$relative")"
+        cp "$notice" "$work/python/licenses/$relative"
+    done
+    step zlib zlib
+    step bzip2 bzip2
+    step zstd zstd
+    step sqlite sqlite
+    step xz xz
+    step libffi libffi
+    step mpdecimal mpdecimal
+    step expat expat
+    step openssl openssl
+fi
 step cpython cpython
 step finalize "$prefix/bin/python3.14" -I "$recipe/finalize.py"
 mkdir -p "$work/python/build/lib" "$work/python/licenses"
 cp "$deps/lib/"*.a "$work/python/build/lib/"
-cp "$src/certifi/certifi/cacert.pem" "$work/python/build/cacert.pem"
+if [ -n "$host" ]; then
+    cp "$host/python/build/cacert.pem" "$work/python/build/cacert.pem"
+    cp "$work/seed/sha256" "$work/python/build/jacpython-seed-sha256"
+    rm -rf "$work/seed"
+else
+    # Only dependency headers/archives are reused by the target build. Host
+    # CPython objects and libpython are never copied into the reduced runtime.
+    cp -R "$deps/include" "$work/python/build/include"
+    cp "$src/certifi/certifi/cacert.pem" "$work/python/build/cacert.pem"
+fi
 step smoke "$prefix/bin/python3.14" -I "$recipe/smoke.py"
 # No compiled test modules, docs, or configuration machinery in the runtime.
 rm -rf "$prefix/share" "$prefix/lib/python3.14/test" \

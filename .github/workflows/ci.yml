@@ -51,6 +51,10 @@ jobs:
               - 'jac/bootstrap/build_python.zig'
               - 'jac/bootstrap/seed.zig'
               - 'jac/bootstrap/python/**'
+              - 'jac/jaclang/**/*.jac'
+              - 'jac/jaclang/**/*.py'
+              - 'jac/jaclang/vendor/typeshed/PIN'
+              - 'jac/jaclang/vendor/typeshed/TARBALL_SHA256'
               - '.github/workflows/ci.yml'
             core:
               - 'jac/**'
@@ -130,7 +134,9 @@ jobs:
         id: python-cache
         with:
           path: jac/.python-build
-          key: python-build-v1-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**') }}
+          key: python-build-v2-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**', 'jac/jaclang/**/*.jac', 'jac/jaclang/**/*.py', 'jac/jaclang/vendor/typeshed/PIN', 'jac/jaclang/vendor/typeshed/TARBALL_SHA256') }}
+          restore-keys: |
+            python-build-v2-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-
       - name: Build and verify relocatable Python
         working-directory: jac
         run: zig build build-python --summary all
@@ -138,7 +144,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && steps.python-cache.outputs.cache-hit != 'true'
         with:
           path: jac/.python-build
-          key: python-build-v1-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**') }}
+          key: python-build-v2-${{ runner.os }}-${{ runner.arch }}-zig0.16.0-sdk${{ steps.python-sdk.outputs.version }}-${{ hashFiles('jac/bootstrap/build_python.zig', 'jac/bootstrap/seed.zig', 'jac/bootstrap/python/**', 'jac/jaclang/**/*.jac', 'jac/jaclang/**/*.py', 'jac/jaclang/vendor/typeshed/PIN', 'jac/jaclang/vendor/typeshed/TARBALL_SHA256') }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -147,7 +153,7 @@ jobs:
           include-hidden-files: true
 
   # Direct-API and C-runtime coverage for the JacPython implementation. Expand
-  # this upstream subset as compatibility lands; it is not the C-removal gate.
+  # this upstream subset as compatibility lands. Both paths run on the reduced runtime.
   jacpython:
     needs: [changes, build-kit]
     if: github.event_name != 'pull_request' || needs.changes.outputs.core == 'true'

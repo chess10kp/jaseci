@@ -3,10 +3,10 @@
 Run through the checkout's Jac binary, for example:
     jac run scripts/run_cpython_compiler_tests.jac
 
-With --runtime, the patched runtime dispatches built-in compilation and source
-imports to JacPython. Test definitions are loaded before activation; bootstrap
-compilation and complete C API coverage are separate gates. --compile-tests
-also compiles every definition in the chosen upstream module with JacPython.
+With --runtime, the runtime dispatches built-in compilation and source imports
+to JacPython. The reduced runtime already uses the embedded JacPython seed;
+the runner temporarily instruments dispatch and restores it afterward.
+--compile-tests also compiles every definition with the checkout's JacPython.
 --symtable-api and --tokenize-api additionally route those public APIs, including
 module-level fixtures, through Jac adapters or the patched C entry points.
 Without it, tests with no call to the replacement are reported as skipped.
@@ -177,9 +177,6 @@ def install_api(
         }
         target = sys;
         name = hook;
-        if getattr(target, name, None) is not None {
-            raise RuntimeError(f"{hook} dispatch is already enabled");
-        }
     }
     restoration = (target, name, hasattr(target, name), getattr(target, name, None));
     setattr(target, name, replacement);
@@ -331,6 +328,10 @@ def run_tests(args: any, calls: list[int]) -> int {
     original_defaults = [];
     import ast;
     original_ast_compile = ast.__dict__.get("compile");
+    original_runtime_compile = (
+        hasattr(sys, "_jacpython_compile"),
+        sys?._jacpython_compile
+    );
     if args.runtime {
         import ctypes;
         try {
@@ -342,9 +343,6 @@ def run_tests(args: any, calls: list[int]) -> int {
         }
         if (bridge_version() != 2) {
             raise RuntimeError("Unsupported JacPython runtime bridge version");
-        }
-        if (sys?._jacpython_compile is not None) {
-            raise RuntimeError("JacPython runtime dispatch is already enabled");
         }
         setattr(sys, "_jacpython_compile", replacement_compile);
     } else {
@@ -430,7 +428,11 @@ def run_tests(args: any, calls: list[int]) -> int {
             (fn.__defaults__, fn.__kwdefaults__) = (defaults, kwdefaults);
         }
         if args.runtime {
-            delattr(sys, "_jacpython_compile");
+            if original_runtime_compile[0] {
+                setattr(sys, "_jacpython_compile", original_runtime_compile[1]);
+            } else {
+                delattr(sys, "_jacpython_compile");
+            }
         } elif args.ast_api {
             if (original_ast_compile is None) {
                 ast.__dict__.pop("compile", None);

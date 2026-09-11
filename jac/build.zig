@@ -162,6 +162,7 @@ pub fn build(b: *std.Build) void {
     });
     const ts_seed = b.addExecutable(.{ .name = "fetch_typeshed", .root_module = ts_seed_mod });
     const fetch_ts = b.addRunArtifact(ts_seed);
+    fetch_host.step.dependOn(&fetch_ts.step);
     fetch_ts.addArg(b.pathFromRoot("jaclang/vendor/typeshed"));
     // has_side_effects: the output lands in the source tree, not the cache, so
     // the step must run even when its (unchanging) argv would otherwise cache

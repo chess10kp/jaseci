@@ -206,7 +206,7 @@ def _source_as_str(source: any) -> str {
         }
         import io;
         import tokenize;
-        encoding = tokenize.detect_encoding(io.BytesIO(raw).readline)[0];
+        encoding = str(tokenize.detect_encoding(io.BytesIO(raw).readline)[0]);
         try {
             source = raw.decode(encoding);
         } except UnicodeDecodeError as error {

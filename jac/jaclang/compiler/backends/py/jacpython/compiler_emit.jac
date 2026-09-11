@@ -2671,7 +2671,10 @@ def try_load_super_attr(
         }
     } else {
         emit_name_load(g, "__class__", aloc);
-        g.emit_op(OP_LOAD_FAST, 0, aloc);
+        # Inlined comprehensions and nested functions can capture self/cls.
+        # The first parameter then lives in a cell and needs the same deref
+        # load as an ordinary reference to that parameter.
+        emit_name_load(g, g.u.varnames[0], aloc);
     }
     idx = g.u.add_name(codegen_mangle(g, attr_name));
     oparg = (idx << 2) | (2 if two_arg else 0) | (1 if method_form else 0);
@@ -2709,7 +2712,10 @@ def emit_starred_list_build(g: cfg_builder, elts: list[expr], dloc: cloc) -> Non
 def fast_local_index(g: cfg_builder, name: str) -> int {
     if g.sym_top is not None {
         scope = sym_scope_of(sym_dict_get(g.sym_top.symbols, name, 0));
-        if scope in (SCOPE_GLOBAL_EXPLICIT, SCOPE_GLOBAL_IMPLICIT) {
+        # A captured parameter's slot holds a cell, not its value. Callers
+        # selecting fast-load shortcuts must fall back to scope-aware loads.
+        if scope
+            in (SCOPE_GLOBAL_EXPLICIT, SCOPE_GLOBAL_IMPLICIT, SCOPE_CELL, SCOPE_FREE) {
             return -1;
         }
         if g.sym_top.block_type in ("module", "class") and name not in g.scope_names {
