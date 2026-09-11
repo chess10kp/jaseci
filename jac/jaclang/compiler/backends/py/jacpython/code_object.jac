@@ -135,14 +135,14 @@ def compile_python(
     _feature_version: int = -1
 ) -> any {
     import ast;
-    import builtins;
     import from jaclang.compiler.frontend.python.ast_bridge {
         from_python_ast,
         to_python_ast
     }
     import from jaclang.compiler.backends.py.jacpython.product_compile {
         compile_source,
-        compile_ast
+        compile_ast,
+        prepare_ast_output
     }
     import from jaclang.runtime.python.objects { PyError }
     import from jaclang.compiler.frontend.python.ast_nodes { mod }
@@ -177,7 +177,7 @@ def compile_python(
     if not dont_inherit {
         flags |= sys._getframe(1).f_code.co_flags & 0x1FE0000;
     }
-    if flags & 0xC200 {
+    if flags & 0x4200 {
         raise NotImplementedError(
             "JacPython parsing and optimization flags are not implemented yet"
         );
@@ -189,10 +189,26 @@ def compile_python(
         raise ValueError("compile(): invalid optimize value");
     }
     if isinstance(source, ast.AST) {
-        if flags & ast.PyCF_ONLY_AST {
-            return source;
+        expected_root = {
+            "exec": ast.Module,
+            "eval": ast.Expression,
+            "single": ast.Interactive,
+            "func_type": ast.FunctionType
+        }[mode];
+        if not isinstance(source, expected_root) {
+            raise TypeError(
+                f"expected {expected_root.__name__} node, got {type(source).__name__}"
+            );
         }
-        result = compile_ast(from_python_ast(source), filename, mode, optimize, flags);
+        tree = from_python_ast(source);
+        if flags & ast.PyCF_ONLY_AST {
+            output = prepare_ast_output(tree, filename, optimize, flags);
+            if isinstance(output, PyError) {
+                raise_compiler_error(output, source, filename);
+            }
+            return to_python_ast(output, constant_value);
+        }
+        result = compile_ast(tree, filename, mode, optimize, flags);
     } else {
         if not isinstance(source, str) {
             try {
@@ -240,33 +256,40 @@ def compile_python(
             if tree is None {
                 raise SyntaxError("invalid syntax");
             }
-            return to_python_ast(tree, constant_value);
+            output = prepare_ast_output(tree, filename, optimize, flags);
+            if isinstance(output, PyError) {
+                raise_compiler_error(output, source, filename);
+            }
+            return to_python_ast(output, constant_value);
         }
         result = compile_source(source, filename, mode, optimize, flags);
     }
     if isinstance(result, PyError) {
-        error_type: type[BaseException] = vars(builtins).get(
-            result.exception.type_name, RuntimeError
-        );
-        if issubclass(error_type, SyntaxError)
-            and "lineno" in result.exception.type_fields {
-            line = constant_value(result.exception.type_fields["lineno"]);
-            column = constant_value(result.exception.type_fields["offset"]) - 1;
-            lines = source.splitlines(keepends=True) if isinstance(source, str) else [];
-            text = lines[line - 1] if line <= len(lines) else None;
-            if text is not None {
-                column = len(
-                    text.encode("utf-8")[:column].decode("utf-8", errors="ignore")
-                );
-            }
-            raise error_type(
-                result.exception.message, (filename, line, column + 1, text)
-            );
-        }
-        raise error_type(result.exception.message);
+        raise_compiler_error(result, source, filename);
     }
     if not isinstance(result, PyCode) {
         raise SystemError("JacPython compiler returned no code object");
     }
     return code_object(result);
+}
+
+def raise_compiler_error(result: any, source: any, filename: str) {
+    import builtins;
+    error_type: type[BaseException] = vars(builtins).get(
+        result.exception.type_name, RuntimeError
+    );
+    if issubclass(error_type, SyntaxError)
+        and "lineno" in result.exception.type_fields {
+        line = constant_value(result.exception.type_fields["lineno"]);
+        column = constant_value(result.exception.type_fields["offset"]) - 1;
+        lines = source.splitlines(keepends=True) if isinstance(source, str) else [];
+        text = lines[line - 1] if line <= len(lines) else None;
+        if text is not None {
+            column = len(
+                text.encode("utf-8")[:column].decode("utf-8", errors="ignore")
+            );
+        }
+        raise error_type(result.exception.message, (filename, line, column + 1, text));
+    }
+    raise error_type(result.exception.message);
 }

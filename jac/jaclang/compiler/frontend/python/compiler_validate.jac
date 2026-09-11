@@ -1021,7 +1021,9 @@ def validate_eval_expr(e: expr, allow_top_await: bool = False) -> validation_res
 
 # Resolve future directives before scopes are built. Only a leading docstring
 # and other future directives may precede them, including on the same line.
-def future_features(body: list[stmt]) -> tuple[int, validation_result] {
+def future_features(
+    body: list[stmt], check_placement: bool = True
+) -> tuple[int, validation_result] {
     allowed: set[int] = set();
     flags = 0;
     obsolete = (
@@ -1067,6 +1069,9 @@ def future_features(body: list[stmt]) -> tuple[int, validation_result] {
                 );
             }
         }
+    }
+    if not check_placement {
+        return (flags, validation_ok());
     }
     pending: list[ast_node] = [item for item in reversed(body)];
     while pending {

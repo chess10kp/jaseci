@@ -239,6 +239,16 @@ jobs:
               AST_Tests.test_type_params_feature_version \
               AST_Tests.test_type_params_default_feature_version
           done
+      - name: Run upstream AST preprocessing tests
+        run: |
+          for bridge_mode in "--ast-api" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --module test.test_ast.test_ast --tests \
+              ASTOptimizationTests \
+              AST_Tests.test_optimization_levels__debug__ \
+              AST_Tests.test_docstring_optimization_single_node \
+              AST_Tests.test_docstring_optimization_multiple_nodes \
+              AST_Tests.test_non_interned_future_from_ast
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

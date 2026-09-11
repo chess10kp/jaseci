@@ -14,6 +14,7 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     Module,
     Interactive
 }
+import from jaclang.compiler.frontend.python.compiler_preprocess { preprocess_node }
 import from jaclang.compiler.frontend.python.compiler_validate {
     validate_eval_expr,
     validate_module_body,
@@ -109,6 +110,19 @@ def compile_ast(
     return result;
 }
 
+def prepare_ast_output(
+    tree: mod, filename: str, optimize: int, flags: int
+) -> mod | PyObj {
+    if isinstance(tree, (Module, Interactive)) {
+        (features, result) = future_features(tree.body, False);
+        if result.diag is not None {
+            return compiler_diag_to_pyobj(result.diag);
+        }
+        flags |= features;
+    }
+    return preprocess_node(tree, optimize, flags, bool(flags & 0x8000));
+}
+
 def compile_eval_path(source: str, filename: str, mode: str) -> PyObj {
     if mode != "eval" {
         return py_error(
@@ -130,6 +144,10 @@ def compile_eval_ast(e: expr, filename: str) -> PyObj {
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
     }
+    import from jaclang.compiler.backends.py.jacpython.compiler_context {
+        current_optimization_level
+    }
+    e = preprocess_node(e, current_optimization_level(), current_compile_flags(), True);
     check_ast_warnings(e, filename);
     sr = build_module_symtable(
         [
@@ -185,6 +203,10 @@ def compile_exec_ast(m: Module, filename: str, interactive: bool = False) -> PyO
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
     }
+    import from jaclang.compiler.backends.py.jacpython.compiler_context {
+        current_optimization_level
+    }
+    preprocess_node(m, current_optimization_level(), current_compile_flags(), True);
     check_ast_warnings(m, filename);
     sr = build_module_symtable(m.body);
     if sr.diag is not None {
