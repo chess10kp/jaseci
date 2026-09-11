@@ -579,16 +579,25 @@ def emit_function_prologue(
     protect_start = -1;
     g.generator_protect_start = -1;
     if is_suspendable {
-        suspend_loc = def_line_no_columns(firstlineno);
-        g.emit_op(OP_RETURN_GENERATOR, 0, suspend_loc);
-        g.emit_op(OP_POP_TOP, 0, suspend_loc);
-        resume_blk = g.new_block();
-        g.use(resume_blk);
-        protect_start = resume_blk.id;
-        g.generator_protect_start = protect_start;
+        protect_start = emit_suspendable_prologue(g, firstlineno);
     }
     g.emit_op(OP_RESUME, 0, loc(firstlineno, firstlineno, 0, 0));
     return protect_start;
+}
+
+# Shared by functions and source scopes with top-level await. The caller
+# emits RESUME with its own source location after establishing suspension.
+def emit_suspendable_prologue(
+    g: cfg_builder, firstlineno: int, wrap_stopiteration: bool = True
+) -> int {
+    suspend_loc = def_line_no_columns(firstlineno);
+    g.emit_op(OP_RETURN_GENERATOR, 0, suspend_loc);
+    g.emit_op(OP_POP_TOP, 0, suspend_loc);
+    resume_blk = g.new_block();
+    g.use(resume_blk);
+    # Top-level coroutine code preserves escaping StopIteration unchanged.
+    g.generator_protect_start = resume_blk.id if wrap_stopiteration else -1;
+    return g.generator_protect_start;
 }
 
 # Suspendable functions: PEP 479 StopIteration handler at end of co_code.

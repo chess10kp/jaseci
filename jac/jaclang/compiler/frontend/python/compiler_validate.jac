@@ -813,9 +813,11 @@ def validate_except_star_exits(body: list[stmt]) -> validation_result {
 
 # Suspension legality follows lexical scopes, including expression fields
 # such as defaults, decorators, annotations and comprehension filters.
-def validate_suspensions(roots: list[ast_node]) -> validation_result {
+def validate_suspensions(
+    roots: list[ast_node], allow_top_await: bool = False
+) -> validation_result {
     pending: list[tuple[ast_node, bool, bool, bool, bool]] = [
-        (item, False, False, False, False) for item in reversed(roots)
+        (item, False, allow_top_await, False, False) for item in reversed(roots)
     ];
     while pending {
         (item, in_function, in_async, in_comp, in_annotation) = pending.pop();
@@ -910,8 +912,10 @@ def validate_suspensions(roots: list[ast_node]) -> validation_result {
     return validation_ok();
 }
 
-def validate_module_body(body: list[stmt]) -> validation_result {
-    result = validate_suspensions([item for item in body]);
+def validate_module_body(
+    body: list[stmt], allow_top_await: bool = False
+) -> validation_result {
+    result = validate_suspensions([item for item in body], allow_top_await);
     if result.diag is not None {
         return result;
     }
@@ -919,11 +923,13 @@ def validate_module_body(body: list[stmt]) -> validation_result {
     if result.diag is not None {
         return result;
     }
-    return validate_stmt_list(body, in_function=False, in_loop=False, in_async=False);
+    return validate_stmt_list(
+        body, in_function=False, in_loop=False, in_async=allow_top_await
+    );
 }
 
-def validate_eval_expr(e: expr) -> validation_result {
-    result = validate_suspensions([e]);
+def validate_eval_expr(e: expr, allow_top_await: bool = False) -> validation_result {
+    result = validate_suspensions([e], allow_top_await);
     if result.diag is not None {
         return result;
     }

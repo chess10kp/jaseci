@@ -126,7 +126,7 @@ def compile_eval_path(source: str, filename: str, mode: str) -> PyObj {
 }
 
 def compile_eval_ast(e: expr, filename: str) -> PyObj {
-    vr = validate_eval_expr(e);
+    vr = validate_eval_expr(e, bool(current_compile_flags() & 0x2000));
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
     }
@@ -181,7 +181,7 @@ def compile_exec_ast(m: Module, filename: str, interactive: bool = False) -> PyO
     if current_compile_flags() & 0x1000000 {
         stringify_future_annotations(m, filename);
     }
-    vr = validate_module_body(m.body);
+    vr = validate_module_body(m.body, bool(current_compile_flags() & 0x2000));
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);
     }

@@ -322,7 +322,13 @@ import from jaclang.compiler.backends.py.jacpython.flowgraph {
     optimize_swap_range
 }
 import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
+import from jaclang.compiler.backends.py.jacpython.compiler_context {
+    current_compile_flags
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_emit {
+    emit_suspendable_prologue,
+    emit_generator_except_handler,
+    flush_pending_await_footers,
     cellvars_from_sym,
     codegen_busy,
     codegen_fail,
@@ -562,7 +568,7 @@ def compile_eval(
     }
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_top);
-    g.emit_op(OP_RESUME, 0, loc(0, firstlineno, 0, 0));
+    protect_start = emit_source_resume(g, sym_top, firstlineno);
     cleanup = visit_expr(g, e, false_shortcircuit_returns=True);
     if codegen_busy(g) {
         u.flush_late_consts();
@@ -597,6 +603,7 @@ def compile_eval(
             g.emit_op(OP_RETURN_VALUE, 0, eloc);
         }
     }
+    finish_source_scope(g, protect_start);
     u.flush_late_consts();
     return u;
 }
@@ -1423,7 +1430,7 @@ def compile_exec(
             OP_MAKE_CELL, localsplus_index_u(u, "__conditional_annotations__"), no_loc()
         );
     }
-    g.emit_op(OP_RESUME, 0, ploc0);
+    protect_start = emit_source_resume(g, sym_top, firstlineno);
     if ann_plan.any_annotation {
         sloc = ann_plan.head_loc;
         if sloc is None {
@@ -1469,7 +1476,7 @@ def compile_exec(
                 }
             }
             u.add_const(py_none());
-            stmt_handlers["deferred_comp_handlers"](g);
+            finish_source_scope(g, protect_start);
             u.flush_late_consts();
             return u;
         }
@@ -1494,14 +1501,14 @@ def compile_exec(
         # Dead implicit-return None const, interned like CPython's unreachable
         # epilogue; kept by remove_unused_consts only at index 0.
         u.add_const(py_none());
-        stmt_handlers["deferred_comp_handlers"](g);
+        finish_source_scope(g, protect_start);
         u.flush_late_consts();
         return u;
     }
     none_idx = u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, last);
     g.emit_op(OP_RETURN_VALUE, 0, last);
-    stmt_handlers["deferred_comp_handlers"](g);
+    finish_source_scope(g, protect_start);
     u.flush_late_consts();
     return u;
 }
@@ -1513,3 +1520,23 @@ def compile_exec(
 # would close an import cycle. Each sibling registers its visitors at module
 # load; entry drivers (product_compile, compiler_slice) import the siblings so
 # registration runs before the first compile. See compiler_dispatch.jac.
+
+# Module and eval code keep mapping locals, even when they produce a coroutine.
+# Scope analysis runs before optimization, so elided awaits still set CO_COROUTINE.
+def emit_source_resume(
+    g: cfg_builder, scope: sym_block | None, firstlineno: int
+) -> int {
+    protect_start = -1;
+    if scope is not None and scope.coroutine and current_compile_flags() & 0x2000 {
+        g.u.flags |= CO_COROUTINE;
+        protect_start = emit_suspendable_prologue(g, firstlineno, False);
+    }
+    g.emit_op(OP_RESUME, 0, loc(0, firstlineno, 0, 0));
+    return protect_start;
+}
+
+def finish_source_scope(g: cfg_builder, protect_start: int) {
+    flush_pending_await_footers(g);
+    stmt_handlers["deferred_comp_handlers"](g);
+    emit_generator_except_handler(g, protect_start);
+}

@@ -1256,6 +1256,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             body = fo.body;
             orelse = fo.orelse;
         } elif isinstance(s, AsyncFor) {
+            b.cur.coroutine = True;
             afo = s as AsyncFor;
             if not sym_visit_store_target(b, afo.target) {
                 return False;
@@ -1360,6 +1361,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         return True;
     }
     if isinstance(s, AsyncWith) {
+        b.cur.coroutine = True;
         async_with_stmt = s as AsyncWith;
         ii = 0;
         while ii < len(async_with_stmt.items) {

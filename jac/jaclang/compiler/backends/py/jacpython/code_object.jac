@@ -169,7 +169,7 @@ def compile_python(
     if not dont_inherit {
         flags |= sys._getframe(1).f_code.co_flags & 0x1FE0000;
     }
-    if flags & 0xF200 {
+    if flags & 0xD200 {
         raise NotImplementedError(
             "JacPython parsing and optimization flags are not implemented yet"
         );
