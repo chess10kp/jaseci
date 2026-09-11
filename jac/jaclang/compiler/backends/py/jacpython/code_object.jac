@@ -104,18 +104,21 @@ def code_object(code: PyCode, constants: dict[str, any] | None = None) -> CodeTy
         tuple(code.cellvars)
     );
     constructor = (sys as any)?._jacpython_code;
-    if constructor is not None {
-        metadata = {};
-        for name in code.varnames {
-            hidden = not bool(code.flags & 1);
-            if name.startswith(".comp.") or hidden {
-                public_name = name[6:] if name.startswith(".comp.") else name;
-                metadata[name] = (public_name, hidden);
-            }
+    metadata = {};
+    for name in code.varnames {
+        hidden = not bool(code.flags & 1);
+        if name.startswith(".comp.") or hidden {
+            public_name = name[6:] if name.startswith(".comp.") else name;
+            metadata[name] = (public_name, hidden);
         }
-        if metadata {
-            result = constructor(result, metadata);
+    }
+    if metadata {
+        if constructor is None {
+            raise RuntimeError(
+                "Rebuild the Python runtime with JacPython code metadata support"
+            );
         }
+        result = constructor(result, metadata);
     }
     return result;
 }

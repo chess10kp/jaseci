@@ -101,6 +101,8 @@ def from_python_ast(value: any) -> any {
             fields[key] = constant_from_python(child);
         } elif isinstance(value, ast.MatchSingleton) and key == "value" {
             fields[key] = constant_from_python(child);
+        } elif isinstance(value, ast.Interpolation) and key == "str" {
+            fields[key] = constant_from_python(child);
         } else {
             fields[key] = from_python_ast(child);
         }

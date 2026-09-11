@@ -121,6 +121,8 @@ import from jaclang.runtime.python.opcode_meta {
     OP_FORMAT_SIMPLE,
     OP_FORMAT_WITH_SPEC,
     OP_BUILD_STRING,
+    OP_BUILD_TEMPLATE,
+    OP_BUILD_INTERPOLATION,
     OP_LOAD_FAST,
     OP_LOAD_FAST_BORROW,
     OP_LOAD_FAST_CHECK,
@@ -460,7 +462,12 @@ def fast_varnames_from_sym(block: sym_block) -> list[str] {
             }
             li = li + 1;
         }
-        return out + [name for name in inline_storage_names(block) if name not in out];
+        return out
+            + [
+                name
+                for name in inline_storage_names(block)
+                if name not in out
+            ];
     }
     names = sym_sorted_names(block.symbols);
     out: list[str] = [];
@@ -1629,6 +1636,10 @@ def fstring_conversion_oparg(conversion: int) -> int {
 def emit_joinedstr(g: cfg_builder, js: JoinedStr) {
     jsloc = nloc(js.lineno, js.end_lineno, js.col_offset, js.end_col_offset);
     vals = js.values if js.values is not None else [];
+    if not vals {
+        g.emit_op(OP_LOAD_CONST, g.u.add_const(PyStr(t="str", val="")), jsloc);
+        return;
+    }
     vi = 0;
     while vi < len(vals) {
         v = vals[vi];
@@ -1675,9 +1686,48 @@ def emit_joinedstr(g: cfg_builder, js: JoinedStr) {
         }
         vi = vi + 1;
     }
-    if len(vals) >= 2 {
+    if len(vals) > 1 {
         g.emit_op(OP_BUILD_STRING, len(vals), jsloc);
     }
+}
+
+def emit_template(g: cfg_builder, template: TemplateStr) {
+    strings: list[PyObj] = [];
+    interpolations: list[Interpolation] = [];
+    text = "";
+    for part in template.values {
+        if isinstance(part, Constant) and isinstance(part.value, PyStr) {
+            text += part.value.val;
+        } elif isinstance(part, Interpolation) {
+            strings.append(PyStr(t="str", val=text));
+            text = "";
+            interpolations.append(part);
+        } else {
+            codegen_fail(g, "TypeError", "invalid template string component");
+            return;
+        }
+    }
+    strings.append(PyStr(t="str", val=text));
+    location = expr_loc(template);
+    g.emit_op(
+        OP_LOAD_CONST, g.u.add_const(PyTuple(t="tuple", items=strings)), location
+    );
+    for part in interpolations {
+        visit_expr(g, part.value);
+        g.emit_op(OP_LOAD_CONST, g.u.add_const(part.str), expr_loc(part));
+        conversion = fstring_conversion_oparg(part.conversion);
+        if conversion < 0 {
+            codegen_fail(g, "SyntaxError", "invalid template string conversion");
+            return;
+        }
+        if part.format_spec is not None {
+            visit_expr(g, part.format_spec);
+        }
+        operand = 2 | (conversion << 2) | int(part.format_spec is not None);
+        g.emit_op(OP_BUILD_INTERPOLATION, operand, expr_loc(part));
+    }
+    g.emit_op(OP_BUILD_TUPLE, len(interpolations), location);
+    g.emit_op(OP_BUILD_TEMPLATE, 0, location);
 }
 
 # Visit one expression. Returns a chained-compare cleanup block when the caller
@@ -1690,6 +1740,14 @@ def visit_expr(
     register_int_const: bool = True
 ) -> basicblock | None {
     if codegen_busy(g) {
+        return None;
+    }
+    if isinstance(e, Starred) {
+        codegen_fail(g, "SyntaxError", "can't use starred expression here");
+        return None;
+    }
+    if isinstance(e, TemplateStr) {
+        emit_template(g, e);
         return None;
     }
     if isinstance(e, Constant) {

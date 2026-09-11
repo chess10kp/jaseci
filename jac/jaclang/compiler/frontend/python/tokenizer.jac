@@ -27,6 +27,9 @@ import from jaclang.compiler.frontend.python.token_model {
     FSTRING_START,
     FSTRING_MIDDLE,
     FSTRING_END,
+    TSTRING_START,
+    TSTRING_MIDDLE,
+    TSTRING_END,
     TOK_NO_COLUMN,
     EXACT_TOKEN_TYPES,
     exact_token_type,
@@ -41,6 +44,23 @@ glob TABSIZE: int = 8,
      MAXINDENT: int = 100;
 
 # ---------------- tokenizer state ----------------
+obj string_field {
+    has paren: int,
+        in_spec: bool = False,
+        spec_started: bool = False;
+}
+
+obj string_mode {
+    has quote: str,
+        qlen: int,
+        raw: bool,
+        template: bool = False,
+        lineno: int = 1,
+        col_offset: int = 0,
+        resume: bool = True,
+        fields: list[string_field] = [];
+}
+
 obj tok_state {
     has source: str,
         pos: int = 0,
@@ -56,14 +76,9 @@ obj tok_state {
         indstack: list[int] = [0],
         pending: int = 0,
         paren_level: int = 0,
-        fstring_active: bool = False,
-        fstring_quote: str = "",
-        fstring_qlen: int = 1,
-        fstring_raw: bool = False,
-        fstring_expr_depth: int = 0,
-        fstring_resume: bool = False,
-        fstring_in_spec: bool = False,
-        fstring_field_paren: int = 0,
+        paren_stack: list[str] = [],
+        comments: dict[int, list[tuple[int, int]]] = {},
+        string_modes: list[string_mode] = [],
         eof_newline_done: bool = False,
         line_has_code: bool = False;
 }
@@ -311,6 +326,14 @@ def _advance(st: tok_state) -> str {
 
 def _match_operator(st: tok_state) -> tok_token | None {
     rest = st.source[st.pos:st.pos + 3];
+    if st.string_modes and st.string_modes[-1].fields {
+        field = st.string_modes[-1].fields[-1];
+        if st.paren_level == field.paren and rest.startswith(":=") {
+            # At the field boundary ':' begins a format specifier; a walrus
+            # expression needs its own parentheses.
+            rest = ":";
+        }
+    }
     # Longest match first (CPython _PyToken_ThreeChars / TwoChars / OneChar).
     if len(rest) >= 3 {
         spell = rest[0:3];
@@ -346,6 +369,10 @@ def _match_operator(st: tok_state) -> tok_token | None {
     }
     if len(rest) >= 1 {
         spell = rest[0:1];
+        if spell not in EXACT_TOKEN_TYPES
+            and (spell == "\\" or not spell.isprintable() or ord(spell) >= 128) {
+            return None;
+        }
         typ = exact_token_type(spell);
         start_col = st.col_offset;
         st.pos = st.pos + 1;
@@ -531,7 +558,7 @@ def _is_string_prefix_char(ch: str) -> bool {
     if ch == "f" or ch == "F" {
         return True;
     }
-    if ch == "u" or ch == "U" {
+    if ch in ("t", "T", "u", "U") {
         return True;
     }
     return False;
@@ -558,10 +585,25 @@ def _is_string_start(st: tok_state) -> bool {
 }
 
 def _string_syntax_error(st: tok_state, msg: str, start_col: int) -> tok_diag {
+    line = st.lineno;
+    if msg == "EOL while scanning string literal" and st.string_modes {
+        mode = st.string_modes[-1];
+        kind = "t-string" if mode.template else "f-string";
+        if mode.fields {
+            msg = kind + ": expecting '}'";
+        } else {
+            line = mode.lineno;
+            start_col = mode.col_offset;
+            msg = "unterminated "
+                + ("triple-quoted " if mode.qlen == 3 else "")
+                + kind
+                + " literal";
+        }
+    }
     bad = mk_diag(
         "SyntaxError",
         msg,
-        tok_loc_span(st.lineno, st.lineno, start_col, st.col_offset),
+        tok_loc_span(line, line, start_col, start_col + 1),
         st.filename
     );
     st.error = bad;
@@ -572,8 +614,16 @@ def _string_syntax_error(st: tok_state, msg: str, start_col: int) -> tok_diag {
 def _fstring_emit_middle(
     st: tok_state, text: str, lineno: int, col_offset: int, end_col_offset: int
 ) -> tok_token {
+    mode = st.string_modes[-1];
+    metadata = "raw" if mode.raw else "";
+    if not mode.raw
+        and _peek(st) in ("{", "}")
+        and (len(text) - len(text.rstrip("\\"))) % 2 {
+        metadata = "escape:" + _peek(st);
+    }
     return tok_token(
-        tok_type=FSTRING_MIDDLE,
+        tok_type=TSTRING_MIDDLE if mode.template else FSTRING_MIDDLE,
+        metadata=metadata,
         spelling=text,
         lineno=lineno,
         col_offset=col_offset,
@@ -585,15 +635,9 @@ def _fstring_emit_middle(
 def _fstring_emit_end(
     st: tok_state, spelling: str, lineno: int, col_offset: int
 ) -> tok_token {
-    st.fstring_active = False;
-    st.fstring_quote = "";
-    st.fstring_qlen = 1;
-    st.fstring_raw = False;
-    st.fstring_expr_depth = 0;
-    st.fstring_resume = False;
-    st.fstring_in_spec = False;
+    mode = st.string_modes.pop();
     tok = tok_token(
-        tok_type=FSTRING_END,
+        tok_type=TSTRING_END if mode.template else FSTRING_END,
         spelling=spelling,
         lineno=lineno,
         col_offset=col_offset,
@@ -606,73 +650,79 @@ def _fstring_emit_end(
 
 def _fstring_scan_format_spec(st: tok_state) -> tok_token | tok_diag | None {
     # Format-spec mode (PEP 701): after the terminating ':' of a replacement
-    # field, text up to the field's '}' scans as FSTRING_MIDDLE. '{{'/'}}'
-    # double; a lone '{' opens a nested replacement field (the operator path
-    # emits its LBRACE); a lone '}' terminates the field (emitted via the
-    # operator path as RBRACE so the parser and depth tracking see it).
-    quote = st.fstring_quote;
-    qlen = st.fstring_qlen;
+    # field, text up to a brace scans as a string middle. Braces begin/end
+    # nested fields; literal brace doubling applies outside format specs.
+    mode = st.string_modes[-1];
+    quote = mode.quote;
+    qlen = mode.qlen;
     start_lineno = st.lineno;
     start_col = st.col_offset;
     buf = "";
     while st.pos < len(st.source) {
         ch = _peek(st);
         if ch == quote {
-            return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+            return _string_syntax_error(
+                st,
+                ("t-string" if mode.template else "f-string")
+                    + ": expecting '}', or format specs",
+                start_col
+            );
         }
-        if qlen == 1 and (ch == "\n" or ch == "\r") {
-            return _string_syntax_error(st, "f-string: expecting '}'", start_col);
-        }
-        if ch == "{" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "{" {
-            buf = buf + "{";
-            _advance(st);
-            _advance(st);
-            continue;
-        }
-        if ch == "}" and st.pos + 1 < len(st.source) and st.source[st.pos + 1] == "}" {
-            buf = buf + "}";
-            _advance(st);
-            _advance(st);
-            continue;
+        if qlen == 1 and ch in ("\n", "\r") {
+            return _string_syntax_error(
+                st,
+                ("t-string" if mode.template else "f-string")
+                    + ": newlines are not allowed in format specifiers",
+                start_col
+            );
         }
         if ch == "{" or ch == "}" {
-            if len(buf) > 0 {
-                st.fstring_resume = True;
+            if len(buf) > 0 or not mode.fields[-1].spec_started {
+                mode.fields[-1].spec_started = True;
+                mode.resume = True;
                 return _fstring_emit_middle(
                     st, buf, start_lineno, start_col, st.col_offset
                 );
             }
             # Let the operator path emit LBRACE (nested field) or RBRACE
-            # (field terminator) so fstring_expr_depth tracking applies.
+            # (field terminator) so the field stack tracks nested format specs.
             return None;
         }
-        if ch == "\\" and not st.fstring_raw {
-            buf = buf + ch;
-            _advance(st);
-            if st.pos < len(st.source) {
-                buf = buf + st.source[st.pos];
-                _advance(st);
+        if ch == "\\" {
+            buf += _advance(st);
+            if not mode.raw and st.source.startswith("N{", st.pos) {
+                while st.pos < len(st.source) {
+                    if st.source.startswith(mode.quote * mode.qlen, st.pos) {
+                        break;
+                    }
+                    escaped = _advance(st);
+                    buf += escaped;
+                    if escaped == "}" {
+                        break;
+                    }
+                }
+            } elif st.pos < len(st.source) and _peek(st) not in ("{", "}") {
+                buf += _advance(st);
             }
             continue;
         }
         buf = buf + ch;
         _advance(st);
     }
-    return _string_syntax_error(st, "f-string: expecting '}'", start_col);
+    return _string_syntax_error(
+        st, ("t-string" if mode.template else "f-string") + ": expecting '}'", start_col
+    );
 }
 
 def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
-    st.fstring_resume = False;
-    if st.fstring_in_spec {
+    mode = st.string_modes[-1];
+    mode.resume = False;
+    if mode.fields and mode.fields[-1].in_spec {
         return _fstring_scan_format_spec(st);
     }
-    if st.fstring_expr_depth > 0 {
-        col = st.col_offset;
-        return _fstring_emit_middle(st, "", st.lineno, col, col);
-    }
-    quote = st.fstring_quote;
-    qlen = st.fstring_qlen;
-    raw = st.fstring_raw;
+    quote = mode.quote;
+    qlen = mode.qlen;
+    raw = mode.raw;
     start_lineno = st.lineno;
     start_col = st.col_offset;
     buf = "";
@@ -682,7 +732,7 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
             if ch == quote {
                 end_col = st.col_offset;
                 if len(buf) > 0 {
-                    st.fstring_resume = True;
+                    mode.resume = True;
                     return _fstring_emit_middle(
                         st, buf, start_lineno, start_col, end_col
                     );
@@ -703,7 +753,7 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
                 and st.source[st.pos + 2] == quote {
                 end_col = st.col_offset;
                 if len(buf) > 0 {
-                    st.fstring_resume = True;
+                    mode.resume = True;
                     return _fstring_emit_middle(
                         st, buf, start_lineno, start_col, end_col
                     );
@@ -729,6 +779,14 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
             _advance(st);
             continue;
         }
+        if ch == "}" {
+            return _string_syntax_error(
+                st,
+                ("t-string" if mode.template else "f-string")
+                    + ": single '}' is not allowed",
+                start_col
+            );
+        }
         if ch == "{" {
             if len(buf) > 0 {
                 end_col = st.col_offset;
@@ -736,12 +794,21 @@ def _fstring_next_segment(st: tok_state) -> tok_token | tok_diag | None {
             }
             return None;
         }
-        if ch == "\\" and not raw {
-            buf = buf + ch;
-            _advance(st);
-            if st.pos < len(st.source) {
-                buf = buf + st.source[st.pos];
-                _advance(st);
+        if ch == "\\" {
+            buf += _advance(st);
+            if not mode.raw and st.source.startswith("N{", st.pos) {
+                while st.pos < len(st.source) {
+                    if st.source.startswith(mode.quote * mode.qlen, st.pos) {
+                        break;
+                    }
+                    escaped = _advance(st);
+                    buf += escaped;
+                    if escaped == "}" {
+                        break;
+                    }
+                }
+            } elif st.pos < len(st.source) and _peek(st) not in ("{", "}") {
+                buf += _advance(st);
             }
             continue;
         }
@@ -755,15 +822,20 @@ def _read_fstring_start(
     st: tok_state, start: int, start_col: int, raw: bool, quote: str, qlen: int
 ) -> tok_token | tok_diag {
     spell = st.source[start:st.pos];
-    st.fstring_active = True;
-    st.fstring_quote = quote;
-    st.fstring_qlen = qlen;
-    st.fstring_raw = raw;
-    st.fstring_expr_depth = 0;
-    st.fstring_resume = True;
-    st.fstring_in_spec = False;
+    if len(st.string_modes) >= 150 {
+        return _string_syntax_error(st, "too many nested f-strings", start_col);
+    }
+    mode = string_mode(
+        quote=quote,
+        qlen=qlen,
+        raw=raw,
+        template="t" in spell.lower(),
+        lineno=st.lineno,
+        col_offset=start_col
+    );
+    st.string_modes.append(mode);
     tok = tok_token(
-        tok_type=FSTRING_START,
+        tok_type=TSTRING_START if mode.template else FSTRING_START,
         spelling=spell,
         lineno=st.lineno,
         col_offset=start_col,
@@ -798,6 +870,11 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
         }
         break;
     }
+    prefix = st.source[start:st.pos].lower();
+    if prefix
+        not in ("", "u", "r", "b", "br", "rb", "f", "fr", "rf", "t", "tr", "rt") {
+        return _string_syntax_error(st, "string prefixes are incompatible", start_col);
+    }
     quote = _peek(st);
     if quote != "'" and quote != "\"" {
         return _string_syntax_error(st, "invalid syntax", start_col);
@@ -814,7 +891,7 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
         _advance(st);
         qlen = 3;
     }
-    if has_f {
+    if has_f or "t" in st.source[start:st.pos].lower() {
         return _read_fstring_start(st, start, start_col, raw, quote, qlen);
     }
     while st.pos < len(st.source) {
@@ -836,7 +913,11 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
             }
             if ch == "\n" or ch == "\r" {
                 return _string_syntax_error(
-                    st, "EOL while scanning string literal", start_col
+                    st,
+                    "EOL while scanning string literal"
+                        if st.string_modes and quote == st.string_modes[-1].quote
+                        else "unterminated string literal",
+                    start_col
                 );
             }
             if ch == "\\" {
@@ -890,7 +971,13 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
         }
         _advance(st);
     }
-    return _string_syntax_error(st, "EOL while scanning string literal", start_col);
+    return _string_syntax_error(
+        st,
+        "EOL while scanning string literal"
+            if st.string_modes and quote == st.string_modes[-1].quote
+            else "unterminated string literal",
+        start_col
+    );
 }
 
 def tokenizer_from_string(source: str, filename: str, exec_input: bool) -> tok_state {
@@ -931,7 +1018,7 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     if pending is not None {
         return pending;
     }
-    if st.fstring_active and st.fstring_resume {
+    if st.string_modes and st.string_modes[-1].resume {
         fseg = _fstring_next_segment(st);
         if fseg is not None {
             if isinstance(fseg, tok_diag) {
@@ -969,9 +1056,13 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         if ch == "#" {
             # Comment: consume to end of line (not the newline itself, which the
             # newline branch handles). Matches CPython's comment-then-NEWLINE.
+            comment_start = st.col_offset;
             while st.pos < len(st.source) and _peek(st) != "\n" and _peek(st) != "\r" {
                 _advance(st);
             }
+            st.comments.setdefault(st.lineno, []).append(
+                (comment_start, st.col_offset)
+            );
             continue;
         }
         if ch == "\\"
@@ -1059,32 +1150,56 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         }
         op = _match_operator(st);
         if op is not None {
-            if st.fstring_active {
-                if op.tok_type == LBRACE {
-                    st.fstring_expr_depth = st.fstring_expr_depth + 1;
-                    if st.fstring_expr_depth == 1 {
-                        # Paren level right after the field's own '{': a colon
-                        # at this level (and depth 1) is a format-spec start.
-                        st.fstring_field_paren = st.paren_level + 1;
+            if op.spelling in ("(", "[", "{") {
+                if len(st.paren_stack) >= 200 {
+                    return _string_syntax_error(
+                        st, "too many nested parentheses", op.col_offset
+                    );
+                }
+                st.paren_stack.append(op.spelling);
+            } elif op.spelling in (")", "]", "}") {
+                opener = {")": "(", "]": "[", "}": "{"}[op.spelling];
+                if not st.paren_stack or st.paren_stack[-1] != opener {
+                    at_field = st.string_modes
+                        and st.string_modes[-1].fields
+                        and st.paren_level == st.string_modes[-1].fields[-1].paren;
+                    message = "unmatched '" + op.spelling + "'";
+                    if st.paren_stack and not at_field {
+                        message = "closing parenthesis '"
+                            + op.spelling
+                            + "' does not match opening parenthesis '"
+                            + st.paren_stack[-1]
+                            + "'";
+                    } elif at_field {
+                        message = (
+                            "t-string" if st.string_modes[-1].template else "f-string"
+                        )
+                            + ": "
+                            + message;
                     }
+                    return _string_syntax_error(st, message, op.col_offset);
                 }
-                if op.tok_type == COLON
-                    and st.fstring_expr_depth == 1
-                    and st.paren_level == st.fstring_field_paren {
-                    # Top-level ':' in a replacement field starts the format
-                    # spec (PEP 701); following text scans as FSTRING_MIDDLE.
-                    st.fstring_in_spec = True;
-                    st.fstring_resume = True;
-                }
-                if op.tok_type == RBRACE and st.fstring_expr_depth > 0 {
-                    st.fstring_expr_depth = st.fstring_expr_depth - 1;
-                    if st.fstring_expr_depth == 0 {
-                        st.fstring_resume = True;
-                        st.fstring_in_spec = False;
-                    } elif st.fstring_in_spec {
-                        # Closing a nested field inside a spec returns to the
-                        # spec text.
-                        st.fstring_resume = True;
+                st.paren_stack.pop();
+            }
+
+            if st.string_modes {
+                mode = st.string_modes[-1];
+                op.metadata = "t-string" if mode.template else "f-string";
+                literal = not mode.fields or mode.fields[-1].in_spec;
+                if op.tok_type == LBRACE and literal {
+                    if len(mode.fields) >= 3 {
+                        return _string_syntax_error(
+                            st, "f-string: expressions nested too deeply", op.col_offset
+                        );
+                    }
+                    mode.fields.append(string_field(paren=st.paren_level + 1));
+                } elif mode.fields and st.paren_level == mode.fields[-1].paren {
+                    if op.tok_type == COLON {
+                        mode.fields[-1].in_spec = True;
+                        mode.resume = True;
+                    } elif op.tok_type == RBRACE {
+                        mode.fields.pop();
+                        mode.resume = not mode.fields or mode.fields[-1].in_spec;
                     }
                 }
             }
@@ -1093,13 +1208,20 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         }
         bad = mk_diag(
             "SyntaxError",
-            "invalid character in identifier",
+            "unexpected character after line continuation character"
+                if ch == "\\"
+                else "invalid non-printable character U+" + format(ord(ch), "04X")
+                    if not ch.isprintable()
+                    else "invalid character in identifier",
             tok_loc_span(st.lineno, st.lineno, st.col_offset, st.col_offset + 1),
             st.filename
         );
         st.error = bad;
         st.done = True;
         return bad;
+    }
+    if st.string_modes and st.string_modes[-1].fields {
+        return _string_syntax_error(st, "'{' was never closed", st.col_offset);
     }
     if not st.eof_newline_done and len(st.source) > 0 {
         last = st.source[len(st.source) - 1];
@@ -1138,6 +1260,7 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
 def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     token = _tokenizer_next(st);
     if isinstance(token, tok_token) {
+        token.level = st.paren_level;
         if token.tok_type == NEWLINE {
             st.line_has_code = False;
         } elif token.tok_type not in (ENDMARKER, INDENT, DEDENT) {

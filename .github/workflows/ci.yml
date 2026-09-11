@@ -152,7 +152,7 @@ jobs:
     needs: [changes, build-kit]
     if: github.event_name != 'pull_request' || needs.changes.outputs.core == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       JAC_NO_DEV_SOURCE: ""
     steps:
@@ -199,6 +199,13 @@ jobs:
             jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_listcomps --tests ListComprehensionTest
             jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_dictcomps
             jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_setcomps --tests SetComprehensionTest
+          done
+      - name: Compile and run upstream string syntax tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            for test_module in test.test_fstring test.test_tstring; do
+              jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
+            done
           done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the

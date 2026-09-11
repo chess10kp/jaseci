@@ -6890,7 +6890,7 @@ def rule_fstring_conversion(p: peg_parser) -> Name | None {
     if conv_token is not None {
         conv = pa_name_from_token(peg_expect_token(p, NAME));
         if conv is not None {
-            res = pa_check_fstring_conversion(conv_token, conv);
+            res = pa_check_fstring_conversion(p, conv_token, conv);
             return res;
         }
     }
@@ -6998,6 +6998,7 @@ def rule_fstring_replacement_field(p: peg_parser) -> expr | None {
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
                 res = pa_formatted_value(
+                    p,
                     a,
                     debug_expr,
                     conversion,
@@ -9340,7 +9341,7 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
             ) {
                 res = (
                     None
-                        if pa_err_occurred(p) is not None
+                        if pa_err_occurred(p)
                         else pa_raise_syntax(
                             p, True, "f-string: expecting '=', or '!', or ':', or '}'"
                         )
@@ -9365,7 +9366,7 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
                 ) {
                     res = (
                         None
-                            if pa_err_occurred(p) is not None
+                            if pa_err_occurred(p)
                             else pa_raise_syntax(
                                 p, True, "f-string: expecting '!', or ':', or '}'"
                             )
@@ -9405,7 +9406,7 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
             ) {
                 res = (
                     None
-                        if pa_err_occurred(p) is not None
+                        if pa_err_occurred(p)
                         else pa_raise_syntax(p, True, "f-string: expecting ':' or '}'")
                 );
                 return res;
@@ -9426,7 +9427,7 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
                     if (peg_negative_lookahead_token(p, 26)) {
                         res = (
                             None
-                                if pa_err_occurred(p) is not None
+                                if pa_err_occurred(p)
                                 else pa_raise_syntax(
                                     p, True, "f-string: expecting '}', or format specs"
                                 )
@@ -9447,7 +9448,7 @@ def rule_invalid_fstring_replacement_field(p: peg_parser) -> object | None {
             if (peg_negative_lookahead_token(p, 26)) {
                 res = (
                     None
-                        if pa_err_occurred(p) is not None
+                        if pa_err_occurred(p)
                         else pa_raise_syntax(p, True, "f-string: expecting '}'")
                 );
                 return res;
@@ -10692,7 +10693,7 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
             ) {
                 res = (
                     None
-                        if pa_err_occurred(p) is not None
+                        if pa_err_occurred(p)
                         else pa_raise_syntax(
                             p, True, "t-string: expecting '=', or '!', or ':', or '}'"
                         )
@@ -10717,7 +10718,7 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
                 ) {
                     res = (
                         None
-                            if pa_err_occurred(p) is not None
+                            if pa_err_occurred(p)
                             else pa_raise_syntax(
                                 p, True, "t-string: expecting '!', or ':', or '}'"
                             )
@@ -10757,7 +10758,7 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
             ) {
                 res = (
                     None
-                        if pa_err_occurred(p) is not None
+                        if pa_err_occurred(p)
                         else pa_raise_syntax(p, True, "t-string: expecting ':' or '}'")
                 );
                 return res;
@@ -10778,7 +10779,7 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
                     if (peg_negative_lookahead_token(p, 26)) {
                         res = (
                             None
-                                if pa_err_occurred(p) is not None
+                                if pa_err_occurred(p)
                                 else pa_raise_syntax(
                                     p, True, "t-string: expecting '}', or format specs"
                                 )
@@ -10799,7 +10800,7 @@ def rule_invalid_tstring_replacement_field(p: peg_parser) -> object | None {
             if (peg_negative_lookahead_token(p, 26)) {
                 res = (
                     None
-                        if pa_err_occurred(p) is not None
+                        if pa_err_occurred(p)
                         else pa_raise_syntax(p, True, "t-string: expecting '}'")
                 );
                 return res;
@@ -15848,6 +15849,7 @@ def rule_tstring_format_spec_replacement_field(p: peg_parser) -> expr | None {
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
                 res = pa_formatted_value(
+                    p,
                     a,
                     debug_expr,
                     conversion,
@@ -15954,6 +15956,7 @@ def rule_tstring_replacement_field(p: peg_parser) -> expr | None {
                 end_lineno = end_tok.end_lineno;
                 end_col_offset = end_tok.end_col_offset;
                 res = pa_interpolation(
+                    p,
                     a,
                     debug_expr,
                     conversion,
@@ -16917,7 +16920,8 @@ def parse_interactive(source: str, filename: str) -> Interactive | None {
         raise_source_error(p, error);
     }
     if body is None or peg_expect_token(p, ENDMARKER) is None {
-        return finish_parse(p, None, "single");
+        finish_parse(p, None, "single");
+        return None;
     }
     # An inline compound statement needs an explicit terminal newline in
     # interactive mode. An indented suite supplies its own logical boundary.
@@ -16956,7 +16960,7 @@ def source_column(lines: list[str], line: int, column: int) -> int {
     return column;
 }
 
-def raise_source_error(p: peg_parser, error: any) {
+def raise_source_error(p: peg_parser, error: SyntaxError) {
     token = p.tokens[-1] if p.tokens else None;
     line = error.lineno or (token.lineno if token is not None else 1);
     column = error.offset - 1
@@ -16966,7 +16970,8 @@ def raise_source_error(p: peg_parser, error: any) {
     end_column = error.end_offset - 1 if error.end_offset is not None else column + 1;
     lines = p.tok.source.splitlines(keepends=True);
     text = lines[line - 1] if line <= len(lines) else None;
-    raise type(error)(
+    error_type: type[SyntaxError] = type(error);
+    raise error_type(
         error.msg,
         (
             p.filename,
@@ -17012,10 +17017,13 @@ def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
     }
     lines = p.tok.source.splitlines(keepends=True);
     text = lines[line - 1] if line > 0 and line <= len(lines) else "";
+    if message.startswith("unterminated") {
+        text = text.rstrip("\r\n");
+    }
     column = source_column(lines, line, column);
     end_column = source_column(lines, end_line, end_column);
     import builtins;
-    error_type = getattr(builtins, kind, SyntaxError);
+    error_type: type[SyntaxError] = vars(builtins).get(kind, SyntaxError);
     raise error_type(
         message, (p.filename, line, column + 1, text, end_line, end_column + 1)
     );

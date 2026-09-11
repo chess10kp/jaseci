@@ -99,6 +99,8 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     MatchSingleton,
     ImportFrom,
     JoinedStr,
+    TemplateStr,
+    Interpolation,
     FormattedValue,
 }
 import from jaclang.compiler.frontend.python.peg_runtime {
@@ -173,9 +175,38 @@ def pa_name_from_token(tok: peg_token | None) -> Name | None {
     );
 }
 
+def pa_warn_escape(escape: str, tok: peg_token | None) {
+    if tok is not None and tok.warned {
+        return;
+    }
+    if tok is not None {
+        tok.warned = True;
+    }
+    import warnings;
+    kind = "octal escape sequence" if len(escape) == 3 else "escape sequence";
+    escaped = "\\" + escape;
+    message = '"'
+        + escaped
+        + '" is an invalid '
+        + kind
+        + '. Such sequences will not work in the future. Did you mean "\\'
+        + escaped
+        + '"? A raw string is also an option.';
+    try {
+        warnings.warn_explicit(
+            message,
+            SyntaxWarning,
+            tok.filename if tok is not None else "<unknown>",
+            tok.lineno if tok is not None else 1
+        );
+    } except SyntaxWarning as error {
+        raise SyntaxError(str(error));
+    }
+}
+
 # Escape decoding uses the retained string/bytes object runtime, just as
 # CPython's string_parser.c does. No parser or compiler API is called here.
-def pa_decode_escape_body(body: str) -> str {
+def pa_decode_escape_body(body: str, tok: peg_token | None = None) -> str {
     import codecs;
     encoded: list[str] = [];
     i = 0;
@@ -184,6 +215,13 @@ def pa_decode_escape_body(body: str) -> str {
         if ch == "\\" and i + 1 < len(body) {
             following = body[i + 1];
             if ord(following) < 128 {
+                if following not in "\\\"'abfnrtv\n\r01234567xuUN" {
+                    pa_warn_escape(following, tok);
+                } elif following in "4567"
+                    and len(body[i + 1:i + 4]) == 3
+                    and all(c in "01234567" for c in body[i + 1:i + 4]) {
+                    pa_warn_escape(body[i + 1:i + 4], tok);
+                }
                 encoded.append(ch + following);
                 i += 2;
                 continue;
@@ -199,9 +237,13 @@ def pa_decode_escape_body(body: str) -> str {
         i += 1;
     }
     try {
-        return codecs.decode("".join(encoded).encode("ascii"), "unicode_escape");
+        import warnings;
+        with warnings.catch_warnings() {
+            warnings.simplefilter("ignore", DeprecationWarning);
+            return codecs.decode("".join(encoded).encode("ascii"), "unicode_escape");
+        }
     } except UnicodeError as error {
-        raise SyntaxError(str(error));
+        raise SyntaxError("(unicode error) " + str(error));
     }
 }
 
@@ -222,7 +264,9 @@ def pa_decode_bytes_escape_body(body: str, raw: bool) -> list[int] {
     }
 }
 
-def pa_decode_string_literal_spelling(spelling: str) -> str | list[int] | None {
+def pa_decode_string_literal_spelling(
+    spelling: str, tok: peg_token | None = None
+) -> str | list[int] | None {
     if len(spelling) == 0 {
         return None;
     }
@@ -274,7 +318,7 @@ def pa_decode_string_literal_spelling(spelling: str) -> str | list[int] | None {
     if raw {
         return body;
     }
-    return pa_decode_escape_body(body);
+    return pa_decode_escape_body(body, tok);
 }
 
 def pa_constant_from_fstring_middle(
@@ -284,10 +328,14 @@ def pa_constant_from_fstring_middle(
         return None;
     }
     body = tok.spelling;
-    if raw {
+    if tok.metadata is not None and tok.metadata.startswith("escape:") {
+        pa_warn_escape(tok.metadata[7:], tok);
+        body += "\\";
+    }
+    if raw or tok.metadata == "raw" {
         decoded = body;
     } else {
-        decoded = pa_decode_escape_body(body);
+        decoded = pa_decode_escape_body(body, tok);
     }
     return Constant(
         value=PyStr(t="str", val=decoded),
@@ -303,7 +351,7 @@ def pa_constant_from_string(tok: peg_token | None) -> Constant | None {
     if tok is None {
         return None;
     }
-    decoded = pa_decode_string_literal_spelling(tok.spelling);
+    decoded = pa_decode_string_literal_spelling(tok.spelling, tok);
     if decoded is None {
         return None;
     }
@@ -326,6 +374,30 @@ def pa_constant_from_string(tok: peg_token | None) -> Constant | None {
 def pa_concatenate_strings(parts: list[object]) -> expr | None {
     if len(parts) == 0 {
         return None;
+    }
+    byte_parts = [
+        part
+        for part in parts
+        if isinstance(part, Constant) and isinstance(part.value, PyBytes)
+    ];
+    if byte_parts {
+        if len(byte_parts) != len(parts) {
+            raise SyntaxError("cannot mix bytes and nonbytes literals");
+        }
+        first = byte_parts[0];
+        last = byte_parts[-1];
+        data: list[int] = [];
+        for part in byte_parts {
+            data.extend((part.value as PyBytes).val);
+        }
+        return Constant(
+            value=PyBytes(t="bytes", val=data),
+            kind=None,
+            lineno=first.lineno,
+            col_offset=first.col_offset,
+            end_lineno=last.end_lineno,
+            end_col_offset=last.end_col_offset
+        );
     }
     has_fstring = False;
     i = 0;
@@ -387,9 +459,6 @@ def pa_concatenate_strings(parts: list[object]) -> expr | None {
         }
         i = i + 1;
     }
-    if len(figures) == 0 {
-        return None;
-    }
     # Merge adjacent literal figures (CPython concatenates neighboring
     # Constants when gluing implicitly-joined strings into one JoinedStr).
     merged: list[expr] = [];
@@ -450,7 +519,7 @@ def pa_concatenate_strings(parts: list[object]) -> expr | None {
 }
 
 def pa_constant_from_token(tok: peg_token | None) -> Constant | None {
-    return pa_constant_from_string(tok);
+    return pa_constant_from_fstring_middle(tok, False);
 }
 
 def pa_decoded_constant_from_token(tok: peg_token | None) -> Constant | None {
@@ -1728,6 +1797,14 @@ def pa_raise_kvpair_error(p: peg_parser, `node: expr) -> None {
 }
 
 def pa_check_legacy_stmt_or_raise(p: peg_parser, a: object, b: object) -> None {
+    if isinstance(a, Name) and a.id in ("print", "exec") {
+        return None;
+    }
+    if p.mark > 0 and p.tokens[p.mark - 1].level > 0 {
+        return pa_raise_syntax_known_range(
+            p, False, a, b, "invalid syntax. Perhaps you forgot a comma?"
+        );
+    }
     return None;
 }
 
@@ -1776,7 +1853,32 @@ def pa_check_legacy_stmt(p: peg_parser, `node: object) -> bool {
 }
 
 def pa_concatenate_tstrings(parts: list[object]) -> expr | None {
-    return None;
+    strings: list[object] = [];
+    for part in parts {
+        if not isinstance(part, TemplateStr) {
+            return None;
+        }
+        strings.append(
+            JoinedStr(
+                values=part.values,
+                lineno=part.lineno,
+                col_offset=part.col_offset,
+                end_lineno=part.end_lineno,
+                end_col_offset=part.end_col_offset
+            )
+        );
+    }
+    joined = pa_concatenate_strings(strings);
+    if not isinstance(joined, JoinedStr) {
+        return None;
+    }
+    return TemplateStr(
+        values=joined.values,
+        lineno=joined.lineno,
+        col_offset=joined.col_offset,
+        end_lineno=joined.end_lineno,
+        end_col_offset=joined.end_col_offset
+    );
 }
 
 def pa_ensure_imaginary(`node: expr) -> expr {
@@ -1970,68 +2072,31 @@ def pa_setup_full_format_spec(
     end_lineno: int,
     end_col_offset: int
 ) -> expr | None {
-    if colon is None {
-        return None;
-    }
-    non_empty: list[expr] = [];
-    i = 0;
-    while i < len(spec) {
-        item = spec[i];
-        if isinstance(item, Constant) {
-            c = item as Constant;
-            if isinstance(c.value, PyStr) and len((c.value as PyStr).val) == 0 {
-                i = i + 1;
-                continue;
-            }
-        }
-        non_empty.append(item);
-        i = i + 1;
-    }
-    if len(non_empty) == 0 {
-        return JoinedStr(
-            values=[],
-            lineno=lineno,
-            col_offset=col_offset,
-            end_lineno=end_lineno,
-            end_col_offset=end_col_offset
-        );
-    }
-    if len(non_empty) == 1 and isinstance(non_empty[0], Constant) {
-        return JoinedStr(
-            values=non_empty,
-            lineno=lineno,
-            col_offset=col_offset,
-            end_lineno=end_lineno,
-            end_col_offset=end_col_offset
-        );
-    }
-    joined = pa_concatenate_strings(non_empty);
-    if joined is None {
-        return None;
-    }
-    if isinstance(joined, Constant) {
-        return JoinedStr(
-            values=[joined],
-            lineno=lineno,
-            col_offset=col_offset,
-            end_lineno=end_lineno,
-            end_col_offset=end_col_offset
-        );
-    }
-    return joined;
+    return JoinedStr(
+        values=pa_resize_fstring_parts(colon, spec),
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
 }
 
-def pa_check_fstring_conversion(conv_token: peg_token, conv: Name) -> Name | None {
+def pa_check_fstring_conversion(
+    p: peg_parser, conv_token: peg_token, conv: Name
+) -> Name | None {
+    kind = conv_token.metadata or "f-string";
+    message = "";
     if conv_token.lineno != conv.lineno
         or conv_token.end_col_offset != conv.col_offset {
-        return None;
+        message = kind + ": conversion type must come right after the exclamation mark";
+    } elif conv.id not in ("s", "r", "a") {
+        message = kind
+            + ": invalid conversion character "
+            + repr(conv.id)
+            + ": expected 's', 'r', or 'a'";
     }
-    if len(conv.id) != 1 {
-        return None;
-    }
-    ch = conv.id[0];
-    if ch != "s" and ch != "r" and ch != "a" {
-        return None;
+    if message {
+        raise SyntaxError(message, (p.filename, conv.lineno, conv.col_offset + 1, ""));
     }
     return conv;
 }
@@ -2049,11 +2114,41 @@ def _fstring_prefix_is_raw(start: peg_token) -> bool {
     return False;
 }
 
-def _fstring_debug_prefix(expression: expr) -> str {
-    if isinstance(expression, Name) {
-        return (expression as Name).id + "=";
+def interpolation_text(
+    p: peg_parser,
+    lineno: int,
+    col_offset: int,
+    conversion: object,
+    format: object,
+    closing_brace: peg_token
+) -> str {
+    end_line = closing_brace.lineno;
+    end_col = closing_brace.col_offset;
+    if isinstance(conversion, Name) {
+        end_line = conversion.lineno;
+        end_col = conversion.col_offset - 1;
+    } elif isinstance(format, JoinedStr) {
+        end_line = format.lineno;
+        end_col = format.col_offset;
     }
-    return "=";
+    if not p.source_lines {
+        p.source_lines = p.tok.source.encode("utf-8").splitlines(keepends=True);
+    }
+    lines = p.source_lines;
+    fragments: list[bytes] = [];
+    for line in range(lineno, end_line + 1) {
+        start = col_offset + 1 if line == lineno else 0;
+        end = end_col if line == end_line else len(lines[line - 1]);
+        for (comment_start, comment_end) in p.tok.comments.get(line, []) {
+            if comment_end <= start or comment_start >= end {
+                continue;
+            }
+            fragments.append(lines[line - 1][start:max(start, comment_start)]);
+            start = min(end, comment_end);
+        }
+        fragments.append(lines[line - 1][start:end]);
+    }
+    return b"".join(fragments).decode("utf-8");
 }
 
 def _interpolation_conversion(
@@ -2279,10 +2374,19 @@ def pa_template_str(
     end_lineno: int,
     end_col_offset: int
 ) -> expr | None {
-    return None;
+    start = a as peg_token;
+    end = c as peg_token;
+    return TemplateStr(
+        values=pa_resize_fstring_parts(start, b),
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end.end_lineno,
+        end_col_offset=end.end_col_offset
+    );
 }
 
 def pa_formatted_value(
+    p: peg_parser,
     a: object,
     b: object,
     c: object,
@@ -2332,7 +2436,12 @@ def pa_formatted_value(
         debug_end_col = closing_brace.end_col_offset;
     }
     dbg_const = Constant(
-        value=PyStr(t="str", val=_fstring_debug_prefix(expression)),
+        value=PyStr(
+            t="str",
+            val=interpolation_text(
+                p, lineno, col_offset, conversion, format, closing_brace
+            )
+        ),
         kind=None,
         lineno=lineno,
         col_offset=col_offset + 1,
@@ -2349,6 +2458,7 @@ def pa_formatted_value(
 }
 
 def pa_interpolation(
+    p: peg_parser,
     a: object,
     b: object,
     c: object,
@@ -2359,5 +2469,25 @@ def pa_interpolation(
     end_lineno: int,
     end_col_offset: int
 ) -> expr | None {
-    return None;
+    expression = a as expr;
+    closing = e as peg_token;
+    text = interpolation_text(p, lineno, col_offset, c, d, closing);
+    interpolation = Interpolation(
+        value=expression,
+        str=PyStr(t="str", val=text.rstrip("= \t\r\n\f")),
+        conversion=_interpolation_conversion(b, c, d),
+        format_spec=d as expr if d is not None else None,
+        lineno=lineno,
+        col_offset=col_offset,
+        end_lineno=end_lineno,
+        end_col_offset=end_col_offset
+    );
+    if b is None {
+        return interpolation;
+    }
+    debug = pa_formatted_value(
+        p, a, b, c, d, e, lineno, col_offset, end_lineno, end_col_offset
+    ) as JoinedStr;
+    debug.values[-1] = interpolation;
+    return debug;
 }

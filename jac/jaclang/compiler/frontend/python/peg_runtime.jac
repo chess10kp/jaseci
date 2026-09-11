@@ -56,6 +56,8 @@ obj peg_token {
         end_col_offset: int,
         level: int = 0,
         metadata: str | None = None,
+        filename: str = "<unknown>",
+        warned: bool = False,
         memo_head: peg_memo | None = None;
 }
 
@@ -73,6 +75,7 @@ obj peg_memo_hit {
 obj peg_parser {
     has tok: tok_state,
         tokens: list[peg_token] = [],
+        source_lines: list[bytes] = [],
         mark: int = 0,
         keyword_lists: list[list[peg_keyword_entry]] = [],
         soft_keywords: list[str] = [],
@@ -179,6 +182,7 @@ def peg_fill_token(p: peg_parser) -> bool {
     }
     pt = peg_token_from_tok(tok);
     pt.tok_type = tok_type;
+    pt.filename = p.filename;
     p.tokens.append(pt);
     p.parsing_started = True;
     return True;
@@ -200,7 +204,8 @@ def peg_peek_type(p: peg_parser) -> int {
 
 def peg_check_memo(p: peg_parser, rule_type: int) -> peg_memo_hit {
     if not peg_ensure_token(p) {
-        return peg_memo_hit(hit=False);
+        # A terminal lexer error cannot seed a left-recursive rule.
+        return peg_memo_hit(hit=True);
     }
     head = p.tokens[p.mark].memo_head;
     while head is not None {
