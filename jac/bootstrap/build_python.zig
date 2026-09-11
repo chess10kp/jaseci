@@ -58,61 +58,7 @@ pub fn main(init: std.process.Init) !void {
         if (result != .exited or result.exited != 0) return error.HostPythonBuildFailed;
     }
     const smoke = try std.fs.path.join(a, &.{ root, "bootstrap/python/smoke.py" });
-    var hash = std.crypto.hash.sha2.Sha256.init(.{});
-    hash.update(if (host_mode) "build-time-host" else "jacpython-runtime");
-    hash.update(platform);
-    hash.update(builtin.zig_version_string);
-    if (builtin.os.tag == .macos) {
-        const sdk = try std.process.run(a, io, .{ .argv = &.{ "xcrun", "--sdk", "macosx", "--show-sdk-version" } });
-        if (sdk.term != .exited or sdk.term.exited != 0) return error.MissingMacOSSDK;
-        hash.update(std.mem.trim(u8, sdk.stdout, " \r\n"));
-    }
-    for (inputs) |path| {
-        if (host_mode and (std.mem.endsWith(u8, path, "/compiler-bridge.patch") or
-            std.mem.endsWith(u8, path, "/compiler_bridge.c") or std.mem.endsWith(u8, path, "/compiler_bridge.h") or
-            std.mem.endsWith(u8, path, "/prepare_seed.py") or std.mem.endsWith(u8, path, "/seed_runtime.py"))) continue;
-        const full = try std.fs.path.join(a, &.{ root, path });
-        const content = try Io.Dir.cwd().readFileAlloc(io, full, a, .unlimited);
-        hash.update(path);
-        hash.update(content);
-    }
-    if (!host_mode) {
-        // The producing compiler and its Jac/Python inputs are part of the
-        // embedded seed. Source edits must invalidate the reduced runtime.
-        for ([_][]const u8{ "jaclang/vendor/typeshed/PIN", "jaclang/vendor/typeshed/TARBALL_SHA256" }) |path| {
-            hash.update(path);
-            hash.update(try Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(a, &.{ root, path }), a, .limited(1024)));
-        }
-        const package_path = try std.fs.path.join(a, &.{ root, "jaclang" });
-        var package = try Io.Dir.cwd().openDir(io, package_path, .{ .iterate = true });
-        defer package.close(io);
-        var walker = try package.walkSelectively(a);
-        defer walker.deinit();
-        var paths: std.ArrayList([]const u8) = .empty;
-        while (try walker.next(io)) |entry| {
-            if (entry.kind == .directory) {
-                if (!std.mem.startsWith(u8, entry.basename, ".") and
-                    !std.mem.eql(u8, entry.basename, "node_modules") and
-                    !std.mem.eql(u8, entry.basename, "__pycache__") and
-                    !std.mem.eql(u8, entry.basename, "vendor")) try walker.enter(io, entry);
-            } else if (entry.kind == .file and (std.mem.endsWith(u8, entry.path, ".jac") or std.mem.endsWith(u8, entry.path, ".py"))) {
-                try paths.append(a, try a.dupe(u8, entry.path));
-            }
-        }
-        std.mem.sort([]const u8, paths.items, {}, struct {
-            fn less(_: void, left: []const u8, right: []const u8) bool {
-                return std.mem.lessThan(u8, left, right);
-            }
-        }.less);
-        for (paths.items) |path| {
-            hash.update(path);
-            hash.update(try package.readFileAlloc(io, path, a, .unlimited));
-        }
-        hash.update(try Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(a, &.{ host_dest, "build-key" }), a, .limited(128)));
-    }
-    var digest: [32]u8 = undefined;
-    hash.final(&digest);
-    const key = std.fmt.bytesToHex(digest, .lower);
+    const key = try buildKey(io, a, platform, root, host_dest, host_mode);
     const stamp_path = try std.fs.path.join(a, &.{ dest, "build-key" });
     const old = Io.Dir.cwd().readFileAlloc(io, stamp_path, a, .limited(128)) catch "";
     const python = try std.fs.path.join(a, &.{ dest, "python/install/bin/python3.14" });
@@ -168,6 +114,64 @@ pub fn main(init: std.process.Init) !void {
     // Verify relocation before allowing a cache hit on the next invocation.
     try runSmoke(io, python, smoke);
     try Io.Dir.cwd().writeFile(io, .{ .sub_path = stamp_path, .data = &key });
+}
+
+fn buildKey(io: Io, a: std.mem.Allocator, platform: []const u8, root: []const u8, host_dest: []const u8, host_mode: bool) ![64]u8 {
+    var hash = std.crypto.hash.sha2.Sha256.init(.{});
+    hash.update(if (host_mode) "build-time-host" else "jacpython-runtime");
+    hash.update(platform);
+    hash.update(builtin.zig_version_string);
+    if (builtin.os.tag == .macos) {
+        const sdk = try std.process.run(a, io, .{ .argv = &.{ "xcrun", "--sdk", "macosx", "--show-sdk-version" } });
+        if (sdk.term != .exited or sdk.term.exited != 0) return error.MissingMacOSSDK;
+        hash.update(std.mem.trim(u8, sdk.stdout, " \r\n"));
+    }
+    for (inputs) |path| {
+        if (host_mode and (std.mem.endsWith(u8, path, "/compiler-bridge.patch") or
+            std.mem.endsWith(u8, path, "/compiler_bridge.c") or std.mem.endsWith(u8, path, "/compiler_bridge.h") or
+            std.mem.endsWith(u8, path, "/prepare_seed.py") or std.mem.endsWith(u8, path, "/seed_runtime.py"))) continue;
+        const full = try std.fs.path.join(a, &.{ root, path });
+        const content = try Io.Dir.cwd().readFileAlloc(io, full, a, .unlimited);
+        hash.update(path);
+        hash.update(content);
+    }
+    if (!host_mode) {
+        // The producing compiler and its Jac/Python inputs are part of the
+        // embedded seed. Source edits must invalidate the reduced runtime.
+        for ([_][]const u8{ "jaclang/vendor/typeshed/PIN", "jaclang/vendor/typeshed/TARBALL_SHA256" }) |path| {
+            hash.update(path);
+            hash.update(try Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(a, &.{ root, path }), a, .limited(1024)));
+        }
+        const package_path = try std.fs.path.join(a, &.{ root, "jaclang" });
+        var package = try Io.Dir.cwd().openDir(io, package_path, .{ .iterate = true });
+        defer package.close(io);
+        var walker = try package.walkSelectively(a);
+        defer walker.deinit();
+        var paths: std.ArrayList([]const u8) = .empty;
+        while (try walker.next(io)) |entry| {
+            if (entry.kind == .directory) {
+                if (!std.mem.startsWith(u8, entry.basename, ".") and
+                    !std.mem.eql(u8, entry.basename, "node_modules") and
+                    !std.mem.eql(u8, entry.basename, "__pycache__") and
+                    !std.mem.eql(u8, entry.basename, "vendor")) try walker.enter(io, entry);
+            } else if (entry.kind == .file and (std.mem.endsWith(u8, entry.path, ".jac") or std.mem.endsWith(u8, entry.path, ".py"))) {
+                try paths.append(a, try a.dupe(u8, entry.path));
+            }
+        }
+        std.mem.sort([]const u8, paths.items, {}, struct {
+            fn less(_: void, left: []const u8, right: []const u8) bool {
+                return std.mem.lessThan(u8, left, right);
+            }
+        }.less);
+        for (paths.items) |path| {
+            hash.update(path);
+            hash.update(try package.readFileAlloc(io, path, a, .unlimited));
+        }
+        hash.update(try Io.Dir.cwd().readFileAlloc(io, try std.fs.path.join(a, &.{ host_dest, "build-key" }), a, .limited(128)));
+    }
+    var digest: [32]u8 = undefined;
+    hash.final(&digest);
+    return std.fmt.bytesToHex(digest, .lower);
 }
 
 // Only the explicitly separate build-time interpreter retains these inputs.
@@ -308,4 +312,44 @@ test "invalid source manifests fail before pruning" {
     try std.testing.expectError(error.OverlappingSourceEntries, retainSources(io, a, tmp.dir, "Include/\nInclude/Python.h\n"));
     try std.testing.expectError(error.OverlappingSourceEntries, retainSources(io, a, tmp.dir, "Include/Python.h\nInclude/\n"));
     _ = try tmp.dir.statFile(io, "Include/Python.h", .{});
+}
+
+test "seed edits invalidate only the runtime; shared recipes invalidate both stages" {
+    const io = std.testing.io;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    for (inputs) |path| {
+        if (std.fs.path.dirname(path)) |parent| try tmp.dir.createDirPath(io, parent);
+        try tmp.dir.writeFile(io, .{ .sub_path = path, .data = "recipe" });
+    }
+    try tmp.dir.createDirPath(io, "jaclang/vendor/typeshed");
+    for ([_][]const u8{ "PIN", "TARBALL_SHA256" }) |name| {
+        try tmp.dir.writeFile(io, .{ .sub_path = try std.fs.path.join(a, &.{ "jaclang/vendor/typeshed", name }), .data = "pin" });
+    }
+    try tmp.dir.createDirPath(io, "host");
+    try tmp.dir.writeFile(io, .{ .sub_path = "host/build-key", .data = "host-key" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "jaclang/compiler.jac", .data = "compiler" });
+    const root = try tmp.dir.realPathFileAlloc(io, ".", a);
+    const host = try std.fs.path.join(a, &.{ root, "host" });
+    const before_host = try buildKey(io, a, hostPlatform(), root, host, true);
+    const before_runtime = try buildKey(io, a, hostPlatform(), root, host, false);
+    try tmp.dir.writeFile(io, .{ .sub_path = "jaclang/compiler.jac", .data = "changed compiler" });
+    const changed_runtime = try buildKey(io, a, hostPlatform(), root, host, false);
+    try std.testing.expect(!std.mem.eql(u8, &before_runtime, &changed_runtime));
+    try std.testing.expectEqual(before_host, try buildKey(io, a, hostPlatform(), root, host, true));
+    try tmp.dir.writeFile(io, .{ .sub_path = "jaclang/vendor/generated.py", .data = "materialized vendor data" });
+    try std.testing.expectEqual(changed_runtime, try buildKey(io, a, hostPlatform(), root, host, false));
+    try tmp.dir.writeFile(io, .{ .sub_path = "bootstrap/python/seed_runtime.py", .data = "changed seed loader" });
+    try std.testing.expect(!std.mem.eql(u8, &changed_runtime, &(try buildKey(io, a, hostPlatform(), root, host, false))));
+    try std.testing.expectEqual(before_host, try buildKey(io, a, hostPlatform(), root, host, true));
+    const before_recipe = try buildKey(io, a, hostPlatform(), root, host, false);
+    try tmp.dir.writeFile(io, .{ .sub_path = "bootstrap/python/cpython-sources.txt", .data = "changed C source selection" });
+    try std.testing.expect(!std.mem.eql(u8, &before_host, &(try buildKey(io, a, hostPlatform(), root, host, true))));
+    try std.testing.expect(!std.mem.eql(u8, &before_recipe, &(try buildKey(io, a, hostPlatform(), root, host, false))));
+    const before_host_key = try buildKey(io, a, hostPlatform(), root, host, false);
+    try tmp.dir.writeFile(io, .{ .sub_path = "host/build-key", .data = "rebuilt host" });
+    try std.testing.expect(!std.mem.eql(u8, &before_host_key, &(try buildKey(io, a, hostPlatform(), root, host, false))));
 }

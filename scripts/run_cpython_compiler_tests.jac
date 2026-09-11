@@ -193,10 +193,11 @@ def run_tests(args: any, calls: list[int]) -> int {
         sys.path.pop(0);
     }
     support = importlib.import_module("test.support");
+    # Resource decorators are evaluated when the test module is imported.
+    support.use_resources = [];
     import from jaclang.compiler.backends.py.jacpython.code_object { compile_python }
     reference_module = importlib.import_module(args.module);
     test_module: any = reference_module;
-    support.use_resources = [];
     # Warm the compiler before individual tests and their timers.
     compile_python("pass", "<warmup>", "exec", dont_inherit=True);
     compiled_codes: set[int] = set();

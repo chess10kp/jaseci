@@ -38,6 +38,15 @@ if required_compiler is not None:
     assert sys._jacpython_compile.__module__.startswith("_jacpython_seed.")
     assert sys._jacpython_symtable.__module__.startswith("_jacpython_seed.")
     assert sys._jacpython_tokenize.__module__.startswith("_jacpython_seed.")
+    import io
+    import symtable
+    import tokenize
+    assert symtable.symtable("x=1", "<smoke>", "exec").lookup("x").is_global()
+    assert list(tokenize.generate_tokens(io.StringIO("x=1\n").readline))
+    for source in ('f"{value:{width}}"', 't"{value:{width}}"'):
+        tokens = [item[:2] for item in tokenize.generate_tokens(io.StringIO(source).readline)]
+        rebuilt = tokenize.untokenize(tokens)
+        assert [item[:2] for item in tokenize.generate_tokens(io.StringIO(rebuilt).readline)] == tokens
     compiler = sys._jacpython_compile
 
     def unavailable(*args, **kwargs):

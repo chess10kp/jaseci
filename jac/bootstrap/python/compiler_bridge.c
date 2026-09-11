@@ -436,7 +436,7 @@ static PyObject *jac_tokenize(PyObject *self, PyObject *args, PyObject *kwargs)
 }
 static int jac_symtable_constants(PyObject *module)
 {
-#define ADD(name) if (PyModule_AddIntMacro(module, name) < 0) return -1
+#define ADD(name) if (PyModule_AddIntConstant(module, #name, name) < 0) return -1
     ADD(USE); ADD(DEF_GLOBAL); ADD(DEF_NONLOCAL); ADD(DEF_LOCAL); ADD(DEF_PARAM);
     ADD(DEF_TYPE_PARAM); ADD(DEF_FREE_CLASS); ADD(DEF_IMPORT); ADD(DEF_BOUND);
     ADD(DEF_ANNOT); ADD(DEF_COMP_ITER); ADD(DEF_COMP_CELL);

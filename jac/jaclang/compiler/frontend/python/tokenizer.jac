@@ -768,7 +768,7 @@ def _fstring_scan_format_spec(st: tok_state) -> tok_token | tok_diag | None {
             );
         }
         if ch == "{" or ch == "}" {
-            if len(buf) > 0 or not mode.fields[-1].spec_started {
+            if len(buf) > 0 or (ch == "}" and not mode.fields[-1].spec_started) {
                 mode.fields[-1].spec_started = True;
                 mode.resume = True;
                 return _fstring_emit_middle(
@@ -1352,6 +1352,12 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
                     } elif op.tok_type == RBRACE {
                         mode.fields.pop();
                         mode.resume = not mode.fields or mode.fields[-1].in_spec;
+                        if mode.fields and mode.fields[-1].in_spec {
+                            # A nested field starts a new format-spec segment.
+                            # Preserve its empty trailing middle token so
+                            # untokenize does not insert text between `}}`.
+                            mode.fields[-1].spec_started = False;
+                        }
                     }
                 }
             }
