@@ -380,6 +380,11 @@ def visit_if(
     }
     if constant_test is not None {
         chosen = i.body if constant_test else i.orelse;
+        test_loc = expr_loc(i.`test);
+        g.emit_op(OP_NOP, 0, test_loc);
+        if not chosen {
+            return stmt_cont(loc=test_loc);
+        }
         return stmt_handlers["visit_cleanup_stmts"](g, chosen, ann_ctx);
     }
     test_loc = expr_loc(i.`test);

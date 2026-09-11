@@ -7521,7 +7521,7 @@ def rule_imaginary_number(p: peg_parser) -> expr | None {
     res: expr | None = None;
     imag = pa_number_from_token(peg_expect_token(p, NUMBER));
     if imag is not None {
-        res = pa_ensure_imaginary(imag);
+        res = pa_ensure_imaginary(p, imag);
         return res;
     }
     peg_reset(p, mark);
@@ -13482,7 +13482,7 @@ def rule_real_number(p: peg_parser) -> expr | None {
     res: expr | None = None;
     real = pa_number_from_token(peg_expect_token(p, NUMBER));
     if real is not None {
-        res = pa_ensure_real(real);
+        res = pa_ensure_real(p, real);
         return res;
     }
     peg_reset(p, mark);
@@ -14768,7 +14768,8 @@ def rule_star_target(p: peg_parser) -> expr | None {
                 start_lineno,
                 start_col_offset,
                 end_lineno,
-                end_col_offset
+                end_col_offset,
+                ctx=Store()
             );
             peg_insert_memo(p, mark, RULE_star_target, res);
             return res;

@@ -159,159 +159,13 @@ obj match_case_start {
 }
 
 
-# Exact maximum fail-pop depth for a pattern entered with `on_top` extra stack
-# items and `nstores` deferred capture names. Mirrors emit_match_pattern's
-# on_top/stores accounting so cleanup blocks can be pre-allocated in layout order
-# (block id order == layout order is assumed by the flowgraph). Returns
-# (max_pops, nstores_after); max_pops is -1 when the pattern never jumps to fail.
-def match_fail_levels(p: pattern, on_top: int, nstores: int) -> tuple[int, int] {
-    p = match_pattern_unwrap_or(p);
-    if isinstance(p, MatchValue) or isinstance(p, MatchSingleton) {
-        return (on_top + nstores, nstores);
-    }
-    if isinstance(p, MatchAs) {
-        ma = p as MatchAs;
-        if ma.pattern is None {
-            ns = nstores;
-            if ma.name is not None {
-                ns = nstores + 1;
-            }
-            return (-1, ns);
-        }
-        sub = match_fail_levels(ma.pattern, on_top + 1, nstores);
-        ns2 = sub[1];
-        if ma.name is not None {
-            ns2 = ns2 + 1;
-        }
-        return (sub[0], ns2);
-    }
-    if isinstance(p, MatchSequence) {
-        ms = p as MatchSequence;
-        patterns = ms.patterns;
-        size = len(patterns);
-        star = -1;
-        only_wildcard = True;
-        pi = 0;
-        while pi < size {
-            pat = patterns[pi];
-            if isinstance(pat, MatchStar) {
-                star = pi;
-                mst = pat as MatchStar;
-                if mst.name is not None {
-                    only_wildcard = False;
-                }
-            } elif not match_pattern_wildcard(pat) {
-                only_wildcard = False;
-            }
-            pi = pi + 1;
-        }
-        d1 = (on_top + 1) + nstores;
-        if star >= 0 {
-            return (d1, nstores);
-        }
-        if only_wildcard or match_sequence_all_captures(patterns) {
-            return (d1, nstores);
-        }
-        maxf = d1;
-        cur = on_top + size;
-        ns = nstores;
-        pi = 0;
-        while pi < size {
-            cur = cur - 1;
-            sub = match_fail_levels(patterns[pi], cur, ns);
-            if sub[0] > maxf {
-                maxf = sub[0];
-            }
-            ns = sub[1];
-            pi = pi + 1;
-        }
-        return (maxf, ns);
-    }
-    if isinstance(p, MatchMapping) {
-        mm = p as MatchMapping;
-        mm_keys: list[expr] = mm.keys if mm.keys is not None else [];
-        mm_patterns: list[pattern] = mm.patterns if mm.patterns is not None else [];
-        size = len(mm_keys);
-        d1 = (on_top + 1) + nstores;
-        if size == 0 and mm.rest is None {
-            return (d1, nstores);
-        }
-        maxf = d1;
-        f2 = (on_top + 3) + nstores;
-        if f2 > maxf {
-            maxf = f2;
-        }
-        cur = on_top + size + 2;
-        ns = nstores;
-        pi = 0;
-        while pi < size {
-            cur = cur - 1;
-            sub = match_fail_levels(mm_patterns[pi], cur, ns);
-            if sub[0] > maxf {
-                maxf = sub[0];
-            }
-            ns = sub[1];
-            pi = pi + 1;
-        }
-        if mm.rest is not None {
-            ns = ns + 1;
-        }
-        return (maxf, ns);
-    }
-    if isinstance(p, MatchClass) {
-        mc = p as MatchClass;
-        mc_patterns: list[pattern] = mc.patterns if mc.patterns is not None else [];
-        mc_kwd: list[pattern] = mc.kwd_patterns if mc.kwd_patterns is not None else [];
-        nargs = len(mc_patterns);
-        nattrs = len(mc_kwd);
-        total = nargs + nattrs;
-        maxf = (on_top + 1) + nstores;
-        cur = on_top + total;
-        ns = nstores;
-        i = 0;
-        while i < total {
-            cur = cur - 1;
-            sp: pattern = mc_patterns[i] if i < nargs else mc_kwd[i - nargs];
-            if not match_pattern_wildcard(sp) {
-                sub = match_fail_levels(sp, cur, ns);
-                if sub[0] > maxf {
-                    maxf = sub[0];
-                }
-                ns = sub[1];
-            }
-            i = i + 1;
-        }
-        return (maxf, ns);
-    }
-    return (on_top + nstores, nstores);
-}
-
-
-def match_arm_cleanup_levels(p: pattern) -> int {
-    res = match_fail_levels(p, 0, 0);
-    if res[0] < 0 {
-        return 0;
-    }
-    return res[0];
-}
-
-
-# Allocate `levels` cleanup blocks + next_arm so their block ids ascend in the
-# exact layout order needed for fail-pop fallthrough chaining: the block reached
-# by an N-deep fail pops N items across N contiguous blocks that fall through to
-# next_arm. cleanup_blocks[i] is the target for a fail that must pop i+1 items.
-def match_begin_case(g: cfg_builder, levels: int) -> match_case_start {
+# Failure cleanup blocks are allocated on demand and placed after the arm.
+# Each block pops one item, then falls through to the next smaller cleanup.
+def match_begin_case(g: cfg_builder) -> match_case_start {
     # Deferred blocks: laid out at use() (CPython USE_LABEL) so the fail-pop chain
     # and next_arm land after the arm body, and after any deferred blocks a MatchOr
     # alternative emits. Placement order (not allocation order) is authoritative.
     cleanup: list[basicblock] = [];
-    i = 0;
-    while i < levels {
-        blk = g.new_deferred_block();
-        blk.exit_inline_ok = True;
-        cleanup.append(blk);
-        i = i + 1;
-    }
     next_arm = g.new_deferred_block();
     next_arm.exit_inline_ok = True;
     ctx = match_pat_ctx(
@@ -328,6 +182,7 @@ def match_begin_case(g: cfg_builder, levels: int) -> match_case_start {
 def match_ensure_cleanup_blocks(g: cfg_builder, ctx: match_pat_ctx, n: int) {
     while len(ctx.cleanup_blocks) < n {
         blk = g.new_deferred_block();
+        blk.exit_inline_ok = True;
         ctx.cleanup_blocks.append(blk);
     }
 }
@@ -420,6 +275,12 @@ def emit_match_pattern_sub(
 def emit_match_pattern_value(
     g: cfg_builder, mv: MatchValue, ctx: match_pat_ctx, next_arm: basicblock, ploc: cloc
 ) -> bool {
+    if not isinstance(mv.value, (Constant, Attribute)) {
+        codegen_fail(
+            g, "SyntaxError", "patterns may only match literals and attribute lookups"
+        );
+        return False;
+    }
     visit_expr(g, mv.value);
     if codegen_busy(g) {
         return False;
@@ -477,118 +338,6 @@ def emit_match_pattern_as(
     }
     ctx.on_top = ctx.on_top - 1;
     return match_pattern_helper_store_name(g, ma.name, ctx, ploc);
-}
-
-
-def match_sequence_all_captures(patterns: list[pattern]) -> bool {
-    if len(patterns) == 0 {
-        return False;
-    }
-    pi = 0;
-    while pi < len(patterns) {
-        p = match_pattern_unwrap_or(patterns[pi]);
-        if not isinstance(p, MatchAs) {
-            return False;
-        }
-        ma = p as MatchAs;
-        if ma.pattern is not None or ma.name is None or ma.name == "_" {
-            return False;
-        }
-        pi = pi + 1;
-    }
-    return True;
-}
-
-
-def match_emit_sequence_capture_stores(
-    g: cfg_builder, patterns: list[pattern], ploc: cloc
-) {
-    n = len(patterns);
-    if n == 2 {
-        na = codegen_mangle(
-            g, (match_pattern_unwrap_or(patterns[0]) as MatchAs).name as str
-        );
-        nb = codegen_mangle(
-            g, (match_pattern_unwrap_or(patterns[1]) as MatchAs).name as str
-        );
-        fa = fast_local_index(g, na);
-        fb = fast_local_index(g, nb);
-        if fa >= 0 and fb >= 0 {
-            pair = fa * 16 + fb;
-            g.emit_op(OP_STORE_FAST_STORE_FAST, pair, ploc);
-            return;
-        }
-    }
-    pi = n - 1;
-    while pi >= 0 {
-        ma = match_pattern_unwrap_or(patterns[pi]) as MatchAs;
-        emit_name_store(g, ma.name as str, ploc);
-        pi = pi - 1;
-    }
-}
-
-
-def match_star_capture_name(
-    patterns: list[pattern], idx: int, star_idx: int
-) -> str | None {
-    if idx == star_idx {
-        return (patterns[idx] as MatchStar).name;
-    }
-    return (match_pattern_unwrap_or(patterns[idx]) as MatchAs).name;
-}
-
-
-def match_seq_star_all_captures(patterns: list[pattern], star_idx: int) -> bool {
-    if len(patterns) == 0 {
-        return False;
-    }
-    pi = 0;
-    while pi < len(patterns) {
-        if pi == star_idx {
-            mst = patterns[pi] as MatchStar;
-            if mst.name is None or mst.name == "_" {
-                return False;
-            }
-        } else {
-            p = match_pattern_unwrap_or(patterns[pi]);
-            if not isinstance(p, MatchAs) {
-                return False;
-            }
-            ma = p as MatchAs;
-            if ma.pattern is not None or ma.name is None or ma.name == "_" {
-                return False;
-            }
-        }
-        pi = pi + 1;
-    }
-    return True;
-}
-
-
-def match_emit_star_capture_stores(
-    g: cfg_builder, patterns: list[pattern], star_idx: int, ploc: cloc
-) {
-    n = len(patterns);
-    if n == 2 {
-        na = codegen_mangle(g, match_star_capture_name(patterns, 0, star_idx) as str);
-        nb = codegen_mangle(g, match_star_capture_name(patterns, 1, star_idx) as str);
-        fa = fast_local_index(g, na);
-        fb = fast_local_index(g, nb);
-        if fa >= 0 and fb >= 0 {
-            g.emit_op(OP_STORE_FAST_STORE_FAST, fa * 16 + fb, ploc);
-            return;
-        }
-    }
-    # UNPACK_EX leaves element[0] on top, so bind forward; opt_superinstructions
-    # fuses the first adjacent STORE_FAST pair (matching CPython's left-to-right
-    # STORE_FAST_STORE_FAST peephole, e.g. `[a,*mid,b]` -> (a,mid) + b).
-    pi = 0;
-    while pi < n {
-        emit_name_store(
-            g, match_star_capture_name(patterns, pi, star_idx) as str, ploc
-        );
-        pi = pi + 1;
-    }
 }
 
 
@@ -717,10 +466,6 @@ def emit_match_pattern_sequence(
         # Capture star: split the subject with UNPACK_EX (n_before | n_after<<8).
         ctx.on_top = ctx.on_top - 1;
         g.emit_op(OP_UNPACK_EX, n_before + n_after * 256, ploc);
-        if match_seq_star_all_captures(patterns, star) {
-            match_emit_star_capture_stores(g, patterns, star, ploc);
-            return True;
-        }
         ctx.on_top = ctx.on_top + size;
         pi = 0;
         while pi < size {
@@ -754,11 +499,6 @@ def emit_match_pattern_sequence(
     ctx.on_top = ctx.on_top - 1;
     if only_wildcard {
         g.emit_op(OP_POP_TOP, 0, ploc);
-        return True;
-    }
-    if match_sequence_all_captures(patterns) {
-        g.emit_op(OP_UNPACK_SEQUENCE, size, ploc);
-        match_emit_sequence_capture_stores(g, patterns, ploc);
         return True;
     }
     g.emit_op(OP_UNPACK_SEQUENCE, size, ploc);
@@ -974,9 +714,8 @@ def emit_match_pattern_mapping(
 # it falls to the next alternative (subject preserved underneath); the last
 # alternative's failure pops the surviving subject and jumps to next_arm. `end`
 # and the per-alternative entries are deferred blocks so they lay out after the
-# preceding alternative bodies (allocation order != layout order). Captures inside
-# alternatives (name permutation across arms) need a sequence/display subject to
-# oracle-verify and are gated off until that slice lands.
+# preceding alternative bodies (allocation order != layout order). Captures are
+# checked and permuted into a common order before joining the surrounding pattern.
 def emit_match_pattern_or(
     g: cfg_builder, mo: MatchOr, ctx: match_pat_ctx, next_arm: basicblock, ploc: cloc
 ) -> bool {
@@ -984,6 +723,7 @@ def emit_match_pattern_or(
     end.exit_inline_ok = True;
     size = len(mo.patterns);
     outer_allow = ctx.allow_irrefutable;
+    control: list[str] = [];
     i = 0;
     while i < size {
         alt = mo.patterns[i];
@@ -1003,23 +743,54 @@ def emit_match_pattern_or(
         if codegen_busy(g) {
             return False;
         }
-        if len(alt_ctx.stores) != 0 {
+        if i == 0 {
+            control = alt_ctx.stores.copy();
+        } else {
+            if set(alt_ctx.stores) != set(control) {
+                codegen_fail(
+                    g, "SyntaxError", "alternative patterns bind different names"
+                );
+                return False;
+            }
+            # Every successful alternative must leave captures in the first
+            # alternative's order, even when the pattern spells them differently.
+            ci = len(control) - 1;
+            while ci >= 0 {
+                si = alt_ctx.stores.index(control[ci]);
+                if ci != si {
+                    rotations = si + 1;
+                    rotated = alt_ctx.stores[:rotations];
+                    alt_ctx.stores = alt_ctx.stores[rotations:];
+                    alt_ctx.stores[ci - si:ci - si] = rotated;
+                    for unused in range(rotations) {
+                        match_pattern_rotate(g, ploc, ci + 1);
+                    }
+                }
+                ci = ci - 1;
+            }
+        }
+        g.emit_jump(OP_JUMP_FORWARD, end.id, ploc);
+        match_emit_reset_fail_pop(g, alt_ctx, alt_fail, ploc);
+        i = i + 1;
+    }
+    # Total failure must also discard captures and subjects belonging to the
+    # surrounding pattern, not just the copy used to try the alternatives.
+    g.emit_op(OP_POP_TOP, 0, ploc);
+    match_jump_to_fail(g, ctx, next_arm, OP_JUMP_FORWARD, ploc);
+    g.use(end);
+    rotations = len(control) + 1 + ctx.on_top + len(ctx.stores);
+    for name in control {
+        match_pattern_rotate(g, ploc, rotations);
+        if name in ctx.stores {
             codegen_fail(
-                g, "NotImplementedError", "capture inside match-or alternative"
+                g,
+                "SyntaxError",
+                "multiple assignments to name '" + name + "' in pattern"
             );
             return False;
         }
-        g.emit_jump(OP_JUMP_FORWARD, end.id, ploc);
-        g.use(alt_fail);
-        if is_last {
-            # Total failure: pop the subject copy that survived every alternative,
-            # then continue to the arm's fail target.
-            g.emit_op(OP_POP_TOP, 0, ploc);
-            g.emit_jump(OP_JUMP_FORWARD, next_arm.id, ploc);
-        }
-        i = i + 1;
+        ctx.stores.append(name);
     }
-    g.use(end);
     g.emit_op(OP_POP_TOP, 0, ploc);
     return True;
 }
@@ -1061,6 +832,16 @@ def emit_match_pattern(
 
 
 # Lower match (CPython codegen_match_inner shape; slice 1–3 patterns + guards).
+def match_is_irrefutable(pat: pattern) -> bool {
+    if isinstance(pat, MatchAs) {
+        return pat.pattern is None or match_is_irrefutable(pat.pattern);
+    }
+    if isinstance(pat, MatchOr) {
+        return any(match_is_irrefutable(item) for item in pat.patterns);
+    }
+    return False;
+}
+
 def visit_match(
     g: cfg_builder,
     m: Match,
@@ -1070,7 +851,7 @@ def visit_match(
     tail_join: basicblock | None = None,
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
-    mloc = stmt_loc(m);
+    mloc = nloc(m.lineno, m.end_lineno, m.col_offset, m.end_col_offset);
     if len(m.cases) == 0 {
         return stmt_cont(loc=mloc);
     }
@@ -1106,18 +887,19 @@ def visit_match(
         body_follows = True;
     }
     loop_end = len(m.cases) - has_default;
-    terminated = False;
+    last_arm = m.cases[-1];
+    terminated = last_arm.guard is None and match_is_irrefutable(last_arm.pattern);
     ci = 0;
     while ci < loop_end {
         arm = m.cases[ci];
         ploc = match_pattern_loc(arm.pattern);
-        start = match_begin_case(g, match_arm_cleanup_levels(arm.pattern));
+        start = match_begin_case(g);
         ctx = start.ctx;
         next_arm = start.next_arm;
         if ci != loop_end - 1 {
             g.emit_op(OP_COPY, 1, ploc);
         }
-        ctx.allow_irrefutable = arm.guard is not None or ci == loop_end - 1;
+        ctx.allow_irrefutable = arm.guard is not None or ci == len(m.cases) - 1;
         opt_lo = len(g.cur.instrs);
         if not emit_match_pattern(g, arm.pattern, ctx, next_arm, ploc) {
             return stmt_cont(loc=mloc);
@@ -1146,10 +928,13 @@ def visit_match(
         if codegen_busy(g) {
             return stmt_cont(loc=mloc);
         }
-        if body_cont.terminated {
-            terminated = True;
-        } else {
-            g.emit_jump(OP_JUMP_FORWARD, match_end.id, ploc);
+        terminated = terminated and body_cont.terminated;
+        if not body_cont.terminated {
+            if owns_match_end and not body_follows {
+                emit_module_return(g, body_cont.loc);
+            } else {
+                g.emit_jump(OP_JUMP_FORWARD, match_end.id, ploc);
+            }
         }
         match_emit_reset_fail_pop(g, ctx, next_arm, ploc);
         ci = ci + 1;
@@ -1176,14 +961,20 @@ def visit_match(
         if codegen_busy(g) {
             return stmt_cont(loc=mloc);
         }
-        if body_cont.terminated {
-            terminated = True;
+        terminated = terminated and body_cont.terminated;
+        if not body_cont.terminated and owns_match_end and not body_follows {
+            emit_module_return(g, body_cont.loc);
         }
     }
     if owns_match_end {
         g.use(match_end);
         if not more_code_follows and not terminated {
-            emit_module_return(g, mloc);
+            # The unmatched path remains on the last pattern/guard line. Each
+            # successful arm has its own location for its implicit return.
+            exit_loc = expr_loc(last_arm.guard)
+                if last_arm.guard is not None
+                else match_pattern_loc(last_arm.pattern);
+            emit_module_return(g, exit_loc);
             terminated = True;
         }
     }

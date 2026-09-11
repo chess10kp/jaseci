@@ -250,6 +250,44 @@ jobs:
               AST_Tests.test_non_interned_future_from_ast
           done
 
+      - name: Run upstream AST validation and round-trip tests
+        run: |
+          for bridge_mode in "--ast-api" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --module test.test_ast.test_ast --tests \
+              ASTValidatorTests \
+              AST_Tests.test_parse_invalid_ast \
+              AST_Tests.test_invalid_position_information \
+              AST_Tests.test_compilation_of_ast_nodes_with_default_end_position_values \
+              AST_Tests.test_negative_locations_for_compile \
+              AST_Tests.test_slice \
+              AST_Tests.test_from_import \
+              AST_Tests.test_alias \
+              AST_Tests.test_invalid_sum \
+              AST_Tests.test_invalid_identifier \
+              AST_Tests.test_invalid_constant \
+              AST_Tests.test_empty_yield_from \
+              AST_Tests.test_issue31592 \
+              AST_Tests.test_issue18374_binop_col_offset \
+              AST_Tests.test_issue39579_dotted_name_end_col_offset \
+              AST_Tests.test_compare_basics \
+              AST_Tests.test_compare_modified_ast \
+              AST_Tests.test_compare_modes \
+              AST_Tests.test_compare_attributes_option \
+              AST_Tests.test_constant_as_name \
+              AST_Tests.test_constant_as_unicode_name \
+              AST_Tests.test_null_bytes \
+              AST_Tests.test_none_checks \
+              AST_Tests.test_repr \
+              AST_Tests.test_repr_large_input_crash \
+              AST_Tests.test_tstring \
+              ConstantTests
+          done
+      - name: Compile and run upstream pattern-matching tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_patma
+          done
+
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite
   # runs through the binary a PR would ship.

@@ -50,6 +50,7 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     Return,
     Pass,
     Tuple,
+    List,
     Add,
     Sub,
     Mult,
@@ -164,6 +165,12 @@ def pa_name_from_token(tok: peg_token | None) -> Name | None {
     if not identifier.isascii() {
         import unicodedata;
         identifier = unicodedata.normalize("NFKC", identifier);
+    }
+    if not isinstance(identifier, str) {
+        raise TypeError("identifier must be of type str");
+    }
+    if identifier in ("True", "False", "None") {
+        raise ValueError(f"identifier field can't represent '{identifier}' constant");
     }
     return Name(
         id=identifier,
@@ -788,11 +795,16 @@ def pa_ast_call(
 }
 
 def pa_ast_starred(
-    value: expr, lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
+    value: expr,
+    lineno: int,
+    col_offset: int,
+    end_lineno: int,
+    end_col_offset: int,
+    ctx: expr_context | None = None
 ) -> Starred {
     return Starred(
         value=value,
-        ctx=Load(),
+        ctx=ctx if ctx is not None else Load(),
         lineno=lineno,
         col_offset=col_offset,
         end_lineno=end_lineno,
@@ -1167,9 +1179,39 @@ def pa_seq_flatten(parts: list[object]) -> list[stmt] {
     return out;
 }
 
-# target / RHS context switch: _PyPegen_set_expr_context rewrites a Name's ctx.
-# Jac values are immutable, so rebuild the Name with the requested context.
+# Rebuild assignment/deletion targets without changing memoized load expressions.
 def pa_set_context(target: expr, ctx: expr_context) -> expr {
+    if isinstance(target, Starred) {
+        return Starred(
+            value=pa_set_context(target.value, ctx),
+            ctx=ctx,
+            lineno=target.lineno,
+            col_offset=target.col_offset,
+            end_lineno=target.end_lineno,
+            end_col_offset=target.end_col_offset
+        );
+    }
+    if isinstance(target, (List, Tuple)) {
+        items = [pa_set_context(item, ctx) for item in target.elts];
+        if isinstance(target, List) {
+            return List(
+                elts=items,
+                ctx=ctx,
+                lineno=target.lineno,
+                col_offset=target.col_offset,
+                end_lineno=target.end_lineno,
+                end_col_offset=target.end_col_offset
+            );
+        }
+        return Tuple(
+            elts=items,
+            ctx=ctx,
+            lineno=target.lineno,
+            col_offset=target.col_offset,
+            end_lineno=target.end_lineno,
+            end_col_offset=target.end_col_offset
+        );
+    }
     if isinstance(target, Name) {
         n = target as Name;
         return Name(
@@ -1888,12 +1930,22 @@ def pa_concatenate_tstrings(parts: list[object]) -> expr | None {
     );
 }
 
-def pa_ensure_imaginary(`node: expr) -> expr {
-    return `node;
+def pa_ensure_imaginary(p: peg_parser, value: expr) -> expr | None {
+    if not isinstance(value, Constant) or not isinstance(value.value, PyComplex) {
+        peg_raise_syntax_error(
+            p, False, "imaginary number required in complex literal"
+        );
+        return None;
+    }
+    return value;
 }
 
-def pa_ensure_real(`node: expr) -> expr {
-    return `node;
+def pa_ensure_real(p: peg_parser, value: expr) -> expr | None {
+    if isinstance(value, Constant) and isinstance(value.value, PyComplex) {
+        peg_raise_syntax_error(p, False, "real number required in complex literal");
+        return None;
+    }
+    return value;
 }
 
 def pa_get_expr_name(`node: expr) -> str {

@@ -35,14 +35,16 @@ def fetch_tests(cache: Path) -> Path:
     library = destination / f"Python-{pin['version']}" / "Lib"
     marker = destination / ".complete"
     print(f"CPython {pin['version']} tests; archive SHA256 {pin['sha256']}", flush=True)
-    if marker.is_file() and (library / "test/test_compile.py").is_file():
+    if (marker.is_file() and (library / "test/test_compile.py").is_file()
+            and (library / "ast.py").is_file()):
         return library
     with urllib.request.urlopen(pin["url"], timeout=120) as response:
         archive = response.read()
     if hashlib.sha256(archive).hexdigest() != pin["sha256"]:
         raise RuntimeError("CPython test archive checksum mismatch")
     destination.mkdir(parents=True, exist_ok=True)
-    prefix = f"Python-{pin['version']}/Lib/test/"
+    # Some upstream AST tests compile standard-library source fixtures too.
+    prefix = f"Python-{pin['version']}/Lib/"
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as bundle:
         members = [m for m in bundle if m.isfile() and m.name.startswith(prefix)]
         bundle.extractall(destination, members=members, filter="data")
@@ -74,7 +76,14 @@ def main() -> int:
         help="Compile the upstream test module itself with JacPython",
     )
     args = parser.parse_args()
-    sys.path.insert(0, str(fetch_tests(args.cache)))
+    library = fetch_tests(args.cache)
+    sys.path.insert(0, str(library))
+    try:
+        importlib.import_module("test")
+    finally:
+        # Retain test.__path__ while keeping runtime stdlib imports on their
+        # installed path. The fetched Lib tree also supplies source fixtures.
+        sys.path.pop(0)
     from test import support
     from jaclang.compiler.backends.py.jacpython.code_object import compile_python
 
@@ -103,6 +112,10 @@ def main() -> int:
         finally:
             sys.modules[args.module] = reference_module
         print(f"JACPYTHON_TEST_MODULE {args.module}", flush=True)
+    if args.module == "test.test_ast.test_ast":
+        test_module.STDLIB = str(library)
+        test_module.STDLIB_FILES = [path.name for path in library.glob("*.py")]
+        test_module.STDLIB_FILES.extend(["test/test_grammar.py", "test/test_unpack_ex.py"])
     calls = 0
 
     def replacement_compile(source, filename, mode, flags=0, dont_inherit=False,

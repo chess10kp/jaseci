@@ -137,6 +137,7 @@ def compile_python(
     import ast;
     import from jaclang.compiler.frontend.python.ast_bridge {
         from_python_ast,
+        validate_python_ast,
         to_python_ast
     }
     import from jaclang.compiler.backends.py.jacpython.product_compile {
@@ -200,6 +201,7 @@ def compile_python(
                 f"expected {expected_root.__name__} node, got {type(source).__name__}"
             );
         }
+        validate_python_ast(source);
         tree = from_python_ast(source);
         if flags & ast.PyCF_ONLY_AST {
             output = prepare_ast_output(tree, filename, optimize, flags);
