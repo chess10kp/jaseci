@@ -116,10 +116,15 @@ obj sym_block {
         # a super load), so the body needs the implicit __class__ cell
         # (CPython symtable.c drop_class_free -> ste_needs_class_closure).
         needs_class_closure: bool = False,
+        needs_classdict_closure: bool = False,
         # Any module-top symbol entry for "super" (CPython codegen.c checks
         # _PyST_GetScope(st_top, "super") != 0 before optimizing super calls).
         top_has_super: bool = False,
         comprehension: str | None = None,
+        inlined: bool = False,
+        inlined_class: bool = False,
+        class_free_names: list[str] = [],
+        inline_aliases: dict[str, str] = {},
         symbols: dict[str, int] = {},
         varnames: list[str] = [],
         local_varnames: list[str] = [],
@@ -383,15 +388,65 @@ def sym_visit_comprehension_generators(
 }
 
 def sym_visit_inline_comprehension(
-    b: sym_builder, generators: list[comprehension], elt: expr, value: expr | None
+    b: sym_builder,
+    expression: expr,
+    generators: list[comprehension],
+    elt: expr,
+    value: expr | None,
+    kind: str
 ) -> bool {
-    if not sym_visit_comprehension_generators(b, generators) {
+    if not generators {
+        return True;
+    }
+    # The first iterable is evaluated in the containing scope. The inlined
+    # body retains an independent lexical scope for binding and closures.
+    if not sym_visit_load_expr(b, generators[0].iter) {
+        return False;
+    }
+    in_class = b.cur.block_type == "class" or b.cur.inlined_class;
+    if not b.push_block(
+        "function",
+        kind,
+        expression.lineno,
+        sym_compute_nested(b),
+        False,
+        expression.col_offset
+    ) {
+        return False;
+    }
+    b.cur.comprehension = kind;
+    b.cur.inlined = True;
+    b.cur.inlined_class = in_class;
+    for gen in generators {
+        if not sym_visit_comp_store_target(b, gen.target) {
+            return False;
+        }
+        if gen.is_async {
+            b.cur.coroutine = True;
+        }
+    }
+    for (index, gen) in enumerate(generators) {
+        if index > 0 and not sym_visit_load_expr(b, gen.iter) {
+            return False;
+        }
+        for condition in gen.ifs {
+            if not sym_visit_load_expr(b, condition) {
+                return False;
+            }
+        }
+    }
+    if not sym_visit_load_expr(b, elt) {
         return False;
     }
     if value is not None and not sym_visit_load_expr(b, value) {
         return False;
     }
-    return sym_visit_load_expr(b, elt);
+    asynchronous = b.cur.coroutine;
+    if not b.pop_block() {
+        return False;
+    }
+    b.cur.coroutine = b.cur.coroutine or asynchronous;
+    return True;
 }
 
 def sym_visit_genexp(b: sym_builder, e: GeneratorExp) -> bool {
@@ -403,7 +458,7 @@ def sym_visit_genexp(b: sym_builder, e: GeneratorExp) -> bool {
         return False;
     }
     nested = sym_compute_nested(b);
-    in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+    in_class = False;
     if not b.push_block(
         "function", "genexpr", e.lineno, nested, in_class, e.col_offset
     ) {
@@ -423,7 +478,7 @@ def sym_visit_genexp(b: sym_builder, e: GeneratorExp) -> bool {
     if not b.add_def(".0", DEF_PARAM, dot0.lineno, dot0.col_offset) {
         return False;
     }
-    if not sym_visit_store_target(b, outer.target) {
+    if not sym_visit_comp_store_target(b, outer.target) {
         return False;
     }
     fi = 0;
@@ -439,7 +494,7 @@ def sym_visit_genexp(b: sym_builder, e: GeneratorExp) -> bool {
         if not sym_visit_load_expr(b, g.iter) {
             return False;
         }
-        if not sym_visit_store_target(b, g.target) {
+        if not sym_visit_comp_store_target(b, g.target) {
             return False;
         }
         fj = 0;
@@ -621,25 +676,82 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
     }
     if isinstance(e, NamedExpr) {
         ne = e as NamedExpr;
-        # PEP 572: the walrus target binds in the current scope (for inlined
-        # comprehensions that is the enclosing function, matching the shared
-        # fast-local slots); the value side is an ordinary load.
-        if not sym_visit_store_target(b, ne.target) {
+        if b.cur.comprehension is not None and isinstance(ne.target, Name) {
+            name = mangle_name(b.private, ne.target.id);
+            owner: sym_block | None = None;
+            for block in reversed(b.stack + [b.cur]) {
+                if block.comprehension is not None {
+                    if sym_flag_set(
+                        sym_dict_get(block.symbols, name, 0), DEF_COMP_ITER
+                    ) {
+                        return b.fail(
+                            "SyntaxError",
+                            "assignment expression cannot rebind comprehension iteration variable '"
+                                + ne.target.id
+                                + "'",
+                            ne.lineno,
+                            ne.col_offset
+                        );
+                    }
+                } else {
+                    owner = block;
+                    break;
+                }
+            }
+            if owner is None or owner.block_type == "class" {
+                return b.fail(
+                    "SyntaxError",
+                    "assignment expression within a comprehension cannot be used in a class body",
+                    ne.lineno,
+                    ne.col_offset
+                );
+            }
+            owner_flags = sym_dict_get(owner.symbols, name, 0);
+            global_binding = owner.block_type == "module"
+                or sym_flag_set(owner_flags, DEF_GLOBAL);
+            current = b.cur;
+            b.cur = owner;
+            try {
+                if not (owner_flags & (DEF_GLOBAL | DEF_NONLOCAL)) {
+                    if not b.add_def(
+                        ne.target.id, DEF_LOCAL, ne.lineno, ne.col_offset
+                    ) {
+                        return False;
+                    }
+                }
+            } finally {
+                b.cur = current;
+            }
+            if not b.add_def(
+                ne.target.id,
+                DEF_GLOBAL if global_binding else DEF_NONLOCAL,
+                ne.lineno,
+                ne.col_offset
+            ) {
+                return False;
+            }
+        } elif not sym_visit_store_target(b, ne.target) {
             return False;
         }
         return sym_visit_load_expr(b, ne.value);
     }
     if isinstance(e, ListComp) {
         lc = e as ListComp;
-        return sym_visit_inline_comprehension(b, lc.generators, lc.elt, None);
+        return sym_visit_inline_comprehension(
+            b, lc, lc.generators, lc.elt, None, "listcomp"
+        );
     }
     if isinstance(e, SetComp) {
         sc = e as SetComp;
-        return sym_visit_inline_comprehension(b, sc.generators, sc.elt, None);
+        return sym_visit_inline_comprehension(
+            b, sc, sc.generators, sc.elt, None, "setcomp"
+        );
     }
     if isinstance(e, DictComp) {
         dc = e as DictComp;
-        if not sym_visit_inline_comprehension(b, dc.generators, dc.key, dc.value) {
+        if not sym_visit_inline_comprehension(
+            b, dc, dc.generators, dc.key, dc.value, "dictcomp"
+        ) {
             return False;
         }
         return True;
@@ -653,7 +765,7 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
             return False;
         }
         nested = sym_compute_nested(b);
-        in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+        in_class = False;
         if not b.push_block(
             "function", "lambda", lam.lineno, nested, in_class, lam.col_offset
         ) {
@@ -731,8 +843,8 @@ def sym_visit_comp_store_target(b: sym_builder, t: expr) -> bool {
     if b.diag is not None {
         return False;
     }
-    if isinstance(t, Tuple) {
-        elts = (t as Tuple).elts;
+    if isinstance(t, (Tuple, List)) {
+        elts = t.elts;
         ei = 0;
         while ei < len(elts) {
             if not sym_visit_comp_store_target(b, elts[ei]) {
@@ -744,11 +856,11 @@ def sym_visit_comp_store_target(b: sym_builder, t: expr) -> bool {
     }
     if isinstance(t, Name) {
         n = t as Name;
-        flags = DEF_LOCAL;
-        if b.cur.block_type == "module" {
-            flags = DEF_LOCAL | DEF_COMP_ITER;
-        }
+        flags = DEF_LOCAL | DEF_COMP_ITER;
         return b.add_def(n.id, flags, n.lineno, n.col_offset);
+    }
+    if isinstance(t, Starred) {
+        return sym_visit_comp_store_target(b, t.value);
     }
     return sym_visit_store_target(b, t);
 }
@@ -849,14 +961,11 @@ def sym_is_function_like(block: sym_block) -> bool {
 }
 
 def sym_compute_nested(b: sym_builder) -> bool {
-    if b.cur.block_type == "module" {
-        return False;
-    }
-    if sym_is_function_like(b.cur) {
-        return True;
-    }
-    if b.cur.nested {
-        return True;
+    for block in reversed(b.stack + [b.cur]) {
+        if block.inlined {
+            continue;
+        }
+        return sym_is_function_like(block) or block.nested;
     }
     return False;
 }
@@ -1294,7 +1403,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             return False;
         }
         nested = sym_compute_nested(b);
-        in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+        in_class = False;
         if not b.push_block(
             "function", fd.name, fd.lineno, nested, in_class, fd.col_offset
         ) {
@@ -1332,7 +1441,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             return False;
         }
         nested = sym_compute_nested(b);
-        in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+        in_class = False;
         if not b.push_block(
             "function", afd.name, afd.lineno, nested, in_class, afd.col_offset
         ) {
@@ -1604,6 +1713,10 @@ def sym_analyze_name(
         sym_set_discard(global_set, name);
         return None;
     }
+    if block.inlined_class and name in ("__class__", "__classdict__") {
+        scopes[name] = SCOPE_GLOBAL_IMPLICIT;
+        return None;
+    }
     if class_entry is not None {
         class_flags = sym_dict_get(class_entry.symbols, name, 0);
         if sym_flag_set(class_flags, DEF_GLOBAL) {
@@ -1639,6 +1752,8 @@ def sym_analyze_block(
     inherited_global: dict[str, int],
     class_entry: sym_block | None
 ) -> tuple[dict[str, int], compiler_diagnostic | None] {
+    enclosing_bound = None if bound is None else sym_set_union({}, bound);
+    bound = None if bound is None else sym_set_union({}, bound);
     local: dict[str, int] = {};
     free: dict[str, int] = {};
     global_set: dict[str, int] = sym_set_union({}, inherited_global);
@@ -1665,13 +1780,15 @@ def sym_analyze_block(
     if sym_is_function_like(block) {
         newbound = sym_set_union(newbound, local);
     } elif block.block_type == "class" {
-        for dunder in ["__class__", "__classdict__", "__conditional_annotations__"] {
+        for dunder in ["__class__", "__classdict__"] {
             sym_set_add(newbound, dunder);
         }
     }
-    if bound is not None {
-        newbound = sym_set_union(newbound, bound);
+    child_bound = enclosing_bound if block.block_type == "class" else bound;
+    if child_bound is not None {
+        newbound = sym_set_union(newbound, child_bound);
     }
+    child_globals = inherited_global if block.block_type == "class" else global_set;
     child_free: dict[str, int] = {};
     ci = 0;
     while ci < len(block.children) {
@@ -1682,7 +1799,7 @@ def sym_analyze_block(
                 child_class = block;
             }
         }
-        cf_result = sym_analyze_block(child, newbound, global_set, child_class);
+        cf_result = sym_analyze_block(child, newbound, child_globals, child_class);
         if cf_result[1] is not None {
             return ({}, cf_result[1]);
         }
@@ -1697,11 +1814,13 @@ def sym_analyze_block(
         # implicit cell (needs_class_closure) consumed by the body prologue and
         # returned as __classcell__. __classdict__/__conditional_annotations__
         # get their own implicit cells at compile time.
-        for dunder in ["__class__", "__classdict__", "__conditional_annotations__"] {
+        for dunder in ["__class__", "__classdict__"] {
             if sym_set_contains(child_free, dunder) {
                 sym_set_discard(child_free, dunder);
                 if dunder == "__class__" {
                     block.needs_class_closure = True;
+                } else {
+                    block.needs_classdict_closure = True;
                 }
             }
         }
@@ -1710,7 +1829,12 @@ def sym_analyze_block(
     fi = 0;
     while fi < len(fk_names) {
         fname = fk_names[fi];
-        if sym_set_contains(local, fname) {
+        if block.block_type == "class" {
+            if sym_set_contains(newbound, fname)
+                and fname not in block.class_free_names {
+                block.class_free_names.append(fname);
+            }
+        } elif sym_set_contains(local, fname) {
             scopes[fname] = SCOPE_CELL;
             sym_set_discard(child_free, fname);
         } elif not sym_set_contains(local, fname)
@@ -1751,6 +1875,30 @@ def sym_propagate_module_globals(top: sym_block) {
     }
 }
 
+def sym_assign_inline_aliases(block: sym_block, owner: sym_block | None = None) {
+    if owner is None {
+        owner = block;
+    }
+    free_names = sym_block_tuple_names(owner.symbols, SCOPE_FREE)
+        + owner.class_free_names;
+    for child in block.children {
+        if child.inlined {
+            for name in child.local_varnames {
+                if sym_scope_of(child.symbols[name]) in (SCOPE_LOCAL, SCOPE_CELL) {
+                    # Share ordinary frame slots so locals() observes the active
+                    # binding. A closure slot stays distinct from a hidden local.
+                    child.inline_aliases[name] = ".comp." + name
+                        if name in free_names
+                        else name;
+                }
+            }
+            sym_assign_inline_aliases(child, owner);
+        } else {
+            sym_assign_inline_aliases(child, child);
+        }
+    }
+}
+
 def build_module_symtable(body: list[stmt]) -> symtable_result {
     top = sym_block(block_type="module", name="top", lineno=0, nested=False);
     b = sym_builder(cur=top, stack=[], module_global={}, private=None, diag=None);
@@ -1768,6 +1916,7 @@ def build_module_symtable(body: list[stmt]) -> symtable_result {
     if sym_result[1] is not None {
         return symtable_result(diag=sym_result[1]);
     }
+    sym_assign_inline_aliases(top);
     sym_propagate_module_globals(top);
     # CPython codegen.c super-call optimization requires 'super' to be unknown
     # at the module top; record that fact on every block so nested units can

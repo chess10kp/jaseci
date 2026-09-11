@@ -243,6 +243,7 @@ obj cfg_builder {
         # before its owner resumes the enclosing exception/return operation.
         fallthrough_target: basicblock | None = None,
         sym_top: sym_block | None = None,
+        scope_names: dict[str, str] = {},
         private: str | None = None,
         loop_stack: list[loop_frame] = [],
         # Enclosing with / async-with frames, outermost first.

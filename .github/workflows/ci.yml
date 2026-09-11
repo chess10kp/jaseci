@@ -193,6 +193,13 @@ jobs:
               ModifyUnderlyingIterableTest ExceptionTest GeneratorCloseTest \
               GeneratorDeallocTest GeneratorThrowTest GeneratorStackTraceTest YieldFromTests
           done
+      - name: Compile and run upstream comprehension unit tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_listcomps --tests ListComprehensionTest
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_dictcomps
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_setcomps --tests SetComprehensionTest
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

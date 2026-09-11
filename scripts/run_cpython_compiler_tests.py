@@ -154,6 +154,7 @@ def main() -> int:
         name: test_module.__dict__.get(name)
         for name in ("compile", "eval", "exec")
     }
+    original_defaults = []
     if args.runtime:
         import ctypes
 
@@ -170,6 +171,25 @@ def main() -> int:
         test_module.compile = replacement_compile
         test_module.eval = replacement_eval
         test_module.exec = replacement_exec
+        replacements = ((builtins.compile, replacement_compile),
+                        (builtins.eval, replacement_eval),
+                        (builtins.exec, replacement_exec))
+
+        def replace_default(value):
+            return next((new for old, new in replacements if value is old), value)
+
+        for obj in list(vars(test_module).values()):
+            candidates = [obj]
+            if isinstance(obj, type) and obj.__module__ == args.module:
+                candidates.extend(vars(obj).values())
+            for fn in candidates:
+                if not isinstance(fn, types.FunctionType) or fn.__module__ != args.module:
+                    continue
+                original_defaults.append((fn, fn.__defaults__, fn.__kwdefaults__))
+                if fn.__defaults__:
+                    fn.__defaults__ = tuple(replace_default(v) for v in fn.__defaults__)
+                if fn.__kwdefaults__:
+                    fn.__kwdefaults__ = {k: replace_default(v) for k, v in fn.__kwdefaults__.items()}
     print("Compiler path:", "C runtime dispatch" if args.runtime else "direct API", flush=True)
     try:
         sys.modules[args.module] = test_module
@@ -193,6 +213,8 @@ def main() -> int:
         return int(not result.wasSuccessful())
     finally:
         sys.modules[args.module] = reference_module
+        for fn, defaults, kwdefaults in original_defaults:
+            fn.__defaults__, fn.__kwdefaults__ = defaults, kwdefaults
         if args.runtime:
             del sys._jacpython_compile
         for name, value in original.items():

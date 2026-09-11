@@ -558,6 +558,7 @@ def compile_eval(
     );
     if sym_top is not None {
         u.varnames = fast_varnames_from_sym(sym_top);
+        u.cellvars.extend(cellvars_from_sym(sym_top));
     }
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_top);
@@ -1352,31 +1353,6 @@ def visit_return_stmt(
     has_fblocks = len(g.cleanup_stack) > 0;
     unwind_end = control_unwind();
     if r.value is not None {
-        if isinstance(r.value, Name) {
-            n = r.value as Name;
-            name = codegen_mangle(g, n.id);
-            fi = fast_local_index(g, name);
-            if fi >= 0 {
-                nloc_name = nloc(
-                    n.lineno, n.end_lineno, n.col_offset, n.end_col_offset
-                );
-                if check_fast {
-                    g.emit_op(OP_LOAD_FAST_CHECK, fi, nloc_name);
-                } elif borrow_fast {
-                    g.emit_op(OP_LOAD_FAST_BORROW, fi, nloc_name);
-                } else {
-                    g.emit_op(OP_LOAD_FAST, fi, nloc_name);
-                }
-                if has_fblocks {
-                    unwind_end = emit_return_unwind(g, rloc);
-                }
-                if not unwind_end.terminated {
-                    g.emit_op(OP_RETURN_VALUE, 0, rloc);
-                }
-                finish_control_unwind(g, unwind_end);
-                return;
-            }
-        }
         visit_expr(g, r.value);
         ret_loc = rloc;
         if isinstance(r.value, Constant) {
@@ -1437,6 +1413,7 @@ def compile_exec(
     u.interactive = interactive;
     if sym_top is not None {
         u.varnames = fast_varnames_from_sym(sym_top);
+        u.cellvars.extend(cellvars_from_sym(sym_top));
     }
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_top);

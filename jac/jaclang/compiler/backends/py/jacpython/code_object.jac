@@ -83,7 +83,7 @@ def code_object(code: PyCode, constants: dict[str, any] | None = None) -> CodeTy
     if constants is None {
         constants = {};
     }
-    return CodeType(
+    result = CodeType(
         code.argcount,
         code.posonlyargcount,
         code.kwonlyargcount,
@@ -103,7 +103,23 @@ def code_object(code: PyCode, constants: dict[str, any] | None = None) -> CodeTy
         tuple(code.freevars),
         tuple(code.cellvars)
     );
+    constructor = (sys as any)?._jacpython_code;
+    if constructor is not None {
+        metadata = {};
+        for name in code.varnames {
+            hidden = not bool(code.flags & 1);
+            if name.startswith(".comp.") or hidden {
+                public_name = name[6:] if name.startswith(".comp.") else name;
+                metadata[name] = (public_name, hidden);
+            }
+        }
+        if metadata {
+            result = constructor(result, metadata);
+        }
+    }
+    return result;
 }
+
 
 def compile_python(
     source: any,

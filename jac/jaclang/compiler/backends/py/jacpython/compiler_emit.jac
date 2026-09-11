@@ -397,6 +397,42 @@ def codegen_mangle(g: cfg_builder, name: str) -> str {
 
 # Fast locals for a compile unit. Module scope: comprehension iteration variables
 # only. Function scope: parameters (definition order) then other locals (sorted).
+def inline_storage_names(
+    block: sym_block, cells_only: bool = False, owner: sym_block | None = None
+) -> list[str] {
+    if owner is None {
+        owner = block;
+    }
+    occupied = sym_block_tuple_names(owner.symbols, SCOPE_FREE)
+        + owner.class_free_names;
+    if not cells_only {
+        if owner.block_type == "function" {
+            occupied.extend(sym_block_tuple_names(owner.symbols, SCOPE_LOCAL));
+        }
+    }
+    names: list[str] = [];
+    for child in block.children {
+        if child.inlined {
+            for (name, alias) in child.inline_aliases.items() {
+                if alias not in occupied
+                    and alias not in names
+                    and (
+                        not cells_only
+                        or sym_scope_of(child.symbols[name]) == SCOPE_CELL
+                    ) {
+                    names.append(alias);
+                }
+            }
+            for name in inline_storage_names(child, cells_only, owner) {
+                if name not in names {
+                    names.append(name);
+                }
+            }
+        }
+    }
+    return names;
+}
+
 def fast_varnames_from_sym(block: sym_block) -> list[str] {
     if block.block_type == "function" {
         out: list[str] = [];
@@ -424,7 +460,7 @@ def fast_varnames_from_sym(block: sym_block) -> list[str] {
             }
             li = li + 1;
         }
-        return out;
+        return out + [name for name in inline_storage_names(block) if name not in out];
     }
     names = sym_sorted_names(block.symbols);
     out: list[str] = [];
@@ -441,15 +477,22 @@ def fast_varnames_from_sym(block: sym_block) -> list[str] {
         }
         ni = ni + 1;
     }
-    return out;
+    return out + inline_storage_names(block);
 }
 
 def cellvars_from_sym(block: sym_block) -> list[str] {
-    return sym_block_tuple_names(block.symbols, SCOPE_CELL);
+    names = sym_block_tuple_names(block.symbols, SCOPE_CELL);
+    return names
+        + [
+            name
+            for name in inline_storage_names(block, True)
+            if name not in names
+        ];
 }
 
 def freevars_from_sym(block: sym_block) -> list[str] {
-    return sym_block_tuple_names(block.symbols, SCOPE_FREE);
+    names = sym_block_tuple_names(block.symbols, SCOPE_FREE);
+    return sorted(set(names + block.class_free_names));
 }
 
 def varname_index(u: unverified_cfg, name: str) -> int {
@@ -493,7 +536,7 @@ def localsplus_index_u(u: unverified_cfg, name: str) -> int {
 }
 
 def localsplus_index(g: cfg_builder, name: str) -> int {
-    return localsplus_index_u(g.u, name);
+    return localsplus_index_u(g.u, g.scope_names.get(name, name));
 }
 
 # CPython emits MAKE_CELL(s), optional COPY_FREE_VARS, then RESUME. Generators
@@ -519,9 +562,10 @@ def emit_function_prologue(
     if len(u.freevars) > 0 {
         g.emit_op(OP_COPY_FREE_VARS, len(u.freevars), noloc);
     }
+    initial_cells = sym_block_tuple_names(sym_fn.symbols, SCOPE_CELL);
     ci = 0;
-    while ci < len(u.cellvars) {
-        lp = localsplus_index_u(u, u.cellvars[ci]);
+    while ci < len(initial_cells) {
+        lp = localsplus_index_u(u, initial_cells[ci]);
         g.emit_op(OP_MAKE_CELL, lp, noloc);
         ci = ci + 1;
     }
@@ -2574,6 +2618,16 @@ def emit_starred_list_build(g: cfg_builder, elts: list[expr], dloc: cloc) -> Non
 }
 
 def fast_local_index(g: cfg_builder, name: str) -> int {
+    if g.sym_top is not None {
+        scope = sym_scope_of(sym_dict_get(g.sym_top.symbols, name, 0));
+        if scope in (SCOPE_GLOBAL_EXPLICIT, SCOPE_GLOBAL_IMPLICIT) {
+            return -1;
+        }
+        if g.sym_top.block_type in ("module", "class") and name not in g.scope_names {
+            return -1;
+        }
+    }
+    name = g.scope_names.get(name, name);
     vi = 0;
     while vi < len(g.u.varnames) {
         if g.u.varnames[vi] == name {
@@ -3371,58 +3425,80 @@ def visit_inline_comprehension(
     first = generators[0];
     visit_expr(g, first.iter);
     g.emit_op(OP_GET_AITER if first.is_async else OP_GET_ITER, 0, expr_loc(first.iter));
-    slots: list[int] = [];
-    cells: list[int] = [];
-    for gen in generators {
-        for name in comp_target_names(gen.target) {
-            slot = comp_target_slot_index(g, codegen_mangle(g, name));
-            if slot < 0 {
-                codegen_fail(
-                    g, "SystemError", "missing comprehension binding: " + name
-                );
-                return;
-            }
-            if slot not in slots {
-                slots.append(slot);
-                g.emit_op(OP_LOAD_FAST_AND_CLEAR, slot, lc);
-                if comp_name_is_cell(g, codegen_mangle(g, name)) {
-                    cells.append(slot);
+    kind = "listcomp"
+        if build_op == OP_BUILD_LIST
+        else "setcomp" if build_op == OP_BUILD_SET else "dictcomp";
+    if g.sym_top is None {
+        codegen_fail(g, "SystemError", "comprehension without symbol table");
+        return;
+    }
+    scope = sym_function_child_at(g.sym_top, kind, lc.lineno, lc.col_offset);
+    if scope is None {
+        codegen_fail(g, "SystemError", "missing inlined comprehension scope");
+        return;
+    }
+    parent = g.sym_top;
+    parent_names = g.scope_names;
+    g.sym_top = scope;
+    g.scope_names = parent_names | scope.inline_aliases;
+    try {
+        slots: list[int] = [];
+        cells: list[int] = [];
+        for gen in generators {
+            for name in comp_target_names(gen.target) {
+                slot = comp_target_slot_index(g, codegen_mangle(g, name));
+                if slot < 0 {
+                    codegen_fail(
+                        g, "SystemError", "missing comprehension binding: " + name
+                    );
+                    return;
+                }
+                if slot not in slots {
+                    slots.append(slot);
+                    g.emit_op(OP_LOAD_FAST_AND_CLEAR, slot, lc);
+                    if comp_name_is_cell(g, codegen_mangle(g, name)) {
+                        cells.append(slot);
+                    }
                 }
             }
         }
+        # Move the outer iterator above all saved bindings, retaining their order.
+        for depth in range(2, len(slots) + 2) {
+            g.emit_op(OP_SWAP, depth, lc);
+        }
+        start = g.new_block();
+        g.use(start);
+        for slot in cells {
+            g.emit_op(OP_MAKE_CELL, slot, lc);
+        }
+        g.emit_op(build_op, 0, lc);
+        g.emit_op(OP_SWAP, 2, lc);
+        emit_comprehension_loop(g, generators, 0, element, value, add_op);
+        end = g.new_block();
+        g.use(end);
+        comp_restore_slots(g, slots, lc);
+        join = g.new_deferred_block();
+        g.emit_jump(OP_JUMP_FORWARD, join.id, lc);
+        handler = g.new_block();
+        g.use(handler);
+        comp_restore_slots(g, slots, lc);
+        g.emit_op(OP_RERAISE, 0, lc);
+        g.use(join);
+        g.u.except_regions.append(
+            except_region(
+                start_block=start.id,
+                end_block=end.id,
+                handler_block=handler.id,
+                stack_depth=0,
+                depth_from_block=start.id
+            )
+        );
+    } finally {
+        g.sym_top = parent;
+        g.scope_names = parent_names;
     }
-    # Move the outer iterator above all saved bindings, retaining their order.
-    for depth in range(2, len(slots) + 2) {
-        g.emit_op(OP_SWAP, depth, lc);
-    }
-    start = g.new_block();
-    g.use(start);
-    for slot in cells {
-        g.emit_op(OP_MAKE_CELL, slot, lc);
-    }
-    g.emit_op(build_op, 0, lc);
-    g.emit_op(OP_SWAP, 2, lc);
-    emit_comprehension_loop(g, generators, 0, element, value, add_op);
-    end = g.new_block();
-    g.use(end);
-    comp_restore_slots(g, slots, lc);
-    join = g.new_deferred_block();
-    g.emit_jump(OP_JUMP_FORWARD, join.id, lc);
-    handler = g.new_block();
-    g.use(handler);
-    comp_restore_slots(g, slots, lc);
-    g.emit_op(OP_RERAISE, 0, lc);
-    g.use(join);
-    g.u.except_regions.append(
-        except_region(
-            start_block=start.id,
-            end_block=end.id,
-            handler_block=handler.id,
-            stack_depth=0,
-            depth_from_block=start.id
-        )
-    );
 }
+
 
 def visit_list_comp(g: cfg_builder, lc: ListComp) {
     visit_inline_comprehension(
@@ -3628,27 +3704,17 @@ def compile_lambda_cfg(
 # statement-level helpers live above this layer (codegen imports emit).
 def emit_expr_name_store(g: cfg_builder, name: str, tloc: cloc) -> None {
     name = codegen_mangle(g, name);
-    fi = fast_local_index(g, name);
-    if fi >= 0 {
-        g.emit_op(OP_STORE_FAST, fi, tloc);
+    if emit_local_or_cell_store(g, name, tloc) {
         return;
     }
+    opcode = OP_STORE_NAME;
     if g.sym_top is not None and g.sym_top.block_type != "module" {
-        flags = sym_dict_get(g.sym_top.symbols, name, 0);
-        scope = sym_scope_of(flags);
-        if scope == SCOPE_FREE or scope == SCOPE_CELL {
-            idx = localsplus_index(g, name);
-            g.emit_op(OP_STORE_DEREF, idx, tloc);
-            return;
-        }
-        if scope == SCOPE_GLOBAL_EXPLICIT or scope == SCOPE_GLOBAL_IMPLICIT {
-            idx = g.u.add_name(name);
-            g.emit_op(OP_STORE_GLOBAL, idx, tloc);
-            return;
+        scope = sym_scope_of(sym_dict_get(g.sym_top.symbols, name, 0));
+        if scope in (SCOPE_GLOBAL_EXPLICIT, SCOPE_GLOBAL_IMPLICIT) {
+            opcode = OP_STORE_GLOBAL;
         }
     }
-    idx = g.u.add_name(name);
-    g.emit_op(OP_STORE_NAME, idx, tloc);
+    g.emit_op(opcode, g.u.add_name(name), tloc);
 }
 
 # Lower a generator expression: nested <genexpr> PyCode + MAKE_FUNCTION, then

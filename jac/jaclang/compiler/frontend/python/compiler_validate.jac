@@ -585,14 +585,6 @@ def validate_stmt(
     }
     if isinstance(s, Nonlocal) {
         nl = s as Nonlocal;
-        if not in_function {
-            return validation_error(
-                "SyntaxError",
-                "nonlocal declaration not allowed at module level",
-                nl.lineno,
-                nl.col_offset
-            );
-        }
         return validate_duplicate_names(nl.names, "nonlocal", nl.lineno, nl.col_offset);
     }
     if isinstance(s, For) {

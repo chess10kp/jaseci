@@ -66,7 +66,6 @@ import from jaclang.runtime.python.opcode_meta {
     OP_SET_UPDATE,
     stack_effect,
     _opcode_num_popped,
-    _opcode_num_popped,
     _opcode_num_pushed,
     has_target,
     is_unconditional_jump_opcode,
@@ -1474,6 +1473,11 @@ def ac_scan_block(
         # Exception edge: the handler can start at any point of this block.
         if h >= 0 and h < len(masks) {
             ac_maybe_push(h, mask, masks, onstack, blocks_by_id, worklist);
+        }
+        if ins.target_block >= 0 and ins.opcode != OP_END_ASYNC_FOR {
+            ac_maybe_push(
+                ins.target_block, mask, masks, onstack, blocks_by_id, worklist
+            );
         }
         oparg = ins.oparg;
         # Fused superinstructions carry packed nibble pairs, so they are not

@@ -87,6 +87,7 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     codegen_mangle,
     fast_local_index,
     fast_varnames_from_sym,
+    inline_storage_names,
     freevars_from_sym,
     localsplus_index,
     localsplus_index_u,
@@ -536,12 +537,15 @@ def compile_class_cfg(
     # survive into the class-body code object so method creation inside the
     # body can close over those cells.
     u.freevars = freevars_from_sym(sym_cls);
+    u.varnames = inline_storage_names(sym_cls);
+    u.cellvars.extend(inline_storage_names(sym_cls, True));
     # Implicit __class__ cell first (CPython compiler_unit appends it before
     # __classdict__; observed oracle order ('__class__', '__classdict__')).
     if sym_cls.needs_class_closure {
         u.cellvars.append("__class__");
     }
-    if class_body_has_function(cd)
+    if sym_cls.needs_classdict_closure
+        or class_body_has_function(cd)
         or ann_plan.any_annotation
         or class_body_has_typealias(cd) {
         u.cellvars.append("__classdict__");
