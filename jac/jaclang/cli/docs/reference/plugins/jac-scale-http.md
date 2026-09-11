@@ -1392,6 +1392,8 @@ api_key_expiry_days = 365
 | `signature_header` | string | `"X-Webhook-Signature"` | HTTP header name containing the HMAC signature. |
 | `verify_signature` | boolean | `true` | Whether to verify HMAC signatures on incoming requests. |
 | `api_key_expiry_days` | integer | `365` | Default expiry period for API keys in days. Set to `0` for permanent keys. |
+| `github_secret` | string | `""` | Secret that `scheme="github"` walkers verify `X-Hub-Signature-256` against (the GitHub App's webhook secret). Boot fails if a github-scheme walker exists and this is empty. |
+| `github_signature_header` | string | `"X-Hub-Signature-256"` | Header carrying the GitHub-style signature for `scheme="github"` walkers. |
 
 **Environment Variables:**
 
@@ -1500,6 +1502,32 @@ curl -X POST "http://localhost:8000/webhook/PaymentReceived" \
     -H "X-Webhook-Signature: $SIGNATURE" \
     -d "$PAYLOAD"
 ```
+
+#### GitHub-Signed Webhooks (`scheme="github"`)
+
+Providers such as GitHub sign the raw body with a shared secret and cannot send an API key. Declare the scheme on the walker and the endpoint switches verification:
+
+```jac
+@restspec(protocol=APIProtocol.WEBHOOK, scheme="github")
+walker GithubEvent {
+    has event: str = "",      # copied from X-GitHub-Event
+        delivery: str = "",   # copied from X-GitHub-Delivery
+        action: str = "",
+        installation: dict[str, any] = {};
+
+    can handle with Root entry {
+        report {"event": self.event, "action": self.action};
+    }
+}
+```
+
+- No `X-API-Key`. The runtime verifies `X-Hub-Signature-256` (`sha256=` plus HMAC-SHA256 of the raw body, keyed by `[scale.webhook].github_secret`; the prefix is optional).
+- No timestamp window: GitHub sends none, and only the body is signed, so `X-GitHub-Event` and `X-GitHub-Delivery` are not authenticated. Deduping on `X-GitHub-Delivery` absorbs GitHub's own redeliveries, not a captured body replayed with a new delivery id.
+- Deliveries must be `application/json`. GitHub's default content type (`application/x-www-form-urlencoded`, the JSON inside a `payload=` field) is refused with 415, so a misconfigured webhook shows up in the delivery log instead of running the walker with every field at its default.
+- The walker runs as the system identity (the user the scheduler runs jobs as, created at boot) and resolves its own tenant from the payload. Boot fails when `[scale.webhook].github_secret` is empty or that identity is missing.
+- `X-GitHub-Event` and `X-GitHub-Delivery` are copied into `event` and `delivery` when the walker declares them, and win over same-named body keys.
+- The body size cap and the per-minute rate limit apply; the rate limit is keyed by walker name.
+- The default scheme (`scheme` omitted or `"jac"`) is unchanged, and both kinds of walker can coexist in one app.
 
 ### Webhook vs Regular Walkers
 
@@ -1651,11 +1679,26 @@ Types that cross the app boundary use the same wire contract as client-to-server
 
 What works:
 
-- **`obj` types** -- fields hydrated recursively, including nested objects.
+- **`obj` types** -- fields hydrated recursively, including inherited fields, objects inside lists and dictionaries, optional fields, and recursive type declarations. Nested types are included even when the consumer imports only the function or the outer type. Import aliases on either side refer to the same consumer-side type.
 - **`enum` types** -- serialized by name.
 - **Primitives** -- `int`, `float`, `str`, `bool`, `None`, `list[T]`, `dict[K, V]`.
 - **Bidirectional** -- typed function arguments are wrapped on the way out and unwrapped on the way in.
 - **walkers** -- when imported by name. The consumer-side stub mirrors the provider's `has` fields, and the round-trip rehydrates the walker into a real instance with `reports` populated. See [Walker Imports](#walker-imports).
+
+Reconstruction uses the `_jac_type_id` identity in API responses and the boundary
+types collected by the compiler. An identity names the declaring module, and the
+app as well when that module is an app's entry file, so unrelated types with the
+same name remain distinct while aliases of one declaration share a consumer-side
+type, whichever app compiled the module. It applies to function results, walker fields,
+and reports, including when services run in separate processes. Ordinary
+dictionaries stay dictionaries. Forwarding a reconstructed value preserves its
+nested type markers and inherited fields, including when passed to a typed
+service parameter. Reconstruction only uses the declared boundary types; it
+does not import or execute the provider module.
+
+Browser stubs resolve field and function-signature types in their declaring
+modules too. Imports and re-exported aliases retain the matching boundary class,
+even when several providers declare types with the same name.
 
 What doesn't:
 
@@ -1816,7 +1859,8 @@ JAC_APP_INVENTORY_URL=http://host-a:8001 jac run orders --port 8000
 
 #### Troubleshooting
 
-- **`{"detail":"Invalid anchor id ..."}` 500s.** Stale anchors persisted from a previous run with a different schema. Stop the server, `rm -rf .jac/data/`, and restart. Not specific to cross-app calls; any `def:pub` call can hit this after a schema change.
+If an endpoint reports an invalid anchor, check its ID, the selected app and store, and recent schema changes. Run `jac guide jac-debugging --section diagnose-state-and-cache-errors` for the diagnostic sequence. Preserve existing data until you have identified the cause and chosen a repair.
+
 - **`BridgeUnavailable: app 'x' is not registered`.** The provider app is neither colocated nor reachable: the served app has no `[apps.x]` table to colocate, or in a fleet/multi-host setup `JAC_APP_X_URL` is unset.
 - **`BridgeRejected` with status 404 / 401.** The element is not on the provider's bridge surface (`jac check` reports `E5106` for the compile-time half), or the hop carried no usable `Authorization` for a `:priv` endpoint.
 - **`E1042` at a call you did not think was remote.** The imported element is owned by another app; add `await` (and make the enclosing function `async`).

@@ -1,6 +1,6 @@
 ---
 name: jac-codespaces
-description: Inferred client/server/native code placement - how the whole-program solver decides what runs where (JSX/npm imports mark code client, python imports and graph archetypes anchor code server, extern C declarations mark code native), what never moves (def:pub endpoints, walkers, shared objs), the [placement.pins] override table, and the --placements review tooling. Load when deciding where code runs, pinning a declaration server-side, migrating marker-era code with `jac fix placement`, or debugging why something landed in the wrong bundle.
+description: Inspect and constrain client, server, and native placement. Use for placement pins, unexpected bundles, or migration from explicit codespace markers.
 ---
 
 **Placement is inferred - there is no syntax for it.** Jac compiles one language to three codespaces: server (Python - the default), client (JavaScript/JSX), and native (LLVM). A whole-program placement solver reads the evidence in your code and places every top-level element. The old `sv`/`cl`/`na` markers (blocks, statement prefixes, and the `.sv.jac` / `.cl.jac` / `.na.jac` suffixes) were removed - marker code is a syntax error and suffixed files fail loudly; run `jac fix placement` to migrate old code (see Migration below). Overrides live in `jac.toml` under `[placement.pins]`, not in the source. Project kind constrains the solver before it runs: a kind whose codespace roster has no server (`js-package`) compiles every module client by construction, so a `pub` element can never silently land on a server that cannot exist.
@@ -92,17 +92,22 @@ Pins feed the solver exactly like the old markers did: a pinned element is immov
 Declaring that a module runs as its own service happens ONLY in `jac.toml`, as an **app**:
 
 ```toml
-[apps.math]                          # file-rooted service app: owns exactly this file
+[apps.math]                          # service entry
 kind = "service"
-entry-point = "core/math.jac"
+entry-point = "core.math"
 
-[apps.orders]                        # dir-rooted: owns everything under orders/
+[apps.orders]                        # service entry
 kind = "service"
-path = "orders"
+entry-point = "orders.main"
 route = "/api/orders"                # default would be /api/orders anyway
 ```
 
-Every module carries stamped **app facts** (`app`, `app_root`, `app_kind`, `owner_app`); modules under no app root are shared. A service app's elements are server-anchored by definition and owned by it; plain imports of its walkers / `def:pub` functions from any other app lower to bridge stubs automatically - typed-async Python stubs server-to-server (`await`), async JS stubs client-to-server. Two laws ride on the same facts: an app may use another app's declarations only through that bridge surface (`E2039`), and shared code may never import from an app (`E2040`). `jac create --app <name> --kind service` writes the table. There is no auto-discovery from source. See `jac-sv-microservices`.
+`AppContextPass` stamps app facts during compilation. Helpers inherit the
+selected app context; another declared entry establishes a boundary. Public
+functions and walkers reached through a service entry lower to awaited bridge
+calls. `E2039` diagnoses access outside that public surface. `jac create --app
+<name> --kind service` writes an explicit entry declaration. See
+`jac-sv-microservices`.
 
 ## Native inference - extern C declarations are the seed
 

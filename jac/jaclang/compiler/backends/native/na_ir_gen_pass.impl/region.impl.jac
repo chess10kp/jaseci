@@ -264,7 +264,7 @@ impl NaIRGenPass._emit_struct_drop_fields_fn(type_name: str) -> (ir.Function | N
         for (fname, ftype) in field_types.items()
         if fname not in foreign_fields
             and (
-                isinstance(ftype, ir.PointerType)
+                self._elem_kind(ftype) != "raw"
                 or self._opt_ptr_payload_of(ftype) is not None
             )
             and field_indices.get(fname, -1) >= 0
@@ -304,7 +304,7 @@ impl NaIRGenPass._emit_struct_drop_fields_fn(type_name: str) -> (ir.Function | N
     }
     if _hook is not None {
         self.struct_drop_hooks[type_name] = _hook;
-        b.call(_hook, [_dobj]);
+        b.call(_hook, [b.bitcast(_dobj, _hook.args[0].type)]);
     }
     for (fname, ftype) in _ptr_fields {
         idx = field_indices.get(fname, -1);
@@ -325,13 +325,7 @@ impl NaIRGenPass._emit_struct_drop_fields_fn(type_name: str) -> (ir.Function | N
             continue;
         }
         fv = b.load(fp, name=f"dropf.{fname}");
-        _fv_ty = fv.type;
-        if isinstance(_fv_ty, ir.PointerType)
-            and isinstance(_fv_ty.pointee, ir.FunctionType) {
-            continue;
-        }
-        fv_i8 = b.bitcast(fv, i8p, name=f"dropf.{fname}.i8");
-        b.call(self.rc_release_simple_fn, [fv_i8]);
+        self._emit_elem_release(b, ftype, fv);
     }
     b.branch(done_bb);
 

@@ -45,20 +45,28 @@ impl ViteClientBundleBuilder._emitted_digest(self: ViteClientBundleBuilder) -> s
     return emitted_tree_digest(self.vite_package_json.parent / 'compiled');
 }
 
+impl ViteClientBundleBuilder.prepare(
+    self: ViteClientBundleBuilder, module: ModuleType
+) -> ClientBuildInputs {
+    if not module.__file__ {
+        raise ClientBundleError(
+            f"Module '{module.__name__}' has no __file__ attribute"
+        );
+    }
+    return self._get_compiler().prepare_bundle(module, Path(module.__file__).resolve());
+}
+
+impl ViteClientBundleBuilder.bundle(
+    self: ViteClientBundleBuilder, inputs: ClientBuildInputs
+) -> ClientBundle {
+    return self._get_compiler().bundle(inputs);
+}
+
 impl ViteClientBundleBuilder._compile_bundle(
     self: ViteClientBundleBuilder, module: ModuleType, module_path: Path
 ) -> ClientBundle {
     compiler = self._get_compiler();
-    (bundle_code, bundle_hash, client_exports, client_globals) = compiler.compile_and_bundle(
-        module, module_path
-    );
-    return ClientBundle(
-        module_name=module.__name__,
-        code=bundle_code,
-        client_functions=client_exports,
-        client_globals=client_globals,
-        hash=bundle_hash
-    );
+    return compiler.bundle(compiler.prepare_bundle(module, module_path));
 }
 
 impl ViteClientBundleBuilder._get_compiler(

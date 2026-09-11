@@ -6,7 +6,7 @@ import zlib;
 import from pathlib { Path }
 
 glob MAGIC = b"JIR\x00",
-     FORMAT_VERSION: int = 24,
+     FORMAT_VERSION: int = 25,
      HEADER_SIZE: int = 32,
      HEADER_FMT: str = "<4sHHIIIIII",
      EXTERNAL_REF: int = 0xFFFFFF,
@@ -419,7 +419,9 @@ def module_env_fingerprint(source_path: str) -> str {
 }
 
 def compute_module_key(source_path: str) -> str {
+    import from jaclang.compiler.driver.compilation_context { cache_identity }
     h = hashlib.sha256();
+    h.update(cache_identity().encode());
     h.update(_env_fingerprint_for(source_path).encode());
     h.update(compute_content_sha256(source_path).encode());
     for (rel, digest) in _related_files(source_path) {
@@ -661,8 +663,12 @@ def jir_matches_source(jir_data: bytes, source_path: str) -> bool {
 }
 
 def compute_precompile_module_key(source_path: str, compiler_digest: str = "") -> str {
+    import from jaclang.compiler.driver.compilation_context { cache_scope }
     h = hashlib.sha256();
-    h.update(module_cache_key(source_path).encode());
+
+    with cache_scope('') {
+        h.update(module_cache_key(source_path).encode());
+    }
     h.update(b"|compiler=");
     h.update((compiler_digest or running_compiler_digest()).encode());
     return h.hexdigest();
@@ -727,9 +733,10 @@ def _get_module_cache_dir(source_path: str) -> Path {
 }
 
 def get_module_cache_path(source_path: str) -> Path {
+    import from jaclang.compiler.driver.compilation_context { cache_identity }
     cache_dir = _get_module_cache_dir(source_path);
     source = Path(source_path).resolve();
-    path_hash = hashlib.sha256(str(source).encode()).hexdigest()[:8];
+    path_hash = hashlib.sha256((str(source) + cache_identity()).encode()).hexdigest()[:8];
     (major, minor) = (sys.version_info.major, sys.version_info.minor);
     return cache_dir / f"{source.stem}.{path_hash}.cpython-{major}{minor}.jir";
 }

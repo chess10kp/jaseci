@@ -2,7 +2,98 @@
 
 This document provides a summary of new features, improvements, and bug fixes in each version of **Jaclang**. For details on changes that might require updates to your existing code, please refer to the [Breaking Changes](../breaking-changes.md) page.
 
-## jaclang 0.37.7 (Latest Release)
+## jaclang 0.37.13 (Latest Release)
+
+### New Features
+
+- **Webhook walkers can accept provider-signed deliveries** (#9038): `@restspec(protocol=APIProtocol.WEBHOOK, scheme="github")` verifies `X-Hub-Signature-256` over the raw body against `[scale.webhook].github_secret` instead of requiring an API key and a timestamped signature, runs the walker as the system identity, and copies `X-GitHub-Event` and `X-GitHub-Delivery` into declared `event` and `delivery` fields. The default scheme is unchanged and both kinds of webhook walker can coexist. A github-scheme walker fails at boot, with a message naming the walker, when the secret is empty or the system identity is missing, and deliveries that are not `application/json` are refused with 415.
+
+### Bug Fixes
+
+- `async def ... by llm()` now works on every LLM class: the streaming path no longer raises `TypeError: 'async_generator' object can't be awaited` on `MockLLM`, `LocalLLM`, `ModelPool` or a user-defined `BaseLLM` subclass, and `Model("mockllm")` / `Model("local:...")` now reach their delegate on the async path instead of asking a provider for a model it has never heard of.
+- **Fix: byLLM's `Image` no longer trips `jac check` when pillow is installed** (#9002): PIL types `Image.open()` as `ImageFile`, so the checker could not see the inherited `.format` and `.save`. Encoding behaviour is unchanged.
+- `jac check` no longer fails intermittently on files the change never touched: a class inheritance chain (MRO) was computed once from a base the analysis cache had published but not yet populated and then kept forever, so grandparent members and subtype checks failed at random (E1053 "Cannot assign StaticTarget to parameter of type ClientTarget", E1030 "has no attribute" on inherited members); ancestry caches now record what they were built from and rebuild when a base has grown, never shrinking and never discarding an ancestry the checker did not compute, and a class typed against an unresolved base re-binds it on first use.
+- **Fix: Nested values from shared modules reconstruct across services again**: A boundary type's identity now carries the app only when its module is an app's entry file. A shared module was tagged with whichever app happened to compile it, so the provider and each consumer computed different identities for the same type and nested fields declared in shared modules came back as plain dictionaries. The `typed_boundary` scale fixture also names its entry points as modules, as the `entry-point` validator now requires.
+- **Fix: Restore application context on cached compiler interfaces**: Hydrated dependencies retain their application's identity, kind, and root, matching freshly compiled modules when the same source is used by multiple apps.
+- **Fix: a profile's `[apps.<name>.scale]` tables reach the deployed manifests** (#8995): the deploy fleet read its project config without the active profile, so `JAC_PROFILE` retuned `[scale.gateway]` but silently dropped every per-app setting in the same profile file, including `deployment_overlay`. The fleet now resolves the profile with the same rule the `[scale.*]` reader uses.
+- Release compiler syntax trees before bundling standalone client builds while preserving native WASM assets and boundary metadata.
+- Balance native string references and constructor temporaries across compiler calls and scope cleanup.
+
+## jaclang 0.37.12
+
+### Breaking Changes
+
+- **Breaking: `/admin/metrics` `summary` replaces `total_requests`, `error_count` and `avg_latency_ms` with `scopes` and `endpoints`**: scopes carry request and 4xx/5xx counts, p50/p95/p99 and a latency distribution cut at the configured `histogram_buckets` edges; endpoints list one row per method and path sorted by p95. The admin HTTP traffic card now shows a real 60s/5m/15m window, latency percentiles and error rates instead of lifetime counts.
+- **Breaking: Entry-module application compilation**: explicit `[apps.<name>]` tables require `kind` and a dotted, project-relative `entry-point` such as `core.api`; file-path entry values and the directory `path` key are rejected, and default-app inference and shared-layer/ambiguous-app diagnostics are removed. Single-app `[project] entry-point` values also use module names (`main`, without `.jac`). Application identity is called app context; `Module.app` replaces the redundant `owner_app` stamp, while ownership continues to describe memory and borrowing. Ordinary imports inherit the selected app context; another declared entry is a boundary. Typed phase and product schedules centralize compilation, sharing parsed syntax while keeping analyzed artifacts and source runtime modules app specific. Workspace checks follow entry imports and page roots; name unreachable files explicitly. `jac test <app>` uses configured test directories or the entry module. `jac run` prepares server, client, native, and serving artifacts before initialization, with visible progress. Programmatic source servers must prepare applications before loading them; `JacTestClient` and the in-process host do so automatically. Failed preparation preserves the working revision, and prepared development reloads perform a full browser reload. Sealed applications now retain serving metadata per module, including colocated services; rebuild existing artifacts.
+
+### Bug Fixes
+
+- **Fix: Read-tier flush no longer reopens a read-only transaction before a write**: Overlapping requests whose walker updates a field on an existing node no longer fail at commit with Postgres `25006 cannot execute INSERT in a read-only transaction`; the flush now always opens a writable transaction for pending writes.
+- **Fix: Nested archetypes survive service calls**: Service responses recursively reconstruct typed objects in inherited and nested fields, lists, dictionaries, optional and union results, and walker responses. The compiler includes nested boundary types without requiring explicit imports, distinguishes same-named declarations across apps and modules, and preserves type identity across provider and consumer import aliases. Typed forwarding retains inherited fields and nested type identities. Browser stubs also resolve boundary types and aliases in their declaring modules.
+
+## jaclang 0.37.11
+
+### New Features
+
+- **Client: the react-native scaffold targets Expo SDK 57** (#9037): Expo Go on the App Store is a single build that supports only the newest SDK, so a project scaffolded on SDK 54 was refused on a real phone with "requires a newer version of Expo Go", which reads as the user's app being broken. `EXPO_SDK_VERSION` moves to 57 and `REACT_NATIVE_VERSION` to 0.86.3, along with the packages the scaffold pins by hand; since SDK 57 Expo versions its own packages with the SDK major, `expo-asset` and `expo-constants` jump to `~57.x`. `app.json` no longer sets `newArchEnabled` or `jsEngine`: SDK 57 removed both from the Expo config schema, and `expo-doctor` fails a project that still declares them. A scaffold generated by this change passes `expo install --check` and `expo-doctor` 21/21.
+- **Graph construction expressions**: `graph { ... }` composes nested graph structure into a typed fragment with roots, continuation tips, participating nodes, and captured edges. Existing connect expressions retain their result semantics; client connects now preserve singleton target lists consistently with the server. `graph` is reserved; existing identifiers with that spelling must be renamed or backtick-escaped.
+
+### Bug Fixes
+
+- **Scale: gateway-only (Kubernetes) mode probes service health instead of asserting it**: the gateway used to mark every service app declared in `[apps]` healthy without contacting anything, so `/healthz` reported the contents of jac.toml, never-deployed services showed `"status": "healthy"` with plausible in-cluster URLs, and dead upstreams were proxied into the void until a 502 GATEWAY_TIMEOUT. Gateway-only mode now starts entries as `starting` and runs the same health-monitor loop the process-managed path already uses, demoting unreachable services to `unhealthy`. The `/healthz` top-level status is a computed roll-up (`healthy`/`starting`/`degraded`) and returns 503 when degraded; the pod probes `/healthz/live` and `/healthz/ready` are unchanged. Fixes #8347.
+- **Fix: Infer authenticated client bridges**: Server-placed private and protected functions now receive authenticated RPC forwarders for client imports within the same app, allowing the day-planner examples to run without placement pins. Cross-app imports still require public endpoints. Remove redundant application and test placement pins and declare the scale admin UI as a server-hosted web app.
+- **Fix: workspace deployments build the served web app**: Resolve the client entry from the served fleet member and stage its bundle for the gateway, even when a service is the default app.
+- **Fix: dependency ordering survives compiler hub growth**: Visit newly registered modules during fleet edge analysis without mutating a live dictionary iterator or dropping their edges.
+- **Fix: lightweight ownership classification**: Inspect import target syntax and cache bounded boolean results instead of retaining full type-analysis trees and recursively inferring placement.
+- **Fix: profile app overlays**: Merge per-app profile and local settings, including nested deployment overlays, into effective app configuration.
+- **Fix: async walker abilities execute**: Infer async traversal for walkers with async event abilities; synchronous callers complete traversal, while callers inside an event loop receive an awaitable.
+- **Fix: invalid await diagnostics**: Reject await outside async abilities and functions during checking, and correct the workspace documentation example.
+
+## jaclang 0.37.10
+
+### New Features
+
+- **Registration protection and JacYac limits**: Add optional expiring, single-use registration challenges and database-backed request limits, preserve drafts when posting quotas are reached, and build the JacYac mobile app as the Android CI artifact. Release PRs also synchronize the jaclang.org workspace’s exact Jac version pin.
+
+### Bug Fixes
+
+- Fix macOS native binaries aborting at startup with a missing `__errno_location` symbol by preserving platform-specific module filenames during dependency linking.
+- **Fix: scale-to-zero pods no longer rebuild their venv on every wake**: `jac scale deploy` now builds the app's Python environment once at seal time, from the same vendored wheels pods already ship, and seals it into the `.jab` bundle. A woken pod unpacks it with the rest of the bundle and `jac install` verifies a dependency marker instead of reinstalling, cutting the measured 21s per-wake install (issue #8695) to about a second. Seal hosts that cannot install the pod-platform wheels (cross-arch deploys, thin bundles) fall back to the previous boot-time install automatically; `JAC_SEAL_SKIP_VENV=1` opts out explicitly.
+- **Compiler: Native ownership and object semantics**: Fix native tuple-valued dictionary conversions and temporary ownership, computed union properties, inherited destruction, and imported function aliases. Jac object fields, constructors, and reflection now use shared Jac-owned object semantics while preserving external Python dataclass interoperability.
+- **Native field factories and library imports**: Field factories can call user-defined functions and built-in list constructors, with separate constructor argument ordering for `init=False` and `kw_only` fields. Fix mixed `os.path` operations, bundled library symbol collisions, and legacy type-alias overload resolution.
+- **Native compiler kernel**: Fix symbol-table construction aborting on self-field assignments and compiler-state fields materializing as strings.
+
+## jaclang 0.37.9
+
+### Breaking Changes
+
+- **Retained boundary contracts and typed Wasm integration**: Native browser imports now generate scalar conversions and opaque ownership handles from declarations. Replace `set_na_env` and manual host dictionaries with `bind_na_host(export, typed_host)`; reusable graphics support is available through `@jac/webgl`. Signup returns a `SignupResult` record instead of a dictionary, so consumers use its `success`, `user_id`, `error`, and `status` fields. Qualified endpoint identities, conservative effect summaries, concurrent cache invalidation, external JSON response contracts, and a production boundary audit share retained compiler metadata. Compiler and client artifact caches are invalidated for the new formats.
+
+### New Features
+
+- **Selective guide retrieval**: Add `jac guide <topic> --sections` and `--section <slug>` with JSON output so readers and coding agents can retrieve individual sections of bundled guides and documentation. New project instructions and generic MCP startup begin with a compact essentials guide and route to task-specific references.
+
+## jaclang 0.37.8
+
+### Breaking Changes
+
+- **Breaking: `[scale.monitoring] namespace` is now sanitized, so metric names can change** (#8688): a configured namespace was passed to Prometheus untouched and normalized by the client instead, so `namespace = "jac--shop"` exported `jac__shop_http_requests_total` while the same value derived from `[scale.kubernetes]` exported `jac_shop_http_requests_total`. Both paths now produce the sanitized form, and a warning names the old and new prefix at startup. If your namespace contains anything other than letters, digits and underscores, the exported metric names change once, so update dashboards and alert rules that reference the old prefix. The admin traffic panel builds its queries from the same value, so it now matches what is actually exported instead of coming up empty.
+
+### New Features
+
+- **Managed native build toolchains**: Jac now provisions Android JDK/SDK/Node tools, Apple Ruby/CocoaPods tools, and Linux desktop dependencies through shared verified downloads with progress, atomic installation, locks, and cache reuse. `jac setup --toolchain` supports pre-provisioning; desktop builds no longer write into the installed package, and PostgreSQL/deployment downloads reuse the same installer.
+
+### Bug Fixes
+
+- **Fix: JSX children are checked as part of the component contract**: the client codegen destructures only a component's declared parameter names out of `props`, so children handed to a component that never declares `children` were dropped silently -- a blank render behind a clean `jac check`. `W1053` now reports them at the call site, the client build refuses a `pages/` project whose exported `app` would discard the entire route tree, and `E1109` rejects a `props` bundle declared alongside another parameter, which the codegen emits as either invalid JavaScript or a signature the renderer never calls that way. Both read one predicate shared with the codegen, so `JsxPage`, `JsxLayout` and unions are covered exactly as `JsxElement` is.
+- **Fix: JSX props are checked at call sites that pass no attribute**: prop validation used to require both an attribute at the call site and a parameter on the component, so `<Card/>` against `def Card(title: str)` checked clean and a zero-parameter component accepted every attribute handed to it. Both shapes are now validated like any other, which can surface `E1102` and `E1101` on code that previously passed `jac check`. Nested children also count toward a `children` parameter now: `<Card title="t">body</Card>` against `def Card(title: str, children: any)` no longer reports `children` as missing, so the `= None` default is a convenience rather than a workaround.
+- **Fix: a Solid `element=` parent route hands its matched child to the element**: `Route` wrapped the node in a props-ignoring lambda, so the matched nested route never reached it and a parent-route guard rendered nothing. The wrapper now provides the matched child through the outlet context, and `AuthGuard` falls back to `<Outlet />` only when it is given no children.
+- **Change: `W1052` covers every component return type**: the untyped-props-bag warning keyed on `JsxElement` alone; it now reads the same predicate as the other JSX contract checks, so `props: any` on a component returning `JsxPage`, `JsxLayout` or a union is reported too.
+- **Fix: comparing a dict to `undefined` no longer throws in the client runtime**: `_jac.dict.eq` called `Object.keys` on both operands unconditionally; it now returns `false` for a null or non-object operand.
+- **Client: Fix development runtime imports**: Remove annotation-only imports that break development startup, preserve JSX and embedded JavaScript references, and validate remaining runtime imports consistently. Exercise bare `jac run` in packaged smoke tests and clean up Vite on server shutdown without changing CLI behavior.
+- **Fix: the `glob`-inside-a-function error no longer suggests a `global` statement** (#8612): `E0063` told the user "perhaps you mean global", but Jac has no `global` statement, so following the hint produced a parse error. The message now states the rule and the help names the real idiom: declare the glob at module level and rebind it inside a function by plain assignment.
+
+## jaclang 0.37.7
 
 ### Breaking Changes
 

@@ -454,7 +454,12 @@ jac check [-h] [-e] [-i [IGNORE ...]] [-p] [--nowarn] [--lint] [--fix] [--app AP
 | `--lint` | Also run the linter and report style/lint violations | `False` |
 | `--fix` | With `--lint`, auto-fix lint violations (code corrections) | `False` |
 
-**The workspace gate.** With no paths, `jac check` compiles **one rooted program per app** -- each app's entry with that app's facts (kind, ui, platform, owning app) stamped -- and then sweeps every `.jac` file no app reached as its own root, so nothing under the project goes unchecked. When more than one app is checked, each diagnostic is prefixed `[<app>]`. Explicit paths keep the file-per-root behavior, using the owning app's facts for each file. `--app <name>` restricts both the app compile and the sweep to one app. This is the check that sees the cross-app laws (`E2039`, `E2040`, `E5107`, `E5104`, `E5106`); see [Workspaces & Apps](../apps.md#working-with-a-workspace).
+**The workspace gate.** With no paths, `jac check` traverses imports from every
+declared app entry in its compilation context, including page roots for client
+apps. Shared helpers are checked in each context that reaches them. Diagnostics
+carry an app prefix when several apps are checked. `--app <name>` selects one
+context; explicit files remain explicit roots. Unreachable source is checked by
+naming it explicitly. See [Workspaces & Apps](../apps.md#working-with-a-workspace).
 
 **Examples:**
 
@@ -1665,16 +1670,18 @@ jac build --as client web
 
 ### jac guide
 
-Show the curated Jac reference guides bundled with the compiler -- the authoritative spec for writing correct, idiomatic Jac. AI coding agents and humans can read them straight from the CLI; nothing to install.
+Show versioned coding guides and documentation bundled with the compiler. AI coding agents and humans can read them straight from the CLI; nothing to install.
 
 ```bash
-jac guide [-h] [-s SEARCH] [-e EXPORT] [-n] [-j] [topic]
+jac guide [-h] [-s SEARCH] [-e EXPORT] [-n] [-j] [--sections | --section SECTION] [topic]
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `topic` | Guide or doc to print, or a doc set (`reference`, `quick-guide`, `build`, `tutorials`, `internals`, `community`) to list; omit to show the full index | None |
 | `-s, --search` | Grep every bundled guide and doc (`name:line:` hits) | None |
+| `--sections` | List a topic's headings and section slugs | False |
+| `--section` | Retrieve a topic section by slug or exact heading | None |
 | `-e, --export` | Export all guides as a Claude Code skills directory at this path | None |
 | `-n, --nav` | Print the docs navigation: sections, titles, and reading order | `False` |
 | `-j, --json` | Emit machine-readable JSON (for tools and agents) | `False` |
@@ -1686,7 +1693,9 @@ jac guide [-h] [-s SEARCH] [-e EXPORT] [-n] [-j] [topic]
 jac guide
 
 # Print a specific guide
-jac guide jac-types
+jac guide jac-essentials
+jac guide jac-types --sections
+jac guide jac-types --section pitfalls
 
 # Find guides by keyword
 jac guide --search walker

@@ -1,6 +1,8 @@
 # What You Can Build
 
-Jac compiles one language to three runtimes -- Python bytecode (server, `sv`), JavaScript (client, `cl`), and native machine code (`na`, which also compiles to in-browser WebAssembly) -- so the *same* skills produce a CLI tool, a REST API, a full-stack app, a desktop/mobile build, native compute that runs in the browser, or a C-callable shared library. This page is the hub: the composition grid below shows what each kind is made of, and every kind links to its guided **"I like to build…" track**, which carries the working recipe and a curated path onward. Each one is a *combination* of a few building blocks, not a separate mode.
+Choose a project kind for the artifact you want to build. Jac targets server execution, browser JavaScript, and native code; each kind specifies how those targets are assembled and what `jac run` does. The table below links to a guided track for each target.
+
+For a first project, choose `cli` for a script, `service` for an API, or `web-app` for a browser interface with a server. Use `web-static` when the application needs no Jac server. Desktop, mobile, and native-library builds have additional target requirements described in their tracks.
 
 Install once and follow any track:
 
@@ -60,7 +62,7 @@ Read across a row and the composition is the point: a full-stack app is just a *
 
 ## One project, several apps
 
-The kinds compose across a project, too. A `jac.toml` with an `[apps.<name>]` table per app is a **workspace**: a `web-app`, a `mobile` app, a `cli` and a couple of `service` apps over one shared `core/` directory, each with its own kind, entry and effective config, all type-checked as one program by `jac check`. Everything under no app's directory is shared code that any app may import; a walker or `def:pub` that another app owns is reached through a bridge the compiler generates, so `jac run web` can colocate the services in one process while `jac run web --fleet` and `jac scale deploy` run them apart -- *the boundary is structural, the topology is profile*. `jac create <name> --awesome` scaffolds the flagship example (jaclang.org itself) and `jac create --app <name> --kind <kind>` adds an app to any project.
+The kinds compose across a project, too. A `jac.toml` with an `[apps.<name>]` table per app is a **workspace**: a `web-app`, a `mobile` app, a `cli` and a couple of `service` apps over one shared `core/` directory, each with its own kind, entry and effective config, all type-checked as one program by `jac check`. Ordinary shared imports participate in the selected app context; a walker or `def:pub` exposed by another app is reached through a bridge the compiler generates, so `jac run web` can colocate the services in one process while `jac run web --fleet` and `jac scale deploy` run them apart -- *the boundary is structural, the topology is profile*. `jac create <name> --awesome` scaffolds the flagship example (jaclang.org itself) and `jac create --app <name> --kind <kind>` adds an app to any project.
 
 :octicons-arrow-right-24: Reference: [Workspaces & Apps](../reference/apps.md) · Tutorial: [Service Apps](../tutorials/production/microservices.md)
 

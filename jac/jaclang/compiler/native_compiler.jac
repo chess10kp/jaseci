@@ -81,6 +81,8 @@ class NativeCompiler {
         L = self.lib;
         L.jac_str_new.argtypes = [c_char_p, c_int64];
         L.jac_str_new.restype = c_void_p;
+        L.jac_release.argtypes = [c_void_p];
+        L.jac_release.restype = None;
         for name in ("jc_run", "jc_annex") {
             fn = getattr(L, name);
             fn.argtypes = [c_void_p, c_void_p, c_int64, c_void_p, c_void_p, c_int64];
@@ -161,10 +163,11 @@ class NativeCompiler {
     }
 
     def _field_annotations(self: NativeCompiler, cls: any) -> dict {
-        import dataclasses;
+        import from jaclang.runtime.object_interop { fields }
+        import from jaclang.runtime.object_model { MISSING }
         out = {};
         try {
-            for f in dataclasses.fields(cls) {
+            for f in fields(cls) {
                 out[f.name] = str(f.`type);
             }
         } except TypeError {}
@@ -277,14 +280,15 @@ class NativeCompiler {
     }
 
     def _register_defaults(self: NativeCompiler, cls: any, tag: int) {
-        import dataclasses;
+        import from jaclang.runtime.object_interop { fields }
+        import from jaclang.runtime.object_model { MISSING }
         try {
-            dc_fields = dataclasses.fields(cls);
+            dc_fields = fields(cls);
         } except TypeError {
             return;
         }
         for f in dc_fields {
-            if f.`default is not dataclasses.MISSING {
+            if f.`default is not MISSING {
                 continue;
             }
             descr = getattr(cls, f.name, None);
@@ -292,7 +296,7 @@ class NativeCompiler {
                 continue;
             }
             kind = -1;
-            if f.default_factory is not dataclasses.MISSING {
+            if f.default_factory is not None {
                 if f.default_factory is `list {
                     kind = 1;
                 } elif f.default_factory is `dict {
@@ -393,15 +397,21 @@ class NativeCompiler {
         ab = a.encode();
         bb = b.encode();
         pa = self.lib.jac_str_new(ab, len(ab));
-        pb = self.lib.jac_str_new(bb, len(bb));
-        return fn(
-            c_void_p(pa),
-            c_void_p(pa),
-            c_int64(len(ab)),
-            c_void_p(pb),
-            c_void_p(pb),
-            c_int64(len(bb))
-        );
+        pb = None;
+        try {
+            pb = self.lib.jac_str_new(bb, len(bb));
+            return fn(
+                c_void_p(pa),
+                c_void_p(pa),
+                c_int64(len(ab)),
+                c_void_p(pb),
+                c_void_p(pb),
+                c_int64(len(bb))
+            );
+        } finally {
+            self.lib.jac_release(pb);
+            self.lib.jac_release(pa);
+        }
     }
 
     def annex(self: NativeCompiler, annex_src: str, annex_path: str) -> int {
