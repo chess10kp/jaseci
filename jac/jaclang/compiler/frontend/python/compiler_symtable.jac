@@ -97,6 +97,7 @@ glob DEF_GLOBAL: int = 1,
      DEF_PARAM: int = 4,
      DEF_NONLOCAL: int = 8,
      SYM_USE: int = 16,
+     DEF_ANNOT: int = 256,
      DEF_BOUND: int = 70,
      DEF_COMP_ITER: int = 512,
      SCOPE_OFFSET: int = 12,
@@ -136,6 +137,7 @@ obj sym_block {
         children: list[sym_block] = [],
         type_parameter_key: int = 0,
         function_annotation_key: int = 0,
+        annotation_scope: sym_block | None = None,
         generic_parameters: bool = False,
         annotation_kind: str = "",
         mangled_names: set[str] | None = None;
@@ -307,6 +309,21 @@ obj sym_builder {
             return self.fail(
                 "SyntaxError",
                 "name '" + name + "' is parameter and nonlocal",
+                lineno,
+                col_offset
+            );
+        }
+        directive = flags & (DEF_GLOBAL | DEF_NONLOCAL);
+        if not directive and flags & DEF_ANNOT and self.cur.block_type != "module" {
+            directive = cur_flags & (DEF_GLOBAL | DEF_NONLOCAL);
+        }
+        if directive and (cur_flags | flags) & DEF_ANNOT {
+            return self.fail(
+                "SyntaxError",
+                "annotated name '"
+                    + name
+                    + "' can't be "
+                    + ("global" if directive & DEF_GLOBAL else "nonlocal"),
                 lineno,
                 col_offset
             );
@@ -1225,8 +1242,51 @@ def sym_visit_type_parameters(b: sym_builder, parameters: list[type_param]) -> b
     return True;
 }
 
-# Annotation expressions have their own closure scope, outside the function's
-# parameter/body scope. This also keeps annotation evaluation lazy.
+# Module/class assignments share a deferred annotation scope. Re-enter it
+# for each expression so nested comprehensions and closures bind correctly.
+def sym_visit_assignment_annotation(b: sym_builder, an: AnnAssign) -> bool {
+    import from jaclang.compiler.backends.py.jacpython.compiler_context {
+        current_compile_flags
+    }
+    if current_compile_flags() & 0x1000000
+        or b.cur.block_type == "function"
+        or not an.simple
+        or not isinstance(an.target, Name) {
+        return True;
+    }
+    owner = b.cur;
+    scope = owner.annotation_scope;
+    if scope is None {
+        in_class = owner.block_type == "class";
+        if not b.push_block(
+            "function",
+            "__annotate__",
+            an.lineno,
+            sym_compute_nested(b),
+            in_class,
+            an.col_offset
+        ) {
+            return False;
+        }
+        owner.annotation_scope = b.cur;
+        b.cur.annotation_kind = "an annotation";
+        if not b.add_def(".format", DEF_PARAM, an.lineno, an.col_offset) {
+            return False;
+        }
+        if in_class and not b.add_use("__classdict__") {
+            return False;
+        }
+    } else {
+        b.stack.append(owner);
+        b.cur = scope;
+    }
+    if not sym_visit_load_expr(b, an.annotation) {
+        return False;
+    }
+    return b.pop_block();
+}
+
+# Function annotations bind outside the parameter/body scope.
 def sym_visit_function_annotations(
     b: sym_builder, fd: FunctionDef | AsyncFunctionDef
 ) -> bool {
@@ -1364,13 +1424,19 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         an = s as AnnAssign;
         if isinstance(an.target, Name) {
             tn = (an.target as Name).id;
-            if not b.add_def(tn, DEF_LOCAL, an.lineno, an.col_offset) {
-                return False;
+            if an.simple or an.value is not None {
+                flags = DEF_LOCAL | DEF_ANNOT if an.simple else DEF_LOCAL;
+                if not b.add_def(tn, flags, an.lineno, an.col_offset) {
+                    return False;
+                }
             }
         } else {
             if not sym_visit_store_target(b, an.target) {
                 return False;
             }
+        }
+        if not sym_visit_assignment_annotation(b, an) {
+            return False;
         }
         if an.value is not None {
             return sym_visit_load_expr(b, an.value);

@@ -295,6 +295,16 @@ jobs:
               jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
             done
           done
+      - name: Compile and run upstream annotation tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_type_annotations
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_grammar --tests \
+              GrammarTests.test_var_annot_basics GrammarTests.test_var_annot_syntax_errors \
+              GrammarTests.test_var_annot_basic_semantics GrammarTests.test_annotations_inheritance \
+              GrammarTests.test_var_annot_module_semantics GrammarTests.test_var_annot_in_module \
+              GrammarTests.test_var_annot_simple_exec GrammarTests.test_var_annot_rhs
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

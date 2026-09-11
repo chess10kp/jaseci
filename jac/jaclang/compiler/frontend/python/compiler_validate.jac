@@ -26,6 +26,7 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     Return,
     AugAssign,
     AnnAssign,
+    NamedExpr,
     Delete,
     Attribute,
     Subscript,
@@ -905,7 +906,9 @@ def validate_suspensions(
     while pending {
         (item, in_function, in_async, in_comp, in_annotation) = pending.pop();
         message: str | None = None;
-        if isinstance(item, Await) {
+        if isinstance(item, NamedExpr) and in_annotation {
+            message = "named expression cannot be used within an annotation";
+        } elif isinstance(item, Await) {
             if in_annotation {
                 message = "await expression cannot be used within an annotation";
             } elif not in_async {
@@ -973,6 +976,10 @@ def validate_suspensions(
             asynchronous = in_async;
             comp = in_comp;
             annotation = in_annotation or field in ("annotation", "returns");
+            if field in ("annotation", "returns") {
+                asynchronous = False;
+                comp = False;
+            }
             if isinstance(item, (FunctionDef, AsyncFunctionDef, Lambda, ClassDef))
                 and field == "body" {
                 fn = not isinstance(item, ClassDef);

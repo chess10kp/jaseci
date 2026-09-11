@@ -222,7 +222,20 @@ def visit_import(g: cfg_builder, imp: Import) -> stmt_cont {
     while ni < len(imp.names) {
         a = imp.names[ni];
         emit_import_name_call(g, a.name, 0, None, iloc);
+        parts = a.name.split(".");
+        if a.asname is not None and len(parts) > 1 {
+            for (index, part) in enumerate(parts[1:]) {
+                g.emit_op(OP_IMPORT_FROM, g.u.add_name(part), iloc);
+                if index < len(parts) - 2 {
+                    g.emit_op(OP_SWAP, 2, iloc);
+                    g.emit_op(OP_POP_TOP, 0, iloc);
+                }
+            }
+        }
         emit_name_store(g, import_bind_name(a), iloc);
+        if a.asname is not None and len(parts) > 1 {
+            g.emit_op(OP_POP_TOP, 0, iloc);
+        }
         ni = ni + 1;
     }
     return stmt_cont(loc=iloc);

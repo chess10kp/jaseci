@@ -852,6 +852,10 @@ def visit_match(
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
     mloc = nloc(m.lineno, m.end_lineno, m.col_offset, m.end_col_offset);
+    # Class bodies still need their annotation and __classcell__ epilogue.
+    if g.sym_top is not None and g.sym_top.block_type == "class" {
+        more_code_follows = True;
+    }
     if len(m.cases) == 0 {
         return stmt_cont(loc=mloc);
     }

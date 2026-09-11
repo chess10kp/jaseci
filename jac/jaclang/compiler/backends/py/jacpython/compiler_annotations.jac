@@ -1,23 +1,11 @@
-# PEP 649 (CPython 3.14) deferred annotations for MODULE scope.
+# CPython 3.14 deferred module/class annotations share a lexical __annotate__
+# scope. Conditional entries register their indices as the body executes;
+# the annotation function evaluates only those entries when called later.
+# Function-local and non-simple annotations never evaluate their expressions.
 #
-# A module-scope annotated assignment never evaluates the annotation inline.
-# The scope gains a cellvar __conditional_annotations__ (a set of annotation
-# indices), a synthetic __annotate__(format) code object that builds the
-# {name: value} dict on demand, and per-statement SET_ADD registration bytes.
-# Function-local AnnAssign stays assignment-only (annotations vanish), and
-# class bodies still trap until the __classdict__ closure plumbing lands.
-#
-# Byte-shape notes pinned against the host oracle (b11_annotations goldens):
-#   - Setup bytes sit at scope entry (right after RESUME): optional
-#     LOAD_CONST <code>/MAKE_FUNCTION/STORE_NAME __annotate__, then
-#     BUILD_SET 0/STORE_NAME __conditional_annotations__. But the __annotate__
-#     const/name table slots are only allocated AFTER the whole body has been
-#     visited -- the oracle's consts/names order proves CPython defers the
-#     resolution, so we patch the two placeholder instructions at end of unit.
-#   - The nested __annotate__ code object: flags OPTIMIZED|NEWLOCALS,
-#     varnames ['format'] positional-only, consts ['2' dead slot, target
-#     names...]; body is a format>2 guard raising NotImplementedError, then
-#     BUILD_MAP 0 plus one guarded COPY/STORE_SUBSCR entry per annotation.
+# Module setup reserves the __annotate__ function's code/name operands;
+# scope finalization fills them after emitting the body. Class finalization
+# creates a closure containing the class namespace and any enclosing cells.
 
 import from jaclang.runtime.python.objects { PyStr, PyInt, py_none, hashkey_equal }
 import from jaclang.runtime.python.opcode_meta {
@@ -50,6 +38,7 @@ import from jaclang.runtime.python.opcode_meta {
     OP_LOAD_FROM_DICT_OR_GLOBALS,
     OP_BUILD_TUPLE,
     OP_COPY_FREE_VARS,
+    OP_MAKE_CELL,
     OP_SET_FUNCTION_ATTRIBUTE,
     OP_STORE_DEREF,
     CMP_GT,
@@ -91,6 +80,7 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     For,
     AsyncFor,
     Try,
+    TryStar,
     With,
     AsyncWith,
     Match,
@@ -125,6 +115,7 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     cloc,
     cinstr,
     cfg_builder,
+    basicblock,
     unverified_cfg,
     loc,
     new_cfg_builder,
@@ -142,6 +133,8 @@ import from jaclang.compiler.frontend.python.compiler_symtable {
     SCOPE_GLOBAL_IMPLICIT,
     SYM_USE,
     sym_set_scope,
+    sym_block_tuple_names,
+    SCOPE_CELL,
 }
 import from jaclang.compiler.backends.py.jacpython.flowgraph { verify_cfg }
 import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
@@ -154,6 +147,9 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     localsplus_index_u,
     codegen_fail,
     codegen_busy,
+    fast_varnames_from_sym,
+    freevars_from_sym,
+    cellvars_from_sym,
 }
 
 import from jaclang.compiler.backends.py.jacpython.compiler_context {
@@ -370,8 +366,8 @@ def ann_stmt_span(s: stmt) -> cloc {
         af2 = s as AsyncFor;
         return nloc(af2.lineno, af2.end_lineno, af2.col_offset, af2.end_col_offset);
     }
-    if isinstance(s, Try) {
-        tt = s as Try;
+    if isinstance(s, (Try, TryStar)) {
+        tt = s as Try | TryStar;
         return nloc(tt.lineno, tt.end_lineno, tt.col_offset, tt.end_col_offset);
     }
     if isinstance(s, With) {
@@ -406,7 +402,7 @@ def ann_collect_stmt(plan: ann_scope_plan, s: stmt, cond_depth: int) {
     if isinstance(s, AnnAssign) {
         an = s as AnnAssign;
         plan.any_annotation = True;
-        if isinstance(an.target, Name) {
+        if an.simple and isinstance(an.target, Name) {
             n = an.target as Name;
             cond = cond_depth > 0;
             if cond {
@@ -452,11 +448,11 @@ def ann_collect_stmt(plan: ann_scope_plan, s: stmt, cond_depth: int) {
         ann_collect_stmts(plan, af.orelse, cond_depth + 1);
         return;
     }
-    if isinstance(s, Try) {
+    if isinstance(s, (Try, TryStar)) {
         # Finally-only Try arrives with handlers=None from the generated
         # parser (host CPython AST would carry []); treat it as no handlers,
         # same tolerance as the visit_try dispatch in compiler_exc.jac.
-        t = s as Try;
+        t = s as Try | TryStar;
         ann_collect_stmts(plan, t.body, cond_depth + 1);
         if t.handlers is not None {
             hi = 0;
@@ -520,6 +516,12 @@ def visit_ann_assign(
     g: cfg_builder, an: AnnAssign, plan: ann_scope_plan | None = None
 ) -> stmt_cont {
     aloc = stmt_loc(an as stmt);
+    # Even an unevaluated annotation evaluates a bare attribute/subscript
+    # target's component expressions, without loading the actual item.
+    if an.value is None and not isinstance(an.target, Name) {
+        ann_discard_target(g, an.target);
+        return stmt_cont(loc=aloc);
+    }
     if g.sym_top is not None and g.sym_top.block_type == "function" {
         if an.value is None {
             return stmt_cont(loc=aloc);
@@ -589,10 +591,7 @@ def visit_ann_assign(
     ent = ann_entry_for(plan, an);
     if ent is None {
         if an.value is None {
-            tvloc = ann_target_value_loc(an);
-            visit_expr(g, ann_target_value(an));
-            g.emit_op(OP_POP_TOP, 0, tvloc);
-            return stmt_cont(loc=tvloc);
+            return stmt_cont(loc=aloc);
         }
         visit_expr(g, an.value);
         if codegen_busy(g) {
@@ -623,58 +622,40 @@ def visit_ann_assign(
 }
 
 def ann_store_target_tos(g: cfg_builder, t: expr) -> cloc {
-    if isinstance(t, Name) {
-        n = t as Name;
-        tloc = expr_loc(n);
-        name = codegen_mangle(g, n.id);
-        fi = fast_local_index(g, name);
-        if fi >= 0 {
-            g.emit_op(OP_STORE_FAST, fi, tloc);
-            return tloc;
-        }
-        idx = g.u.add_name(name);
-        g.emit_op(OP_STORE_NAME, idx, tloc);
-        return tloc;
+    import from jaclang.compiler.backends.py.jacpython.compiler_codegen {
+        visit_store_target_tos
     }
-    if isinstance(t, Attribute) {
-        a = t as Attribute;
-        visit_expr(g, a.value);
-        idx = g.u.add_name(codegen_mangle(g, a.attr));
-        tloc = expr_loc(a);
-        g.emit_op(OP_STORE_ATTR, idx, tloc);
-        return tloc;
-    }
-    if isinstance(t, Subscript) {
-        su = t as Subscript;
-        if isinstance(su.slice, Slice) {
-            codegen_fail(
-                g,
-                "NotImplementedError",
-                "slice-subscript annotated-assignment target not supported"
-            );
-            return expr_loc(su);
-        }
-        sloc = expr_loc(su);
-        visit_expr(g, su.value);
-        visit_subscript_index(g, su.slice, sloc);
-        g.emit_op(OP_STORE_SUBSCR, 0, sloc);
-        return sloc;
-    }
-    codegen_fail(
-        g, "NotImplementedError", "unsupported annotated-assignment target kind"
-    );
-    return expr_loc(t);
+    return visit_store_target_tos(g, t).loc;
 }
 
-def ann_target_value(an: AnnAssign) -> expr {
-    if isinstance(an.target, Attribute) {
-        return (an.target as Attribute).value;
-    }
-    return (an.target as Subscript).value;
+def ann_discard_expression(g: cfg_builder, value: expr) {
+    visit_expr(g, value);
+    g.emit_op(OP_POP_TOP, 0, expr_loc(value));
 }
 
-def ann_target_value_loc(an: AnnAssign) -> cloc {
-    return expr_loc(ann_target_value(an));
+def ann_discard_subscript(g: cfg_builder, value: expr) {
+    if isinstance(value, Slice) {
+        for part in [value.lower, value.upper, value.step] {
+            if part is not None {
+                ann_discard_expression(g, part);
+            }
+        }
+    } elif isinstance(value, Tuple) {
+        for part in value.elts {
+            ann_discard_subscript(g, part);
+        }
+    } else {
+        ann_discard_expression(g, value);
+    }
+}
+
+def ann_discard_target(g: cfg_builder, target: expr) {
+    if isinstance(target, (Attribute, Subscript)) {
+        ann_discard_expression(g, target.value);
+    }
+    if isinstance(target, Subscript) {
+        ann_discard_subscript(g, target.slice);
+    }
 }
 
 # Small-int operand emission with CPython's dead-const rule: the FIRST
@@ -733,11 +714,9 @@ def finish_module_annotations(g: cfg_builder, plan: ann_scope_plan) {
     if len(plan.entries) == 0 or lci is None {
         return;
     }
-    sym = ann_synthetic_sym(plan);
+    sym = g.sym_top.annotation_scope if g.sym_top is not None else None;
     if sym is None {
-        codegen_fail(
-            g, "NotImplementedError", "unsupported construct inside deferred annotation"
-        );
+        codegen_fail(g, "SystemError", "missing module annotation scope");
         return;
     }
     u_fn = build_annotate_fn_cfg(sym, plan, g.u.filename);
@@ -747,6 +726,7 @@ def finish_module_annotations(g: cfg_builder, plan: ann_scope_plan) {
         return;
     }
     co = assemble(cfg_fn);
+    co.varnames[0] = "format";
     g.u.nested_code_emitted = True;
     # Insert the code object after all statement-produced consts but before
     # any None the control-flow duplication enqueued mid-loop (host defers
@@ -827,34 +807,28 @@ def finish_class_annotations(g: cfg_builder, plan: ann_scope_plan) {
     if len(plan.entries) == 0 {
         return;
     }
-    sym = ann_synthetic_sym(plan);
+    sym = g.sym_top.annotation_scope if g.sym_top is not None else None;
     if sym is None {
-        codegen_fail(
-            g, "NotImplementedError", "unsupported construct inside deferred annotation"
-        );
+        codegen_fail(g, "SystemError", "missing class annotation scope");
         return;
     }
-    u_fn = build_annotate_fn_cfg(sym, plan, g.u.filename, True);
+    u_fn = build_annotate_fn_cfg(sym, plan, g.u.filename, True, g.private);
     cfg_fn = verify_cfg(u_fn);
     if cfg_fn.diag is not None {
         g.u.diag = cfg_fn.diag;
         return;
     }
     co = assemble(cfg_fn);
+    co.varnames[0] = "format";
     g.u.nested_code_emitted = True;
     bloc = plan.head_loc;
     if bloc is None {
         bloc = no_loc();
     }
-    clp = localsplus_index_u(g.u, "__classdict__");
-    g.emit_op(OP_LOAD_FAST_BORROW, clp, bloc);
-    nclosure = 1;
-    if plan.any_conditional {
-        cond_lp = localsplus_index_u(g.u, "__conditional_annotations__");
-        g.emit_op(OP_LOAD_FAST_BORROW, cond_lp, bloc);
-        nclosure = 2;
+    for name in co.freevars {
+        g.emit_op(OP_LOAD_FAST_BORROW, localsplus_index(g, name), bloc);
     }
-    g.emit_op(OP_BUILD_TUPLE, nclosure, bloc);
+    g.emit_op(OP_BUILD_TUPLE, len(co.freevars), bloc);
     ci = g.u.add_const(co);
     g.emit_op(OP_LOAD_CONST, ci, bloc);
     g.emit_op(OP_MAKE_FUNCTION, 0, bloc);
@@ -865,16 +839,15 @@ def finish_class_annotations(g: cfg_builder, plan: ann_scope_plan) {
 
 # --- nested __annotate__ code object ---------------------------------------
 
-# Build the synthetic __annotate__(format) code object. Two modes:
-#  - module (default): names resolve global-implicit (LOAD_GLOBAL) and every
-#    entry is membership-checked against the conditional-annotation set.
-#  - class_mode: freevars are the closure cells (always __classdict__, plus
-#    __conditional_annotations__ when any entry is conditional), bare Name
-#    loads go through the classdict hook (LOAD_DEREF/__FROM_DICT_OR_GLOBALS),
-#    only conditional entries get membership checks, and the qualname is
-#    `<owner>.__annotate__`.
+# Build __annotate__(format) using the analyzed annotation scope, including
+# comprehension storage and captured locals. Module entries consult the
+# conditional set; class entries do so only when they are conditional.
 def build_annotate_fn_cfg(
-    sym: sym_block, plan: ann_scope_plan, filename: str, class_mode: bool = False
+    sym: sym_block,
+    plan: ann_scope_plan,
+    filename: str,
+    class_mode: bool = False,
+    private: str | None = None
 ) -> unverified_cfg {
     qualname = "__annotate__";
     if class_mode {
@@ -890,30 +863,40 @@ def build_annotate_fn_cfg(
     u.posonlyargcount = 1;
     u.param_count = 1;
     u.flags = CO_OPTIMIZED | CO_NEWLOCALS;
+    u.freevars = freevars_from_sym(sym);
+    u.cellvars = cellvars_from_sym(sym);
+    if sym.nested {
+        u.flags |= CO_NESTED;
+    }
     if class_mode {
         if plan.nested_class {
             u.flags = u.flags | CO_NESTED;
         }
-        u.freevars.append("__classdict__");
+        if "__classdict__" not in u.freevars {
+            u.freevars.append("__classdict__");
+        }
         if plan.any_conditional {
             u.freevars.append("__conditional_annotations__");
         }
         u.classdict_names = True;
     }
-    u.varnames = ["format"];
+    u.varnames = fast_varnames_from_sym(sym);
     hloc = plan.head_loc;
     if hloc is None {
         hloc = no_loc();
     }
     entry_blk = u.add_block();
-    g = new_cfg_builder(u, entry_blk, sym);
+    g = new_cfg_builder(u, entry_blk, sym, private);
     ploc = loc(plan.body_first_lineno, plan.body_first_lineno, 0, 0);
-    if class_mode {
-        g.emit_op(OP_COPY_FREE_VARS, len(u.freevars), ploc);
+    if u.freevars {
+        g.emit_op(OP_COPY_FREE_VARS, len(u.freevars), no_loc());
+    }
+    for name in sym_block_tuple_names(sym.symbols, SCOPE_CELL) {
+        g.emit_op(OP_MAKE_CELL, localsplus_index_u(u, name), no_loc());
     }
     g.emit_op(OP_RESUME, 0, ploc);
-    # format guard: raise NotImplementedError when format > 2 (formats 0 and
-    # 1 are the only ones PEP 749 defines today). Guard, BUILD_MAP,
+    # Higher annotation formats are delegated back to annotationlib by
+    # raising NotImplementedError when format > 2. Guard, BUILD_MAP,
     # STORE_SUBSCR and RETURN_VALUE all carry the scope-head location; only
     # the annotation expression's own instructions carry their spans.
     g.emit_op(OP_LOAD_FAST, 0, hloc);
@@ -944,7 +927,7 @@ def build_annotate_fn_cfg(
                 g.emit_op(OP_LOAD_GLOBAL, cond_idx << 1, eloc);
             }
             g.emit_op(OP_CONTAINS_OP, 0, eloc);
-            nb = g.new_block();
+            nb = g.new_deferred_block();
             g.emit_jump(OP_POP_JUMP_IF_FALSE, nb.id, eloc);
         }
         visit_expr(g, e.annotation);
@@ -952,7 +935,7 @@ def build_annotate_fn_cfg(
             return u;
         }
         g.emit_op(OP_COPY, 2, eloc);
-        tidx = u.add_const(PyStr(t="str", val=e.target));
+        tidx = u.add_const(PyStr(t="str", val=codegen_mangle(g, e.target)));
         g.emit_op(OP_LOAD_CONST, tidx, eloc);
         g.emit_op(OP_STORE_SUBSCR, 0, hloc);
         if nb is not None {
@@ -973,7 +956,8 @@ def ann_synthetic_sym(plan: ann_scope_plan) -> sym_block | None {
         block_type="function",
         name="__annotate__",
         lineno=plan.body_first_lineno,
-        col_offset=0
+        col_offset=0,
+        varnames=["format"]
     );
     ei = 0;
     while ei < len(plan.entries) {
