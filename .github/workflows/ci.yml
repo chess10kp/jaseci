@@ -308,6 +308,11 @@ jobs:
       - name: Compile and run upstream interactive compiler tests with JacPython
         run: |
           jac run scripts/run_cpython_compiler_tests.jac --runtime --compile-tests --module test.test_codeop
+      - name: Run upstream symbol-table API tests through JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --symtable-api --compile-tests --module test.test_symtable --tests SymtableTest ComprehensionTests
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

@@ -310,3 +310,29 @@
      /* Might as well keep this in alphabetic order */
      SYS_ADDAUDITHOOK_METHODDEF
      SYS_AUDIT_METHODDEF
+--- a/Modules/symtablemodule.c
++++ b/Modules/symtablemodule.c
+@@ -3,6 +3,8 @@
+ #include "pycore_symtable.h"      // struct symtable
+
+ #include "clinic/symtablemodule.c.h"
++
++PyAPI_FUNC(int) _PyJac_SymtableBridgeVersion(void) { return 1; }
+ /*[clinic input]
+ module _symtable
+ [clinic start generated code]*/
+@@ -25,6 +27,14 @@
+                         PyObject *filename, const char *startstr)
+ /*[clinic end generated code: output=59eb0d5fc7285ac4 input=436ffff90d02e4f6]*/
+ {
++    /* The callback is opt-in until the bootstrap and replacement gates pass. */
++    PyObject *compiler = PySys_GetObject("_jacpython_symtable");
++    if (compiler != NULL && compiler != Py_None) {
++        Py_INCREF(compiler);
++        PyObject *result = PyObject_CallFunction(compiler, "OOs", source, filename, startstr);
++        Py_DECREF(compiler);
++        return result;
++    }
+     struct symtable *st;
+     PyObject *t;
+     int start;

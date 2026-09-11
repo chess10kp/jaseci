@@ -1184,6 +1184,7 @@ def sym_function_child_at(
     while ci < len(parent.children) {
         ch = parent.children[ci];
         if ch.block_type == "function"
+            and ch.annotation_kind != "an annotation"
             and ch.name == fn_name
             and ch.lineno == lineno
             and ch.col_offset == col_offset {
@@ -1339,12 +1340,13 @@ def name_load_opcode(g: cfg_builder, name: str) -> int {
     if fast_local_index(g, name) >= 0 {
         return OP_LOAD_FAST;
     }
-    if g.sym_top is None or g.sym_top.block_type == "module" {
+    if g.sym_top is None {
         return OP_LOAD_NAME;
     }
     flags = sym_dict_get(g.sym_top.symbols, name, 0);
     scope = sym_scope_of(flags);
-    if scope == SCOPE_GLOBAL_EXPLICIT or scope == SCOPE_GLOBAL_IMPLICIT {
+    if scope == SCOPE_GLOBAL_EXPLICIT
+        or (scope == SCOPE_GLOBAL_IMPLICIT and g.sym_top.block_type != "module") {
         return OP_LOAD_GLOBAL;
     }
     return OP_LOAD_NAME;

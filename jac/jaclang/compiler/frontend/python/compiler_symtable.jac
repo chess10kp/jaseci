@@ -97,8 +97,9 @@ glob DEF_GLOBAL: int = 1,
      DEF_PARAM: int = 4,
      DEF_NONLOCAL: int = 8,
      SYM_USE: int = 16,
+     DEF_IMPORT: int = 128,
      DEF_ANNOT: int = 256,
-     DEF_BOUND: int = 70,
+     DEF_BOUND: int = 134,
      DEF_COMP_ITER: int = 512,
      SCOPE_OFFSET: int = 12,
      SCOPE_LOCAL: int = 1,
@@ -283,7 +284,7 @@ obj sym_builder {
     }
 
     def add_def(name: str, flags: int, lineno: int, col_offset: int) -> bool {
-        if name == "__debug__" and (flags & (DEF_LOCAL | DEF_PARAM)) != 0 {
+        if name == "__debug__" and flags & DEF_BOUND {
             return self.fail(
                 "SyntaxError", "cannot assign to __debug__", lineno, col_offset
             );
@@ -330,6 +331,10 @@ obj sym_builder {
             );
         }
         self.cur.symbols[mangled] = sym_flag_add(cur_flags, flags);
+        if flags & DEF_GLOBAL and self.stack {
+            top = self.stack[0];
+            top.symbols[mangled] = sym_dict_get(top.symbols, mangled, 0) | DEF_GLOBAL;
+        }
         if sym_flag_set(flags, DEF_GLOBAL) or sym_flag_set(flags, DEF_NONLOCAL) {
             self.cur.directive_lineno[mangled] = lineno;
             self.cur.directive_col[mangled] = col_offset;
@@ -339,9 +344,8 @@ obj sym_builder {
         }
         if sym_flag_set(flags, DEF_PARAM) {
             self.cur.varnames.append(mangled);
-        } elif self.cur.block_type == "function" and sym_flag_set(flags, DEF_LOCAL) {
-            if not sym_flag_set(cur_flags, DEF_LOCAL)
-                and not sym_flag_set(cur_flags, DEF_PARAM) {
+        } elif self.cur.block_type == "function" and flags & (DEF_LOCAL | DEF_IMPORT) {
+            if not cur_flags & DEF_BOUND {
                 self.cur.local_varnames.append(mangled);
             }
         }
@@ -385,6 +389,17 @@ obj sym_builder {
         self.cur = self.stack.pop();
         return True;
     }
+}
+
+def sym_allows_async(block: sym_block) -> bool {
+    import from jaclang.compiler.backends.py.jacpython.compiler_context {
+        current_compile_flags
+    }
+    return (block.block_type == "module" and bool(current_compile_flags() & 0x2000))
+        or (
+            block.block_type == "function"
+            and (block.coroutine or bool(block.comprehension))
+        );
 }
 
 def sym_visit_comprehension_generators(
@@ -481,6 +496,14 @@ def sym_visit_inline_comprehension(
     if not b.pop_block() {
         return False;
     }
+    if asynchronous and not sym_allows_async(b.cur) {
+        return b.fail(
+            "SyntaxError",
+            "asynchronous comprehension outside of an asynchronous function",
+            expression.lineno,
+            expression.col_offset
+        );
+    }
     b.cur.coroutine = b.cur.coroutine or asynchronous;
     return True;
 }
@@ -564,6 +587,14 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
             forbidden + " cannot be used within " + b.cur.annotation_kind,
             e.lineno,
             e.col_offset
+        );
+    }
+    if isinstance(e, (Yield, YieldFrom)) and b.cur.comprehension {
+        description = "generator expression"
+            if b.cur.comprehension == "gen"
+            else b.cur.comprehension.removesuffix("comp") + " comprehension";
+        return b.fail(
+            "SyntaxError", "'yield' inside " + description, e.lineno, e.col_offset
         );
     }
     if isinstance(e, Name) {
@@ -853,6 +884,16 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
         return sym_visit_load_expr(b, (e as YieldFrom).value);
     }
     if isinstance(e, Await) {
+        if not sym_allows_async(b.cur) {
+            return b.fail(
+                "SyntaxError",
+                "'await' outside async function"
+                    if b.cur.block_type == "function"
+                    else "'await' outside function",
+                e.lineno,
+                e.col_offset
+            );
+        }
         b.cur.coroutine = True;
         return sym_visit_load_expr(b, (e as Await).value);
     }
@@ -1316,9 +1357,6 @@ def sym_visit_function_annotations(
     if fd.returns is not None {
         annotations.append(fd.returns);
     }
-    if not annotations {
-        return True;
-    }
     in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
     owner = b.cur;
     nested = sym_compute_nested(b);
@@ -1435,6 +1473,11 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
                 flags = DEF_LOCAL | DEF_ANNOT if an.simple else DEF_LOCAL;
                 if not b.add_def(tn, flags, an.lineno, an.col_offset) {
                     return False;
+                }
+                if an.simple and b.cur.block_type == "module" {
+                    if not b.add_use("__conditional_annotations__") {
+                        return False;
+                    }
                 }
             }
         } else {
@@ -1560,6 +1603,14 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             body = fo.body;
             orelse = fo.orelse;
         } elif isinstance(s, AsyncFor) {
+            if not sym_allows_async(b.cur) {
+                return b.fail(
+                    "SyntaxError",
+                    "'async for' outside async function",
+                    s.lineno,
+                    s.col_offset
+                );
+            }
             b.cur.coroutine = True;
             afo = s as AsyncFor;
             if not sym_visit_store_target(b, afo.target) {
@@ -1665,6 +1716,14 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         return True;
     }
     if isinstance(s, AsyncWith) {
+        if not sym_allows_async(b.cur) {
+            return b.fail(
+                "SyntaxError",
+                "'async with' outside async function",
+                s.lineno,
+                s.col_offset
+            );
+        }
         b.cur.coroutine = True;
         async_with_stmt = s as AsyncWith;
         ii = 0;
@@ -1874,7 +1933,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         ni = 0;
         while ni < len(imp.names) {
             bind = sym_import_bind_name(imp.names[ni]);
-            if not b.add_def(bind, DEF_LOCAL, imp.lineno, imp.col_offset) {
+            if not b.add_def(bind, DEF_IMPORT, imp.lineno, imp.col_offset) {
                 return False;
             }
             ni = ni + 1;
@@ -1886,7 +1945,19 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         ni = 0;
         while ni < len(imp_from.names) {
             bind = sym_import_bind_name(imp_from.names[ni]);
-            if not b.add_def(bind, DEF_LOCAL, imp_from.lineno, imp_from.col_offset) {
+            if bind == "*" {
+                if b.cur.block_type != "module" {
+                    return b.fail(
+                        "SyntaxError",
+                        "import * only allowed at module level",
+                        imp_from.lineno,
+                        imp_from.col_offset
+                    );
+                }
+                ni += 1;
+                continue;
+            }
+            if not b.add_def(bind, DEF_IMPORT, imp_from.lineno, imp_from.col_offset) {
                 return False;
             }
             ni = ni + 1;
@@ -1997,7 +2068,7 @@ def sym_analyze_name(
         sym_set_add(free, name);
         return None;
     }
-    if sym_flag_set(flags, DEF_LOCAL) or sym_flag_set(flags, DEF_PARAM) {
+    if flags & DEF_BOUND {
         scopes[name] = SCOPE_LOCAL;
         sym_set_add(local, name);
         sym_set_discard(global_set, name);
@@ -2174,23 +2245,6 @@ def sym_analyze_block(
     return (child_free, None);
 }
 
-def sym_propagate_module_globals(top: sym_block) {
-    ci = 0;
-    while ci < len(top.children) {
-        child = top.children[ci];
-        if child.block_type == "function" {
-            for name in child.symbols.keys() {
-                flags = child.symbols[name];
-                if sym_flag_set(flags, DEF_GLOBAL) {
-                    cur = sym_dict_get(top.symbols, name, 0);
-                    top.symbols[name] = sym_flag_add(cur, DEF_GLOBAL);
-                }
-            }
-        }
-        ci = ci + 1;
-    }
-}
-
 def sym_assign_inline_aliases(block: sym_block, owner: sym_block | None = None) {
     if owner is None {
         owner = block;
@@ -2233,7 +2287,6 @@ def build_module_symtable(body: list[stmt]) -> symtable_result {
         return symtable_result(diag=sym_result[1]);
     }
     sym_assign_inline_aliases(top);
-    sym_propagate_module_globals(top);
     # CPython codegen.c super-call optimization requires 'super' to be unknown
     # at the module top; record that fact on every block so nested units can
     # check it without parent links.

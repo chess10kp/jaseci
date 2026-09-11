@@ -7,6 +7,8 @@ With --runtime, the patched runtime dispatches built-in compilation and source
 imports to JacPython. Test definitions are loaded before activation; bootstrap
 compilation and complete C API coverage are separate gates. --compile-tests
 also compiles every definition in the chosen upstream module with JacPython.
+--symtable-api additionally routes symbol-table calls, including module-level
+fixtures, through Jac's adapter or the patched C entry point.
 Without it, tests with no call to the replacement are reported as skipped.
 No CPython test corpus is checked into this repository.
 """
@@ -88,7 +90,59 @@ def main -> int {
         action="store_true",
         help="Compile the upstream test module itself with JacPython"
     );
+    parser.add_argument(
+        "--symtable-api",
+        action="store_true",
+        help="Route symbol-table construction through JacPython, including fixtures"
+    );
     args = parser.parse_args();
+    calls: list[int] = [0];
+    if not args.symtable_api {
+        return run_tests(args, calls);
+    }
+    import _symtable;
+    import from jaclang.runtime.python.symtable { symtable }
+    def replacement_symtable(source: any, filename: any, mode: any, /) -> object {
+        calls[0] += 1;
+        return symtable(source, filename, mode);
+    }
+    original = _symtable.symtable;
+    had_hook = hasattr(sys, "_jacpython_symtable");
+    if args.runtime {
+        import ctypes;
+        try {
+            bridge_version = ctypes.pythonapi._PyJac_SymtableBridgeVersion;
+        } except AttributeError as error {
+            raise RuntimeError(
+                "Rebuild the runtime with the JacPython symtable bridge"
+            ) from error;
+        }
+        if bridge_version() != 1 {
+            raise RuntimeError("Unsupported JacPython symtable bridge version");
+        }
+        if (sys?._jacpython_symtable is not None) {
+            raise RuntimeError("JacPython symtable dispatch is already enabled");
+        }
+        setattr(sys, "_jacpython_symtable", replacement_symtable);
+    } else {
+        setattr(_symtable, "symtable", replacement_symtable);
+    }
+    try {
+        return run_tests(args, calls);
+    } finally {
+        if args.runtime {
+            if had_hook {
+                setattr(sys, "_jacpython_symtable", None);
+            } else {
+                delattr(sys, "_jacpython_symtable");
+            }
+        } else {
+            setattr(_symtable, "symtable", original);
+        }
+    }
+}
+
+def run_tests(args: any, calls: list[int]) -> int {
     library = fetch_tests(args.cache);
     sys.path.insert(0, str(library));
     try {
@@ -131,6 +185,9 @@ def main -> int {
         }
         print(f"JACPYTHON_TEST_MODULE {args.module}", flush=True);
     }
+    if args.symtable_api {
+        print(f"JACPYTHON_SYMTABLE_FIXTURE_CALLS {calls[0]}", flush=True);
+    }
     if (args.module == "test.test_ast.test_ast") {
         test_module.STDLIB = str(library);
         test_module.STDLIB_FILES = [path.name for path in library.glob("*.py")];
@@ -138,7 +195,6 @@ def main -> int {
             ["test/test_grammar.py", "test/test_unpack_ex.py"]
         );
     }
-    calls: list[int] = [0];
     def replacement_compile(
         source: any,
         filename: any,

@@ -178,7 +178,9 @@ def sym_function_child(parent: sym_block, fn_name: str) -> sym_block | None {
     ci = 0;
     while ci < len(parent.children) {
         ch = parent.children[ci];
-        if ch.block_type == "function" and ch.name == fn_name {
+        if ch.block_type == "function"
+            and ch.annotation_kind != "an annotation"
+            and ch.name == fn_name {
             return ch;
         }
         ci = ci + 1;
@@ -856,6 +858,9 @@ def emit_definition_annotations(
     }
     if fd.returns is not None {
         pairs.append(("return", fd.returns));
+    }
+    if not pairs {
+        return;
     }
     for (name, annotation) in pairs {
         keys.append(

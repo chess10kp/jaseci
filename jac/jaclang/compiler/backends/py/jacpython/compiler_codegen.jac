@@ -466,10 +466,11 @@ def emit_name_store(g: cfg_builder, name: str, tloc: cloc) {
         g.emit_op(OP_STORE_FAST, fi, tloc);
         return;
     }
-    if g.sym_top is not None and g.sym_top.block_type != "module" {
+    if g.sym_top is not None {
         flags = sym_dict_get(g.sym_top.symbols, name, 0);
         scope = sym_scope_of(flags);
-        if scope == SCOPE_GLOBAL_EXPLICIT or scope == SCOPE_GLOBAL_IMPLICIT {
+        if scope == SCOPE_GLOBAL_EXPLICIT
+            or (scope == SCOPE_GLOBAL_IMPLICIT and g.sym_top.block_type != "module") {
             idx = g.u.add_name(name);
             g.emit_op(OP_STORE_GLOBAL, idx, tloc);
             return;
@@ -497,10 +498,11 @@ def emit_name_delete(g: cfg_builder, name: str, tloc: cloc) {
         g.emit_op(OP_DELETE_FAST, fi, tloc);
         return;
     }
-    if g.sym_top is not None and g.sym_top.block_type != "module" {
+    if g.sym_top is not None {
         flags = sym_dict_get(g.sym_top.symbols, name, 0);
         scope = sym_scope_of(flags);
-        if scope == SCOPE_GLOBAL_EXPLICIT or scope == SCOPE_GLOBAL_IMPLICIT {
+        if scope == SCOPE_GLOBAL_EXPLICIT
+            or (scope == SCOPE_GLOBAL_IMPLICIT and g.sym_top.block_type != "module") {
             idx = g.u.add_name(name);
             g.emit_op(OP_DELETE_GLOBAL, idx, tloc);
             return;

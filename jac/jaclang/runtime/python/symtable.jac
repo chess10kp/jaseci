@@ -1,33 +1,26 @@
-# Product-path facade for _symtable (Modules/symtablemodule.c).
-#
-# Semantics mirror CPython 3.14 ``Modules/symtablemodule.c`` plus the flag
-# bits of ``Include/internal/pycore_symtable.h``. The C module has exactly
-# one entry point, ``_symtable.symtable(source, filename, startstr)``,
-# which parses *source* and returns its top-level symtable entry
-# (``st->st_top``, a PySTEntryObject). This facade runs the same pipeline
-# on the native front end (parse_file / parse_eval_expr ->
-# build_module_symtable) and returns that entry surface as a plain dict
-# tree so Python-level wrappers can consume raw def-use flag bits:
-#
-#     {"name": str, "type": int, "lineno": int, "nested": bool,
-#      "symbols": {name: flags:int}, "varnames": [str],
-#      "children": [<same shape>]}
-#
-# The C entry also carries an ``id`` member (object identity used only
-# for Lib/symtable.py memoization); a dict tree cannot reproduce
-# identity, so it is intentionally omitted.
-#
-# Module constants match PyModule_AddIntMacro/IntConstant order in
-# symtable_init_constants.
+"""Python's public symbol-table entry surface backed by Jac scope analysis."""
 
+import os;
+import builtins;
 import from jaclang.compiler.frontend.python.ast_nodes { stmt, Expr }
-import from jaclang.compiler.frontend.python.compiler_diagnostics { symbol_diagnostic }
-import from jaclang.compiler.frontend.python.parser { parse_file, parse_eval_expr }
+import from jaclang.compiler.frontend.python.compiler_diagnostics {
+    compiler_diag_to_pyobj
+}
+import from jaclang.compiler.frontend.python.parser {
+    parse_file,
+    parse_eval_expr,
+    parse_interactive
+}
 import from jaclang.compiler.frontend.python.compiler_symtable {
     build_module_symtable,
     sym_block
 }
-
+import from jaclang.compiler.frontend.python.compiler_validate { future_features }
+import from jaclang.compiler.backends.py.jacpython.compiler_context {
+    enter_compile_context,
+    exit_compile_context
+}
+import from jaclang.compiler.backends.py.jacpython.code_object { raise_compiler_error }
 
 glob USE: int = 16,
      DEF_GLOBAL: int = 1,
@@ -37,7 +30,7 @@ glob USE: int = 16,
      DEF_TYPE_PARAM: int = 1024,
      DEF_FREE_CLASS: int = 64,
      DEF_IMPORT: int = 128,
-     DEF_BOUND: int = 130,
+     DEF_BOUND: int = 134,
      DEF_ANNOT: int = 256,
      DEF_COMP_ITER: int = 512,
      DEF_COMP_CELL: int = 2048,
@@ -57,116 +50,230 @@ glob USE: int = 16,
      SCOPE_MASK: int = 15;
 
 
-def _block_type_code(block_type: str) -> int {
-    # _Py_block_ty enum ordering (pycore_symtable.h).
-    if block_type == "function" {
-        return TYPE_FUNCTION;
+obj SymtableEntry {
+    has _name: str,
+        _type: int,
+        _lineno: int,
+        _nested: bool,
+        _symbols: dict[str, int],
+        _varnames: list[str],
+        _children: list[SymtableEntry];
+
+    has name: str {
+        getter {
+            return self._name;
+        }
     }
-    if block_type == "class" {
-        return TYPE_CLASS;
+
+    has type: int {
+        getter {
+            return self._type;
+        }
     }
-    if block_type == "module" {
-        return TYPE_MODULE;
+
+    has lineno: int {
+        getter {
+            return self._lineno;
+        }
     }
-    if block_type == "annotation" {
-        return TYPE_ANNOTATION;
+
+    has nested: bool {
+        getter {
+            return self._nested;
+        }
     }
-    if block_type == "type_alias" {
-        return TYPE_TYPE_ALIAS;
+
+    has symbols: dict[str, int] {
+        getter {
+            return self._symbols;
+        }
     }
-    if block_type == "type_parameters" {
-        return TYPE_TYPE_PARAMETERS;
+
+    has varnames: list[str] {
+        getter {
+            return self._varnames;
+        }
     }
-    if block_type == "type_variable" {
-        return TYPE_TYPE_VARIABLE;
+
+    has children: list[SymtableEntry] {
+        getter {
+            return self._children;
+        }
     }
-    return TYPE_MODULE;
+
+    has id: int {
+        getter {
+            return builtins.id(self);
+        }
+    }
+
+    def __hash__ -> int {
+        return builtins.id(self);
+    }
+
+    def __eq__(other: object) -> bool {
+        return self is other;
+    }
+
+    def __repr__ -> str {
+        return f"<symtable entry {self.name}({self.id}), line {self.lineno}>";
+    }
 }
 
-
-def _entry_to_dict(b: sym_block) -> dict[str, any] {
-    symbols: dict[str, any] = {};
-    for name in sorted(list(b.symbols.keys())) {
-        symbols[name] = b.symbols[name];
+def _entry_from_block(b: sym_block, nested: bool = False) -> SymtableEntry {
+    kind = TYPE_FUNCTION;
+    name = b.name;
+    if b.block_type == "module" {
+        kind = TYPE_MODULE;
+    } elif b.block_type == "class" {
+        kind = TYPE_CLASS;
+    } elif b.generic_parameters {
+        kind = TYPE_TYPE_PARAMETERS;
+        name = name.removeprefix("<generic parameters of ").removesuffix(">");
+    } elif b.annotation_kind == "an annotation" {
+        kind = TYPE_ANNOTATION;
+    } elif b.annotation_kind == "a type alias" {
+        kind = TYPE_TYPE_ALIAS;
+    } elif b.type_parameter_key {
+        kind = TYPE_TYPE_VARIABLE;
     }
-    children: list[any] = [];
-    for ch in b.children {
-        children.append(_entry_to_dict(ch));
+    symbols = dict(b.symbols);
+    varnames = list(b.varnames);
+    if kind == TYPE_TYPE_PARAMETERS
+        and ".defaults" not in symbols
+        and any(
+            child.block_type == "function" and not child.annotation_kind
+            for child in b.children
+        ) {
+        # The public table includes CPython's generic-function defaults slot
+        # even when Jac's factory does not need to pass a defaults tuple.
+        symbols = {".defaults": DEF_PARAM | (LOCAL << SCOPE_OFF), ** symbols};
+        varnames.insert(0, ".defaults");
     }
-    return {
-        "name": b.name,
-        "type": _block_type_code(b.block_type),
-        "lineno": b.lineno,
-        "nested": b.nested,
-        "symbols": symbols,
-        "varnames": list(b.varnames),
-        "children": children,
-
-    };
+    table = SymtableEntry(
+        _name=name,
+        _type=kind,
+        _lineno=b.lineno,
+        _nested=nested,
+        _symbols=symbols,
+        _varnames=varnames,
+        _children=[]
+    );
+    if b.annotation_kind and ".format" in table.symbols {
+        table.symbols[".format"] |= USE;
+    }
+    for free_name in b.class_free_names {
+        if free_name in table.symbols and table.symbols[free_name] & DEF_BOUND {
+            table.symbols[free_name] |= DEF_FREE_CLASS;
+        }
+    }
+    _entry_children(table, b, nested or b.block_type == "function");
+    return table;
 }
 
-
-def _start_input(startstr: str) -> int {
-    # Mirrors the strcmp chain in _symtable_symtable_impl.
-    if startstr == "exec" {
-        return 0;
+def _entry_children(table: SymtableEntry, b: sym_block, nested: bool) {
+    for child in b.children {
+        if child.inlined {
+            for (name, flags) in child.symbols.items() {
+                scope = (flags >> SCOPE_OFF) & SCOPE_MASK;
+                if scope == CELL {
+                    flags |= DEF_COMP_CELL;
+                }
+                if name in table.symbols {
+                    previous = table.symbols[name];
+                    if flags & DEF_COMP_CELL {
+                        table.symbols[name] = (previous & ((1 << SCOPE_OFF) - 1))
+                            | DEF_COMP_CELL
+                            | (CELL << SCOPE_OFF);
+                    }
+                } else {
+                    table.symbols[name] = flags;
+                }
+            }
+            _entry_children(table, child, True);
+        } else {
+            table.children.append(_entry_from_block(child, nested));
+        }
     }
-    if startstr == "eval" {
-        return 1;
-    }
-    if startstr == "single" {
-        return 2;
-    }
-    raise ValueError("symtable() arg 3 must be 'exec' or 'eval' or 'single'");
 }
-
 
 def _source_as_str(source: any) -> str {
-    # _Py_SourceAsString accepts str and bytes; bytes decode as UTF-8
-    # (cf.cf_flags carries PyCF_SOURCE_IS_UTF8).
-    if isinstance(source, str) {
-        return source as str;
+    if not isinstance(source, str) {
+        try {
+            raw = bytes(memoryview(source));
+        } except TypeError {
+            raise TypeError("symtable(): source must be string or bytes");
+        }
+        import io;
+        import tokenize;
+        encoding = tokenize.detect_encoding(io.BytesIO(raw).readline)[0];
+        try {
+            source = raw.decode(encoding);
+        } except UnicodeDecodeError as error {
+            raise SyntaxError(str(error));
+        }
     }
-    if isinstance(source, bytes) {
-        return (source as bytes).decode("utf-8");
+    if "\x00" in source {
+        raise SyntaxError("source code string cannot contain null bytes");
     }
-    raise TypeError("symtable(): source must be string or bytes");
+    return source as str;
 }
 
-
-def symtable(source: any, filename: str, startstr: str) -> dict[str, any] {
+def symtable(source: any, filename: any, startstr: any, /) -> SymtableEntry {
+    filename = os.fsdecode(os.fspath(filename));
+    if "\x00" in filename {
+        raise ValueError("embedded null character");
+    }
+    if not isinstance(startstr, str) {
+        raise TypeError("symtable() argument 3 must be str");
+    }
+    if startstr not in ("exec", "eval", "single") {
+        raise ValueError("symtable() arg 3 must be 'exec' or 'eval' or 'single'");
+    }
     src = _source_as_str(source);
-    start = _start_input(startstr);
     body: list[stmt];
-    if start == 0 {
-        m = parse_file(src, filename);
-        if m is None {
+    if startstr == "eval" {
+        value = parse_eval_expr(src, filename);
+        if value is None {
             raise SyntaxError("invalid syntax");
         }
-        body = m.body;
-    } else {
-        # eval/single inputs parse as one expression node; symtable.c still
-        # analyzes them over a module block wrapping that expression.
-        e = parse_eval_expr(src, filename);
-        if e is None {
-            raise SyntaxError("invalid syntax");
-        }
-        # The wrapper statement carries no source location of its own; the
-        # expression node inside keeps whatever positions the parser recorded.
         body = [
             Expr(
-                value=e, lineno=1, col_offset=0, end_lineno=None, end_col_offset=None,
-            ),
-
+                value=value,
+                lineno=value.lineno,
+                col_offset=value.col_offset,
+                end_lineno=value.end_lineno,
+                end_col_offset=value.end_col_offset
+            )
         ];
+    } elif startstr == "single" {
+        tree = parse_interactive(src, filename);
+        if tree is None {
+            raise SyntaxError("invalid syntax");
+        }
+        body = tree.body;
+    } else {
+        module_tree = parse_file(src, filename);
+        if module_tree is None {
+            raise SyntaxError("invalid syntax");
+        }
+        body = module_tree.body;
     }
-    sr = build_module_symtable(body);
-    if sr.diag is not None {
-        d = sr.diag as symbol_diagnostic;
-        raise SyntaxError(d.message);
+    (flags, validation) = future_features(body, False);
+    if validation.diag is not None {
+        raise_compiler_error(compiler_diag_to_pyobj(validation.diag), src, filename);
     }
-    if sr.top is None {
-        raise SyntaxError("invalid syntax");
+    enter_compile_context(0, flags);
+    try {
+        result = build_module_symtable(body);
+    } finally {
+        exit_compile_context();
     }
-    return _entry_to_dict(sr.top);
+    if result.diag is not None {
+        raise_compiler_error(compiler_diag_to_pyobj(result.diag), src, filename);
+    }
+    if result.top is None {
+        raise SystemError("symbol table has no module table");
+    }
+    return _entry_from_block(result.top);
 }
