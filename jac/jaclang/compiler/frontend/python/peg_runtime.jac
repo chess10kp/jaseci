@@ -199,6 +199,18 @@ def peg_fill_token(p: peg_parser) -> bool {
     }
     tok = raw as tok_token;
     tok_type = tok.tok_type;
+    if p.tok.single_input and tok_type == ENDMARKER and p.parsing_started {
+        tok_type = NEWLINE;
+        p.parsing_started = False;
+        p.tok.done = False;
+        if p.tok.indent and not p.flags & 0x200 {
+            p.tok.pending = -p.tok.indent;
+            p.tok.indent = 0;
+            p.tok.indstack = [0];
+        }
+    } else {
+        p.parsing_started = True;
+    }
     if tok_type == NUMBER and "_" in tok.spelling and p.feature_version < 6 {
         p.error = mk_diag(
             "SyntaxError",
@@ -216,7 +228,6 @@ def peg_fill_token(p: peg_parser) -> bool {
     pt.tok_type = tok_type;
     pt.filename = p.filename;
     p.tokens.append(pt);
-    p.parsing_started = True;
     return True;
 }
 
@@ -367,10 +378,13 @@ def peg_raise_syntax_error(p: peg_parser, on_next: bool, message: str) -> None {
             tok = peg_get_last_nonnwhitespace_token(p);
         }
     }
+    kind = "IndentationError"
+        if message.startswith("expected an indented block")
+        else "SyntaxError";
     if tok is None {
-        p.error = mk_diag("SyntaxError", message, tok_no_loc(), p.filename);
+        p.error = mk_diag(kind, message, tok_no_loc(), p.filename);
     } else {
-        p.error = mk_diag("SyntaxError", message, peg_token_loc(tok), p.filename);
+        p.error = mk_diag(kind, message, peg_token_loc(tok), p.filename);
     }
     p.error_indicator = True;
 }

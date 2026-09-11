@@ -305,6 +305,9 @@ jobs:
               GrammarTests.test_var_annot_module_semantics GrammarTests.test_var_annot_in_module \
               GrammarTests.test_var_annot_simple_exec GrammarTests.test_var_annot_rhs
           done
+      - name: Compile and run upstream interactive compiler tests with JacPython
+        run: |
+          jac run scripts/run_cpython_compiler_tests.jac --runtime --compile-tests --module test.test_codeop
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

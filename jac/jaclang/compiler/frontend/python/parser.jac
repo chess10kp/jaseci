@@ -16910,7 +16910,7 @@ def parse_eval_module(p: peg_parser) -> mod | None {
 def parse_eval_source(
     source: str, filename: str, flags: int = 0, feature_version: int = 14
 ) -> mod | None {
-    p = peg_parser_from_source(source, filename, True, flags, feature_version);
+    p = peg_parser_from_source(source, filename, False, flags, feature_version);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {
@@ -16975,45 +16975,35 @@ def parse_file(
 def parse_interactive(
     source: str, filename: str, flags: int = 0, feature_version: int = 14
 ) -> Interactive | None {
-    p = peg_parser_from_source(source, filename, True, flags, feature_version);
+    p = peg_parser_from_source(source, filename, False, flags, feature_version);
+    p.tok.single_input = True;
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {
-        body = rule_statement(p);
+        body = rule_statement_newline(p);
     } except SyntaxError as error {
         raise_source_error(p, error);
     }
-    if body is None or peg_expect_token(p, ENDMARKER) is None {
+    if not body {
         finish_parse(p, None, "single");
         return None;
     }
-    # An inline compound statement needs an explicit terminal newline in
-    # interactive mode. An indented suite supplies its own logical boundary.
-    if not source.endswith(("\n", "\r")) and len(body) == 1 {
-        first = body[0];
-        if isinstance(
-            first,
-            (
-                FunctionDef,
-                AsyncFunctionDef,
-                ClassDef,
-                If,
-                While,
-                For,
-                AsyncFor,
-                With,
-                AsyncWith,
-                Try,
-                TryStar,
-                Match
-            )
-        )
-            and first.lineno == first.end_lineno {
-            return None;
+    # A complete interactive statement may be followed only by whitespace or
+    # comments. This check must not turn a second statement into incomplete input.
+    extra = any(t.tok_type not in (NEWLINE, ENDMARKER) for t in p.tokens[p.mark:]);
+    for line in p.tok.source[p.tok.pos:].splitlines() {
+        if line.strip() and not line.lstrip().startswith("#") {
+            extra = True;
         }
     }
-    result = finish_parse(p, Interactive(body=body), "single");
-    return result as Interactive;
+    if extra {
+        p.tok.eof_reached = False;
+        raise_source_error(
+            p,
+            SyntaxError("multiple statements found while compiling a single statement")
+        );
+    }
+    return finish_parse(p, Interactive(body=body), "single") as Interactive;
 }
 
 def source_column(lines: list[str], line: int, column: int) -> int {
@@ -17027,6 +17017,11 @@ def source_column(lines: list[str], line: int, column: int) -> int {
 
 def raise_source_error(p: peg_parser, error: SyntaxError) {
     token = p.tokens[-1] if p.tokens else None;
+    if p.flags & 0x4000
+        and p.tok.eof_reached
+        and (token is None or token.tok_type != NUMBER) {
+        raise_incomplete_input(p);
+    }
     line = error.lineno or (token.lineno if token is not None else 1);
     column = error.offset - 1
         if error.offset is not None
@@ -17049,6 +17044,18 @@ def raise_source_error(p: peg_parser, error: SyntaxError) {
     ) from None;
 }
 
+def raise_incomplete_input(p: peg_parser) {
+    import builtins;
+    error_type = vars(builtins)["_IncompleteInputError"];
+    lines = p.tok.source.splitlines(keepends=True);
+    line = max(1, p.tok.lineno);
+    text = lines[line - 1] if line <= len(lines) else "";
+    column = source_column(lines, line, p.tok.col_offset) + 1;
+    raise error_type(
+        "incomplete input", (p.filename, line, column, text, line, column)
+    ) as SyntaxError;
+}
+
 def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
     if result is not None and not p.error_indicator {
         import from jaclang.compiler.frontend.python.ast_nodes { TypeIgnore }
@@ -17067,6 +17074,9 @@ def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
         }
         return result;
     }
+    if p.flags & 0x4000 and p.tok.eof_reached {
+        raise_incomplete_input(p);
+    }
     # The first pass only recognizes valid syntax. Diagnostic productions run
     # once on failure, with memoized first-pass failures cleared.
     first_bad = p.tokens[-1] if p.tokens else None;
@@ -17079,11 +17089,17 @@ def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
         } elif mode == "func_type" {
             rule_func_type(p);
         } else {
-            rule_statement(p);
+            rule_statement_newline(p);
         }
     }
     kind = "SyntaxError";
     message = "invalid syntax";
+    if first_bad is not None and first_bad.tok_type in (INDENT, DEDENT) {
+        kind = "IndentationError";
+        message = "unexpected indent"
+            if first_bad.tok_type == INDENT
+            else "unexpected unindent";
+    }
     line = first_bad.lineno if first_bad is not None else 1;
     column = first_bad.col_offset if first_bad is not None else 0;
     end_line = line;
@@ -17114,7 +17130,7 @@ def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
 def parse_func_type(
     source: str, filename: str, flags: int = 0, feature_version: int = 14
 ) -> mod | None {
-    p = peg_parser_from_source(source, filename, True, flags, feature_version);
+    p = peg_parser_from_source(source, filename, False, flags, feature_version);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {

@@ -71,8 +71,10 @@ obj tok_state {
         line_start: int = 0,
         filename: str = "<unknown>",
         exec_input: bool = False,
+        single_input: bool = False,
         type_comments: bool = False,
         done: bool = False,
+        eof_reached: bool = False,
         error: tok_diag | None = None,
         at_bol: bool = True,
         indent: int = 0,
@@ -81,12 +83,11 @@ obj tok_state {
         paren_level: int = 0,
         paren_stack: list[str] = [],
         comments: dict[int, list[tuple[int, int]]] = {},
-        string_modes: list[string_mode] = [],
-        eof_newline_done: bool = False,
-        line_has_code: bool = False;
+        string_modes: list[string_mode] = [];
 }
 
 def _indent_error(st: tok_state, msg: str) -> tok_diag {
+    st.eof_reached = False;
     bad = mk_diag(
         "IndentationError",
         msg,
@@ -220,7 +221,7 @@ def _consume_bol_newline(st: tok_state) -> None {
 
 def _process_bol_indent(st: tok_state) -> int {
     # Returns 0 ok, 1 blank line consumed, -1 error.
-    if not st.exec_input or st.paren_level > 0 {
+    if st.paren_level > 0 {
         st.at_bol = False;
         return 0;
     }
@@ -242,11 +243,7 @@ def _process_bol_indent(st: tok_state) -> int {
             return 1;
         }
     }
-    # EOF with only whitespace on this logical line.
-    if st.pos >= len(st.source) {
-        st.at_bol = False;
-        return 0;
-    }
+    _peek(st);
     cur = st.indstack[st.indent];
     if col == cur {
         st.at_bol = False;
@@ -274,17 +271,6 @@ def _process_bol_indent(st: tok_state) -> int {
     }
     st.at_bol = False;
     return 0;
-}
-
-def _begin_eof_dedents(st: tok_state) -> None {
-    if not st.exec_input {
-        return;
-    }
-    while st.indent > 0 {
-        st.pending = st.pending - 1;
-        st.indent = st.indent - 1;
-        st.indstack.pop();
-    }
 }
 
 def _track_paren_delta(tok_type: int) -> int {
@@ -326,6 +312,7 @@ def:priv _is_digit(ch: str) -> bool {
 
 def _peek(st: tok_state) -> str {
     if st.pos >= len(st.source) {
+        st.eof_reached = True;
         return "";
     }
     return st.source[st.pos];
@@ -353,6 +340,9 @@ def _advance(st: tok_state) -> str {
 
 def _match_operator(st: tok_state) -> tok_token | None {
     rest = st.source[st.pos:st.pos + 3];
+    if st.pos + 1 >= len(st.source) {
+        st.eof_reached = True;
+    }
     if st.string_modes and st.string_modes[-1].fields {
         field = st.string_modes[-1].fields[-1];
         if st.paren_level == field.paren and rest.startswith(":=") {
@@ -381,6 +371,9 @@ def _match_operator(st: tok_state) -> tok_token | None {
     if len(rest) >= 2 {
         spell = rest[0:2];
         if spell in EXACT_TOKEN_TYPES {
+            if st.pos + 2 >= len(st.source) {
+                st.eof_reached = True;
+            }
             start_col = st.col_offset;
             st.pos = st.pos + 2;
             st.col_offset = st.col_offset + 2;
@@ -416,7 +409,7 @@ def _match_operator(st: tok_state) -> tok_token | None {
     return None;
 }
 
-def _read_number(st: tok_state) -> tok_token {
+def _read_number(st: tok_state) -> tok_token | tok_diag {
     start = st.pos;
     start_col = st.col_offset;
     based = False;
@@ -519,6 +512,17 @@ def _read_number(st: tok_state) -> tok_token {
     }
     spell = st.source[start:st.pos];
     if _is_id_start(_peek(st)) {
+        kind = "decimal";
+        if spell.lower().startswith("0x") {
+            kind = "hexadecimal";
+        } elif spell.lower().startswith("0o") {
+            kind = "octal";
+        } elif spell.lower().startswith("0b") {
+            kind = "binary";
+        } elif spell.endswith(("j", "J")) {
+            kind = "imaginary";
+        }
+        keyword_boundary = False;
         for keyword in ("and", "else", "for", "if", "in", "is", "or", "not") {
             end = st.pos + len(keyword);
             if st.source[st.pos:end] == keyword
@@ -526,21 +530,15 @@ def _read_number(st: tok_state) -> tok_token {
                 import from jaclang.compiler.frontend.python.compiler_diagnostics {
                     syntax_warning
                 }
-                kind = "decimal";
-                if spell.lower().startswith("0x") {
-                    kind = "hexadecimal";
-                } elif spell.lower().startswith("0o") {
-                    kind = "octal";
-                } elif spell.lower().startswith("0b") {
-                    kind = "binary";
-                } elif spell.endswith(("j", "J")) {
-                    kind = "imaginary";
-                }
+                keyword_boundary = True;
                 syntax_warning(
                     f"invalid {kind} literal", st.filename, st.lineno, start_col
                 );
                 break;
             }
+        }
+        if not keyword_boundary {
+            return _string_syntax_error(st, f"invalid {kind} literal", start_col);
         }
     }
     return tok_token(
@@ -565,6 +563,7 @@ def _read_name(st: tok_state) -> tok_token {
         _advance(st);
     }
     spell = st.source[start:st.pos];
+    _peek(st);
     return tok_token(
         tok_type=NAME,
         spelling=spell,
@@ -612,6 +611,13 @@ def _is_string_start(st: tok_state) -> bool {
 }
 
 def _string_syntax_error(st: tok_state, msg: str, start_col: int) -> tok_diag {
+    st.eof_reached = st.pos >= len(st.source)
+        and (
+            msg.startswith("unterminated")
+            or msg == "EOL while scanning string literal"
+            or "expecting '}'" in msg
+            or "was never closed" in msg
+        );
     line = st.lineno;
     if msg == "EOL while scanning string literal" and st.string_modes {
         mode = st.string_modes[-1];
@@ -1008,12 +1014,11 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
 }
 
 def tokenizer_from_string(source: str, filename: str, exec_input: bool) -> tok_state {
-    # Eval/single input: ensure a trailing newline like decode_str(single=1).
+    # File input gets a terminal newline before scanning; eval/single input
+    # must retain physical EOF so incomplete-input flags can distinguish it.
     buf = source.replace("\r\n", "\n").replace("\r", "\n");
-    if not exec_input {
-        if len(buf) == 0 or buf[len(buf) - 1] != "\n" {
-            buf = buf + "\n";
-        }
+    if exec_input and buf and not buf.endswith("\n") {
+        buf += "\n";
     }
     return tok_state(source=buf, filename=filename, exec_input=exec_input);
 }
@@ -1137,6 +1142,13 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             } else {
                 _advance(st);
             }
+            if st.pos >= len(st.source) {
+                bad = _string_syntax_error(
+                    st, "unexpected EOF while parsing", st.col_offset
+                );
+                st.eof_reached = True;
+                return bad;
+            }
             continue;
         }
         if ch == "\n" {
@@ -1181,15 +1193,11 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         if ch == "." {
             nxt = st.pos + 1;
             if nxt < len(st.source) and _is_digit(st.source[nxt]) {
-                tok = _read_number(st);
-                st.paren_level = st.paren_level + _track_paren_delta(tok.tok_type);
-                return tok;
+                return _read_number(st);
             }
         }
         if _is_digit(ch) {
-            tok = _read_number(st);
-            st.paren_level = st.paren_level + _track_paren_delta(tok.tok_type);
-            return tok;
+            return _read_number(st);
         }
         # String-start MUST precede identifier: a prefixed string (b'', r'', u'',
         # f'') begins with an id-start char; _is_string_start only matches when a
@@ -1276,29 +1284,20 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         );
         st.error = bad;
         st.done = True;
+        st.eof_reached = ch.isprintable()
+            and ch != "\\"
+            and st.pos + 1 == len(st.source);
         return bad;
     }
+    st.eof_reached = True;
     if st.string_modes and st.string_modes[-1].fields {
         return _string_syntax_error(st, "'{' was never closed", st.col_offset);
     }
-    if not st.eof_newline_done and len(st.source) > 0 {
-        last = st.source[len(st.source) - 1];
-        if last != "\n"
-            and last != "\r"
-            and st.line_has_code
-            and not st.source.rstrip().endswith("\\") {
-            st.eof_newline_done = True;
-            return tok_token(
-                tok_type=NEWLINE,
-                spelling="",
-                lineno=st.lineno,
-                col_offset=st.col_offset,
-                end_lineno=st.lineno,
-                end_col_offset=st.col_offset
-            );
+    if st.at_bol {
+        if _process_bol_indent(st) < 0 {
+            return st.error as tok_diag;
         }
     }
-    _begin_eof_dedents(st);
     pending = _flush_pending_indent(st);
     if pending is not None {
         return pending;
@@ -1319,11 +1318,6 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     token = _tokenizer_next(st);
     if isinstance(token, tok_token) {
         token.level = st.paren_level;
-        if token.tok_type == NEWLINE {
-            st.line_has_code = False;
-        } elif token.tok_type not in (ENDMARKER, INDENT, DEDENT, TYPE_IGNORE) {
-            st.line_has_code = True;
-        }
     }
     return token;
 }
