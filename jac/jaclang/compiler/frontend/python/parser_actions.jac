@@ -1829,8 +1829,14 @@ def pa_raise_invalid_target(p: peg_parser, kind: object, `node: object | None) -
     return pa_raise_syntax(p, False, "invalid assignment target");
 }
 
-def pa_raise_type_param_error(colon: object, `node: expr, is_tuple: bool) -> None {
-    return None;
+def pa_raise_type_param_error(
+    p: peg_parser, colon: object, value: expr, is_tuple: bool
+) -> None {
+    kind = "TypeVarTuple" if is_tuple else "ParamSpec";
+    restriction = "constraints" if isinstance(value, Tuple) else "bound";
+    return pa_raise_syntax_known_range(
+        p, False, colon, value, "cannot use " + restriction + " with " + kind
+    );
 }
 
 def pa_raise_kvpair_error(p: peg_parser, `node: expr) -> None {

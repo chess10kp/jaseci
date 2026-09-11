@@ -47,6 +47,9 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     AsyncFunctionDef,
     TypeAlias,
     TypeVar,
+    TypeVarTuple,
+    ParamSpec,
+    type_param,
     AsyncFor,
     AsyncWith,
     Set,
@@ -130,7 +133,12 @@ obj sym_block {
         local_varnames: list[str] = [],
         directive_lineno: dict[str, int] = {},
         directive_col: dict[str, int] = {},
-        children: list[sym_block] = [];
+        children: list[sym_block] = [],
+        type_parameter_key: int = 0,
+        function_annotation_key: int = 0,
+        generic_parameters: bool = False,
+        annotation_kind: str = "",
+        mangled_names: set[str] | None = None;
 }
 
 obj symtable_result {
@@ -242,6 +250,15 @@ def mangle_name(private: str | None, name: str) -> str {
     return "_" + private[ip:] + name;
 }
 
+# Generic class headers mangle only type-parameter identifiers. Nested
+# expression scopes inherit that restriction; the class body starts afresh.
+def sym_mangle_name(private: str | None, scope: sym_block, name: str) -> str {
+    if scope.mangled_names is not None and name not in scope.mangled_names {
+        return name;
+    }
+    return mangle_name(private, name);
+}
+
 obj sym_builder {
     has cur: sym_block,
         stack: list[sym_block],
@@ -268,7 +285,7 @@ obj sym_builder {
                 "SyntaxError", "cannot assign to __debug__", lineno, col_offset
             );
         }
-        mangled = mangle_name(self.private, name);
+        mangled = sym_mangle_name(self.private, self.cur, name);
         cur_flags = self.lookup(mangled);
         if sym_flag_set(cur_flags, DEF_PARAM) and sym_flag_set(flags, DEF_PARAM) {
             return self.fail(
@@ -314,7 +331,7 @@ obj sym_builder {
     }
 
     def add_use(name: str) -> bool {
-        mangled = mangle_name(self.private, name);
+        mangled = sym_mangle_name(self.private, self.cur, name);
         cur_flags = self.lookup(mangled);
         self.cur.symbols[mangled] = sym_flag_add(cur_flags, SYM_USE);
         return True;
@@ -334,7 +351,8 @@ obj sym_builder {
             lineno=lineno,
             col_offset=col_offset,
             nested=nested,
-            can_see_class_scope=can_see_class_scope
+            can_see_class_scope=can_see_class_scope,
+            mangled_names=self.cur.mangled_names if block_type != "class" else None
         );
         self.cur.children.append(child);
         self.stack.append(self.cur);
@@ -517,6 +535,19 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
     if b.diag is not None {
         return False;
     }
+    forbidden = "named expression"
+        if isinstance(e, NamedExpr)
+        else "yield expression"
+            if isinstance(e, (Yield, YieldFrom))
+            else "await expression" if isinstance(e, Await) else "";
+    if forbidden and b.cur.annotation_kind {
+        return b.fail(
+            "SyntaxError",
+            forbidden + " cannot be used within " + b.cur.annotation_kind,
+            e.lineno,
+            e.col_offset
+        );
+    }
     if isinstance(e, Name) {
         ok = b.add_use((e as Name).id);
         # Special-case super: it counts as a use of __class__
@@ -677,7 +708,7 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
     if isinstance(e, NamedExpr) {
         ne = e as NamedExpr;
         if b.cur.comprehension is not None and isinstance(ne.target, Name) {
-            name = mangle_name(b.private, ne.target.id);
+            name = sym_mangle_name(b.private, b.cur, ne.target.id);
             owner: sym_block | None = None;
             for block in reversed(b.stack + [b.cur]) {
                 if block.comprehension is not None {
@@ -702,6 +733,15 @@ def sym_visit_load_expr(b: sym_builder, e: expr) -> bool {
                 return b.fail(
                     "SyntaxError",
                     "assignment expression within a comprehension cannot be used in a class body",
+                    ne.lineno,
+                    ne.col_offset
+                );
+            }
+            if owner.annotation_kind and owner.annotation_kind != "an annotation" {
+                return b.fail(
+                    "SyntaxError",
+                    "assignment expression within a comprehension cannot be used in "
+                        + owner.annotation_kind,
                     ne.lineno,
                     ne.col_offset
                 );
@@ -839,7 +879,9 @@ def sym_visit_store_target(b: sym_builder, t: expr) -> bool {
     return True;
 }
 
-def sym_visit_comp_store_target(b: sym_builder, t: expr) -> bool {
+def sym_visit_comp_store_target(
+    b: sym_builder, t: expr, allow_starred: bool = False
+) -> bool {
     if b.diag is not None {
         return False;
     }
@@ -847,7 +889,7 @@ def sym_visit_comp_store_target(b: sym_builder, t: expr) -> bool {
         elts = t.elts;
         ei = 0;
         while ei < len(elts) {
-            if not sym_visit_comp_store_target(b, elts[ei]) {
+            if not sym_visit_comp_store_target(b, elts[ei], True) {
                 return False;
             }
             ei = ei + 1;
@@ -860,6 +902,14 @@ def sym_visit_comp_store_target(b: sym_builder, t: expr) -> bool {
         return b.add_def(n.id, flags, n.lineno, n.col_offset);
     }
     if isinstance(t, Starred) {
+        if not allow_starred {
+            return b.fail(
+                "SyntaxError",
+                "starred assignment target must be in a list or tuple",
+                t.lineno,
+                t.col_offset
+            );
+        }
         return sym_visit_comp_store_target(b, t.value);
     }
     return sym_visit_store_target(b, t);
@@ -1099,6 +1149,187 @@ def sym_match_pattern_unwrap_or(p: pattern) -> pattern {
         }
     }
     return p;
+}
+
+# Bounds and defaults are independently evaluated annotation scopes. The key
+# distinguishes them even when a manually constructed AST shares expressions
+# or gives both fields the same source position.
+def sym_visit_type_parameters(b: sym_builder, parameters: list[type_param]) -> bool {
+    seen_default = False;
+    for tp in parameters {
+        name: str = getattr(tp, "name");
+        if name == "__classdict__" {
+            return b.fail(
+                "SyntaxError",
+                "reserved name '__classdict__' cannot be used for type parameter",
+                tp.lineno,
+                tp.col_offset
+            );
+        }
+        if b.lookup(sym_mangle_name(b.private, b.cur, name)) & DEF_LOCAL {
+            return b.fail(
+                "SyntaxError",
+                "duplicate type parameter '" + name + "'",
+                tp.lineno,
+                tp.col_offset
+            );
+        }
+        if not b.add_def(name, DEF_LOCAL | 1024, tp.lineno, tp.col_offset) {
+            return False;
+        }
+        default_value: expr | None = getattr(tp, "default_value");
+        if default_value is None and seen_default {
+            return b.fail(
+                "SyntaxError",
+                "non-default type parameter '"
+                    + name
+                    + "' follows default type parameter",
+                tp.lineno,
+                tp.col_offset
+            );
+        }
+        seen_default = seen_default or default_value is not None;
+        bound = tp.bound if isinstance(tp, TypeVar) else None;
+        for (index, value) in enumerate([bound, default_value]) {
+            if value is None {
+                continue;
+            }
+            in_class = b.cur.can_see_class_scope;
+            if not b.push_block(
+                "function", name, value.lineno, True, in_class, value.col_offset
+            ) {
+                return False;
+            }
+            b.cur.type_parameter_key = id(tp) * 2 + index;
+            type_name = "TypeVarTuple"
+                if isinstance(tp, TypeVarTuple)
+                else "ParamSpec" if isinstance(tp, ParamSpec) else "TypeVar";
+            b.cur.annotation_kind = "a "
+                + type_name
+                + (
+                    " default"
+                        if index
+                        else " constraint" if isinstance(value, Tuple) else " bound"
+                );
+            if not b.add_def(".format", DEF_PARAM, value.lineno, value.col_offset) {
+                return False;
+            }
+            if in_class and not b.add_use("__classdict__") {
+                return False;
+            }
+            if not sym_visit_load_expr(b, value) or not b.pop_block() {
+                return False;
+            }
+        }
+    }
+    return True;
+}
+
+# Annotation expressions have their own closure scope, outside the function's
+# parameter/body scope. This also keeps annotation evaluation lazy.
+def sym_visit_function_annotations(
+    b: sym_builder, fd: FunctionDef | AsyncFunctionDef
+) -> bool {
+    import from jaclang.compiler.backends.py.jacpython.compiler_context {
+        current_compile_flags
+    }
+    if current_compile_flags() & 0x1000000 {
+        return True;
+    }
+    parameters = fd.args.posonlyargs + fd.args.args;
+    if fd.args.vararg is not None {
+        parameters.append(fd.args.vararg);
+    }
+    parameters.extend(fd.args.kwonlyargs);
+    if fd.args.kwarg is not None {
+        parameters.append(fd.args.kwarg);
+    }
+    annotations: list[expr] = [];
+    for parameter in parameters {
+        if parameter.annotation is not None {
+            annotations.append(parameter.annotation);
+        }
+    }
+    if fd.returns is not None {
+        annotations.append(fd.returns);
+    }
+    if not annotations {
+        return True;
+    }
+    in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+    nested = sym_compute_nested(b);
+    if not b.push_block(
+        "function", "__annotate__", fd.lineno, nested, in_class, fd.col_offset
+    ) {
+        return False;
+    }
+    b.cur.function_annotation_key = id(fd);
+    b.cur.annotation_kind = "an annotation";
+    if not b.add_def(".format", DEF_PARAM, fd.lineno, fd.col_offset) {
+        return False;
+    }
+    if in_class and not b.add_use("__classdict__") {
+        return False;
+    }
+    for annotation in annotations {
+        if not sym_visit_load_expr(b, annotation) {
+            return False;
+        }
+    }
+    return b.pop_block();
+}
+
+# Generic definitions evaluate decorators/defaults outside this scope, then
+# construct type parameters before evaluating bases, annotations, or bodies.
+def sym_enter_generic_definition(
+    b: sym_builder, definition: FunctionDef | AsyncFunctionDef | ClassDef
+) -> bool {
+    in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
+    nested = sym_compute_nested(b);
+    if not b.push_block(
+        "function",
+        "<generic parameters of " + definition.name + ">",
+        definition.lineno,
+        nested,
+        in_class,
+        definition.col_offset
+    ) {
+        return False;
+    }
+    b.cur.generic_parameters = True;
+    b.cur.annotation_kind = "the definition of a generic";
+    if in_class and not b.add_use("__classdict__") {
+        return False;
+    }
+    if isinstance(definition, ClassDef) {
+        b.private = definition.name;
+        b.cur.mangled_names = {
+            getattr(parameter, "name") as str
+            for parameter in definition.type_params or []
+        };
+        for name in [".type_params", ".generic_base"] {
+            if not b.add_def(name, DEF_LOCAL, definition.lineno, definition.col_offset)
+                or not b.add_use(name) {
+                return False;
+            }
+        }
+    } else {
+        if definition.args.defaults {
+            if not b.add_def(
+                ".defaults", DEF_PARAM, definition.lineno, definition.col_offset
+            ) {
+                return False;
+            }
+        }
+        if any(value is not None for value in definition.args.kw_defaults) {
+            if not b.add_def(
+                ".kwdefaults", DEF_PARAM, definition.lineno, definition.col_offset
+            ) {
+                return False;
+            }
+        }
+    }
+    return sym_visit_type_parameters(b, definition.type_params or []);
 }
 
 def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
@@ -1385,82 +1616,45 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         }
         return True;
     }
-    if isinstance(s, FunctionDef) {
-        fd = s as FunctionDef;
+    if isinstance(s, (FunctionDef, AsyncFunctionDef)) {
+        fd = s;
         if not b.add_def(fd.name, DEF_LOCAL, fd.lineno, fd.col_offset) {
             return False;
         }
-        decs = fd.decorator_list;
-        if decs is None {
-            decs = [];
-        }
-        di = 0;
-        while di < len(decs) {
-            if not sym_visit_load_expr(b, decs[di]) {
+        for decorator in fd.decorator_list or [] {
+            if not sym_visit_load_expr(b, decorator) {
                 return False;
             }
-            di = di + 1;
         }
         if not sym_visit_arg_defaults(b, fd.args) {
             return False;
         }
         nested = sym_compute_nested(b);
-        in_class = False;
+        generic = bool(fd.type_params);
+        if generic and not sym_enter_generic_definition(b, fd) {
+            return False;
+        }
+        if not sym_visit_function_annotations(b, fd) {
+            return False;
+        }
         if not b.push_block(
-            "function", fd.name, fd.lineno, nested, in_class, fd.col_offset
+            "function", fd.name, fd.lineno, nested, False, fd.col_offset
         ) {
             return False;
         }
+        b.cur.coroutine = isinstance(fd, AsyncFunctionDef);
         if not sym_visit_params(b, fd.args) {
             return False;
         }
-        bi = 0;
-        while bi < len(fd.body) {
-            if not sym_visit_stmt(b, fd.body[bi]) {
+        for statement in fd.body {
+            if not sym_visit_stmt(b, statement) {
                 return False;
             }
-            bi = bi + 1;
         }
-        return b.pop_block();
-    }
-    if isinstance(s, AsyncFunctionDef) {
-        afd = s as AsyncFunctionDef;
-        if not b.add_def(afd.name, DEF_LOCAL, afd.lineno, afd.col_offset) {
+        if not b.pop_block() {
             return False;
         }
-        decs = afd.decorator_list;
-        if decs is None {
-            decs = [];
-        }
-        di = 0;
-        while di < len(decs) {
-            if not sym_visit_load_expr(b, decs[di]) {
-                return False;
-            }
-            di = di + 1;
-        }
-        if not sym_visit_arg_defaults(b, afd.args) {
-            return False;
-        }
-        nested = sym_compute_nested(b);
-        in_class = False;
-        if not b.push_block(
-            "function", afd.name, afd.lineno, nested, in_class, afd.col_offset
-        ) {
-            return False;
-        }
-        b.cur.coroutine = True;
-        if not sym_visit_params(b, afd.args) {
-            return False;
-        }
-        bi = 0;
-        while bi < len(afd.body) {
-            if not sym_visit_stmt(b, afd.body[bi]) {
-                return False;
-            }
-            bi = bi + 1;
-        }
-        return b.pop_block();
+        return not generic or b.pop_block();
     }
     if isinstance(s, ClassDef) {
         cd = s as ClassDef;
@@ -1480,6 +1674,12 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             }
             di = di + 1;
         }
+        saved_private = b.private;
+        nested = b.cur.block_type != "module";
+        generic = bool(cd.type_params);
+        if generic and not sym_enter_generic_definition(b, cd) {
+            return False;
+        }
         if cd.bases is not None {
             for base in cd.bases {
                 if not sym_visit_load_expr(b, base) {
@@ -1494,14 +1694,18 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
                 }
             }
         }
-        saved_private = b.private;
-        nested = b.cur.block_type != "module";
         if not b.push_block(
             "class", cd.name, cd.lineno, nested, False, cd.col_offset
         ) {
             return False;
         }
         b.private = cd.name;
+        if generic {
+            if not b.add_def("__type_params__", DEF_LOCAL, cd.lineno, cd.col_offset)
+                or not b.add_use(".type_params") {
+                return False;
+            }
+        }
         bi = 0;
         while bi < len(cd.body) {
             if not sym_visit_stmt(b, cd.body[bi]) {
@@ -1511,7 +1715,10 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             bi = bi + 1;
         }
         b.private = saved_private;
-        return b.pop_block();
+        if not b.pop_block() {
+            return False;
+        }
+        return not generic or b.pop_block();
     }
     if isinstance(s, TypeAlias) {
         ta = s as TypeAlias;
@@ -1528,21 +1735,6 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         if not b.add_def(type_alias_name.id, DEF_LOCAL, ta.lineno, ta.col_offset) {
             return False;
         }
-        pi = 0;
-        while pi < len(tps) {
-            if not isinstance(tps[pi], TypeVar)
-                or (tps[pi] as TypeVar).bound is not None
-                or (tps[pi] as TypeVar).default_value is not None {
-                return b.fail(
-                    "NotImplementedError",
-                    "type parameter bounds/defaults/ParamSpec/TypeVarTuple "
-                        + "are not supported in type aliases yet",
-                    ta.lineno,
-                    ta.col_offset
-                );
-            }
-            pi = pi + 1;
-        }
         nested = sym_compute_nested(b);
         in_class = b.cur.block_type == "class" or b.cur.can_see_class_scope;
         if len(tps) > 0 {
@@ -1558,17 +1750,24 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             ) {
                 return False;
             }
-            pi = 0;
-            while pi < len(tps) {
-                tv = tps[pi] as TypeVar;
-                if not b.add_def(tv.name, DEF_LOCAL, tv.lineno, tv.col_offset) {
-                    return False;
-                }
-                pi = pi + 1;
+            b.cur.generic_parameters = True;
+            b.cur.annotation_kind = "the definition of a generic";
+            if in_class and not b.add_use("__classdict__") {
+                return False;
+            }
+            if not sym_visit_type_parameters(b, tps) {
+                return False;
             }
             if not b.push_block(
                 "function", type_alias_name.id, ta.lineno, True, in_class, ta.col_offset
             ) {
+                return False;
+            }
+            b.cur.annotation_kind = "a type alias";
+            if in_class and not b.add_use("__classdict__") {
+                return False;
+            }
+            if not b.add_def(".format", DEF_PARAM, ta.lineno, ta.col_offset) {
                 return False;
             }
             if not sym_visit_load_expr(b, ta.value) {
@@ -1583,6 +1782,10 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         if not b.push_block(
             "function", type_alias_name.id, ta.lineno, nested, in_class, ta.col_offset
         ) {
+            return False;
+        }
+        b.cur.annotation_kind = "a type alias";
+        if in_class and not b.add_use("__classdict__") {
             return False;
         }
         if not b.add_def(".format", DEF_PARAM, ta.lineno, ta.col_offset) {
@@ -1667,7 +1870,8 @@ def sym_analyze_name(
     free: dict[str, int],
     global_set: dict[str, int],
     scopes: dict[str, int],
-    class_entry: sym_block | None
+    class_entry: sym_block | None,
+    type_parameters: dict[str, int]
 ) -> compiler_diagnostic | None {
     if sym_flag_set(flags, DEF_GLOBAL) {
         if sym_flag_set(flags, DEF_NONLOCAL) {
@@ -1703,6 +1907,17 @@ def sym_analyze_name(
                 message="no binding for nonlocal '" + name + "' found",
                 lineno=loc[0],
                 col_offset=loc[1]
+            );
+        }
+        if name in type_parameters {
+            position = sym_directive_loc(block, name);
+            return symbol_diagnostic(
+                kind="SyntaxError",
+                message="nonlocal binding not allowed for type parameter '"
+                    + name
+                    + "'",
+                lineno=position[0],
+                col_offset=position[1]
             );
         }
         scopes[name] = SCOPE_FREE;
@@ -1752,8 +1967,10 @@ def sym_analyze_block(
     block: sym_block,
     bound: dict[str, int] | None,
     inherited_global: dict[str, int],
-    class_entry: sym_block | None
+    class_entry: sym_block | None,
+    inherited_type_parameters: dict[str, int] | None = None
 ) -> tuple[dict[str, int], compiler_diagnostic | None] {
+    type_parameters = dict(inherited_type_parameters or {});
     enclosing_bound = None if bound is None else sym_set_union({}, bound);
     bound = None if bound is None else sym_set_union({}, bound);
     local: dict[str, int] = {};
@@ -1766,7 +1983,16 @@ def sym_analyze_block(
         name = names[ni];
         raw = block.symbols[name];
         ad = sym_analyze_name(
-            block, name, raw, bound, local, free, global_set, scopes, class_entry
+            block,
+            name,
+            raw,
+            bound,
+            local,
+            free,
+            global_set,
+            scopes,
+            class_entry,
+            type_parameters
         );
         if ad is not None {
             return ({}, ad);
@@ -1791,17 +2017,32 @@ def sym_analyze_block(
         newbound = sym_set_union(newbound, child_bound);
     }
     child_globals = inherited_global if block.block_type == "class" else global_set;
+    if block.block_type != "class" {
+        for name in local {
+            if block.symbols[name] & 1024 {
+                type_parameters[name] = 1;
+            } else {
+                type_parameters.pop(name, None);
+            }
+        }
+        for name in global_set {
+            type_parameters.pop(name, None);
+        }
+    }
     child_free: dict[str, int] = {};
     ci = 0;
     while ci < len(block.children) {
         child = block.children[ci];
-        child_class: sym_block | None = class_entry;
+        child_class: sym_block | None = None;
         if child.can_see_class_scope {
+            child_class = class_entry;
             if block.block_type == "class" {
                 child_class = block;
             }
         }
-        cf_result = sym_analyze_block(child, newbound, child_globals, child_class);
+        cf_result = sym_analyze_block(
+            child, newbound, child_globals, child_class, type_parameters
+        );
         if cf_result[1] is not None {
             return ({}, cf_result[1]);
         }

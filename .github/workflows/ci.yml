@@ -54,7 +54,7 @@ jobs:
               - '.github/workflows/ci.yml'
             core:
               - 'jac/**'
-              - 'scripts/run_cpython_compiler_tests.py'
+              - 'scripts/run_cpython_compiler_tests.jac'
               - '.github/workflows/ci.yml'
               - '.github/actions/**'
             scale:
@@ -161,14 +161,14 @@ jobs:
       - name: Run pinned CPython tests through the direct API and C runtime
         run: |
           for bridge_mode in "" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --tests \
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --tests \
               test_argument_handling test_argument_order test_bad_single_statement \
               test_compile_ast \
               test_compile_filename test_compile_filename_refleak \
               test_compile_invalid_namedexpr test_compile_invalid_typealias \
               test_docstring test_docstring_interactive_mode test_docstring_omitted \
               test_dont_merge_constants test_merge_constants test_encoding \
-              test_float_literals test_literals_with_leading_zeroes \
+              test_float_literals test_literals_with_leading_zeroes test_folding_type_param \
               test_multi_line_lambda_as_argument test_none_assignment \
               test_same_filename_used test_single_statement test_stack_overflow \
               test_big_dict_literal test_remove_unused_consts_extended_args \
@@ -182,13 +182,13 @@ jobs:
         run: |
           for bridge_mode in "" "--runtime"; do
             for test_module in test.test_with test.test_exception_variations test.test_except_star test.test_coroutines; do
-              jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
+              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
             done
           done
       - name: Compile and run upstream generator unit tests with JacPython
         run: |
           for bridge_mode in "" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_generators --tests \
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_generators --tests \
               SignalAndYieldFromTest FinalizationTest GeneratorTest \
               ModifyUnderlyingIterableTest ExceptionTest GeneratorCloseTest \
               GeneratorDeallocTest GeneratorThrowTest GeneratorStackTraceTest YieldFromTests
@@ -196,28 +196,28 @@ jobs:
       - name: Compile and run upstream comprehension unit tests with JacPython
         run: |
           for bridge_mode in "" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_listcomps --tests ListComprehensionTest
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_dictcomps
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_setcomps --tests SetComprehensionTest
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_listcomps --tests ListComprehensionTest
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_dictcomps
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_setcomps --tests SetComprehensionTest
           done
       - name: Compile and run upstream string syntax tests with JacPython
         run: |
           for bridge_mode in "" "--runtime"; do
             for test_module in test.test_fstring test.test_tstring; do
-              jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
+              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
             done
           done
       - name: Compile and run upstream future-import tests with JacPython
         run: |
           for bridge_mode in "" "--runtime"; do
             for test_module in test.test_future_stmt.test_future test.test_future_stmt.test_future_flags; do
-              jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
+              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
             done
           done
       - name: Run upstream top-level await compiler tests
         run: |
           for bridge_mode in "" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --module test.test_builtin --tests \
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_builtin --tests \
               BuiltinTest.test_compile_top_level_await_no_coro \
               BuiltinTest.test_compile_top_level_await \
               BuiltinTest.test_compile_top_level_await_invalid_cases \
@@ -226,8 +226,8 @@ jobs:
       - name: Run upstream type-comment and grammar-version tests
         run: |
           for bridge_mode in "--ast-api" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_type_comments
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --module test.test_ast.test_ast --tests \
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_type_comments
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_ast.test_ast --tests \
               AST_Tests.test_positional_only_feature_version \
               AST_Tests.test_assignment_expression_feature_version \
               AST_Tests.test_pep750_tstring \
@@ -242,7 +242,7 @@ jobs:
       - name: Run upstream AST preprocessing tests
         run: |
           for bridge_mode in "--ast-api" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --module test.test_ast.test_ast --tests \
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_ast.test_ast --tests \
               ASTOptimizationTests \
               AST_Tests.test_optimization_levels__debug__ \
               AST_Tests.test_docstring_optimization_single_node \
@@ -253,8 +253,9 @@ jobs:
       - name: Run upstream AST validation and round-trip tests
         run: |
           for bridge_mode in "--ast-api" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --module test.test_ast.test_ast --tests \
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --module test.test_ast.test_ast --tests \
               ASTValidatorTests \
+              AST_Tests.test_snippets AST_Tests.test_ast_validation \
               AST_Tests.test_parse_invalid_ast \
               AST_Tests.test_invalid_position_information \
               AST_Tests.test_compilation_of_ast_nodes_with_default_end_position_values \
@@ -285,8 +286,14 @@ jobs:
       - name: Compile and run upstream pattern-matching tests with JacPython
         run: |
           for bridge_mode in "" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_patma
+            jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module test.test_patma
           done
+      - name: Compile and run upstream generic definition tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            for test_module in test.test_type_aliases test.test_type_params; do
+              jac run scripts/run_cpython_compiler_tests.jac $bridge_mode --compile-tests --module "$test_module"
+            done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

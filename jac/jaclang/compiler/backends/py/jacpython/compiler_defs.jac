@@ -21,6 +21,8 @@ import from jaclang.runtime.python.opcode_meta {
     CMP_GT,
     OP_CALL,
     OP_CALL_INTRINSIC_1,
+    OP_CALL_INTRINSIC_2,
+    OP_UNPACK_SEQUENCE,
     OP_CALL_KW,
     OP_COMPARE_OP,
     OP_BUILD_TUPLE,
@@ -47,17 +49,27 @@ import from jaclang.runtime.python.opcode_meta {
     OP_STORE_DEREF,
     OP_STORE_FAST,
     OP_STORE_NAME,
+    OP_SWAP,
     compare_oparg,
 }
 import from jaclang.compiler.frontend.python.ast_nodes {
     AsyncFunctionDef,
     ClassDef,
+    Call,
+    Dict,
+    Constant,
+    Load,
     FunctionDef,
     Import,
     ImportFrom,
     Name,
     TypeAlias,
     TypeVar,
+    Tuple,
+    Starred,
+    expr,
+    TypeVarTuple,
+    ParamSpec,
     type_param,
     arguments,
     keyword,
@@ -77,6 +89,13 @@ import from jaclang.compiler.backends.py.jacpython.flowgraph { verify_cfg }
 import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
 import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     cellvars_from_sym,
+    call_has_unpacking,
+    emit_call_ex_positional,
+    emit_call_keyword_values,
+    emit_call_instruction,
+    emit_function_defaults,
+    emit_function_kwdefaults,
+    emit_name_load,
     codegen_busy,
     flush_pending_await_footers,
     codegen_fail,
@@ -259,50 +278,57 @@ def sym_class_qualname(
 }
 
 
-# LOAD_BUILD_CLASS call: name const is already on stack; push bases and keywords.
-def emit_class_build_call(g: cfg_builder, cd: ClassDef, cloc: cloc) {
-    bases = class_effective_bases(cd);
-    kws = class_effective_keywords(cd);
-    bi = 0;
-    while bi < len(bases) {
-        visit_expr(g, bases[bi], False, False);
-        if codegen_busy(g) {
-            return;
-        }
-        bi = bi + 1;
+# The body function and class name are already on the stack. Reuse ordinary
+# call lowering, including ordered *bases and **keywords merging.
+def emit_class_build_call(
+    g: cfg_builder, cd: ClassDef, cloc: cloc, generic: bool = False
+) {
+    call = Call(
+        func=Name(
+            id=cd.name,
+            ctx=Load(),
+            lineno=cd.lineno,
+            col_offset=cd.col_offset,
+            end_lineno=cd.end_lineno,
+            end_col_offset=cd.end_col_offset
+        ),
+        args=list(class_effective_bases(cd)),
+        keywords=class_effective_keywords(cd),
+        lineno=cd.lineno,
+        col_offset=cd.col_offset,
+        end_lineno=cd.end_lineno,
+        end_col_offset=cd.end_col_offset
+    );
+    if generic {
+        call.args.append(
+            Name(
+                id=".generic_base",
+                ctx=Load(),
+                lineno=cd.lineno,
+                col_offset=cd.col_offset,
+                end_lineno=cd.end_lineno,
+                end_col_offset=cd.end_col_offset
+            )
+        );
     }
-    if len(kws) == 0 {
-        g.emit_op(OP_CALL, 2 + len(bases), cloc);
+    if call_has_unpacking(call) {
+        emit_call_ex_positional(g, call, cloc, False, 2);
+    } else {
+        for base in call.args {
+            visit_expr(g, base, False, False);
+            if codegen_busy(g) {
+                return;
+            }
+        }
+    }
+    if codegen_busy(g) {
         return;
     }
-    ki = 0;
-    while ki < len(kws) {
-        kw = kws[ki];
-        if kw.arg is None {
-            codegen_fail(
-                g, "NotImplementedError", "keyword argument unpacking not supported"
-            );
-            return;
-        }
-        visit_expr(g, kw.value, False, False);
-        if codegen_busy(g) {
-            return;
-        }
-        ki = ki + 1;
+    emit_call_keyword_values(g, call, cloc, False, False);
+    if not codegen_busy(g) {
+        emit_call_instruction(g, call, cloc, 2);
     }
-    names: list[PyObj] = [];
-    ki = 0;
-    while ki < len(kws) {
-        kw_name = kws[ki].arg as str;
-        names.append(PyStr(t="str", val=kw_name));
-        ki = ki + 1;
-    }
-    tup = PyTuple(t="tuple", items=names);
-    tidx = g.u.add_const(tup);
-    g.emit_op(OP_LOAD_CONST, tidx, cloc);
-    g.emit_op(OP_CALL_KW, 2 + len(bases) + len(kws), cloc);
 }
-
 
 # A direct type alias in the body closes over __classdict__, forcing the
 # classdict cell even with no functions/annotations present.
@@ -422,48 +448,77 @@ def emit_class_body_epilogue(g: cfg_builder, last: cloc) {
 
 # Lower `class name: ...` at module/class scope into nested PyCode + LOAD_BUILD_CLASS.
 def visit_class_def(g: cfg_builder, cd: ClassDef) -> stmt_cont {
-    # Module-level LOAD_BUILD_CLASS sequence rows carry the full class span
-    # (through the last body statement), matching CPython's LOC(cls).
     cloc = class_def_loc(cd);
     if g.sym_top is None {
         codegen_fail(g, "SystemError", "class definition without symtable");
         return stmt_cont(loc=cloc);
     }
-    sym_cls = sym_class_child_at(g.sym_top, cd.name, cd.lineno, cd.col_offset);
-    if sym_cls is None {
+    decorators = cd.decorator_list or [];
+    for decorator in decorators {
+        visit_expr(g, decorator);
+    }
+    firstlineno = decorators[0].lineno if decorators else cd.lineno;
+    qualname = nested_code_qualname(g.sym_top.block_type, g.u.qualname, cd.name);
+    generic = bool(cd.type_params);
+    scope: sym_block | None = g.sym_top;
+    if generic {
+        scope = sym_function_child_at(
+            scope, "<generic parameters of " + cd.name + ">", cd.lineno, cd.col_offset
+        );
+    }
+    sym_cls = sym_class_child_at(scope, cd.name, cd.lineno, cd.col_offset)
+        if scope is not None
+        else None;
+    if sym_cls is None or scope is None {
         codegen_fail(g, "SystemError", "missing symtable for class " + cd.name);
         return stmt_cont(loc=cloc);
     }
-    decorators = cd.decorator_list;
-    if decorators is None {
-        decorators = [];
+    if generic {
+        wrapper = generic_definition_builder(g, scope, firstlineno, cd.name);
+        emit_type_parameters(
+            wrapper,
+            cd.type_params or [],
+            wrapper.u.qualname,
+            scope.can_see_class_scope,
+            cloc
+        );
+        emit_name_store(wrapper, ".type_params", cloc);
+        emit_class_value(wrapper, cd, sym_cls, firstlineno, qualname, True);
+        finish_generic_definition(g, wrapper, cloc, 0);
+    } else {
+        emit_class_value(g, cd, sym_cls, firstlineno, qualname, False);
     }
-    # CPython codegen_class: decorator expressions evaluate in the ENCLOSING
-    # scope, left-to-right, before the class body is compiled -- their
-    # names/consts therefore precede the body's in both tables.
-    di = 0;
-    while di < len(decorators) {
-        visit_expr(g, decorators[di], False, False);
-        if codegen_busy(g) {
-            return stmt_cont(loc=cloc);
-        }
-        di = di + 1;
+    if codegen_busy(g) {
+        return stmt_cont(loc=cloc);
     }
+    for decorator in reversed(decorators) {
+        g.emit_op(OP_CALL, 0, expr_loc(decorator));
+    }
+    emit_name_store(g, cd.name, cloc);
+    return stmt_cont(loc=cloc);
+}
+
+# Leave the constructed class on the enclosing scope's operand stack.
+def emit_class_value(
+    g: cfg_builder,
+    cd: ClassDef,
+    sym_cls: sym_block,
+    firstlineno: int,
+    qualname: str,
+    generic: bool
+) {
+    cloc = class_def_loc(cd);
     u_cls = compile_class_cfg(
-        cd,
-        g.u.filename,
-        sym_cls,
-        g.private,
-        decorators[0].lineno if len(decorators) > 0 else None
+        cd, g.u.filename, sym_cls, g.private, firstlineno, qualname
     );
     if u_cls.diag is not None {
         g.u.diag = u_cls.diag;
-        return stmt_cont(loc=cloc);
+        return;
     }
     cfg_cls = verify_cfg(u_cls);
     if cfg_cls.diag is not None {
         g.u.diag = cfg_cls.diag;
-        return stmt_cont(loc=cloc);
+        return;
     }
     co = assemble(cfg_cls);
     g.u.nested_code_emitted = True;
@@ -490,23 +545,16 @@ def visit_class_def(g: cfg_builder, cd: ClassDef) -> stmt_cont {
     }
     name_idx = g.u.add_const(PyStr(t="str", val=cd.name));
     g.emit_op(OP_LOAD_CONST, name_idx, cloc);
-    emit_class_build_call(g, cd, cloc);
+    if generic {
+        emit_name_load(g, ".type_params", cloc);
+        g.emit_op(OP_CALL_INTRINSIC_1, 10, cloc);
+        emit_name_store(g, ".generic_base", cloc);
+    }
+    emit_class_build_call(g, cd, cloc, generic);
     if codegen_busy(g) {
-        return stmt_cont(loc=cloc);
+        return;
     }
-    # Apply decorators outermost-last: CALL 0 per decorator, right-to-left
-    # through decorator_list, each row carrying that decorator's span
-    # (CPython codegen_apply_decorators).
-    ri = len(decorators) - 1;
-    while ri >= 0 {
-        dec = decorators[ri];
-        g.emit_op(OP_CALL, 0, expr_loc(dec));
-        ri = ri - 1;
-    }
-    emit_name_store(g, cd.name, cloc);
-    return stmt_cont(loc=cloc);
 }
-
 
 # Build unverified_cfg for a class body (nested code object before assembly).
 def compile_class_cfg(
@@ -514,7 +562,8 @@ def compile_class_cfg(
     filename: str,
     sym_cls: sym_block,
     enclosing_private: str | None = None,
-    body_firstlineno: int | None = None
+    body_firstlineno: int | None = None,
+    qualname: str | None = None
 ) -> unverified_cfg {
     # CPython codegen_class scopes the class body at the first decorator's
     # line when decorated (drives co_firstlineno, RESUME/boilerplate rows,
@@ -522,7 +571,9 @@ def compile_class_cfg(
     if body_firstlineno is None {
         body_firstlineno = cd.lineno;
     }
-    class_qname = sym_class_qualname(cd, sym_cls, enclosing_private);
+    class_qname = qualname
+        if qualname is not None
+        else sym_class_qualname(cd, sym_cls, enclosing_private);
     u = unverified_cfg(
         filename=filename,
         name=cd.name,
@@ -557,6 +608,10 @@ def compile_class_cfg(
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_cls, cd.name);
     emit_class_body_prologue(g, class_qname, body_firstlineno);
+    if cd.type_params {
+        emit_name_load(g, ".type_params", stmt_loc(cd));
+        emit_name_store(g, "__type_params__", stmt_loc(cd));
+    }
     emit_class_annotation_setup(
         g, ann_plan, nloc(cd.lineno, cd.end_lineno, cd.col_offset, cd.end_col_offset)
     );
@@ -602,22 +657,32 @@ def compile_class_cfg(
 
 
 # Lower `def name(...): ...` at module/class scope into nested PyCode + MAKE_FUNCTION.
-def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
-    floc = function_def_loc(fd);
+def visit_function_def(
+    g: cfg_builder, fd: FunctionDef | AsyncFunctionDef
+) -> stmt_cont {
+    floc = stmt_loc(fd);
     if g.sym_top is None {
         codegen_fail(g, "SystemError", "function definition without symtable");
         return stmt_cont(loc=floc);
     }
-    sym_fn = sym_function_child_at(g.sym_top, fd.name, fd.lineno, fd.col_offset);
-    if sym_fn is None {
+    decorators = fd.decorator_list or [];
+    firstlineno = decorators[0].lineno if decorators else fd.lineno;
+    qualname = nested_code_qualname(g.sym_top.block_type, g.u.qualname, fd.name);
+    generic = bool(fd.type_params);
+    scope: sym_block | None = g.sym_top;
+    if generic {
+        scope = sym_function_child_at(
+            scope, "<generic parameters of " + fd.name + ">", fd.lineno, fd.col_offset
+        );
+    }
+    sym_fn = sym_function_child_at(scope, fd.name, fd.lineno, fd.col_offset)
+        if scope is not None
+        else None;
+    if sym_fn is None or scope is None {
         codegen_fail(g, "SystemError", "missing symtable for function " + fd.name);
         return stmt_cont(loc=floc);
     }
-    decorators = fd.decorator_list;
-    if decorators is None {
-        decorators = [];
-    }
-    u_fn = compile_fn_cfg(
+    unit = compile_fn_cfg(
         fd.name,
         fd.args,
         fd.body,
@@ -625,121 +690,205 @@ def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
         g.u.filename,
         sym_fn,
         g.private,
-        decorators[0].lineno if len(decorators) > 0 else None,
+        firstlineno,
         g.sym_top.block_type == "class",
-        nested_code_qualname(g.sym_top.block_type, g.u.qualname, fd.name)
+        qualname
     );
-    if u_fn.diag is not None {
-        g.u.diag = u_fn.diag;
+    cfg = verify_cfg(unit);
+    if cfg.diag is not None {
+        g.u.diag = cfg.diag;
         return stmt_cont(loc=floc);
     }
-    cfg_fn = verify_cfg(u_fn);
-    if cfg_fn.diag is not None {
-        g.u.diag = cfg_fn.diag;
-        return stmt_cont(loc=floc);
-    }
-    co = assemble(cfg_fn);
+    co = assemble(cfg);
     g.u.nested_code_emitted = True;
-    di = 0;
-    while di < len(decorators) {
-        visit_expr(g, decorators[di]);
-        di = di + 1;
+    for decorator in decorators {
+        visit_expr(g, decorator);
     }
-    emit_make_function_with_closure(g, sym_fn, co, floc, fd.args);
-    emit_future_function_annotations(g, fd);
+    if generic {
+        # Preserve the outer evaluation order and pass defaults into the factory.
+        if not emit_function_defaults(g, fd.args.defaults, floc)
+            or not emit_function_kwdefaults(g, fd.args, floc) {
+            return stmt_cont(loc=floc);
+        }
+        wrapper = generic_definition_builder(g, scope, firstlineno, g.private);
+        emit_type_parameters(
+            wrapper,
+            fd.type_params or [],
+            wrapper.u.qualname,
+            scope.can_see_class_scope,
+            floc
+        );
+        for name in scope.varnames {
+            emit_name_load(wrapper, name, floc);
+        }
+        emit_make_function_with_closure(wrapper, sym_fn, co, floc);
+        if ".kwdefaults" in scope.varnames {
+            wrapper.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 2, floc);
+        }
+        if ".defaults" in scope.varnames {
+            wrapper.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 1, floc);
+        }
+        emit_definition_annotations(wrapper, fd, qualname);
+        wrapper.emit_op(OP_SWAP, 2, floc);
+        wrapper.emit_op(OP_CALL_INTRINSIC_2, 4, floc);
+        finish_generic_definition(g, wrapper, floc, len(scope.varnames));
+    } else {
+        emit_make_function_with_closure(g, sym_fn, co, floc, fd.args);
+        emit_definition_annotations(g, fd, qualname);
+    }
     if codegen_busy(g) {
         return stmt_cont(loc=floc);
     }
-    ri = len(decorators) - 1;
-    while ri >= 0 {
-        dec = decorators[ri];
-        g.emit_op(OP_CALL, 0, expr_loc(dec));
-        ri = ri - 1;
+    for decorator in reversed(decorators) {
+        g.emit_op(OP_CALL, 0, expr_loc(decorator));
     }
-    if g.sym_top is not None and g.sym_top.block_type == "function" {
-        if not emit_local_or_cell_store(g, fd.name, floc) {
-            codegen_fail(
-                g, "SystemError", "missing fast local for nested function " + fd.name
-            );
-            return stmt_cont(loc=floc);
-        }
-    } else {
-        nidx = g.u.add_name(codegen_mangle(g, fd.name));
-        g.emit_op(OP_STORE_NAME, nidx, floc);
-    }
+    emit_name_store(g, fd.name, floc);
     return stmt_cont(loc=floc);
 }
 
+def visit_async_function_def(g: cfg_builder, fd: AsyncFunctionDef) -> stmt_cont {
+    return visit_function_def(g, fd);
+}
 
-# Lower `async def name(...): ...` at module/class scope into nested PyCode + MAKE_FUNCTION.
-def visit_async_function_def(g: cfg_builder, afd: AsyncFunctionDef) -> stmt_cont {
-    floc = async_function_def_loc(afd);
-    if g.sym_top is None {
-        codegen_fail(g, "SystemError", "function definition without symtable");
-        return stmt_cont(loc=floc);
+# Hidden annotation scopes are transparent to public qualnames.
+def generic_definition_builder(
+    enclosing: cfg_builder, scope: sym_block, firstlineno: int, private: str | None
+) -> cfg_builder {
+    assert enclosing.sym_top is not None;
+    qname = nested_code_qualname(
+        enclosing.sym_top.block_type, enclosing.u.qualname, scope.name
+    );
+    u = unverified_cfg(
+        filename=enclosing.u.filename,
+        name=scope.name,
+        qualname=qname,
+        firstlineno=firstlineno
+    );
+    u.flags = CO_OPTIMIZED | CO_NEWLOCALS | (CO_NESTED if scope.nested else 0);
+    u.varnames = fast_varnames_from_sym(scope);
+    u.argcount = len(scope.varnames);
+    u.param_count = u.argcount;
+    u.classdict_names = scope.can_see_class_scope;
+    entry_blk = u.add_block();
+    builder = new_cfg_builder(u, entry_blk, scope, private);
+    emit_function_prologue(builder, scope, firstlineno, False);
+    return builder;
+}
+
+# The factory's result is the undecorated function or class.
+def finish_generic_definition(
+    enclosing: cfg_builder, wrapper: cfg_builder, location: cloc, nargs: int
+) {
+    wrapper.emit_op(OP_RETURN_VALUE, 0, location);
+    wrapper.u.flush_late_consts();
+    cfg = verify_cfg(wrapper.u);
+    if cfg.diag is not None {
+        enclosing.u.diag = cfg.diag;
+        return;
     }
-    sym_fn = sym_function_child_at(g.sym_top, afd.name, afd.lineno, afd.col_offset);
-    if sym_fn is None {
-        codegen_fail(g, "SystemError", "missing symtable for function " + afd.name);
-        return stmt_cont(loc=floc);
+    emit_typealias_closure(enclosing, assemble(cfg), location);
+    if nargs {
+        # Defaults already occupy the stack in their evaluation order. Rotate
+        # the factory beneath them; CALL's implicit first argument consumes
+        # the first defaults object without needing another stack slot.
+        for depth in range(nargs + 1, 1, -1) {
+            enclosing.emit_op(OP_SWAP, depth, location);
+        }
+        enclosing.emit_op(OP_CALL, nargs - 1, location);
+    } else {
+        enclosing.emit_op(OP_PUSH_NULL, 0, location);
+        enclosing.emit_op(OP_CALL, 0, location);
     }
-    decorators = afd.decorator_list;
-    if decorators is None {
-        decorators = [];
+}
+
+# Function annotations use the same lazy format guard and closure machinery
+# as alias values and type-parameter bounds.
+def emit_definition_annotations(
+    g: cfg_builder, fd: FunctionDef | AsyncFunctionDef, qualname: str
+) {
+    import from jaclang.compiler.backends.py.jacpython.compiler_context {
+        current_compile_flags
     }
-    u_fn = compile_fn_cfg(
-        afd.name,
-        afd.args,
-        afd.body,
-        afd.lineno,
+    if current_compile_flags() & 0x1000000 {
+        emit_future_function_annotations(g, fd);
+        return;
+    }
+    scope: sym_block | None = None;
+    if g.sym_top is not None {
+        for child in g.sym_top.children {
+            if child.function_annotation_key == id(fd) {
+                scope = child;
+                break;
+            }
+        }
+    }
+    if scope is None {
+        return;
+    }
+    parameters = fd.args.posonlyargs + fd.args.args;
+    if fd.args.vararg is not None {
+        parameters.append(fd.args.vararg);
+    }
+    parameters.extend(fd.args.kwonlyargs);
+    if fd.args.kwarg is not None {
+        parameters.append(fd.args.kwarg);
+    }
+    keys: list[expr | None] = [];
+    values: list[expr] = [];
+    pairs: list[tuple[str, expr]] = [];
+    for parameter in parameters {
+        if parameter.annotation is not None {
+            pairs.append((codegen_mangle(g, parameter.arg), parameter.annotation));
+        }
+    }
+    if fd.returns is not None {
+        pairs.append(("return", fd.returns));
+    }
+    for (name, annotation) in pairs {
+        keys.append(
+            Constant(
+                value=PyStr(t="str", val=name),
+                kind=None,
+                lineno=annotation.lineno,
+                col_offset=annotation.col_offset,
+                end_lineno=annotation.end_lineno,
+                end_col_offset=annotation.end_col_offset
+            )
+        );
+        values.append(annotation);
+    }
+    value = Dict(
+        keys=keys,
+        values=values,
+        lineno=fd.lineno,
+        col_offset=fd.col_offset,
+        end_lineno=fd.end_lineno,
+        end_col_offset=fd.end_col_offset
+    );
+    prefix = qualname.rsplit(".", 1)[0] + "." if "." in qualname else "";
+    unit = type_expression_cfg(
+        value,
+        "__annotate__",
+        prefix + "__annotate__",
         g.u.filename,
-        sym_fn,
+        scope,
         g.private,
-        decorators[0].lineno if len(decorators) > 0 else None,
-        g.sym_top.block_type == "class",
-        nested_code_qualname(g.sym_top.block_type, g.u.qualname, afd.name)
+        scope.can_see_class_scope,
+        stmt_loc(fd)
     );
-    if u_fn.diag is not None {
-        g.u.diag = u_fn.diag;
-        return stmt_cont(loc=floc);
+    cfg = verify_cfg(unit);
+    if cfg.diag is not None {
+        g.u.diag = cfg.diag;
+        return;
     }
-    cfg_fn = verify_cfg(u_fn);
-    if cfg_fn.diag is not None {
-        g.u.diag = cfg_fn.diag;
-        return stmt_cont(loc=floc);
-    }
-    co = assemble(cfg_fn);
-    g.u.nested_code_emitted = True;
-    di = 0;
-    while di < len(decorators) {
-        visit_expr(g, decorators[di]);
-        di = di + 1;
-    }
-    emit_make_function_with_closure(g, sym_fn, co, floc, afd.args);
-    emit_future_function_annotations(g, afd);
-    if codegen_busy(g) {
-        return stmt_cont(loc=floc);
-    }
-    ri = len(decorators) - 1;
-    while ri >= 0 {
-        dec = decorators[ri];
-        g.emit_op(OP_CALL, 0, expr_loc(dec));
-        ri = ri - 1;
-    }
-    if g.sym_top is not None and g.sym_top.block_type == "function" {
-        if not emit_local_or_cell_store(g, afd.name, floc) {
-            codegen_fail(
-                g, "SystemError", "missing fast local for nested function " + afd.name
-            );
-            return stmt_cont(loc=floc);
-        }
-    } else {
-        nidx = g.u.add_name(codegen_mangle(g, afd.name));
-        g.emit_op(OP_STORE_NAME, nidx, floc);
-    }
-    return stmt_cont(loc=floc);
+    code = assemble(cfg);
+    # Keep the internal .format binding distinct from annotation references
+    # to the user's name `format`, but expose the public positional parameter.
+    code.varnames[0] = "format";
+    emit_typealias_closure(g, code, stmt_loc(fd));
+    g.emit_op(OP_SWAP, 2, stmt_loc(fd));
+    g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 16, stmt_loc(fd));
 }
-
 
 # Build unverified_cfg for a function/async body (nested code object before assembly).
 def compile_fn_cfg(
@@ -877,17 +1026,19 @@ def typealias_target_name(ta: TypeAlias) -> str | None {
 # The lazy value scope: argcount 1 (.format), format guard, then the alias
 # value expression. Generic aliases additionally take the type params as
 # free vars (COPY_FREE_VARS in the prologue via their symtable cells).
-def typealias_value_cfg(
-    ta: TypeAlias,
+def type_expression_cfg(
+    value: expr,
     name: str,
     qualname: str,
     filename: str,
     sym_v: sym_block,
     private: str | None,
-    in_class: bool
+    in_class: bool,
+    hloc: cloc,
+    unpack: bool = False
 ) -> unverified_cfg {
     u = unverified_cfg(
-        filename=filename, name=name, qualname=qualname, firstlineno=ta.lineno
+        filename=filename, name=name, qualname=qualname, firstlineno=hloc.lineno
     );
     u.argcount = 1;
     u.posonlyargcount = 1;
@@ -896,12 +1047,14 @@ def typealias_value_cfg(
     if sym_v.nested {
         u.flags = u.flags | CO_NESTED;
     }
-    u.varnames = [".format"];
+    u.varnames = fast_varnames_from_sym(sym_v);
     u.freevars = freevars_from_sym(sym_v);
     if in_class {
         # Directly inside a class body the lazy scope closes over the class
         # dict cell and resolves bare names through it (PEP 649 hook).
-        u.freevars.append("__classdict__");
+        if "__classdict__" not in u.freevars {
+            u.freevars.append("__classdict__");
+        }
         u.classdict_names = True;
     }
     entry_blk = u.add_block();
@@ -918,8 +1071,7 @@ def typealias_value_cfg(
         g.emit_op(OP_MAKE_CELL, localsplus_index_u(u, u.cellvars[ci]), noloc);
         ci = ci + 1;
     }
-    g.emit_op(OP_RESUME, 0, loc(ta.lineno, ta.lineno, 0, 0));
-    hloc = nloc(ta.lineno, ta.end_lineno, ta.col_offset, ta.end_col_offset);
+    g.emit_op(OP_RESUME, 0, loc(hloc.lineno, hloc.lineno, 0, 0));
     # Guard: if .format > 2: raise NotImplementedError (formats 0/1 only).
     g.emit_op(OP_LOAD_FAST_BORROW, localsplus_index_u(u, ".format"), hloc);
     # Dead small-int slot: the guard literal keeps const pool slot 0.
@@ -932,7 +1084,10 @@ def typealias_value_cfg(
     g.emit_op(OP_LOAD_COMMON_CONSTANT, 1, hloc);
     g.emit_op(OP_RAISE_VARARGS, 1, hloc);
     g.use(after);
-    visit_expr(g, ta.value);
+    visit_expr(g, value);
+    if unpack {
+        g.emit_op(OP_UNPACK_SEQUENCE, 1, hloc);
+    }
     if codegen_busy(g) {
         u.flush_late_consts();
         return u;
@@ -966,8 +1121,9 @@ def typealias_genparams_cfg(
     if sym_gp.nested {
         u.flags = u.flags | CO_NESTED;
     }
+    u.varnames = fast_varnames_from_sym(sym_gp);
     u.freevars = freevars_from_sym(sym_gp);
-    if in_class {
+    if in_class and "__classdict__" not in u.freevars {
         u.freevars.append("__classdict__");
     }
     entry_blk = u.add_block();
@@ -986,37 +1142,14 @@ def typealias_genparams_cfg(
     tloc = nloc(ta.lineno, ta.end_lineno, ta.col_offset, ta.end_col_offset);
     nidx = g.u.add_const(PyStr(t="str", val=name));
     g.emit_op(OP_LOAD_CONST, nidx, tloc);
-    np = len(tps);
-    pi = 0;
-    while pi < np {
-        tv_name = (tps[pi] as TypeVar).name;
-        pidx = g.u.add_const(PyStr(t="str", val=tv_name));
-        g.emit_op(OP_LOAD_CONST, pidx, tloc);
-        g.emit_op(OP_CALL_INTRINSIC_1, 7, tloc);
-        g.emit_op(OP_COPY, 1, tloc);
-        g.emit_op(OP_STORE_DEREF, localsplus_index_u(u, tv_name), tloc);
-        pi = pi + 1;
+    emit_type_parameters(g, tps, qualname, in_class, tloc);
+    if codegen_busy(g) {
+        return u;
     }
-    g.emit_op(OP_BUILD_TUPLE, np, tloc);
     def_tup = PyTuple(t="tuple", items=[PyInt(t="int", val=1)]);
     didx = g.u.add_const(def_tup);
     g.emit_op(OP_LOAD_CONST, didx, tloc);
-    nclosure = np;
-    pi = 0;
-    while pi < np {
-        tv_name = (tps[pi] as TypeVar).name;
-        g.emit_op(OP_LOAD_FAST_BORROW, localsplus_index_u(u, tv_name), tloc);
-        pi = pi + 1;
-    }
-    if in_class {
-        g.emit_op(OP_LOAD_FAST_BORROW, localsplus_index_u(u, "__classdict__"), tloc);
-        nclosure = nclosure + 1;
-    }
-    g.emit_op(OP_BUILD_TUPLE, nclosure, tloc);
-    cidx = g.u.add_const(co_value);
-    g.emit_op(OP_LOAD_CONST, cidx, tloc);
-    g.emit_op(OP_MAKE_FUNCTION, 0, tloc);
-    g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 8, tloc);
+    emit_typealias_closure(g, co_value, tloc);
     g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 1, tloc);
     g.emit_op(OP_BUILD_TUPLE, 3, tloc);
     g.emit_op(OP_CALL_INTRINSIC_1, 11, tloc);
@@ -1025,6 +1158,114 @@ def typealias_genparams_cfg(
     return u;
 }
 
+
+def emit_type_parameters(
+    g: cfg_builder, tps: list[type_param], qualname: str, in_class: bool, tloc: cloc
+) {
+    np = len(tps);
+    pi = 0;
+    while pi < np {
+        tp = tps[pi];
+        tv_name: str = getattr(tp, "name");
+        pidx = g.u.add_const(PyStr(t="str", val=tv_name));
+        g.emit_op(OP_LOAD_CONST, pidx, tloc);
+        bound = tp.bound if isinstance(tp, TypeVar) else None;
+        if bound is not None {
+            if not emit_type_parameter_expr(g, tp, bound, False, qualname, in_class) {
+                return;
+            }
+            g.emit_op(OP_CALL_INTRINSIC_2, 3 if isinstance(bound, Tuple) else 2, tloc);
+        } else {
+            intrinsic = 9
+                if isinstance(tp, TypeVarTuple)
+                else 8 if isinstance(tp, ParamSpec) else 7;
+            g.emit_op(OP_CALL_INTRINSIC_1, intrinsic, tloc);
+        }
+        default_value: expr | None = getattr(tp, "default_value");
+        if default_value is not None {
+            if not emit_type_parameter_expr(
+                g, tp, default_value, True, qualname, in_class
+            ) {
+                return;
+            }
+            g.emit_op(OP_CALL_INTRINSIC_2, 5, tloc);
+        }
+        g.emit_op(OP_COPY, 1, tloc);
+        emit_name_store(g, tv_name, tloc);
+        pi = pi + 1;
+    }
+    g.emit_op(OP_BUILD_TUPLE, np, tloc);
+}
+
+def emit_type_parameter_expr(
+    g: cfg_builder,
+    tp: type_param,
+    value: expr,
+    is_default: bool,
+    qualname: str,
+    in_class: bool
+) -> bool {
+    key = id(tp) * 2 + int(is_default);
+    scope: sym_block | None = None;
+    if g.sym_top is not None {
+        for child in g.sym_top.children {
+            if child.type_parameter_key == key {
+                scope = child;
+                break;
+            }
+        }
+    }
+    if scope is None {
+        codegen_fail(g, "SystemError", "missing type parameter annotation scope");
+        return False;
+    }
+    name: str = getattr(tp, "name");
+    prefix = qualname.rsplit(".", 1)[0] + "." if "." in qualname else "";
+    tloc = expr_loc(value);
+    unpack = is_default and isinstance(tp, TypeVarTuple) and isinstance(value, Starred);
+    body = value.value if unpack and isinstance(value, Starred) else value;
+    unit = type_expression_cfg(
+        body,
+        name,
+        prefix + name,
+        g.u.filename,
+        scope,
+        g.private,
+        in_class,
+        tloc,
+        unpack
+    );
+    cfg = verify_cfg(unit);
+    if cfg.diag is not None {
+        g.u.diag = cfg.diag;
+        return False;
+    }
+    co = assemble(cfg);
+    g.emit_op(
+        OP_LOAD_CONST,
+        g.u.add_const(PyTuple(t="tuple", items=[PyInt(t="int", val=1)])),
+        tloc
+    );
+    emit_typealias_closure(g, co, tloc);
+    g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 1, tloc);
+    return True;
+}
+
+# A lazy alias may capture enclosing locals in addition to its own type
+# parameters. The assembled function's free-variable order is authoritative.
+def emit_typealias_closure(g: cfg_builder, co: PyCode, tloc: cloc) {
+    for name in co.freevars {
+        g.emit_op(OP_LOAD_FAST_BORROW, localsplus_index(g, name), tloc);
+    }
+    if co.freevars {
+        g.emit_op(OP_BUILD_TUPLE, len(co.freevars), tloc);
+    }
+    g.emit_op(OP_LOAD_CONST, g.u.add_const(co), tloc);
+    g.emit_op(OP_MAKE_FUNCTION, 0, tloc);
+    if co.freevars {
+        g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 8, tloc);
+    }
+}
 
 # Lower `type name[params] = value` at module/class/function scope.
 def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
@@ -1073,20 +1314,8 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
         gpqname = g.u.qualname + ".<locals>." + gpqname;
     }
     in_class = g.sym_top.block_type == "class";
-    if generic and in_class {
-        # Needs classdict-aware deref loads (LOAD_FROM_DICT_OR_DEREF) for the
-        # type-param cells inside the lazy scope; the shared name-load path in
-        # compiler_emit only has the _OR_GLOBALS variant today. Fail loudly
-        # rather than emitting silently-wrong bytes.
-        codegen_fail(
-            g,
-            "NotImplementedError",
-            "generic type alias directly inside a class body is not supported"
-        );
-        return stmt_cont(loc=tloc);
-    }
-    u_v = typealias_value_cfg(
-        ta, name, vqname, g.u.filename, sym_value, g.private, in_class
+    u_v = type_expression_cfg(
+        ta.value, name, vqname, g.u.filename, sym_value, g.private, in_class, tloc
     );
     if u_v.diag is not None {
         g.u.diag = u_v.diag;
@@ -1113,17 +1342,7 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
         }
         co_gp = assemble(cfg_gp);
         g.u.nested_code_emitted = True;
-        if in_class {
-            clp = localsplus_index(g, "__classdict__");
-            g.emit_op(OP_LOAD_FAST_BORROW, clp, tloc);
-            g.emit_op(OP_BUILD_TUPLE, 1, tloc);
-        }
-        gidx = g.u.add_const(co_gp);
-        g.emit_op(OP_LOAD_CONST, gidx, tloc);
-        g.emit_op(OP_MAKE_FUNCTION, 0, tloc);
-        if in_class {
-            g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 8, tloc);
-        }
+        emit_typealias_closure(g, co_gp, tloc);
         g.emit_op(OP_PUSH_NULL, 0, tloc);
         g.emit_op(OP_CALL, 0, tloc);
     } else {
@@ -1138,20 +1357,10 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
         none_idx = g.u.add_const(py_none());
         def_tup = PyTuple(t="tuple", items=[PyInt(t="int", val=1)]);
         didx = g.u.add_const(def_tup);
-        vidx = g.u.add_const(co_v);
         g.emit_op(OP_LOAD_CONST, nidx, tloc);
         g.emit_op(OP_LOAD_CONST, none_idx, tloc);
         g.emit_op(OP_LOAD_CONST, didx, tloc);
-        if in_class {
-            clp = localsplus_index(g, "__classdict__");
-            g.emit_op(OP_LOAD_FAST_BORROW, clp, tloc);
-            g.emit_op(OP_BUILD_TUPLE, 1, tloc);
-        }
-        g.emit_op(OP_LOAD_CONST, vidx, tloc);
-        g.emit_op(OP_MAKE_FUNCTION, 0, tloc);
-        if in_class {
-            g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 8, tloc);
-        }
+        emit_typealias_closure(g, co_v, tloc);
         g.emit_op(OP_SET_FUNCTION_ATTRIBUTE, 1, tloc);
         g.emit_op(OP_BUILD_TUPLE, 3, tloc);
         g.emit_op(OP_CALL_INTRINSIC_1, 11, tloc);
@@ -1159,17 +1368,7 @@ def visit_type_alias(g: cfg_builder, ta: TypeAlias) -> stmt_cont {
     if codegen_busy(g) {
         return stmt_cont(loc=tloc);
     }
-    if g.sym_top is not None and g.sym_top.block_type == "function" {
-        fi = fast_local_index(g, name);
-        if fi < 0 {
-            codegen_fail(g, "SystemError", "missing fast local for type alias " + name);
-            return stmt_cont(loc=tloc);
-        }
-        g.emit_op(OP_STORE_FAST, fi, tloc);
-    } else {
-        nidx2 = g.u.add_name(name);
-        g.emit_op(OP_STORE_NAME, nidx2, tloc);
-    }
+    emit_name_store(g, name, tloc);
     return stmt_cont(loc=tloc);
 }
 

@@ -315,6 +315,7 @@ import from jaclang.compiler.frontend.python.compiler_symtable {
     sym_scope_of,
     sym_sorted_names,
     mangle_name,
+    sym_mangle_name,
     DEF_COMP_ITER,
     SCOPE_GLOBAL_EXPLICIT,
     SCOPE_GLOBAL_IMPLICIT,
@@ -394,7 +395,9 @@ def codegen_busy(g: cfg_builder) -> bool {
 
 # Class-body private name mangling (__x -> _C__x) for bytecode name tables.
 def codegen_mangle(g: cfg_builder, name: str) -> str {
-    return mangle_name(g.private, name);
+    return sym_mangle_name(g.private, g.sym_top, name)
+        if g.sym_top is not None
+        else mangle_name(g.private, name);
 }
 
 # Fast locals for a compile unit. Module scope: comprehension iteration variables
@@ -1108,7 +1111,9 @@ def emit_function_kwdefaults(g: cfg_builder, args: arguments, tloc: cloc) -> boo
         }
         if kd is not None {
             kwonly_arg = args.kwonlyargs[ki];
-            key_idx = g.u.add_const(PyStr(t="str", val=kwonly_arg.arg));
+            key_idx = g.u.add_const(
+                PyStr(t="str", val=codegen_mangle(g, kwonly_arg.arg))
+            );
             g.emit_op(OP_LOAD_CONST, key_idx, tloc);
             visit_expr(g, kd);
             if codegen_busy(g) {
@@ -1241,6 +1246,11 @@ def emit_name_load(
                 # compile_name_op class-scope rule).
                 g.emit_op(OP_LOAD_LOCALS, 0, tloc);
                 g.emit_op(OP_LOAD_FROM_DICT_OR_DEREF, idx, tloc);
+            } elif g.u.classdict_names and name != "__classdict__" {
+                # Lazy class annotations and type expressions see the current
+                # class namespace before a captured enclosing binding.
+                g.emit_op(OP_LOAD_DEREF, localsplus_index(g, "__classdict__"), tloc);
+                g.emit_op(OP_LOAD_FROM_DICT_OR_DEREF, idx, tloc);
             } else {
                 g.emit_op(OP_LOAD_DEREF, idx, tloc);
             }
@@ -1282,7 +1292,8 @@ def emit_name_load(
         }
         return True;
     }
-    if g.u.classdict_names {
+    flags = sym_dict_get(g.sym_top.symbols, name, 0) if g.sym_top is not None else 0;
+    if g.u.classdict_names and sym_scope_of(flags) != SCOPE_GLOBAL_EXPLICIT {
         # Class-scope __annotate__ body: every free name resolves through the
         # class namespace first, then globals/builtins (PEP 649 classdict
         # resolution; CPython emits the LOAD_DEREF/LOAD_FROM_DICT_OR_GLOBALS
@@ -2370,6 +2381,9 @@ def emit_call_keyword_values(
     register_int_const: bool = True
 ) {
     kws = call_effective_keywords(ca);
+    if not kws {
+        return;
+    }
     if call_has_unpacking(ca) {
         # CALL_FUNCTION_EX kwargs side: a base BUILD_MAP over the leading run of
         # explicit keywords (possibly zero pairs) opens the mapping; every
@@ -2492,10 +2506,14 @@ def call_has_unpacking(ca: Call) -> bool {
 #     closed by CALL_INTRINSIC_1(LIST_TO_TUPLE); a kwargs-only call uses an
 #     empty-tuple constant instead.
 def emit_call_ex_positional(
-    g: cfg_builder, ca: Call, cloc_call: cloc, register_int_const: bool = True
+    g: cfg_builder,
+    ca: Call,
+    cloc_call: cloc,
+    register_int_const: bool = True,
+    prefix_count: int = 0
 ) -> None {
     args = call_effective_args(ca);
-    if len(args) == 1 and isinstance(args[0], Starred) {
+    if prefix_count == 0 and len(args) == 1 and isinstance(args[0], Starred) {
         # Single lone *x: CPython evaluates x directly; the VM tuple-izes it.
         visit_expr(g, (args[0] as Starred).value, False, False, register_int_const);
         return;
@@ -2508,7 +2526,7 @@ def emit_call_ex_positional(
         }
         ai = ai + 1;
     }
-    if not any_star {
+    if not any_star and prefix_count == 0 {
         # Plain-only positional side lowers as a tuple display (folded to a
         # late const tuple when every element is constant).
         tup = Tuple(
@@ -2531,7 +2549,7 @@ def emit_call_ex_positional(
         }
         n_lead = n_lead + 1;
     }
-    g.emit_op(OP_BUILD_LIST, n_lead, cloc_call);
+    g.emit_op(OP_BUILD_LIST, prefix_count + n_lead, cloc_call);
     ai = n_lead;
     while ai < len(args) {
         el = args[ai];
@@ -2556,7 +2574,9 @@ def emit_call_ex_positional(
 }
 
 # Positional and keyword values must already be on the stack (names tuple last for CALL_KW).
-def emit_call_instruction(g: cfg_builder, ca: Call, cloc_call: cloc) {
+def emit_call_instruction(
+    g: cfg_builder, ca: Call, cloc_call: cloc, prefix_count: int = 0
+) {
     args = call_effective_args(ca);
     kws = call_effective_keywords(ca);
     if call_has_unpacking(ca) {
@@ -2570,9 +2590,9 @@ def emit_call_instruction(g: cfg_builder, ca: Call, cloc_call: cloc) {
         return;
     }
     if len(kws) > 0 {
-        g.emit_op(OP_CALL_KW, len(args) + len(kws), cloc_call);
+        g.emit_op(OP_CALL_KW, prefix_count + len(args) + len(kws), cloc_call);
     } else {
-        g.emit_op(OP_CALL, len(args), cloc_call);
+        g.emit_op(OP_CALL, prefix_count + len(args), cloc_call);
     }
 }
 
@@ -3506,8 +3526,10 @@ def visit_inline_comprehension(
     }
     parent = g.sym_top;
     parent_names = g.scope_names;
+    parent_classdict_names = g.u.classdict_names;
     g.sym_top = scope;
     g.scope_names = parent_names | scope.inline_aliases;
+    g.u.classdict_names = False;
     try {
         slots: list[int] = [];
         cells: list[int] = [];
@@ -3563,6 +3585,7 @@ def visit_inline_comprehension(
     } finally {
         g.sym_top = parent;
         g.scope_names = parent_names;
+        g.u.classdict_names = parent_classdict_names;
     }
 }
 

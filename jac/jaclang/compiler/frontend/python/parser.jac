@@ -10846,7 +10846,7 @@ def rule_invalid_type_param(p: peg_parser) -> object | None {
             if colon is not None {
                 e = rule_expression(p);
                 if e is not None {
-                    res = pa_raise_type_param_error(colon, e, True);
+                    res = pa_raise_type_param_error(p, colon, e, True);
                     return res;
                 }
             }
@@ -10861,7 +10861,7 @@ def rule_invalid_type_param(p: peg_parser) -> object | None {
             if colon is not None {
                 e = rule_expression(p);
                 if e is not None {
-                    res = pa_raise_type_param_error(colon, e, False);
+                    res = pa_raise_type_param_error(p, colon, e, False);
                     return res;
                 }
             }

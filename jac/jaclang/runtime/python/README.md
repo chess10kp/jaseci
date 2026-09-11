@@ -70,7 +70,7 @@ checkout.
 Bundled JacPython test suites and fixtures have been removed. The `jacpython` CI
 job fetches the checksum-pinned upstream CPython tests and runs a focused subset
 through both the explicit compile API and the patched C runtime (`--runtime`).
-`scripts/run_cpython_compiler_tests.py` runs the
+`jac run scripts/run_cpython_compiler_tests.jac` runs the
 whole `TestSpecifics` class when invoked without `--tests`; compatibility gaps
 remain in that broader suite. Tests with no replacement calls are reported as
 skipped. Test definitions load before runtime dispatch is enabled. The direct
