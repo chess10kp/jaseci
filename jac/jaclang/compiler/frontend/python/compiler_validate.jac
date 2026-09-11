@@ -46,6 +46,7 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     While,
     If,
     Try,
+    TryStar,
     With,
     FunctionDef,
     ClassDef,
@@ -64,9 +65,25 @@ import from jaclang.compiler.frontend.python.compiler_diagnostics {
 # Diagnose the source AST once, before lowering duplicates finally bodies or
 # folds constant branches. Traversal follows only AST fields, never Jac anchors.
 def check_ast_warnings(tree: ast_node, filename: str) {
-    pending = [tree];
+    pending = [(tree, False, False)];
     while pending {
-        item_node = pending.pop();
+        (item_node, return_in_finally, loop_exit_in_finally) = pending.pop();
+        exit_name = None;
+        if isinstance(item_node, Return) and return_in_finally {
+            exit_name = "return";
+        } elif isinstance(item_node, Break) and loop_exit_in_finally {
+            exit_name = "break";
+        } elif isinstance(item_node, Continue) and loop_exit_in_finally {
+            exit_name = "continue";
+        }
+        if exit_name is not None and isinstance(item_node, stmt) {
+            syntax_warning(
+                f"'{exit_name}' in a 'finally' block",
+                filename,
+                item_node.lineno,
+                item_node.col_offset
+            );
+        }
         if isinstance(item_node, Compare) {
             left = item_node.left;
             for (op, right) in zip(item_node.ops, item_node.comparators) {
@@ -103,12 +120,23 @@ def check_ast_warnings(tree: ast_node, filename: str) {
             );
         }
         children = [];
-        for value in vars(item_node).values() {
+        for (key, value) in vars(item_node).items() {
+            child_return = return_in_finally;
+            child_loop_exit = loop_exit_in_finally;
+            if isinstance(item_node, (FunctionDef, AsyncFunctionDef, ClassDef)) {
+                child_return = False;
+                child_loop_exit = False;
+            } elif isinstance(item_node, (Try, TryStar)) and key == "finalbody" {
+                child_return = True;
+                child_loop_exit = True;
+            } elif isinstance(item_node, (For, AsyncFor, While)) and key == "body" {
+                child_loop_exit = False;
+            }
             if isinstance(value, ast_node) {
-                children.append(value);
+                children.append((value, child_return, child_loop_exit));
             } elif isinstance(value, list) {
                 children.extend(
-                    item
+                    (item, child_return, child_loop_exit)
                     for item in value
                     if isinstance(item, ast_node)
                 );
@@ -626,8 +654,8 @@ def validate_stmt(
         }
         return validate_stmt_list(iff.orelse, in_function, in_loop, in_async);
     }
-    if isinstance(s, Try) {
-        tr = s as Try;
+    if isinstance(s, (Try, TryStar)) {
+        tr = s;
         body = validate_stmt_list(tr.body, in_function, in_loop, in_async);
         if body.diag is not None {
             return body;
@@ -731,7 +759,54 @@ def validate_stmt(
     return validation_ok();
 }
 
+def validate_except_star_exits(body: list[stmt]) -> validation_result {
+    pending: list[tuple[ast_node, bool, bool]] = [
+        (item, False, False) for item in reversed(body)
+    ];
+    while pending {
+        (item, return_forbidden, loop_exit_forbidden) = pending.pop();
+        if (isinstance(item, Return) and return_forbidden)
+            or (isinstance(item, (Break, Continue)) and loop_exit_forbidden) {
+            return validation_error(
+                "SyntaxError",
+                "'break', 'continue' and 'return' cannot appear in an except* block",
+                item.lineno,
+                item.col_offset
+            );
+        }
+        children: list[tuple[ast_node, bool, bool]] = [];
+        for (key, value) in vars(item).items() {
+            no_return = return_forbidden;
+            no_loop_exit = loop_exit_forbidden;
+            if isinstance(item, (FunctionDef, AsyncFunctionDef, ClassDef)) {
+                no_return = False;
+                no_loop_exit = False;
+            } elif isinstance(item, TryStar) and key == "handlers" {
+                no_return = True;
+                no_loop_exit = True;
+            } elif isinstance(item, (For, AsyncFor, While)) and key == "body" {
+                no_loop_exit = False;
+            }
+            if isinstance(value, ast_node) {
+                children.append((value, no_return, no_loop_exit));
+            } elif isinstance(value, list) {
+                children.extend(
+                    (child, no_return, no_loop_exit)
+                    for child in value
+                    if isinstance(child, ast_node)
+                );
+            }
+        }
+        pending.extend(reversed(children));
+    }
+    return validation_ok();
+}
+
 def validate_module_body(body: list[stmt]) -> validation_result {
+    result = validate_except_star_exits(body);
+    if result.diag is not None {
+        return result;
+    }
     return validate_stmt_list(body, in_function=False, in_loop=False, in_async=False);
 }
 

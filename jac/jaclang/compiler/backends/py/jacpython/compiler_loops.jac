@@ -370,8 +370,6 @@ def visit_if(
     ann_ctx: ann_scope_plan | None = None
 ) -> stmt_cont {
     iloc = nloc(i.lineno, i.end_lineno, i.col_offset, i.end_col_offset);
-    # Scope analysis has already visited both branches. Elide only the bytecode
-    # for an unreachable constant branch, preserving bindings in the symbol table.
     constant_test = None;
     if isinstance(i.`test, Constant) {
         constant_test = i.`test.value.tp_bool();
@@ -380,232 +378,28 @@ def visit_if(
     }
     if constant_test is not None {
         chosen = i.body if constant_test else i.orelse;
-        if not chosen {
-            return stmt_cont(loc=iloc);
-        }
-        join = g.new_deferred_block();
-        branch = visit_stmts(g, chosen, 0, False, None, 0, join, ann_ctx);
-        if not branch.terminated {
-            if g.u.blocks[-1] is not g.cur {
-                g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
-            }
-            g.use(join);
-        }
-        return stmt_cont(loc=branch.loc, terminated=branch.terminated);
+        return stmt_handlers["visit_cleanup_stmts"](g, chosen, ann_ctx);
     }
     test_loc = expr_loc(i.`test);
     kind = visit_test_expr(g, i.`test, test_loc, True);
-    if codegen_busy(g) {
-        return stmt_cont(loc=iloc);
-    }
-    # Defer layout until after the true body (g.use below). Eager add_block here
-    # placed the false label between the branch and the true-path code, so
-    # calculate_stackdepth saw a spurious fallthrough from the test block into
-    # the false label with the iterator still on stack (if/for CFG crash).
     false_blk = g.new_deferred_block();
-    has_else = len(i.orelse) > 0;
-    if more_code_follows {
-        # tail is None in loop-body contexts: the continuation is the enclosing
-        # loop's back edge, not a statement suffix to duplicate or consume.
-        tail_more = tail is not None and exec_tail_emits_code(tail, tail_idx);
-        if has_else {
-            owns_join = False;
-            if tail_join is not None {
-                join = tail_join as basicblock;
-            } else {
-                join = g.new_deferred_block();
-                owns_join = True;
-            }
-            emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
-            body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=body_cont.loc);
-            }
-            if not body_cont.terminated {
-                g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
-            }
-            g.use(false_blk);
-            else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, join, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=else_cont.loc);
-            }
-            # An open orelse end falls through to join only when it is still
-            # the last-placed block; a body construct that materialized
-            # deferred machinery below (try handlers) sits between them, so
-            # close the path with an explicit jump.
-            if not else_cont.terminated
-                and g.u.blocks[len(g.u.blocks) - 1] is not g.cur {
-                g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
-            }
-            if owns_join {
-                g.use(join);
-                if tail_more {
-                    tail_cont = visit_stmt_tail(
-                        g,
-                        tail,
-                        tail_idx,
-                        exec_tail_emits_code(tail, tail_idx + 1),
-                        ann_ctx
-                    );
-                    return stmt_cont(
-                        loc=tail_cont.loc,
-                        next_si=len(tail),
-                        terminated=tail_cont.terminated
-                    );
-                }
-                return stmt_cont(loc=iloc);
-            }
-            # Adopted join: the current block is the orelse end, which may
-            # have terminated (raise/return in the last branch). The caller
-            # must not emit a jump into a terminated block.
-            return stmt_cont(loc=iloc, terminated=else_cont.terminated);
-        }
-        owns_tail = False;
-        if tail_join is not None {
-            join = tail_join as basicblock;
-        } else {
-            join = g.new_deferred_block();
-            owns_tail = True;
-        }
-        emit_branch_if_test_false(g, kind, join.id, test_loc);
-        body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=body_cont.loc);
-        }
-        # Same fallthrough contract as the orelse above: when the open body
-        # end is no longer the last-placed block (deferred try/with machinery
-        # materialized below it), an explicit jump is required to reach join.
-        if not body_cont.terminated and g.u.blocks[len(g.u.blocks) - 1] is not g.cur {
-            g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
-        }
-        if owns_tail {
-            g.use(join);
-            if tail_more {
-                tail_cont = visit_stmt_tail(
-                    g, tail, tail_idx, exec_tail_emits_code(tail, tail_idx + 1), ann_ctx
-                );
-                return stmt_cont(
-                    loc=tail_cont.loc,
-                    next_si=len(tail),
-                    terminated=tail_cont.terminated
-                );
-            }
-            # No code in `tail` to duplicate: the real continuation lives in the
-            # caller's own statement list (e.g. visit_stmts over a loop body).
-            # Fall through at `join` and let the caller emit its following
-            # statements. Returning next_si=len(tail)=0 here would reset the
-            # caller's index to 0 -> infinite loop (hangs `while: if c: break; more`).
-            return stmt_cont(loc=body_cont.loc);
-        }
-        # Adopted join: the body end is the current block and may have
-        # terminated; the caller must not emit a jump into a terminated block.
-        return stmt_cont(loc=body_cont.loc, terminated=body_cont.terminated);
-    }
-    # more_code_follows == False: nothing follows this if in the current
-    # statement list. Two sub-cases:
-    #
-    # (a) inside an active loop with tail is None -- the continuation is the
-    #     loop's JUMP_BACKWARD, not a return. visit_stmt_tail also passes
-    #     tail=None, but pops the loop stack before calling it, so use
-    #     current_loop() rather than tail alone to detect this case.
-    #
-    # (b) module/function/unit epilogue (tail is None from the module driver
-    #     or visit_stmt_tail after a trailing for): CPython DUPLICATES the
-    #     implicit `return None` into each falling-through branch.
-    if tail_join is not None {
-        join = tail_join as basicblock;
-        if not has_else {
-            emit_branch_if_test_false(g, kind, join.id, test_loc);
-            body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=body_cont.loc);
-            }
-            return stmt_cont(loc=body_cont.loc, terminated=body_cont.terminated);
-        }
-        emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
-        body_cont = visit_stmts(g, i.body, 0, False, None, 0, join, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=body_cont.loc);
-        }
-        if not body_cont.terminated {
-            g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
-        }
-        g.use(false_blk);
-        else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, join, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=else_cont.loc);
-        }
-        return stmt_cont(loc=iloc, terminated=else_cont.terminated);
-    }
-    loop_frame = g.current_loop();
-    if loop_frame is not None {
-        if not has_else {
-            # Loop-body `if` without else: both paths rejoin the loop header.
-            # CPython emits POP_JUMP_IF_* then either body+JUMP_BACKWARD or an
-            # immediate JUMP_BACKWARD on the not-taken path — never a false label
-            # laid out after the true body (that spurious fallthrough broke
-            # stackdepth when a second for followed the outer if).
-            skip_blk = g.new_deferred_block();
-            emit_branch_if_test_false(g, kind, skip_blk.id, test_loc);
-            body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=body_cont.loc);
-            }
-            if not body_cont.terminated {
-                g.emit_jump(OP_JUMP_BACKWARD, loop_frame.continue_blk.id, iloc);
-            }
-            g.use(skip_blk);
-            g.emit_jump(OP_JUMP_BACKWARD, loop_frame.continue_blk.id, iloc);
-            return stmt_cont(loc=iloc, terminated=True);
-        }
-        emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
-        body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=body_cont.loc);
-        }
-        if has_else {
-            else_join: basicblock | None = None;
-            if not body_cont.terminated {
-                else_join = g.new_deferred_block();
-                g.emit_jump(OP_JUMP_FORWARD, else_join.id, iloc);
-            }
-            g.use(false_blk);
-            else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, None, ann_ctx);
-            if codegen_busy(g) {
-                return stmt_cont(loc=else_cont.loc);
-            }
-            if else_join is not None {
-                g.use(else_join);
-                return stmt_cont(loc=iloc, terminated=False);
-            }
-            return stmt_cont(loc=iloc, terminated=else_cont.terminated);
-        }
-        g.use(false_blk);
-        return stmt_cont(loc=iloc, terminated=False);
-    }
+    join = g.new_deferred_block();
     emit_branch_if_test_false(g, kind, false_blk.id, test_loc);
-    body_cont = visit_stmts(g, i.body, 0, False, None, 0, None, ann_ctx);
-    if codegen_busy(g) {
-        return stmt_cont(loc=body_cont.loc);
-    }
+    body_cont = stmt_handlers["visit_cleanup_stmts"](g, i.body, ann_ctx);
     if not body_cont.terminated {
-        emit_module_return(g, body_cont.loc);
+        g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
     }
     g.use(false_blk);
-    if has_else {
-        else_cont = visit_stmts(g, i.orelse, 0, False, None, 0, None, ann_ctx);
-        if codegen_busy(g) {
-            return stmt_cont(loc=else_cont.loc);
-        }
-        if not else_cont.terminated {
-            emit_module_return(g, else_cont.loc);
-        }
-    } else {
-        emit_module_return(g, test_loc);
+    else_cont = stmt_handlers["visit_cleanup_stmts"](g, i.orelse, ann_ctx);
+    if body_cont.terminated and else_cont.terminated {
+        return stmt_cont(loc=iloc, terminated=True);
     }
-    return stmt_cont(loc=iloc, terminated=True);
+    if not else_cont.terminated and g.u.blocks[-1] is not g.cur {
+        g.emit_jump(OP_JUMP_FORWARD, join.id, iloc);
+    }
+    g.use(join);
+    return stmt_cont(loc=iloc);
 }
-
 
 def visit_while(
     g: cfg_builder,
@@ -1091,19 +885,19 @@ def visit_for(
             g.use(join);
             break_join = join;
         }
-        join_epilogue = epilogue_done;
-        if not break_join.placed or not block_is_terminated(break_join) {
-            join_epilogue = False;
-        }
+        join_epilogue = break_join.placed and block_is_terminated(break_join);
         finish_break_sites(g, break_frame, break_join, iter_loc, join_epilogue, False);
         # The unit driver must append the natural-path return only when the
         # exhaustion block is still open: with the visit_try hook it is
         # already terminated, and a terminated back-edge block must not take
         # dead epilogue bytes.
         exhausted = after.placed and block_is_terminated(after);
-        return stmt_cont(loc=iter_loc, terminated=else_terminated or exhausted);
+        return stmt_cont(
+            loc=iter_loc,
+            terminated=else_terminated or exhausted or block_is_terminated(g.cur)
+        );
     }
-    if epilogue_done and block_is_terminated(g.cur) {
+    if block_is_terminated(g.cur) {
         return stmt_cont(loc=iter_loc, terminated=True);
     }
     if else_terminated {

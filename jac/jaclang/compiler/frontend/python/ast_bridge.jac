@@ -58,7 +58,9 @@ def field_matches(value: any, expected: any) -> bool {
         return any(field_matches(value, item) for item in expected.__args__);
     }
     if isinstance(expected, GenericAlias) {
-        return isinstance(value, expected.__origin__)
+        origin = expected.__origin__;
+        return isinstance(origin, type)
+            and isinstance(value, origin)
             and all(field_matches(item, expected.__args__[0]) for item in value);
     }
     return isinstance(value, expected);

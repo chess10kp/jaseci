@@ -1796,7 +1796,14 @@ def pa_get_last_comprehension_item(`node: object) -> object {
 }
 
 def pa_join_names_with_dot(a: expr, b: expr) -> expr {
-    return a;
+    return Name(
+        id=pa_name_id(a) + "." + pa_name_id(b),
+        ctx=Load(),
+        lineno=a.lineno,
+        col_offset=a.col_offset,
+        end_lineno=b.end_lineno,
+        end_col_offset=b.end_col_offset
+    );
 }
 
 def pa_join_sequences(a: list[object], b: list[object]) -> list[object] {

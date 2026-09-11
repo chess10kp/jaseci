@@ -124,6 +124,7 @@ def compile_python(
         compile_ast
     }
     import from jaclang.runtime.python.objects { PyError }
+    import from jaclang.compiler.frontend.python.ast_nodes { mod }
     filename = os.fsdecode(os.fspath(filename));
     if "\x00" in filename {
         raise ValueError("embedded null character");
@@ -189,6 +190,7 @@ def compile_python(
                 parse_eval_source,
                 parse_interactive
             }
+            tree: mod | None = None;
             if mode == "exec" {
                 tree = parse_file(source, filename);
             } elif mode == "eval" {
@@ -204,7 +206,9 @@ def compile_python(
         result = compile_source(source, filename, mode, optimize);
     }
     if isinstance(result, PyError) {
-        error_type = getattr(builtins, result.exception.type_name, RuntimeError);
+        error_type: type[BaseException] = vars(builtins).get(
+            result.exception.type_name, RuntimeError
+        );
         if issubclass(error_type, SyntaxError)
             and "lineno" in result.exception.type_fields {
             line = constant_value(result.exception.type_fields["lineno"]);

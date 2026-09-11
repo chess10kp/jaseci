@@ -40,6 +40,7 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     While,
     If,
     Try,
+    TryStar,
     With,
     FunctionDef,
     ClassDef,
@@ -752,7 +753,16 @@ def sym_visit_delete_target(b: sym_builder, t: expr) -> bool {
         return False;
     }
     if isinstance(t, Name) {
-        return b.add_use((t as Name).id);
+        n = t as Name;
+        return b.add_def(n.id, DEF_LOCAL, n.lineno, n.col_offset);
+    }
+    if isinstance(t, (Tuple, List)) {
+        for item in t.elts {
+            if not sym_visit_delete_target(b, item) {
+                return False;
+            }
+        }
+        return True;
     }
     if isinstance(t, Attribute) {
         return sym_visit_load_expr(b, (t as Attribute).value);
@@ -1118,7 +1128,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
         or isinstance(s, AsyncFor)
         or isinstance(s, While)
         or isinstance(s, If)
-        or isinstance(s, Try) {
+        or isinstance(s, (Try, TryStar)) {
         body: list[stmt];
         orelse: list[stmt] = [];
         if isinstance(s, For) {
@@ -1156,7 +1166,7 @@ def sym_visit_stmt(b: sym_builder, s: stmt) -> bool {
             body = iff.body;
             orelse = iff.orelse;
         } else {
-            tr = s as Try;
+            tr = s;
             body = tr.body;
             orelse = tr.orelse;
             if tr.handlers is not None {

@@ -1,3 +1,4 @@
+import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
 # Expression-side lowering: visit_expr, expression/comprehension/lambda
 # visitors, call/slice/await emission primitives, and the shared name/
 # const/cell plumbing used by both expression and statement lowering.
@@ -298,7 +299,8 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     loop_frame,
     except_region,
     with_unwind_rec,
-    with_fblock,
+    cleanup_frame,
+    control_unwind,
     await_footer_job,
     try_await_frame,
     comp_handler,
@@ -580,19 +582,27 @@ def emit_send_delegation_loop(
     als = emit_await_send_loop_header(
         g, get_iter_op, get_iter_arg, resume_after_yield_arg, yloc
     );
-    # The CLEANUP_THROW/CJ pair is a cold block (CPython push_cold_blocks_to_end):
-    # it is queued here and placed at the enclosing construct's flush point
-    # (try handler entry / async-with seam / unit end), never eagerly after
-    # end_send -- an eager pair sits directly on end_send's warm fallthrough
-    # edge, which converges at SEND-seeded depth and underflows the verifier
-    # whenever the continuation closes at a block boundary (try body end).
-    ct = g.new_deferred_block();
-    cj = g.new_deferred_block();
-    g.pending_await_footers.append(
-        await_footer_job(ct=ct, cj=cj, end_send=als.end_send_blk, loc=yloc)
-    );
-    emit_await_send_except_regions(g, als, ct, cj, 3, -1, -1, -1, 2, True, True);
+    # Keep delegated cleanup inside its lexical protection. The normal edge
+    # skips the cold handler; a thrown exception restores the complete operand
+    # prefix (including call arguments and enclosing exception state).
+    cleanup = g.new_deferred_block();
+    continuation = g.new_deferred_block();
     g.use(als.end_send_blk);
+    g.emit_jump(OP_JUMP_FORWARD, continuation.id, yloc);
+    g.use(cleanup);
+    g.emit_op(OP_CLEANUP_THROW, 0, yloc);
+    g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, als.end_send_blk.id, yloc);
+    g.use(continuation);
+    g.u.except_regions.append(
+        except_region(
+            start_block=als.yield_blk.id,
+            end_block=als.after_resume_blk.id,
+            handler_block=cleanup.id,
+            stack_depth=0,
+            depth_from_block=als.yield_blk.id,
+            depth_offset=1
+        )
+    );
 }
 
 # Place every still-queued await CLEANUP_THROW footer after all warm code
@@ -825,64 +835,112 @@ def emit_await_send_except_regions(
     }
 }
 
-def emit_sync_with_unwind(
+def emit_control_unwind(
     g: cfg_builder, wloc: cloc, preserve_value: bool, stop_depth: int = 0
-) -> basicblock | None {
-    frames = g.with_fblocks[stop_depth:];
-    if not frames {
-        return None;
+) -> control_unwind {
+    frames = g.cleanup_stack[:];
+    if len(frames) <= stop_depth {
+        return control_unwind();
     }
     end = g.new_deferred_block();
-    loop_index = len(g.loop_stack);
-    for fb in reversed(frames) {
-        if fb.is_async {
-            codegen_fail(g, "NotImplementedError", "async with loop-exit cleanup");
-            return None;
-        }
-        boundary = g.new_block();
-        g.use(boundary);
-        fb.unwind_spans.append((boundary.id, end.id));
-        # A return may cross loops entered inside this context manager. Their
-        # iterators sit between the exit callable and the return value.
-        if preserve_value {
-            while loop_index > fb.loop_depth {
-                loop_index -= 1;
-                if g.loop_stack[loop_index].pops_iter {
-                    g.emit_op(OP_SWAP, 2, wloc);
-                    g.emit_op(OP_POP_TOP, 0, wloc);
-                }
+    loops = g.loop_stack[:];
+    saved_depth = g.handler_nest_depth;
+    loop_index = len(loops);
+    try {
+        for frame_index in range(len(frames) - 1, stop_depth - 1, -1) {
+            fb = frames[frame_index];
+            if fb.is_async {
+                codegen_fail(g, "NotImplementedError", "async with loop-exit cleanup");
+                return control_unwind(end=end);
             }
-            g.emit_op(OP_SWAP, 3, wloc);
-            g.emit_op(OP_SWAP, 2, wloc);
+            boundary = g.new_block();
+            g.use(boundary);
+            fb.unwind_spans.append((boundary.id, end.id));
+            g.cleanup_stack = frames[:frame_index];
+            if preserve_value {
+                while loop_index > fb.loop_depth {
+                    loop_index -= 1;
+                    if loops[loop_index].pops_iter {
+                        g.emit_op(OP_SWAP, 2, wloc);
+                        g.emit_op(OP_POP_TOP, 0, wloc);
+                    }
+                }
+                g.loop_stack = loops[:loop_index];
+            }
+            if fb.kind == "finally" {
+                # The pending return stays below the cleanup's operands. A
+                # return/break/continue inside that cleanup must discard it.
+                if preserve_value {
+                    g.cleanup_stack.append(
+                        cleanup_frame(kind="value", pop_count=1, loop_depth=loop_index)
+                    );
+                    g.handler_nest_depth += 1;
+                }
+                cont = stmt_handlers["visit_cleanup_stmts"](g, fb.body, fb.ann_ctx);
+                if preserve_value {
+                    g.handler_nest_depth -= 1;
+                }
+                if cont.terminated {
+                    return control_unwind(end=end, terminated=True);
+                }
+            } elif fb.kind == "exception" or fb.kind == "value" {
+                for unused in range(fb.pop_count) {
+                    if preserve_value {
+                        g.emit_op(OP_SWAP, 2, wloc);
+                    }
+                    g.emit_op(OP_POP_TOP, 0, wloc);
+                    g.handler_nest_depth -= 1;
+                }
+                if fb.kind == "exception" {
+                    if preserve_value {
+                        g.emit_op(OP_SWAP, 2, wloc);
+                    }
+                    g.emit_op(OP_POP_EXCEPT, 0, wloc);
+                    g.handler_nest_depth -= 1;
+                    if fb.exception_name is not None {
+                        stmt_handlers["clear_exception_name"](
+                            g, fb.exception_name, wloc
+                        );
+                    }
+                }
+            } elif fb.kind == "with" {
+                if preserve_value {
+                    g.emit_op(OP_SWAP, 3, wloc);
+                    g.emit_op(OP_SWAP, 2, wloc);
+                }
+                none_idx = g.u.add_const(py_none());
+                for unused in range(3) {
+                    g.emit_op(OP_LOAD_CONST, none_idx, wloc);
+                }
+                g.emit_op(OP_CALL, 3, wloc);
+                g.emit_op(OP_POP_TOP, 0, wloc);
+                g.handler_nest_depth -= 2;
+            }
         }
-        none_idx = g.u.add_const(py_none());
-        for unused in range(3) {
-            g.emit_op(OP_LOAD_CONST, none_idx, wloc);
-        }
-        g.emit_op(OP_CALL, 3, wloc);
-        g.emit_op(OP_POP_TOP, 0, wloc);
+    } finally {
+        g.cleanup_stack = frames;
+        g.loop_stack = loops;
+        g.handler_nest_depth = saved_depth;
     }
-    return end;
+    return control_unwind(end=end);
 }
 
-def finish_with_unwind(g: cfg_builder, end: basicblock | None) {
-    if end is not None {
-        # Place the protection boundary after the return/jump, while leaving
-        # the caller on its terminated block for ordinary CFG bookkeeping.
+def finish_control_unwind(g: cfg_builder, result: control_unwind) {
+    if result.end is not None {
         terminated = g.cur;
-        g.use(end);
+        g.use(result.end);
         g.use(terminated);
     }
 }
 
-def emit_with_return_unwind(g: cfg_builder, wloc: cloc) -> basicblock | None {
-    if all(not frame.is_async for frame in g.with_fblocks) {
-        return emit_sync_with_unwind(g, wloc, True);
+def emit_return_unwind(g: cfg_builder, wloc: cloc) -> control_unwind {
+    if all(not frame.is_async for frame in g.cleanup_stack) {
+        return emit_control_unwind(g, wloc, True);
     }
     g.with_unwind_used = True;
-    while len(g.with_fblocks) > 0 {
-        fb = g.with_fblocks[len(g.with_fblocks) - 1];
-        g.with_fblocks = g.with_fblocks[0:len(g.with_fblocks) - 1];
+    while len(g.cleanup_stack) > 0 {
+        fb = g.cleanup_stack[len(g.cleanup_stack) - 1];
+        g.cleanup_stack = g.cleanup_stack[0:len(g.cleanup_stack) - 1];
         boundary = g.new_block();
         g.use(boundary);
         if fb.protect_region >= 0
@@ -915,7 +973,7 @@ def emit_with_return_unwind(g: cfg_builder, wloc: cloc) -> basicblock | None {
         }
         g.emit_op(OP_POP_TOP, 0, wloc);
     }
-    return None;
+    return control_unwind();
 }
 
 # GET_ANEXT + SEND loop blocks for async-for (footer emitted after the loop body).
@@ -1389,7 +1447,7 @@ def visit_compare(
     ei = 0;
     while ei < n {
         visit_expr(g, c.comparators[ei]);
-        if n > 1 and ei == 0 {
+        if ei < n - 1 {
             g.emit_op(OP_SWAP, 2, cloc_cmp);
             g.emit_op(OP_COPY, 2, cloc_cmp);
         }
@@ -1691,7 +1749,7 @@ def visit_expr(
             cv = (un.operand as Constant).value;
             if isinstance(cv, PyFloat) or isinstance(cv, PyComplex) {
                 if isinstance(cv, PyFloat) {
-                    negated = PyFloat(t="float", val=-cv.val);
+                    negated: PyObj = PyFloat(t="float", val=-cv.val);
                 } else {
                     negated = PyComplex(t="complex", real=-cv.real, imag=-cv.imag);
                 }
@@ -1973,7 +2031,7 @@ def visit_expr(
             g.emit_op(OP_CALL_INTRINSIC_1, 4, yloc);
         }
         g.emit_op(OP_YIELD_VALUE, 0, yloc);
-        g.emit_op(OP_RESUME, 5, yloc);
+        g.emit_op(OP_RESUME, 1 if g.cleanup_stack else 5, yloc);
         return None;
     }
     if isinstance(e, YieldFrom) {
@@ -2817,13 +2875,6 @@ def visit_comp_elt(
         }
         ci = 0;
         while ci < len(c.comparators) {
-            if filter_compare
-                and is_none_identity_test(c.ops[ci] as PyObj, c.comparators[ci]) {
-                codegen_fail(
-                    g, "NotImplementedError", "is-None jump peephole not supported"
-                );
-                return;
-            }
             visit_comp_elt(g, c.comparators[ci], bound_names, filter_compare);
             if codegen_busy(g) {
                 return;
@@ -4023,10 +4074,6 @@ def visit_test_expr(
                     }
                     return TEST_IS_NOT_NONE + (3 if invert else 0);
                 }
-                codegen_fail(
-                    g, "NotImplementedError", "is-None jump peephole not supported"
-                );
-                return TEST_NORMAL;
             }
             visit_expr(g, c.left);
             visit_expr(g, c.comparators[0]);
@@ -4136,7 +4183,10 @@ def compile_lambda_cfg(
     }
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_fn, private);
-    emit_function_prologue(g, sym_fn, lam.lineno);
+    if sym_fn.generator {
+        u.flags |= CO_GENERATOR;
+    }
+    protect_start = emit_function_prologue(g, sym_fn, lam.lineno, sym_fn.generator);
     bloc = expr_loc(lam.body);
     visit_expr(g, lam.body);
     if codegen_busy(g) {
@@ -4147,6 +4197,10 @@ def compile_lambda_cfg(
     # unit, interning the const after all body consts (kept at index 0 by
     # remove_unused_consts, dropped otherwise).
     u.add_const(py_none());
+    stmt_handlers["deferred_comp_handlers"](g);
+    if sym_fn.generator {
+        emit_generator_except_handler(g, protect_start);
+    }
     return u;
 }
 
@@ -4194,6 +4248,9 @@ def visit_genexp(g: cfg_builder, ge: GeneratorExp) -> None {
         return;
     }
     u_fn = compile_genexp_cfg(ge, g.u.filename, sym_fn, g.private);
+    u_fn.qualname = nested_code_qualname(
+        g.sym_top.block_type, g.u.qualname, "<genexpr>"
+    );
     if u_fn.diag is not None {
         g.u.diag = u_fn.diag;
         return;

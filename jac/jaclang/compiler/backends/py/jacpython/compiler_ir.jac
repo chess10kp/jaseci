@@ -26,6 +26,7 @@ import from jaclang.compiler.frontend.python.compiler_diagnostics {
     compiler_diagnostic
 }
 import from jaclang.compiler.frontend.python.compiler_symtable { sym_block }
+import from jaclang.compiler.frontend.python.ast_nodes { stmt }
 
 def constant_key(value: PyObj) -> str {
     if isinstance(value, PyCode) {
@@ -154,7 +155,7 @@ obj loop_frame {
         # FOR-loop family: unwinding the loop on break pops the iterator
         # (CPython codegen_unwind_fblock, COMPILE_FBLOCK_FOR_LOOP).
         pops_iter: bool = False,
-        with_depth: int = 0,
+        cleanup_depth: int = 0,
         # Per-break emission sites recorded by visit_stmt (Break).
         break_sites: list[break_site] = [];
 }
@@ -173,12 +174,22 @@ obj pending_break_finish {
 # Enclosing with / async-with frame tracked for return unwinding (mirrors
 # CPython COMPILE_FBLOCK_WITH / COMPILE_FBLOCK_ASYNC_WITH). The open protect
 # region is closed at the unwind boundary (POP_BLOCK equivalent).
-obj with_fblock {
-    has is_async: bool,
-        protect_region: int,
-        frame_idx: int,
+obj cleanup_frame {
+    has is_async: bool = False,
+        protect_region: int = -1,
+        frame_idx: int = 0,
+        kind: str = "with",
+        body: list[stmt] = [],
+        ann_ctx: any = None,
+        pop_count: int = 0,
+        exception_name: str | None = None,
         loop_depth: int = 0,
         unwind_spans: list[tuple[int, int]] = [];
+}
+
+obj control_unwind {
+    has end: basicblock | None = None,
+        terminated: bool = False;
 }
 
 # One async-with frame's return-unwind await loop (emitted inline at the
@@ -235,7 +246,7 @@ obj cfg_builder {
         private: str | None = None,
         loop_stack: list[loop_frame] = [],
         # Enclosing with / async-with frames, outermost first.
-        with_fblocks: list[with_fblock] = [],
+        cleanup_stack: list[cleanup_frame] = [],
         # Set when return unwinding ran for at least one with frame.
         with_unwind_used: bool = False,
         # Per-frame return-unwind records (innermost frame first), one per
@@ -310,11 +321,7 @@ obj cfg_builder {
         unit_for_after_loc: cloc | None = None,
         # Protect-span depth bump for try/except registered while emitting a
         # loop body (while +2, for +4). Set by visit_while/visit_for.
-        loop_except_depth_bump: int = 0,
-        # Deferred resume block after yield-from POP_TOP when more stmts follow.
-        # The send-loop footer lays out cleanup labels before POP_TOP; jumping
-        # forward skips them so stackdepth fallthrough does not enter CLEANUP_THROW.
-        yield_from_resume: basicblock | None = None;
+        loop_except_depth_bump: int = 0;
 
     def emit(ins: cinstr) {
         self.cur.instrs.append(ins);
@@ -332,7 +339,7 @@ obj cfg_builder {
                 break_blk=break_blk,
                 break_is_stub=break_is_stub,
                 pops_iter=pops_iter,
-                with_depth=len(self.with_fblocks)
+                cleanup_depth=len(self.cleanup_stack)
             )
         );
     }
@@ -436,7 +443,9 @@ obj except_region {
         end_block: int,
         handler_block: int,
         stack_depth: int,
-        preserve_lasti: bool = False;
+        preserve_lasti: bool = False,
+        depth_from_block: int = -1,
+        depth_offset: int = 0;
 }
 
 # Unverified CFG plus compile metadata from codegen. Flowgraph verification

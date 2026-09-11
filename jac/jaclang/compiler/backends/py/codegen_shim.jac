@@ -208,6 +208,9 @@ def _parse_splice(
     tree = compiler(
         src, "<unknown>", "exec", flags=ast.PyCF_ONLY_AST, dont_inherit=True
     );
+    if not isinstance(tree, ast.Module) {
+        raise TypeError("Python splice compiler must return an ast.Module");
+    }
     if line_offset {
         for w in ast.walk(tree) {
             for field in ("lineno", "end_lineno") {

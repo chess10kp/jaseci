@@ -79,6 +79,7 @@ def main() -> int:
     support.use_resources = []
     # Pay import/compilation setup outside individual tests and their timers.
     compile_python("pass", "<warmup>", "exec")
+    compiled_codes = set()
     if args.compile_tests:
         path = Path(reference_module.__file__)
         test_module = types.ModuleType(reference_module.__name__)
@@ -86,6 +87,11 @@ def main() -> int:
         test_module.__package__ = reference_module.__package__
         test_module.__spec__ = reference_module.__spec__
         code = compile_python(path.read_bytes(), str(path), "exec")
+        pending = [code]
+        while pending:
+            item = pending.pop()
+            compiled_codes.add(id(item))
+            pending.extend(c for c in item.co_consts if isinstance(c, types.CodeType))
         sys.modules[args.module] = test_module
         try:
             exec(code, test_module.__dict__)
@@ -123,10 +129,19 @@ def main() -> int:
         def startTest(self, test):
             nonlocal calls
             calls = 0
+            method = getattr(test, getattr(test, "_testMethodName", "runTest"), None)
+            seen = set()
+            self.compiled_test = False
+            while method is not None and id(method) not in seen:
+                seen.add(id(method))
+                if id(getattr(method, "__code__", None)) in compiled_codes:
+                    self.compiled_test = True
+                    break
+                method = getattr(method, "__wrapped__", None)
             super().startTest(test)
 
         def addSuccess(self, test):
-            if calls or args.compile_tests:
+            if calls or self.compiled_test:
                 super().addSuccess(test)
             else:
                 self.addSkip(test, "no direct call to JacPython in this test")

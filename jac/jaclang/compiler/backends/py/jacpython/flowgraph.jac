@@ -66,6 +66,7 @@ import from jaclang.runtime.python.opcode_meta {
     OP_SET_UPDATE,
     stack_effect,
     _opcode_num_popped,
+    _opcode_num_popped,
     _opcode_num_pushed,
     has_target,
     is_unconditional_jump_opcode,
@@ -418,6 +419,25 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
             stackdepth_diag("ValueError", "Invalid CFG, inconsistent stackdepth")
         );
     }
+    # Handler entries are roots of the same graph traversal as normal code.
+    # Walking only their first block misses stack peaks in nested handlers and
+    # their successors, producing a co_stacksize too small for the evaluator.
+    for reg in u.except_regions {
+        if reg.depth_from_block >= 0 {
+            continue;
+        }
+        handler = find_block(u, reg.handler_block);
+        if handler is not None
+            and not stackdepth_push(startdepths, work, handler, reg.stack_depth) {
+            return (
+                0,
+                stackdepth_diag(
+                    "ValueError",
+                    "Invalid CFG, inconsistent exception handler stackdepth"
+                )
+            );
+        }
+    }
     while len(work) > 0 {
         bid = work[len(work) - 1];
         work = work[0:len(work) - 1];
@@ -429,10 +449,43 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
             );
         }
         depth = startdepths[bid];
+        for reg in u.except_regions {
+            if reg.depth_from_block == bid {
+                reg.stack_depth = depth + reg.depth_offset;
+                handler = find_block(u, reg.handler_block);
+                if handler is not None
+                    and not stackdepth_push(
+                        startdepths, work, handler, reg.stack_depth
+                    ) {
+                    return (
+                        0,
+                        stackdepth_diag(
+                            "ValueError",
+                            "Invalid CFG, inconsistent computed handler stackdepth"
+                        )
+                    );
+                }
+            }
+        }
         next_blk = layout_next_block(u, layout_pos(pos, b.id));
         ii = 0;
         while ii < len(b.instrs) {
             ins = b.instrs[ii];
+            # Net stack effects alone miss invalid COPY/SWAP operands and
+            # RETURN_VALUE without a value (its 3.14 net effect is zero).
+            needed = _opcode_num_popped(ins.opcode, ins.oparg);
+            if needed > depth {
+                return (
+                    0,
+                    stackdepth_diag(
+                        "ValueError",
+                        "Invalid CFG, insufficient operands for opcode="
+                            + str(ins.opcode)
+                            + ", arg="
+                            + str(ins.oparg)
+                    )
+                );
+            }
             if depth > maxdepth {
                 maxdepth = depth;
             }
@@ -535,27 +588,6 @@ def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | 
                 );
             }
         }
-    }
-    ri = 0;
-    while ri < len(u.except_regions) {
-        reg = u.except_regions[ri];
-        if reg.handler_block < 0 {
-            ri = ri + 1;
-            continue;
-        }
-        hb = find_block(u, reg.handler_block);
-        if hb is None {
-            ri = ri + 1;
-            continue;
-        }
-        if reg.stack_depth > maxdepth {
-            maxdepth = reg.stack_depth;
-        }
-        (maxdepth, ed) = walk_block_maxdepth(hb, reg.stack_depth, maxdepth);
-        if ed is not None {
-            return (0, ed);
-        }
-        ri = ri + 1;
     }
     # Publish per-block entry depths for optimize_load_fast (indexed by block id;
     # UNSET_STARTDEPTH for blocks unreachable via normal / jump / fallthrough edges).
@@ -899,13 +931,16 @@ def mark_reachable(u: unverified_cfg) -> list[int] {
     while ri < len(u.except_regions) {
         reg = u.except_regions[ri];
         rb = 0;
-        while rb < 3 {
+        while rb < 4 {
             bid = reg.handler_block;
             if rb == 1 {
                 bid = reg.start_block;
             }
             if rb == 2 {
                 bid = reg.end_block;
+            }
+            if rb == 3 {
+                bid = reg.depth_from_block;
             }
             if bid >= 0 {
                 rp = layout_pos(pos, bid);
@@ -1746,7 +1781,9 @@ def normalize_except_regions(u: unverified_cfg) {
             and result[-1].end_block == start_id
             and result[-1].handler_block == reg.handler_block
             and result[-1].stack_depth == reg.stack_depth
-            and result[-1].preserve_lasti == reg.preserve_lasti {
+            and result[-1].preserve_lasti == reg.preserve_lasti
+            and result[-1].depth_from_block == reg.depth_from_block
+            and result[-1].depth_offset == reg.depth_offset {
             result[-1].end_block = end_id;
         } else {
             result.append(
@@ -1755,7 +1792,9 @@ def normalize_except_regions(u: unverified_cfg) {
                     end_block=end_id,
                     handler_block=reg.handler_block,
                     stack_depth=reg.stack_depth,
-                    preserve_lasti=reg.preserve_lasti
+                    preserve_lasti=reg.preserve_lasti,
+                    depth_from_block=reg.depth_from_block,
+                    depth_offset=reg.depth_offset
                 )
             );
         }

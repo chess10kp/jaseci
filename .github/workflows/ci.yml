@@ -173,14 +173,25 @@ jobs:
               test_same_filename_used test_single_statement \
               test_big_dict_literal test_remove_unused_consts_extended_args \
               test_compile_warnings test_compile_warning_in_finally test_int_literals_too_long \
+              test_pep_765_warnings test_pep_765_no_warnings \
               test_condition_expression_with_redundant_comparisons_compiles \
               test_compare_positions test_other_newlines \
               test_compile_redundant_jumps_and_nops_after_moving_cold_blocks
           done
-      - name: Compile and run upstream context-manager tests with JacPython
+      - name: Compile and run upstream cleanup tests with JacPython
         run: |
           for bridge_mode in "" "--runtime"; do
-            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_with
+            for test_module in test.test_with test.test_exception_variations test.test_except_star; do
+              jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
+            done
+          done
+      - name: Compile and run upstream generator unit tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_generators --tests \
+              SignalAndYieldFromTest FinalizationTest GeneratorTest \
+              ModifyUnderlyingIterableTest ExceptionTest GeneratorCloseTest \
+              GeneratorDeallocTest GeneratorThrowTest GeneratorStackTraceTest YieldFromTests
           done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the

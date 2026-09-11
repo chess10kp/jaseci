@@ -295,6 +295,7 @@ import from jaclang.compiler.backends.py.jacpython.compiler_ir {
     new_cfg_builder,
     loop_frame,
     break_site,
+    control_unwind,
     except_region,
     comp_handler,
 }
@@ -342,9 +343,9 @@ import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     emit_await_send_except_regions,
     emit_await_send_loop_footer,
     emit_await_send_loop_header,
-    emit_with_return_unwind,
-    emit_sync_with_unwind,
-    finish_with_unwind,
+    emit_return_unwind,
+    emit_control_unwind,
+    finish_control_unwind,
     emit_branch_if_test_false,
     emit_branch_if_test_true,
     emit_call_instruction,
@@ -752,6 +753,13 @@ def visit_delete_target(g: cfg_builder, t: expr) -> stmt_cont {
     if codegen_busy(g) {
         return stmt_cont(loc=expr_loc(t));
     }
+    if isinstance(t, (Tuple, List)) {
+        last = expr_loc(t);
+        for item in t.elts {
+            last = visit_delete_target(g, item).loc;
+        }
+        return stmt_cont(loc=last);
+    }
     if isinstance(t, Name) {
         n = t as Name;
         tloc = expr_loc(n);
@@ -875,10 +883,6 @@ def visit_stmts(
     terminated = False;
     si = from_idx;
     while si < len(stmts) {
-        if g.yield_from_resume is not None {
-            g.use(g.yield_from_resume);
-            g.yield_from_resume = None;
-        }
         follow = more_follows_after;
         local_more = exec_tail_emits_code(stmts, si + 1);
         if not follow {
@@ -1167,16 +1171,7 @@ def visit_stmt(
             finish_expression(g, eloc);
             g.use(after);
         } else {
-            if isinstance(x.value, YieldFrom) {
-                finish_expression(g, eloc);
-                if more_code_follows {
-                    resume = g.new_deferred_block();
-                    g.emit_jump(OP_JUMP_FORWARD, resume.id, eloc);
-                    g.yield_from_resume = resume;
-                }
-            } else {
-                finish_expression(g, eloc);
-            }
+            finish_expression(g, eloc);
         }
         return stmt_cont(loc=eloc);
     }
@@ -1229,7 +1224,11 @@ def visit_stmt(
             codegen_fail(g, "SyntaxError", "'break' outside loop");
             return stmt_cont(loc=bloc);
         }
-        unwind_end = emit_sync_with_unwind(g, bloc, False, frame.with_depth);
+        unwind_end = emit_control_unwind(g, bloc, False, frame.cleanup_depth);
+        if unwind_end.terminated {
+            finish_control_unwind(g, unwind_end);
+            return stmt_cont(loc=bloc, terminated=True);
+        }
         if frame.break_is_stub {
             # CPython codegen_break: unwind the loop (POP_TOP for the FOR
             # family, nothing for WHILE), then jump to the loop's exit anchor.
@@ -1244,7 +1243,7 @@ def visit_stmt(
         } else {
             emit_module_return(g, bloc);
         }
-        finish_with_unwind(g, unwind_end);
+        finish_control_unwind(g, unwind_end);
         return stmt_cont(loc=bloc, terminated=True);
     }
     if isinstance(s, Continue) {
@@ -1255,9 +1254,11 @@ def visit_stmt(
             codegen_fail(g, "SyntaxError", "'continue' not properly in loop");
             return stmt_cont(loc=cloc_stmt);
         }
-        unwind_end = emit_sync_with_unwind(g, cloc_stmt, False, frame.with_depth);
-        g.emit_jump(OP_JUMP_BACKWARD, frame.continue_blk.id, cloc_stmt);
-        finish_with_unwind(g, unwind_end);
+        unwind_end = emit_control_unwind(g, cloc_stmt, False, frame.cleanup_depth);
+        if not unwind_end.terminated {
+            g.emit_jump(OP_JUMP_BACKWARD, frame.continue_blk.id, cloc_stmt);
+        }
+        finish_control_unwind(g, unwind_end);
         return stmt_cont(loc=cloc_stmt, terminated=True);
     }
     if isinstance(s, Return) {
@@ -1351,8 +1352,8 @@ def visit_return_stmt(
     # pins BOTH the load and RETURN_VALUE to the value's span. Fast-local loads
     # keep the Name node's own span.
     rloc = nloc(r.lineno, r.end_lineno, r.col_offset, r.end_col_offset);
-    has_fblocks = len(g.with_fblocks) > 0;
-    unwind_end: basicblock | None = None;
+    has_fblocks = len(g.cleanup_stack) > 0;
+    unwind_end = control_unwind();
     if r.value is not None {
         if isinstance(r.value, Name) {
             n = r.value as Name;
@@ -1370,10 +1371,12 @@ def visit_return_stmt(
                     g.emit_op(OP_LOAD_FAST, fi, nloc_name);
                 }
                 if has_fblocks {
-                    unwind_end = emit_with_return_unwind(g, rloc);
+                    unwind_end = emit_return_unwind(g, rloc);
                 }
-                g.emit_op(OP_RETURN_VALUE, 0, rloc);
-                finish_with_unwind(g, unwind_end);
+                if not unwind_end.terminated {
+                    g.emit_op(OP_RETURN_VALUE, 0, rloc);
+                }
+                finish_control_unwind(g, unwind_end);
                 return;
             }
         }
@@ -1383,19 +1386,23 @@ def visit_return_stmt(
             ret_loc = expr_loc(r.value);
         }
         if has_fblocks {
-            unwind_end = emit_with_return_unwind(g, rloc);
+            unwind_end = emit_return_unwind(g, rloc);
         }
-        g.emit_op(OP_RETURN_VALUE, 0, ret_loc);
-        finish_with_unwind(g, unwind_end);
+        if not unwind_end.terminated {
+            g.emit_op(OP_RETURN_VALUE, 0, ret_loc);
+        }
+        finish_control_unwind(g, unwind_end);
         return;
     }
     none_idx = g.u.add_const(py_none());
     g.emit_op(OP_LOAD_CONST, none_idx, rloc);
     if has_fblocks {
-        unwind_end = emit_with_return_unwind(g, rloc);
+        unwind_end = emit_return_unwind(g, rloc);
     }
-    g.emit_op(OP_RETURN_VALUE, 0, rloc);
-    finish_with_unwind(g, unwind_end);
+    if not unwind_end.terminated {
+        g.emit_op(OP_RETURN_VALUE, 0, rloc);
+    }
+    finish_control_unwind(g, unwind_end);
 }
 
 

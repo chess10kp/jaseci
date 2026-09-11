@@ -79,6 +79,8 @@ def ensure_compile_registries_wired -> PyObj {
         "visit_type_alias",
         "visit_import",
         "visit_import_from",
+        "visit_cleanup_stmts",
+        "clear_exception_name",
         "visit_try",
         "visit_try_star",
         "visit_raise_stmt",
