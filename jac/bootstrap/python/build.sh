@@ -161,8 +161,11 @@ SH
 #!/bin/sh
 exec "$JAC_PYTHON_ZIG" cc -target "$JAC_PYTHON_TARGET" -isysroot "$JAC_PYTHON_SDK" -isystem "$JAC_PYTHON_SDK/usr/include" -L "$JAC_PYTHON_SDK/usr/lib" -F "$JAC_PYTHON_SDK/System/Library/Frameworks" -Wno-unused-command-line-argument -Wno-error=date-time '-Wl,-rpath,@loader_path/../lib' "$@"
 SH
-            # CPython otherwise writes its temporary prefix into the dylib ID.
-            sed 's|-Wl,-install_name,$(prefix)/lib/|-Wl,-install_name,@rpath/|' \
+            # Keep the dylib relocatable and use the three-component versions
+            # required by Zig's Mach-O linker (CPython supplies major.minor).
+            sed -e 's|-Wl,-install_name,$(prefix)/lib/|-Wl,-install_name,@rpath/|' \
+                -e 's/-compatibility_version,$(VERSION)/-compatibility_version,$(VERSION).0/g' \
+                -e 's/-current_version,$(VERSION)/-current_version,$(VERSION).0/g' \
                 Makefile.pre.in > Makefile.pre.in.new
             mv Makefile.pre.in.new Makefile.pre.in
             ;;
