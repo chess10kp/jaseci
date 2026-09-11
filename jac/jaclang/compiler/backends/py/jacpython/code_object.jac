@@ -163,8 +163,16 @@ def compile_python(
     if mode not in ("exec", "eval", "single") {
         raise ValueError("compile() mode must be 'exec', 'eval' or 'single'");
     }
-    if flags & ~ast.PyCF_ONLY_AST {
-        raise NotImplementedError("JacPython compile flags are not implemented yet");
+    if flags & ~(0x1FE0000 | 0x10 | 0xF600) {
+        raise ValueError("compile(): unrecognised flags");
+    }
+    if not dont_inherit {
+        flags |= sys._getframe(1).f_code.co_flags & 0x1FE0000;
+    }
+    if flags & 0xF200 {
+        raise NotImplementedError(
+            "JacPython parsing and optimization flags are not implemented yet"
+        );
     }
     if optimize == -1 {
         optimize = sys.flags.optimize;
@@ -176,7 +184,7 @@ def compile_python(
         if flags & ast.PyCF_ONLY_AST {
             return source;
         }
-        result = compile_ast(from_python_ast(source), filename, mode, optimize);
+        result = compile_ast(from_python_ast(source), filename, mode, optimize, flags);
     } else {
         if not isinstance(source, str) {
             try {
@@ -211,18 +219,18 @@ def compile_python(
             }
             tree: mod | None = None;
             if mode == "exec" {
-                tree = parse_file(source, filename);
+                tree = parse_file(source, filename, flags);
             } elif mode == "eval" {
-                tree = parse_eval_source(source, filename);
+                tree = parse_eval_source(source, filename, flags);
             } else {
-                tree = parse_interactive(source, filename);
+                tree = parse_interactive(source, filename, flags);
             }
             if tree is None {
                 raise SyntaxError("invalid syntax");
             }
             return to_python_ast(tree, constant_value);
         }
-        result = compile_source(source, filename, mode, optimize);
+        result = compile_source(source, filename, mode, optimize, flags);
     }
     if isinstance(result, PyError) {
         error_type: type[BaseException] = vars(builtins).get(

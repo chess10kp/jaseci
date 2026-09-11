@@ -92,6 +92,7 @@ glob ENDMARKER: int = 0,
 glob EXACT_TOKEN_TYPES: dict[str, int] = {
          "!": EXCLAMATION,
          "!=": NOTEQUAL,
+         "<>": NOTEQUAL,
          "%": PERCENT,
          "%=": PERCENTEQUAL,
          "&": AMPER,

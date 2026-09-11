@@ -17,7 +17,8 @@ import from jaclang.compiler.frontend.python.ast_nodes {
 import from jaclang.compiler.frontend.python.compiler_validate {
     validate_eval_expr,
     validate_module_body,
-    check_ast_warnings
+    check_ast_warnings,
+    future_features
 }
 import from jaclang.compiler.frontend.python.compiler_symtable { build_module_symtable }
 import from jaclang.compiler.frontend.python.compiler_diagnostics {
@@ -36,13 +37,20 @@ import from jaclang.compiler.backends.py.jacpython.compiler_loops { visit_if }
 import from jaclang.compiler.backends.py.jacpython.compiler_match { visit_match }
 import from jaclang.compiler.backends.py.jacpython.flowgraph { verify_cfg }
 import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
+import from jaclang.compiler.backends.py.jacpython.compiler_annotations {
+    stringify_future_annotations
+}
 import from jaclang.compiler.backends.py.jacpython.compiler_context {
+    current_compile_flags,
+    add_future_flags,
     enter_compile_context,
     exit_compile_context,
     ensure_compile_registries_wired,
 }
 
-def compile_source(source: str, filename: str, mode: str, optimize: int) -> PyObj {
+def compile_source(
+    source: str, filename: str, mode: str, optimize: int, flags: int = 0
+) -> PyObj {
     if optimize not in (0, 1, 2) {
         return py_error("ValueError", "compile(): invalid optimize value");
     }
@@ -50,12 +58,12 @@ def compile_source(source: str, filename: str, mode: str, optimize: int) -> PyOb
     if is_error(reg) {
         return reg;
     }
-    enter_compile_context(optimize);
+    enter_compile_context(optimize, flags);
     try {
         if mode == "eval" {
             result = compile_eval_path(source, filename, mode);
         } elif mode == "single" {
-            tree = parse_interactive(source, filename);
+            tree = parse_interactive(source, filename, current_compile_flags());
             if tree is None {
                 result = py_error("SyntaxError", "invalid syntax");
             } else {
@@ -72,7 +80,9 @@ def compile_source(source: str, filename: str, mode: str, optimize: int) -> PyOb
     return result;
 }
 
-def compile_ast(tree: mod, filename: str, mode: str, optimize: int = 0) -> PyObj {
+def compile_ast(
+    tree: mod, filename: str, mode: str, optimize: int = 0, flags: int = 0
+) -> PyObj {
     if optimize not in (0, 1, 2) {
         return py_error("ValueError", "compile(): invalid optimize value");
     }
@@ -80,7 +90,7 @@ def compile_ast(tree: mod, filename: str, mode: str, optimize: int = 0) -> PyObj
     if is_error(reg) {
         return reg;
     }
-    enter_compile_context(optimize);
+    enter_compile_context(optimize, flags);
     try {
         if mode == "eval" and isinstance(tree, Expression) {
             result = compile_eval_ast(tree.body, filename);
@@ -106,7 +116,7 @@ def compile_eval_path(source: str, filename: str, mode: str) -> PyObj {
             "compile_source: mode '" + mode + "' not yet supported (Phase C)"
         );
     }
-    e = parse_eval_expr(source, filename);
+    e = parse_eval_expr(source, filename, current_compile_flags());
     if e is None {
         return py_error(
             "SyntaxError", "compile_source: failed to parse eval expression"
@@ -155,7 +165,7 @@ def compile_exec_path(source: str, filename: str, mode: str) -> PyObj {
             "compile_source: mode '" + mode + "' not yet supported"
         );
     }
-    m = parse_file(source, filename);
+    m = parse_file(source, filename, current_compile_flags());
     if m is None {
         return py_error("SyntaxError", "compile_source: failed to parse exec module");
     }
@@ -163,6 +173,14 @@ def compile_exec_path(source: str, filename: str, mode: str) -> PyObj {
 }
 
 def compile_exec_ast(m: Module, filename: str, interactive: bool = False) -> PyObj {
+    (features, future_result) = future_features(m.body);
+    if future_result.diag is not None {
+        return compiler_diag_to_pyobj(future_result.diag);
+    }
+    add_future_flags(features);
+    if current_compile_flags() & 0x1000000 {
+        stringify_future_annotations(m, filename);
+    }
     vr = validate_module_body(m.body);
     if vr.diag is not None {
         return compiler_diag_to_pyobj(vr.diag);

@@ -363,7 +363,7 @@ def pa_constant_from_string(tok: peg_token | None) -> Constant | None {
     }
     return Constant(
         value=value,
-        kind=None,
+        kind="u" if tok.spelling.startswith("u") else None,
         lineno=tok.lineno,
         col_offset=tok.col_offset,
         end_lineno=tok.end_lineno,
@@ -430,7 +430,7 @@ def pa_concatenate_strings(parts: list[object]) -> expr | None {
         last = parts[len(parts) - 1] as Constant;
         return Constant(
             value=PyStr(t="str", val=out),
-            kind=None,
+            kind=first.kind,
             lineno=first.lineno,
             col_offset=first.col_offset,
             end_lineno=last.end_lineno,
@@ -1547,7 +1547,7 @@ def pa_map_names_to_ids(names: list[expr]) -> list[str] {
 }
 
 def pa_seq_count_dots(seq: object) -> int {
-    return 0;
+    return sum(len(token.spelling) for token in (seq as list[peg_token]));
 }
 
 def pa_body_end_span(body: list[stmt]) -> tuple[int, int] {
@@ -1809,6 +1809,7 @@ def pa_check_legacy_stmt_or_raise(p: peg_parser, a: object, b: object) -> None {
 }
 
 def pa_checked_future_import(
+    p: peg_parser,
     module: object,
     names: object,
     level: object,
@@ -1828,6 +1829,13 @@ def pa_checked_future_import(
     alist: list[alias] = [];
     if isinstance(names, list) {
         alist = names as list[alias];
+    }
+    if mod == "__future__" and not lvl {
+        for item in alist {
+            if item.name == "barry_as_FLUFL" {
+                p.flags |= 0x400000;
+            }
+        }
     }
     return ImportFrom(
         module=mod,

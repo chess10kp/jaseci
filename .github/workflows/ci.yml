@@ -207,6 +207,13 @@ jobs:
               jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
             done
           done
+      - name: Compile and run upstream future-import tests with JacPython
+        run: |
+          for bridge_mode in "" "--runtime"; do
+            for test_module in test.test_future_stmt.test_future test.test_future_stmt.test_future_flags; do
+              jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module "$test_module"
+            done
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

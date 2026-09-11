@@ -16,7 +16,8 @@ import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_hand
 
 obj compile_context {
     has pending_break_finishes: list[pending_break_finish] = [],
-        optimize: int = 0;
+        optimize: int = 0,
+        flags: int = 0;
 }
 
 glob _compile_contexts: any = ContextVar(
@@ -28,9 +29,9 @@ def product_compile_active -> bool {
     return bool(_compile_contexts.get());
 }
 
-def enter_compile_context(optimize: int = 0) {
+def enter_compile_context(optimize: int = 0, flags: int = 0) {
     _compile_contexts.set(
-        _compile_contexts.get() + (compile_context(optimize=optimize), )
+        _compile_contexts.get() + (compile_context(optimize=optimize, flags=flags), )
     );
 }
 
@@ -108,4 +109,17 @@ def ensure_compile_registries_wired -> PyObj {
     }
     _registries_validated[0] = True;
     return py_none();
+}
+
+# Future flags belong to a compilation and are inherited by all nested code.
+def current_compile_flags -> int {
+    stack = _compile_contexts.get();
+    return stack[-1].flags if stack else 0;
+}
+
+def add_future_flags(flags: int) {
+    stack = _compile_contexts.get();
+    if stack {
+        stack[-1].flags |= flags;
+    }
 }

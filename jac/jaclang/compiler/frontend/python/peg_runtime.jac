@@ -74,6 +74,8 @@ obj peg_memo_hit {
 # ---------------- parser state ----------------
 obj peg_parser {
     has tok: tok_state,
+        flags: int = 0,
+        initial_flags: int = 0,
         tokens: list[peg_token] = [],
         source_lines: list[bytes] = [],
         mark: int = 0,
@@ -137,9 +139,11 @@ def _is_soft_keyword(p: peg_parser, spelling: str) -> bool {
     return False;
 }
 
-def peg_parser_from_source(source: str, filename: str, exec_input: bool) -> peg_parser {
+def peg_parser_from_source(
+    source: str, filename: str, exec_input: bool, flags: int = 0
+) -> peg_parser {
     st = tokenizer_from_string(source, filename, exec_input);
-    return peg_parser(tok=st, filename=filename);
+    return peg_parser(tok=st, filename=filename, flags=flags, initial_flags=flags);
 }
 
 def peg_set_keywords(p: peg_parser, lists: list[list[peg_keyword_entry]]) {
@@ -364,6 +368,7 @@ def peg_reset_for_error_pass(p: peg_parser) {
         i = i + 1;
     }
     p.mark = 0;
+    p.flags = p.initial_flags;
     p.call_invalid_rules = True;
     p.error_indicator = False;
     p.error = None;

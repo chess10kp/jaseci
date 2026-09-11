@@ -7539,6 +7539,7 @@ def rule_import_from(p: peg_parser) -> stmt | None {
                         end_lineno = end_tok.end_lineno;
                         end_col_offset = end_tok.end_col_offset;
                         res = pa_checked_future_import(
+                            p,
                             pa_name_id(b),
                             c,
                             pa_seq_count_dots(a),
@@ -12617,6 +12618,18 @@ def rule_noteq_bitwise_or(p: peg_parser) -> pa_cmpop_expr_pair | None {
     res: pa_cmpop_expr_pair | None = None;
     tok = peg_expect_token(p, 28);
     if tok is not None {
+        barry = bool(p.flags & 0x400000);
+        if (barry and tok.spelling == "!=") or (not barry and tok.spelling == "<>") {
+            pa_raise_syntax_known_expr(
+                p,
+                False,
+                tok,
+                "with Barry as BDFL, use '<>' instead of '!='"
+                    if barry
+                    else "invalid syntax"
+            );
+            return None;
+        }
         a = rule_bitwise_or(p);
         if a is not None {
             res = pa_make_cmpop_pair(NotEq(), a);
@@ -16853,8 +16866,8 @@ def parse_eval_module(p: peg_parser) -> mod | None {
     return res;
 }
 
-def parse_eval_source(source: str, filename: str) -> mod | None {
-    p = peg_parser_from_source(source, filename, True);
+def parse_eval_source(source: str, filename: str, flags: int = 0) -> mod | None {
+    p = peg_parser_from_source(source, filename, True, flags);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {
@@ -16865,8 +16878,8 @@ def parse_eval_source(source: str, filename: str) -> mod | None {
     return finish_parse(p, result, "eval");
 }
 
-def parse_eval_expr(source: str, filename: str) -> expr | None {
-    mod = parse_eval_source(source, filename);
+def parse_eval_expr(source: str, filename: str, flags: int = 0) -> expr | None {
+    mod = parse_eval_source(source, filename, flags);
     if mod is None {
         return None;
     }
@@ -16887,8 +16900,8 @@ def parse_file_module(p: peg_parser) -> mod | None {
     return res;
 }
 
-def parse_file_source(source: str, filename: str) -> mod | None {
-    p = peg_parser_from_source(source, filename, True);
+def parse_file_source(source: str, filename: str, flags: int = 0) -> mod | None {
+    p = peg_parser_from_source(source, filename, True, flags);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {
@@ -16899,8 +16912,8 @@ def parse_file_source(source: str, filename: str) -> mod | None {
     return finish_parse(p, result, "exec");
 }
 
-def parse_file(source: str, filename: str) -> Module | None {
-    mod = parse_file_source(source, filename);
+def parse_file(source: str, filename: str, flags: int = 0) -> Module | None {
+    mod = parse_file_source(source, filename, flags);
     if mod is None {
         return None;
     }
@@ -16910,8 +16923,10 @@ def parse_file(source: str, filename: str) -> Module | None {
     return None;
 }
 
-def parse_interactive(source: str, filename: str) -> Interactive | None {
-    p = peg_parser_from_source(source, filename, True);
+def parse_interactive(
+    source: str, filename: str, flags: int = 0
+) -> Interactive | None {
+    p = peg_parser_from_source(source, filename, True, flags);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {

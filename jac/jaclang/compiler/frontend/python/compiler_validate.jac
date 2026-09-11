@@ -6,6 +6,7 @@
 # only via product_compile.jac.
 
 import from jaclang.compiler.frontend.python.ast_nodes {
+    ImportFrom,
     ast_node,
     Is,
     IsNot,
@@ -402,6 +403,11 @@ def validate_subscript_slice(key: expr, in_function: bool) -> validation_result 
 def validate_store_target(t: expr, in_function: bool) -> validation_result {
     if isinstance(t, Name) {
         n = t as Name;
+        if n.id == "__debug__" {
+            return validation_error(
+                "SyntaxError", "cannot assign to __debug__", n.lineno, n.col_offset
+            );
+        }
         if not isinstance(n.ctx, Store) {
             return validation_error(
                 "SyntaxError", "cannot assign to " + n.id, n.lineno, n.col_offset
@@ -411,6 +417,11 @@ def validate_store_target(t: expr, in_function: bool) -> validation_result {
     }
     if isinstance(t, Attribute) {
         a = t as Attribute;
+        if a.attr == "__debug__" {
+            return validation_error(
+                "SyntaxError", "cannot assign to __debug__", a.lineno, a.col_offset
+            );
+        }
         if not isinstance(a.ctx, Store) {
             return validation_error(
                 "SyntaxError", "illegal target for assignment", a.lineno, a.col_offset
@@ -917,4 +928,87 @@ def validate_eval_expr(e: expr) -> validation_result {
         return result;
     }
     return validate_load_expr(e, False);
+}
+
+# Resolve future directives before scopes are built. Only a leading docstring
+# and other future directives may precede them, including on the same line.
+def future_features(body: list[stmt]) -> tuple[int, validation_result] {
+    allowed: set[int] = set();
+    flags = 0;
+    obsolete = (
+        "nested_scopes",
+        "generators",
+        "division",
+        "absolute_import",
+        "with_statement",
+        "print_function",
+        "unicode_literals",
+        "generator_stop"
+    );
+    for (index, item) in enumerate(body) {
+        if index == 0
+            and isinstance(item, Expr)
+            and isinstance(item.value, Constant)
+            and item.value.value.t == "str" {
+            continue;
+        }
+        if not isinstance(item, ImportFrom)
+            or item.module != "__future__"
+            or item.level {
+            break;
+        }
+        allowed.add(id(item));
+        for feature in item.names {
+            if feature.name in obsolete {
+                continue;
+            }
+            if feature.name == "barry_as_FLUFL" {
+                flags |= 0x400000;
+            } elif feature.name == "annotations" {
+                flags |= 0x1000000;
+            } else {
+                message = "not a chance"
+                    if feature.name == "braces"
+                    else "future feature " + feature.name[:100] + " is not defined";
+                return (
+                    flags,
+                    validation_error(
+                        "SyntaxError", message, feature.lineno, feature.col_offset
+                    )
+                );
+            }
+        }
+    }
+    pending: list[ast_node] = [item for item in reversed(body)];
+    while pending {
+        item = pending.pop();
+        if isinstance(item, ImportFrom)
+            and item.module == "__future__"
+            and not item.level
+            and id(item) not in allowed {
+            return (
+                flags,
+                validation_error(
+                    "SyntaxError",
+                    "from __future__ imports must occur at the beginning of the file",
+                    item.lineno,
+                    item.col_offset
+                )
+            );
+        }
+        children: list[ast_node] = [];
+        for value in vars(item).values() {
+            if isinstance(value, ast_node) {
+                children.append(value);
+            } elif isinstance(value, list) {
+                children.extend(
+                    child
+                    for child in value
+                    if isinstance(child, ast_node)
+                );
+            }
+        }
+        pending.extend(reversed(children));
+    }
+    return (flags, validation_ok());
 }

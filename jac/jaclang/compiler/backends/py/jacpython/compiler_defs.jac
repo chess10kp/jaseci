@@ -121,6 +121,7 @@ import from jaclang.compiler.backends.py.jacpython.compiler_exc {
 import from jaclang.compiler.backends.py.jacpython.compiler_annotations {
     collect_ann_plan_class,
     emit_class_annotation_setup,
+    emit_future_function_annotations,
     finish_class_annotations
 }
 
@@ -645,6 +646,10 @@ def visit_function_def(g: cfg_builder, fd: FunctionDef) -> stmt_cont {
         di = di + 1;
     }
     emit_make_function_with_closure(g, sym_fn, co, floc, fd.args);
+    emit_future_function_annotations(g, fd);
+    if codegen_busy(g) {
+        return stmt_cont(loc=floc);
+    }
     ri = len(decorators) - 1;
     while ri >= 0 {
         dec = decorators[ri];
@@ -711,6 +716,10 @@ def visit_async_function_def(g: cfg_builder, afd: AsyncFunctionDef) -> stmt_cont
         di = di + 1;
     }
     emit_make_function_with_closure(g, sym_fn, co, floc, afd.args);
+    emit_future_function_annotations(g, afd);
+    if codegen_busy(g) {
+        return stmt_cont(loc=floc);
+    }
     ri = len(decorators) - 1;
     while ri >= 0 {
         dec = decorators[ri];

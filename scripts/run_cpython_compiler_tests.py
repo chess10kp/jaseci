@@ -17,6 +17,7 @@ import hashlib
 import importlib
 import io
 import json
+import operator
 from pathlib import Path
 import sys
 import tarfile
@@ -100,10 +101,15 @@ def main() -> int:
         print(f"JACPYTHON_TEST_MODULE {args.module}", flush=True)
     calls = 0
 
-    def replacement_compile(*args, **kwargs):
+    def replacement_compile(source, filename, mode, flags=0, dont_inherit=False,
+                            optimize=-1, **kwargs):
         nonlocal calls
         calls += 1
-        return compile_python(*args, **kwargs)
+        flags = operator.index(flags)
+        dont_inherit = bool(dont_inherit)
+        if not dont_inherit:
+            flags |= sys._getframe(1).f_code.co_flags & 0x1FE0000
+        return compile_python(source, filename, mode, flags, dont_inherit, optimize, **kwargs)
 
     def replacement_eval(source, globals=None, locals=None):
         frame = sys._getframe(1)
@@ -112,7 +118,8 @@ def main() -> int:
             if locals is None:
                 locals = frame.f_locals
         if isinstance(source, (str, bytes, bytearray, memoryview)):
-            source = replacement_compile(source, "<string>", "eval")
+            source = replacement_compile(source, "<string>", "eval",
+                                         frame.f_code.co_flags & 0x1FE0000, True)
         return builtins.eval(source, globals, locals)
 
     def replacement_exec(source, globals=None, locals=None, *, closure=None):
@@ -122,7 +129,8 @@ def main() -> int:
             if locals is None:
                 locals = frame.f_locals
         if isinstance(source, (str, bytes, bytearray, memoryview)):
-            source = replacement_compile(source, "<string>", "exec")
+            source = replacement_compile(source, "<string>", "exec",
+                                         frame.f_code.co_flags & 0x1FE0000, True)
         return builtins.exec(source, globals, locals, closure=closure)
 
     class Result(unittest.TextTestResult):
