@@ -202,7 +202,9 @@ SETUP
     # without a libpython next to the copied executable. Jac's launcher still
     # uses the separately built shared library. Neither needs libpython3.so.
     make -j"$jobs" PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)'
-    make -j"$jobs" PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)' install
+    # CPython's install targets create overlapping directories. BSD install
+    # fails if another target creates the same directory after its check.
+    make -j1 PY3LIBRARY= 'LINK_PYTHON_OBJS=$(LIBRARY_OBJS)' install
 }
 # Preserve notices before discarding each dependency's installed build tree.
 mkdir -p "$work/python/licenses"
