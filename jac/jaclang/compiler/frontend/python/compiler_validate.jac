@@ -434,28 +434,6 @@ def validate_stmt_list(
     return validation_ok();
 }
 
-def validate_duplicate_names(
-    names: list[str], kind: str, lineno: int, col_offset: int
-) -> validation_result {
-    ni = 0;
-    while ni < len(names) {
-        nj = ni + 1;
-        while nj < len(names) {
-            if names[ni] == names[nj] {
-                return validation_error(
-                    "SyntaxError",
-                    "name '" + names[ni] + "' is repeated in " + kind + " declaration",
-                    lineno,
-                    col_offset
-                );
-            }
-            nj = nj + 1;
-        }
-        ni = ni + 1;
-    }
-    return validation_ok();
-}
-
 def validate_subscript_slice(key: expr, in_function: bool) -> validation_result {
     if isinstance(key, Slice) {
         sl = key as Slice;
@@ -671,16 +649,10 @@ def validate_stmt(
     if isinstance(s, Expr) {
         return validate_load_expr((s as Expr).value, in_function);
     }
-    if isinstance(s, Pass) {
+    if isinstance(s, (Pass, Global, Nonlocal)) {
+        # Repeated names within one global/nonlocal declaration are legal.
+        # Scope conflicts and ordering are checked by the symbol-table pass.
         return validation_ok();
-    }
-    if isinstance(s, Global) {
-        g = s as Global;
-        return validate_duplicate_names(g.names, "global", g.lineno, g.col_offset);
-    }
-    if isinstance(s, Nonlocal) {
-        nl = s as Nonlocal;
-        return validate_duplicate_names(nl.names, "nonlocal", nl.lineno, nl.col_offset);
     }
     if isinstance(s, For) {
         fo = s as For;

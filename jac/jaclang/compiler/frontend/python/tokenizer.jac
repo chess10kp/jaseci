@@ -1057,7 +1057,9 @@ def _read_string(st: tok_state) -> tok_token | tok_diag {
                 return tok;
             }
         }
-        if ch == "\\" and not raw {
+        # Raw strings preserve escapes in the value, but an escaped quote still
+        # cannot begin the closing delimiter, including for triple quotes.
+        if ch == "\\" {
             _advance(st);
             if st.pos < len(st.source) {
                 _advance(st);

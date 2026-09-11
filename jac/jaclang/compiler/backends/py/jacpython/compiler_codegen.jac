@@ -855,7 +855,9 @@ def visit_assert_stmt(g: cfg_builder, a: Assert) -> stmt_cont {
     if codegen_busy(g) {
         return stmt_cont(loc=aloc);
     }
-    ok = g.new_block();
+    # Message expressions can create their own blocks (for comprehensions,
+    # conditionals and short-circuit operators). Place success after all of them.
+    ok = g.new_deferred_block();
     emit_branch_if_test_true(g, kind, ok.id, test_loc);
     g.emit_op(OP_LOAD_COMMON_CONSTANT, 0, aloc);
     if a.msg is not None {

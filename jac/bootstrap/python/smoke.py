@@ -47,7 +47,56 @@ if required_compiler is not None:
         tokens = [item[:2] for item in tokenize.generate_tokens(io.StringIO(source).readline)]
         rebuilt = tokenize.untokenize(tokens)
         assert [item[:2] for item in tokenize.generate_tokens(io.StringIO(rebuilt).readline)] == tokens
+    for prefix in ("r", "R", "rb", "br", "rB", "Rb", "bR", "Br", "RB", "BR"):
+        for quote in ("'", '"'):
+            for count in (1, 2):
+                body = ("\\" + quote) * count
+                source = prefix + quote * 3 + body + quote * 3
+                expected = body.encode() if "b" in prefix.lower() else body
+                assert eval(source) == expected, source
     compiler = sys._jacpython_compile
+    namespace = {}
+    exec(compile("""
+def checked(ok, values):
+    assert ok, f"{[item * 2 for item in values]}"
+    return 42
+scalar = lambda: "not a name"
+sequence = lambda: ("not a name",)
+member = lambda value: value in {("not a name",)}
+def set_global():
+    global declared, declared
+    declared = 42
+def outer():
+    value = 0
+    def inner():
+        nonlocal value, value
+        value = 42
+    inner()
+    return value
+""", "<compiler-regressions>", "exec", optimize=0), namespace)
+    assert namespace["checked"](True, None) == 42
+    try:
+        namespace["checked"](False, [1, 2])
+    except AssertionError as error:
+        assert str(error) == "[2, 4]", error
+    else:
+        raise AssertionError("Assertion message control flow was bypassed")
+    assert namespace["member"](("not a name",))
+    assert not namespace["member"]("not a name")
+    frozen = next(c for c in namespace["member"].__code__.co_consts if isinstance(c, frozenset))
+    sequence = next(c for c in namespace["sequence"].__code__.co_consts if isinstance(c, tuple))
+    assert next(iter(frozen)) is sequence
+    assert sequence[0] is namespace["scalar"]()
+    namespace["set_global"]()
+    assert namespace["declared"] == namespace["outer"]() == 42
+    import ast
+    tree = ast.parse("class Located:\n    value = 42\n")
+    tree.body[0].lineno = 10
+    tree.body[0].end_lineno = 11
+    located_code = compile(tree, "<separate-class-body>", "exec")
+    exec(located_code, namespace)
+    assert namespace["Located"].value == 42
+    assert all(end is None or end >= start for start, end, _, _ in located_code.co_positions())
 
     def unavailable(*args, **kwargs):
         raise RuntimeError("compiler failure must propagate")

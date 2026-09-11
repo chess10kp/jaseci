@@ -8,9 +8,13 @@
 # Product module: imports compiler_ir + opcode_meta + objects only.
 # Never imports assembler.
 
-import from jaclang.runtime.python.objects { PyInt, PyObj }
+import from jaclang.runtime.python.objects { PyInt, PyObj, PyTuple, PySet, is_error }
 import from jaclang.runtime.python.opcode_meta {
     OP_LOAD_CONST,
+    OP_BUILD_LIST,
+    OP_BUILD_SET,
+    OP_CONTAINS_OP,
+    OP_GET_ITER,
     OP_LOAD_SMALL_INT,
     opcode_has_const,
     OP_NOT_TAKEN,
@@ -992,7 +996,88 @@ def remove_unreachable_blocks(u: unverified_cfg) -> bool {
     return removed;
 }
 
+def optimize_literal_iterables(u: unverified_cfg) {
+    # Membership and iteration never expose their temporary list/set. Replace
+    # constant displays with a tuple/frozenset, as CPython's flowgraph pass does.
+    # This also preserves shared nested constants across code objects.
+    for block in u.blocks {
+        for index in range(len(block.instrs) - 1) {
+            ins = block.instrs[index];
+            nextop = block.instrs[index + 1].opcode;
+            if nextop not in (OP_CONTAINS_OP, OP_GET_ITER) {
+                continue;
+            }
+            if ins.opcode in (OP_LIST_EXTEND, OP_SET_UPDATE)
+                and ins.oparg == 1
+                and index >= 2 {
+                start = block.instrs[index - 2];
+                const_load = block.instrs[index - 1];
+                buildop = OP_BUILD_LIST
+                    if ins.opcode == OP_LIST_EXTEND
+                    else OP_BUILD_SET;
+                if start.opcode == buildop
+                    and start.oparg == 0
+                    and const_load.opcode == OP_LOAD_CONST
+                    and (
+                        (
+                            buildop == OP_BUILD_LIST
+                            and isinstance(u.consts[const_load.oparg], PyTuple)
+                        )
+                        or (
+                            buildop == OP_BUILD_SET
+                            and isinstance(u.consts[const_load.oparg], PySet)
+                        )
+                    ) {
+                    start.opcode = OP_NOP;
+                    ins.opcode = OP_NOP;
+                }
+                continue;
+            }
+            if ins.opcode not in (OP_BUILD_LIST, OP_BUILD_SET) or ins.oparg > index {
+                continue;
+            }
+            count = ins.oparg;
+            loads = block.instrs[index - count:index];
+            values: list[PyObj] = [];
+            for load in loads {
+                if load.opcode == OP_LOAD_CONST {
+                    values.append(u.consts[load.oparg]);
+                } elif load.opcode == OP_LOAD_SMALL_INT {
+                    values.append(PyInt(t="int", val=load.oparg));
+                } else {
+                    break;
+                }
+            }
+            if len(values) != count {
+                continue;
+            }
+            folded: PyObj = PyTuple(t="tuple", items=values);
+            if ins.opcode == OP_BUILD_SET {
+                frozen = PySet(t="frozenset", items={}, frozen=True);
+                valid = True;
+                for value in values {
+                    if is_error(frozen.set_add(value)) {
+                        valid = False;
+                        break;
+                    }
+                }
+                if not valid {
+                    continue;
+                }
+                folded = frozen;
+            }
+            for load in loads {
+                load.opcode = OP_NOP;
+            }
+            ins.opcode = OP_LOAD_CONST;
+            ins.oparg = u.add_const(folded);
+        }
+        opt_compact_block(block);
+    }
+}
+
 def optimize_cfg(u: unverified_cfg) {
+    optimize_literal_iterables(u);
     iterations = 0;
     while iterations < 100 {
         c1 = inline_small_exit_blocks(u);

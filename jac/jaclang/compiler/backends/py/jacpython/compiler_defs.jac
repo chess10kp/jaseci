@@ -375,19 +375,10 @@ def class_body_has_function(cd: ClassDef) -> bool {
 
 # Class-body prologue locations (CPython 3.14): MAKE_CELL carries NO_LOCATION;
 # RESUME points at the class statement line (def-line form, like nested scopes).
-# CPython spans for `class` statements run through the last body statement
-# (same parser-end_tok overshoot as function_def_loc, see codegen_util).
+# Use the class node's span. A supplied AST can have body statements from an
+# implementation file whose line numbers precede the class declaration.
 def class_def_loc(cd: ClassDef) -> cloc {
-    last = cd.body[len(cd.body) - 1];
-    end_ln = last.lineno;
-    end_col = last.col_offset;
-    if last.end_lineno is not None {
-        end_ln = last.end_lineno;
-    }
-    if last.end_col_offset is not None {
-        end_col = last.end_col_offset;
-    }
-    return loc(cd.lineno, end_ln, cd.col_offset, end_col);
+    return nloc(cd.lineno, cd.end_lineno, cd.col_offset, cd.end_col_offset);
 }
 
 
