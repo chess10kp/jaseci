@@ -16,6 +16,7 @@ import from jaclang.compiler.frontend.python.token_model {
     DEDENT,
     NL,
     COMMENT,
+    TYPE_IGNORE,
     ERRORTOKEN,
     NT_OFFSET,
     TOK_NO_LINE,
@@ -76,6 +77,8 @@ obj peg_parser {
     has tok: tok_state,
         flags: int = 0,
         initial_flags: int = 0,
+        feature_version: int = 14,
+        type_ignores: list[tuple[int, str]] = [],
         tokens: list[peg_token] = [],
         source_lines: list[bytes] = [],
         mark: int = 0,
@@ -140,10 +143,21 @@ def _is_soft_keyword(p: peg_parser, spelling: str) -> bool {
 }
 
 def peg_parser_from_source(
-    source: str, filename: str, exec_input: bool, flags: int = 0
+    source: str,
+    filename: str,
+    exec_input: bool,
+    flags: int = 0,
+    feature_version: int = 14
 ) -> peg_parser {
     st = tokenizer_from_string(source, filename, exec_input);
-    return peg_parser(tok=st, filename=filename, flags=flags, initial_flags=flags);
+    st.type_comments = bool(flags & 0x1000);
+    return peg_parser(
+        tok=st,
+        filename=filename,
+        flags=flags,
+        initial_flags=flags,
+        feature_version=feature_version
+    );
 }
 
 def peg_set_keywords(p: peg_parser, lists: list[list[peg_keyword_entry]]) {
@@ -174,6 +188,10 @@ def peg_fill_token(p: peg_parser) -> bool {
         return True;
     }
     raw = tokenizer_next(p.tok);
+    while isinstance(raw, tok_token) and raw.tok_type == TYPE_IGNORE {
+        p.type_ignores.append((raw.lineno, raw.spelling));
+        raw = tokenizer_next(p.tok);
+    }
     if isinstance(raw, tok_diag) {
         p.error = raw;
         p.error_indicator = True;
@@ -181,6 +199,16 @@ def peg_fill_token(p: peg_parser) -> bool {
     }
     tok = raw as tok_token;
     tok_type = tok.tok_type;
+    if tok_type == NUMBER and "_" in tok.spelling and p.feature_version < 6 {
+        p.error = mk_diag(
+            "SyntaxError",
+            "Underscores in numeric literals are only supported in Python 3.6 and greater",
+            peg_token_loc(peg_token_from_tok(tok)),
+            p.filename
+        );
+        p.error_indicator = True;
+        return False;
+    }
     if tok_type == NAME {
         tok_type = _keyword_type_for(p, tok.spelling);
     }

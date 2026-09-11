@@ -16,6 +16,8 @@ import from jaclang.compiler.frontend.python.token_model {
     INDENT,
     DEDENT,
     ERRORTOKEN,
+    TYPE_COMMENT,
+    TYPE_IGNORE,
     LPAR,
     RPAR,
     LSQB,
@@ -69,6 +71,7 @@ obj tok_state {
         line_start: int = 0,
         filename: str = "<unknown>",
         exec_input: bool = False,
+        type_comments: bool = False,
         done: bool = False,
         error: tok_diag | None = None,
         at_bol: bool = True,
@@ -147,6 +150,26 @@ def _skip_comment_line(st: tok_state) -> bool {
     return False;
 }
 
+# Spaces in the prefix match zero or more ASCII spaces/tabs, as in CPython.
+def _type_comment_start(st: tok_state) -> int {
+    if not st.type_comments {
+        return -1;
+    }
+    pos = st.pos;
+    for ch in "# type: " {
+        if ch == " " {
+            while pos < len(st.source) and st.source[pos] in " \t" {
+                pos += 1;
+            }
+        } elif pos < len(st.source) and st.source[pos] == ch {
+            pos += 1;
+        } else {
+            return -1;
+        }
+    }
+    return pos;
+}
+
 def _measure_indent(st: tok_state) -> int {
     col = 0;
     while st.pos < len(st.source) {
@@ -205,6 +228,10 @@ def _process_bol_indent(st: tok_state) -> int {
     if st.pos < len(st.source) {
         ch = st.source[st.pos];
         if ch == "#" {
+            if _type_comment_start(st) >= 0 {
+                st.at_bol = False;
+                return 0;
+            }
             if _skip_comment_line(st) {
                 _consume_bol_newline(st);
                 return 1;
@@ -1057,12 +1084,43 @@ def _tokenizer_next(st: tok_state) -> tok_token | tok_diag {
             # Comment: consume to end of line (not the newline itself, which the
             # newline branch handles). Matches CPython's comment-then-NEWLINE.
             comment_start = st.col_offset;
+            start_pos = st.pos;
+            type_start = _type_comment_start(st);
+            blankline = not st.source[st.line_start:st.pos].strip();
             while st.pos < len(st.source) and _peek(st) != "\n" and _peek(st) != "\r" {
                 _advance(st);
             }
             st.comments.setdefault(st.lineno, []).append(
                 (comment_start, st.col_offset)
             );
+            if type_start >= 0 {
+                payload = st.source[type_start:st.pos];
+                kind = TYPE_COMMENT;
+                if payload.startswith("ignore")
+                    and (
+                        len(payload) == 6
+                        or (ord(payload[6]) < 128 and not payload[6].isalnum())
+                    ) {
+                    kind = TYPE_IGNORE;
+                    payload = payload[6:];
+                    type_start += 6;
+                }
+                token = tok_token(
+                    tok_type=kind,
+                    spelling=payload,
+                    lineno=st.lineno,
+                    col_offset=comment_start + type_start - start_pos,
+                    end_lineno=st.lineno,
+                    end_col_offset=st.col_offset
+                );
+                if kind == TYPE_IGNORE and blankline {
+                    # The tokenizer includes the consumed (or implicit final)
+                    # newline in standalone ignore tags.
+                    token.spelling += "\n";
+                    _consume_bol_newline(st);
+                }
+                return token;
+            }
             continue;
         }
         if ch == "\\"
@@ -1263,7 +1321,7 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
         token.level = st.paren_level;
         if token.tok_type == NEWLINE {
             st.line_has_code = False;
-        } elif token.tok_type not in (ENDMARKER, INDENT, DEDENT) {
+        } elif token.tok_type not in (ENDMARKER, INDENT, DEDENT, TYPE_IGNORE) {
             st.line_has_code = True;
         }
     }

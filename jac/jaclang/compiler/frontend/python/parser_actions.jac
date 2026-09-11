@@ -1221,8 +1221,7 @@ def pa_ast_expr_stmt(
     );
 }
 
-# star_targets '=' annotated_rhs -> Assign. NEW_TYPE_COMMENT is lowered to None
-# (type comments disabled).
+# star_targets '=' annotated_rhs -> Assign.
 def pa_ast_assign(
     targets: list[expr],
     value: expr,
@@ -2022,6 +2021,9 @@ def pa_alias_for_star(
 }
 
 def pa_add_type_comment_to_arg(arg: arg, comment: object) -> arg {
+    if isinstance(comment, peg_token) {
+        arg.type_comment = comment.spelling;
+    }
     return arg;
 }
 

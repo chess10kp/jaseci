@@ -62,6 +62,89 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     DictComp,
     GeneratorExp,
 }
+import jaclang.compiler.frontend.python.ast_nodes as nodes;
+
+# Feature versions constrain source grammar; AST inputs are already parsed.
+def validate_feature_version(value: any, version: int) {
+    if version >= 14 {
+        return;
+    }
+    if isinstance(value, list) {
+        for item in value {
+            validate_feature_version(item, version);
+        }
+        return;
+    }
+    if not isinstance(value, nodes.ast_node) {
+        return;
+    }
+    minimum = 0;
+    feature = "";
+    if isinstance(value, nodes.AsyncFunctionDef) {
+        minimum = 5;
+        feature = "Async functions are";
+    } elif isinstance(value, nodes.AsyncFor) {
+        minimum = 5;
+        feature = "Async for loops are";
+    } elif isinstance(value, nodes.AsyncWith) {
+        minimum = 5;
+        feature = "Async with statements are";
+    } elif isinstance(value, nodes.Await) {
+        minimum = 5;
+        feature = "Await expressions are";
+    } elif isinstance(value, (nodes.BinOp, nodes.AugAssign))
+        and isinstance(value.op, nodes.MatMult) {
+        minimum = 5;
+        feature = "The '@' operator is";
+    } elif isinstance(value, nodes.AnnAssign) {
+        minimum = 6;
+        feature = "Variable annotation syntax is";
+    } elif isinstance(value, nodes.comprehension) and value.is_async {
+        minimum = 6;
+        feature = "Async comprehensions are";
+    } elif isinstance(value, nodes.arguments) and value.posonlyargs {
+        minimum = 8;
+        feature = "Positional-only parameters are";
+    } elif isinstance(value, nodes.NamedExpr) {
+        minimum = 8;
+        feature = "Assignment expressions are";
+    } elif isinstance(value, nodes.Match) {
+        minimum = 10;
+        feature = "Pattern matching is";
+    } elif isinstance(value, nodes.TryStar) {
+        minimum = 11;
+        feature = "Exception groups are";
+    } elif isinstance(value, nodes.TypeAlias) {
+        minimum = 12;
+        feature = "Type statement is";
+    } elif isinstance(value, nodes.TemplateStr) {
+        minimum = 14;
+        feature = "t-strings are";
+    }
+    if isinstance(value, (nodes.FunctionDef, nodes.AsyncFunctionDef, nodes.ClassDef))
+        and value.type_params
+        and minimum < 12 {
+        minimum = 12;
+        feature = "Type parameter lists are";
+    }
+    if isinstance(value, (nodes.TypeVar, nodes.TypeVarTuple, nodes.ParamSpec))
+        and value.default_value is not None {
+        minimum = 13;
+        feature = "Type parameter defaults are";
+    }
+    if version < minimum {
+        line = getattr(value, "lineno", 1);
+        column = getattr(value, "col_offset", 0);
+        raise SyntaxError(
+            f"{feature} only supported in Python 3.{minimum} and greater",
+            ("<unknown>", line, column + 1, None)
+        );
+    }
+    for child in vars(value).values() {
+        validate_feature_version(child, version);
+    }
+}
+
 import from jaclang.compiler.frontend.python.compiler_diagnostics {
     compiler_diagnostic,
     validation_diagnostic,

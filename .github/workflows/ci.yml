@@ -223,6 +223,22 @@ jobs:
               BuiltinTest.test_compile_top_level_await_invalid_cases \
               BuiltinTest.test_compile_async_generator
           done
+      - name: Run upstream type-comment and grammar-version tests
+        run: |
+          for bridge_mode in "--ast-api" "--runtime"; do
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --compile-tests --module test.test_type_comments
+            jac -c 'import runpy; runpy.run_path("scripts/run_cpython_compiler_tests.py", run_name="__main__")' $bridge_mode --module test.test_ast.test_ast --tests \
+              AST_Tests.test_positional_only_feature_version \
+              AST_Tests.test_assignment_expression_feature_version \
+              AST_Tests.test_pep750_tstring \
+              AST_Tests.test_pep758_except_without_parens \
+              AST_Tests.test_pep758_except_with_single_expr \
+              AST_Tests.test_pep758_except_star_without_parens \
+              AST_Tests.test_conditional_context_managers_parse_with_low_feature_version \
+              AST_Tests.test_exception_groups_feature_version \
+              AST_Tests.test_type_params_feature_version \
+              AST_Tests.test_type_params_default_feature_version
+          done
 
   # The kit lane: build the binary from this checkout, smoke it, vendor the
   # runtime trees, publish the kit. Every test lane waits on it, so the suite

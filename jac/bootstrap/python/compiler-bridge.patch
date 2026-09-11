@@ -13,7 +13,7 @@
  #endif
 
 +/* Dispatch is opt-in until compiler compatibility and bootstrap gates pass. */
-+PyAPI_FUNC(int) _PyJac_CompilerBridgeVersion(void) { return 1; }
++PyAPI_FUNC(int) _PyJac_CompilerBridgeVersion(void) { return 2; }
 +
  /* Forward */
 +static PyObject *run_eval_code_obj(PyThreadState *, PyCodeObject *, PyObject *, PyObject *);
@@ -105,7 +105,7 @@
  Python/getplatform.o: $(srcdir)/Python/getplatform.c
 --- /dev/null
 +++ b/Python/jac_compile.h
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,111 @@
 +/* Development dispatch to Jac's Python compiler; no fallback once enabled. */
 +#ifndef Py_JAC_COMPILE_H
 +#define Py_JAC_COMPILE_H
@@ -144,8 +144,16 @@
 +    }
 +    int options = flags ? flags->cf_flags : 0;
 +    options &= ~(PyCF_SOURCE_IS_UTF8 | PyCF_IGNORE_COOKIE);
-+    PyObject *result = PyObject_CallFunction(compiler, "OOsiii", source,
-+                                            filename, mode, options, 1, optimize);
++    PyObject *call_args = Py_BuildValue("(OOsiii)", source, filename,
++                                        mode, options, 1, optimize);
++    PyObject *kwargs = call_args == NULL ? NULL : Py_BuildValue(
++        "{s:i}", "_feature_version", flags ? flags->cf_feature_version : -1);
++    PyObject *result = NULL;
++    if (kwargs != NULL) {
++        result = PyObject_Call(compiler, call_args, kwargs);
++    }
++    Py_XDECREF(call_args);
++    Py_XDECREF(kwargs);
 +    Py_DECREF(compiler);
 +    if (result == NULL) {
 +        return NULL;

@@ -130,7 +130,9 @@ def compile_python(
     mode: str,
     flags: int = 0,
     dont_inherit: bool = False,
-    optimize: int = -1
+    optimize: int = -1,
+    *,
+    _feature_version: int = -1
 ) -> any {
     import ast;
     import builtins;
@@ -153,14 +155,20 @@ def compile_python(
     }
     flags = operator.index(flags);
     optimize = operator.index(optimize);
+    _feature_version = operator.index(_feature_version);
     if flags < -(1 << 31)
         or flags >= (1 << 31)
         or optimize < -(1 << 31)
-        or optimize >= (1 << 31) {
+        or optimize >= (1 << 31)
+        or _feature_version < -(1 << 31)
+        or _feature_version >= (1 << 31) {
         raise OverflowError("Python int too large to convert to C int");
     }
     dont_inherit = bool(dont_inherit);
-    if mode not in ("exec", "eval", "single") {
+    if mode == "func_type" and not flags & ast.PyCF_ONLY_AST {
+        raise ValueError("compile() mode 'func_type' requires flag PyCF_ONLY_AST");
+    }
+    if mode not in ("exec", "eval", "single", "func_type") {
         raise ValueError("compile() mode must be 'exec', 'eval' or 'single'");
     }
     if flags & ~(0x1FE0000 | 0x10 | 0xF600) {
@@ -169,7 +177,7 @@ def compile_python(
     if not dont_inherit {
         flags |= sys._getframe(1).f_code.co_flags & 0x1FE0000;
     }
-    if flags & 0xD200 {
+    if flags & 0xC200 {
         raise NotImplementedError(
             "JacPython parsing and optimization flags are not implemented yet"
         );
@@ -215,15 +223,19 @@ def compile_python(
             import from jaclang.compiler.frontend.python.parser {
                 parse_file,
                 parse_eval_source,
-                parse_interactive
+                parse_interactive,
+                parse_func_type
             }
+            version = _feature_version if _feature_version >= 0 else 14;
             tree: mod | None = None;
             if mode == "exec" {
-                tree = parse_file(source, filename, flags);
+                tree = parse_file(source, filename, flags, version);
             } elif mode == "eval" {
-                tree = parse_eval_source(source, filename, flags);
+                tree = parse_eval_source(source, filename, flags, version);
+            } elif mode == "func_type" {
+                tree = parse_func_type(source, filename, flags, version);
             } else {
-                tree = parse_interactive(source, filename, flags);
+                tree = parse_interactive(source, filename, flags, version);
             }
             if tree is None {
                 raise SyntaxError("invalid syntax");

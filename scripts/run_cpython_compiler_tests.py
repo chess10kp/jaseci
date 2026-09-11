@@ -66,6 +66,10 @@ def main() -> int:
     )
     parser.add_argument("--module", default="test.test_compile")
     parser.add_argument(
+        "--ast-api", action="store_true",
+        help="Also route stdlib ast.parse through the direct replacement API",
+    )
+    parser.add_argument(
         "--compile-tests", action="store_true",
         help="Compile the upstream test module itself with JacPython",
     )
@@ -163,6 +167,8 @@ def main() -> int:
         for name in ("compile", "eval", "exec")
     }
     original_defaults = []
+    import ast
+    original_ast_compile = ast.__dict__.get("compile")
     if args.runtime:
         import ctypes
 
@@ -170,12 +176,14 @@ def main() -> int:
             bridge_version = ctypes.pythonapi._PyJac_CompilerBridgeVersion
         except AttributeError as error:
             raise RuntimeError("Rebuild the Python runtime with the JacPython bridge") from error
-        if bridge_version() != 1:
+        if bridge_version() != 2:
             raise RuntimeError("Unsupported JacPython runtime bridge version")
         if getattr(sys, "_jacpython_compile", None) is not None:
             raise RuntimeError("JacPython runtime dispatch is already enabled")
         sys._jacpython_compile = replacement_compile
     else:
+        if args.ast_api:
+            ast.compile = replacement_compile
         test_module.compile = replacement_compile
         test_module.eval = replacement_eval
         test_module.exec = replacement_exec
@@ -225,6 +233,11 @@ def main() -> int:
             fn.__defaults__, fn.__kwdefaults__ = defaults, kwdefaults
         if args.runtime:
             del sys._jacpython_compile
+        elif args.ast_api:
+            if original_ast_compile is None:
+                ast.__dict__.pop("compile", None)
+            else:
+                ast.compile = original_ast_compile
         for name, value in original.items():
             if value is None:
                 test_module.__dict__.pop(name, None)

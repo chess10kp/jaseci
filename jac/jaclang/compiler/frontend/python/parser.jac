@@ -3813,6 +3813,7 @@ def rule_assignment(p: peg_parser) -> stmt | None {
                 res = pa_ast_assign(
                     a_3, b, start_lineno, start_col_offset, end_lineno, end_col_offset
                 );
+                res.type_comment = tc.spelling if tc is not None else None;
                 return res;
             }
         }
@@ -6136,6 +6137,12 @@ def rule_except_block(p: peg_parser) -> excepthandler | None {
                         end_lineno=end_lineno,
                         end_col_offset=end_col_offset
                     );
+                    if p.feature_version < 14 {
+                        raise SyntaxError(
+                            "except expressions without parentheses are only supported in Python 3.14 and greater",
+                            (p.filename, start_lineno, start_col_offset + 1, None)
+                        );
+                    }
                     return res;
                 }
             }
@@ -6298,6 +6305,12 @@ def rule_except_star_block(p: peg_parser) -> excepthandler | None {
                             end_lineno=end_lineno,
                             end_col_offset=end_col_offset
                         );
+                        if p.feature_version < 14 {
+                            raise SyntaxError(
+                                "except expressions without parentheses are only supported in Python 3.14 and greater",
+                                (p.filename, start_lineno, start_col_offset + 1, None)
+                            );
+                        }
                         return res;
                     }
                 }
@@ -6779,7 +6792,7 @@ def rule_for_stmt(p: peg_parser) -> stmt | None {
                                 iter=ex,
                                 body=(b if b is not None else []),
                                 orelse=pa_stmt_list_or_empty(el),
-                                type_comment=None,
+                                type_comment=tc.spelling if tc is not None else None,
                                 lineno=start_lineno,
                                 col_offset=start_col_offset,
                                 end_lineno=end_lineno,
@@ -6823,7 +6836,9 @@ def rule_for_stmt(p: peg_parser) -> stmt | None {
                                     iter=ex,
                                     body=(b if b is not None else []),
                                     orelse=pa_stmt_list_or_empty(el),
-                                    type_comment=None,
+                                    type_comment=tc.spelling
+                                        if tc is not None
+                                        else None,
                                     lineno=start_lineno,
                                     col_offset=start_col_offset,
                                     end_lineno=end_lineno,
@@ -7060,7 +7075,10 @@ def rule_func_type_comment(p: peg_parser) -> peg_token | None {
     if _newline is not None {
         t = peg_expect_token(p, TYPE_COMMENT);
         if t is not None {
-            if ((rule__tmp_30(p) is not None)) {
+            lookahead = peg_mark(p);
+            matched = rule__tmp_30(p) is not None;
+            peg_reset(p, lookahead);
+            if matched {
                 res = t;
                 return res;
             }
@@ -7149,7 +7167,7 @@ def rule_function_def_raw(p: peg_parser) -> stmt | None {
                                 body=(b if b is not None else []),
                                 decorator_list=[],
                                 returns=a,
-                                type_comment=None,
+                                type_comment=tc.spelling if tc is not None else None,
                                 type_params=(t if t is not None else []),
                                 lineno=start_lineno,
                                 col_offset=start_col_offset,
@@ -7202,7 +7220,9 @@ def rule_function_def_raw(p: peg_parser) -> stmt | None {
                                     body=(b if b is not None else []),
                                     decorator_list=[],
                                     returns=a,
-                                    type_comment=None,
+                                    type_comment=tc.spelling
+                                        if tc is not None
+                                        else None,
                                     type_params=(t if t is not None else []),
                                     lineno=start_lineno,
                                     col_offset=start_col_offset,
@@ -12762,7 +12782,12 @@ def rule_param_maybe_default(p: peg_parser) -> name_default_pair | None {
         if lit is not None {
             tc = peg_expect_token(p, TYPE_COMMENT);
             res = pa_name_default_pair(
-                a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                pa_add_type_comment_to_arg(a, tc),
+                c,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
             );
             return res;
         }
@@ -12774,7 +12799,12 @@ def rule_param_maybe_default(p: peg_parser) -> name_default_pair | None {
         tc = peg_expect_token(p, TYPE_COMMENT);
         if (peg_positive_lookahead_token(p, 8)) {
             res = pa_name_default_pair(
-                a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                pa_add_type_comment_to_arg(a, tc),
+                c,
+                start_lineno,
+                start_col_offset,
+                end_lineno,
+                end_col_offset
             );
             return res;
         }
@@ -12893,7 +12923,12 @@ def rule_param_with_default(p: peg_parser) -> name_default_pair | None {
             if lit is not None {
                 tc = peg_expect_token(p, TYPE_COMMENT);
                 res = pa_name_default_pair(
-                    a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                    pa_add_type_comment_to_arg(a, tc),
+                    c,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
                 );
                 return res;
             }
@@ -12907,7 +12942,12 @@ def rule_param_with_default(p: peg_parser) -> name_default_pair | None {
             tc = peg_expect_token(p, TYPE_COMMENT);
             if (peg_positive_lookahead_token(p, 8)) {
                 res = pa_name_default_pair(
-                    a, c, start_lineno, start_col_offset, end_lineno, end_col_offset
+                    pa_add_type_comment_to_arg(a, tc),
+                    c,
+                    start_lineno,
+                    start_col_offset,
+                    end_lineno,
+                    end_col_offset
                 );
                 return res;
             }
@@ -16584,7 +16624,7 @@ def rule_with_stmt(p: peg_parser) -> stmt | None {
                             res = With(
                                 items=(a if a is not None else []),
                                 body=(b if b is not None else []),
-                                type_comment=None,
+                                type_comment=tc.spelling if tc is not None else None,
                                 lineno=start_lineno,
                                 col_offset=start_col_offset,
                                 end_lineno=end_lineno,
@@ -16618,7 +16658,7 @@ def rule_with_stmt(p: peg_parser) -> stmt | None {
                     res = With(
                         items=(a if a is not None else []),
                         body=(b if b is not None else []),
-                        type_comment=None,
+                        type_comment=tc.spelling if tc is not None else None,
                         lineno=start_lineno,
                         col_offset=start_col_offset,
                         end_lineno=end_lineno,
@@ -16693,7 +16733,7 @@ def rule_with_stmt(p: peg_parser) -> stmt | None {
                         res = AsyncWith(
                             items=(a if a is not None else []),
                             body=(b if b is not None else []),
-                            type_comment=None,
+                            type_comment=tc.spelling if tc is not None else None,
                             lineno=start_lineno,
                             col_offset=start_col_offset,
                             end_lineno=end_lineno,
@@ -16866,8 +16906,10 @@ def parse_eval_module(p: peg_parser) -> mod | None {
     return res;
 }
 
-def parse_eval_source(source: str, filename: str, flags: int = 0) -> mod | None {
-    p = peg_parser_from_source(source, filename, True, flags);
+def parse_eval_source(
+    source: str, filename: str, flags: int = 0, feature_version: int = 14
+) -> mod | None {
+    p = peg_parser_from_source(source, filename, True, flags, feature_version);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {
@@ -16878,8 +16920,10 @@ def parse_eval_source(source: str, filename: str, flags: int = 0) -> mod | None 
     return finish_parse(p, result, "eval");
 }
 
-def parse_eval_expr(source: str, filename: str, flags: int = 0) -> expr | None {
-    mod = parse_eval_source(source, filename, flags);
+def parse_eval_expr(
+    source: str, filename: str, flags: int = 0, feature_version: int = 14
+) -> expr | None {
+    mod = parse_eval_source(source, filename, flags, feature_version);
     if mod is None {
         return None;
     }
@@ -16900,8 +16944,10 @@ def parse_file_module(p: peg_parser) -> mod | None {
     return res;
 }
 
-def parse_file_source(source: str, filename: str, flags: int = 0) -> mod | None {
-    p = peg_parser_from_source(source, filename, True, flags);
+def parse_file_source(
+    source: str, filename: str, flags: int = 0, feature_version: int = 14
+) -> mod | None {
+    p = peg_parser_from_source(source, filename, True, flags, feature_version);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {
@@ -16912,8 +16958,10 @@ def parse_file_source(source: str, filename: str, flags: int = 0) -> mod | None 
     return finish_parse(p, result, "exec");
 }
 
-def parse_file(source: str, filename: str, flags: int = 0) -> Module | None {
-    mod = parse_file_source(source, filename, flags);
+def parse_file(
+    source: str, filename: str, flags: int = 0, feature_version: int = 14
+) -> Module | None {
+    mod = parse_file_source(source, filename, flags, feature_version);
     if mod is None {
         return None;
     }
@@ -16924,9 +16972,9 @@ def parse_file(source: str, filename: str, flags: int = 0) -> Module | None {
 }
 
 def parse_interactive(
-    source: str, filename: str, flags: int = 0
+    source: str, filename: str, flags: int = 0, feature_version: int = 14
 ) -> Interactive | None {
-    p = peg_parser_from_source(source, filename, True, flags);
+    p = peg_parser_from_source(source, filename, True, flags, feature_version);
     peg_set_keywords(p, _build_keyword_lists());
     peg_set_soft_keywords(p, SOFT_KEYWORDS);
     try {
@@ -16963,7 +17011,8 @@ def parse_interactive(
             return None;
         }
     }
-    return Interactive(body=body);
+    result = finish_parse(p, Interactive(body=body), "single");
+    return result as Interactive;
 }
 
 def source_column(lines: list[str], line: int, column: int) -> int {
@@ -17001,6 +17050,20 @@ def raise_source_error(p: peg_parser, error: SyntaxError) {
 
 def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
     if result is not None and not p.error_indicator {
+        import from jaclang.compiler.frontend.python.ast_nodes { TypeIgnore }
+        import from jaclang.compiler.frontend.python.compiler_validate {
+            validate_feature_version
+        }
+        if isinstance(result, Module) {
+            result.type_ignores = [
+                TypeIgnore(lineno=line, tag=tag) for (line, tag) in p.type_ignores
+            ];
+        }
+        try {
+            validate_feature_version(result, p.feature_version);
+        } except SyntaxError as error {
+            raise_source_error(p, error);
+        }
         return result;
     }
     # The first pass only recognizes valid syntax. Diagnostic productions run
@@ -17012,6 +17075,8 @@ def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
             parse_eval_module(p);
         } elif mode == "exec" {
             parse_file_module(p);
+        } elif mode == "func_type" {
+            rule_func_type(p);
         } else {
             rule_statement(p);
         }
@@ -17042,4 +17107,19 @@ def finish_parse(p: peg_parser, result: mod | None, mode: str) -> mod | None {
     raise error_type(
         message, (p.filename, line, column + 1, text, end_line, end_column + 1)
     );
+}
+
+
+def parse_func_type(
+    source: str, filename: str, flags: int = 0, feature_version: int = 14
+) -> mod | None {
+    p = peg_parser_from_source(source, filename, True, flags, feature_version);
+    peg_set_keywords(p, _build_keyword_lists());
+    peg_set_soft_keywords(p, SOFT_KEYWORDS);
+    try {
+        result = rule_func_type(p);
+    } except SyntaxError as error {
+        raise_source_error(p, error);
+    }
+    return finish_parse(p, result, "func_type");
 }
