@@ -1071,11 +1071,7 @@ def lf_pop(s: lf_stack) -> tuple[int, int] {
     if n == 0 {
         return (LF_DUMMY_INSTR, LF_NOT_LOCAL);
     }
-    ri = s.instr[n - 1];
-    rl = s.local[n - 1];
-    s.instr = s.instr[0:n - 1];
-    s.local = s.local[0:n - 1];
-    return (ri, rl);
+    return (s.instr.pop(), s.local.pop());
 }
 
 def lf_at(s: lf_stack, idx: int) -> tuple[int, int] {
