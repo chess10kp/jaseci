@@ -247,7 +247,10 @@ def pa_decode_escape_body(body: str, tok: peg_token | None = None) -> str {
         import warnings;
         with warnings.catch_warnings() {
             warnings.simplefilter("ignore", DeprecationWarning);
-            return codecs.decode("".join(encoded).encode("ascii"), "unicode_escape");
+            # Invoke the retained Unicode decoder directly. Codec lookup can
+            # import encodings.unicode_escape while its source is being parsed
+            # during a cold compiler startup.
+            return codecs.unicode_escape_decode("".join(encoded).encode("ascii"))[0];
         }
     } except UnicodeError as error {
         raise SyntaxError("(unicode error) " + str(error));
