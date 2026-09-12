@@ -75,7 +75,9 @@ test "initdb retry never wipes a cluster another process completed" {
     with patch("jaclang.data.pgembed.subprocess.run", side_effect=fake_run) {
         rt._initdb_if_needed(bin_dir="/nonexistent/bin");
     }
-    assert len(calls) == 1 , f"provision must not retry once the cluster is complete, got {len(calls)} calls";
+    assert len(calls) == 1 , f"provision must not retry once the cluster is complete, got {len(
+        calls
+    )} calls";
     assert os.path.isfile(os.path.join(data_dir, 'PG_VERSION')) , "completed cluster marker must survive the failed attempt";
     assert os.listdir(data_dir) == ['PG_VERSION'] , "no wipe may touch a completed data dir";
 }
