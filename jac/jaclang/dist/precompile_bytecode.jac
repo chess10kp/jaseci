@@ -679,8 +679,6 @@ def app_metadata(pkg_path: Path, pkg_name: str, app: str = "") -> dict[str, any]
                 meta["native"]["unresolved"] = list(_rec.get("unresolved"));
             }
         } elif _libs {
-            # A native artifact without a seal-time record is not interop:
-            # only the record file may claim it.
             meta["native"] = {"interop": False};
         }
     }
