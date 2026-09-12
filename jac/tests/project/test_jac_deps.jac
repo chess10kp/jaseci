@@ -29,11 +29,7 @@ import from jaclang.project.jac_provider {
     version_satisfied
 }
 import from jaclang.project.providers { InstallContext, get_provider_registry }
-import from jaclang.project.lockfile {
-    jac_lock_rows,
-    read_lock,
-    update_jac_rows
-}
+import from jaclang.project.lockfile { jac_lock_rows, read_lock, update_jac_rows }
 
 
 def make_git_repo(path: Path, jac_toml: str, files: dict) -> str {
@@ -490,9 +486,7 @@ test "frozen replay keeps the recorded commit" {
             replayed = provider.resolve_closure(
                 config,
                 InstallContext(frozen=True),
-                frozen_pins=jac_lock_rows(
-                    read_lock(config.project_root or Path.cwd())
-                )
+                frozen_pins=jac_lock_rows(read_lock(config.project_root or Path.cwd()))
             );
             assert replayed["mylib"].sha == pinned_sha;
             fresh = provider.resolve_closure(config, InstallContext());
@@ -557,10 +551,7 @@ test "why chains trace reverse edges" {
             "mylib": {"git": "https://x", "requested_by": ["root"]},
             "shared": {"git": "https://y", "requested_by": ["mylib", "other"]}
         },
-        "python_graph": {
-            "requests": ["root"],
-            "urllib3": ["requests"]
-        }
+        "python_graph": {"requests": ["root"], "urllib3": ["requests"]}
     };
     chains = why_chains(lock_data, "urllib3");
     assert chains == [["urllib3", "requests", "root"]];

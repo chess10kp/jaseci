@@ -1,20 +1,3 @@
-"""jac.lock: the project's reproducibility record (repo root, committed).
-
-[jac.<name>]   resolved pure-jac pins: git/path key, requested ref, resolved
-               commit, tree hash, version, and the requirers that pulled the
-               package in
-[python]       harvested pip pins: name -> "==x.y.z"
-[python_graph] reverse edges for `jac why`: name -> [requirers]
-[npm]          harvested npm pins: name -> installed version
-
-`jac install` replays the file when present: floating pure-jac refs resolve
-to the recorded commits (tree hashes verified), python installs the recorded
-pins. Fresh resolves merge into it; `jac update` re-resolves floating refs
-and rewrites the rows. Python pins are harvested from the venv's installed
-metadata after a fresh install; stale entries survive until the next fresh
-harvest.
-"""
-
 import from pathlib { Path }
 import from jaclang.cli.console { console }
 import from jaclang.project.config { JacConfig }
@@ -106,9 +89,7 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
         lines.append("");
     }
     try {
-        lock_path(project_root).write_text(
-            "\n".join(lines) + "\n", encoding="utf-8"
-        );
+        lock_path(project_root).write_text("\n".join(lines) + "\n", encoding="utf-8");
     } except OSError as e {
         console.error(f"Could not write {LOCK_FILE_NAME}: {e}");
         return False;
@@ -118,7 +99,6 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
 
 
 def update_jac_rows(project_root: Path, resolved: dict) -> bool {
-    # merge the resolved pure-jac closure into the [jac.*] rows
     lock_data = read_lock(project_root);
     rows: dict = {};
     for pkg in resolved.values() {
@@ -128,6 +108,7 @@ def update_jac_rows(project_root: Path, resolved: dict) -> bool {
             "sha": pkg.sha,
             "tree": pkg.tree,
             "requested_by": sorted(pkg.requested_by),
+
         };
         if pkg.source == "path" {
             row["path"] = pkg.key;
@@ -144,7 +125,6 @@ def update_jac_rows(project_root: Path, resolved: dict) -> bool {
 def update_python_rows(
     project_root: Path, pins: dict, py_graph: dict, npm_pins: dict | None = None
 ) -> bool {
-    # merge harvested python pins/graph (and optional npm pins)
     lock_data = read_lock(project_root);
     lock_data["python"] = pins;
     lock_data["python_graph"] = py_graph;
@@ -156,10 +136,6 @@ def update_python_rows(
 
 
 def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] {
-    # (pins, graph) for the python closure, read from installed metadata:
-    # walk the venv's installed distributions starting from the direct
-    # [dependencies]/[dev-dependencies] names in jac.toml. Names are
-    # normalized per PEP 503; pins record "==<installed version>".
     import from jaclang.project.pyvenv { get_venv_site_packages }
     site = get_venv_site_packages(venv_dir);
     if not site or not Path(site).is_dir() {
@@ -187,8 +163,7 @@ def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] 
     }
     roots = [
         norm(str(n))
-        for n in list(config.dependencies.keys())
-        + list(config.dev_dependencies.keys())
+        for n in list(config.dependencies.keys()) + list(config.dev_dependencies.keys())
     ];
     pins: dict = {};
     py_graph: dict = {};
@@ -243,7 +218,6 @@ def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] 
 
 
 def harvest_npm_lock(config: JacConfig) -> dict {
-    # direct npm deps' installed versions from the project's node_modules
     if config.project_root is None {
         return {};
     }
@@ -252,10 +226,7 @@ def harvest_npm_lock(config: JacConfig) -> dict {
     pins: dict = {};
     for name in list(deps.keys()) + list(dev_deps.keys()) {
         meta_path = (
-            Path(str(config.project_root))
-            / "node_modules"
-            / str(name)
-            / "package.json"
+            Path(str(config.project_root)) / "node_modules" / str(name) / "package.json"
         );
         try {
             meta = json.loads(meta_path.read_text(encoding="utf-8"));
@@ -264,14 +235,15 @@ def harvest_npm_lock(config: JacConfig) -> dict {
             continue;
         }
     }
-    return {k: v for (k, v) in pins.items() if v};
+    return {
+        k: v
+        for (k, v) in pins.items()
+        if v
+    };
 }
 
 
 def why_chains(lock_data: dict, name: str) -> list {
-    # all reverse-dependency chains for `name`, e.g.
-    # [name, requirer, ..., "root"]. Reads [jac.*] requested_by edges and
-    # the [python_graph] section; an unknown name yields [].
     jac_rows = jac_lock_rows(lock_data);
     py_graph = lock_data.get("python_graph", {});
     if not isinstance(py_graph, dict) {
