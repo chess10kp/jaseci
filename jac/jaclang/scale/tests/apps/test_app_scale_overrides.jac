@@ -20,6 +20,11 @@ import from jaclang.scale.config.validation {
     validate_scale_config
 }
 import from jaclang.scale.runtime.fleet { fleet_from_config }
+import from jaclang.scale.config.app_config { AppConfig }
+import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
+    KubernetesConfig
+}
+import from jaclang.scale.deploy.target.kubernetes.manifest_builder { ManifestBuilder }
 
 glob _TOML: str = '[project]\n'
      'name = "shop"\n'
@@ -27,11 +32,11 @@ glob _TOML: str = '[project]\n'
      '\n'
      '[apps.web]\n'
      'kind = "web-app"\n'
-     'entry-point = "main.jac"\n'
+     'entry-point = "main"\n'
      '\n'
      '[apps.orders]\n'
      'kind = "service"\n'
-     'entry-point = "orders.jac"\n'
+     'entry-point = "orders"\n'
      '\n'
      '[apps.orders.scale]\n'
      'rpc_timeout = 120.0\n'
@@ -251,17 +256,44 @@ test "a profile retunes [apps.<name>.scale], not only [scale.gateway]" {
 }
 
 
+test "the fleet a deploy builds carries the profile's [apps.<name>.scale]" {
+    d = _project_with_profile();
+    old = os.environ.get("JAC_PROFILE");
+    os.environ["JAC_PROFILE"] = "e2e";
+    try {
+        builder = ManifestBuilder(
+            k8s_config=KubernetesConfig(app_name="shop", namespace="shop"),
+            project_dir=d,
+            dry_run=True
+        );
+        builder._fleet(AppConfig(code_folder=d, app_name="shop"));
+        orders = builder._service_config("orders");
+        assert orders["replicas"] == 1 , orders;
+        assert orders["cpu_limit"] == "500m" , orders;
+        assert orders["hpa"]["enabled"] is False , orders;
+        assert orders["rpc_timeout"] == 120.0 , orders;
+    } finally {
+        if old is None {
+            os.environ.pop("JAC_PROFILE", None);
+        } else {
+            os.environ["JAC_PROFILE"] = old;
+        }
+        shutil.rmtree(d, ignore_errors=True);
+    }
+}
+
+
 glob _INTERP_TOML: str = '[project]\n'
      'name = "shop"\n'
      'default-app = "web"\n'
      '\n'
      '[apps.web]\n'
      'kind = "web-app"\n'
-     'entry-point = "main.jac"\n'
+     'entry-point = "main"\n'
      '\n'
      '[apps.orders]\n'
      'kind = "service"\n'
-     'entry-point = "orders.jac"\n'
+     'entry-point = "orders"\n'
      'route = "/${ORDERS_ROUTE_SEG}"\n';
 
 

@@ -173,10 +173,23 @@ def source_filter_for(base: Path) -> BundleSourceFilter {
 
 
 def _project_config(project_dir: str) -> any {
-    import from jaclang.project.config { get_config_for_path }
+    import from jaclang.project.config {
+        JacConfig,
+        active_profile_name,
+        get_config_for_path,
+        project_scope_is_pinned
+    }
 
     try {
-        return get_config_for_path(Path(project_dir));
+        config = get_config_for_path(Path(project_dir));
+        if config is None or config.active_profile or project_scope_is_pinned() {
+            return config;
+        }
+        profile = active_profile_name(config);
+        if not profile {
+            return config;
+        }
+        return JacConfig.discover(start_path=config.project_root, profile=profile);
     } except Exception as exc {
         raise ValueError(
             f"jac.toml under '{project_dir}' cannot be parsed ({exc}), so the "
@@ -205,7 +218,11 @@ def _entry_module_spec(project_dir: str) -> (tuple[Path, Path] | None) {
     if not config.project.entry_point {
         return None;
     }
-    return (proj_root.resolve(), Path(config.project.entry_point));
+    import from jaclang.project.apps { resolve_entry_path }
+    return (
+        proj_root.resolve(),
+        Path(resolve_entry_path(config.project.entry_point, str(proj_root)))
+    );
 }
 
 
@@ -700,6 +717,34 @@ def _precompile_app(
         jac_path.write_bytes(seal_binary);
         jac_path.chmod(0o755);
 
+        manifest_script = stage_root / "_serve_payloads.jac";
+        manifest_script.write_text(
+            "import from pathlib { Path }\n"
+                + "import from jaclang.project.config { get_config_for_path }\n"
+                + "import from jaclang.dist.seal { bake_serve_payloads }\n"
+                + "with entry {\n"
+                + "    project = Path('app').resolve();\n"
+                + "    config = get_config_for_path(project);\n"
+                + "    if not bake_serve_payloads(config, project, bake_client=False) {\n"
+                + "        raise RuntimeError('Serving metadata preparation failed');\n"
+                + "    }\n}\n"
+        );
+        prepared = subprocess.run(
+            [str(jac_path), "run", str(manifest_script)],
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            env=seal_step_env(),
+            cwd=str(stage_root)
+        );
+        manifest_script.unlink();
+        if prepared.returncode != 0 {
+            raise RuntimeError(
+                "App serving metadata preparation failed: "
+                    + (prepared.stderr or prepared.stdout).strip()[-4000:]
+            );
+        }
+
         result = subprocess.run(
             [str(jac_path), "precompile", str(stage_root), "--seal"],
             capture_output=True,
@@ -1022,7 +1067,7 @@ def pack_jab(
             try {
                 _venv_stage(staged, seal_binary, seal_timeout_setting(project_dir));
             } except Exception as exc {
-                shutil.rmtree(str(staged / ".jac"), ignore_errors=True);
+                shutil.rmtree(str(staged / ".jac" / "venv"), ignore_errors=True);
                 logger.warning(
                     f"Seal-time venv staging failed; pods will build the venv "
                     f"at boot instead. {exc}"
@@ -1046,6 +1091,15 @@ def pack_jab(
                 logger.info(
                     f"Sealed {count} precompiled app-module artifacts into the .jab."
                 );
+                import from jaclang.server.sealed_serve { SERVE_MANIFEST_REL }
+                serve_manifest = staged / SERVE_MANIFEST_REL;
+                if serve_manifest.is_file() {
+                    tar.add(
+                        str(serve_manifest),
+                        arcname=SERVE_MANIFEST_REL,
+                        filter=det_tar_member
+                    );
+                }
                 ven = staged / "_vendor";
                 if ven.is_dir() {
                     wheel_count = 0;
