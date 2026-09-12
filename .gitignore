@@ -70,11 +70,25 @@ demo/
 .zig-cache/
 zig-out/
 
+# Local CPython reference sources.
+reference/
+
 # Agent / IDE working notes (not repo artifacts)
 AGENTS.md
 PLAN.md
 IMPLEMENTATION.md
 RUNTIME_SPLIT_PROGRESS.md
+CURRENT.md
+FIXME.md
+INTEGRATION_PLAN.md
+PROGRESS.md
+PR_SPLIT_PLAN.md
+TASK.md
+SKILL.md
+AUDIT-*.md
+.cursor/
+.pi/
+.ralph/
 
 # Claude Code local instructions
 CLAUDE.local.md
@@ -95,3 +109,4 @@ zig-pkg/
 
 # Seal-time generated materializer root (see jaclang/dist/gen_native_materialize.jac)
 jac/jaclang/compiler/native_materialize.jac
+.xdg-cache/
