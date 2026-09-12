@@ -25,7 +25,23 @@ impl TestResponse.ok.getter -> bool {
 
 impl TestResponse.data.getter -> (dict[str, any] | None) {
     response_json = self.json();
-
+    if not isinstance(response_json, dict) {
+        return response_json;
+    }
+    if response_json.get("ok") is False
+        and isinstance(response_json.get("error"), dict) {
+        detail = response_json["error"];
+        unwrapped: dict[str, any] = {
+            "error": str(detail.get("message") or "Request failed")
+        };
+        if detail.get("code") {
+            unwrapped["error_code"] = detail["code"];
+        }
+        if detail.get("details") is not None {
+            unwrapped["details"] = detail["details"];
+        }
+        return unwrapped;
+    }
     if "data" in response_json {
         return response_json["data"];
     }
@@ -61,6 +77,7 @@ impl JacTestClient._ensure_initialized -> None {
     }
 
     Jac.set_base_path(self._base_path);
+    Jac.set_full_target_path(self._jac_file);
 
     mach = Jac.create_j_context(
         user_root=None, base_path_dir=self._base_path, full_target_path=self._jac_file
@@ -78,7 +95,10 @@ impl JacTestClient._ensure_initialized -> None {
 
     set_effective_default_codespace('server');
 
-    Jac.jac_import(target=mod, base_path=base, lng="jac");
+    import from jaclang.compiler.driver.application { prepare_application }
+    import from jaclang.runtime.prepared { initialize_application }
+    prepared = prepare_application(self._jac_file, Jac.get_program(), base);
+    initialize_application(prepared);
 
     self._server = JacAPIServer(
         module_name=mod, port=0, base_path=self._base_path, module_file=self._jac_file
@@ -87,6 +107,7 @@ impl JacTestClient._ensure_initialized -> None {
     self._server.load_module();
 
     server_ref: any = self._server;
+    server_ref._ensure_internal_users();
     self._app = server_ref.build_app();
 }
 
@@ -275,9 +296,7 @@ impl JacTestClient.reload -> None {
     new_module = Jac.loaded_modules.get(mod);
     if new_module {
         introspector = self.server.introspector;
-        introspector._module = new_module;
-        introspector._functions = introspector._collect_functions();
-        introspector._walkers = introspector._collect_walkers();
+        introspector._check_module_freshness();
     }
 
     server_ref: any = self._server;
@@ -285,6 +304,8 @@ impl JacTestClient.reload -> None {
 }
 
 impl JacTestClient.close -> None {
+    import from jaclang.runtime.prepared { forget }
+    forget(self._jac_file);
     import from contextlib { suppress }
     if self._server {
         with suppress(Exception) {
