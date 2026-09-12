@@ -842,6 +842,9 @@ impl EsastGenPass.exit_forever_stmt with uni.ForeverStmt exit {
     forever_stmt = self.sync_loc(
         es.WhileStatement(`test=es.Literal(value=True), body=body), jac_node=here
     );
+    if self._loop_label_stack {
+        self._loop_label_stack.pop();
+    }
     here.gen.es_ast = self._view_loop_stmt(here, forever_stmt);
 }
 

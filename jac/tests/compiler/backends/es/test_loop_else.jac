@@ -8,6 +8,7 @@ belonging to the loop is rewritten to a labeled break that skips them.
 
 import os;
 import tempfile;
+import re;
 import from jaclang.compiler.backends.es { EsastGenPass }
 import from jaclang.compiler.backends.es.es_unparse { es_to_js }
 import from jaclang.compiler.driver.program { JacProgram }
@@ -58,6 +59,22 @@ def loop_for_break_skips(items: list[int]) -> int {
         total += 1000;
     }
     return total;
+}
+
+def forever_in_for_else() -> str {
+    out = "";
+    for x in [1, 2] {
+        if x == 2 {
+            break;
+        }
+        forever {
+            out += "f";
+            break;
+        }
+    } else {
+        out += "e";
+    }
+    return out;
 }
 ''',
      _test_tmp_dir: str = tempfile.mkdtemp(prefix="jac_test_loop_else_");
@@ -121,4 +138,19 @@ test "for-of break rewrites to its own label and skips the else" {
     body = js[js.find("loop_for_break_skips"):];
     assert "__jac_loop_" in body , f"no label around breaking for-of: {body[:400]}";
     assert "break __jac_loop_" in body , f"break not labeled: {body[:400]}";
+}
+
+test "forever inside for-else leaves no dangling labeled break" {
+    js = compile_to_js();
+    body = js[js.find("forever_in_for_else"):];
+    assert "break __jac_loop_" in body , (
+        f"outer break was not rewritten to a labeled break: {body[:400]}"
+    );
+    breaks = re.findall("break (__jac_loop_[0-9]+)", body);
+    labels = re.findall("(__jac_loop_[0-9]+):", body);
+    for b in breaks {
+        assert b in labels , (
+            f"break {b} targets a label that is never emitted: {sorted(labels)}"
+        );
+    }
 }
