@@ -20,7 +20,6 @@ import os;
 import sys;
 import from tests.support { TESTS_DIR, native_force_opts, native_str_func }
 import from jaclang.compiler.driver.program { JacProgram }
-import jaclang.jac0core.unitree as uni;
 import from jaclang.compiler.backends.native.llvm.binding { ExecutionEngine }
 
 glob FIXTURES = os.path.join(
