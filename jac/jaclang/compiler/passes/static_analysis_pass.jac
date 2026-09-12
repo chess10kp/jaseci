@@ -3,6 +3,7 @@ import from jaclang.compiler.frontend.unitree {
     Archetype,
     Assignment,
     AtomTrailer,
+    AwaitExpr,
     BinaryExpr,
     Bool,
     CompareExpr,
@@ -28,6 +29,7 @@ import from jaclang.compiler.frontend.unitree {
     Int,
     IterForStmt,
     KWPair,
+    LambdaExpr,
     ListVal,
     MatchPattern,
     Module,
@@ -41,6 +43,7 @@ import from jaclang.compiler.frontend.unitree {
     Semi,
     SubTag,
     Symbol,
+    Test,
     Token,
     TupleVal,
     UniNode,
@@ -65,7 +68,8 @@ import from jaclang.compiler.frontend.diagnostics {
     E2018,
     E2027,
     E2055,
-    E2083
+    E2083,
+    E2085
 }
 import type from jaclang.compiler.driver.program { JacProgram }
 
@@ -264,8 +268,7 @@ walker StaticAnalysisPass(Transform) {
         cancel_token: any = None,
         _checked_scopes: set[int] = set();
 
-    static has PROVIDES: tuple = ('static-checks', ),
-        HOST_PASS: bool = True;
+    static has HOST_PASS: bool = True;
 
     def postinit -> None;
     def transform(ir_in: Module) -> Module;
