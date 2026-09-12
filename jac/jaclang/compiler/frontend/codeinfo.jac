@@ -398,7 +398,11 @@ def bundled_stdlib_module_of(file_path: str) -> (str | None) {
     return None;
 }
 
-glob CLIENT_RUNTIME_SOURCE_PATHS: list[str] = [
+glob SHARED_RUNTIME_MODULES: tuple[str, ...] = (
+         "jaclang.runtime.graph_fragment",
+
+     ),
+     CLIENT_RUNTIME_SOURCE_PATHS: list[str] = [
          "client/client_runtime.jac",
          "client/client_runtime_core.jac",
          "client/solid_runtime.jac",
@@ -428,6 +432,20 @@ def is_client_by_location(file_path: str) -> bool {
         }
     }
     return False;
+}
+
+def is_shared_runtime_module(file_path: str) -> bool {
+    import os;
+    import jaclang;
+    if not file_path or not jaclang?.__file__ {
+        return False;
+    }
+    package = os.path.dirname(os.path.realpath(str(jaclang.__file__)));
+    path = os.path.realpath(file_path);
+    return any(
+        path == os.path.join(package, *module.split('.')[1:]) + '.jac'
+        for module in SHARED_RUNTIME_MODULES
+    );
 }
 
 def is_bundled_native_module(module_name: str) -> bool {
@@ -519,7 +537,7 @@ def resolve_native_module(
             _native_variant_path(os.path.join(base_dir, clean))
         );
         if local is not None {
-            return (f"{clean}.jac", local);
+            return (str(os.path.relpath(local, os.path.abspath(base_dir))), local);
         }
         if path_name != clean {
             search = os.path.abspath(base_dir);
@@ -541,18 +559,21 @@ def resolve_native_module(
     }
 
     if clean.startswith('jaclang.') {
+        import jaclang as _jl;
+        _pkg = os.path.dirname(os.path.abspath(_jl.__file__));
+        _parts = clean.split('.')[1:];
+        _cand = os.path.join(_pkg, *_parts) + '.jac';
         import from jaclang.compiler.native_scope {
             in_native_scope_path,
             scope_lowering_active
         }
         if scope_lowering_active() {
-            import jaclang as _jl;
-            _pkg = os.path.dirname(os.path.abspath(_jl.__file__));
-            _parts = clean.split('.')[1:];
-            _cand = os.path.join(_pkg, *_parts) + '.jac';
             if in_native_scope_path(_cand) and os.path.isfile(_cand) {
                 return (path_name, _cand);
             }
+        }
+        if clean in SHARED_RUNTIME_MODULES and os.path.isfile(_cand) {
+            return (path_name, _cand);
         }
     }
 
@@ -670,6 +691,8 @@ def native_layout_to_dict(layout: NativeModuleLayout) -> dict {
 obj BoundaryTypeInfo {
     has name: str,
         kind: str,
+        type_id: str = '',
+        type_scope: str = '',
         fields: list[tuple[(str, str)]] = field(default_factory=`list),
         field_defaults: dict[(str, any)] = field(default_factory=`dict),
         enum_members: list[tuple[(str, any)]] = field(default_factory=`list),
@@ -685,6 +708,7 @@ obj InteropBinding {
         param_names: list[str] = [],
         ast_node: any = None,
         source_module: (str | None) = None,
+        type_scope: str = '',
         kind: str = 'function',
         provider_app: str = '',
         native_contract: dict = field(default_factory=`dict),
@@ -697,6 +721,7 @@ obj InteropManifest {
     has native_host_imports: dict[str, dict] = field(default_factory=`dict),
         bindings: dict[(str, InteropBinding)] = field(default_factory=`dict),
         boundary_types: dict[(str, BoundaryTypeInfo)] = field(default_factory=`dict),
+        boundary_type_names: dict[str, dict[str, str]] = field(default_factory=`dict),
         endpoint_effects: dict[(str, dict)] = field(default_factory=`dict),
         func_access: dict[(str, bool)] = field(default_factory=`dict),
         walker_access: dict[(str, bool)] = field(default_factory=`dict),
@@ -715,6 +740,8 @@ obj InteropManifest {
     has client_native_imports: list[InteropBinding] { getter; }
     has server_exports_to_client: list[InteropBinding] { getter; }
     has server_exports_to_server: list[InteropBinding] { getter; }
+
+    def boundary_types_for(scope: str) -> dict[str, BoundaryTypeInfo];
 }
 
 obj NodeComments {
@@ -761,11 +788,11 @@ obj CodeGenTarget {
 
 def endpoint_descriptor(module: any, kind: str, name: str) -> dict {
     import os;
-    import from jaclang.compiler.driver.boundary_classify { owner_app_name_for_path }
     import from jaclang.compiler.placement.workspace { workspace_for_path }
     path = module.loc.mod_path;
     workspace = workspace_for_path(path);
-    app = owner_app_name_for_path(path) or module.owner_app or "";
+    owner = workspace.app_for_path(path) if workspace else None;
+    app = owner.name if owner is not None else "";
     source = os.path.relpath(path, workspace.project_root)
         if workspace
         else module.name;

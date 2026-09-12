@@ -433,6 +433,9 @@ impl TypeEvaluator._lookup_object_member(
 impl TypeEvaluator._lookup_class_member(
     base_type: ClassType, member: str
 ) -> ClassMember | None {
+    import from jaclang.compiler.types.type_utils { ensure_mro_fresh }
+    self._heal_ancestry(base_type);
+    ensure_mro_fresh(base_type);
     for cls in base_type.shared.mro {
         overloaded_syms: list[Symbol] = [];
         if sym := cls.lookup_member_symbol(member, overloaded_syms) {
@@ -1224,6 +1227,24 @@ impl TypeEvaluator._extract_ct_params(node_: Archetype) -> (list[str] | None) {
     return names;
 }
 
+impl TypeEvaluator._type_var_from_param(node_: TypeParam) -> TypeVarType {
+    cached = node_.name.type;
+    if isinstance(cached, TypeVarType) {
+        return cached;
+    }
+    result = TypeVarType(
+        name=node_.sym_name, is_class_type_param=self._is_class_scoped_type_param(node_)
+    );
+
+    node_.name.type = result;
+    if node_.bound is not None {
+        result.bound = self._convert_to_instance(
+            self.get_type_of_expression(node_.bound)
+        );
+    }
+    return result;
+}
+
 impl TypeEvaluator._extract_type_params(node_: Archetype) -> list[TypeVarType] {
     type_params: list[TypeVarType] = [];
 
@@ -1232,7 +1253,7 @@ impl TypeEvaluator._extract_type_params(node_: Archetype) -> list[TypeVarType] {
             if tp.is_comptime {
                 continue;
             }
-            tv = TypeVarType(name=tp.sym_name, is_class_type_param=True);
+            tv = self._type_var_from_param(tp);
             type_params.append(tv);
         }
         return type_params;
@@ -1881,7 +1902,9 @@ impl TypeEvaluator._get_function_type_params(func: Ability) -> list[TypeVarType]
     type_params: list[TypeVarType] = [];
 
     for tp in func.type_params {
-        type_params.append(TypeVarType(name=tp.sym_name));
+        if not tp.is_comptime {
+            type_params.append(self._type_var_from_param(tp));
+        }
     }
 
     if isinstance(func.signature, FuncSignature) {

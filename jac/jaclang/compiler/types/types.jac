@@ -162,7 +162,10 @@ node ClassDetailsShared {
         _derived_special_types: (dict[str, ClassType] | None) = None,
         ct_params: (list[str] | None) = None,
         _mro_cache: (list[ClassType] | None) = None,
-        _acc_cache: (dict[str, any] | None) = None;
+        _acc_cache: (dict[str, any] | None) = None,
+        _mro_sig: (tuple | None) = None,
+        _provisional: bool = False,
+        _heal_stamp: int = 0;
 
     has symbol_table: SymbolTable { getter; setter(symbol_table: SymbolTable); }
     has mro: list[ClassType] { getter; setter(mro: list[ClassType]); }
@@ -296,6 +299,7 @@ enum FunctionTypeFlags(IntEnum) {
     StaticMethod = 1 << 1,
     ClassMethod = 1 << 2,
     SynthesizedMethod = 1 << 3,
+    Generator = 1 << 4,
 }
 
 node Parameter {
@@ -375,6 +379,7 @@ node FunctionType(TypeBase) {
     ) -> None;
 
     def __str__ -> str;
+    def clone -> FunctionType;
     def specialize(class_type: ClassType) -> FunctionType;
     def specialize_func_type_vars(solution: dict[(str, TypeBase)]) -> FunctionType;
     def is_gradual_callable_form -> bool;

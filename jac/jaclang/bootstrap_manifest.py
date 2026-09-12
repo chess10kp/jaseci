@@ -38,6 +38,7 @@ SEED_PATHS: tuple[str, ...] = (
     "compiler/backends/common/fmt_kernel.jac",
     "compiler/passes/annex_weave.jac",
     "compiler/passes/ast_validation_pass.jac",
+    "compiler/passes/graph_lowering_pass.jac",
     "compiler/passes/boundary_analysis_pass.jac",
     "compiler/passes/decl_impl_match_pass.jac",
     "compiler/passes/endpoint_effect_pass.jac",
@@ -73,7 +74,10 @@ SEED_PATHS: tuple[str, ...] = (
     "compiler/driver/mtp.jac",
     "cli/cli_boot.jac",
     "jac0core/cli_boot.jac",
+    "project/__init__.jac",
     "project/tomlio.jac",
+    "project/apps.jac",
+    "project/app_kinds.jac",
 )
 
 # Modules that live under a seed directory but belong to the native

@@ -6,6 +6,7 @@ import from jaclang.compiler.frontend.unitree {
     BinaryExpr,
     BoolExpr,
     CompareExpr,
+    ConnectOp,
     DictCompr,
     DictVal,
     Expr,
@@ -62,6 +63,11 @@ def result_ownership(expr: (Expr | None)) -> Ownership {
     if isinstance(expr, FuncCall) {
         return Ownership.OWNED;
     }
+    if isinstance(expr, BinaryExpr)
+        and isinstance(expr.op, ConnectOp)
+        and expr.op.capture_edges {
+        return Ownership.OWNED;
+    }
     if isinstance(expr, (ListVal, SetVal, DictVal, ListCompr, DictCompr)) {
         return Ownership.OWNED;
     }
@@ -109,9 +115,6 @@ walker RcFactsPass(Transform) {
         cancel_token: any = None,
         _node_use: dict[int, set[SymId]] = {},
         _node_def: dict[int, set[SymId]] = {};
-
-    static has PROVIDES: tuple = ('rc-facts', ),
-        REQUIRES: tuple = ('CfgSucc', );
 
     def postinit -> None;
     def transform(ir_in: Module) -> Module;

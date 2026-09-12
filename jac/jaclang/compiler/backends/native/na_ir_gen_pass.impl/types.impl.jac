@@ -21,9 +21,17 @@ impl NaIRGenPass._lower_type(t: any) -> (ir.Type | None) {
         if _sol is not None and t.name in _sol {
             return self._lower_type(_sol[t.name]);
         }
+        if t.bound is not None {
+            bound = self._lower_type(t.bound);
+            if isinstance(bound, ir.PointerType) {
+                return ir.IntType(8).as_pointer();
+            }
+        }
         return None;
     }
-    key = self._mangled_of(t);
+    mangled = self._mangled_of(t);
+
+    key = (t, mangled) if isinstance(t, TypeBase) and mangled is not None else None;
     if key is not None and key in self._lowered_type_cache {
         return self._lowered_type_cache[key];
     }
@@ -722,6 +730,9 @@ impl NaIRGenPass._lower_view_container(t: any) -> (ir.Type | None) {
 
 impl NaIRGenPass._lower_class_type(t: ClassType) -> (ir.Type | None) {
     cname = t.shared.class_name;
+    if t.is_builtin("Node") or t.is_builtin("Edge") or t.is_builtin("Walker") {
+        return ir.IntType(8).as_pointer();
+    }
     if cname in self.type_map {
         return self.type_map[cname];
     }
@@ -1519,6 +1530,12 @@ impl NaIRGenPass._abi_sizeof(t: ir.Type) -> int {
     );
 }
 
+impl NaIRGenPass._consume_bool(val: ir.Value) -> ir.Value {
+    result = self._to_bool(val);
+    self._release_owned_args([val], op="condition");
+    return result;
+}
+
 impl NaIRGenPass._to_bool(val: ir.Value) -> ir.Value {
     if self._str_desc_ty is not None and val.type == self._str_desc_ty {
         return self.builder.icmp_signed(
@@ -2082,10 +2099,7 @@ impl NaIRGenPass._coerce_type_inner(val: ir.Value, target_type: ir.Type) -> ir.V
             return self.builder.call(self.str_wrap_raw_fn, [val], name="s.desc");
         }
         if val.type == _sd and target_type == _i8p_sd {
-            if self.str_unwrap_fn is None {
-                self._emit_str_desc_helpers();
-            }
-            return self.builder.call(self.str_unwrap_fn, [val], name="s.raw");
+            return self._str_materialize(val);
         }
         if target_type == _sd and self?.jacval_type and val.type == self.jacval_type {
             if self.str_unwrap_fn is None {
@@ -2112,13 +2126,8 @@ impl NaIRGenPass._coerce_type_inner(val: ir.Value, target_type: ir.Type) -> ir.V
         if val.type == _sd
             and isinstance(target_type, ir.IntType)
             and target_type.width == 64 {
-            if self.str_unwrap_fn is None {
-                self._emit_str_desc_helpers();
-            }
             return self.builder.ptrtoint(
-                self.builder.call(self.str_unwrap_fn, [val], name="s.raw"),
-                target_type,
-                name="s.box"
+                self._str_materialize(val), target_type, name="s.box"
             );
         }
     }

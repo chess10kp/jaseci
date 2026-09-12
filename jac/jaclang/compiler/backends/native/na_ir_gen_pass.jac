@@ -155,9 +155,7 @@ obj NativeFunctionState {
 
 walker NaIRGenPass(Transform) {
     has prog: JacProgram;
-    static has HOST_PASS: bool = True,
-        REQUIRES: tuple = ('TypeOf', 'CfgSucc', 'ownership', 'capability', 'rc-facts');
-
+    static has HOST_PASS: bool = True;
     has ir_in: uni.Module,
         _llvm_module: (ir.Module | None) = None,
         _type_map: (dict[str, ir.Type] | None) = None,
@@ -327,6 +325,7 @@ walker NaIRGenPass(Transform) {
         str_wrap_raw_fn: (ir.Function | None) = None,
         str_import_fn: (ir.Function | None) = None,
         str_unwrap_fn: (ir.Function | None) = None,
+        str_materialize_fn: (ir.Function | None) = None,
         _str_desc_ty: (ir.IdentifiedStructType | None) = None,
         rc_roots_buf_gv: object = None,
         rc_roots_cap_gv: object = None,
@@ -367,7 +366,7 @@ walker NaIRGenPass(Transform) {
         _global_origins: dict[str, str] = {},
         _clib_paths: list[str] = [],
         _clib_symbol_lib: dict[str, str] = {},
-        _lowered_type_cache: dict[str, ir.Type] = {},
+        _lowered_type_cache: dict[tuple[TypeBase, str], ir.Type] = {},
         di_file: object = None,
         di_cu: object = None,
         _di_current_sp: object = None,
@@ -537,6 +536,10 @@ walker NaIRGenPass(Transform) {
     def _emit_bytes_repr(bv: ir.Value) -> ir.Value;
     def _bytes_repr_fn -> ir.Function;
     def _codegen_call(nd: uni.FuncCall) -> (ir.Value | None);
+    def _codegen_callable_value(
+        nd: uni.FuncCall, value: ir.Value, captures: list[tuple[str, ir.Value]]
+    ) -> (ir.Value | None);
+
     def _codegen_synthetic_call(
         target: uni.Expr,
         params: list[uni.Expr | uni.KWPair],
@@ -1723,6 +1726,7 @@ walker NaIRGenPass(Transform) {
     def _str_desc_type -> ir.IdentifiedStructType;
     def _str_desc_kind -> str;
     def _str_norm(val: ir.Value) -> ir.Value;
+    def _str_materialize(val: ir.Value) -> ir.Value;
     def _str_norm_optional(val: ir.Value | None) -> (ir.Value | None);
     def _str_arg(val: ir.Value | None) -> (ir.Value | None);
     def _emit_str_desc_helpers -> None;
@@ -2088,6 +2092,11 @@ walker NaIRGenPass(Transform) {
     def _elem_spec_of(expr: (uni.UniNode | None)) -> (str | None);
     def _get_name(nd: (uni.UniNode | None)) -> (str | None);
     def _to_bool(val: ir.Value) -> ir.Value;
+    def _consume_bool(val: ir.Value) -> ir.Value;
+    def _finish_borrowed_read(
+        owner: ir.Value, value: (ir.Value | None)
+    ) -> (ir.Value | None);
+
     def _jacval_truthy(jv: ir.Value) -> ir.Value;
     def _jacval_is_none(jv: ir.Value, negate: bool) -> ir.Value;
     def _entry_alloca(var_type: ir.Type, name: str) -> ir.Value;
