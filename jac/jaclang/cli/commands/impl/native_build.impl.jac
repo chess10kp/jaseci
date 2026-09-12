@@ -544,9 +544,7 @@ impl native_build(  # jac:ignore[W3030]
                 " for the entry-lib host protocol."
             );
         }
-        # An entry library skips load-time init registration: the jab host
-        # sets __jac_argv/__jac_argc first and calls __jac_shared_init
-        # explicitly before invoking jac_entry.
+
         init_funcs = [] if entry_lib else ["__jac_shared_init"];
         for _s in ir_module.gen._exported_symbols {
             if _s not in export_symbols {
@@ -561,8 +559,7 @@ impl native_build(  # jac:ignore[W3030]
         if entry_lib {
             if "__jac_argc" not in llvm_ir_str {
                 llvm_ir_str += (
-                    "\n@__jac_argc = global i32 0\n"
-                    + "@__jac_argv = global ptr null\n"
+                    "\n@__jac_argc = global i32 0\n" + "@__jac_argv = global ptr null\n"
                 );
             }
             for _s in ["jac_entry", "__jac_argc", "__jac_argv", "__jac_shared_init"] {
@@ -952,9 +949,7 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
         probe_ir = probe.compile(
             file_path=os.path.abspath(filename),
             options=CompileOptions(
-                aot_mode=True,
-                default_codespace='native',
-                force_target_program=True
+                aot_mode=True, default_codespace='native', force_target_program=True
             )
         );
     } except Exception as e {
@@ -966,7 +961,9 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
         return 1;
     }
     _mf = probe_ir.gen.interop_manifest;
-    _pair_imports = [b.name for b in _mf.native_imports] if _mf and _mf.native_imports else [];
+    _pair_imports = [b.name for b in _mf.native_imports]
+        if _mf and _mf.native_imports
+        else [];
     _interop_record = interop_record_path(lib_output);
     if _pair_imports {
         console.warning(
@@ -976,10 +973,7 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
         );
         _interop_record.parent.mkdir(parents=True, exist_ok=True);
         _interop_record.write_text(
-            json.dumps(
-                {"interop": True, "unresolved": _pair_imports},
-                sort_keys=True
-            )
+            json.dumps({"interop": True, "unresolved": _pair_imports}, sort_keys=True)
                 + "\n",
             encoding="utf-8"
         );

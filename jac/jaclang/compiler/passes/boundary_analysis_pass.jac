@@ -72,11 +72,9 @@ walker BoundaryAnalysisPass(UniPass) {
 
     def _get_context(nd: UniNode) -> InteropContext;
     def _caller_context(nd: Import, import_context: InteropContext) -> InteropContext;
-
     def _extract_type_name(expr: (UniNode | None)) -> str;
     def _in_native_module -> bool;
     def _native_source_module_of(mod: (Module | None)) -> (str | None);
-
     def _register_native_absorb(nd: Import) -> None;
     can enter_import with Import entry;
     def _register_sv_import(

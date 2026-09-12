@@ -58,7 +58,7 @@ def _seal_fixture_project(
     }
     (proj_root / "jac.toml").write_text(
         f'[project]\nname = "{name}"\nversion = "0.1.0"\n'
-            + f'entry-point = "main.jac"\nkind = "cli-native"\n{pins}',
+            + f'entry-point = "main"\nkind = "cli-native"\n{pins}',
         encoding="utf-8"
     );
     return JacConfig.load(proj_root / "jac.toml");
@@ -109,7 +109,7 @@ test "_run_native_lib returns None when the library cannot be loaded" {
 
 test "_run_native_lib returns None when required exports are missing" {
     class _StubLib {
-        def __jac_shared_init(self: _StubLib) { }
+        def __jac_shared_init(self: _StubLib) {}
     }
     stub = _StubLib();
     with patch("ctypes.CDLL", return_value=stub), patch.object(
@@ -278,7 +278,9 @@ test "standalone exe native_build still rejects native_imports" {
         proj = Path(tmp) / "proj";
         proj.mkdir();
         _seal_fixture_project(proj, "interopseal", interop=True);
-        rc = native_build(filename=str(proj / "main.jac"), output=str(proj / "blocked"));
+        rc = native_build(
+            filename=str(proj / "main.jac"), output=str(proj / "blocked")
+        );
         assert rc == 1 , "exe target must hard-error on native_imports";
         assert not os.path.isfile(str(proj / "blocked")) , (
             "no artifact may be produced when the gate fires"
@@ -375,7 +377,7 @@ test "run_jab_image stays host-driven when the manifest says interop" {
             return 0;
         }
 
-        def fake_run(filename: str, args: list) -> int {
+        def fake_run(target: str, args: list) -> int {
             run_calls.append(filename);
             return 0;
         }
@@ -414,7 +416,7 @@ test "app_metadata reads interop from the seal-time record, not artifact presenc
         triple_dir.mkdir(parents=True);
         (pkg / "jac.toml").write_text(
             '[project]\nname = "metaapp"\nversion = "0.1.0"\n'
-                + 'entry-point = "main.jac"\n',
+                + 'entry-point = "main"\n',
             encoding="utf-8"
         );
         (pkg / "main.jac").write_text("with entry { }\n", encoding="utf-8");
