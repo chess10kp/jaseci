@@ -86,8 +86,10 @@ def entry_error(name: str, dep: any, why: str) -> JacDepError {
 
 
 def _entry_key(name: str, dep: dict, base_dir: Path) -> tuple[str, str] {
-    has_git = isinstance(dep.get("git"), str) and bool(dep.get("git").strip());
-    has_path = isinstance(dep.get("path"), str) and bool(dep.get("path").strip());
+    git_val = dep.get("git");
+    path_val = dep.get("path");
+    has_git = isinstance(git_val, str) and bool(git_val.strip());
+    has_path = isinstance(path_val, str) and bool(path_val.strip());
     if has_git and has_path {
         raise entry_error(name, dep, "cannot declare both 'git' and 'path'");
     }
@@ -646,12 +648,16 @@ obj JacGitProvider(EcosystemProvider) {
             return True;
         }
         include_root_dev = True if not deps else any(d.dev for d in deps);
-        import from jaclang.project.lockfile { jac_lock_rows, read_lock, update_jac_rows }
+        import from jaclang.project.lockfile {
+            jac_lock_rows,
+            read_lock,
+            update_jac_rows
+        }
         pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
         if ctx.frozen {
             missing = [
                 n
-                for n in {**root_deps, **(root_dev if include_root_dev else {})}
+                for n in {** root_deps, ** (root_dev if include_root_dev else {})}
                 if n not in pins
             ];
             if missing {
@@ -697,10 +703,16 @@ obj JacGitProvider(EcosystemProvider) {
             section[name] = dep;
         }
         config.save();
-        import from jaclang.project.lockfile { jac_lock_rows, read_lock, update_jac_rows }
+        import from jaclang.project.lockfile {
+            jac_lock_rows,
+            read_lock,
+            update_jac_rows
+        }
         try {
             resolved = self.resolve_closure(
-                config, ctx, frozen_pins=jac_lock_rows(read_lock(config.project_root or Path.cwd()))
+                config,
+                ctx,
+                frozen_pins=jac_lock_rows(read_lock(config.project_root or Path.cwd()))
             );
         } except JacDepError as e {
             self._unrecord(config, name, dev);

@@ -1192,9 +1192,7 @@ impl install(
     }
 
     if not dry_run and install_success and not no_save {
-        (py_harvest, py_graph) = harvest_python_lock(
-            config, config.get_venv_dir()
-        );
+        (py_harvest, py_graph) = harvest_python_lock(config, config.get_venv_dir());
         update_python_rows(
             config.project_root or Path.cwd(),
             py_harvest,
@@ -1379,8 +1377,7 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
             old_sha = old_shas.get(pkg.name, "");
             if pkg.sha and old_sha and old_sha != pkg.sha {
                 console.print(
-                    f"  ✔ {pkg.name}: {old_sha[:12]} -> {pkg.sha[:12]}",
-                    style="success"
+                    f"  ✔ {pkg.name}: {old_sha[:12]} -> {pkg.sha[:12]}", style="success"
                 );
             } else {
                 via = f"{pkg.sha[:12]}" if pkg.sha else "path dep";
@@ -2089,8 +2086,7 @@ impl why(packages: list = []) -> int {
     }
     if not packages {
         console.error(
-            "Usage: jac why <package>",
-            hint="Pass at least one dependency name."
+            "Usage: jac why <package>", hint="Pass at least one dependency name."
         );
         return 1;
     }
@@ -2122,9 +2118,7 @@ impl why(packages: list = []) -> int {
     for raw_name in packages {
         pname = str(raw_name);
         chains = why_chains(lock_data, pname);
-        known = (
-            pname in jac_rows or pname in py_graph or pname in npm_pins
-        );
+        known = pname in jac_rows or pname in py_graph or pname in npm_pins;
         if not chains or not known {
             console.error(
                 f"'{pname}' is not recorded in jac.lock",
