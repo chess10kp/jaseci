@@ -62,8 +62,6 @@ def resolve_floor_dir(pkg_root: str, triple: str) -> (str | None) {
 
     python_build = os.path.join(pkg_root, ".python-build");
     fallback: (str | None) = None;
-    # Both variants build the same C dependency archives. Prefer the default
-    # cache, then JacPython, and retain the previous layout for existing trees.
     for build_root in [
         os.path.join(python_build, "cpython"),
         os.path.join(python_build, "jacpython"),
