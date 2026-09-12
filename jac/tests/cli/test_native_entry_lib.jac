@@ -378,7 +378,7 @@ test "run_jab_image stays host-driven when the manifest says interop" {
         }
 
         def fake_run(target: str, args: list) -> int {
-            run_calls.append(filename);
+            run_calls.append(target);
             return 0;
         }
 

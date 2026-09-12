@@ -600,7 +600,11 @@ def app_metadata(pkg_path: Path, pkg_name: str, app: str = "") -> dict[str, any]
     }
     import from jaclang.project.config { get_config_for_path }
     import from jaclang.project.kinds { resolve_app_kind, resolve_entry }
-    import from jaclang.server.sealed_serve { CLIENT_DIST_REL, NATIVE_DIR_REL }
+    import from jaclang.server.sealed_serve {
+        CLIENT_DIST_REL,
+        NATIVE_DIR_REL,
+        native_lib_suffix
+    }
 
     config = get_config_for_path(pkg_path);
     if config is None {
@@ -659,6 +663,11 @@ def app_metadata(pkg_path: Path, pkg_name: str, app: str = "") -> dict[str, any]
             meta["triples"] = triples;
         }
         _sidecars = sorted(native_dir.glob("*/*.interop.json"));
+        _libs = [
+            f
+            for f in native_dir.glob("*/*")
+            if f.is_file() and f.name.endswith(native_lib_suffix())
+        ];
         if _sidecars {
             try {
                 _rec = json.loads(_sidecars[0].read_text(encoding="utf-8"));
@@ -669,6 +678,10 @@ def app_metadata(pkg_path: Path, pkg_name: str, app: str = "") -> dict[str, any]
             if _rec.get("unresolved") {
                 meta["native"]["unresolved"] = list(_rec.get("unresolved"));
             }
+        } elif _libs {
+            # A native artifact without a seal-time record is not interop:
+            # only the record file may claim it.
+            meta["native"] = {"interop": False};
         }
     }
     return meta;
