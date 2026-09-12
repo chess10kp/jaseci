@@ -679,6 +679,7 @@ impl TypeEvaluator._get_type_of_expression_core(
                     isinstance(expr.target, Name)
                     and expr.target.value == "builtins"
                     and isinstance(expr.right, Name)
+                    and self.builtins_module is not None
                 ) {
                     member_sym = self.builtins_module.names_in_scope.get(
                         expr.right.value

@@ -1252,7 +1252,7 @@ impl PyastBuildPass.proc_continue(nd: py_ast.Continue) -> CtrlStmt {
 }
 
 impl PyastBuildPass.proc_constant(nd: py_ast.Constant) -> Expr {
-    type_mapping: dict[type, type[Expr]] = {
+    type_mapping: dict[type, type[Literal]] = {
         str: String,
         bytes: String,
         bool: Bool,
