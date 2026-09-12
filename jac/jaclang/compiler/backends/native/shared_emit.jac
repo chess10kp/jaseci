@@ -112,7 +112,6 @@ def jac_entry_defined(llvm_ir_str: str) -> bool {
     import re;
     return bool(re.search(r'define[^@\n]*@"?jac_entry"?\s*\(', llvm_ir_str));
 }
-}
 
 def aarch64_outline_atomics_ir -> str {
     ops: dict[str, str] = {
