@@ -674,10 +674,11 @@ def app_metadata(pkg_path: Path, pkg_name: str, app: str = "") -> dict[str, any]
             } except Exception {
                 _rec = {};
             }
-            meta["native"] = {"interop": bool(_rec.get("interop", True))};
+            native_meta: dict[str, any] = {"interop": bool(_rec.get("interop", True))};
             if _rec.get("unresolved") {
-                meta["native"]["unresolved"] = list(_rec.get("unresolved"));
+                native_meta["unresolved"] = list(_rec.get("unresolved"));
             }
+            meta["native"] = native_meta;
         } elif _libs {
             meta["native"] = {"interop": False};
         }
