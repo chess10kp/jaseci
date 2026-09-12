@@ -81,7 +81,7 @@ def dirhash(tree_dir: Path) -> str {
             if fname in HASH_EXCLUDE_DIRS {
                 continue;
             }
-            fpath = Path(dir_root) / fname;
+            fpath = Path(str(dir_root)) / fname;
             rel = str(fpath)[prefix_len:].replace(os.sep, "/");
             digest = hashlib.sha256(fpath.read_bytes()).hexdigest();
             entries.append(f"{rel}\n{digest}\n");

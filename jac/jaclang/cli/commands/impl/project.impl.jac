@@ -1029,8 +1029,8 @@ impl install(
         }
         try {
             config.save();
-            section = "dev-dependencies" if dev else "dependencies";
-            console.print(f"\n  ✔ Updated jac.toml [{section}]", style="muted");
+            section_name = "dev-dependencies" if dev else "dependencies";
+            console.print(f"\n  ✔ Updated jac.toml [{section_name}]", style="muted");
         } except Exception as e {
             console.error(f"Could not save jac.toml: {e}");
             return 1;
