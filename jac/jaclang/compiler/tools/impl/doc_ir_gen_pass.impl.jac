@@ -320,7 +320,9 @@ impl DocIRGenPass.exit_special_var_ref with uni.SpecialVarRef exit {
 
 impl DocIRGenPass.exit_string with uni.String exit {
     if here.parent and isinstance(here.parent, uni.FString) {
-        here.gen.doc_ir = self.text(fstring_escape_interior(here.value), source_token=here);
+        here.gen.doc_ir = self.text(
+            fstring_escape_interior(here.value), source_token=here
+        );
         return;
     }
     here.gen.doc_ir = self.text(here.value, source_token=here);
