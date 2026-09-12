@@ -196,6 +196,15 @@ impl HotReloader._process_change(file_path: str, is_directory: bool = False) -> 
 }
 
 impl HotReloader._dispatch_change(file_path: str, is_directory: bool = False) -> None {
+    import from jaclang.runtime.prepared { application_for }
+    entry_path = str(self._entry_module_path());
+    if application_for(entry_path) is not None {
+        self._reload_server_module(file_path);
+        if self._build_status is BuildStatus.COMPILING {
+            self._signal_full_reload();
+        }
+        return;
+    }
     if is_directory {
         if not Path(file_path).exists() {
             self._remove_compiled_dir(file_path);
@@ -228,7 +237,7 @@ impl HotReloader._dispatch_change(file_path: str, is_directory: bool = False) ->
         return;
     }
 
-    (has_client, has_server) = self._classify_declarations(target_path);
+    (has_client, has_server, _has_native) = self._classify_declarations(target_path);
 
     if has_server {
         self._reload_server_module(target_path);
@@ -239,10 +248,53 @@ impl HotReloader._dispatch_change(file_path: str, is_directory: bool = False) ->
         self._recompile_client_code(target_path, visited);
     }
 
+    if self._tracked_wasm_module(target_path) {
+        self._reemit_native_wasm(target_path);
+    }
+
     self._refresh_routing(target_path);
 }
 
+
+impl HotReloader._tracked_wasm_module(file_path: str) -> bool {
+    if not self.client_compiler {
+        return False;
+    }
+    try {
+        tracked = self.client_compiler.jac_client_compiler?.na_wasm_modules or set();
+        target = str(Path(file_path).resolve());
+        for known in tracked {
+            if str(Path(known).resolve()) == target {
+                return True;
+            }
+        }
+    } except OSError {
+        return False;
+    }
+    return False;
+}
+
+
+impl HotReloader._reemit_native_wasm(file_path: str) -> None {
+    if not self.client_compiler {
+        return;
+    }
+    try {
+        emitted = self.client_compiler._emit_wasm_module(Path(file_path).resolve());
+    } except Exception as e {
+        console.error(f"na wasm re-emit failed for {file_path}: {e}");
+        self.record_error(file_path, f"na wasm re-emit failed: {e}");
+        return;
+    }
+    if emitted {
+        self._signal_full_reload();
+    }
+}
+
 impl HotReloader._entry_module_path -> Path {
+    if self.entry_path {
+        return Path(self.entry_path);
+    }
     return Path(self.base_path) / f"{self.module_name}.jac";
 }
 
@@ -338,9 +390,14 @@ impl HotReloader._refresh_routing(file_path: str) -> None {
         return;
     }
     try {
+        jcc.routes_manifest_changed = False;
         has_pages = jcc.rescan_pages();
         self.client_compiler._has_pages = has_pages;
         self.client_compiler.create_entry_file(self._entry_module_path());
+        if jcc.routes_manifest_changed {
+            console.print("  ↻ Route table changed; full reload");
+            self._signal_full_reload();
+        }
         if not has_pages {
             if routes_file.exists() {
                 routes_file.unlink();
@@ -360,13 +417,10 @@ impl HotReloader._refresh_routing(file_path: str) -> None {
 impl HotReloader._reload_server_module(file_path: str) -> None {
     import from jaclang.runtime.runtime { JacRuntime as Jac }
 
-    sys.modules.pop(self.module_name, None);
+    import from jaclang.runtime.prepared { application_for }
+    entry_path = str(self._entry_module_path());
+    previous = application_for(entry_path);
     program = Jac.program;
-    if program is not None {
-        for key in list(program.mod.hub.keys()) {
-            sys.modules.pop(self._path_to_module(key), None);
-        }
-    }
 
     try {
         resolved_path = str(Path(file_path).resolve());
@@ -381,9 +435,43 @@ impl HotReloader._reload_server_module(file_path: str) -> None {
     }
 
     try {
-        Jac.jac_import(
-            target=self.module_name, base_path=self.base_path, reload_module=True
-        );
+        import from jaclang.runtime.prepared { application_for }
+        entry_path = str(self._entry_module_path());
+        prepared = application_for(entry_path);
+        if prepared is not None {
+            import from jaclang.compiler.driver.application { reprepare_application }
+            prepared = reprepare_application(prepared, Jac.get_program());
+            if prepared.client_compiler is not None {
+                self.client_compiler = prepared.client_compiler;
+            }
+        }
+
+        sys.modules.pop(self.module_name, None);
+        Jac.loaded_modules.pop(self.module_name, None);
+        if previous is not None {
+            for (name, loaded) in list(sys.modules.items()) {
+                source = loaded?.__file__;
+                if source and os.path.realpath(source) in previous.code {
+                    sys.modules.pop(name, None);
+                    Jac.loaded_modules.pop(name, None);
+                }
+            }
+        } elif program is not None {
+            for key in list(program.mod.hub.keys()) {
+                sys.modules.pop(self._path_to_module(key), None);
+            }
+        }
+        if prepared is not None {
+            import from jaclang.runtime.prepared { initialize_application }
+            import from jaclang.project.config { get_config_for_dir }
+            cfg = get_config_for_dir(prepared.root);
+            served = cfg.app_for_path(prepared.entry) if cfg is not None else None;
+            initialize_application(prepared, cfg, served);
+        } else {
+            Jac.jac_import(
+                target=self.module_name, base_path=self.base_path, reload_module=True
+            );
+        }
         console.print(f"[HMR] Reloaded: {file_path}");
     } except SyntaxError as e {
         console.error(
@@ -431,9 +519,7 @@ impl HotReloader._recompile_client_unified(file_path: str) -> None {
         }
         jcc = self.client_compiler.jac_client_compiler;
         mark = len(program.errors_had) if program is not None else 0;
-        jcc.compile_dependencies_recursively(
-            source_path, source_root=Path(self.base_path).resolve(), skip_existing=True
-        );
+        jcc.emit_dependencies(source_path, source_root=Path(self.base_path).resolve());
         console.success(
             f"Recompiled: {file_path} -> {self._get_js_filename(file_path)}"
         );
@@ -554,7 +640,7 @@ impl HotReloader._recompile_client_code(
         program.drop_module_alerts(source_key);
 
         mark = len(program.errors_had);
-        mod = program.compile(source_key);
+        artifact = program.get_client_artifact(source_key);
 
         new_errors = program.errors_had[mark:];
         if new_errors {
@@ -570,9 +656,7 @@ impl HotReloader._recompile_client_code(
             }
             return;
         }
-
-        js_code = mod.gen.js or '';
-        if not js_code {
+        if artifact is None {
             if force {
                 console.warning(f"No client JS generated for {file_path}");
             }
@@ -580,10 +664,10 @@ impl HotReloader._recompile_client_code(
         }
 
         import from jaclang.client.client_surface { prepend_active_runtime_globals }
-        js_code = prepend_active_runtime_globals(js_code);
+        js_code = prepend_active_runtime_globals(artifact.js);
 
-        manifest = mod.gen.client_manifest if mod else None;
-        if manifest and manifest.imports {
+        manifest = artifact.manifest;
+        if manifest.imports {
             for (import_key, import_path) in manifest.imports.items() {
                 if import_key.startswith('@jac/') {
                     continue;
@@ -620,10 +704,11 @@ impl HotReloader._get_js_filename(file_path: str) -> str {
     return base_stem(path.name) + ".js";
 }
 
-impl HotReloader._classify_declarations(file_path: str) -> tuple[bool, bool] {
+impl HotReloader._classify_declarations(file_path: str) -> tuple[bool, bool, bool] {
     import from jaclang.compiler.driver.program { JacProgram }
     has_client = False;
     has_server = False;
+    has_native = False;
     try {
         prog = JacProgram();
         mod = prog.compile(file_path, no_cgen=True);
@@ -633,13 +718,15 @@ impl HotReloader._classify_declarations(file_path: str) -> tuple[bool, bool] {
             if nd_context {
                 if nd_context == CodeContext.CLIENT {
                     has_client = True;
+                } elif nd_context == CodeContext.NATIVE {
+                    has_native = True;
                 } else {
                     has_server = True;
                 }
             }
         }
 
-        if not has_client and not has_server {
+        if not has_client and not has_server and not has_native {
             has_server = True;
         }
     } except SyntaxError as e {
@@ -650,7 +737,7 @@ impl HotReloader._classify_declarations(file_path: str) -> tuple[bool, bool] {
         console.error(f"{error_type} in {file_path}: {e}");
         has_server = True;
     }
-    return (has_client, has_server);
+    return (has_client, has_server, has_native);
 }
 
 impl HotReloader._path_to_module(file_path: str) -> str {
