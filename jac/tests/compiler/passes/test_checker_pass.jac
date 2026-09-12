@@ -5076,9 +5076,10 @@ test "web_project_lowercase_component_no_w1050" {
     # lowercase host tag must still be flagged.
     path = os.path.join(CHECKER_FIXTURES, "checker_jsx_lowercase_component_web.jac");
     program = JacProgram();
-    program.compile(
-        path, options=CompileOptions(project_kind="web", project_root=CHECKER_FIXTURES)
+    opts = CompileOptions(
+        force_codespace="client", project_root=CHECKER_FIXTURES
     );
+    program.compile(path, options=opts);
     w1050 = [
         w
         for w in program.warnings_had
