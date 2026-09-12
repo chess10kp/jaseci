@@ -3,7 +3,8 @@ import logging;
 import sys;
 import threading;
 import from time { monotonic }
-import from dataclasses { fields, is_dataclass, MISSING }
+import from jaclang.runtime.object_interop { fields, is_record }
+import from jaclang.runtime.object_model { MISSING }
 import from datetime { date, datetime, time }
 import from enum { Enum }
 import from hashlib { sha256 }
@@ -70,6 +71,10 @@ obj Serializer {
     ) -> object;
 
     static def deserialize(data: dict[str, object]) -> (object | None);
+    static def deserialize_api(
+        value: object, boundary_types: dict[str, type], target: (type | None) = None
+    ) -> object;
+
     static def _serialize_value(
         val: object,
         include_type: bool,
@@ -106,7 +111,7 @@ obj Serializer {
     static def _reset_warn_cache -> None;
     static def _id_to_stub(anchor_cls: type[Anchor], id_str: str) -> (Anchor | None);
     static def _deserialize_anchor(data: dict[str, object]) -> (Anchor | None);
-    static def _deserialize_permission(data: object) -> Permission;
+    static def _deserialize_permission(data: object) -> (Permission | None);
     static def _deserialize_access(data: object) -> Access;
     static def _deserialize_archetype(
         data: dict[str, object], anchor: Anchor

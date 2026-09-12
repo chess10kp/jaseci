@@ -131,22 +131,13 @@ def _retained_failure_details(file_path: str) -> str:
 
 
 def _module_scoped_alerts(program: object, file_path: str) -> list:
-    """Collect compile alerts recorded against file_path (or its annexes).
+    """Compile errors recorded against file_path or one of its annexes.
 
-    Delegates to ext_registry.is_module_scoped_path: `foo.jac` matches
-    annex paths such as `foo.impl.jac` and `foo.impl/bar.jac`, so errors
-    reported against an impl file count as the module's own.
+    The program's diagnostic ledger owns the rule (an error in `foo.impl.jac`,
+    `foo.impl/bar.jac` or `impl/foo.impl.jac` is `foo.jac`'s own), so the
+    importer reports exactly what the compiler retains and drops.
     """
-    norm = os.path.realpath(file_path)
-    alerts = []
-    for alert in getattr(program, "errors_had", []):
-        try:
-            alert_path = os.path.realpath(alert.loc.mod_path)
-        except Exception:
-            continue
-        if ext_registry.is_module_scoped_path(alert_path, norm):
-            alerts.append(alert)
-    return alerts
+    return program.diags.owned_errors(file_path)
 
 
 # Bootstrap modresolver.jac before JacMetaImporter is registered. This module
@@ -174,6 +165,19 @@ _modresolver.__package__ = "jaclang.compiler.driver"
 exec(_modresolver_code, _modresolver.__dict__)  # noqa: S102
 sys.modules["jaclang.compiler.driver.modresolver"] = _modresolver
 get_jac_search_paths = _modresolver.get_jac_search_paths
+
+
+class _PreparedAliasLoader(Loader):
+    """A relative import of an app entry resolves to the provider instance."""
+
+    def __init__(self, target: str) -> None:
+        self.target = target
+
+    def create_module(self, spec: ModuleSpec) -> ModuleType:
+        return importlib.import_module(self.target)
+
+    def exec_module(self, module: ModuleType) -> None:
+        pass
 
 
 class JacMetaImporter(MetaPathFinder, Loader):
@@ -209,6 +213,15 @@ class JacMetaImporter(MetaPathFinder, Loader):
         target: ModuleType | None = None,
     ) -> ModuleSpec | None:
         """Find the spec for the module."""
+        registry = sys.modules.get("jaclang.runtime.prepared")
+        alias_for = getattr(registry, "entry_alias", None)
+        alias = alias_for(fullname) if alias_for is not None else None
+        if alias is not None:
+            target_name, origin = alias
+            return importlib.util.spec_from_loader(
+                fullname, _PreparedAliasLoader(target_name), origin=origin
+            )
+
         # Sealed image is authoritative: a sealed binary resolves its modules
         # from the manifest by name, with no filesystem probing for .jac. This
         # is the primary path (not a fallback) so a sealed runtime never touches
@@ -271,7 +284,7 @@ class JacMetaImporter(MetaPathFinder, Loader):
                 raise ImportError(
                     f"{retired}: the .na.jac marker was retired in 0.35 -- "
                     "rename the file to .jac; native placement is inferred "
-                    "(or forced by 'jac nacompile' / 'jac build --as native')."
+                    "(or forced by 'jac build --native')."
                 )
 
         return None
@@ -359,9 +372,25 @@ class JacMetaImporter(MetaPathFinder, Loader):
         # Get and execute bytecode using the compiler singleton
         compiler = Jac.get_compiler()
         program = Jac.get_program()
-        codeobj = compiler.get_bytecode(
-            full_target=file_path,
-            target_program=program,
+        # The registry is itself Jac. Read it only after its import completes;
+        # importing it here would recurse while bootstrapping the compiler.
+        registry = sys.modules.get("jaclang.runtime.prepared")
+        lookup = getattr(registry, "application_for", None)
+        prepared = lookup(file_path, module.__name__) if lookup is not None else None
+        prepared_path = os.path.realpath(file_path)
+        if prepared is None:
+            containing_lookup = getattr(registry, "containing_application", None)
+            containing = (
+                containing_lookup(file_path, module.__name__) if containing_lookup is not None else None
+            )
+            if containing is not None:
+                from jaclang.compiler.driver.application import prepare_dynamic_module
+
+                prepared = prepare_dynamic_module(file_path, program, containing)
+        codeobj = (
+            prepared.code.get(prepared_path)
+            if prepared is not None
+            else compiler.get_bytecode(full_target=file_path, target_program=program)
         )
         if not codeobj:
             if is_pkg:
@@ -405,8 +434,10 @@ class JacMetaImporter(MetaPathFinder, Loader):
             program.mtir_map.update(renamed)
 
         # Inject native interop infrastructure if needed (sv↔na interop)
-        native_engine, interop_py_funcs = compiler.get_native_interop_setup(
-            file_path, program
+        native_engine, interop_py_funcs = (
+            prepared.native.get(prepared_path, (None, None))
+            if prepared is not None
+            else compiler.get_native_interop_setup(file_path, program)
         )
         if native_engine is not None:
             module.__dict__["__jac_native_engine__"] = native_engine
@@ -416,6 +447,12 @@ class JacMetaImporter(MetaPathFinder, Loader):
         if interop_py_funcs is not None:
             module.__dict__["__jac_interop_py_funcs__"] = interop_py_funcs
 
+        # Bind local imports to this app's compiled closure.
+        if prepared is not None and (
+            module.__name__ == registry.application_namespace(prepared)
+            or module.__name__.startswith(registry.application_namespace(prepared) + ".")
+        ):
+            module.__dict__["__builtins__"] = registry.module_builtins(prepared, file_path)
         # Execute the bytecode directly in the module's namespace
         exec(codeobj, module.__dict__)
 

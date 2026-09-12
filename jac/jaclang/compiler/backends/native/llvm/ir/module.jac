@@ -1,6 +1,8 @@
 import collections;
 import from jaclang.compiler.backends.native.llvm.ir { context, values, types, _utils }
 class Module(object) {
+    has globals: dict[str, values.GlobalValue] = {};
+
     def init(
         self: Module, name: any = '', context: any = context.global_context
     ) -> object {
@@ -59,7 +61,7 @@ class Module(object) {
         A MDValue instance is returned, it can then be associated to
         e.g. an instruction.
         """
-    def add_metadata(self: Module, operands: any) -> object {
+    def add_metadata(self: Module, operands: any) -> values.MDValue {
         if not isinstance(operands, (`list, `tuple)) {
             raise TypeError(
                 (
@@ -91,7 +93,7 @@ class Module(object) {
         """
     def add_debug_info(
         self: Module, kind: any, operands: any, is_distinct: any = False
-    ) -> object {
+    ) -> values.DIValue {
         operands = `tuple(sorted(self._fix_di_operands(operands.items())));
         str_op_key = `tuple(sorted(self.str_ditok_operands(operands)));
         key = (kind, str_op_key, is_distinct);
@@ -116,7 +118,9 @@ class Module(object) {
         Example::
             module.add_named_metadata("llvm.ident", ["jaclang.compiler.backends.native.llvm/1.0"])
         """
-    def add_named_metadata(self: Module, name: any, element: any = None) -> object {
+    def add_named_metadata(
+        self: Module, name: str, element: any = None
+    ) -> values.NamedMetaData {
         if (name in self.namedmetadata) {
             nmd = self.namedmetadata[name];
         } else {
@@ -140,7 +144,7 @@ class Module(object) {
         A list of functions declared or defined in this module.
         """
     @property
-    def functions(self: Module) -> object {
+    def functions(self: Module) -> list[values.Function] {
         return [
             v
             for v in self.globals.values()
@@ -152,14 +156,14 @@ class Module(object) {
         An iterable of global values in this module.
         """
     @property
-    def global_values(self: Module) -> object {
+    def global_values(self: Module) -> Iterable[values.GlobalValue] {
         return self.globals.values();
     }
 
     """
         Get a global value by name.
         """
-    def get_global(self: Module, name: any) -> object {
+    def get_global(self: Module, name: any) -> values.GlobalValue {
         return self.globals[name];
     }
 

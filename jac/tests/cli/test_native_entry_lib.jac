@@ -10,7 +10,7 @@ import from unittest.mock { patch }
 import from tests.support { TESTS_DIR }
 import from jaclang.cli.commands { execution as exec_cmds }
 import from jaclang.cli.commands { project as proj_cmds }
-import from jaclang.cli.commands.nacompile { nacompile }
+import from jaclang.cli.commands.native_build { native_build }
 import from jaclang.project.config { JacConfig }
 import from jaclang.server.sealed_serve {
     native_lib_name,
@@ -27,6 +27,12 @@ def _llvm_available -> bool {
     } except Exception {
         return False;
     }
+}
+
+
+def _bake(config: any, pkg_copy: Path) -> bool {
+    import from jaclang.dist.seal { bake_native_payloads }
+    return bake_native_payloads(config, pkg_copy);
 }
 
 
@@ -130,8 +136,8 @@ test "entry_lib runs __jac_shared_init only after argv is populated (Linux)" {
     );
     with tempfile.TemporaryDirectory() as d {
         lib_out = os.path.join(d, "entry.so");
-        rc = nacompile(filename=fixture, output=lib_out, entry_lib=True);
-        assert rc == 0 , "entry_lib nacompile failed";
+        rc = native_build(filename=fixture, output=lib_out, entry_lib=True);
+        assert rc == 0 , "entry_lib native_build failed";
         assert os.path.isfile(lib_out) , "entry library was not produced";
         host_argv = ["/sealed/main.jac", "alpha", "beta"];
         lib = ctypes.CDLL(lib_out);
@@ -164,7 +170,7 @@ test "_run_native_lib succeeds for a valid entry library (Linux)" {
     );
     with tempfile.TemporaryDirectory() as d {
         lib_out = os.path.join(d, "entry.so");
-        assert nacompile(filename=fixture, output=lib_out, entry_lib=True) == 0;
+        assert native_build(filename=fixture, output=lib_out, entry_lib=True) == 0;
         host_argv = ["/sealed/main.jac"];
         rc = exec_cmds._run_native_lib(lib_out, host_argv);
         assert rc == 0 , "_run_native_lib should run jac_entry successfully";
@@ -172,7 +178,7 @@ test "_run_native_lib succeeds for a valid entry library (Linux)" {
 }
 
 
-test "_bake_native_payloads accepts nacompile_sealed_pair success (return 0)" {
+test "_bake_native_payloads accepts native_build_sealed_pair success (return 0)" {
     if not _llvm_available() {
         return;
     }
@@ -184,12 +190,12 @@ test "_bake_native_payloads accepts nacompile_sealed_pair success (return 0)" {
         pkg_copy = Path(tmp) / "stage";
         pkg_copy.mkdir();
         with patch(
-            "jaclang.cli.commands.nacompile.nacompile_sealed_pair", return_value=0
+            "jaclang.cli.commands.native_build.native_build_sealed_pair", return_value=0
         ) as mock_pair {
-            ok = proj_cmds._bake_native_payloads(config, pkg_copy);
+            ok = _bake(config, pkg_copy);
         }
         assert ok , (
-            "return 0 from nacompile_sealed_pair must not abort native bake "
+            "return 0 from native_build_sealed_pair must not abort native bake "
             "(Jac treats 0 as falsy — check != 0, not `if not`)"
         );
         assert mock_pair.called , "expected nacompile_sealed_pair to be invoked";
@@ -199,7 +205,7 @@ test "_bake_native_payloads accepts nacompile_sealed_pair success (return 0)" {
 }
 
 
-test "_bake_native_payloads fails when nacompile_sealed_pair returns non-zero" {
+test "_bake_native_payloads fails when native_build_sealed_pair returns non-zero" {
     if not _llvm_available() {
         return;
     }
@@ -211,11 +217,11 @@ test "_bake_native_payloads fails when nacompile_sealed_pair returns non-zero" {
         pkg_copy = Path(tmp) / "stage";
         pkg_copy.mkdir();
         with patch(
-            "jaclang.cli.commands.nacompile.nacompile_sealed_pair", return_value=1
+            "jaclang.cli.commands.native_build.native_build_sealed_pair", return_value=1
         ) {
-            ok = proj_cmds._bake_native_payloads(config, pkg_copy);
+            ok = _bake(config, pkg_copy);
         }
-        assert not ok , "non-zero nacompile_sealed_pair must abort native bake";
+        assert not ok , "non-zero native_build_sealed_pair must abort native bake";
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -235,8 +241,8 @@ test "sealed pair on a native_imports app drops the exe and keeps the lib" {
         proj.mkdir();
         _seal_fixture_project(proj, "interopseal", interop=True);
         exe_out = str(proj / "main");
-        import from jaclang.cli.commands.nacompile { nacompile_sealed_pair }
-        rc = nacompile_sealed_pair(
+        import from jaclang.cli.commands.native_build { native_build_sealed_pair }
+        rc = native_build_sealed_pair(
             filename=str(proj / "main.jac"),
             exe_output=exe_out,
             lib_output=str(proj / "libmain.entry.so")
@@ -263,7 +269,7 @@ test "sealed pair on a native_imports app drops the exe and keeps the lib" {
 }
 
 
-test "standalone exe nacompile still rejects native_imports" {
+test "standalone exe native_build still rejects native_imports" {
     if not _llvm_available() {
         return;
     }
@@ -272,7 +278,7 @@ test "standalone exe nacompile still rejects native_imports" {
         proj = Path(tmp) / "proj";
         proj.mkdir();
         _seal_fixture_project(proj, "interopseal", interop=True);
-        rc = nacompile(filename=str(proj / "main.jac"), output=str(proj / "blocked"));
+        rc = native_build(filename=str(proj / "main.jac"), output=str(proj / "blocked"));
         assert rc == 1 , "exe target must hard-error on native_imports";
         assert not os.path.isfile(str(proj / "blocked")) , (
             "no artifact may be produced when the gate fires"
@@ -415,7 +421,7 @@ test "app_metadata reads interop from the seal-time record, not artifact presenc
         import from jaclang.dist.precompile_bytecode { app_metadata }
 
         # A lib-only payload without a seal-time record is NOT interop: only
-        # nacompile_sealed_pair's decision (the record file) may claim it.
+        # native_build_sealed_pair's decision (the record file) may claim it.
         (triple_dir / native_lib_name("main")).write_bytes(b"");
         meta = app_metadata(pkg, "metaapp");
         assert meta.get("native") == {"interop": False} , (

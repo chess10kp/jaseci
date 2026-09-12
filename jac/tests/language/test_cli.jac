@@ -22,7 +22,6 @@ import from jaclang.cli.commands {
     transform
 }
 import from jaclang.cli.commands { config as config_cmd }
-import from jaclang.cli.registry { get_registry }
 import from jaclang.compiler.frontend.diagnostic_utils { resolve_diagnostic_tokens }
 import from jaclang.compiler.tools.unparse_pass { unparse_module }
 import from jaclang.project.config { set_config }
@@ -429,27 +428,13 @@ test "jac test err" {
     captured_output = io.StringIO();
     sys.stdout = captured_output;
     sys.stderr = captured_output;
-    analysis.`test(fixture_path("baddy.jac"));
+    analysis.`test(paths=[fixture_path("baddy.jac")]);
     sys.stdout = sys.__stdout__;
     sys.stderr = sys.__stderr__;
     stdout_value = captured_output.getvalue();
     # the runner points the failure at <file>:<line> -- the deliberate error is on
     # line 2 of the base module's test annex.
     assert "baddy.test.jac:2" in stdout_value;
-}
-
-test "jac ast tool pass template" {
-    captured = io.StringIO();
-    old_stdout = sys.stdout;
-    sys.stdout = captured;
-    try {
-        tools.tool("pass_template");
-    } finally {
-        sys.stdout = old_stdout;
-    }
-    stdout_value = captured.getvalue();
-    assert "Sub objects." in stdout_value;
-    assert stdout_value.count("def exit_") > 10;
 }
 
 test "ast print" {
@@ -502,7 +487,7 @@ test "del clean" {
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        analysis.check(f"{fixture_path('del_clean.jac')}");
+        analysis.check([fixture_path("del_clean.jac")]);
     } finally {
         sys.stdout = old_stdout;
     }
@@ -515,7 +500,7 @@ test "run test" {
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        analysis.`test(fixture_path("run_test.jac"), maxfail=2);
+        analysis.`test(paths=[fixture_path("run_test.jac")], maxfail=2);
         out = captured.getvalue();
     } finally {
         sys.stdout = old_stdout;
@@ -537,7 +522,7 @@ test "run test native codespace file" {
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        analysis.`test(fixture_path("native_run_test.jac"), maxfail=2);
+        analysis.`test(paths=[fixture_path("native_run_test.jac")], maxfail=2);
         out = captured.getvalue();
     } finally {
         sys.stdout = old_stdout;
@@ -562,7 +547,7 @@ test "run test native broken import surfaces error" {
     old_stdout = sys.stdout;
     sys.stdout = captured;
     try {
-        rc = analysis.`test(fixture_path("native_broken_import_test.jac"));
+        rc = analysis.`test(paths=[fixture_path("native_broken_import_test.jac")]);
         out = captured.getvalue();
     } finally {
         sys.stdout = old_stdout;
@@ -698,7 +683,9 @@ test "run specific test only" {
     sys.stdout = captured;
     try {
         analysis.`test(
-            fixture_path("jactest_main.jac"), test_name="from 2 to 10", verbose=True
+            paths=[fixture_path("jactest_main.jac")],
+            test_name="from 2 to 10",
+            verbose=True
         );
         out = captured.getvalue();
     } finally {
@@ -815,6 +802,9 @@ test "param arg" {
     captured = io.StringIO();
     old_stdout = sys.stdout;
     sys.stdout = captured;
+    # Bound before the try so a failure ahead of the temp-file write surfaces
+    # as itself rather than as an UnboundLocalError from the cleanup.
+    jac_file_path = "";
     try {
         transform.jac2py(f"{fixture_path('params/test_complex_params.jac')}");
         py_code = JacProgram().compile(file_path=filename).gen.py;
@@ -839,7 +829,9 @@ test "param arg" {
             execution.run(jac_file_path);
         } finally {
             os.remove(py_file_path);
-            os.remove(jac_file_path);
+            if jac_file_path {
+                os.remove(jac_file_path);
+            }
         }
     } finally {
         sys.stdout = old_stdout;
@@ -1273,20 +1265,26 @@ test "jac create and run no root files" {
 
         files_before_run = get_root_files(project_path);
 
-        # Run jac run main.jac (change to project directory first)
+        # The cli scaffold dispatches argparse subcommands, so a bare run is
+        # a usage error; `jac run main.jac -- greet <name>` is the happy path.
+        # The template ends in sys.`exit(main()), which surfaces as SystemExit.
         os.chdir(project_path);
         captured = io.StringIO();
         old_stdout = sys.stdout;
         sys.stdout = captured;
+        saved_argv = list(sys.argv);
         try {
-            result = execution.run("main.jac");
+            result = execution.run("main.jac", args=["greet", project_name]);
+        } except SystemExit as e {
+            result = int(e.code or 0);
         } finally {
             sys.stdout = old_stdout;
+            sys.argv = saved_argv;
         }
         stdout = captured.getvalue();
 
-        assert result == 0 , "jac run failed";
-        assert f"Hello from {project_name}!" in stdout;
+        assert result == 0 , f"jac run failed: {stdout}";
+        assert f"Hello, {project_name}! This is {project_name}." in stdout , stdout;
 
         # Record files after run
         files_after_run = get_root_files(project_path);
@@ -1336,7 +1334,7 @@ test "install editable outside any project errors" {
         pkg_dir = (Path(_tmpdir) / "my-lib").resolve();
         pkg_dir.mkdir();
         (pkg_dir / "jac.toml").write_text(
-            '[project]\nname = "my-lib"\nversion = "0.1.0"\ndescription = "Test lib"\nentry-point = "main.jac"\n'
+            '[project]\nname = "my-lib"\nversion = "0.1.0"\ndescription = "Test lib"\nentry-point = "main"\n'
         );
         # cwd (_tmpdir) has no jac.toml of its own; clear any cached config from a
         # prior test so discovery actually runs against this project-less cwd.
@@ -1359,7 +1357,7 @@ test "install editable resolves config from cwd when given dot path" {
     try {
         resolved_tmpdir = Path(_tmpdir).resolve();
         (resolved_tmpdir / "jac.toml").write_text(
-            '[project]\nname = "dot-lib"\nversion = "0.1.0"\ndescription = "Test lib"\nentry-point = "main.jac"\n'
+            '[project]\nname = "dot-lib"\nversion = "0.1.0"\ndescription = "Test lib"\nentry-point = "main"\n'
         );
         os.chdir(_tmpdir);
 
@@ -1397,17 +1395,17 @@ test "jac install -e accepts space-separated and repeated flag forms" {
         pkg_b.mkdir();
         pkg_c.mkdir();
         (pkg_a / "jac.toml").write_text(
-            '[project]\nname = "pkg-a"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "pkg-a"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         (pkg_b / "jac.toml").write_text(
-            '[project]\nname = "pkg-b"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "pkg-b"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         (pkg_c / "jac.toml").write_text(
-            '[project]\nname = "pkg-c"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "pkg-c"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         # The host project (cwd) receives the editable links in its .jac/venv.
         (Path(_tmpdir) / "jac.toml").write_text(
-            '[project]\nname = "host"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "host"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
 
         # -e pkg_a pkg_b exercises space-separated; -e pkg_c exercises repeated flag
@@ -1454,17 +1452,17 @@ test "jac install -e links all packages for space-separated and repeated flag fo
         pkg_b.mkdir();
         pkg_c.mkdir();
         (pkg_a / "jac.toml").write_text(
-            '[project]\nname = "pkg-a"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "pkg-a"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         (pkg_b / "jac.toml").write_text(
-            '[project]\nname = "pkg-b"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "pkg-b"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         (pkg_c / "jac.toml").write_text(
-            '[project]\nname = "pkg-c"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "pkg-c"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         # The host project (cwd) receives the editable links in its .jac/venv.
         (Path(_tmpdir) / "jac.toml").write_text(
-            '[project]\nname = "host"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "host"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         os.chdir(_tmpdir);
 
@@ -1505,7 +1503,7 @@ test "jac install <pkg> routes package names to the project venv installer" {
     original_cwd = os.getcwd();
     try {
         (Path(_tmpdir) / "jac.toml").write_text(
-            '[project]\nname = "host"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main.jac"\n'
+            '[project]\nname = "host"\nversion = "0.1.0"\ndescription = ""\nentry-point = "main"\n'
         );
         os.chdir(_tmpdir);
         # `install` now records to jac.toml, so discovery must resolve to this
@@ -2061,13 +2059,13 @@ test "error traceback shows source code" {
     # Should show the error message
     assert "Error" in stderr , "stderr should contain Error";
     assert (
-        "attempted relative import" in stderr
+        "No module named" in stderr
         or "ImportError" in stderr
-        or "__package__" in stderr
+        or "ModuleNotFoundError" in stderr
     ) , "stderr should contain import error message";
 
     # Should show the source code line that caused the error
-    assert "import from .nonexistent_module" in stderr , (
+    assert "import from jac_nonexistent_module" in stderr , (
         "stderr should show the problematic import statement"
     );
 

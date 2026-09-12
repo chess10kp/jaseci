@@ -44,6 +44,7 @@ enum TokenKind {
     KW_DEF = "def",
     KW_STATIC = "static",
     KW_OVERRIDE = "override",
+    KW_COMPTIME = "comptime",
     KW_IMPL = "impl",
     KW_GETTER = "getter",
     KW_SETTER = "setter",
@@ -51,6 +52,7 @@ enum TokenKind {
     KW_SEM = "sem",
     KW_TEST = "test",
     KW_GLOBAL = "glob",
+    KW_GRAPH = "graph",
     KW_IMPORT = "import",
     KW_INCLUDE = "include",
     KW_FROM = "from",
@@ -101,6 +103,7 @@ enum TokenKind {
     KW_ISN = "is not",
     KW_LAMBDA = "lambda",
     KW_OWN = "own",
+    KW_LIN = "lin",
     KW_MUT = "mut",
     KW_IMM = "imm",
     KW_PUB = "pub",
@@ -285,6 +288,7 @@ glob KEYWORDS: dict[str, TokenKind] = {
          "def": TokenKind.KW_DEF,
          "static": TokenKind.KW_STATIC,
          "override": TokenKind.KW_OVERRIDE,
+         "comptime": TokenKind.KW_COMPTIME,
          "impl": TokenKind.KW_IMPL,
          "getter": TokenKind.KW_GETTER,
          "setter": TokenKind.KW_SETTER,
@@ -292,6 +296,7 @@ glob KEYWORDS: dict[str, TokenKind] = {
          "sem": TokenKind.KW_SEM,
          "test": TokenKind.KW_TEST,
          "glob": TokenKind.KW_GLOBAL,
+         "graph": TokenKind.KW_GRAPH,
          "import": TokenKind.KW_IMPORT,
          "include": TokenKind.KW_INCLUDE,
          "from": TokenKind.KW_FROM,
@@ -340,6 +345,7 @@ glob KEYWORDS: dict[str, TokenKind] = {
          "is": TokenKind.KW_IS,
          "lambda": TokenKind.KW_LAMBDA,
          "own": TokenKind.KW_OWN,
+         "lin": TokenKind.KW_LIN,
          "mut": TokenKind.KW_MUT,
          "imm": TokenKind.KW_IMM,
          "pub": TokenKind.KW_PUB,
@@ -360,6 +366,51 @@ def lookup_keyword(text: str) -> TokenKind | None {
         return KEYWORDS[text];
     }
     return None;
+}
+
+glob RESERVED_KINDS: frozenset = frozenset(KEYWORDS.values())
+         - frozenset({TokenKind.BOOL, TokenKind.NULL});
+
+def is_reserved_kind(kind: TokenKind) -> bool {
+    return kind in RESERVED_KINDS;
+}
+
+glob BUILTIN_TYPE_KINDS: frozenset = frozenset(
+         {
+             TokenKind.TYP_STRING,
+             TokenKind.TYP_INT,
+             TokenKind.TYP_FLOAT,
+             TokenKind.TYP_LIST,
+             TokenKind.TYP_TUPLE,
+             TokenKind.TYP_SET,
+             TokenKind.TYP_DICT,
+             TokenKind.TYP_BOOL,
+             TokenKind.TYP_BYTES,
+             TokenKind.TYP_ANY,
+             TokenKind.TYP_TYPE,
+             TokenKind.TYP_I8,
+             TokenKind.TYP_U8,
+             TokenKind.TYP_I16,
+             TokenKind.TYP_U16,
+             TokenKind.TYP_I32,
+             TokenKind.TYP_U32,
+             TokenKind.TYP_I64,
+             TokenKind.TYP_U64,
+             TokenKind.TYP_F32,
+             TokenKind.TYP_F64
+         }
+     );
+
+def is_builtin_type_kind(kind: TokenKind) -> bool {
+    return kind in BUILTIN_TYPE_KINDS;
+}
+
+def reserved_words -> list[str] {
+    return sorted(
+        word
+        for (word, kind) in KEYWORDS.items()
+        if kind in RESERVED_KINDS
+    );
 }
 
 glob SPECIAL_VAR_KINDS: set[TokenKind] = {

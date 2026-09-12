@@ -1,3 +1,4 @@
+import from jaclang.compiler.driver.pipeline { require_product, CompilationProduct }
 import from jaclang.cli.console { console }
 import from jaclang.compiler.tools.unparse_pass { unparse_module }
 import from jaclang.compiler.tools.treeprinter {
@@ -49,7 +50,7 @@ impl AstTool.autodoc_uninode -> str {
 }
 
 impl AstTool.ir(args: list[str]) -> str {
-    import from jaclang.compiler.driver.pass_driver { run_pass }
+    import from jaclang.compiler.driver.pipeline { run_utility, UtilityProduct }
     error = 'Usage: ir <choose one of (sym / sym. / ast / ast. / docir / pyast / py / unparse / esast / es)> <.py or .jac file_path>';
     if (len(args) != 2) {
         return error;
@@ -69,13 +70,14 @@ impl AstTool.ir(args: list[str]) -> str {
                 return f"{py_ast.dump(parsed_ast, indent=2)}";
             }
             try {
-                rep = run_pass(
-                    PyastBuildPass,
+                rep = run_utility(
+                    UtilityProduct.PYTHON_AST,
                     uni.PythonModuleAst(
                         parsed_ast, orig_src=uni.Source(file_source, file_name)
                     ),
                     prog
                 ).ir_out;
+                assert isinstance(rep, uni.Module);
                 rep_src = unparse_module(rep);
                 console.print(rep_src);
                 ir_mod = prog.compile(
@@ -150,7 +152,9 @@ impl AstTool.ir(args: list[str]) -> str {
                     else 'Compile failed.';
 
             case 'docir':
-                return str(run_pass(DocIRGenPass, ir_mod, prog).ir_out.gen.doc_ir);
+                return str(
+                    run_utility(UtilityProduct.DOC, ir_mod, prog).ir_out.gen.doc_ir
+                );
 
             case 'py':
                 ir_mod = prog.compile(
@@ -161,8 +165,8 @@ impl AstTool.ir(args: list[str]) -> str {
                     else 'Compile failed.';
 
             case 'esast':
-                esast_pass = run_pass(EsastGenPass, ir_mod, prog);
-                es_ir = esast_pass.ir_out;
+                require_product(prog, ir_mod, CompilationProduct.CLIENT);
+                es_ir = ir_mod;
                 es_ast = es_ir.gen.es_ast;
                 if isinstance(es_ast, EsNode) {
                     return f"{json.dumps(es_node_to_dict(es_ast), indent=2)}";
@@ -171,8 +175,8 @@ impl AstTool.ir(args: list[str]) -> str {
                 }
 
             case 'es':
-                esast_pass = run_pass(EsastGenPass, ir_mod, prog);
-                es_ir = esast_pass.ir_out;
+                require_product(prog, ir_mod, CompilationProduct.CLIENT);
+                es_ir = ir_mod;
                 es_ast = es_ir.gen.es_ast;
                 if isinstance(es_ast, EsNode) {
                     return f"{es_to_js(es_ast)}";
@@ -221,40 +225,6 @@ impl AstTool.py_uni_nodes -> str {
     for i in missing {
         output += "# missing: \n" + i + "\n";
     }
-    return output;
-}
-
-impl AstTool.pass_template -> str {
-    output = 'import jaclang.compiler.frontend.unitree as ast\nfrom jaclang.compiler.passes import Pass\n\nclass SomePass(Pass):\n';
-    """Emit to output.""";
-    def emit(to_append: str) {
-        output += '\n    ' + to_append;
-    }
-    for cls in self.ast_classes {
-        emit(f"def exit_{cls.class_name_snake}(self, node: ast.{cls.name}) -> None:");
-        emit('    """Sub objects.\n');
-        for kid in cls.kids {
-            emit(
-                f"    {kid.name}: {kid.typ}{(' =' + str(kid.`default))
-                    if kid.`default
-                    else ''},"
-            );
-        }
-        emit('    """\n');
-    }
-    output = output.replace('jaclang.compiler.frontend.unitree.', '').replace(
-        'typing.', ''
-    ).replace(
-        "<enum '", ''
-    ).replace(
-        "'>", ''
-    ).replace(
-        "<class '", ''
-    ).replace(
-        "ForwardRef('", ''
-    ).replace(
-        "')", ''
-    );
     return output;
 }
 

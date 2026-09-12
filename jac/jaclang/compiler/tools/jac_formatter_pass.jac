@@ -4,7 +4,7 @@ import jaclang.compiler.frontend.unitree as uni;
 import from jaclang.compiler.frontend.diagnostics { W5050, E5051 }
 import from jaclang.compiler.passes { Transform }
 
-obj JacFormatPass(Transform) {
+walker JacFormatPass(Transform) {
     has indent_size: int = 4,
         MAX_LINE_LENGTH: int = 88,
         _probe_cache: dict[tuple[int, int, int], bool] = {},
@@ -27,6 +27,8 @@ obj JacFormatPass(Transform) {
     ) -> int;
 
     def transform(ir_in: uni.Module) -> uni.Module;
+    def _run_impl(ir_in: uni.Module) -> uni.Module;
+    can run_walk with uni.Module entry;
     def format_doc_ir(
         doc_node: (doc.DocType | None) = None,
         indent_level: int = 0,
@@ -39,9 +41,11 @@ obj JacFormatPass(Transform) {
 
 def format_module(mod: uni.Module) -> str {
     import from jaclang.compiler.tools.doc_ir_gen_pass { DocIRGenPass }
-    import from jaclang.compiler.driver.pass_driver { run_pass }
+    import from jaclang.compiler.driver.pipeline { run_utility, UtilityProduct }
     import from jaclang.compiler.driver.program { JacProgram }
-    return run_pass(
-        JacFormatPass, run_pass(DocIRGenPass, mod, JacProgram()).ir_out, JacProgram()
+    return run_utility(
+        UtilityProduct.FORMAT,
+        run_utility(UtilityProduct.DOC, mod, JacProgram()).ir_out,
+        JacProgram()
     ).ir_out.gen.jac;
 }
