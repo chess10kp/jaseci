@@ -253,12 +253,6 @@ def fetch_package(
     url = normalize_git_url(url);
     store_dir = store_root();
     (store_dir / TMP_DIR_NAME).mkdir(parents=True, exist_ok=True);
-    if sha {
-        hit = _store_hit_for(store_dir, url, sha, expected_tree, verify);
-        if hit is not None {
-            return hit;
-        }
-    }
     if sha and ref and ref != sha and not frozen {
         agreement = _ref_agreement(url, ref, sha);
         if agreement is not None {
@@ -278,6 +272,12 @@ def fetch_package(
                 );
                 ref = "";
             }
+        }
+    }
+    if sha {
+        hit = _store_hit_for(store_dir, url, sha, expected_tree, verify);
+        if hit is not None {
+            return hit;
         }
     }
     staging = Path(tempfile.mkdtemp(prefix="jac_stage_", dir=store_dir / TMP_DIR_NAME));
