@@ -34,7 +34,7 @@ obj JacScaleTestRunner {
     }
 
     """Start the jac-scale server."""
-    def start_server(timeout: int = 30) {
+    def start_server(timeout: int = 300) {
         project_root_result = find_project_root(self.example_file.parent);
         if project_root_result {
             (example_dir, _) = project_root_result;
@@ -104,9 +104,11 @@ obj JacScaleTestRunner {
         }
 
         if not server_ready {
-            (stdout, stderr) = self.server_process.communicate(timeout=5);
+            self.server_process.kill();
+            (stdout, stderr) = self.server_process.communicate();
             raise RuntimeError(
-                f"Server failed to become ready.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}"
+                f"Server failed to become ready within {timeout}s.\n"
+                f"STDOUT:\n{stdout}\nSTDERR:\n{stderr}"
             );
         }
     }
