@@ -4,6 +4,7 @@ import subprocess;
 import tempfile;
 import from pathlib { Path }
 import from jaclang.project.tool_paths { jac_global_prefix }
+import from jaclang.cli.console { console }
 
 glob TREE_HASH_PREFIX: str = "sha256-",
      STORE_DIR_NAME: str = "store",
@@ -159,6 +160,45 @@ def _write_origin_meta(dest: Path, meta: dict) {
 }
 
 
+def _ref_agreement(url: str, ref: str, sha: str) -> tuple[bool, bool] | None {
+    try {
+        out = _run_git(["ls-remote", url, ref]);
+    } except JacDepError {
+        return None;
+    }
+    canonical = {
+        "refs/heads/" + ref,
+        "refs/tags/" + ref,
+        "refs/tags/" + ref + "^{}",
+        ref
+    };
+    matched = False;
+    is_tag = False;
+    agrees = False;
+    for line in out.splitlines() {
+        parts = line.split(None, 1);
+        if len(parts) != 2 {
+            continue;
+        }
+        (oid, refname) = (parts[0], parts[1].strip());
+        if refname not in canonical {
+            continue;
+        }
+        matched = True;
+        if refname.startswith("refs/tags/") {
+            is_tag = True;
+        }
+        if oid == sha {
+            agrees = True;
+        }
+    }
+    if not matched {
+        return None;
+    }
+    return (agrees, is_tag);
+}
+
+
 def _store_hit_for(
     store_dir: Path, url: str, sha: str, expected_tree: str, verify: bool
 ) -> dict | None {
@@ -196,6 +236,15 @@ def _store_hit_for(
 }
 
 
+def _tree_matches(tree_dir: Path, expected: str) -> bool {
+    try {
+        return dirhash(tree_dir) == expected;
+    } except OSError {
+        return False;
+    }
+}
+
+
 def fetch_package(
     url: str,
     ref: str = "",
@@ -206,6 +255,27 @@ def fetch_package(
     url = normalize_git_url(url);
     store_dir = store_root();
     (store_dir / TMP_DIR_NAME).mkdir(parents=True, exist_ok=True);
+    if sha and ref and ref != sha {
+        agreement = _ref_agreement(url, ref, sha);
+        if agreement is not None {
+            (agrees, is_tag) = agreement;
+            if not agrees and is_tag {
+                raise JacDepError(
+                    f"Tag '{ref}' of {url} no longer resolves to recorded "
+                    f"commit {sha}. The tag was moved; verify upstream and "
+                    f"re-lock with 'jac update'."
+                );
+            }
+            if not agrees {
+                console.warning(
+                    f"ref '{ref}' of {url} moved past recorded commit "
+                    f"{sha[:12]}; replaying the recorded commit "
+                    "(run 'jac update' to advance)"
+                );
+                ref = "";
+            }
+        }
+    }
     if sha {
         hit = _store_hit_for(store_dir, url, sha, expected_tree, verify);
         if hit is not None {
@@ -220,7 +290,6 @@ def fetch_package(
         final = store_dir / tree_hash;
         if final.exists() {
             shutil.rmtree(tree_dest, ignore_errors=True);
-            meta = _read_origin_meta(final / ORIGIN_MARKER);
         } else {
             _write_origin_meta(
                 tree_dest, {"url": url, "sha": resolved_sha, "tree": tree_hash}
@@ -228,16 +297,19 @@ def fetch_package(
             try {
                 os.rename(str(tree_dest), str(final));
             } except OSError {
-                shutil.rmtree(final, ignore_errors=True);
-                os.rename(str(tree_dest), str(final));
+                if _tree_matches(final, tree_hash) {
+                    shutil.rmtree(tree_dest, ignore_errors=True);
+                } else {
+                    shutil.rmtree(final, ignore_errors=True);
+                    os.rename(str(tree_dest), str(final));
+                }
             }
-            meta = {"url": url, "sha": resolved_sha, "tree": tree_hash};
         }
         return {
             "path": str(final),
-            "sha": meta["sha"],
-            "tree": meta["tree"],
-            "cached": bool(sha) and meta["sha"] == sha
+            "sha": resolved_sha,
+            "tree": tree_hash,
+            "cached": bool(sha) and resolved_sha == sha
         };
     } finally {
         shutil.rmtree(staging, ignore_errors=True);
@@ -253,18 +325,14 @@ def prune_tmp {
 }
 
 
-def _link_tree(src: Path, dest: Path) {
+def _copy_tree(src: Path, dest: Path) {
     dest.mkdir(parents=True);
     for item in sorted(src.iterdir()) {
         target = dest / item.name;
-        if item.is_dir() {
-            _link_tree(item, target);
+        if item.is_symlink() or not item.is_dir() {
+            shutil.copy2(item, target, follow_symlinks=False);
         } else {
-            try {
-                os.link(item, target);
-            } except OSError {
-                shutil.copy2(item, target, follow_symlinks=False);
-            }
+            _copy_tree(item, target);
         }
     }
 }
@@ -275,6 +343,6 @@ def materialize(src: Path, dest: Path) -> Path {
         shutil.rmtree(dest);
     }
     dest.parent.mkdir(parents=True, exist_ok=True);
-    _link_tree(src, dest);
+    _copy_tree(src, dest);
     return dest;
 }
