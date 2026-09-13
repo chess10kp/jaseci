@@ -2145,7 +2145,6 @@ walker NaIRGenPass(Transform) {
     ) -> (ir.Value | None);
 
     def _widen_i1_pair(left: ir.Value, right: ir.Value) -> tuple[(ir.Value, ir.Value)];
-
     def _is_jacval_ty(t: ir.Type) -> bool;
     def _is_jacval_boxable(t: ir.Type) -> bool;
     def _sort_key_supported(ty: ir.Type) -> bool;
