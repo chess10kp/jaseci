@@ -181,16 +181,30 @@ def version_satisfied(constraint: str, actual: str) -> bool {
     constraint = constraint.strip();
     actual_v = _vtuple(actual);
     if constraint.startswith("^") {
-        base = _vtuple(constraint[1:]);
-        return actual_v >= base and actual_v[0] == base[0];
+        body = constraint[1:];
+        if not re.match(r"^\d+(\.\d+)*$", body) {
+            raise JacDepError(
+                f"Unsupported version constraint '{constraint}': use an exact "
+                "version ('1.2.3' or '=1.2.3') or a caret ('^1.2.3')"
+            );
+        }
+        base = _vtuple(body);
+        if base[0] > 0 {
+            return actual_v >= base and actual_v[0] == base[0];
+        }
+        if base[1] > 0 {
+            return (actual_v >= base and actual_v[0] == 0 and actual_v[1] == base[1]);
+        }
+        return actual_v == base;
     }
-    if constraint.startswith("=") {
-        return actual_v == _vtuple(constraint.lstrip("="));
+    exact = constraint.lstrip("=");
+    if re.match(r"^\d+(\.\d+)*$", exact) {
+        return actual_v == _vtuple(exact);
     }
-    if re.match(r"^\d", constraint) {
-        return actual_v == _vtuple(constraint);
-    }
-    return True;
+    raise JacDepError(
+        f"Unsupported version constraint '{constraint}': use an exact "
+        "version ('1.2.3' or '=1.2.3') or a caret ('^1.2.3')"
+    );
 }
 
 
@@ -234,8 +248,28 @@ def deps_map_path(config: JacConfig) -> Path {
 }
 
 
+def read_deps_map(config: JacConfig) -> dict {
+    map_path = deps_map_path(config);
+    try {
+        data = json.loads(map_path.read_text(encoding="utf-8"));
+    } except (OSError, ValueError) {
+        return {};
+    }
+    return data if isinstance(data, dict) else {};
+}
+
+
 def read_deps_roots(project_root: Path) -> list[str] {
-    map_path = project_root / ".jac" / "deps.json";
+    import from jaclang.project.config { get_config_for_path }
+    try {
+        config = get_config_for_path(project_root);
+    } except (OSError, ValueError) {
+        return [];
+    }
+    if config is None {
+        return [];
+    }
+    map_path = deps_map_path(config);
     if not map_path.is_file() {
         return [];
     }
@@ -248,7 +282,6 @@ def read_deps_roots(project_root: Path) -> list[str] {
     if cached is not None and cached[0] == mtime {
         return list(cached[1]);
     }
-    import json;
     roots: list[str] = [];
     try {
         data = json.loads(map_path.read_text(encoding="utf-8"));
@@ -380,8 +413,7 @@ obj JacGitProvider(EcosystemProvider) {
     def resolve_closure(
         config: JacConfig,
         ctx: InstallContext | None = None,
-        frozen_pins: dict[str, dict] | None = None,
-        include_root_dev: bool = True
+        frozen_pins: dict[str, dict] | None = None
     ) -> dict[str, JacPackage] {
         frozen_pins = frozen_pins or {};
         overrides = config.get_section("override");
@@ -389,7 +421,7 @@ obj JacGitProvider(EcosystemProvider) {
         noted_overrides: set[str] = set();
         project_root = config.project_root or Path.cwd();
         (root_deps, root_dev) = manifest_jac_deps(config);
-        root_entries = {** root_deps, ** (root_dev if include_root_dev else {})};
+        root_entries = {** root_deps, ** root_dev};
         packages_root = config.get_build_dir() / "packages";
 
         queue: list[tuple] = [];
@@ -401,11 +433,15 @@ obj JacGitProvider(EcosystemProvider) {
             (source, key) = _entry_key(name, dep, Path(str(project_root)));
             (ref, commit) = _entry_ref(name, dep);
             seen[name] = (key, ref, commit);
-            queue.append((name, dep, str(project_root), "root"));
+            queue.append(
+                (name, dep, str(project_root), "root", source, key, ref, commit)
+            );
             queued.add(name);
         }
-        while queue {
-            (name, dep, base_dir, requirer) = queue.pop(0);
+        idx = 0;
+        while idx < len(queue) {
+            (name, dep, base_dir, requirer, source, key, ref, commit) = queue[idx];
+            idx += 1;
             if not isinstance(dep, dict) {
                 raise entry_error(
                     name,
@@ -414,8 +450,6 @@ obj JacGitProvider(EcosystemProvider) {
                     "{ git = ... } or { path = ... }"
                 );
             }
-            (source, key) = _entry_key(name, dep, Path(base_dir));
-            (ref, commit) = _entry_ref(name, dep);
             existing = resolved.get(name);
             if existing is not None {
                 self._check_unification(
@@ -477,7 +511,18 @@ obj JacGitProvider(EcosystemProvider) {
                 }
                 if tname not in queued {
                     queued.add(tname);
-                    queue.append((tname, tentry, pkg.pkg_root, name));
+                    queue.append(
+                        (
+                            tname,
+                            tentry,
+                            pkg.pkg_root,
+                            name,
+                            tsource,
+                            tkey,
+                            tref,
+                            tcommit
+                        )
+                    );
                 }
             }
         }
@@ -485,7 +530,7 @@ obj JacGitProvider(EcosystemProvider) {
     }
 
     def _materialize_pkg(
-        pkg: any, packages_root: Path, ctx: InstallContext | None
+        pkg: JacPackage, packages_root: Path, ctx: InstallContext | None
     ) -> None {
         if pkg.source == "path" or (ctx is not None and ctx.is_dry_run()) {
             pkg.local_path = Path(pkg.pkg_root);
@@ -607,7 +652,8 @@ obj JacGitProvider(EcosystemProvider) {
                 ref=ref,
                 sha=commit or pin_sha or None,
                 expected_tree=str(pins.get("tree", "")),
-                verify=bool(pins)
+                verify=bool(pins),
+                frozen=(ctx is not None and ctx.frozen)
             );
             pkg = JacPackage(
                 name=name,
@@ -640,7 +686,7 @@ obj JacGitProvider(EcosystemProvider) {
         return pkg;
     }
 
-    def save_deps_map(config: JacConfig, resolved: dict) -> bool {
+    def save_deps_map(config: JacConfig, resolved: dict[str, JacPackage]) -> bool {
         map_path = deps_map_path(config);
         map_path.parent.mkdir(parents=True, exist_ok=True);
         packages = [
@@ -671,7 +717,6 @@ obj JacGitProvider(EcosystemProvider) {
         if not root_deps and not root_dev {
             return True;
         }
-        include_root_dev = True if not deps else any(d.dev for d in deps);
         import from jaclang.project.lockfile {
             jac_lock_rows,
             read_lock,
@@ -681,7 +726,7 @@ obj JacGitProvider(EcosystemProvider) {
         if ctx.frozen {
             missing = [
                 n
-                for n in {** root_deps, ** (root_dev if include_root_dev else {})}
+                for n in {** root_deps, ** root_dev}
                 if n not in pins
             ];
             if missing {
@@ -693,9 +738,7 @@ obj JacGitProvider(EcosystemProvider) {
             }
         }
         try {
-            resolved = self.resolve_closure(
-                config, ctx, frozen_pins=pins, include_root_dev=include_root_dev
-            );
+            resolved = self.resolve_closure(config, ctx, frozen_pins=pins);
         } except JacDepError as e {
             console.error(str(e));
             return False;
@@ -759,12 +802,13 @@ obj JacGitProvider(EcosystemProvider) {
         self.save_deps_map(config, resolved);
         if ctx is None or not ctx.is_dry_run() {
             update_jac_rows(config.project_root or Path.cwd(), resolved);
+            write_pth(config, resolved);
+            pkg = resolved[name];
+            via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
+            console.print(f"  ✔ {name} ({via})", style="success");
+            return via;
         }
-        write_pth(config, resolved);
-        pkg = resolved[name];
-        via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
-        console.print(f"  ✔ {name} ({via})", style="success");
-        return via;
+        return name;
     }
 
     def _rematerialize(config: JacConfig) {
@@ -807,19 +851,33 @@ obj JacGitProvider(EcosystemProvider) {
             return False;
         }
         is_dev = dev or (name not in deps and name in dev_deps);
+        if is_dev and name in dev_deps {
+            previous = dev_deps[name];
+        } else {
+            previous = deps.get(name);
+        }
         if not config.remove_dependency(name, dev=is_dev, dep_type="jac") {
             return False;
         }
         config.save();
-        stale = config.get_build_dir() / "packages" / name;
-        if stale.is_dir() {
-            shutil.rmtree(stale, ignore_errors=True);
-        }
         try {
             resolved = self.resolve_closure(config, ctx);
         } except JacDepError as e {
+            section = config.plugin_dependencies.setdefault("jac", {});
+            if is_dev {
+                restored = section.setdefault("dev", {});
+                restored[name] = previous;
+            } else {
+                section[name] = previous;
+            }
+            config.save();
             console.error(str(e));
+            self._rematerialize(config);
             return False;
+        }
+        stale = config.get_build_dir() / "packages" / name;
+        if stale.is_dir() {
+            shutil.rmtree(stale, ignore_errors=True);
         }
         self.save_deps_map(config, resolved);
         import from jaclang.project.lockfile { update_jac_rows }
@@ -830,17 +888,12 @@ obj JacGitProvider(EcosystemProvider) {
     }
 
     override def list_installed(config: JacConfig) -> list[str] {
-        map_path = deps_map_path(config);
-        if not map_path.is_file() {
-            return [];
-        }
-        import json;
-        try {
-            data = json.loads(map_path.read_text(encoding="utf-8"));
-        } except (OSError, ValueError) {
-            return [];
-        }
-        return sorted(p.get("name", "") for p in data.get("packages", []));
+        data = read_deps_map(config);
+        return sorted(
+            p.get("name", "")
+            for p in data.get("packages", [])
+            if isinstance(p, dict)
+        );
     }
 
     override def emit_standalone(
@@ -848,7 +901,10 @@ obj JacGitProvider(EcosystemProvider) {
     ) -> list[Path] {
         try {
             resolved = self.resolve_closure(config, None);
-        } except JacDepError {
+        } except JacDepError as e {
+            console.warning(
+                f"Could not resolve jac dependencies ({e}); " "continuing without them."
+            );
             resolved = {};
         }
         if not resolved {
