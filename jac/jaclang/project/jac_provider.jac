@@ -97,6 +97,10 @@ def _entry_key(name: str, dep: dict, base_dir: Path) -> tuple[str, str] {
         return ("git", normalize_git_url(dep["git"]));
     }
     if has_path {
+        path_text = str(dep["path"]);
+        if any(ord(c) < 32 for c in path_text) {
+            raise entry_error(name, dep, "path contains control characters");
+        }
         real = os.path.realpath(str(base_dir / dep["path"]));
         return ("path", real);
     }
@@ -271,10 +275,17 @@ def pth_lines(resolved: dict[str, JacPackage]) -> list[str] {
             continue;
         }
         text = str(local.resolve());
-        if text not in seen {
-            seen.add(text);
-            lines.append(text);
+        if text in seen {
+            continue;
         }
+        if any(ord(c) < 32 for c in text) {
+            raise JacDepError(
+                f"Dependency path for '{name}' contains control characters "
+                "and would corrupt the import map"
+            );
+        }
+        seen.add(text);
+        lines.append(text);
     }
     return lines;
 }
@@ -305,6 +316,24 @@ def write_pth(config: JacConfig, resolved: dict[str, JacPackage]) -> None {
     } else {
         pth.unlink(missing_ok=True);
     }
+}
+
+
+def _apply_override(
+    overrides: dict, noted: set, name: str, dep: dict, requirer: str
+) -> dict {
+    if name in overrides and isinstance(overrides[name], dict) {
+        if name not in noted {
+            console.print(
+                f"  override: using [override] dep for '{name}' "
+                f"(requested by {requirer})",
+                style="muted"
+            );
+            noted.add(name);
+        }
+        return overrides[name];
+    }
+    return dep;
 }
 
 
@@ -362,18 +391,19 @@ obj JacGitProvider(EcosystemProvider) {
         (root_deps, root_dev) = manifest_jac_deps(config);
         root_entries = {** root_deps, ** (root_dev if include_root_dev else {})};
         packages_root = config.get_build_dir() / "packages";
-        queue: list[tuple] = [
-            (name, dep, str(project_root), "root")
-            for (name, dep) in root_entries.items()
-        ];
+
+        queue: list[tuple] = [];
         resolved: dict[str, JacPackage] = {};
-        seen: dict[str, tuple] = {
-            name: (
-                _entry_key(name, dep, Path(str(project_root)))[1],
-                _entry_ref(name, dep)
-            ) for (name, dep) in root_entries.items()
-        };
-        queued: set[str] = {name for (name, _, _, _) in queue};
+        seen: dict[str, tuple] = {};
+        queued: set[str] = set();
+        for (name, dep) in root_entries.items() {
+            dep = _apply_override(overrides, noted_overrides, name, dep, "root");
+            (source, key) = _entry_key(name, dep, Path(str(project_root)));
+            (ref, commit) = _entry_ref(name, dep);
+            seen[name] = (key, ref, commit);
+            queue.append((name, dep, str(project_root), "root"));
+            queued.add(name);
+        }
         while queue {
             (name, dep, base_dir, requirer) = queue.pop(0);
             if not isinstance(dep, dict) {
@@ -383,17 +413,6 @@ obj JacGitProvider(EcosystemProvider) {
                     "string entries have no meaning here; a pure-jac dep needs "
                     "{ git = ... } or { path = ... }"
                 );
-            }
-            if name in overrides and isinstance(overrides[name], dict) {
-                if name not in noted_overrides {
-                    console.print(
-                        f"  override: using [override] dep for '{name}' "
-                        f"(requested by {requirer})",
-                        style="muted"
-                    );
-                    noted_overrides.add(name);
-                }
-                dep = overrides[name];
             }
             (source, key) = _entry_key(name, dep, Path(base_dir));
             (ref, commit) = _entry_ref(name, dep);
@@ -423,6 +442,9 @@ obj JacGitProvider(EcosystemProvider) {
                 if not isinstance(tentry, dict) {
                     continue;
                 }
+                tentry = _apply_override(
+                    overrides, noted_overrides, tname, tentry, name
+                );
                 (tsource, tkey) = _entry_key(tname, tentry, Path(pkg.pkg_root));
                 (tref, tcommit) = _entry_ref(tname, tentry);
                 existing = resolved.get(tname);
@@ -574,17 +596,19 @@ obj JacGitProvider(EcosystemProvider) {
                 pins = {};
                 pin_sha = "";
             }
-            try {
-                fetched = fetch_package(
-                    url=key,
-                    ref=ref if not (commit or pin_sha) else "",
-                    sha=commit or pin_sha or None,
-                    expected_tree=str(pins.get("tree", "")),
-                    verify=bool(pins)
+            if ctx is not None and ctx.frozen and not pin_sha {
+                raise JacDepError(
+                    f"jac.lock is missing '{name}' (requested by "
+                    f"{requirer}). Run 'jac install' to refresh the lockfile."
                 );
-            } except JacDepError {
-                raise;
             }
+            fetched = fetch_package(
+                url=key,
+                ref=ref,
+                sha=commit or pin_sha or None,
+                expected_tree=str(pins.get("tree", "")),
+                verify=bool(pins)
+            );
             pkg = JacPackage(
                 name=name,
                 key=key,
@@ -698,8 +722,10 @@ obj JacGitProvider(EcosystemProvider) {
         section = config.plugin_dependencies.setdefault("jac", {});
         if dev {
             dev_section = section.setdefault("dev", {});
+            previous = dev_section.get(name);
             dev_section[name] = dep;
         } else {
+            previous = section.get(name);
             section[name] = dep;
         }
         config.save();
@@ -715,9 +741,19 @@ obj JacGitProvider(EcosystemProvider) {
                 frozen_pins=jac_lock_rows(read_lock(config.project_root or Path.cwd()))
             );
         } except JacDepError as e {
-            self._unrecord(config, name, dev);
+            if previous is not None {
+                if dev {
+                    restored = section.setdefault("dev", {});
+                    restored[name] = previous;
+                } else {
+                    section[name] = previous;
+                }
+            } else {
+                self._unrecord(config, name, dev);
+            }
             config.save();
             console.error(str(e));
+            self._rematerialize(config);
             return None;
         }
         self.save_deps_map(config, resolved);
@@ -729,6 +765,21 @@ obj JacGitProvider(EcosystemProvider) {
         via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
         console.print(f"  ✔ {name} ({via})", style="success");
         return via;
+    }
+
+    def _rematerialize(config: JacConfig) {
+        import from jaclang.project.lockfile { jac_lock_rows, read_lock }
+        try {
+            pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            resolved = self.resolve_closure(config, None, frozen_pins=pins);
+            self.save_deps_map(config, resolved);
+            write_pth(config, resolved);
+        } except Exception {
+            console.warning(
+                "Previous dependencies could not be re-materialized; "
+                "run 'jac install' to restore .jac/ state."
+            );
+        }
     }
 
     def _unrecord(config: JacConfig, name: str, dev: bool) {

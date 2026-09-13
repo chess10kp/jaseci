@@ -1176,18 +1176,40 @@ impl install(
     lock = read_lock(config.project_root or Path.cwd());
     py_pins = lock.get("python", {});
     py_pins = py_pins if isinstance(py_pins, dict) else {};
-    if python_deps and py_pins {
-        pin_specs = [f"{name}{py_pins[name]}" for name in sorted(py_pins.keys())];
-        with console.status(
-            f"Installing {len(pin_specs)} pinned package(s)...", spinner="dots"
-        ) as status {
-            install_success = python.install_specs(config, pin_specs, ctx);
+    if python_deps {
+        import re;
+
+        def py_norm(n: str) -> str {
+            return re.sub(r"[-_.]+", "-", str(n)).lower();
         }
-    } elif python_deps {
-        with console.status(
-            f"Installing {len(python_deps)} package(s)...", spinner="dots"
-        ) as status {
-            install_success = python.install_all(config, python_deps, ctx);
+
+        pin_names = {py_norm(p) for p in py_pins.keys()};
+        manifest_names = {py_norm(d.name) for d in python_deps};
+        git_dep_names = {
+            py_norm(d.name)
+            for d in python_deps
+            if d.source == "git"
+        };
+
+        pin_specs = [
+            f"{name}{py_pins[name]}"
+            for name in sorted(py_pins.keys())
+            if py_norm(name) in manifest_names and py_norm(name) not in git_dep_names
+        ];
+        fresh_specs = python.specs_for(
+            [
+                d
+                for d in python_deps
+                if py_norm(d.name) not in pin_names or d.source == "git"
+            ]
+        );
+        specs = pin_specs + fresh_specs;
+        if specs {
+            with console.status(
+                f"Installing {len(specs)} package(s)...", spinner="dots"
+            ) as status {
+                install_success = python.install_specs(config, specs, ctx);
+            }
         }
     }
 
@@ -1361,14 +1383,26 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
                 };
             } except (OSError, ValueError) {}
         }
+        import from jaclang.project.lockfile {
+            jac_lock_rows,
+            read_lock,
+            update_jac_rows
+        }
         try {
-            resolved = jac_provider.resolve_closure(config, ctx);
+            pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            if jac_targets {
+                for t in jac_targets {
+                    pins.pop(t, None);
+                }
+            } else {
+                pins = {};
+            }
+            resolved = jac_provider.resolve_closure(config, ctx, frozen_pins=pins);
         } except Exception as e {
             console.error(str(e));
             return 1;
         }
         jac_provider.save_deps_map(config, resolved);
-        import from jaclang.project.lockfile { update_jac_rows }
         update_jac_rows(config.project_root or Path.cwd(), resolved);
         for pkg in resolved.values() {
             if jac_targets and pkg.name not in jac_targets {

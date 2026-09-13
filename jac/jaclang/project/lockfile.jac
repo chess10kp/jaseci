@@ -38,6 +38,39 @@ def jac_lock_rows(lock_data: dict) -> dict {
 }
 
 
+def _toml_str(value: str) -> str {
+    out: list[str] = [];
+    for ch in str(value) {
+        if ch == "\\" {
+            out.append("\\\\");
+        } elif ch == '"' {
+            out.append('\\"');
+        } elif ch == "\n" {
+            out.append("\\n");
+        } elif ch == "\r" {
+            out.append("\\r");
+        } elif ch == "\t" {
+            out.append("\\t");
+        } elif ord(ch) < 32 {
+            out.append(f"\\u{ord(ch):04X}");
+        } else {
+            out.append(ch);
+        }
+    }
+    return '"' + "".join(out) + '"';
+}
+
+
+def _toml_key(key: str) -> str {
+    import re;
+    key = str(key);
+    if re.match(r"^[A-Za-z0-9_-]+$", key) {
+        return key;
+    }
+    return _toml_str(key);
+}
+
+
 def write_lock(project_root: Path, lock_data: dict) -> bool {
     lines: list[str] = [];
     jac_rows = jac_lock_rows(lock_data);
@@ -46,16 +79,16 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
         if not isinstance(row, dict) {
             continue;
         }
-        lines.append(f"[jac.{name}]");
+        lines.append(f"[jac.{_toml_key(name)}]");
         for field in ("git", "path", "ref", "sha", "tree", "version") {
             value = str(row.get(field, ""));
             if value {
-                lines.append(f'{field} = "{value}"');
+                lines.append(f"{field} = {_toml_str(value)}");
             }
         }
         reqs = row.get("requested_by", []);
         if isinstance(reqs, list) and reqs {
-            inner = ", ".join(f'"{r}"' for r in reqs);
+            inner = ", ".join(_toml_str(str(r)) for r in reqs);
             lines.append(f"requested_by = [{inner}]");
         }
         lines.append("");
@@ -64,7 +97,7 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
     if isinstance(py_pins, dict) and py_pins {
         lines.append("[python]");
         for name in sorted(py_pins.keys()) {
-            lines.append(f'{name} = "{py_pins[name]}"');
+            lines.append(f"{_toml_key(name)} = {_toml_str(str(py_pins[name]))}");
         }
         lines.append("");
     }
@@ -74,8 +107,8 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
         for name in sorted(py_graph.keys()) {
             reqs = py_graph[name];
             if isinstance(reqs, list) and reqs {
-                inner = ", ".join(f'"{r}"' for r in reqs);
-                lines.append(f"{name} = [{inner}]");
+                inner = ", ".join(_toml_str(str(r)) for r in reqs);
+                lines.append(f"{_toml_key(name)} = [{inner}]");
             }
         }
         lines.append("");
@@ -84,7 +117,7 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
     if isinstance(npm_pins, dict) and npm_pins {
         lines.append("[npm]");
         for name in sorted(npm_pins.keys()) {
-            lines.append(f'{name} = "{npm_pins[name]}"');
+            lines.append(f"{_toml_key(name)} = {_toml_str(str(npm_pins[name]))}");
         }
         lines.append("");
     }
@@ -243,26 +276,21 @@ def harvest_npm_lock(config: JacConfig) -> dict {
 }
 
 
-def why_chains(lock_data: dict, name: str) -> list {
-    jac_rows = jac_lock_rows(lock_data);
-    py_graph = lock_data.get("python_graph", {});
-    if not isinstance(py_graph, dict) {
-        py_graph = {};
-    }
+def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list {
+    found: list = [];
 
     def requirers_of(cur: str) -> list {
-        if cur in jac_rows and isinstance(jac_rows[cur], dict) {
-            reqs = jac_rows[cur].get("requested_by", []);
-            return reqs if isinstance(reqs, list) else [];
+        if jac_mode {
+            row = edges.get(cur);
+            if isinstance(row, dict) {
+                reqs = row.get("requested_by", []);
+                return reqs if isinstance(reqs, list) else [];
+            }
+            return [];
         }
-        if cur in py_graph {
-            reqs = py_graph[cur];
-            return reqs if isinstance(reqs, list) else [];
-        }
-        return [];
+        reqs = edges.get(cur, []);
+        return reqs if isinstance(reqs, list) else [];
     }
-
-    chains: list = [];
 
     def walk(cur: str, trail: list) -> None {
         if cur in trail {
@@ -270,18 +298,32 @@ def why_chains(lock_data: dict, name: str) -> list {
         }
         reqs = requirers_of(cur);
         if not reqs {
-            chains.append(trail + [cur]);
+            found.append(trail + [cur]);
             return;
         }
         for r in reqs {
             if r == "root" {
-                chains.append(trail + [cur, "root"]);
+                found.append(trail + [cur, "root"]);
             } else {
                 walk(str(r), trail + [cur]);
             }
         }
     }
 
-    walk(name, []);
-    return chains;
+    if name in edges {
+        walk(name, []);
+    }
+    return found;
+}
+
+
+def why_chains(lock_data: dict, name: str) -> list {
+    jac_rows = jac_lock_rows(lock_data);
+    py_graph = lock_data.get("python_graph", {});
+    if not isinstance(py_graph, dict) {
+        py_graph = {};
+    }
+
+    chains = _walk_chains(jac_rows, name, True) + _walk_chains(py_graph, name, False);
+    return chains or [[name]];
 }

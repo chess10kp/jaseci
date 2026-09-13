@@ -17,11 +17,13 @@ import from jaclang.project.jac_store {
     dirhash,
     fetch_package,
     git_package_name,
+    materialize,
     normalize_git_url,
     store_root
 }
 import from jaclang.project.jac_provider {
     JacGitProvider,
+    JacPackage,
     manifest_jac_deps,
     parse_jac_spec,
     pth_lines,
@@ -29,7 +31,12 @@ import from jaclang.project.jac_provider {
     version_satisfied
 }
 import from jaclang.project.providers { InstallContext, get_provider_registry }
-import from jaclang.project.lockfile { jac_lock_rows, read_lock, update_jac_rows }
+import from jaclang.project.lockfile {
+    jac_lock_rows,
+    read_lock,
+    update_jac_rows,
+    write_lock
+}
 
 
 def make_git_repo(path: Path, jac_toml: str, files: dict) -> str {
@@ -104,6 +111,49 @@ def restore_store(tmp: str, old: str | None) {
         os.environ["JAC_GLOBAL_DIR"] = old;
     }
     shutil.rmtree(tmp, ignore_errors=True);
+}
+
+def git_head(path: Path) -> str {
+    return subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True
+    ).stdout.strip();
+}
+
+
+def git_commit_all(path: Path, message: str = "next") -> str {
+    env = dict(os.environ);
+    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, env=env);
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(path),
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@t",
+            "commit",
+            "-q",
+            "-m",
+            message
+        ],
+        check=True,
+        env=env
+    );
+    return git_head(path);
+}
+
+
+def git_branch(path: Path) -> str {
+    return subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "--abbrev-ref", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True
+    ).stdout.strip();
 }
 
 
@@ -560,4 +610,323 @@ test "why chains trace reverse edges" {
     assert ["shared", "other"] in shared_chains;
     assert why_chains(lock_data, "mylib") == [["mylib", "root"]];
     assert why_chains(lock_data, "nope") == [["nope"]];
+}
+
+
+test "dependency paths with control characters are rejected" {
+    toml_text = (
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+        '[dependencies.jac]\nevil = { path = "../ok\\nimport os" }\n'
+    );
+    (config, tmp) = make_project(toml_text);
+    try {
+        base = Path(tmp);
+        make_plain_pkg(base / "ok", '[project]\nname = "ok"\nversion = "1.0.0"\n', {});
+        provider = JacGitProvider();
+        try {
+            provider.resolve_closure(config, InstallContext());
+            assert False;
+        } except JacDepError as e {
+            assert "control characters" in str(e);
+        }
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "pth lines reject executable injection" {
+    pkg = JacPackage(name="x", local_path=Path("/tmp/x\nimport os"));
+    try {
+        pth_lines({"x": pkg});
+        assert False;
+    } except JacDepError as e {
+        assert "import map" in str(e);
+    }
+}
+
+
+test "override resolves a genuine cross-parent conflict" {
+    toml_text = (
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+        '[dependencies.jac]\nx = { path = "../x" }\ny = { path = "../y" }\n\n'
+        '[override]\nshared = { path = "../shared_override" }\n'
+    );
+    (config, tmp) = make_project(toml_text);
+    try {
+        base = Path(tmp);
+        make_plain_pkg(
+            base / "x",
+            '[project]\nname = "x"\nversion = "1.0.0"\n\n'
+            '[dependencies.jac]\nshared = { path = "../shared_x" }\n',
+            {}
+        );
+        make_plain_pkg(
+            base / "y",
+            '[project]\nname = "y"\nversion = "1.0.0"\n\n'
+            '[dependencies.jac]\nshared = { path = "../shared_y" }\n',
+            {}
+        );
+        make_plain_pkg(
+            base / "shared_x", '[project]\nname = "shared"\nversion = "1.0.0"\n', {}
+        );
+        make_plain_pkg(
+            base / "shared_y", '[project]\nname = "shared"\nversion = "2.0.0"\n', {}
+        );
+        make_plain_pkg(
+            base / "shared_override",
+            '[project]\nname = "shared"\nversion = "9.9.9"\n',
+            {}
+        );
+        provider = JacGitProvider();
+        resolved = provider.resolve_closure(config, InstallContext());
+        assert sorted(resolved.keys()) == ["shared", "x", "y"];
+        assert resolved["shared"].key
+            == os.path.realpath(str(base / "shared_override"));
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "frozen install fails when a transitive dep misses the lock" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_frozen_t_");
+        sub_origin = make_git_repo(
+            Path(outer) / "sub",
+            '[project]\nname = "sub"\nversion = "1.0.0"\n',
+            {"sub.jac": "def s() -> int { return 1; }\n"}
+        );
+        mylib_origin = make_git_repo(
+            Path(outer) / "mylib",
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n\n'
+            f'[dependencies.jac]\nsub = {{ git = "{sub_origin}" }}\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        toml_text = (
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nmylib = {{ git = "{mylib_origin}" }}\n'
+        );
+        (config, tmp) = make_project(toml_text);
+        try {
+            provider = JacGitProvider();
+            assert provider.install_all(config, [], InstallContext());
+            lock = read_lock(config.project_root or Path.cwd());
+            rows = jac_lock_rows(lock);
+            assert "sub" in rows;
+            del rows["sub"];
+            lock["jac"] = rows;
+            assert write_lock(config.project_root or Path.cwd(), lock);
+            assert not provider.install_all(config, [], InstallContext(frozen=True));
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "targeted replay keeps non-targeted deps pinned" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_targeted_");
+        origin_a_path = Path(outer) / "a";
+        origin_a = make_git_repo(
+            origin_a_path,
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        origin_b = make_git_repo(
+            Path(outer) / "b",
+            '[project]\nname = "otherlib"\nversion = "2.0.0"\n',
+            {"otherlib.jac": "def other() -> int { return 1; }\n"}
+        );
+        toml_text = (
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nmylib = {{ git = "{origin_a}" }}\n'
+            f'otherlib = {{ git = "{origin_b}" }}\n'
+        );
+        (config, tmp) = make_project(toml_text);
+        try {
+            provider = JacGitProvider();
+            assert provider.install_all(config, [], InstallContext());
+            old_b = jac_lock_rows(read_lock(config.project_root or Path.cwd()))[
+                "otherlib"
+            ]["sha"];
+            (origin_a_path / "extra.jac").write_text(
+                "def extra() -> int { return 7; }\n", encoding="utf-8"
+            );
+            new_a = git_commit_all(origin_a_path, "advance");
+            pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            assert pins["mylib"]["sha"] != new_a;
+            del pins["mylib"];
+            resolved = provider.resolve_closure(
+                config, InstallContext(), frozen_pins=pins
+            );
+            assert resolved["mylib"].sha == new_a;
+            assert resolved["otherlib"].sha == old_b;
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "dedupe keeps the requested origin provenance" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_dedupe_");
+        payload = '[project]\nname = "mylib"\nversion = "1.2.0"\n';
+        files = {"mylib.jac": "def hello() -> int { return 42; }\n"};
+        origin_a = make_git_repo(Path(outer) / "a", payload, files);
+        origin_b = make_git_repo(Path(outer) / "b", payload, files);
+        env = dict(os.environ);
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(Path(outer) / "b"),
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "commit",
+                "-q",
+                "--allow-empty",
+                "-m",
+                "second"
+            ],
+            check=True,
+            env=env
+        );
+        sha_a = git_head(Path(outer) / "a");
+        sha_b = git_head(Path(outer) / "b");
+        assert sha_a != sha_b;
+        first = fetch_package(url=origin_a, ref="");
+        second = fetch_package(url=origin_b, ref="");
+        assert first["tree"] == second["tree"];
+        assert first["path"] == second["path"];
+        assert second["sha"] == sha_b;
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "moved tag fails and moved branch replays" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_ref_check_");
+        origin_path = Path(outer) / "origin";
+        origin = make_git_repo(
+            origin_path,
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        head1 = git_head(origin_path);
+        subprocess.run(["git", "-C", str(origin_path), "tag", "v1"], check=True);
+        (origin_path / "mylib.jac").write_text(
+            "def hello() -> int { return 43; }\n", encoding="utf-8"
+        );
+        head2 = git_commit_all(origin_path, "move on");
+        subprocess.run(
+            ["git", "-C", str(origin_path), "tag", "-f", "v1", head2],
+            check=True,
+            capture_output=True
+        );
+        branch = git_branch(origin_path);
+        replayed = fetch_package(url=origin, ref=branch, sha=head1);
+        assert replayed["sha"] == head1;
+        try {
+            fetch_package(url=origin, ref="v1", sha=head1);
+            assert False;
+        } except JacDepError as e {
+            assert "no longer resolves" in str(e);
+        }
+        ok = fetch_package(url=origin, ref="v1", sha=head2);
+        assert ok["sha"] == head2;
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "materialization copies files and preserves symlinks" {
+    tmp = tempfile.mkdtemp(prefix="jac_material_");
+    try {
+        src = Path(tmp) / "src";
+        (src / "sub").mkdir(parents=True);
+        (src / "a.txt").write_text("one", encoding="utf-8");
+        (src / "sub" / "b.txt").write_text("two", encoding="utf-8");
+        outside = Path(tmp) / "outside";
+        outside.mkdir();
+        os.symlink(str(outside), str(src / "link"));
+        dest = Path(tmp) / "dest";
+        materialize(src, dest);
+        assert (dest / "a.txt").is_file();
+        assert (dest / "link").is_symlink();
+        (dest / "a.txt").write_text("CHANGED", encoding="utf-8");
+        assert (src / "a.txt").read_text(encoding="utf-8") == "one";
+        assert (dest / "link").resolve() == outside.resolve();
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "lock writer emits valid TOML for odd names and values" {
+    tmp = tempfile.mkdtemp(prefix="jac_lock_toml_");
+    try {
+        ok = write_lock(
+            Path(tmp),
+            {
+                "jac": {
+                    "my.json": {
+                        "git": "https://x/my-json",
+                        "path": "C:\\Users\\x\"y",
+                        "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "tree": "sha256-deadbeef",
+                        "requested_by": ["root"]
+                    },
+                    "plain": {
+                        "git": "https://x/plain",
+                        "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                    }
+                },
+                "python": {"some-pkg": "==1.0.0"},
+                "python_graph": {"requests": ["root"]},
+                "npm": {"left-pad": "1.2.3"}
+            }
+        );
+        assert ok;
+        data = read_lock(Path(tmp));
+        rows = jac_lock_rows(data);
+        assert rows["my.json"]["path"] == "C:\\Users\\x\"y";
+        assert rows["my.json"]["requested_by"] == ["root"];
+        assert data["python"]["some-pkg"] == "==1.0.0";
+        assert data["python_graph"]["requests"] == ["root"];
+        assert data["npm"]["left-pad"] == "1.2.3";
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "why chains surface every ecosystem for a shared name" {
+    import from jaclang.project.lockfile { why_chains }
+    lock_data = {
+        "jac": {"dup": {"git": "https://x", "requested_by": ["root"]}},
+        "python_graph": {"dup": ["root"], "requests": ["root"]}
+    };
+    chains = why_chains(lock_data, "dup");
+    assert len(chains) == 2;
+    assert ["dup", "root"] in chains;
 }
