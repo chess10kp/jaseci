@@ -153,7 +153,7 @@ def get_jac_search_paths(base_path: (str | None) = None) -> list[str] {
         for dep_root in read_deps_roots(Path(str(project_root or os.getcwd()))) {
             paths.append(dep_root);
         }
-    } except Exception {}
+    } except (ImportError, OSError) {}
     paths.append(os.getcwd());
     if ('JACPATH' in os.environ) {
         paths.extend(

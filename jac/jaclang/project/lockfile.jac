@@ -1,6 +1,8 @@
+import os;
+import tempfile;
 import from pathlib { Path }
 import from jaclang.cli.console { console }
-import from jaclang.project.config { JacConfig }
+import from jaclang.project.config { JacConfig, serialize_toml }
 import from jaclang.project.providers { manifest_plugin_deps }
 
 glob LOCK_FILE_NAME: str = "jac.lock";
@@ -24,8 +26,8 @@ def read_lock(project_root: Path) -> dict {
     try {
         import tomllib;
         data = tomllib.loads(text);
-    } except Exception {
-        console.warning(f"Could not parse {LOCK_FILE_NAME}; ignoring it.");
+    } except Exception as e {
+        console.warning(f"Could not parse {path}; ignoring it: {e}");
         return {};
     }
     return data if isinstance(data, dict) else {};
@@ -38,91 +40,76 @@ def jac_lock_rows(lock_data: dict) -> dict {
 }
 
 
-def _toml_str(value: str) -> str {
-    out: list[str] = [];
-    for ch in str(value) {
-        if ch == "\\" {
-            out.append("\\\\");
-        } elif ch == '"' {
-            out.append('\\"');
-        } elif ch == "\n" {
-            out.append("\\n");
-        } elif ch == "\r" {
-            out.append("\\r");
-        } elif ch == "\t" {
-            out.append("\\t");
-        } elif ord(ch) < 32 {
-            out.append(f"\\u{ord(ch):04X}");
-        } else {
-            out.append(ch);
-        }
-    }
-    return '"' + "".join(out) + '"';
-}
-
-
-def _toml_key(key: str) -> str {
-    import re;
-    key = str(key);
-    if re.match(r"^[A-Za-z0-9_-]+$", key) {
-        return key;
-    }
-    return _toml_str(key);
-}
-
-
 def write_lock(project_root: Path, lock_data: dict) -> bool {
-    lines: list[str] = [];
+    doc: dict = {};
     jac_rows = jac_lock_rows(lock_data);
+    jac_doc: dict = {};
     for name in sorted(jac_rows.keys()) {
         row = jac_rows[name];
         if not isinstance(row, dict) {
             continue;
         }
-        lines.append(f"[jac.{_toml_key(name)}]");
+        entry_row: dict = {};
         for field in ("git", "path", "ref", "sha", "tree", "version") {
             value = str(row.get(field, ""));
             if value {
-                lines.append(f"{field} = {_toml_str(value)}");
+                entry_row[field] = value;
             }
         }
         reqs = row.get("requested_by", []);
         if isinstance(reqs, list) and reqs {
-            inner = ", ".join(_toml_str(str(r)) for r in reqs);
-            lines.append(f"requested_by = [{inner}]");
+            entry_row["requested_by"] = [str(r) for r in reqs];
         }
-        lines.append("");
+        jac_doc[str(name)] = entry_row;
+    }
+    if jac_doc {
+        doc["jac"] = jac_doc;
     }
     py_pins = lock_data.get("python", {});
     if isinstance(py_pins, dict) and py_pins {
-        lines.append("[python]");
+        pins_doc: dict = {};
         for name in sorted(py_pins.keys()) {
-            lines.append(f"{_toml_key(name)} = {_toml_str(str(py_pins[name]))}");
+            pins_doc[str(name)] = str(py_pins[name]);
         }
-        lines.append("");
+        doc["python"] = pins_doc;
     }
     py_graph = lock_data.get("python_graph", {});
     if isinstance(py_graph, dict) and py_graph {
-        lines.append("[python_graph]");
+        graph_doc: dict = {};
         for name in sorted(py_graph.keys()) {
             reqs = py_graph[name];
             if isinstance(reqs, list) and reqs {
-                inner = ", ".join(_toml_str(str(r)) for r in reqs);
-                lines.append(f"{_toml_key(name)} = [{inner}]");
+                graph_doc[str(name)] = [str(r) for r in reqs];
             }
         }
-        lines.append("");
+        if graph_doc {
+            doc["python_graph"] = graph_doc;
+        }
     }
     npm_pins = lock_data.get("npm", {});
     if isinstance(npm_pins, dict) and npm_pins {
-        lines.append("[npm]");
+        npm_doc: dict = {};
         for name in sorted(npm_pins.keys()) {
-            lines.append(f"{_toml_key(name)} = {_toml_str(str(npm_pins[name]))}");
+            npm_doc[str(name)] = str(npm_pins[name]);
         }
-        lines.append("");
+        doc["npm"] = npm_doc;
     }
+    text = serialize_toml(doc) + "\n";
+    target = lock_path(project_root);
     try {
-        lock_path(project_root).write_text("\n".join(lines) + "\n", encoding="utf-8");
+        (fd, tmp_name) = tempfile.mkstemp(
+            prefix=LOCK_FILE_NAME + ".", dir=str(target.parent)
+        );
+        tmp = Path(tmp_name);
+        try {
+            with os.fdopen(fd, "w", encoding="utf-8") as f {
+                f.write(text);
+            }
+            os.replace(str(tmp), str(target));
+        } except Exception {
+            tmp.unlink(True);
+            raise;
+        }
     } except OSError as e {
         console.error(f"Could not write {LOCK_FILE_NAME}: {e}");
         return False;
@@ -156,11 +143,18 @@ def update_jac_rows(project_root: Path, resolved: dict) -> bool {
 
 
 def update_python_rows(
-    project_root: Path, pins: dict, py_graph: dict, npm_pins: dict | None = None
+    project_root: Path,
+    pins: dict | None,
+    py_graph: dict | None,
+    npm_pins: dict | None = None
 ) -> bool {
     lock_data = read_lock(project_root);
-    lock_data["python"] = pins;
-    lock_data["python_graph"] = py_graph;
+    if pins is not None {
+        lock_data["python"] = pins;
+    }
+    if py_graph is not None {
+        lock_data["python_graph"] = py_graph;
+    }
     if npm_pins is not None {
         lock_data["npm"] = npm_pins;
     }
@@ -168,11 +162,11 @@ def update_python_rows(
 }
 
 
-def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] {
+def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] | None {
     import from jaclang.project.pyvenv { get_venv_site_packages }
     site = get_venv_site_packages(venv_dir);
     if not site or not Path(site).is_dir() {
-        return ({}, {});
+        return None;
     }
     import importlib.metadata;
     import re;
@@ -250,11 +244,14 @@ def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] 
 }
 
 
-def harvest_npm_lock(config: JacConfig) -> dict {
+def harvest_npm_lock(config: JacConfig) -> dict | None {
     if config.project_root is None {
-        return {};
+        return None;
     }
     import json;
+    if not (Path(str(config.project_root)) / "node_modules").is_dir() {
+        return None;
+    }
     (deps, dev_deps) = manifest_plugin_deps(config, "npm");
     pins: dict = {};
     for name in list(deps.keys()) + list(dev_deps.keys()) {
@@ -323,7 +320,14 @@ def why_chains(lock_data: dict, name: str) -> list {
     if not isinstance(py_graph, dict) {
         py_graph = {};
     }
+    npm_pins = lock_data.get("npm", {});
+    if not isinstance(npm_pins, dict) {
+        npm_pins = {};
+    }
 
     chains = _walk_chains(jac_rows, name, True) + _walk_chains(py_graph, name, False);
+    if name in npm_pins and [name] not in chains {
+        chains.append([name]);
+    }
     return chains or [[name]];
 }

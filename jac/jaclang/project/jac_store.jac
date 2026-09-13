@@ -10,7 +10,7 @@ glob TREE_HASH_PREFIX: str = "sha256-",
      STORE_DIR_NAME: str = "store",
      TMP_DIR_NAME: str = "_tmp",
      ORIGIN_MARKER: str = ".jac-origin",
-     HASH_EXCLUDE_DIRS: set = {".git", ".jac", "node_modules", "__pycache__"};
+     HASH_EXCLUDE: set = {".git", ".jac", "node_modules", "__pycache__", ORIGIN_MARKER};
 
 
 obj JacDepError(Exception) {
@@ -76,10 +76,10 @@ def dirhash(tree_dir: Path) -> str {
         dirs[:] = sorted(
             d
             for d in dirs
-            if d not in HASH_EXCLUDE_DIRS
+            if d not in HASH_EXCLUDE
         );
         for fname in sorted(files) {
-            if fname in HASH_EXCLUDE_DIRS {
+            if fname in HASH_EXCLUDE {
                 continue;
             }
             fpath = Path(str(dir_root)) / str(fname);
@@ -214,22 +214,19 @@ def _store_hit_for(
         if meta.get("sha") != sha or meta.get("url") != url {
             continue;
         }
+        if expected_tree and candidate.name == expected_tree {
+            return {"path": str(candidate), "sha": sha, "tree": expected_tree};
+        }
         if not verify and not expected_tree {
             return {
                 "path": str(candidate),
                 "sha": sha,
-                "tree": str(meta.get("tree", "")),
-                "cached": True
+                "tree": str(meta.get("tree", ""))
             };
         }
         expected = expected_tree or candidate.name;
         if dirhash(candidate) == expected {
-            return {
-                "path": str(candidate),
-                "sha": sha,
-                "tree": expected,
-                "cached": True
-            };
+            return {"path": str(candidate), "sha": sha, "tree": expected};
         }
     }
     return None;
@@ -250,12 +247,19 @@ def fetch_package(
     ref: str = "",
     sha: str | None = None,
     expected_tree: str = "",
-    verify: bool = True
+    verify: bool = True,
+    frozen: bool = False
 ) -> dict {
     url = normalize_git_url(url);
     store_dir = store_root();
     (store_dir / TMP_DIR_NAME).mkdir(parents=True, exist_ok=True);
-    if sha and ref and ref != sha {
+    if sha {
+        hit = _store_hit_for(store_dir, url, sha, expected_tree, verify);
+        if hit is not None {
+            return hit;
+        }
+    }
+    if sha and ref and ref != sha and not frozen {
         agreement = _ref_agreement(url, ref, sha);
         if agreement is not None {
             (agrees, is_tag) = agreement;
@@ -274,12 +278,6 @@ def fetch_package(
                 );
                 ref = "";
             }
-        }
-    }
-    if sha {
-        hit = _store_hit_for(store_dir, url, sha, expected_tree, verify);
-        if hit is not None {
-            return hit;
         }
     }
     staging = Path(tempfile.mkdtemp(prefix="jac_stage_", dir=store_dir / TMP_DIR_NAME));
@@ -305,22 +303,9 @@ def fetch_package(
                 }
             }
         }
-        return {
-            "path": str(final),
-            "sha": resolved_sha,
-            "tree": tree_hash,
-            "cached": bool(sha) and resolved_sha == sha
-        };
+        return {"path": str(final), "sha": resolved_sha, "tree": tree_hash};
     } finally {
         shutil.rmtree(staging, ignore_errors=True);
-    }
-}
-
-
-def prune_tmp {
-    tmp_dir = store_root() / TMP_DIR_NAME;
-    if tmp_dir.exists() {
-        shutil.rmtree(tmp_dir, ignore_errors=True);
     }
 }
 

@@ -845,7 +845,11 @@ impl install(
             names.append(name);
         }
         provider = JacGitProvider();
-        ctx = InstallContext(verbose=verbose, frozen=frozen);
+        ctx = InstallContext(
+            verbose=verbose,
+            install_flags=["--dry-run"] if dry_run else [],
+            frozen=frozen
+        );
         if no_save or dry_run {
             section = config.plugin_dependencies.setdefault("jac", {});
             for spec in jac_specs {
@@ -1214,11 +1218,11 @@ impl install(
     }
 
     if not dry_run and install_success and not no_save {
-        (py_harvest, py_graph) = harvest_python_lock(config, config.get_venv_dir());
+        harvest = harvest_python_lock(config, config.get_venv_dir());
         update_python_rows(
             config.project_root or Path.cwd(),
-            py_harvest,
-            py_graph,
+            harvest[0] if harvest else None,
+            harvest[1] if harvest else None,
             npm_pins=harvest_npm_lock(config)
         );
     }
@@ -1240,13 +1244,18 @@ impl install(
             continue;
         }
         console.print(f"\n  Installing {provider.name} dependencies", style="muted");
+        installed = True;
         try {
-            provider.install_all(config, provider_deps, ctx);
+            installed = provider.install_all(config, provider_deps, ctx);
+        } except Exception as e {
+            console.error(f"  ✗ {provider.name} dependencies failed: {e}");
+            installed = False;
+        }
+        if installed {
             console.print(
                 f"  ✔ {provider.name} dependencies installed", style="success"
             );
-        } except Exception as e {
-            console.error(f"  ✗ {provider.name} dependencies failed: {e}");
+        } else {
             plugin_failed = True;
         }
     }
@@ -1354,7 +1363,11 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
         );
         return 1;
     }
-    import from jaclang.project.jac_provider { JacGitProvider, manifest_jac_deps }
+    import from jaclang.project.jac_provider {
+        JacGitProvider,
+        manifest_jac_deps,
+        read_deps_map
+    }
     (jac_deps, jac_dev) = manifest_jac_deps(config);
     jac_names = set(list(jac_deps.keys()) + list(jac_dev.keys()));
     jac_targets = [
@@ -1372,17 +1385,12 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
     if jac_targets or ((not packages) and (jac_deps or jac_dev)) {
         jac_provider = JacGitProvider();
         old_shas: dict[str, str] = {};
-        map_path = config.get_build_dir() / "deps.json";
-        if map_path.is_file() {
-            import json;
-            try {
-                old = json.loads(map_path.read_text(encoding="utf-8"));
-                old_shas = {
-                    p.get("name", ""): str(p.get("sha", ""))
-                    for p in old.get("packages", [])
-                };
-            } except (OSError, ValueError) {}
-        }
+        old_map = read_deps_map(config);
+        old_shas = {
+            p.get("name", ""): str(p.get("sha", ""))
+            for p in old_map.get("packages", [])
+            if isinstance(p, dict)
+        };
         import from jaclang.project.lockfile {
             jac_lock_rows,
             read_lock,
@@ -1391,8 +1399,23 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
         try {
             pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
             if jac_targets {
-                for t in jac_targets {
-                    pins.pop(t, None);
+                reachable: set[str] = set(jac_targets);
+                frontier: list[str] = list(jac_targets);
+                while frontier {
+                    cur = frontier.pop();
+                    for (pname, row) in pins.items() {
+                        if pname in reachable or not isinstance(row, dict) {
+                            continue;
+                        }
+                        reqs = row.get("requested_by", []);
+                        if isinstance(reqs, list) and cur in reqs {
+                            reachable.add(pname);
+                            frontier.append(pname);
+                        }
+                    }
+                }
+                for name in reachable {
+                    pins.pop(name, None);
                 }
             } else {
                 pins = {};
@@ -1536,11 +1559,11 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
         harvest_python_lock,
         update_python_rows
     }
-    (py_harvest, py_graph) = harvest_python_lock(config, config.get_venv_dir());
+    harvest = harvest_python_lock(config, config.get_venv_dir());
     update_python_rows(
         config.project_root or Path.cwd(),
-        py_harvest,
-        py_graph,
+        harvest[0] if harvest else None,
+        harvest[1] if harvest else None,
         npm_pins=harvest_npm_lock(config)
     );
     console.success("Dependencies updated");
