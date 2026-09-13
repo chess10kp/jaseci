@@ -1,3 +1,5 @@
+import from jaclang.compiler.frontend.diagnostics { E5092 }
+
 impl NativeIntEmitter.emit_to_bytes(
     self: NativeIntEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
