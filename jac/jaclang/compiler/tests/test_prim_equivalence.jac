@@ -634,6 +634,14 @@ glob STR_NA_GAPS: list = [
              "hetero_na",
              ["na"]
          ),
+         (
+             "sort key str comparator",
+             "prim_sort_key.jac",
+             "sort_key_py",
+             "sort_key_cl",
+             "sort_key_na",
+             ["na"]
+         ),
 
      ];
 
