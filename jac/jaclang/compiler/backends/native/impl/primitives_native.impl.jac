@@ -1,5 +1,7 @@
 import from jaclang.compiler.frontend.diagnostics { E5092 }
 
+glob SORT_KEY_MSG: str = "comparison requires orderable key values (int, float, bool, str, bytes, tuple, list, or set)";
+
 impl NativeIntEmitter.emit_to_bytes(
     self: NativeIntEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
@@ -3231,18 +3233,16 @@ impl NativeListEmitter.emit_sort(
 
     cj = p._cast_to_list_elem(b, cj, cmp_type, "sort.cj");
     cj1 = p._cast_to_list_elem(b, cj1, cmp_type, "sort.cj1");
-    if not p._sort_key_supported(cmp_type) {
-        p.emit(
-            E5092,
-            node_override=_key_node,
-            kind="sort key",
-            name="comparison requires orderable key values (int, float, bool, str, bytes, tuple, list, or set)"
-        );
+    _key_orderable = p._sort_key_orderable(
+        p._sort_key_return_type(_key_node) if key_fn is not None else None
+    );
+    if _key_orderable is False
+        or (_key_orderable is None and not p._sort_key_supported(cmp_type)) {
+        p.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
         return None;
     }
     _cmp_float = isinstance(cmp_type, (ir.DoubleType, ir.FloatType));
-    _cmp_unsigned = isinstance(_key_node, LambdaExpr)
-        and p._is_unsigned_node(_key_node.tail_return_expr());
+    _cmp_unsigned = key_fn is not None and p._sort_key_unsigned(_key_node);
     if _cmp_float {
         (cj, cj1) = p._promote_to_float(cj, cj1, unsigned=_cmp_unsigned);
     }
@@ -3250,42 +3250,24 @@ impl NativeListEmitter.emit_sort(
     cmp_gt: (ir.Value | None) = p._emit_comparison(
         Tok.GT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned
     );
-    if cmp_gt is None {
+    cmp_lt: (ir.Value | None) = None;
+    if cmp_gt is not None and rev_i1 is not None {
+        cmp_lt = p._emit_comparison(
+            Tok.LT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned
+        );
+    }
+    if cmp_gt is None or (rev_i1 is not None and cmp_lt is None) {
         if key_fn is not None {
             p._release_owned_operands(cj, cj1, op="sort_key");
         }
         if len(p.errors_had) == _sort_errs {
-            p.emit(
-                E5092,
-                node_override=_key_node,
-                kind="sort key",
-                name="comparison requires orderable key values (int, float, bool, str, bytes, tuple, list, or set)"
-            );
+            p.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
         }
         return None;
     }
-    if rev_i1 is None {
-        needs_swap = cmp_gt;
-    } else {
-        cmp_lt = p._emit_comparison(
-            Tok.LT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned
-        );
-        if cmp_lt is None {
-            if key_fn is not None {
-                p._release_owned_operands(cj, cj1, op="sort_key");
-            }
-            if len(p.errors_had) == _sort_errs {
-                p.emit(
-                    E5092,
-                    node_override=_key_node,
-                    kind="sort key",
-                    name="comparison requires orderable key values (int, float, bool, str, bytes, tuple, list, or set)"
-                );
-            }
-            return None;
-        }
-        needs_swap = b.select(rev_i1, cmp_lt, cmp_gt, name="sort.dir");
-    }
+    needs_swap = cmp_gt
+        if rev_i1 is None
+        else b.select(rev_i1, cmp_lt, cmp_gt, name="sort.dir");
     if key_fn is not None {
         p._release_owned_operands(cj, cj1, op="sort_key");
     }

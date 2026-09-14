@@ -3640,40 +3640,17 @@ impl NaIRGenPass._emit_comparison(
                             ">", ea, eb, name=f"tcmp.gt.{i}"
                         );
                     } else {
-                        _sub_lt: (ir.Value | None) = self._emit_comparison(
-                            Tok.LT,
+                        _tup_ord = self._emit_order_pair(
                             ea,
                             eb,
                             isinstance(ea.type, ir.FloatType),
-                            unsigned=unsigned
+                            unsigned,
+                            f"tuple element {i}"
                         );
-                        if _sub_lt is None {
-                            self.emit(
-                                E5090,
-                                kind="comparison",
-                                name=f"tuple element {i}",
-                                help_text="This tuple element does not lower to an orderable representation."
-                            );
+                        if _tup_ord is None {
                             return None;
                         }
-                        _sub_gt: (ir.Value | None) = self._emit_comparison(
-                            Tok.GT,
-                            ea,
-                            eb,
-                            isinstance(ea.type, ir.FloatType),
-                            unsigned=unsigned
-                        );
-                        if _sub_gt is None {
-                            self.emit(
-                                E5090,
-                                kind="comparison",
-                                name=f"tuple element {i}",
-                                help_text="This tuple element does not lower to an orderable representation."
-                            );
-                            return None;
-                        }
-                        lt_i = _sub_lt;
-                        gt_i = _sub_gt;
+                        (lt_i, gt_i) = _tup_ord;
                     }
                     next_bb = func.append_basic_block(name=f"tcmp.lex.next.{i}");
                     if op == Tok.LT or op == Tok.LTE {
@@ -3899,40 +3876,17 @@ impl NaIRGenPass._emit_comparison(
                             ">", lcmp_lea, lcmp_leb, name="lcmp.lex.gt"
                         );
                     } else {
-                        _llt: (ir.Value | None) = self._emit_comparison(
-                            Tok.LT,
+                        _lst_ord = self._emit_order_pair(
                             lcmp_lea,
                             lcmp_leb,
                             isinstance(lcmp_et, ir.FloatType),
-                            unsigned=unsigned
+                            unsigned,
+                            "list element"
                         );
-                        if _llt is None {
-                            self.emit(
-                                E5090,
-                                kind="comparison",
-                                name="list element",
-                                help_text="This list element does not lower to an orderable representation."
-                            );
+                        if _lst_ord is None {
                             return None;
                         }
-                        _lgt: (ir.Value | None) = self._emit_comparison(
-                            Tok.GT,
-                            lcmp_lea,
-                            lcmp_leb,
-                            isinstance(lcmp_et, ir.FloatType),
-                            unsigned=unsigned
-                        );
-                        if _lgt is None {
-                            self.emit(
-                                E5090,
-                                kind="comparison",
-                                name="list element",
-                                help_text="This list element does not lower to an orderable representation."
-                            );
-                            return None;
-                        }
-                        lcmp_lex_lt = _llt;
-                        lcmp_lex_gt = _lgt;
+                        (lcmp_lex_lt, lcmp_lex_gt) = _lst_ord;
                     }
 
                     if op == Tok.LT or op == Tok.LTE {
@@ -4236,6 +4190,32 @@ impl NaIRGenPass._emit_comparison(
     return None;
 }
 
+impl NaIRGenPass._emit_order_pair(
+    left: ir.Value, right: ir.Value, is_float: bool, unsigned: bool, name: str
+) -> (tuple[(ir.Value, ir.Value)] | None) {
+    _lt = self._emit_comparison(Tok.LT, left, right, is_float, unsigned=unsigned);
+    if _lt is None {
+        self.emit(
+            E5090,
+            kind="comparison",
+            name=name,
+            help_text="This element does not lower to an orderable representation."
+        );
+        return None;
+    }
+    _gt = self._emit_comparison(Tok.GT, left, right, is_float, unsigned=unsigned);
+    if _gt is None {
+        self.emit(
+            E5090,
+            kind="comparison",
+            name=name,
+            help_text="This element does not lower to an orderable representation."
+        );
+        return None;
+    }
+    return (_lt, _gt);
+}
+
 impl NaIRGenPass._sort_key_supported(ty: ir.Type) -> bool {
     return self._sort_key_supported_d(ty, 0);
 }
@@ -4254,7 +4234,7 @@ impl NaIRGenPass._sort_key_supported_d(ty: ir.Type, depth: int) -> bool {
         return True;
     }
     if isinstance(ty, ir.LiteralStructType) {
-        for (tkey, tt) in self.tuple_types.items() {
+        for tt in self.tuple_types.values() {
             if ty == tt {
                 for et in tt.elements {
                     if not self._sort_key_supported_d(et, depth + 1) {
@@ -4290,6 +4270,77 @@ impl NaIRGenPass._sort_key_supported_d(ty: ir.Type, depth: int) -> bool {
         }
     }
     return self._sort_key_supported_d(ty.pointee, depth + 1);
+}
+
+impl NaIRGenPass._sort_key_return_type(nd: (uni.UniNode | None)) -> (TypeBase | None) {
+    import from jaclang.compiler.types.types { FunctionType }
+    while isinstance(nd, uni.CfgExpr) {
+        nd = nd.expr;
+    }
+    if isinstance(nd, uni.LambdaExpr) {
+        _ret = nd.tail_return_expr();
+        return _ret.type if _ret is not None else None;
+    }
+    if isinstance(nd, uni.Expr) and isinstance(nd.type, FunctionType) {
+        return nd.type.return_type;
+    }
+    return None;
+}
+
+impl NaIRGenPass._sort_key_orderable(ty: (TypeBase | None)) -> (bool | None) {
+    import from jaclang.compiler.types.types { ClassType }
+    import from jaclang.compiler.types.type_utils { primitive_type_name_of }
+    if ty is None {
+        return None;
+    }
+    _name = primitive_type_name_of(ty);
+    if _name == "str" or _name == "bytes" {
+        return True;
+    }
+    if self._scalar_shape_named(_name) is not None {
+        return True;
+    }
+    if not isinstance(ty, ClassType) {
+        return None;
+    }
+    if _name is None {
+        return False;
+    }
+    if _name not in ("list", "set", "frozenset", "tuple") {
+        return False;
+    }
+    _args = ty.private.type_args or [];
+    if not _args {
+        return None;
+    }
+    _orderable: (bool | None) = True;
+    for _arg in _args {
+        _sub = self._sort_key_orderable(_arg);
+        if _sub is False {
+            return False;
+        }
+        if _sub is None {
+            _orderable = None;
+        }
+    }
+    return _orderable;
+}
+
+impl NaIRGenPass._sort_key_unsigned(nd: (uni.UniNode | None)) -> bool {
+    import from jaclang.compiler.types.type_utils { primitive_type_name_of }
+    while isinstance(nd, uni.CfgExpr) {
+        nd = nd.expr;
+    }
+    if isinstance(nd, uni.LambdaExpr) {
+        return self._is_unsigned_node(nd.tail_return_expr());
+    }
+    _shape = self._scalar_shape_named(
+        primitive_type_name_of(self._sort_key_return_type(nd))
+    );
+    return _shape is not None
+        and _shape.sized
+        and not _shape.is_float
+        and not _shape.signed;
 }
 
 impl NaIRGenPass._infer_type_name(val: ir.Value) -> (str | None) {

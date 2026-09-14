@@ -15,7 +15,7 @@ import from jaclang.compiler.backends.common.primitives {
 }
 import type from jaclang.compiler.backends.native.na_ir_gen_pass { NaIRGenPass }
 import from jaclang.compiler.frontend.constant { Tokens as Tok }
-import from jaclang.compiler.frontend.unitree { Expr, UniNode, LambdaExpr }
+import from jaclang.compiler.frontend.unitree { Expr, UniNode }
 
 obj NativeEmitCtx {
     has pass_ref: NaIRGenPass,
