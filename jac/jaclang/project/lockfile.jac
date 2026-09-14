@@ -314,7 +314,7 @@ def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list {
 }
 
 
-def why_chains(lock_data: dict, name: str) -> list {
+def why_chains(lock_data: dict, name: str) -> list[tuple[str, list]] {
     jac_rows = jac_lock_rows(lock_data);
     py_graph = lock_data.get("python_graph", {});
     if not isinstance(py_graph, dict) {
@@ -325,9 +325,19 @@ def why_chains(lock_data: dict, name: str) -> list {
         npm_pins = {};
     }
 
-    chains = _walk_chains(jac_rows, name, True) + _walk_chains(py_graph, name, False);
-    if name in npm_pins and [name] not in chains {
-        chains.append([name]);
+    chains: list = [];
+    for chain in _walk_chains(jac_rows, name, True) {
+        chains.append(("jac", chain));
     }
-    return chains or [[name]];
+    for chain in _walk_chains(py_graph, name, False) {
+        chains.append(("python", chain));
+    }
+    if name in npm_pins and [name] not in [c for (_, c) in chains] {
+        chains.append(("npm", [name]));
+    }
+    if chains {
+        return chains;
+    }
+    fallback = "npm" if name in npm_pins else ("python" if name in py_graph else "jac");
+    return [(fallback, [name])];
 }

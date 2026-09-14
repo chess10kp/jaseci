@@ -177,3 +177,82 @@ test "targeted update advances target-reachable transitives and freezes the rest
         shutil.rmtree(outer, ignore_errors=True);
     }
 }
+
+
+test "targeted update advances transitives newly reachable from the fresh manifest" {
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_update_fresh_"));
+
+        # T: update target; its v1 manifest has no dependencies at all.
+        origin_t = outer / "t_repo";
+        t1 = make_git_repo_on_main(
+            origin_t,
+            '[project]\nname = "t"\nversion = "1.0.0"\n',
+            {"t.jac": "def t() -> int { return 1; }\n"}
+        );
+        # D: plain dep, required only by U at seed time.
+        origin_d = outer / "d_repo";
+        d1 = make_git_repo_on_main(
+            origin_d,
+            '[project]\nname = "d"\nversion = "1.0.0"\n',
+            {"d.jac": "def d() -> int { return 2; }\n"}
+        );
+        # U: unrelated root dep whose manifest requires D by branch.
+        origin_u = outer / "u_repo";
+        u1 = make_git_repo_on_main(
+            origin_u,
+            '[project]\nname = "u"\nversion = "1.0.0"\n\n'
+            f'[dependencies.jac]\nd = {{ git = "{origin_d}", branch = "main" }}\n',
+            {"u.jac": "def u() -> int { return 3; }\n"}
+        );
+
+        project_dir = outer / "proj";
+        project_dir.mkdir();
+        (project_dir / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nt = {{ git = "{origin_t}", branch = "main" }}\n'
+            f'u = {{ git = "{origin_u}", branch = "main" }}\n',
+            encoding="utf-8"
+        );
+        os.chdir(project_dir);
+        set_config(None);
+        import from jaclang.project.config { get_config }
+        config = get_config();
+        assert config is not None;
+
+        # Seed the lock: T is dep-free, D is reachable only through U.
+        provider = JacGitProvider();
+        assert provider.install_all(config, [], InstallContext());
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["t"]["sha"] == t1;
+        assert rows["u"]["sha"] == u1;
+        assert rows["d"]["sha"] == d1;
+        assert rows["d"]["requested_by"] == ["u"];
+
+        # Advance D on main, then publish a T manifest that requires D too.
+        d2 = git_commit_all(origin_d, "d2", "advance d");
+        (origin_t / "jac.toml").write_text(
+            '[project]\nname = "t"\nversion = "1.0.0"\n\n'
+            f'[dependencies.jac]\nd = {{ git = "{origin_d}", branch = "main" }}\n',
+            encoding="utf-8"
+        );
+        t2 = git_commit_all(origin_t, "t2", "t requires d");
+
+        result = project.update(packages=["t"]);
+        assert result == 0 , f"targeted update failed: {result}";
+
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["t"]["sha"] == t2 , "target T did not advance";
+        assert rows["d"]["sha"] == d2 , (
+            "D newly reachable from T's fresh manifest replayed its stale pin"
+        );
+        assert rows["u"]["sha"] == u1 , "unrelated U was unpinned and churned";
+    } finally {
+        os.chdir(cwd);
+        set_config(None);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}

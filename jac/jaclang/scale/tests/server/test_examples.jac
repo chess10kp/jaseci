@@ -79,10 +79,10 @@ obj JacScaleTestRunner {
             cwd=example_dir
         );
 
-        max_attempts = timeout * 5;
+        deadline = time.monotonic() + timeout;
         server_ready = False;
 
-        for _ in range(max_attempts) {
+        while time.monotonic() < deadline {
             if self.server_process.poll() is not None {
                 (stdout, stderr) = self.server_process.communicate();
                 raise RuntimeError(
@@ -92,7 +92,10 @@ obj JacScaleTestRunner {
             }
 
             try {
-                response = requests.get(f"{self.base_url}/healthz", timeout=2);
+                remaining = deadline - time.monotonic();
+                response = requests.get(
+                    f"{self.base_url}/healthz", timeout=max(0.05, min(2.0, remaining))
+                );
                 if response.status_code == 200 {
                     print(f"Server started on port {self.port}");
                     server_ready = True;
