@@ -288,9 +288,19 @@ def read_deps_roots(project_root: Path) -> list[str] {
     } except (OSError, ValueError) {
         return [];
     }
-    for pkg in data.get("packages", []) {
+    if not isinstance(data, dict) {
+        return [];
+    }
+    packages = data.get("packages", []);
+    if not isinstance(packages, list) {
+        return [];
+    }
+    for pkg in packages {
+        if not isinstance(pkg, dict) {
+            continue;
+        }
         loc = pkg.get("local", "") or pkg.get("root", "");
-        if loc and os.path.isdir(loc) {
+        if isinstance(loc, str) and loc and os.path.isdir(loc) {
             roots.append(loc);
         }
     }

@@ -65,7 +65,7 @@ test "dirhash still distinguishes real content changes" {
 test "why_chains appends the direct npm chain" {
     # npm-only name: the single direct chain.
     npm_only = {"npm": {"left-pad": "1.2.3"}};
-    assert why_chains(npm_only, "left-pad") == [["left-pad"]];
+    assert why_chains(npm_only, "left-pad") == [("npm", ["left-pad"])];
 
     # Name required by a python package and also a direct npm dep:
     # both chains surface.
@@ -74,8 +74,8 @@ test "why_chains appends the direct npm chain" {
         "npm": {"dup": "2.0.0"}
     };
     dup_chains = why_chains(shared, "dup");
-    assert ["dup", "root"] in dup_chains;
-    assert ["dup"] in dup_chains;
+    assert ("python", ["dup", "root"]) in dup_chains;
+    assert ("npm", ["dup"]) in dup_chains;
     assert len(dup_chains) == 2;
 
     # A jac row that already yields the bare [name] chain is not duplicated.
@@ -83,12 +83,12 @@ test "why_chains appends the direct npm chain" {
         "jac": {"direct": {"git": "https://x", "requested_by": []}},
         "npm": {"direct": "1.0.0"}
     };
-    assert why_chains(direct, "direct") == [["direct"]];
+    assert why_chains(direct, "direct") == [("jac", ["direct"])];
 
     # Jac/python chains without npm stay untouched; unknown names keep the
     # [[name]] fallback.
     assert why_chains({"jac": {"a": {"requested_by": ["root"]}}}, "a")
-        == [["a", "root"]];
+        == [("jac", ["a", "root"])];
     assert why_chains({"jac": {"a": {"requested_by": ["root"]}}}, "ghost")
-        == [["ghost"]];
+        == [("jac", ["ghost"])];
 }

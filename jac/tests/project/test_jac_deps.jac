@@ -604,12 +604,12 @@ test "why chains trace reverse edges" {
         "python_graph": {"requests": ["root"], "urllib3": ["requests"]}
     };
     chains = why_chains(lock_data, "urllib3");
-    assert chains == [["urllib3", "requests", "root"]];
+    assert chains == [("python", ["urllib3", "requests", "root"])];
     shared_chains = why_chains(lock_data, "shared");
-    assert ["shared", "mylib", "root"] in shared_chains;
-    assert ["shared", "other"] in shared_chains;
-    assert why_chains(lock_data, "mylib") == [["mylib", "root"]];
-    assert why_chains(lock_data, "nope") == [["nope"]];
+    assert ("jac", ["shared", "mylib", "root"]) in shared_chains;
+    assert ("jac", ["shared", "other"]) in shared_chains;
+    assert why_chains(lock_data, "mylib") == [("jac", ["mylib", "root"])];
+    assert why_chains(lock_data, "nope") == [("jac", ["nope"])];
 }
 
 
@@ -928,5 +928,60 @@ test "why chains surface every ecosystem for a shared name" {
     };
     chains = why_chains(lock_data, "dup");
     assert len(chains) == 2;
-    assert ["dup", "root"] in chains;
+    assert ("jac", ["dup", "root"]) in chains;
+    assert ("python", ["dup", "root"]) in chains;
+}
+
+
+test "read_deps_roots ignores malformed deps maps" {
+    import from jaclang.project.config { get_config, set_config }
+    cwd = os.getcwd();
+    payloads = [
+        '[]',
+        '7',
+        '"str"',
+        '{"packages": 5}',
+        '{"packages": ["nope", 7, null, {"local": 9}]}'
+    ];
+    try {
+        # Each case gets its own fresh project dir: a fresh deps.json path
+        # means a fresh _deps_roots_cache key, so no case can serve a stale
+        # cache entry on coarse-mtime filesystems.
+        for payload in payloads {
+            case_dir = Path(tempfile.mkdtemp(prefix="jac_deps_roots_"));
+            (case_dir / "jac.toml").write_text(
+                '[project]\nname = "proj"\nversion = "0.1.0"\n', encoding="utf-8"
+            );
+            os.chdir(case_dir);
+            set_config(None);
+            config = get_config();
+            assert config is not None;
+            config.get_build_dir().mkdir(parents=True, exist_ok=True);
+            (config.get_build_dir() / "deps.json").write_text(
+                payload, encoding="utf-8"
+            );
+            assert read_deps_roots(case_dir) == [] , (
+                f"malformed deps map not ignored: {payload}"
+            );
+        }
+        # A well-formed map still yields its existing local roots.
+        good = Path(tempfile.mkdtemp(prefix="jac_deps_roots_"));
+        (good / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n', encoding="utf-8"
+        );
+        os.chdir(good);
+        set_config(None);
+        gconfig = get_config();
+        assert gconfig is not None;
+        gconfig.get_build_dir().mkdir(parents=True, exist_ok=True);
+        pkg_dir = good / "vendor" / "local_pkg";
+        pkg_dir.mkdir(parents=True);
+        (gconfig.get_build_dir() / "deps.json").write_text(
+            f'{{"packages": ["junk", {{"local": "{pkg_dir}"}}]}}', encoding="utf-8"
+        );
+        assert read_deps_roots(good) == [str(pkg_dir)];
+    } finally {
+        os.chdir(cwd);
+        set_config(None);
+    }
 }

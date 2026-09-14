@@ -1357,6 +1357,24 @@ def _major_minor(version: str) -> str {
     return version;
 }
 
+def _requirer_closure(requirers: dict, seeds: list[str]) -> set[str] {
+    reach: set[str] = set(seeds);
+    frontier: list[str] = list(seeds);
+    while frontier {
+        cur = frontier.pop();
+        for (child, parents) in requirers.items() {
+            if child in reach or not isinstance(parents, list) {
+                continue;
+            }
+            if cur in parents {
+                reach.add(child);
+                frontier.append(child);
+            }
+        }
+    }
+    return reach;
+}
+
 impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) -> int {
     import from jaclang.project.config { get_config }
     import from jaclang.project.pyvenv { make_git_spec }
@@ -1369,6 +1387,7 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
         return 1;
     }
     import from jaclang.project.jac_provider {
+        JacDepError,
         JacGitProvider,
         manifest_jac_deps,
         read_deps_map
@@ -1402,30 +1421,54 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
             update_jac_rows
         }
         try {
-            pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            all_pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            refresh: set[str] = set();
             if jac_targets {
-                reachable: set[str] = set(jac_targets);
-                frontier: list[str] = list(jac_targets);
-                while frontier {
-                    cur = frontier.pop();
-                    for (pname, row) in pins.items() {
-                        if pname in reachable or not isinstance(row, dict) {
-                            continue;
-                        }
-                        reqs = row.get("requested_by", []);
-                        if isinstance(reqs, list) and cur in reqs {
-                            reachable.add(pname);
-                            frontier.append(pname);
-                        }
+                old_requirers = {
+                    name: row.get("requested_by", [])
+                    for (name, row) in all_pins.items()
+                    if isinstance(row, dict)
+                };
+                refresh = _requirer_closure(old_requirers, jac_targets);
+            }
+            passes = 0;
+            while True {
+                passes += 1;
+                pins = (
+                    {
+                        name: row
+                        for (name, row) in all_pins.items()
+                        if name not in refresh
+                    }
+                        if jac_targets
+                        else {}
+                );
+                resolved = jac_provider.resolve_closure(config, ctx, frozen_pins=pins);
+                if not jac_targets {
+                    break;
+                }
+                extra = _requirer_closure(
+                    {name: pkg.requested_by for (name, pkg) in resolved.items()},
+                    jac_targets
+                );
+                grew = False;
+                for dep_name in extra {
+                    if dep_name not in refresh {
+                        refresh.add(dep_name);
+                        grew = True;
                     }
                 }
-                for name in reachable {
-                    pins.pop(name, None);
+                if not grew {
+                    break;
                 }
-            } else {
-                pins = {};
+                if passes >= 10 {
+                    raise JacDepError(
+                        "Targeted update could not reach a stable refresh set after "
+                        "10 passes. Run 'jac update' without arguments to refresh "
+                        "everything."
+                    );
+                }
             }
-            resolved = jac_provider.resolve_closure(config, ctx, frozen_pins=pins);
         } except Exception as e {
             console.error(str(e));
             return 1;
@@ -2163,19 +2206,6 @@ impl why(packages: list = []) -> int {
         npm_pins = {};
     }
 
-    def tag(n: str) -> str {
-        if n in jac_rows {
-            return " (jac)";
-        }
-        if n in py_graph {
-            return " (python)";
-        }
-        if n in npm_pins {
-            return " (npm)";
-        }
-        return "";
-    }
-
     exit_code = 0;
     for raw_name in packages {
         pname = str(raw_name);
@@ -2189,16 +2219,25 @@ impl why(packages: list = []) -> int {
             exit_code = 1;
             continue;
         }
-        console.print(f"\nWhy {pname}{tag(pname)} is installed", style="bold");
-        for chain in chains {
-            parts = [p + tag(p) for p in chain];
-            line = " <- ".join(parts);
-            if len(chain) == 1 and pname in npm_pins {
-                line += " (direct npm dependency)";
+        by_eco: dict = {};
+        for (eco, chain) in chains {
+            if eco not in by_eco {
+                by_eco[eco] = [];
             }
-            console.print(f"  {line}", style="muted");
+            by_eco[eco].append(chain);
         }
-        console.print(f"  {len(chains)} chain(s)", style="muted");
+        for eco in sorted(by_eco.keys()) {
+            console.print(f"\nWhy {pname} ({eco}) is installed", style="bold");
+            for chain in by_eco[eco] {
+                parts = [p + f" ({eco})" for p in chain];
+                line = " <- ".join(parts);
+                if eco == "npm" and len(chain) == 1 {
+                    line += " (direct npm dependency)";
+                }
+                console.print(f"  {line}", style="muted");
+            }
+            console.print(f"  {len(by_eco[eco])} chain(s)", style="muted");
+        }
     }
     return exit_code;
 }
