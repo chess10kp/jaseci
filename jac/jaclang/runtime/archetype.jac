@@ -9,7 +9,7 @@ import from types { UnionType }
 import from typing { ClassVar, TypeVar }
 import from uuid { UUID, uuid4 }
 import weakref;
-import from jaclang.compiler.frontend.constant { EdgeDir }
+import from jaclang.runtime.constants { EdgeDir }
 glob logger = getLogger(__name__),
      TARCH = TypeVar('TARCH', bound='Archetype'),
      TANCH = TypeVar('TANCH', bound='Anchor'),
@@ -130,10 +130,12 @@ obj NodeAnchor(Anchor) {
         mixed: bool = field(`init=False, `default=False);
 
     def __getstate__ -> dict[(str, object)];
+    def __getattr__(name: str) -> object;
     def is_populated -> bool;
     def edge_delta -> (tuple[(set[UUID], set[UUID])] | None);
     def remove_edge(`edge: EdgeAnchor) -> None;
     def all_edges -> list[EdgeAnchor];
+    def loaded_edges -> list[EdgeAnchor];
     def has_heavy_edges -> bool;
     def detach_light -> None;
 }
