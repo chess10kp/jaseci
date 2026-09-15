@@ -149,11 +149,18 @@ def get_jac_search_paths(base_path: (str | None) = None) -> list[str] {
         paths.append(project_root);
     }
     try {
-        import from jaclang.project.jac_provider { read_deps_roots }
-        for dep_root in read_deps_roots(Path(str(project_root or os.getcwd()))) {
+        # Resolved by name at call time: a static import here would pull the
+        # whole project stack into every vendored/bundled closure, where
+        # jac_provider is absent by design. In bundled contexts the lookup
+        # fails and dep-root injection is skipped, matching plain installs.
+        import importlib;
+        dep_mod = importlib.import_module("jaclang.project.jac_provider");
+        for dep_root in dep_mod.read_deps_roots(
+            Path(str(project_root or os.getcwd()))
+        ) {
             paths.append(dep_root);
         }
-    } except (ImportError, OSError) {}
+    } except (ImportError, AttributeError, OSError) {}
     paths.append(os.getcwd());
     if ('JACPATH' in os.environ) {
         paths.extend(
