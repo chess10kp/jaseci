@@ -1972,7 +1972,7 @@ walker NaIRGenPass {
         func: ir.Function,
         nd: (uni.WhileStmt | uni.InForStmt | uni.IterForStmt),
         prefix: str
-    ) -> tuple[(ir.Block, ir.Block)];
+    ) -> tuple[(ir.Block | None, ir.Block)];
 
     def _emit_loop_else(
         nd: (uni.WhileStmt | uni.InForStmt | uni.IterForStmt),
