@@ -62,7 +62,7 @@ impl NaIRGenPass._loop_exit_blocks(
     func: ir.Function,
     nd: (uni.WhileStmt | uni.InForStmt | uni.IterForStmt),
     prefix: str
-) -> tuple {
+) -> tuple[(ir.Block, ir.Block)] {
     else_bb = (
         func.append_basic_block(name=f"{prefix}.else")
             if nd.else_body is not None
