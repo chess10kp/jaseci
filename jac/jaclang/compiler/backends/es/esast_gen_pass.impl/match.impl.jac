@@ -38,9 +38,6 @@ impl EsastGenPass.exit_match_stmt with uni.MatchStmt exit {
     self.match_seq += 1;
     subj_name = f"__jac_match_subj_{self.match_seq}";
     flag_name = f"__jac_matched_{self.match_seq}";
-    # A case-local break exits this match, not an enclosing loop. When one
-    # was seen, each case body is wrapped in a labeled block that the break
-    # targets (the matched flag already keeps later cases from running).
     break_label = self._match_break_labels.get(id(here));
     if break_label is None {
         break_label = '';
