@@ -256,3 +256,89 @@ test "targeted update advances transitives newly reachable from the fresh manife
         shutil.rmtree(outer, ignore_errors=True);
     }
 }
+
+
+test "failed convergence leaves materialized state and metadata untouched" {
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_update_atomic_"));
+
+        origin_t = outer / "t_repo";
+        t1 = make_git_repo_on_main(
+            origin_t,
+            '[project]\nname = "t"\nversion = "1.0.0"\n',
+            {"t.jac": "def t() -> int { return 1; }\n"}
+        );
+        origin_u = outer / "u_repo";
+        u1 = make_git_repo_on_main(
+            origin_u,
+            '[project]\nname = "u"\nversion = "1.0.0"\n',
+            {"u.jac": "def u() -> int { return 3; }\n"}
+        );
+
+        project_dir = outer / "proj";
+        project_dir.mkdir();
+        (project_dir / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nt = {{ git = "{origin_t}", branch = "main" }}\n'
+            f'u = {{ git = "{origin_u}", branch = "main" }}\n',
+            encoding="utf-8"
+        );
+        os.chdir(project_dir);
+        set_config(None);
+        import from jaclang.project.config { get_config }
+        config = get_config();
+        assert config is not None;
+
+        provider = JacGitProvider();
+        assert provider.install_all(config, [], InstallContext());
+        build = config.get_build_dir();
+        rows_before = jac_lock_rows(read_lock(project_dir));
+        deps_before = (build / "deps.json").read_bytes();
+        assert not (build / "packages" / "t" / "changes.log").exists() , (
+            "unexpected changes.log in the seeded tree"
+        );
+
+        # Advance t and publish a manifest whose newly required dep cannot
+        # be fetched at all: convergence must abort after pass one's
+        # resolution discovered it.
+        not_a_repo = outer / "not_a_repo";
+        not_a_repo.mkdir();
+        (origin_t / "jac.toml").write_text(
+            '[project]\nname = "t"\nversion = "1.0.0"\n\n'
+            f'[dependencies.jac]\nx = {{ git = "{not_a_repo}", branch = "main" }}\n',
+            encoding="utf-8"
+        );
+        t2 = git_commit_all(origin_t, "t2", "t requires x");
+
+        result = project.update(packages=["t"]);
+        assert result != 0 , "update with an unfetchable dep unexpectedly succeeded";
+
+        rows_after = jac_lock_rows(read_lock(project_dir));
+        assert rows_after == rows_before , "jac.lock changed on failed convergence";
+        assert (build / "deps.json").read_bytes() == deps_before , (
+            "deps map changed on failed convergence"
+        );
+        # t2's tree adds changes.log and the x dep to the manifest; if the
+        # t@t2 resolution had been materialized before the failure, both
+        # would now be visible under .jac/packages/t.
+        assert not (build / "packages" / "t" / "changes.log").exists() , (
+            "materialized t was replaced even though convergence failed"
+        );
+        assert "not_a_repo" not in (
+            build / "packages" / "t" / "jac.toml"
+        ).read_text() , (
+            "materialized t carries the failed candidate manifest"
+        );
+        assert rows_after["t"]["sha"] == t1 and rows_after["u"]["sha"] == u1;
+        assert not (build / "packages" / "x").exists() , (
+            "unfetchable dep left materialized state behind"
+        );
+    } finally {
+        os.chdir(cwd);
+        set_config(None);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}

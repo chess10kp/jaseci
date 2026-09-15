@@ -283,7 +283,11 @@ def fetch_package(
     staging = Path(tempfile.mkdtemp(prefix="jac_stage_", dir=store_dir / TMP_DIR_NAME));
     try {
         tree_dest = staging / "tree";
-        resolved_sha = checkout_tree(url, ref, sha, tree_dest);
+        # Frozen replay addresses the recorded commit directly: a moved
+        # branch/tag must not block a lockfile replay (normal installs keep
+        # the ref-agreement checks above).
+        checkout_ref = "" if (frozen and sha) else ref;
+        resolved_sha = checkout_tree(url, checkout_ref, sha, tree_dest);
         tree_hash = dirhash(tree_dest);
         final = store_dir / tree_hash;
         if final.exists() {
