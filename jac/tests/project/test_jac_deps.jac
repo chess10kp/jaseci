@@ -747,6 +747,38 @@ test "override resolves a genuine cross-parent conflict" {
         shutil.rmtree(tmp, ignore_errors=True);
     }
 }
+test "failed replacement restores the previous dependency entry" {
+    # Replacing an existing dep with a spec that fails to resolve must
+    # restore the overwritten entry in jac.toml: the valid dependency
+    # survives, only the failed spec is discarded.
+    toml_text = (
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+        '[dependencies.jac]\nlibb = { path = "../libb" }\n'
+    );
+    (config, tmp) = make_project(toml_text);
+    try {
+        base = Path(tmp);
+        make_plain_pkg(
+            base / "libb",
+            '[project]\nname = "libb"\nversion = "1.0.0"\n',
+            {"libb.jac": "def b() -> int { return 2; }\n"}
+        );
+        broken = base / "broken" / "libb";
+        broken.mkdir(parents=True);
+        provider = JacGitProvider();
+        via = provider.add_spec(config, "jac:file://" + str(broken));
+        assert via is None;
+        (deps, dev_deps) = manifest_jac_deps(config);
+        assert "libb" in deps;
+        assert str(deps["libb"].get("path", "")) == "../libb";
+        reloaded = JacConfig.load(Path(str(config.project_root)) / "jac.toml");
+        (disk_deps, disk_dev) = manifest_jac_deps(reloaded);
+        assert "libb" in disk_deps;
+        assert str(disk_deps["libb"].get("path", "")) == "../libb";
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
 
 
 test "frozen install fails when a transitive dep misses the lock" {
