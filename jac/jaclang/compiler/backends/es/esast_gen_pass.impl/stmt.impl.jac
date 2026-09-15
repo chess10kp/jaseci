@@ -275,9 +275,6 @@ impl EsastGenPass.exit_ctrl_stmt with uni.CtrlStmt exit {
     stmt: (es.BreakStatement | es.ContinueStatement | es.ReturnStatement);
     if (here.ctrl.name == Tok.KW_BREAK) {
         stmt = self.sync_loc(es.BreakStatement(), jac_node=here);
-        # A break belongs to the innermost breakable construct, matching the
-        # AST validation pass: a match/switch between this break and the loop
-        # captures it, so the loop label must not swallow it.
         breakable = self._innermost_breakable(here);
         if isinstance(breakable, uni.MatchStmt) {
             label = self._match_break_label(breakable);
@@ -308,8 +305,6 @@ impl EsastGenPass.exit_ctrl_stmt with uni.CtrlStmt exit {
 }
 
 impl EsastGenPass._innermost_breakable(nd: uni.CtrlStmt) -> (uni.UniNode | None) {
-    # Walk the same boundaries the AST validation pass uses so a break inside
-    # a nested ability or lambda is never attributed to an outer construct.
     parent = nd.parent;
     while parent is not None {
         if isinstance(
