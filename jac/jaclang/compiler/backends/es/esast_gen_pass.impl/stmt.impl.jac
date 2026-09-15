@@ -275,7 +275,19 @@ impl EsastGenPass.exit_ctrl_stmt with uni.CtrlStmt exit {
     stmt: (es.BreakStatement | es.ContinueStatement | es.ReturnStatement);
     if (here.ctrl.name == Tok.KW_BREAK) {
         stmt = self.sync_loc(es.BreakStatement(), jac_node=here);
-        if (self._loop_label_stack) {
+        # A break belongs to the innermost breakable construct, matching the
+        # AST validation pass: a match/switch between this break and the loop
+        # captures it, so the loop label must not swallow it.
+        breakable = self._innermost_breakable(here);
+        if isinstance(breakable, uni.MatchStmt) {
+            label = self._match_break_label(breakable);
+            stmt = self.sync_loc(
+                es.BreakStatement(
+                    label=self.sync_loc(es.Identifier(name=label), jac_node=here)
+                ),
+                jac_node=here
+            );
+        } elif (not isinstance(breakable, uni.SwitchStmt) and self._loop_label_stack) {
             label = self._loop_label_stack[-1];
             if label != '' {
                 stmt = self.sync_loc(
@@ -293,6 +305,42 @@ impl EsastGenPass.exit_ctrl_stmt with uni.CtrlStmt exit {
         stmt = self.sync_loc(es.ContinueStatement(), jac_node=here);
     }
     here.gen.es_ast = stmt;
+}
+
+impl EsastGenPass._innermost_breakable(nd: uni.CtrlStmt) -> (uni.UniNode | None) {
+    # Walk the same boundaries the AST validation pass uses so a break inside
+    # a nested ability or lambda is never attributed to an outer construct.
+    parent = nd.parent;
+    while parent is not None {
+        if isinstance(
+            parent,
+            (
+                uni.InForStmt,
+                uni.IterForStmt,
+                uni.WhileStmt,
+                uni.ForeverStmt,
+                uni.SwitchStmt,
+                uni.MatchStmt
+            )
+        ) {
+            return parent;
+        }
+        if isinstance(parent, (uni.Ability, uni.LambdaExpr, uni.Module)) {
+            return None;
+        }
+        parent = parent.parent;
+    }
+    return None;
+}
+
+impl EsastGenPass._match_break_label(nd: uni.MatchStmt) -> str {
+    label = self._match_break_labels.get(id(nd));
+    if label is None {
+        self._match_break_seq += 1;
+        label = f"__jac_match_{self._match_break_seq}";
+        self._match_break_labels[id(nd)] = label;
+    }
+    return label;
 }
 
 impl EsastGenPass.exit_return_stmt with uni.ReturnStmt exit {

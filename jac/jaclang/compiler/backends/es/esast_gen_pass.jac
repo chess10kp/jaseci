@@ -260,6 +260,8 @@ walker EsastGenPass(BaseAstGenPass[es.Statement]) {
         _loop_label_savepoints: list[list[str]] = [],
         _used_loop_labels: set[str] = set(),
         _loop_label_seq: int = 0,
+        _match_break_labels: dict[(int, str)] = {},
+        _match_break_seq: int = 0,
         sv_import_stubs: list[es.Statement] = [],
         na_import_stubs: list[es.Statement] = [],
         needs_jac_runtime: bool = False,
@@ -521,6 +523,8 @@ walker EsastGenPass(BaseAstGenPass[es.Statement]) {
 
     def _push_loop_label(nd: uni.UniNode) -> None;
     def _finish_loop(nd: uni.UniNode, loop_stmt: es.Statement) -> es.Statement;
+    def _innermost_breakable(nd: uni.CtrlStmt) -> (uni.UniNode | None);
+    def _match_break_label(nd: uni.MatchStmt) -> str;
     def _view_chain_open(nd: uni.UniNode) -> None;
     def _view_chain_arm(nd: uni.UniNode) -> None;
     def _view_chain_close(nd: uni.UniNode) -> None;

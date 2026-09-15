@@ -123,6 +123,55 @@ def else_break_stays_inner() -> int {
     }
     return total;
 }
+
+def switch_break_in_loop_else(items: list[int]) -> int {
+    total = 0;
+    for item in items {
+        switch item {
+            case 2:
+                break;
+            case 3:
+                total += 30;
+                break;
+            default:
+                total += 1;
+        }
+        total += 100;
+    } else {
+        total += 1000;
+    }
+    return total;
+}
+
+def match_break_in_loop_else(items: list[int]) -> int {
+    total = 0;
+    for item in items {
+        match item {
+            case 2:
+                break;
+            case 3:
+                total += 30;
+                break;
+            case _:
+                total += 1;
+        }
+        total += 100;
+    } else {
+        total += 1000;
+    }
+    return total;
+}
+
+def match_break_without_loop(v: int) -> int {
+    total = 0;
+    match v {
+        case 1:
+            break;
+        case _:
+            total = 5;
+    }
+    return total;
+}
 ''',
      _test_tmp_dir: str = tempfile.mkdtemp(prefix="jac_test_loop_else_");
 
@@ -145,7 +194,11 @@ def compile_to_js -> str {
         f"Compilation errors: {[str(e) for e in prog.errors_had]}"
     );
     es_pass = run_pass(EsastGenPass, ir, prog);
-    return es_to_js(es_pass.ir_out.gen.es_ast);
+    _js = es_to_js(es_pass.ir_out.gen.es_ast);
+    with open("/tmp/loop_else_dump.js", "w") as _f {
+        _f.write(_js);
+    }
+    return _js;
 }
 
 test "while else lowers to labeled blocks with labeled breaks" {
@@ -256,4 +309,53 @@ test "break in a nested loop else exits only the inner construct" {
         f"the label must sit on the inner loop's own sequence, not the "
         f"outer construct: {region[:600]}"
     );
+}
+
+test "switch case break binds to the switch, not the loop" {
+    js = compile_to_js();
+    region: str = js[js.find("function switch_break_in_loop_else"):js.find(
+        "function match_break_in_loop_else"
+    )];
+    assert "switch (" in region , f"switch not lowered to a JS switch: {region[:400]}";
+    assert "__jac_loop_" not in region , (
+        f"a loop whose breaks all belong to its switch must not emit a loop "
+        f"label: {region[:400]}"
+    );
+    assert "total += 1000;" in region , f"else body missing: {region[:400]}";
+}
+
+test "match case break exits the match via its labeled block" {
+    js = compile_to_js();
+    region: str = js[js.find("function match_break_in_loop_else"):js.find(
+        "function match_break_without_loop"
+    )];
+    assert "break __jac_loop_" not in region , (
+        f"match break was labeled to the loop: {region[:400]}"
+    );
+    assert "__jac_loop_" not in region , (
+        f"a loop whose breaks all belong to its match must not emit a loop "
+        f"label: {region[:400]}"
+    );
+    breaks = re.findall("break (__jac_match_[0-9]+)", region);
+    labels = re.findall("(__jac_match_[0-9]+):", region);
+    assert breaks , f"no match-targeted break found: {region[:400]}";
+    for b in breaks {
+        assert b in labels , (
+            f"break {b} targets a label that is never emitted: {sorted(labels)}"
+        );
+    }
+    assert "total += 1000;" in region , f"else body missing: {region[:400]}";
+}
+
+test "match break without a loop targets the match, not a bare break" {
+    js = compile_to_js();
+    region: str = js[js.find("function match_break_without_loop"):];
+    breaks = re.findall("break (__jac_match_[0-9]+)", region);
+    labels = re.findall("(__jac_match_[0-9]+):", region);
+    assert breaks , f"match break was not rewritten to a labeled break: {region[:400]}";
+    for b in breaks {
+        assert b in labels , (
+            f"break {b} targets a label that is never emitted: {sorted(labels)}"
+        );
+    }
 }
