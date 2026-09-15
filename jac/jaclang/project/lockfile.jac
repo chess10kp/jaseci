@@ -273,20 +273,26 @@ def harvest_npm_lock(config: JacConfig) -> dict | None {
 }
 
 
-def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list {
-    found: list = [];
+def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list[list[str]] {
+    found: list[list[str]] = [];
 
-    def requirers_of(cur: str) -> list {
+    def requirers_of(cur: str) -> list[str] {
         if jac_mode {
             row = edges.get(cur);
             if isinstance(row, dict) {
                 reqs = row.get("requested_by", []);
-                return reqs if isinstance(reqs, list) else [];
+                if isinstance(reqs, list) {
+                    return [str(r) for r in reqs if isinstance(r, str)];
+                }
+                return [];
             }
             return [];
         }
         reqs = edges.get(cur, []);
-        return reqs if isinstance(reqs, list) else [];
+        if isinstance(reqs, list) {
+            return [str(r) for r in reqs if isinstance(r, str)];
+        }
+        return [];
     }
 
     def walk(cur: str, trail: list) -> None {
@@ -314,7 +320,7 @@ def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list {
 }
 
 
-def why_chains(lock_data: dict, name: str) -> list[tuple[str, list]] {
+def why_chains(lock_data: dict, name: str) -> list[tuple[str, list[str]]] {
     jac_rows = jac_lock_rows(lock_data);
     py_graph = lock_data.get("python_graph", {});
     if not isinstance(py_graph, dict) {
@@ -325,14 +331,16 @@ def why_chains(lock_data: dict, name: str) -> list[tuple[str, list]] {
         npm_pins = {};
     }
 
-    chains: list = [];
+    chains: list[tuple[str, list[str]]] = [];
     for chain in _walk_chains(jac_rows, name, True) {
         chains.append(("jac", chain));
     }
     for chain in _walk_chains(py_graph, name, False) {
         chains.append(("python", chain));
     }
-    if name in npm_pins and [name] not in [c for (_, c) in chains] {
+    # The dedupe compares ecosystem AND chain: a same-shaped chain in a
+    # different ecosystem is a separate provenance fact and must survive.
+    if name in npm_pins and ("npm", [name]) not in chains {
         chains.append(("npm", [name]));
     }
     if chains {

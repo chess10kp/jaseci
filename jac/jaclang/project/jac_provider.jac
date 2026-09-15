@@ -108,6 +108,39 @@ def _entry_key(name: str, dep: dict, base_dir: Path) -> tuple[str, str] {
 }
 
 
+def _safe_dep_name(name: str) -> bool {
+    # A dependency name becomes a single directory under .jac/packages, so
+    # it must be exactly one safe path component on every platform. TOML
+    # keys of fetched packages are dependency-controlled input; on Windows,
+    # backslashes are separators and drive colons escape the root, so the
+    # check is explicit rather than delegated to Path.
+    if not name or name in (".", "..") {
+        return False;
+    }
+    if any(c in name for c in ("/", "\\", ":")) {
+        return False;
+    }
+    if any(ord(c) < 32 or ord(c) == 127 for c in name) {
+        return False;
+    }
+    if name != name.strip() or name.endswith(".") {
+        # Trailing dots/spaces are component-significant on Windows.
+        return False;
+    }
+    stem = name.split(".", 1)[0].upper();
+    if stem in {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5",
+        "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5",
+        "LPT6", "LPT7", "LPT8", "LPT9"
+    } {
+        return False;
+    }
+    return True;
+}
+
+
 def _entry_ref(name: str, dep: dict) -> tuple[str, str] {
     ref = "";
     for field in ("ref", "branch", "tag") {
@@ -423,7 +456,8 @@ obj JacGitProvider(EcosystemProvider) {
     def resolve_closure(
         config: JacConfig,
         ctx: InstallContext | None = None,
-        frozen_pins: dict[str, dict] | None = None
+        frozen_pins: dict[str, dict] | None = None,
+        collect_only: bool = False
     ) -> dict[str, JacPackage] {
         frozen_pins = frozen_pins or {};
         overrides = config.get_section("override");
@@ -480,7 +514,7 @@ obj JacGitProvider(EcosystemProvider) {
                 ctx
             );
             resolved[name] = pkg;
-            self._materialize_pkg(pkg, packages_root, ctx);
+            self._materialize_pkg(pkg, packages_root, ctx, collect_only);
             transitive = pkg.manifest.get("dependencies", {}).get("jac", {});
             for (tname, tentry) in transitive.items() {
                 if not isinstance(tentry, dict) {
@@ -540,22 +574,53 @@ obj JacGitProvider(EcosystemProvider) {
     }
 
     def _materialize_pkg(
-        pkg: JacPackage, packages_root: Path, ctx: InstallContext | None
+        pkg: JacPackage,
+        packages_root: Path,
+        ctx: InstallContext | None,
+        collect_only: bool = False
     ) -> None {
         if pkg.source == "path" or (ctx is not None and ctx.is_dry_run()) {
             pkg.local_path = Path(pkg.pkg_root);
             return;
         }
-        if not pkg.name or "/" in pkg.name or pkg.name in (".", "..") {
+        if collect_only {
+            # Resolution-only sweep (update convergence, no-save install):
+            # leave local_path unset; materialize_closure copies the final
+            # closure once the whole graph has resolved.
+            return;
+        }
+        if not _safe_dep_name(pkg.name) {
             raise JacDepError(f"Unsafe dependency name for install: '{pkg.name}'");
         }
         dest = packages_root / pkg.name;
+        real_dest = os.path.realpath(str(dest));
+        real_root = os.path.realpath(str(packages_root));
+        if not real_dest.startswith(real_root + os.sep) {
+            raise JacDepError(
+                f"Unsafe dependency destination for install: '{pkg.name}' "
+                f"resolves outside {real_root}"
+            );
+        }
         try {
             pkg.local_path = materialize(Path(pkg.pkg_root), dest);
         } except OSError as e {
             raise JacDepError(
                 f"Could not install '{pkg.name}' into {dest}: {e}"
             ) from None;
+        }
+    }
+
+    def materialize_closure(
+        config: JacConfig,
+        resolved: dict[str, JacPackage],
+        ctx: InstallContext | None = None
+    ) -> None {
+        # Copy the final resolved closure into .jac/packages. Callers resolve
+        # with collect_only=True first so a failed resolution never touches
+        # materialized state, then commit everything here in one sweep.
+        packages_root = config.get_build_dir() / "packages";
+        for pkg in resolved.values() {
+            self._materialize_pkg(pkg, packages_root, ctx);
         }
     }
 
@@ -611,6 +676,12 @@ obj JacGitProvider(EcosystemProvider) {
         pins: dict,
         ctx: InstallContext | None
     ) -> JacPackage {
+        if not _safe_dep_name(name) {
+            raise JacDepError(
+                f"Unsafe dependency name: '{name}' (requested by {requirer}). "
+                "Names must be a single safe path component."
+            );
+        }
         if source == "path" {
             if not os.path.isdir(key) {
                 raise JacDepError(
@@ -618,12 +689,60 @@ obj JacGitProvider(EcosystemProvider) {
                     f"(resolved {key}) does not exist"
                 );
             }
+            pkg_tree = dirhash(Path(key));
+            if ctx is not None and ctx.frozen {
+                # A path dep must replay exactly what the lock recorded:
+                # verify the row exists, is still a path row, and that the
+                # live tree hash matches the recorded one. Hashing the live
+                # filesystem without this check lets a frozen install
+                # consume code that differs from the lock closure.
+                row = pins if isinstance(pins, dict) else {};
+                if not row {
+                    raise JacDepError(
+                        f"jac.lock is missing '{name}' (requested by "
+                        f"{requirer}). Run 'jac install' to refresh the "
+                        f"lockfile."
+                    );
+                }
+                if row.get("git") {
+                    raise JacDepError(
+                        f"'{name}': manifest declares a path dependency but "
+                        f"jac.lock records a git source. Run 'jac install' to "
+                        f"refresh the lockfile."
+                    );
+                }
+                recorded_tree = str(row.get("tree", ""));
+                if not recorded_tree {
+                    raise JacDepError(
+                        f"jac.lock row for path dependency '{name}' records "
+                        f"no tree hash. Run 'jac install' to refresh the "
+                        f"lockfile."
+                    );
+                }
+                if recorded_tree != pkg_tree {
+                    raise JacDepError(
+                        f"'{name}': path dependency content differs from the "
+                        f"recorded lock entry (lock tree {recorded_tree[:12]}, "
+                        f"live tree {pkg_tree[:12]}). Run 'jac install' to "
+                        f"refresh the lockfile."
+                    );
+                }
+                recorded_path = str(row.get("path", ""));
+                if recorded_path
+                    and os.path.realpath(recorded_path) != os.path.realpath(key) {
+                    raise JacDepError(
+                        f"'{name}': manifest path resolves to {key} but "
+                        f"jac.lock records {recorded_path}. Run 'jac install' "
+                        f"to refresh the lockfile."
+                    );
+                }
+            }
             pkg = JacPackage(
                 name=name,
                 key=key,
                 source="path",
                 pkg_root=key,
-                tree=dirhash(Path(key)),
+                tree=pkg_tree,
                 requested_by=[requirer]
             );
         } else {
@@ -765,6 +884,46 @@ obj JacGitProvider(EcosystemProvider) {
         return True;
     }
 
+    def install_no_save(
+        config: JacConfig, specs: list[str], ctx: InstallContext
+    ) -> bool {
+        # Project-scoped no-save install: resolves and materializes the
+        # requested pure-jac closure into the project's dependency state
+        # (.jac/deps.json + venv import path) without recording anything
+        # in jac.toml or jac.lock. The in-memory manifest section is
+        # only a transient scratch pad and is restored below. Resolution
+        # runs collect-only so a failed resolve leaves .jac/packages and
+        # the deps map untouched.
+        original = config.plugin_dependencies.get("jac");
+        had_section = isinstance(original, dict);
+        backup: dict = dict(original) if had_section else {};
+        try {
+            section = config.plugin_dependencies.setdefault("jac", {});
+            for spec in specs {
+                (name, ent) = parse_jac_spec(spec);
+                section[name] = ent;
+            }
+            resolved = self.resolve_closure(config, ctx, collect_only=True);
+            self.materialize_closure(config, resolved, ctx);
+            self.save_deps_map(config, resolved);
+            write_pth(config, resolved);
+            for pkg in resolved.values() {
+                via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
+                console.print(f"  ✔ {pkg.name} ({via})", style="success");
+            }
+            return True;
+        } except JacDepError as e {
+            console.error(str(e));
+            return False;
+        } finally {
+            if had_section {
+                config.plugin_dependencies["jac"] = backup;
+            } else {
+                config.plugin_dependencies.pop("jac", None);
+            }
+        }
+    }
+
     def add_spec(
         config: JacConfig,
         spec: str,
@@ -886,7 +1045,7 @@ obj JacGitProvider(EcosystemProvider) {
             return False;
         }
         stale = config.get_build_dir() / "packages" / name;
-        if stale.is_dir() {
+        if _safe_dep_name(name) and stale.is_dir() {
             shutil.rmtree(stale, ignore_errors=True);
         }
         self.save_deps_map(config, resolved);

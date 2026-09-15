@@ -850,24 +850,52 @@ impl install(
             install_flags=["--dry-run"] if dry_run else [],
             frozen=frozen
         );
-        if no_save or dry_run {
-            section = config.plugin_dependencies.setdefault("jac", {});
-            for spec in jac_specs {
-                (name, ent) = parse_jac_spec(spec);
-                section[name] = ent;
-            }
+        if dry_run {
+            # Preview only: resolve the requested closure transiently and
+            # print what a real install would do; nothing is persisted and
+            # the in-memory manifest is restored.
+            original = config.plugin_dependencies.get("jac");
+            had_section = isinstance(original, dict);
+            backup: dict = dict(original) if had_section else {};
             try {
-                resolved = provider.resolve_closure(config, ctx);
-            } except JacDepError as e {
-                console.error(str(e));
-                return 1;
+                section = config.plugin_dependencies.setdefault("jac", {});
+                for spec in jac_specs {
+                    (name, ent) = parse_jac_spec(spec);
+                    section[name] = ent;
+                }
+                try {
+                    resolved = provider.resolve_closure(config, ctx);
+                } except JacDepError as e {
+                    console.error(str(e));
+                    return 1;
+                }
+                console.print(
+                    f"\nWould install {len(resolved)} pure-jac package(s):",
+                    style="bold"
+                );
+                for pkg in resolved.values() {
+                    via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
+                    console.print(f"  {pkg.name} ({via})");
+                }
+                return 0;
+            } finally {
+                if had_section {
+                    config.plugin_dependencies["jac"] = backup;
+                } else {
+                    config.plugin_dependencies.pop("jac", None);
+                }
             }
+        }
+        if no_save {
+            # Install into the project's dependency state without saving
+            # to jac.toml/jac.lock.
             console.print(
-                f"\nWould install {len(resolved)} pure-jac package(s):", style="bold"
+                f"\nInstalling {len(jac_specs)} pure-jac package(s) "
+                "(not saved to jac.toml)",
+                style="bold"
             );
-            for pkg in resolved.values() {
-                via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
-                console.print(f"  {pkg.name} ({via})");
+            if not provider.install_no_save(config, jac_specs, ctx) {
+                return 1;
             }
             return 0;
         }
@@ -1427,9 +1455,7 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
                 };
                 refresh = _requirer_closure(old_requirers, jac_targets);
             }
-            passes = 0;
             while True {
-                passes += 1;
                 pins = (
                     {
                         name: row
@@ -1439,7 +1465,9 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
                         if jac_targets
                         else {}
                 );
-                resolved = jac_provider.resolve_closure(config, ctx, frozen_pins=pins);
+                resolved = jac_provider.resolve_closure(
+                    config, ctx, frozen_pins=pins, collect_only=True
+                );
                 if not jac_targets {
                     break;
                 }
@@ -1457,16 +1485,22 @@ impl update(packages: list = [], dev: bool = False, verbose: bool = False) -> in
                 if not grew {
                     break;
                 }
-                if passes >= 10 {
-                    raise JacDepError(
-                        "Targeted update could not reach a stable refresh set after "
-                        "10 passes. Run 'jac update' without arguments to refresh "
-                        "everything."
-                    );
-                }
             }
         } except Exception as e {
             console.error(str(e));
+            return 1;
+        }
+        # The convergence passes ran collect-only, so neither .jac/packages
+        # nor any metadata was touched while a conflict, fetch error, or
+        # discovery iteration could still abort the command. Commit the
+        # final closure now: materialize first, then the deps map and lock
+        # rows, so a failure above this point leaves the previous install
+        # fully intact.
+        try {
+            jac_provider.materialize_closure(config, resolved, ctx);
+        } except Exception as e {
+            console.error(str(e));
+            jac_provider._rematerialize(config);
             return 1;
         }
         jac_provider.save_deps_map(config, resolved);

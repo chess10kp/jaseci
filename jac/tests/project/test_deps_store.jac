@@ -78,12 +78,17 @@ test "why_chains appends the direct npm chain" {
     assert ("npm", ["dup"]) in dup_chains;
     assert len(dup_chains) == 2;
 
-    # A jac row that already yields the bare [name] chain is not duplicated.
+    # A jac row yielding the bare [name] chain and an npm pin for the same
+    # name are separate provenance facts: both chains surface, each labeled
+    # with its own ecosystem.
     direct = {
         "jac": {"direct": {"git": "https://x", "requested_by": []}},
         "npm": {"direct": "1.0.0"}
     };
-    assert why_chains(direct, "direct") == [("jac", ["direct"])];
+    assert why_chains(direct, "direct") == [
+        ("jac", ["direct"]),
+        ("npm", ["direct"])
+    ];
 
     # Jac/python chains without npm stay untouched; unknown names keep the
     # [[name]] fallback.

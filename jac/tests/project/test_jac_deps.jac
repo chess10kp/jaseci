@@ -39,7 +39,7 @@ import from jaclang.project.lockfile {
 }
 
 
-def make_git_repo(path: Path, jac_toml: str, files: dict) -> str {
+def make_git_repo(path: Path, jac_toml: str, files: dict, branch: str = "") -> str {
     path.mkdir(parents=True, exist_ok=True);
     (path / "jac.toml").write_text(jac_toml, encoding="utf-8");
     for (name, content) in files.items() {
@@ -48,7 +48,11 @@ def make_git_repo(path: Path, jac_toml: str, files: dict) -> str {
         target.write_text(content, encoding="utf-8");
     }
     env = dict(os.environ);
-    subprocess.run(["git", "init", "-q", str(path)], check=True, env=env);
+    subprocess.run(
+        ["git", "init", "-q"] + (["-b", branch] if branch else []) + [str(path)],
+        check=True,
+        env=env
+    );
     subprocess.run(
         [
             "git",
@@ -553,6 +557,62 @@ test "frozen replay keeps the recorded commit" {
     }
 }
 
+
+test "frozen install_all replays a moved branch from the recorded commit" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_lock_fzb_");
+        origin_path = Path(outer) / "origin";
+        origin = make_git_repo(
+            origin_path,
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"},
+            branch="main"
+        );
+        toml_text = (
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\n'
+            f'mylib = {{ git = "{origin}", branch = "main" }}\n'
+        );
+        (config, tmp) = make_project(toml_text);
+        try {
+            provider = JacGitProvider();
+            assert provider.install_all(config, [], InstallContext());
+            rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            assert rows["mylib"]["ref"] == "main";
+            pinned_sha = rows["mylib"]["sha"];
+            # main advances past the recorded commit.
+            (origin_path / "mylib.jac").write_text(
+                "def hello() -> int { return 43; }\n", encoding="utf-8"
+            );
+            moved = git_commit_all(origin_path, "advance main");
+            assert moved != pinned_sha;
+            # Cold store: the replay must re-fetch, so it exercises the
+            # commit-first checkout instead of a store hit.
+            store_dir = store_root();
+            for item in store_dir.iterdir() {
+                if item.is_dir() {
+                    shutil.rmtree(item, ignore_errors=True);
+                } else {
+                    item.unlink();
+                }
+            }
+            assert provider.install_all(config, [], InstallContext(frozen=True));
+            rows2 = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+            assert rows2["mylib"]["sha"] == pinned_sha;
+            assert rows2["mylib"]["ref"] == "main";
+            # A fresh (non-frozen, pin-free) resolution still follows main.
+            fresh = provider.resolve_closure(config, InstallContext());
+            assert fresh["mylib"].sha == moved;
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
 test "frozen install errors when manifest is ahead of lock" {
     (store_tmp, old_env) = isolate_store();
     try {
@@ -984,4 +1044,260 @@ test "read_deps_roots ignores malformed deps maps" {
         os.chdir(cwd);
         set_config(None);
     }
+}
+
+
+test "safe dependency name check rejects traversal components" {
+    import from jaclang.project.jac_provider { _safe_dep_name }
+    bs = chr(92);
+    ok = ["mylib", "my-lib", "My_Lib2", "a.b.c", "lib-1.2"];
+    for name in ok {
+        assert _safe_dep_name(name) , f"safe name rejected: {name}";
+    }
+    bad = [
+        "",
+        ".",
+        "..",
+        "a/b",
+        bs.join(["..", "..", "escaped"]),
+        "C:" + bs + "temp",
+        "con",
+        "COM1",
+        "nul.txt",
+        " x",
+        "x ",
+        "x.",
+        "a" + chr(9)
+    ];
+    for name in bad {
+        assert not _safe_dep_name(name) , f"unsafe name accepted: {name}";
+    }
+}
+
+
+test "transitive dependency with unsafe name is rejected" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_unsafe_name_");
+        bs = chr(92);
+        origin_path = Path(outer) / "origin";
+        # Windows traversal name: on Windows this escapes .jac/packages.
+        bad_name = ".." + bs + ".." + bs + "escaped";
+        origin = make_git_repo(
+            origin_path,
+            "[project]\nname = \"outer\"\nversion = \"1.0.0\"\n\n"
+            "[dependencies.jac]\n"
+            + "\"" + bad_name + "\" = { path = \"../sibling\" }\n",
+            {"outer.jac": "def o() -> int { return 1; }\n"}
+        );
+        (config, tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nouter = {{ git = "{origin}", branch = "main" }}\n'
+        );
+        try {
+            provider = JacGitProvider();
+            assert not provider.install_all(config, [], InstallContext()) , (
+                "unsafe transitive dependency name was accepted"
+            );
+            packages_root = config.get_build_dir() / "packages";
+            assert not (config.get_build_dir() / "escaped").exists();
+            assert not (Path(tmp) / "escaped").exists();
+            if packages_root.is_dir() {
+                for item in packages_root.iterdir() {
+                    assert item.name == "outer" , (
+                        f"unexpected package directory: {item.name}"
+                    );
+                }
+            }
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "frozen install validates path dependency tree hashes" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        (config, tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            '[dependencies.jac]\nutils = { path = "../utils" }\n'
+        );
+        utils = Path(tmp) / "utils";
+        utils.mkdir();
+        (utils / "jac.toml").write_text(
+            '[project]\nname = "utils"\nversion = "1.0.0"\n', encoding="utf-8"
+        );
+        (utils / "utils.jac").write_text(
+            "def u() -> int { return 1; }\n", encoding="utf-8"
+        );
+        project_dir = Path(tmp) / "proj";
+        try {
+            provider = JacGitProvider();
+            assert provider.install_all(config, [], InstallContext());
+            rows = jac_lock_rows(read_lock(project_dir));
+            assert os.path.realpath(rows["utils"]["path"]) == os.path.realpath(
+                str(utils)
+            ) , f"lock row path mismatch: {rows['utils']}";
+            assert rows["utils"]["tree"] , "lock row records no tree hash";
+
+            # Unchanged content: frozen replay succeeds.
+            assert provider.install_all(config, [], InstallContext(frozen=True));
+
+            # Content drift must fail the frozen replay.
+            (utils / "utils.jac").write_text(
+                "def u() -> int { return 999; }\n", encoding="utf-8"
+            );
+            assert not provider.install_all(
+                config, [], InstallContext(frozen=True)
+            ) , "frozen replay accepted drifted path dependency content";
+
+            # Restoring the recorded content unblocks the replay.
+            (utils / "utils.jac").write_text(
+                "def u() -> int { return 1; }\n", encoding="utf-8"
+            );
+            assert provider.install_all(config, [], InstallContext(frozen=True));
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "frozen install requires lock rows for transitive path deps" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_frozen_tpath_");
+        origin_path = Path(outer) / "origin";
+        origin = make_git_repo(
+            origin_path,
+            '[project]\nname = "outer"\nversion = "1.0.0"\n\n'
+            '[dependencies.jac]\ntv = { path = "tv" }\n',
+            {
+                "outer.jac": "def o() -> int { return 1; }\n",
+                "tv/jac.toml": '[project]\nname = "tv"\nversion = "1.0.0"\n',
+                "tv/tv.jac": "def t() -> int { return 2; }\n"
+            },
+            branch="main"
+        );
+        (config, tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nouter = {{ git = "{origin}", branch = "main" }}\n'
+        );
+        project_dir = Path(tmp) / "proj";
+        try {
+            provider = JacGitProvider();
+            assert provider.install_all(config, [], InstallContext());
+            rows = jac_lock_rows(read_lock(project_dir));
+            assert "tv" in rows , f"transitive path dep not locked: {rows.keys()}";
+
+            # Drop the transitive path row: frozen replay must fail.
+            import from jaclang.project.lockfile { write_lock }
+            trimmed = {name: row for (name, row) in rows.items() if name != "tv"};
+            assert write_lock(project_dir, {"jac": trimmed});
+            assert not provider.install_all(
+                config, [], InstallContext(frozen=True)
+            ) , "frozen replay accepted a missing transitive path lock row";
+
+            # Restore the full lock: frozen replay succeeds again.
+            assert write_lock(project_dir, {"jac": rows});
+            assert provider.install_all(config, [], InstallContext(frozen=True));
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "no-save install materializes without touching manifest or lock" {
+    import from jaclang.cli.commands { project }
+    import from jaclang.project.config { set_config }
+    import from jaclang.project.jac_provider { read_deps_map }
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_nosave_");
+        # The install derives the dep name from the URL's last segment.
+        origin_path = Path(outer) / "mylib";
+        origin = make_git_repo(
+            origin_path,
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        (config, tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n'
+        );
+        project_dir = Path(tmp) / "proj";
+        try {
+            os.chdir(project_dir);
+            set_config(None);
+            toml_before = (project_dir / "jac.toml").read_text(encoding="utf-8");
+
+            result = project.install(
+                packages=[f"jac:file://{origin}"], no_save=True
+            );
+            assert result == 0 , f"no-save install failed: {result}";
+
+            # Manifest untouched; no lock created.
+            assert (project_dir / "jac.toml").read_text(
+                encoding="utf-8"
+            ) == toml_before , "jac.toml was modified by --no-save";
+            assert not (project_dir / "jac.lock").exists() , (
+                "--no-save wrote a lockfile"
+            );
+
+            # But the closure is installed into the project's dep state.
+            fresh = JacConfig.load(project_dir / "jac.toml");
+            fresh.project_root = project_dir;
+            installed = {
+                p.get("name", "")
+                for p in read_deps_map(fresh).get("packages", [])
+            };
+            assert "mylib" in installed , f"deps map missing mylib: {installed}";
+            assert (
+                fresh.get_build_dir() / "packages" / "mylib" / "mylib.jac"
+            ).is_file() , "mylib was not materialized under .jac/packages";
+
+            # Import path discovery picks the materialized root up.
+            roots = read_deps_roots(project_dir);
+            assert any("mylib" in p for p in roots) , (
+                f"deps roots do not include mylib: {roots}"
+            );
+        } finally {
+            os.chdir(cwd);
+            set_config(None);
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "why chains keep same-shaped chains across ecosystems" {
+    import from jaclang.project.lockfile { why_chains }
+    lock_data = {
+        "jac": {"dup": {"git": "https://x", "requested_by": []}},
+        "npm": {"dup": "1.0.0"}
+    };
+    chains = why_chains(lock_data, "dup");
+    assert ("jac", ["dup"]) in chains , f"jac chain dropped: {chains}";
+    assert ("npm", ["dup"]) in chains , (
+        f"npm chain suppressed by same-shaped jac chain: {chains}"
+    );
+    py_lock = {"python_graph": {"dup": []}, "npm": {"dup": "1.0.0"}};
+    py_chains = why_chains(py_lock, "dup");
+    assert ("python", ["dup"]) in py_chains , f"python chain dropped: {py_chains}";
+    assert ("npm", ["dup"]) in py_chains , (
+        f"npm chain suppressed by same-shaped python chain: {py_chains}"
+    );
 }
