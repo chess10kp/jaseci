@@ -360,68 +360,32 @@ glob LP_LOCAL: int = 32,
      LP_FREE: int = 128;
 
 # Inline-cache unit counts (_PyOpcode_Caches).
+glob _OPCODE_CACHE_COUNT: dict[int, int] = {
+    OP_STORE_SUBSCR: 1,
+    OP_TO_BOOL: 3,
+    OP_BINARY_OP: 5,
+    OP_CALL: 3,
+    OP_CALL_KW: 3,
+    OP_COMPARE_OP: 1,
+    OP_CONTAINS_OP: 1,
+    OP_FOR_ITER: 1,
+    OP_JUMP_BACKWARD: 1,
+    OP_LOAD_ATTR: 9,
+    OP_LOAD_GLOBAL: 4,
+    OP_LOAD_SUPER_ATTR: 1,
+    OP_POP_JUMP_IF_FALSE: 1,
+    OP_POP_JUMP_IF_NONE: 1,
+    OP_POP_JUMP_IF_NOT_NONE: 1,
+    OP_POP_JUMP_IF_TRUE: 1,
+    OP_SEND: 1,
+    OP_STORE_ATTR: 4,
+    OP_UNPACK_SEQUENCE: 1
+};
+
 def opcode_cache_count(op: int) -> int {
-    if op == OP_STORE_SUBSCR {
-        return 1;
-    }
-    if op == OP_TO_BOOL {
-        return 3;
-    }
-    if op == OP_BINARY_OP {
-        return 5;
-    }
-    if op == OP_CALL {
-        return 3;
-    }
-    if op == OP_CALL_KW {
-        return 3;
-    }
-    if op == OP_COMPARE_OP {
-        return 1;
-    }
-    if op == OP_CONTAINS_OP {
-        return 1;
-    }
-    if op == OP_FOR_ITER {
-        return 1;
-    }
-    if op == OP_JUMP_BACKWARD {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR {
-        return 9;
-    }
-    if op == OP_LOAD_GLOBAL {
-        return 4;
-    }
-    if op == OP_LOAD_SUPER_ATTR {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_FALSE {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_NONE {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_NOT_NONE {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_TRUE {
-        return 1;
-    }
-    if op == OP_SEND {
-        return 1;
-    }
-    if op == OP_STORE_ATTR {
-        return 4;
-    }
-    if op == OP_UNPACK_SEQUENCE {
-        return 1;
-    }
-    return 0;
+    return _OPCODE_CACHE_COUNT.get(op, 0);
 }
 
-# Deoptimization target opcode (_PyOpcode_Deopt).
 def opcode_deopt_target(op: int) -> int {
     if op < 0 or op > 254 {
         return op;
