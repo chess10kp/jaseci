@@ -395,62 +395,26 @@ def opcode_deopt_target(op: int) -> int {
     return _OPCODE_DEOPT_MAP.get(op, op);
 }
 
+glob _POPPED_0_SET: set[int] = {OP_ANNOTATIONS_PLACEHOLDER, OP_CACHE, OP_COPY_FREE_VARS, OP_DELETE_DEREF, OP_DELETE_FAST, OP_DELETE_GLOBAL, OP_DELETE_NAME, OP_ENTER_EXECUTOR, OP_EXTENDED_ARG, OP_INSTRUMENTED_INSTRUCTION, OP_INSTRUMENTED_JUMP_BACKWARD, OP_INSTRUMENTED_JUMP_FORWARD, OP_INSTRUMENTED_LINE, OP_INSTRUMENTED_NOT_TAKEN, OP_INSTRUMENTED_RESUME, OP_JUMP, OP_JUMP_BACKWARD, OP_JUMP_BACKWARD_JIT, OP_JUMP_BACKWARD_NO_INTERRUPT, OP_JUMP_BACKWARD_NO_JIT, OP_JUMP_FORWARD, OP_JUMP_NO_INTERRUPT, OP_LOAD_BUILD_CLASS, OP_LOAD_CLOSURE, OP_LOAD_COMMON_CONSTANT, OP_LOAD_CONST, OP_LOAD_CONST_IMMORTAL, OP_LOAD_CONST_MORTAL, OP_LOAD_DEREF, OP_LOAD_FAST, OP_LOAD_FAST_AND_CLEAR, OP_LOAD_FAST_BORROW, OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW, OP_LOAD_FAST_CHECK, OP_LOAD_FAST_LOAD_FAST, OP_LOAD_GLOBAL, OP_LOAD_GLOBAL_BUILTIN, OP_LOAD_GLOBAL_MODULE, OP_LOAD_LOCALS, OP_LOAD_NAME, OP_LOAD_SMALL_INT, OP_MAKE_CELL, OP_NOP, OP_NOT_TAKEN, OP_POP_BLOCK, OP_PUSH_NULL, OP_RESERVED, OP_RESUME, OP_RESUME_CHECK, OP_RETURN_GENERATOR, OP_SETUP_ANNOTATIONS, OP_SETUP_CLEANUP, OP_SETUP_FINALLY, OP_SETUP_WITH};
+glob _POPPED_1_SET: set[int] = {OP_CALL_INTRINSIC_1, OP_CONVERT_VALUE, OP_DELETE_ATTR, OP_END_FOR, OP_EXIT_INIT_CHECK, OP_FORMAT_SIMPLE, OP_FOR_ITER, OP_FOR_ITER_GEN, OP_FOR_ITER_LIST, OP_FOR_ITER_RANGE, OP_FOR_ITER_TUPLE, OP_GET_AITER, OP_GET_ANEXT, OP_GET_AWAITABLE, OP_GET_ITER, OP_GET_LEN, OP_GET_YIELD_FROM_ITER, OP_IMPORT_FROM, OP_INSTRUMENTED_FOR_ITER, OP_INSTRUMENTED_POP_ITER, OP_INSTRUMENTED_POP_JUMP_IF_FALSE, OP_INSTRUMENTED_POP_JUMP_IF_NONE, OP_INSTRUMENTED_POP_JUMP_IF_NOT_NONE, OP_INSTRUMENTED_POP_JUMP_IF_TRUE, OP_INSTRUMENTED_RETURN_VALUE, OP_INSTRUMENTED_YIELD_VALUE, OP_INTERPRETER_EXIT, OP_JUMP_IF_FALSE, OP_JUMP_IF_TRUE, OP_LOAD_ATTR, OP_LOAD_ATTR_CLASS, OP_LOAD_ATTR_CLASS_WITH_METACLASS_CHECK, OP_LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, OP_LOAD_ATTR_INSTANCE_VALUE, OP_LOAD_ATTR_METHOD_LAZY_DICT, OP_LOAD_ATTR_METHOD_NO_DICT, OP_LOAD_ATTR_METHOD_WITH_VALUES, OP_LOAD_ATTR_MODULE, OP_LOAD_ATTR_NONDESCRIPTOR_NO_DICT, OP_LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES, OP_LOAD_ATTR_PROPERTY, OP_LOAD_ATTR_SLOT, OP_LOAD_ATTR_WITH_HINT, OP_LOAD_FROM_DICT_OR_DEREF, OP_LOAD_FROM_DICT_OR_GLOBALS, OP_LOAD_SPECIAL, OP_MAKE_FUNCTION, OP_MATCH_MAPPING, OP_MATCH_SEQUENCE, OP_POP_EXCEPT, OP_POP_ITER, OP_POP_JUMP_IF_FALSE, OP_POP_JUMP_IF_NONE, OP_POP_JUMP_IF_NOT_NONE, OP_POP_JUMP_IF_TRUE, OP_POP_TOP, OP_PUSH_EXC_INFO, OP_RETURN_VALUE, OP_STORE_DEREF, OP_STORE_FAST, OP_STORE_FAST_LOAD_FAST, OP_STORE_FAST_MAYBE_NULL, OP_STORE_GLOBAL, OP_STORE_NAME, OP_TO_BOOL, OP_TO_BOOL_ALWAYS_TRUE, OP_TO_BOOL_BOOL, OP_TO_BOOL_INT, OP_TO_BOOL_LIST, OP_TO_BOOL_NONE, OP_TO_BOOL_STR, OP_UNARY_INVERT, OP_UNARY_NEGATIVE, OP_UNARY_NOT, OP_UNPACK_EX, OP_UNPACK_SEQUENCE, OP_UNPACK_SEQUENCE_LIST, OP_UNPACK_SEQUENCE_TUPLE, OP_UNPACK_SEQUENCE_TWO_TUPLE, OP_YIELD_VALUE};
+glob _POPPED_2_SET: set[int] = {OP_BINARY_OP, OP_BINARY_OP_ADD_FLOAT, OP_BINARY_OP_ADD_INT, OP_BINARY_OP_ADD_UNICODE, OP_BINARY_OP_EXTEND, OP_BINARY_OP_INPLACE_ADD_UNICODE, OP_BINARY_OP_MULTIPLY_FLOAT, OP_BINARY_OP_MULTIPLY_INT, OP_BINARY_OP_SUBSCR_DICT, OP_BINARY_OP_SUBSCR_GETITEM, OP_BINARY_OP_SUBSCR_LIST_INT, OP_BINARY_OP_SUBSCR_LIST_SLICE, OP_BINARY_OP_SUBSCR_STR_INT, OP_BINARY_OP_SUBSCR_TUPLE_INT, OP_BINARY_OP_SUBTRACT_FLOAT, OP_BINARY_OP_SUBTRACT_INT, OP_BUILD_TEMPLATE, OP_CALL_INTRINSIC_2, OP_CHECK_EG_MATCH, OP_CHECK_EXC_MATCH, OP_COMPARE_OP, OP_COMPARE_OP_FLOAT, OP_COMPARE_OP_INT, OP_COMPARE_OP_STR, OP_CONTAINS_OP, OP_CONTAINS_OP_DICT, OP_CONTAINS_OP_SET, OP_DELETE_SUBSCR, OP_END_ASYNC_FOR, OP_END_SEND, OP_FORMAT_WITH_SPEC, OP_IMPORT_NAME, OP_INSTRUMENTED_END_ASYNC_FOR, OP_INSTRUMENTED_END_FOR, OP_INSTRUMENTED_END_SEND, OP_IS_OP, OP_MATCH_KEYS, OP_SEND, OP_SEND_GEN, OP_SET_FUNCTION_ATTRIBUTE, OP_STORE_ATTR, OP_STORE_ATTR_INSTANCE_VALUE, OP_STORE_ATTR_SLOT, OP_STORE_ATTR_WITH_HINT, OP_STORE_FAST_STORE_FAST};
+glob _POPPED_3_SET: set[int] = {OP_BINARY_SLICE, OP_CALL_LEN, OP_CALL_LIST_APPEND, OP_CALL_STR_1, OP_CALL_TUPLE_1, OP_CALL_TYPE_1, OP_CLEANUP_THROW, OP_INSTRUMENTED_LOAD_SUPER_ATTR, OP_LOAD_SUPER_ATTR, OP_LOAD_SUPER_ATTR_ATTR, OP_LOAD_SUPER_ATTR_METHOD, OP_MATCH_CLASS, OP_STORE_SUBSCR, OP_STORE_SUBSCR_DICT, OP_STORE_SUBSCR_LIST_INT};
+
 def _opcode_num_popped(op: int, oparg: int) -> int {
-    if op == OP_ANNOTATIONS_PLACEHOLDER {
+    if op in _POPPED_0_SET {
         return 0;
     }
-    if op == OP_BINARY_OP {
+    if op in _POPPED_1_SET {
+        return 1;
+    }
+    if op in _POPPED_2_SET {
         return 2;
     }
-    if op == OP_BINARY_OP_ADD_FLOAT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_ADD_INT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_ADD_UNICODE {
-        return 2;
-    }
-    if op == OP_BINARY_OP_EXTEND {
-        return 2;
-    }
-    if op == OP_BINARY_OP_INPLACE_ADD_UNICODE {
-        return 2;
-    }
-    if op == OP_BINARY_OP_MULTIPLY_FLOAT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_MULTIPLY_INT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBSCR_DICT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBSCR_GETITEM {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBSCR_LIST_INT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBSCR_LIST_SLICE {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBSCR_STR_INT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBSCR_TUPLE_INT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBTRACT_FLOAT {
-        return 2;
-    }
-    if op == OP_BINARY_OP_SUBTRACT_INT {
-        return 2;
-    }
-    if op == OP_BINARY_SLICE {
+    if op in _POPPED_3_SET {
         return 3;
     }
-    if op == OP_BUILD_INTERPOLATION {
+
+                                                                            if op == OP_BUILD_INTERPOLATION {
         return 2 + (oparg & 1);
     }
     if op == OP_BUILD_LIST {
@@ -468,16 +432,10 @@ def _opcode_num_popped(op: int, oparg: int) -> int {
     if op == OP_BUILD_STRING {
         return oparg;
     }
-    if op == OP_BUILD_TEMPLATE {
-        return 2;
-    }
-    if op == OP_BUILD_TUPLE {
+        if op == OP_BUILD_TUPLE {
         return oparg;
     }
-    if op == OP_CACHE {
-        return 0;
-    }
-    if op == OP_CALL {
+        if op == OP_CALL {
         return 2 + oparg;
     }
     if op == OP_CALL_ALLOC_AND_ENTER_INIT {
@@ -504,13 +462,7 @@ def _opcode_num_popped(op: int, oparg: int) -> int {
     if op == OP_CALL_FUNCTION_EX {
         return 4;
     }
-    if op == OP_CALL_INTRINSIC_1 {
-        return 1;
-    }
-    if op == OP_CALL_INTRINSIC_2 {
-        return 2;
-    }
-    if op == OP_CALL_ISINSTANCE {
+            if op == OP_CALL_ISINSTANCE {
         return 2 + oparg;
     }
     if op == OP_CALL_KW {
@@ -525,13 +477,7 @@ def _opcode_num_popped(op: int, oparg: int) -> int {
     if op == OP_CALL_KW_PY {
         return 3 + oparg;
     }
-    if op == OP_CALL_LEN {
-        return 3;
-    }
-    if op == OP_CALL_LIST_APPEND {
-        return 3;
-    }
-    if op == OP_CALL_METHOD_DESCRIPTOR_FAST {
+            if op == OP_CALL_METHOD_DESCRIPTOR_FAST {
         return 2 + oparg;
     }
     if op == OP_CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS {
@@ -552,142 +498,16 @@ def _opcode_num_popped(op: int, oparg: int) -> int {
     if op == OP_CALL_PY_GENERAL {
         return 2 + oparg;
     }
-    if op == OP_CALL_STR_1 {
-        return 3;
-    }
-    if op == OP_CALL_TUPLE_1 {
-        return 3;
-    }
-    if op == OP_CALL_TYPE_1 {
-        return 3;
-    }
-    if op == OP_CHECK_EG_MATCH {
-        return 2;
-    }
-    if op == OP_CHECK_EXC_MATCH {
-        return 2;
-    }
-    if op == OP_CLEANUP_THROW {
-        return 3;
-    }
-    if op == OP_COMPARE_OP {
-        return 2;
-    }
-    if op == OP_COMPARE_OP_FLOAT {
-        return 2;
-    }
-    if op == OP_COMPARE_OP_INT {
-        return 2;
-    }
-    if op == OP_COMPARE_OP_STR {
-        return 2;
-    }
-    if op == OP_CONTAINS_OP {
-        return 2;
-    }
-    if op == OP_CONTAINS_OP_DICT {
-        return 2;
-    }
-    if op == OP_CONTAINS_OP_SET {
-        return 2;
-    }
-    if op == OP_CONVERT_VALUE {
-        return 1;
-    }
-    if op == OP_COPY {
+                                                            if op == OP_COPY {
         return 1 + (oparg - 1);
     }
-    if op == OP_COPY_FREE_VARS {
-        return 0;
-    }
-    if op == OP_DELETE_ATTR {
-        return 1;
-    }
-    if op == OP_DELETE_DEREF {
-        return 0;
-    }
-    if op == OP_DELETE_FAST {
-        return 0;
-    }
-    if op == OP_DELETE_GLOBAL {
-        return 0;
-    }
-    if op == OP_DELETE_NAME {
-        return 0;
-    }
-    if op == OP_DELETE_SUBSCR {
-        return 2;
-    }
-    if op == OP_DICT_MERGE {
+                                if op == OP_DICT_MERGE {
         return 5 + (oparg - 1);
     }
     if op == OP_DICT_UPDATE {
         return 2 + (oparg - 1);
     }
-    if op == OP_END_ASYNC_FOR {
-        return 2;
-    }
-    if op == OP_END_FOR {
-        return 1;
-    }
-    if op == OP_END_SEND {
-        return 2;
-    }
-    if op == OP_ENTER_EXECUTOR {
-        return 0;
-    }
-    if op == OP_EXIT_INIT_CHECK {
-        return 1;
-    }
-    if op == OP_EXTENDED_ARG {
-        return 0;
-    }
-    if op == OP_FORMAT_SIMPLE {
-        return 1;
-    }
-    if op == OP_FORMAT_WITH_SPEC {
-        return 2;
-    }
-    if op == OP_FOR_ITER {
-        return 1;
-    }
-    if op == OP_FOR_ITER_GEN {
-        return 1;
-    }
-    if op == OP_FOR_ITER_LIST {
-        return 1;
-    }
-    if op == OP_FOR_ITER_RANGE {
-        return 1;
-    }
-    if op == OP_FOR_ITER_TUPLE {
-        return 1;
-    }
-    if op == OP_GET_AITER {
-        return 1;
-    }
-    if op == OP_GET_ANEXT {
-        return 1;
-    }
-    if op == OP_GET_AWAITABLE {
-        return 1;
-    }
-    if op == OP_GET_ITER {
-        return 1;
-    }
-    if op == OP_GET_LEN {
-        return 1;
-    }
-    if op == OP_GET_YIELD_FROM_ITER {
-        return 1;
-    }
-    if op == OP_IMPORT_FROM {
-        return 1;
-    }
-    if op == OP_IMPORT_NAME {
-        return 2;
-    }
-    if op == OP_INSTRUMENTED_CALL {
+                                                                                        if op == OP_INSTRUMENTED_CALL {
         return 2 + oparg;
     }
     if op == OP_INSTRUMENTED_CALL_FUNCTION_EX {
@@ -696,812 +516,67 @@ def _opcode_num_popped(op: int, oparg: int) -> int {
     if op == OP_INSTRUMENTED_CALL_KW {
         return 3 + oparg;
     }
-    if op == OP_INSTRUMENTED_END_ASYNC_FOR {
-        return 2;
-    }
-    if op == OP_INSTRUMENTED_END_FOR {
-        return 2;
-    }
-    if op == OP_INSTRUMENTED_END_SEND {
-        return 2;
-    }
-    if op == OP_INSTRUMENTED_FOR_ITER {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_INSTRUCTION {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_JUMP_BACKWARD {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_JUMP_FORWARD {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_LINE {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_LOAD_SUPER_ATTR {
-        return 3;
-    }
-    if op == OP_INSTRUMENTED_NOT_TAKEN {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_POP_ITER {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_FALSE {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_NONE {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_NOT_NONE {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_TRUE {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_RESUME {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_RETURN_VALUE {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_YIELD_VALUE {
-        return 1;
-    }
-    if op == OP_INTERPRETER_EXIT {
-        return 1;
-    }
-    if op == OP_IS_OP {
-        return 2;
-    }
-    if op == OP_JUMP {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD_JIT {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD_NO_INTERRUPT {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD_NO_JIT {
-        return 0;
-    }
-    if op == OP_JUMP_FORWARD {
-        return 0;
-    }
-    if op == OP_JUMP_IF_FALSE {
-        return 1;
-    }
-    if op == OP_JUMP_IF_TRUE {
-        return 1;
-    }
-    if op == OP_JUMP_NO_INTERRUPT {
-        return 0;
-    }
-    if op == OP_LIST_APPEND {
+                                                                                                                        if op == OP_LIST_APPEND {
         return 2 + (oparg - 1);
     }
     if op == OP_LIST_EXTEND {
         return 2 + (oparg - 1);
     }
-    if op == OP_LOAD_ATTR {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_CLASS {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_CLASS_WITH_METACLASS_CHECK {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_INSTANCE_VALUE {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_METHOD_LAZY_DICT {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_METHOD_NO_DICT {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_METHOD_WITH_VALUES {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_MODULE {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_NONDESCRIPTOR_NO_DICT {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_PROPERTY {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_SLOT {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_WITH_HINT {
-        return 1;
-    }
-    if op == OP_LOAD_BUILD_CLASS {
-        return 0;
-    }
-    if op == OP_LOAD_CLOSURE {
-        return 0;
-    }
-    if op == OP_LOAD_COMMON_CONSTANT {
-        return 0;
-    }
-    if op == OP_LOAD_CONST {
-        return 0;
-    }
-    if op == OP_LOAD_CONST_IMMORTAL {
-        return 0;
-    }
-    if op == OP_LOAD_CONST_MORTAL {
-        return 0;
-    }
-    if op == OP_LOAD_DEREF {
-        return 0;
-    }
-    if op == OP_LOAD_FAST {
-        return 0;
-    }
-    if op == OP_LOAD_FAST_AND_CLEAR {
-        return 0;
-    }
-    if op == OP_LOAD_FAST_BORROW {
-        return 0;
-    }
-    if op == OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW {
-        return 0;
-    }
-    if op == OP_LOAD_FAST_CHECK {
-        return 0;
-    }
-    if op == OP_LOAD_FAST_LOAD_FAST {
-        return 0;
-    }
-    if op == OP_LOAD_FROM_DICT_OR_DEREF {
-        return 1;
-    }
-    if op == OP_LOAD_FROM_DICT_OR_GLOBALS {
-        return 1;
-    }
-    if op == OP_LOAD_GLOBAL {
-        return 0;
-    }
-    if op == OP_LOAD_GLOBAL_BUILTIN {
-        return 0;
-    }
-    if op == OP_LOAD_GLOBAL_MODULE {
-        return 0;
-    }
-    if op == OP_LOAD_LOCALS {
-        return 0;
-    }
-    if op == OP_LOAD_NAME {
-        return 0;
-    }
-    if op == OP_LOAD_SMALL_INT {
-        return 0;
-    }
-    if op == OP_LOAD_SPECIAL {
-        return 1;
-    }
-    if op == OP_LOAD_SUPER_ATTR {
-        return 3;
-    }
-    if op == OP_LOAD_SUPER_ATTR_ATTR {
-        return 3;
-    }
-    if op == OP_LOAD_SUPER_ATTR_METHOD {
-        return 3;
-    }
-    if op == OP_MAKE_CELL {
-        return 0;
-    }
-    if op == OP_MAKE_FUNCTION {
-        return 1;
-    }
-    if op == OP_MAP_ADD {
+                                                                                                                                                                        if op == OP_MAP_ADD {
         return 3 + (oparg - 1);
     }
-    if op == OP_MATCH_CLASS {
-        return 3;
-    }
-    if op == OP_MATCH_KEYS {
-        return 2;
-    }
-    if op == OP_MATCH_MAPPING {
-        return 1;
-    }
-    if op == OP_MATCH_SEQUENCE {
-        return 1;
-    }
-    if op == OP_NOP {
-        return 0;
-    }
-    if op == OP_NOT_TAKEN {
-        return 0;
-    }
-    if op == OP_POP_BLOCK {
-        return 0;
-    }
-    if op == OP_POP_EXCEPT {
-        return 1;
-    }
-    if op == OP_POP_ITER {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_FALSE {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_NONE {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_NOT_NONE {
-        return 1;
-    }
-    if op == OP_POP_JUMP_IF_TRUE {
-        return 1;
-    }
-    if op == OP_POP_TOP {
-        return 1;
-    }
-    if op == OP_PUSH_EXC_INFO {
-        return 1;
-    }
-    if op == OP_PUSH_NULL {
-        return 0;
-    }
-    if op == OP_RAISE_VARARGS {
+                                                                    if op == OP_RAISE_VARARGS {
         return oparg;
     }
     if op == OP_RERAISE {
         return 1 + oparg;
     }
-    if op == OP_RESERVED {
-        return 0;
-    }
-    if op == OP_RESUME {
-        return 0;
-    }
-    if op == OP_RESUME_CHECK {
-        return 0;
-    }
-    if op == OP_RETURN_GENERATOR {
-        return 0;
-    }
-    if op == OP_RETURN_VALUE {
-        return 1;
-    }
-    if op == OP_SEND {
-        return 2;
-    }
-    if op == OP_SEND_GEN {
-        return 2;
-    }
-    if op == OP_SETUP_ANNOTATIONS {
-        return 0;
-    }
-    if op == OP_SETUP_CLEANUP {
-        return 0;
-    }
-    if op == OP_SETUP_FINALLY {
-        return 0;
-    }
-    if op == OP_SETUP_WITH {
-        return 0;
-    }
-    if op == OP_SET_ADD {
+                                                if op == OP_SET_ADD {
         return 2 + (oparg - 1);
     }
-    if op == OP_SET_FUNCTION_ATTRIBUTE {
-        return 2;
-    }
-    if op == OP_SET_UPDATE {
+        if op == OP_SET_UPDATE {
         return 2 + (oparg - 1);
     }
-    if op == OP_STORE_ATTR {
-        return 2;
-    }
-    if op == OP_STORE_ATTR_INSTANCE_VALUE {
-        return 2;
-    }
-    if op == OP_STORE_ATTR_SLOT {
-        return 2;
-    }
-    if op == OP_STORE_ATTR_WITH_HINT {
-        return 2;
-    }
-    if op == OP_STORE_DEREF {
-        return 1;
-    }
-    if op == OP_STORE_FAST {
-        return 1;
-    }
-    if op == OP_STORE_FAST_LOAD_FAST {
-        return 1;
-    }
-    if op == OP_STORE_FAST_MAYBE_NULL {
-        return 1;
-    }
-    if op == OP_STORE_FAST_STORE_FAST {
-        return 2;
-    }
-    if op == OP_STORE_GLOBAL {
-        return 1;
-    }
-    if op == OP_STORE_NAME {
-        return 1;
-    }
-    if op == OP_STORE_SLICE {
+                                                if op == OP_STORE_SLICE {
         return 4;
     }
-    if op == OP_STORE_SUBSCR {
-        return 3;
-    }
-    if op == OP_STORE_SUBSCR_DICT {
-        return 3;
-    }
-    if op == OP_STORE_SUBSCR_LIST_INT {
-        return 3;
-    }
-    if op == OP_SWAP {
+                if op == OP_SWAP {
         return 2 + (oparg - 2);
     }
-    if op == OP_TO_BOOL {
-        return 1;
-    }
-    if op == OP_TO_BOOL_ALWAYS_TRUE {
-        return 1;
-    }
-    if op == OP_TO_BOOL_BOOL {
-        return 1;
-    }
-    if op == OP_TO_BOOL_INT {
-        return 1;
-    }
-    if op == OP_TO_BOOL_LIST {
-        return 1;
-    }
-    if op == OP_TO_BOOL_NONE {
-        return 1;
-    }
-    if op == OP_TO_BOOL_STR {
-        return 1;
-    }
-    if op == OP_UNARY_INVERT {
-        return 1;
-    }
-    if op == OP_UNARY_NEGATIVE {
-        return 1;
-    }
-    if op == OP_UNARY_NOT {
-        return 1;
-    }
-    if op == OP_UNPACK_EX {
-        return 1;
-    }
-    if op == OP_UNPACK_SEQUENCE {
-        return 1;
-    }
-    if op == OP_UNPACK_SEQUENCE_LIST {
-        return 1;
-    }
-    if op == OP_UNPACK_SEQUENCE_TUPLE {
-        return 1;
-    }
-    if op == OP_UNPACK_SEQUENCE_TWO_TUPLE {
-        return 1;
-    }
-    if op == OP_WITH_EXCEPT_START {
+                                                                if op == OP_WITH_EXCEPT_START {
         return 5;
     }
-    if op == OP_YIELD_VALUE {
-        return 1;
-    }
-    return -1;
+        return -1;
 }
 
+glob _PUSHED_0_SET: set[int] = {OP_ANNOTATIONS_PLACEHOLDER, OP_BINARY_OP_INPLACE_ADD_UNICODE, OP_BINARY_OP_SUBSCR_GETITEM, OP_CACHE, OP_CALL_ALLOC_AND_ENTER_INIT, OP_CALL_BOUND_METHOD_EXACT_ARGS, OP_CALL_BOUND_METHOD_GENERAL, OP_CALL_KW_BOUND_METHOD, OP_CALL_KW_PY, OP_CALL_LIST_APPEND, OP_CALL_PY_EXACT_ARGS, OP_CALL_PY_GENERAL, OP_COPY_FREE_VARS, OP_DELETE_ATTR, OP_DELETE_DEREF, OP_DELETE_FAST, OP_DELETE_GLOBAL, OP_DELETE_NAME, OP_DELETE_SUBSCR, OP_END_ASYNC_FOR, OP_END_FOR, OP_ENTER_EXECUTOR, OP_EXIT_INIT_CHECK, OP_EXTENDED_ARG, OP_INSTRUMENTED_END_ASYNC_FOR, OP_INSTRUMENTED_INSTRUCTION, OP_INSTRUMENTED_JUMP_BACKWARD, OP_INSTRUMENTED_JUMP_FORWARD, OP_INSTRUMENTED_LINE, OP_INSTRUMENTED_NOT_TAKEN, OP_INSTRUMENTED_POP_ITER, OP_INSTRUMENTED_POP_JUMP_IF_FALSE, OP_INSTRUMENTED_POP_JUMP_IF_NONE, OP_INSTRUMENTED_POP_JUMP_IF_NOT_NONE, OP_INSTRUMENTED_POP_JUMP_IF_TRUE, OP_INSTRUMENTED_RESUME, OP_INTERPRETER_EXIT, OP_JUMP, OP_JUMP_BACKWARD, OP_JUMP_BACKWARD_JIT, OP_JUMP_BACKWARD_NO_INTERRUPT, OP_JUMP_BACKWARD_NO_JIT, OP_JUMP_FORWARD, OP_JUMP_NO_INTERRUPT, OP_LOAD_ATTR_PROPERTY, OP_MAKE_CELL, OP_NOP, OP_NOT_TAKEN, OP_POP_BLOCK, OP_POP_EXCEPT, OP_POP_ITER, OP_POP_JUMP_IF_FALSE, OP_POP_JUMP_IF_NONE, OP_POP_JUMP_IF_NOT_NONE, OP_POP_JUMP_IF_TRUE, OP_POP_TOP, OP_RAISE_VARARGS, OP_RESERVED, OP_RESUME, OP_RESUME_CHECK, OP_SETUP_ANNOTATIONS, OP_STORE_ATTR, OP_STORE_ATTR_INSTANCE_VALUE, OP_STORE_ATTR_SLOT, OP_STORE_ATTR_WITH_HINT, OP_STORE_DEREF, OP_STORE_FAST, OP_STORE_FAST_MAYBE_NULL, OP_STORE_FAST_STORE_FAST, OP_STORE_GLOBAL, OP_STORE_NAME, OP_STORE_SLICE, OP_STORE_SUBSCR, OP_STORE_SUBSCR_DICT, OP_STORE_SUBSCR_LIST_INT};
+glob _PUSHED_1_SET: set[int] = {OP_BINARY_OP, OP_BINARY_OP_ADD_FLOAT, OP_BINARY_OP_ADD_INT, OP_BINARY_OP_ADD_UNICODE, OP_BINARY_OP_EXTEND, OP_BINARY_OP_MULTIPLY_FLOAT, OP_BINARY_OP_MULTIPLY_INT, OP_BINARY_OP_SUBSCR_DICT, OP_BINARY_OP_SUBSCR_LIST_INT, OP_BINARY_OP_SUBSCR_LIST_SLICE, OP_BINARY_OP_SUBSCR_STR_INT, OP_BINARY_OP_SUBSCR_TUPLE_INT, OP_BINARY_OP_SUBTRACT_FLOAT, OP_BINARY_OP_SUBTRACT_INT, OP_BINARY_SLICE, OP_BUILD_INTERPOLATION, OP_BUILD_LIST, OP_BUILD_MAP, OP_BUILD_SET, OP_BUILD_SLICE, OP_BUILD_STRING, OP_BUILD_TEMPLATE, OP_BUILD_TUPLE, OP_CALL, OP_CALL_BUILTIN_CLASS, OP_CALL_BUILTIN_FAST, OP_CALL_BUILTIN_FAST_WITH_KEYWORDS, OP_CALL_BUILTIN_O, OP_CALL_FUNCTION_EX, OP_CALL_INTRINSIC_1, OP_CALL_INTRINSIC_2, OP_CALL_ISINSTANCE, OP_CALL_KW, OP_CALL_KW_NON_PY, OP_CALL_LEN, OP_CALL_METHOD_DESCRIPTOR_FAST, OP_CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS, OP_CALL_METHOD_DESCRIPTOR_NOARGS, OP_CALL_METHOD_DESCRIPTOR_O, OP_CALL_NON_PY_GENERAL, OP_CALL_STR_1, OP_CALL_TUPLE_1, OP_CALL_TYPE_1, OP_COMPARE_OP, OP_COMPARE_OP_FLOAT, OP_COMPARE_OP_INT, OP_COMPARE_OP_STR, OP_CONTAINS_OP, OP_CONTAINS_OP_DICT, OP_CONTAINS_OP_SET, OP_CONVERT_VALUE, OP_END_SEND, OP_FORMAT_SIMPLE, OP_FORMAT_WITH_SPEC, OP_FOR_ITER_GEN, OP_GET_AITER, OP_GET_AWAITABLE, OP_GET_ITER, OP_GET_YIELD_FROM_ITER, OP_IMPORT_NAME, OP_INSTRUMENTED_CALL, OP_INSTRUMENTED_CALL_FUNCTION_EX, OP_INSTRUMENTED_CALL_KW, OP_INSTRUMENTED_END_FOR, OP_INSTRUMENTED_END_SEND, OP_INSTRUMENTED_RETURN_VALUE, OP_INSTRUMENTED_YIELD_VALUE, OP_IS_OP, OP_JUMP_IF_FALSE, OP_JUMP_IF_TRUE, OP_LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, OP_LOAD_ATTR_NONDESCRIPTOR_NO_DICT, OP_LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES, OP_LOAD_BUILD_CLASS, OP_LOAD_CLOSURE, OP_LOAD_COMMON_CONSTANT, OP_LOAD_CONST, OP_LOAD_CONST_IMMORTAL, OP_LOAD_CONST_MORTAL, OP_LOAD_DEREF, OP_LOAD_FAST, OP_LOAD_FAST_AND_CLEAR, OP_LOAD_FAST_BORROW, OP_LOAD_FAST_CHECK, OP_LOAD_FROM_DICT_OR_DEREF, OP_LOAD_FROM_DICT_OR_GLOBALS, OP_LOAD_LOCALS, OP_LOAD_NAME, OP_LOAD_SMALL_INT, OP_LOAD_SUPER_ATTR_ATTR, OP_MAKE_FUNCTION, OP_MATCH_CLASS, OP_PUSH_NULL, OP_RETURN_GENERATOR, OP_RETURN_VALUE, OP_SEND_GEN, OP_SETUP_FINALLY, OP_SETUP_WITH, OP_SET_FUNCTION_ATTRIBUTE, OP_STORE_FAST_LOAD_FAST, OP_TO_BOOL, OP_TO_BOOL_ALWAYS_TRUE, OP_TO_BOOL_BOOL, OP_TO_BOOL_INT, OP_TO_BOOL_LIST, OP_TO_BOOL_NONE, OP_TO_BOOL_STR, OP_UNARY_INVERT, OP_UNARY_NEGATIVE, OP_UNARY_NOT, OP_YIELD_VALUE};
+glob _PUSHED_2_SET: set[int] = {OP_CHECK_EG_MATCH, OP_CHECK_EXC_MATCH, OP_CLEANUP_THROW, OP_FOR_ITER, OP_FOR_ITER_LIST, OP_FOR_ITER_RANGE, OP_FOR_ITER_TUPLE, OP_GET_ANEXT, OP_GET_LEN, OP_IMPORT_FROM, OP_INSTRUMENTED_FOR_ITER, OP_LOAD_ATTR_METHOD_LAZY_DICT, OP_LOAD_ATTR_METHOD_NO_DICT, OP_LOAD_ATTR_METHOD_WITH_VALUES, OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW, OP_LOAD_FAST_LOAD_FAST, OP_LOAD_SPECIAL, OP_LOAD_SUPER_ATTR_METHOD, OP_MATCH_MAPPING, OP_MATCH_SEQUENCE, OP_PUSH_EXC_INFO, OP_SEND, OP_SETUP_CLEANUP, OP_UNPACK_SEQUENCE_TWO_TUPLE};
+
 def _opcode_num_pushed(op: int, oparg: int) -> int {
-    if op == OP_ANNOTATIONS_PLACEHOLDER {
+    if op in _PUSHED_0_SET {
         return 0;
     }
-    if op == OP_BINARY_OP {
+    if op in _PUSHED_1_SET {
         return 1;
     }
-    if op == OP_BINARY_OP_ADD_FLOAT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_ADD_INT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_ADD_UNICODE {
-        return 1;
-    }
-    if op == OP_BINARY_OP_EXTEND {
-        return 1;
-    }
-    if op == OP_BINARY_OP_INPLACE_ADD_UNICODE {
-        return 0;
-    }
-    if op == OP_BINARY_OP_MULTIPLY_FLOAT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_MULTIPLY_INT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_SUBSCR_DICT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_SUBSCR_GETITEM {
-        return 0;
-    }
-    if op == OP_BINARY_OP_SUBSCR_LIST_INT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_SUBSCR_LIST_SLICE {
-        return 1;
-    }
-    if op == OP_BINARY_OP_SUBSCR_STR_INT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_SUBSCR_TUPLE_INT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_SUBTRACT_FLOAT {
-        return 1;
-    }
-    if op == OP_BINARY_OP_SUBTRACT_INT {
-        return 1;
-    }
-    if op == OP_BINARY_SLICE {
-        return 1;
-    }
-    if op == OP_BUILD_INTERPOLATION {
-        return 1;
-    }
-    if op == OP_BUILD_LIST {
-        return 1;
-    }
-    if op == OP_BUILD_MAP {
-        return 1;
-    }
-    if op == OP_BUILD_SET {
-        return 1;
-    }
-    if op == OP_BUILD_SLICE {
-        return 1;
-    }
-    if op == OP_BUILD_STRING {
-        return 1;
-    }
-    if op == OP_BUILD_TEMPLATE {
-        return 1;
-    }
-    if op == OP_BUILD_TUPLE {
-        return 1;
-    }
-    if op == OP_CACHE {
-        return 0;
-    }
-    if op == OP_CALL {
-        return 1;
-    }
-    if op == OP_CALL_ALLOC_AND_ENTER_INIT {
-        return 0;
-    }
-    if op == OP_CALL_BOUND_METHOD_EXACT_ARGS {
-        return 0;
-    }
-    if op == OP_CALL_BOUND_METHOD_GENERAL {
-        return 0;
-    }
-    if op == OP_CALL_BUILTIN_CLASS {
-        return 1;
-    }
-    if op == OP_CALL_BUILTIN_FAST {
-        return 1;
-    }
-    if op == OP_CALL_BUILTIN_FAST_WITH_KEYWORDS {
-        return 1;
-    }
-    if op == OP_CALL_BUILTIN_O {
-        return 1;
-    }
-    if op == OP_CALL_FUNCTION_EX {
-        return 1;
-    }
-    if op == OP_CALL_INTRINSIC_1 {
-        return 1;
-    }
-    if op == OP_CALL_INTRINSIC_2 {
-        return 1;
-    }
-    if op == OP_CALL_ISINSTANCE {
-        return 1;
-    }
-    if op == OP_CALL_KW {
-        return 1;
-    }
-    if op == OP_CALL_KW_BOUND_METHOD {
-        return 0;
-    }
-    if op == OP_CALL_KW_NON_PY {
-        return 1;
-    }
-    if op == OP_CALL_KW_PY {
-        return 0;
-    }
-    if op == OP_CALL_LEN {
-        return 1;
-    }
-    if op == OP_CALL_LIST_APPEND {
-        return 0;
-    }
-    if op == OP_CALL_METHOD_DESCRIPTOR_FAST {
-        return 1;
-    }
-    if op == OP_CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS {
-        return 1;
-    }
-    if op == OP_CALL_METHOD_DESCRIPTOR_NOARGS {
-        return 1;
-    }
-    if op == OP_CALL_METHOD_DESCRIPTOR_O {
-        return 1;
-    }
-    if op == OP_CALL_NON_PY_GENERAL {
-        return 1;
-    }
-    if op == OP_CALL_PY_EXACT_ARGS {
-        return 0;
-    }
-    if op == OP_CALL_PY_GENERAL {
-        return 0;
-    }
-    if op == OP_CALL_STR_1 {
-        return 1;
-    }
-    if op == OP_CALL_TUPLE_1 {
-        return 1;
-    }
-    if op == OP_CALL_TYPE_1 {
-        return 1;
-    }
-    if op == OP_CHECK_EG_MATCH {
+    if op in _PUSHED_2_SET {
         return 2;
     }
-    if op == OP_CHECK_EXC_MATCH {
-        return 2;
-    }
-    if op == OP_CLEANUP_THROW {
-        return 2;
-    }
-    if op == OP_COMPARE_OP {
-        return 1;
-    }
-    if op == OP_COMPARE_OP_FLOAT {
-        return 1;
-    }
-    if op == OP_COMPARE_OP_INT {
-        return 1;
-    }
-    if op == OP_COMPARE_OP_STR {
-        return 1;
-    }
-    if op == OP_CONTAINS_OP {
-        return 1;
-    }
-    if op == OP_CONTAINS_OP_DICT {
-        return 1;
-    }
-    if op == OP_CONTAINS_OP_SET {
-        return 1;
-    }
-    if op == OP_CONVERT_VALUE {
-        return 1;
-    }
-    if op == OP_COPY {
+
+                                                                                                                                                                                                                                                                            if op == OP_COPY {
         return 2 + (oparg - 1);
     }
-    if op == OP_COPY_FREE_VARS {
-        return 0;
-    }
-    if op == OP_DELETE_ATTR {
-        return 0;
-    }
-    if op == OP_DELETE_DEREF {
-        return 0;
-    }
-    if op == OP_DELETE_FAST {
-        return 0;
-    }
-    if op == OP_DELETE_GLOBAL {
-        return 0;
-    }
-    if op == OP_DELETE_NAME {
-        return 0;
-    }
-    if op == OP_DELETE_SUBSCR {
-        return 0;
-    }
-    if op == OP_DICT_MERGE {
+                                if op == OP_DICT_MERGE {
         return 4 + (oparg - 1);
     }
     if op == OP_DICT_UPDATE {
         return 1 + (oparg - 1);
     }
-    if op == OP_END_ASYNC_FOR {
-        return 0;
-    }
-    if op == OP_END_FOR {
-        return 0;
-    }
-    if op == OP_END_SEND {
-        return 1;
-    }
-    if op == OP_ENTER_EXECUTOR {
-        return 0;
-    }
-    if op == OP_EXIT_INIT_CHECK {
-        return 0;
-    }
-    if op == OP_EXTENDED_ARG {
-        return 0;
-    }
-    if op == OP_FORMAT_SIMPLE {
-        return 1;
-    }
-    if op == OP_FORMAT_WITH_SPEC {
-        return 1;
-    }
-    if op == OP_FOR_ITER {
-        return 2;
-    }
-    if op == OP_FOR_ITER_GEN {
-        return 1;
-    }
-    if op == OP_FOR_ITER_LIST {
-        return 2;
-    }
-    if op == OP_FOR_ITER_RANGE {
-        return 2;
-    }
-    if op == OP_FOR_ITER_TUPLE {
-        return 2;
-    }
-    if op == OP_GET_AITER {
-        return 1;
-    }
-    if op == OP_GET_ANEXT {
-        return 2;
-    }
-    if op == OP_GET_AWAITABLE {
-        return 1;
-    }
-    if op == OP_GET_ITER {
-        return 1;
-    }
-    if op == OP_GET_LEN {
-        return 2;
-    }
-    if op == OP_GET_YIELD_FROM_ITER {
-        return 1;
-    }
-    if op == OP_IMPORT_FROM {
-        return 2;
-    }
-    if op == OP_IMPORT_NAME {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_CALL {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_CALL_FUNCTION_EX {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_CALL_KW {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_END_ASYNC_FOR {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_END_FOR {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_END_SEND {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_FOR_ITER {
-        return 2;
-    }
-    if op == OP_INSTRUMENTED_INSTRUCTION {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_JUMP_BACKWARD {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_JUMP_FORWARD {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_LINE {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_LOAD_SUPER_ATTR {
+                                                                                                                                    if op == OP_INSTRUMENTED_LOAD_SUPER_ATTR {
         return 1 + (oparg & 1);
     }
-    if op == OP_INSTRUMENTED_NOT_TAKEN {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_POP_ITER {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_FALSE {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_NONE {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_NOT_NONE {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_POP_JUMP_IF_TRUE {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_RESUME {
-        return 0;
-    }
-    if op == OP_INSTRUMENTED_RETURN_VALUE {
-        return 1;
-    }
-    if op == OP_INSTRUMENTED_YIELD_VALUE {
-        return 1;
-    }
-    if op == OP_INTERPRETER_EXIT {
-        return 0;
-    }
-    if op == OP_IS_OP {
-        return 1;
-    }
-    if op == OP_JUMP {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD_JIT {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD_NO_INTERRUPT {
-        return 0;
-    }
-    if op == OP_JUMP_BACKWARD_NO_JIT {
-        return 0;
-    }
-    if op == OP_JUMP_FORWARD {
-        return 0;
-    }
-    if op == OP_JUMP_IF_FALSE {
-        return 1;
-    }
-    if op == OP_JUMP_IF_TRUE {
-        return 1;
-    }
-    if op == OP_JUMP_NO_INTERRUPT {
-        return 0;
-    }
-    if op == OP_LIST_APPEND {
+                                                                                    if op == OP_LIST_APPEND {
         return 1 + (oparg - 1);
     }
     if op == OP_LIST_EXTEND {
@@ -1516,85 +591,19 @@ def _opcode_num_pushed(op: int, oparg: int) -> int {
     if op == OP_LOAD_ATTR_CLASS_WITH_METACLASS_CHECK {
         return 1 + (oparg & 1);
     }
-    if op == OP_LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_INSTANCE_VALUE {
+        if op == OP_LOAD_ATTR_INSTANCE_VALUE {
         return 1 + (oparg & 1);
     }
-    if op == OP_LOAD_ATTR_METHOD_LAZY_DICT {
-        return 2;
-    }
-    if op == OP_LOAD_ATTR_METHOD_NO_DICT {
-        return 2;
-    }
-    if op == OP_LOAD_ATTR_METHOD_WITH_VALUES {
-        return 2;
-    }
-    if op == OP_LOAD_ATTR_MODULE {
+                if op == OP_LOAD_ATTR_MODULE {
         return 1 + (oparg & 1);
     }
-    if op == OP_LOAD_ATTR_NONDESCRIPTOR_NO_DICT {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES {
-        return 1;
-    }
-    if op == OP_LOAD_ATTR_PROPERTY {
-        return 0;
-    }
-    if op == OP_LOAD_ATTR_SLOT {
+                if op == OP_LOAD_ATTR_SLOT {
         return 1 + (oparg & 1);
     }
     if op == OP_LOAD_ATTR_WITH_HINT {
         return 1 + (oparg & 1);
     }
-    if op == OP_LOAD_BUILD_CLASS {
-        return 1;
-    }
-    if op == OP_LOAD_CLOSURE {
-        return 1;
-    }
-    if op == OP_LOAD_COMMON_CONSTANT {
-        return 1;
-    }
-    if op == OP_LOAD_CONST {
-        return 1;
-    }
-    if op == OP_LOAD_CONST_IMMORTAL {
-        return 1;
-    }
-    if op == OP_LOAD_CONST_MORTAL {
-        return 1;
-    }
-    if op == OP_LOAD_DEREF {
-        return 1;
-    }
-    if op == OP_LOAD_FAST {
-        return 1;
-    }
-    if op == OP_LOAD_FAST_AND_CLEAR {
-        return 1;
-    }
-    if op == OP_LOAD_FAST_BORROW {
-        return 1;
-    }
-    if op == OP_LOAD_FAST_BORROW_LOAD_FAST_BORROW {
-        return 2;
-    }
-    if op == OP_LOAD_FAST_CHECK {
-        return 1;
-    }
-    if op == OP_LOAD_FAST_LOAD_FAST {
-        return 2;
-    }
-    if op == OP_LOAD_FROM_DICT_OR_DEREF {
-        return 1;
-    }
-    if op == OP_LOAD_FROM_DICT_OR_GLOBALS {
-        return 1;
-    }
-    if op == OP_LOAD_GLOBAL {
+                                                                if op == OP_LOAD_GLOBAL {
         return 1 + (oparg & 1);
     }
     if op == OP_LOAD_GLOBAL_BUILTIN {
@@ -1603,211 +612,28 @@ def _opcode_num_pushed(op: int, oparg: int) -> int {
     if op == OP_LOAD_GLOBAL_MODULE {
         return 1 + (oparg & 1);
     }
-    if op == OP_LOAD_LOCALS {
-        return 1;
-    }
-    if op == OP_LOAD_NAME {
-        return 1;
-    }
-    if op == OP_LOAD_SMALL_INT {
-        return 1;
-    }
-    if op == OP_LOAD_SPECIAL {
-        return 2;
-    }
-    if op == OP_LOAD_SUPER_ATTR {
+                    if op == OP_LOAD_SUPER_ATTR {
         return 1 + (oparg & 1);
     }
-    if op == OP_LOAD_SUPER_ATTR_ATTR {
-        return 1;
-    }
-    if op == OP_LOAD_SUPER_ATTR_METHOD {
-        return 2;
-    }
-    if op == OP_MAKE_CELL {
-        return 0;
-    }
-    if op == OP_MAKE_FUNCTION {
-        return 1;
-    }
-    if op == OP_MAP_ADD {
+                    if op == OP_MAP_ADD {
         return 1 + (oparg - 1);
     }
-    if op == OP_MATCH_CLASS {
-        return 1;
-    }
-    if op == OP_MATCH_KEYS {
+        if op == OP_MATCH_KEYS {
         return 3;
     }
-    if op == OP_MATCH_MAPPING {
-        return 2;
-    }
-    if op == OP_MATCH_SEQUENCE {
-        return 2;
-    }
-    if op == OP_NOP {
-        return 0;
-    }
-    if op == OP_NOT_TAKEN {
-        return 0;
-    }
-    if op == OP_POP_BLOCK {
-        return 0;
-    }
-    if op == OP_POP_EXCEPT {
-        return 0;
-    }
-    if op == OP_POP_ITER {
-        return 0;
-    }
-    if op == OP_POP_JUMP_IF_FALSE {
-        return 0;
-    }
-    if op == OP_POP_JUMP_IF_NONE {
-        return 0;
-    }
-    if op == OP_POP_JUMP_IF_NOT_NONE {
-        return 0;
-    }
-    if op == OP_POP_JUMP_IF_TRUE {
-        return 0;
-    }
-    if op == OP_POP_TOP {
-        return 0;
-    }
-    if op == OP_PUSH_EXC_INFO {
-        return 2;
-    }
-    if op == OP_PUSH_NULL {
-        return 1;
-    }
-    if op == OP_RAISE_VARARGS {
-        return 0;
-    }
-    if op == OP_RERAISE {
+                                                                if op == OP_RERAISE {
         return oparg;
     }
-    if op == OP_RESERVED {
-        return 0;
-    }
-    if op == OP_RESUME {
-        return 0;
-    }
-    if op == OP_RESUME_CHECK {
-        return 0;
-    }
-    if op == OP_RETURN_GENERATOR {
-        return 1;
-    }
-    if op == OP_RETURN_VALUE {
-        return 1;
-    }
-    if op == OP_SEND {
-        return 2;
-    }
-    if op == OP_SEND_GEN {
-        return 1;
-    }
-    if op == OP_SETUP_ANNOTATIONS {
-        return 0;
-    }
-    if op == OP_SETUP_CLEANUP {
-        return 2;
-    }
-    if op == OP_SETUP_FINALLY {
-        return 1;
-    }
-    if op == OP_SETUP_WITH {
-        return 1;
-    }
-    if op == OP_SET_ADD {
+                                                if op == OP_SET_ADD {
         return 1 + (oparg - 1);
     }
-    if op == OP_SET_FUNCTION_ATTRIBUTE {
-        return 1;
-    }
-    if op == OP_SET_UPDATE {
+        if op == OP_SET_UPDATE {
         return 1 + (oparg - 1);
     }
-    if op == OP_STORE_ATTR {
-        return 0;
-    }
-    if op == OP_STORE_ATTR_INSTANCE_VALUE {
-        return 0;
-    }
-    if op == OP_STORE_ATTR_SLOT {
-        return 0;
-    }
-    if op == OP_STORE_ATTR_WITH_HINT {
-        return 0;
-    }
-    if op == OP_STORE_DEREF {
-        return 0;
-    }
-    if op == OP_STORE_FAST {
-        return 0;
-    }
-    if op == OP_STORE_FAST_LOAD_FAST {
-        return 1;
-    }
-    if op == OP_STORE_FAST_MAYBE_NULL {
-        return 0;
-    }
-    if op == OP_STORE_FAST_STORE_FAST {
-        return 0;
-    }
-    if op == OP_STORE_GLOBAL {
-        return 0;
-    }
-    if op == OP_STORE_NAME {
-        return 0;
-    }
-    if op == OP_STORE_SLICE {
-        return 0;
-    }
-    if op == OP_STORE_SUBSCR {
-        return 0;
-    }
-    if op == OP_STORE_SUBSCR_DICT {
-        return 0;
-    }
-    if op == OP_STORE_SUBSCR_LIST_INT {
-        return 0;
-    }
-    if op == OP_SWAP {
+                                                                if op == OP_SWAP {
         return 2 + (oparg - 2);
     }
-    if op == OP_TO_BOOL {
-        return 1;
-    }
-    if op == OP_TO_BOOL_ALWAYS_TRUE {
-        return 1;
-    }
-    if op == OP_TO_BOOL_BOOL {
-        return 1;
-    }
-    if op == OP_TO_BOOL_INT {
-        return 1;
-    }
-    if op == OP_TO_BOOL_LIST {
-        return 1;
-    }
-    if op == OP_TO_BOOL_NONE {
-        return 1;
-    }
-    if op == OP_TO_BOOL_STR {
-        return 1;
-    }
-    if op == OP_UNARY_INVERT {
-        return 1;
-    }
-    if op == OP_UNARY_NEGATIVE {
-        return 1;
-    }
-    if op == OP_UNARY_NOT {
-        return 1;
-    }
-    if op == OP_UNPACK_EX {
+                                            if op == OP_UNPACK_EX {
         return 1 + (oparg & 0xFF) + (oparg >> 8);
     }
     if op == OP_UNPACK_SEQUENCE {
@@ -1819,16 +645,10 @@ def _opcode_num_pushed(op: int, oparg: int) -> int {
     if op == OP_UNPACK_SEQUENCE_TUPLE {
         return oparg;
     }
-    if op == OP_UNPACK_SEQUENCE_TWO_TUPLE {
-        return 2;
-    }
-    if op == OP_WITH_EXCEPT_START {
+        if op == OP_WITH_EXCEPT_START {
         return 6;
     }
-    if op == OP_YIELD_VALUE {
-        return 1;
-    }
-    return -1;
+        return -1;
 }
 
 # Net stack effect (flowgraph.c get_stack_effects). jump: 0=fallthrough,
