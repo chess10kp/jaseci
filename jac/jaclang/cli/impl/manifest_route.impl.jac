@@ -1,5 +1,5 @@
 impl resolve_cli_version -> str {
-    import from jaclang.cli.version_info { resolve_cli_version as _resolve }
+    import from jaclang.cli.cli_boot { resolve_cli_version as _resolve }
 
     return _resolve(os.environ.get('JAC_DEV_SOURCE'));
 }
@@ -46,7 +46,7 @@ def _print_error(message: str) {
 }
 
 def _render_version_line -> str {
-    import from jaclang.cli.version_info { render_version_line }
+    import from jaclang.cli.cli_boot { render_version_line }
 
     return render_version_line(resolve_cli_version());
 }
