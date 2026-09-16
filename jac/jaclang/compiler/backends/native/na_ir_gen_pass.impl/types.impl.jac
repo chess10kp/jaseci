@@ -3622,7 +3622,7 @@ impl NaIRGenPass._emit_comparison(
                 return tuple_equal;
             }
             if op in (Tok.LT, Tok.GT, Tok.LTE, Tok.GTE) and n > 0 {
-                _tup_args: list = self._agg_key_args(key_ret, "tuple") or [];
+                _tup_args: list[TypeBase] = self._agg_key_args(key_ret, "tuple") or [];
                 func = self.builder.basic_block.function;
                 tcmp_true_bb = func.append_basic_block(name="tcmp.lex.true");
                 tcmp_false_bb = func.append_basic_block(name="tcmp.lex.false");
@@ -3873,7 +3873,7 @@ impl NaIRGenPass._emit_comparison(
                     lcmp_leb = self.builder.call(
                         lcmp_h["get"], [right, lcmp_li], name="lcmp.lex.eb"
                     );
-                    _largs: list = self._agg_key_args(key_ret, "list") or [];
+                    _largs: list[TypeBase] = self._agg_key_args(key_ret, "list") or [];
                     _lelem_unsigned = (
                         self._key_elem_unsigned(_largs[0]) if _largs else False
                     );
@@ -4371,7 +4371,7 @@ impl NaIRGenPass._sort_key_unsigned(nd: (uni.UniNode | None)) -> bool {
 
 impl NaIRGenPass._agg_key_args(
     key_ret: (TypeBase | None), agg_name: str
-) -> (list | None) {
+) -> (list[TypeBase] | None) {
     import from jaclang.compiler.types.types { ClassType }
     import from jaclang.compiler.types.type_utils { primitive_type_name_of }
     if not isinstance(key_ret, ClassType) {
