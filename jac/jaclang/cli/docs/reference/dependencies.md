@@ -2,7 +2,7 @@
 
 Jac projects depend on other Jac projects two ways: through PyPI (Python
 packages, covered by [Configuration](config/index.md#dependencies)) and
-through **pure-Jac dependencies** — Jac source fetched from git or linked
+through **pure-Jac dependencies** -- Jac source fetched from git or linked
 from a local path, resolved, pinned, and imported without pip. This page
 covers the pure-Jac surface: `[dependencies.jac]`, the content-addressed
 store, `jac.lock`, and the `jac install` / `jac update` / `jac why` /
@@ -27,17 +27,17 @@ fixtures = { path = "../fixtures" }
 
 Accepted ref fields, in decreasing precedence for locking:
 
-- `commit` — a 40-hex git SHA; replayed exactly.
-- `branch`, `tag`, or `ref` — a floating ref; resolved at install time
+- `commit` -- a 40-hex git SHA; replayed exactly.
+- `branch`, `tag`, or `ref` -- a floating ref; resolved at install time
   and pinned by SHA in `jac.lock`.
-- neither — tracks the remote's default branch.
+- neither -- tracks the remote's default branch.
 
 An optional `version` field constrains the dependency's `[project]
 version` in its `jac.toml`:
 
-- `^1.2.3` — caret: `>=1.2.3`, `<2.0.0`; `^0.2.3` stays within `0.2.x`;
+- `^1.2.3` -- caret: `>=1.2.3`, `<2.0.0`; `^0.2.3` stays within `0.2.x`;
   `^0.0.3` allows only `0.0.3`.
-- `1.2.3` or `=1.2.3` — exact.
+- `1.2.3` or `=1.2.3` -- exact.
 
 Any other constraint form (`>=`, `~`, `*`, ranges) is an error, so an
 unrecognized spec can never silently match.
@@ -55,18 +55,18 @@ jac install jac:./path/to/pkg        # add a path dependency
 
 `jac install jac:...` parses the spec, records it in
 `[dependencies.jac]`, resolves the full closure, materializes packages,
-and rewrites `jac.lock` — committing manifest, deps map, lock, and
+and rewrites `jac.lock` -- committing manifest, deps map, lock, and
 `.jac/packages` together. A failed install leaves `jac.toml` untouched.
 
 Useful flags:
 
-- `--frozen` — replay `jac.lock` exactly; fail if a row is missing or
+- `--frozen` -- replay `jac.lock` exactly; fail if a row is missing or
   disagrees with the manifest (source, ref, or pinned commit). For CI
   and reproducible builds.
-- `--dev` — install dev-only pure-Jac dependencies (they are skipped by
+- `--dev` -- install dev-only pure-Jac dependencies (they are skipped by
   plain installs).
-- `--dry-run` — print what would be installed without materializing.
-- `--no-save` — install without recording the spec in `jac.toml` (and
+- `--dry-run` -- print what would be installed without materializing.
+- `--no-save` -- install without recording the spec in `jac.toml` (and
   without writing a lock).
 
 Git URLs accept the common shapes: `github.com/user/repo`,
@@ -80,7 +80,7 @@ repository.
 
 Resolution is flat: every package in the closure resolves to one
 version. Two requirers naming the same package with different refs,
-commits, or sources is a hard conflict — unless an `[override]` entry
+commits, or sources is a hard conflict -- unless an `[override]` entry
 replaces the dependency for the whole closure:
 
 ```toml
@@ -90,8 +90,8 @@ utils = { path = "../utils-patch" }
 
 Git content is fetched into a shared, content-addressed store under the
 Jac global directory (`$JAC_GLOBAL_DIR`, defaulting to `~/.jac`), keyed
-by a tree hash of the package files. Identical content — even from
-different origins — is stored once;
+by a tree hash of the package files. Identical content -- even from
+different origins -- is stored once;
 a hit is verified against the recorded hash before it is served, and a
 corrupted or tampered entry is repaired by refetch. From the store,
 packages are materialized into the project's `.jac/packages/<name>`
@@ -155,7 +155,7 @@ jac update utils      # advance one dependency and its transitive closure
 each change as `old -> new` SHAs. Everything outside the update scope
 keeps its locked commit (minimal churn): a bare update advances the main
 closure, `-d` advances the dev closure, and a targeted update advances
-the named dependency plus everything reachable from it — including
+the named dependency plus everything reachable from it -- including
 transitives that only became reachable through the update.
 
 ## Why is this installed?
@@ -173,7 +173,7 @@ Why urllib3 (python) is installed
   1 chain(s)
 ```
 
-`jac why` reads the lockfile only — run `jac install` first if state is
+`jac why` reads the lockfile only -- run `jac install` first if state is
 missing.
 
 ## Removing
@@ -188,6 +188,6 @@ package, and rewrites `jac.lock` and the deps map.
 
 ## Related
 
-- [Configuration Reference](config/index.md) — every `jac.toml` section.
-- [Publishing Packages](publishing.md) — shipping your package to PyPI.
-- [CLI Commands](cli/index.md) — the full command surface.
+- [Configuration Reference](config/index.md) -- every `jac.toml` section.
+- [Publishing Packages](publishing.md) -- shipping your package to PyPI.
+- [CLI Commands](cli/index.md) -- the full command surface.
