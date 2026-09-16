@@ -104,6 +104,7 @@ that moved past the recorded commit replays the recorded commit with a
 warning.
 
 ## jac.lock
+
 `jac install` (any form that resolves) writes `jac.lock` next to
 `jac.toml`. Commit it. It records the resolved state so installs are
 reproducible and `jac why` can answer questions offline:
