@@ -4,8 +4,10 @@ import from pathlib { Path }
 import from jaclang.cli.console { console }
 import from jaclang.project.config { JacConfig, serialize_toml }
 import from jaclang.project.providers { manifest_plugin_deps }
+import from jaclang.project.versioning { norm_pkg_name }
 
-glob LOCK_FILE_NAME: str = "jac.lock";
+glob LOCK_FILE_NAME: str = "jac.lock",
+     LOCK_VERSION: int = 1;
 
 
 def lock_path(project_root: Path) -> Path {
@@ -42,6 +44,7 @@ def jac_lock_rows(lock_data: dict[str, any]) -> dict[str, any] {
 
 def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
     doc: dict[str, any] = {};
+    doc["version"] = LOCK_VERSION;
     jac_rows = jac_lock_rows(lock_data);
     jac_doc: dict[str, any] = {};
     for name in sorted(jac_rows.keys()) {
@@ -173,10 +176,6 @@ def harvest_python_lock(
     import importlib.metadata;
     import re;
 
-    def norm(name: str) -> str {
-        return re.sub(r"[-_.]+", "-", name).lower();
-    }
-
     by_norm: dict[str, any] = {};
     try {
         for dist in importlib.metadata.distributions(path=[str(site)]) {
@@ -185,13 +184,13 @@ def harvest_python_lock(
             if not name {
                 continue;
             }
-            by_norm[norm(str(name))] = dist;
+            by_norm[norm_pkg_name(str(name))] = dist;
         }
     } except Exception {
         return ({}, {});
     }
     roots = [
-        norm(str(n))
+        norm_pkg_name(str(n))
         for n in list(config.dependencies.keys()) + list(config.dev_dependencies.keys())
     ];
     pins: dict[str, any] = {};
@@ -226,7 +225,7 @@ def harvest_python_lock(
             if "extra" in marker {
                 continue;
             }
-            req_name = norm(
+            req_name = norm_pkg_name(
                 re.split(r"[<>=!~\[\]]", raw.split(";", 1)[0], 1)[0].strip()
             );
             if not req_name or req_name not in by_norm {
@@ -275,26 +274,10 @@ def harvest_npm_lock(config: JacConfig) -> dict[str, any] | None {
 }
 
 
-def _walk_chains(edges: dict[str, any], name: str, jac_mode: bool) -> list[list[str]] {
-    found: list[list[str]] = [];
-
-    def requirers_of(cur: str) -> list[str] {
-        if jac_mode {
-            row = edges.get(cur);
-            if isinstance(row, dict) {
-                reqs = row.get("requested_by", []);
-                if isinstance(reqs, list) {
-                    return [
-                        str(r)
-                        for r in reqs
-                        if isinstance(r, str)
-                    ];
-                }
-                return [];
-            }
-            return [];
-        }
-        reqs = edges.get(cur, []);
+def _jac_requirers(rows: dict[str, any], cur: str) -> list[str] {
+    row = rows.get(cur);
+    if isinstance(row, dict) {
+        reqs = row.get("requested_by", []);
         if isinstance(reqs, list) {
             return [
                 str(r)
@@ -302,14 +285,34 @@ def _walk_chains(edges: dict[str, any], name: str, jac_mode: bool) -> list[list[
                 if isinstance(r, str)
             ];
         }
-        return [];
     }
+    return [];
+}
+
+
+def _graph_requirers(mapping: dict[str, any], cur: str) -> list[str] {
+    reqs = mapping.get(cur, []);
+    if isinstance(reqs, list) {
+        return [
+            str(r)
+            for r in reqs
+            if isinstance(r, str)
+        ];
+    }
+    return [];
+}
+
+
+def _walk_chains(
+    edges: dict[str, any], name: str, requirers_of: any
+) -> list[list[str]] {
+    found: list[list[str]] = [];
 
     def walk(cur: str, trail: list[str]) -> None {
         if cur in trail {
             return;
         }
-        reqs = requirers_of(cur);
+        reqs = requirers_of(edges, cur);
         if not reqs {
             found.append(trail + [cur]);
             return;
@@ -342,10 +345,10 @@ def why_chains(lock_data: dict[str, any], name: str) -> list[tuple[str, list[str
     }
 
     chains: list[tuple[str, list[str]]] = [];
-    for chain in _walk_chains(jac_rows, name, True) {
+    for chain in _walk_chains(jac_rows, name, _jac_requirers) {
         chains.append(("jac", chain));
     }
-    for chain in _walk_chains(py_graph, name, False) {
+    for chain in _walk_chains(py_graph, name, _graph_requirers) {
         chains.append(("python", chain));
     }
 

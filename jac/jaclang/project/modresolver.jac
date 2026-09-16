@@ -150,14 +150,11 @@ def get_jac_search_paths(base_path: (str | None) = None) -> list[str] {
     }
 
     try {
-        import importlib;
-        dep_mod = importlib.import_module("jaclang.project.jac_provider");
-        for dep_root in dep_mod.read_deps_roots(
-            Path(str(project_root or os.getcwd()))
-        ) {
+        import from jaclang.project.jac_provider { read_deps_roots }
+        for dep_root in read_deps_roots(Path(str(project_root or os.getcwd()))) {
             paths.append(dep_root);
         }
-    } except (ImportError, AttributeError, OSError) {}
+    } except ImportError {}
     paths.append(os.getcwd());
     if ('JACPATH' in os.environ) {
         paths.extend(

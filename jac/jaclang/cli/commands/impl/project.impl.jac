@@ -826,7 +826,10 @@ impl install(
         import from jaclang.project.config { get_config }
         import from jaclang.project.providers { InstallContext }
         import from jaclang.project.jac_store { JacDepError }
-        import from jaclang.project.jac_provider { JacGitProvider, parse_jac_spec }
+        import from jaclang.project.jac_provider {
+            get_jac_dep_provider,
+            parse_jac_spec
+        }
         config = get_config();
         if config is None {
             console.error(
@@ -835,58 +838,43 @@ impl install(
             );
             return 1;
         }
-        names: list[str] = [];
+        spec_entries: dict[str, dict[str, any]] = {};
         for spec in jac_specs {
             try {
-                (name, _) = parse_jac_spec(spec);
+                (name, ent) = parse_jac_spec(spec);
             } except JacDepError as e {
                 console.error(str(e));
                 return 1;
             }
-            if name in names {
+            if name in spec_entries {
                 console.error(f"Duplicate jac: spec for '{name}'.");
                 return 1;
             }
-            names.append(name);
+            spec_entries[name] = ent;
         }
-        provider = JacGitProvider();
+        provider = get_jac_dep_provider();
         ctx = InstallContext(
             verbose=verbose,
             install_flags=["--dry-run"] if dry_run else [],
             frozen=frozen
         );
         if dry_run {
-            original = config.plugin_dependencies.get("jac");
-            had_section = isinstance(original, dict);
-            backup: dict[str, any] = dict(original) if had_section else {};
             try {
-                section = config.plugin_dependencies.setdefault("jac", {});
-                for spec in jac_specs {
-                    (name, ent) = parse_jac_spec(spec);
-                    section[name] = ent;
-                }
-                try {
-                    resolved = provider.resolve_closure(config, ctx);
-                } except JacDepError as e {
-                    console.error(str(e));
-                    return 1;
-                }
-                console.print(
-                    f"\nWould install {len(resolved)} pure-jac package(s):",
-                    style="bold"
+                resolved = provider.resolve_closure(
+                    config, ctx, extra_specs=spec_entries
                 );
-                for pkg in resolved.values() {
-                    via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
-                    console.print(f"  {pkg.name} ({via})");
-                }
-                return 0;
-            } finally {
-                if had_section {
-                    config.plugin_dependencies["jac"] = backup;
-                } else {
-                    config.plugin_dependencies.pop("jac", None);
-                }
+            } except JacDepError as e {
+                console.error(str(e));
+                return 1;
             }
+            console.print(
+                f"\nWould install {len(resolved)} pure-jac package(s):", style="bold"
+            );
+            for pkg in resolved.values() {
+                via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
+                console.print(f"  {pkg.name} ({via})");
+            }
+            return 0;
         }
         if no_save {
             console.print(
@@ -1209,16 +1197,12 @@ impl install(
     py_pins = lock.get("python", {});
     py_pins = py_pins if isinstance(py_pins, dict) else {};
     if python_deps {
-        import re;
+        import from jaclang.project.versioning { norm_pkg_name }
 
-        def py_norm(n: str) -> str {
-            return re.sub(r"[-_.]+", "-", str(n)).lower();
-        }
-
-        pin_names = {py_norm(p) for p in py_pins.keys()};
-        manifest_names = {py_norm(d.name) for d in python_deps};
+        pin_names = {norm_pkg_name(p) for p in py_pins.keys()};
+        manifest_names = {norm_pkg_name(d.name) for d in python_deps};
         git_dep_names = {
-            py_norm(d.name)
+            norm_pkg_name(d.name)
             for d in python_deps
             if d.source == "git"
         };
@@ -1226,13 +1210,14 @@ impl install(
         pin_specs = [
             f"{name}{py_pins[name]}"
             for name in sorted(py_pins.keys())
-            if py_norm(name) in manifest_names and py_norm(name) not in git_dep_names
+            if norm_pkg_name(name) in manifest_names
+                and norm_pkg_name(name) not in git_dep_names
         ];
         fresh_specs = python.specs_for(
             [
                 d
                 for d in python_deps
-                if py_norm(d.name) not in pin_names or d.source == "git"
+                if norm_pkg_name(d.name) not in pin_names or d.source == "git"
             ]
         );
         specs = pin_specs + fresh_specs;
@@ -1341,10 +1326,10 @@ impl remove(
         console.error("No packages specified.");
         return 1;
     }
-    import from jaclang.project.jac_provider { JacGitProvider, manifest_jac_deps }
+    import from jaclang.project.jac_provider { get_jac_dep_provider, manifest_jac_deps }
     (jac_deps, jac_dev) = manifest_jac_deps(config);
     python = get_python_provider();
-    jac_provider = JacGitProvider();
+    jac_provider = get_jac_dep_provider();
     ctx = InstallContext();
     for name in packages {
         name = str(name);
@@ -1411,12 +1396,28 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
     }
     import from jaclang.project.jac_provider {
         JacDepError,
-        JacGitProvider,
+        get_jac_dep_provider,
         manifest_jac_deps,
         read_deps_map
     }
     (jac_deps, jac_dev) = manifest_jac_deps(config);
-    jac_names = set(list(jac_deps.keys()) + list(jac_dev.keys()));
+
+    section_deps = jac_dev if dev else jac_deps;
+    other_deps = jac_deps if dev else jac_dev;
+    misplaced = [
+        str(p)
+        for p in (packages or [])
+        if str(p) in other_deps
+    ];
+    if misplaced {
+        console.error(
+            f"'{misplaced[0]}' is not a "
+            f"{'dev' if dev else 'main'} dependency "
+            f"({'drop' if dev else 'pass'} -d to update it)."
+        );
+        return 1;
+    }
+    jac_names = set(section_deps.keys());
     jac_targets = [
         str(p)
         for p in (packages or [])
@@ -1429,8 +1430,11 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
     ];
     python = get_python_provider();
     ctx = InstallContext(verbose=verbose);
-    if jac_targets or ((not packages) and (jac_deps or jac_dev)) {
-        jac_provider = JacGitProvider();
+    if jac_targets or ((not packages) and section_deps) {
+        jac_provider = get_jac_dep_provider();
+        if not jac_targets {
+            jac_targets = sorted(section_deps.keys());
+        }
         old_shas: dict[str, str] = {};
         old_map = read_deps_map(config);
         old_shas = {
@@ -1485,14 +1489,14 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
                     break;
                 }
             }
-        } except Exception as e {
+        } except (JacDepError, OSError) as e {
             console.error(str(e));
             return 1;
         }
 
         try {
             jac_provider.materialize_closure(config, resolved, ctx);
-        } except Exception as e {
+        } except (JacDepError, OSError) as e {
             console.error(str(e));
             jac_provider._rematerialize(config);
             return 1;

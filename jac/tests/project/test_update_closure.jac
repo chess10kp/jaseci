@@ -8,96 +8,21 @@ unrelated packages stay pinned (minimal churn).
 
 import os;
 import shutil;
-import subprocess;
 import tempfile;
 import from pathlib { Path }
 import from jaclang.cli.commands { project }
 import from jaclang.project.config { set_config }
-import from jaclang.project.jac_provider { JacGitProvider }
+import from tests.deps_fixtures {
+    git_commit_all,
+    git_head,
+    isolate_store,
+    make_git_repo,
+    restore_store
+}
+
+import from jaclang.project.jac_provider { JacDepProvider }
 import from jaclang.project.providers { InstallContext }
 import from jaclang.project.lockfile { jac_lock_rows, read_lock }
-
-
-def make_git_repo_on_main(path: Path, jac_toml: str, files: dict[str, str]) -> str {
-    path.mkdir(parents=True, exist_ok=True);
-    (path / "jac.toml").write_text(jac_toml, encoding="utf-8");
-    for (name, content) in files.items() {
-        (path / name).write_text(content, encoding="utf-8");
-    }
-    env = dict(os.environ);
-    subprocess.run(["git", "init", "-q", "-b", "main", str(path)], check=True, env=env);
-    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, env=env);
-    subprocess.run(
-        [
-            "git",
-            "-C",
-            str(path),
-            "-c",
-            "user.name=t",
-            "-c",
-            "user.email=t@t",
-            "commit",
-            "-q",
-            "-m",
-            "init"
-        ],
-        check=True,
-        env=env
-    );
-    return subprocess.run(
-        ["git", "-C", str(path), "rev-parse", "HEAD"],
-        check=True,
-        capture_output=True,
-        text=True
-    ).stdout.strip();
-}
-
-def git_commit_all(path: Path, marker: str, message: str = "next") -> str {
-    (path / "changes.log").write_text(marker + "\n", encoding="utf-8");
-    env = dict(os.environ);
-    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, env=env);
-    subprocess.run(
-        [
-            "git",
-            "-C",
-            str(path),
-            "-c",
-            "user.name=t",
-            "-c",
-            "user.email=t@t",
-            "commit",
-            "-q",
-            "-m",
-            message
-        ],
-        check=True,
-        env=env
-    );
-    return subprocess.run(
-        ["git", "-C", str(path), "rev-parse", "HEAD"],
-        check=True,
-        capture_output=True,
-        text=True
-    ).stdout.strip();
-}
-
-
-def isolate_store -> tuple[str, str | None] {
-    tmp = tempfile.mkdtemp(prefix="jac_update_store_");
-    old = os.environ.get("JAC_GLOBAL_DIR");
-    os.environ["JAC_GLOBAL_DIR"] = tmp;
-    return (tmp, old);
-}
-
-
-def restore_store(tmp: str, old: str | None) {
-    if old is None {
-        os.environ.pop("JAC_GLOBAL_DIR", None);
-    } else {
-        os.environ["JAC_GLOBAL_DIR"] = old;
-    }
-    shutil.rmtree(tmp, ignore_errors=True);
-}
 
 
 test "targeted update advances target-reachable transitives and freezes the rest" {
@@ -108,26 +33,32 @@ test "targeted update advances target-reachable transitives and freezes the rest
 
         # T: branch-tracking transitive of R.
         origin_t = outer / "t_repo";
-        t1 = make_git_repo_on_main(
+        make_git_repo(
             origin_t,
             '[project]\nname = "t"\nversion = "1.0.0"\n',
-            {"t.jac": "def t() -> int { return 1; }\n"}
+            {"t.jac": "def t() -> int { return 1; }\n"},
+            branch="main"
         );
+        t1 = git_head(origin_t);
         # R: the update target; requires T by branch.
         origin_r = outer / "r_repo";
-        r1 = make_git_repo_on_main(
+        make_git_repo(
             origin_r,
             '[project]\nname = "r"\nversion = "1.0.0"\n\n'
             f'[dependencies.jac]\nt = {{ git = "{origin_t}", branch = "main" }}\n',
-            {"r.jac": "def r() -> int { return 2; }\n"}
+            {"r.jac": "def r() -> int { return 2; }\n"},
+            branch="main"
         );
+        r1 = git_head(origin_r);
         # U: unrelated root dep that must stay frozen.
         origin_u = outer / "u_repo";
-        u1 = make_git_repo_on_main(
+        make_git_repo(
             origin_u,
             '[project]\nname = "u"\nversion = "1.0.0"\n',
-            {"u.jac": "def u() -> int { return 3; }\n"}
+            {"u.jac": "def u() -> int { return 3; }\n"},
+            branch="main"
         );
+        u1 = git_head(origin_u);
 
         project_dir = outer / "proj";
         project_dir.mkdir();
@@ -144,7 +75,7 @@ test "targeted update advances target-reachable transitives and freezes the rest
         assert config is not None;
 
         # Seed the lock with everything at commit1.
-        provider = JacGitProvider();
+        provider = JacDepProvider();
         assert provider.install_all(config, [], InstallContext());
         rows = jac_lock_rows(read_lock(project_dir));
         assert rows["t"]["sha"] == t1;
@@ -155,8 +86,10 @@ test "targeted update advances target-reachable transitives and freezes the rest
         assert rows["u"]["requested_by"] == ["root"];
 
         # Advance both the target (R) and its transitive (T) on main.
-        t2 = git_commit_all(origin_t, "t2", "advance t");
-        r2 = git_commit_all(origin_r, "r2", "advance r");
+        (origin_t / "changes.log").write_text("t2\n", encoding="utf-8");
+        t2 = git_commit_all(origin_t, "advance t");
+        (origin_r / "changes.log").write_text("r2\n", encoding="utf-8");
+        r2 = git_commit_all(origin_r, "advance r");
 
         result = project.update(packages=["r"]);
         assert result == 0 , f"targeted update failed: {result}";
@@ -187,26 +120,32 @@ test "targeted update advances transitives newly reachable from the fresh manife
 
         # T: update target; its v1 manifest has no dependencies at all.
         origin_t = outer / "t_repo";
-        t1 = make_git_repo_on_main(
+        make_git_repo(
             origin_t,
             '[project]\nname = "t"\nversion = "1.0.0"\n',
-            {"t.jac": "def t() -> int { return 1; }\n"}
+            {"t.jac": "def t() -> int { return 1; }\n"},
+            branch="main"
         );
+        t1 = git_head(origin_t);
         # D: plain dep, required only by U at seed time.
         origin_d = outer / "d_repo";
-        d1 = make_git_repo_on_main(
+        make_git_repo(
             origin_d,
             '[project]\nname = "d"\nversion = "1.0.0"\n',
-            {"d.jac": "def d() -> int { return 2; }\n"}
+            {"d.jac": "def d() -> int { return 2; }\n"},
+            branch="main"
         );
+        d1 = git_head(origin_d);
         # U: unrelated root dep whose manifest requires D by branch.
         origin_u = outer / "u_repo";
-        u1 = make_git_repo_on_main(
+        make_git_repo(
             origin_u,
             '[project]\nname = "u"\nversion = "1.0.0"\n\n'
             f'[dependencies.jac]\nd = {{ git = "{origin_d}", branch = "main" }}\n',
-            {"u.jac": "def u() -> int { return 3; }\n"}
+            {"u.jac": "def u() -> int { return 3; }\n"},
+            branch="main"
         );
+        u1 = git_head(origin_u);
 
         project_dir = outer / "proj";
         project_dir.mkdir();
@@ -223,22 +162,23 @@ test "targeted update advances transitives newly reachable from the fresh manife
         assert config is not None;
 
         # Seed the lock: T is dep-free, D is reachable only through U.
-        provider = JacGitProvider();
+        provider = JacDepProvider();
         assert provider.install_all(config, [], InstallContext());
         rows = jac_lock_rows(read_lock(project_dir));
         assert rows["t"]["sha"] == t1;
         assert rows["u"]["sha"] == u1;
         assert rows["d"]["sha"] == d1;
         assert rows["d"]["requested_by"] == ["u"];
-
+        (origin_d / "changes.log").write_text("d2\n", encoding="utf-8");
+        d2 = git_commit_all(origin_d, "advance d");
         # Advance D on main, then publish a T manifest that requires D too.
-        d2 = git_commit_all(origin_d, "d2", "advance d");
         (origin_t / "jac.toml").write_text(
             '[project]\nname = "t"\nversion = "1.0.0"\n\n'
             f'[dependencies.jac]\nd = {{ git = "{origin_d}", branch = "main" }}\n',
             encoding="utf-8"
         );
-        t2 = git_commit_all(origin_t, "t2", "t requires d");
+        (origin_t / "changes.log").write_text("t2\n", encoding="utf-8");
+        t2 = git_commit_all(origin_t, "t requires d");
 
         result = project.update(packages=["t"]);
         assert result == 0 , f"targeted update failed: {result}";
@@ -263,19 +203,22 @@ test "failed convergence leaves materialized state and metadata untouched" {
     cwd = os.getcwd();
     try {
         outer = Path(tempfile.mkdtemp(prefix="jac_update_atomic_"));
-
         origin_t = outer / "t_repo";
-        t1 = make_git_repo_on_main(
+        make_git_repo(
             origin_t,
             '[project]\nname = "t"\nversion = "1.0.0"\n',
-            {"t.jac": "def t() -> int { return 1; }\n"}
+            {"t.jac": "def t() -> int { return 1; }\n"},
+            branch="main"
         );
+        t1 = git_head(origin_t);
         origin_u = outer / "u_repo";
-        u1 = make_git_repo_on_main(
+        make_git_repo(
             origin_u,
             '[project]\nname = "u"\nversion = "1.0.0"\n',
-            {"u.jac": "def u() -> int { return 3; }\n"}
+            {"u.jac": "def u() -> int { return 3; }\n"},
+            branch="main"
         );
+        u1 = git_head(origin_u);
 
         project_dir = outer / "proj";
         project_dir.mkdir();
@@ -291,7 +234,7 @@ test "failed convergence leaves materialized state and metadata untouched" {
         config = get_config();
         assert config is not None;
 
-        provider = JacGitProvider();
+        provider = JacDepProvider();
         assert provider.install_all(config, [], InstallContext());
         build = config.get_build_dir();
         rows_before = jac_lock_rows(read_lock(project_dir));
@@ -310,7 +253,8 @@ test "failed convergence leaves materialized state and metadata untouched" {
             f'[dependencies.jac]\nx = {{ git = "{not_a_repo}", branch = "main" }}\n',
             encoding="utf-8"
         );
-        t2 = git_commit_all(origin_t, "t2", "t requires x");
+        (origin_t / "changes.log").write_text("t2\n", encoding="utf-8");
+        t2 = git_commit_all(origin_t, "t requires x");
 
         result = project.update(packages=["t"]);
         assert result != 0 , "update with an unfetchable dep unexpectedly succeeded";
@@ -334,6 +278,79 @@ test "failed convergence leaves materialized state and metadata untouched" {
         assert not (build / "packages" / "x").exists() , (
             "unfetchable dep left materialized state behind"
         );
+    } finally {
+        os.chdir(cwd);
+        set_config(None);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}
+
+
+test "update -d advances the dev closure and freezes main deps" {
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_update_dev_"));
+
+        origin_u = outer / "u_repo";
+        make_git_repo(
+            origin_u,
+            '[project]\nname = "u"\nversion = "1.0.0"\n',
+            {"u.jac": "def u() -> int { return 1; }\n"},
+            branch="main"
+        );
+        u1 = git_head(origin_u);
+        origin_d = outer / "d_repo";
+        make_git_repo(
+            origin_d,
+            '[project]\nname = "d"\nversion = "1.0.0"\n',
+            {"d.jac": "def d() -> int { return 2; }\n"},
+            branch="main"
+        );
+        d1 = git_head(origin_d);
+
+        project_dir = outer / "proj";
+        project_dir.mkdir();
+        (project_dir / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nu = {{ git = "{origin_u}", branch = "main" }}\n\n'
+            f'[dev-dependencies.jac]\nd = {{ git = "{origin_d}", branch = "main" }}\n',
+            encoding="utf-8"
+        );
+        os.chdir(project_dir);
+        set_config(None);
+        import from jaclang.project.config { get_config }
+        config = get_config();
+        assert config is not None;
+
+        provider = JacDepProvider();
+        assert provider.install_all(config, [], InstallContext());
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["u"]["sha"] == u1;
+        assert rows["d"]["sha"] == d1;
+
+        (origin_u / "changes.log").write_text("u2\n", encoding="utf-8");
+        u2 = git_commit_all(origin_u, "advance u");
+        (origin_d / "changes.log").write_text("d2\n", encoding="utf-8");
+        d2 = git_commit_all(origin_d, "advance d");
+
+        result = project.update(packages=[]);
+        assert result == 0 , f"plain update failed: {result}";
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["u"]["sha"] == u2 , "plain update did not advance main dep";
+        assert rows["d"]["sha"] == d1 , "plain update advanced a dev dep";
+
+        (origin_u / "changes.log").write_text("u3\n", encoding="utf-8");
+        u3 = git_commit_all(origin_u, "advance u again");
+        (origin_d / "changes.log").write_text("d3\n", encoding="utf-8");
+        d3 = git_commit_all(origin_d, "advance d again");
+
+        result = project.update(packages=[], dev=True);
+        assert result == 0 , f"dev update failed: {result}";
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["d"]["sha"] == d3 , "update -d did not advance the dev dep";
+        assert rows["u"]["sha"] == u2 , "update -d churned the main dep";
     } finally {
         os.chdir(cwd);
         set_config(None);

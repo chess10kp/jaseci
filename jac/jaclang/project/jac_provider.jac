@@ -13,12 +13,14 @@ import from jaclang.project.providers {
 }
 import from jaclang.project.jac_store {
     JacDepError,
+    FetchResult,
     dirhash,
     fetch_package,
     git_package_name,
     materialize,
     normalize_git_url
 }
+import from jaclang.project.versioning { caret_upper, parse_release, vtuple }
 
 glob REF_HEX: str = "^[0-9a-fA-F]{40}$",
      DEPS_MAP_VERSION: str = "1",
@@ -210,41 +212,24 @@ def parse_jac_spec(spec: str) -> tuple[str, dict[str, any]] {
 }
 
 
-def _vtuple(version: str) -> tuple[int, int, int] {
-    parts: list[int] = [];
-    for piece in re.findall(r"\d+", version.split("+")[0].split("-")[0])[:3] {
-        parts.append(int(piece));
-    }
-    while len(parts) < 3 {
-        parts.append(0);
-    }
-    return tuple(parts);
-}
-
-
 def version_satisfied(constraint: str, actual: str) -> bool {
     constraint = constraint.strip();
-    actual_v = _vtuple(actual);
+    actual_v = vtuple(actual);
     if constraint.startswith("^") {
-        body = constraint[1:];
-        if not re.match(r"^\d+(\.\d+)*$", body) {
+        try {
+            base = parse_release(constraint[1:]);
+        } except ValueError {
             raise JacDepError(
                 f"Unsupported version constraint '{constraint}': use an exact "
                 "version ('1.2.3' or '=1.2.3') or a caret ('^1.2.3')"
-            );
+            ) from None;
         }
-        base = _vtuple(body);
-        if base[0] > 0 {
-            return actual_v >= base and actual_v[0] == base[0];
-        }
-        if base[1] > 0 {
-            return (actual_v >= base and actual_v[0] == 0 and actual_v[1] == base[1]);
-        }
-        return actual_v == base;
+        upper = caret_upper(base);
+        return actual_v >= base and actual_v < upper;
     }
     exact = constraint.lstrip("=");
     if re.match(r"^\d+(\.\d+)*$", exact) {
-        return actual_v == _vtuple(exact);
+        return actual_v == vtuple(exact);
     }
     raise JacDepError(
         f"Unsupported version constraint '{constraint}': use an exact "
@@ -462,7 +447,7 @@ def _apply_override(
 }
 
 
-obj JacGitProvider(EcosystemProvider) {
+obj JacDepProvider(EcosystemProvider) {
     has name: str = "jac",
         manifest_key: str = "jac",
         cli_flag: str = "";
@@ -506,7 +491,8 @@ obj JacGitProvider(EcosystemProvider) {
         config: JacConfig,
         ctx: InstallContext | None = None,
         frozen_pins: dict[str, dict[str, any]] | None = None,
-        collect_only: bool = False
+        collect_only: bool = False,
+        extra_specs: dict[str, dict[str, any]] | None = None
     ) -> dict[str, JacPackage] {
         frozen_pins = frozen_pins or {};
         overrides = config.get_section("override");
@@ -514,7 +500,8 @@ obj JacGitProvider(EcosystemProvider) {
         noted_overrides: set[str] = set();
         project_root = config.project_root or Path.cwd();
         (root_deps, root_dev) = manifest_jac_deps(config);
-        root_entries = {** root_deps, ** root_dev};
+
+        root_entries = {** root_deps, ** root_dev, ** (extra_specs or {})};
         packages_root = config.get_build_dir() / "packages";
 
         queue: list[tuple[any, ...]] = [];
@@ -827,9 +814,9 @@ obj JacGitProvider(EcosystemProvider) {
                 key=key,
                 source="git",
                 ref=ref,
-                sha=fetched["sha"],
-                tree=fetched["tree"],
-                pkg_root=fetched["path"],
+                sha=fetched.sha,
+                tree=fetched.tree,
+                pkg_root=fetched.path,
                 requested_by=[requirer]
             );
         }
@@ -925,47 +912,35 @@ obj JacGitProvider(EcosystemProvider) {
     def install_no_save(
         config: JacConfig, specs: list[str], ctx: InstallContext
     ) -> bool {
-        original = config.plugin_dependencies.get("jac");
-        had_section = isinstance(original, dict);
-        backup: dict[str, any] = dict(original) if had_section else {};
+        extra: dict[str, dict[str, any]] = {};
+        for spec in specs {
+            (name, ent) = parse_jac_spec(spec);
+            extra[name] = ent;
+        }
         try {
-            section = config.plugin_dependencies.setdefault("jac", {});
-            for spec in specs {
-                (name, ent) = parse_jac_spec(spec);
-                section[name] = ent;
-            }
-            resolved = self.resolve_closure(config, ctx, collect_only=True);
-            try {
-                self.materialize_closure(config, resolved, ctx);
-            } except Exception as e {
-                console.error(str(e));
-                try {
-                    restore_saved_packages(config);
-                } except Exception {
-                    console.warning(
-                        "Could not restore previous packages; run "
-                        "'jac install' to repair .jac/ state."
-                    );
-                }
-                return False;
-            }
-            self.save_deps_map(config, resolved);
-            write_pth(config, resolved);
-            for pkg in resolved.values() {
-                via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
-                console.print(f"  ✔ {pkg.name} ({via})", style="success");
-            }
-            return True;
+            resolved = self.resolve_closure(
+                config, ctx, collect_only=True, extra_specs=extra
+            );
+            self.materialize_closure(config, resolved, ctx);
         } except JacDepError as e {
             console.error(str(e));
-            return False;
-        } finally {
-            if had_section {
-                config.plugin_dependencies["jac"] = backup;
-            } else {
-                config.plugin_dependencies.pop("jac", None);
+            try {
+                restore_saved_packages(config);
+            } except (JacDepError, OSError) {
+                console.warning(
+                    "Could not restore previous packages; run "
+                    "'jac install' to repair .jac/ state."
+                );
             }
+            return False;
         }
+        self.save_deps_map(config, resolved);
+        write_pth(config, resolved);
+        for pkg in resolved.values() {
+            via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
+            console.print(f"  ✔ {pkg.name} ({via})", style="success");
+        }
+        return True;
     }
 
     def add_spec(
@@ -975,43 +950,31 @@ obj JacGitProvider(EcosystemProvider) {
         ctx: InstallContext | None = None
     ) -> str | None {
         (name, dep) = parse_jac_spec(spec);
-        section = config.plugin_dependencies.setdefault("jac", {});
-        if dev {
-            dev_section = section.setdefault("dev", {});
-            previous = dev_section.get(name);
-            dev_section[name] = dep;
-        } else {
-            previous = section.get(name);
-            section[name] = dep;
-        }
-        config.save();
         import from jaclang.project.lockfile {
             jac_lock_rows,
             read_lock,
             update_jac_rows
         }
+
         try {
             resolved = self.resolve_closure(
                 config,
                 ctx,
-                frozen_pins=jac_lock_rows(read_lock(config.project_root or Path.cwd()))
+                frozen_pins=jac_lock_rows(read_lock(config.project_root or Path.cwd())),
+                extra_specs={name: dep}
             );
         } except JacDepError as e {
-            if previous is not None {
-                if dev {
-                    restored = section.setdefault("dev", {});
-                    restored[name] = previous;
-                } else {
-                    section[name] = previous;
-                }
-            } else {
-                self._unrecord(config, name, dev);
-            }
-            config.save();
             console.error(str(e));
             self._rematerialize(config);
             return None;
         }
+        section = config.plugin_dependencies.setdefault("jac", {});
+        if dev {
+            section.setdefault("dev", {})[name] = dep;
+        } else {
+            section[name] = dep;
+        }
+        config.save();
         self.save_deps_map(config, resolved);
         if ctx is None or not ctx.is_dry_run() {
             update_jac_rows(config.project_root or Path.cwd(), resolved);
@@ -1031,20 +994,11 @@ obj JacGitProvider(EcosystemProvider) {
             resolved = self.resolve_closure(config, None, frozen_pins=pins);
             self.save_deps_map(config, resolved);
             write_pth(config, resolved);
-        } except Exception {
+        } except (JacDepError, OSError) {
             console.warning(
                 "Previous dependencies could not be re-materialized; "
                 "run 'jac install' to restore .jac/ state."
             );
-        }
-    }
-
-    def _unrecord(config: JacConfig, name: str, dev: bool) {
-        section = config.plugin_dependencies.get("jac", {});
-        if dev and isinstance(section.get("dev"), dict) {
-            section["dev"].pop(name, None);
-        } else {
-            section.pop(name, None);
         }
     }
 
@@ -1072,7 +1026,6 @@ obj JacGitProvider(EcosystemProvider) {
         if not config.remove_dependency(name, dev=is_dev, dep_type="jac") {
             return False;
         }
-        config.save();
         try {
             resolved = self.resolve_closure(config, ctx);
         } except JacDepError as e {
@@ -1083,7 +1036,7 @@ obj JacGitProvider(EcosystemProvider) {
             } else {
                 section[name] = previous;
             }
-            config.save();
+
             console.error(str(e));
             self._rematerialize(config);
             return False;
@@ -1136,4 +1089,14 @@ obj JacGitProvider(EcosystemProvider) {
         out_path.write_text("\n".join(lines) + "\n", encoding="utf-8");
         return [out_path];
     }
+}
+
+
+def get_jac_dep_provider -> JacDepProvider {
+    import from jaclang.project.providers { get_provider_registry }
+    provider = get_provider_registry().get("jac");
+    if not isinstance(provider, JacDepProvider) {
+        raise RuntimeError("jac provider missing from the registry");
+    }
+    return provider;
 }

@@ -618,8 +618,8 @@ def get_provider_registry -> ProviderRegistry {
     if _registry is None {
         _registry = ProviderRegistry();
         _registry.register(PythonProvider());
-        import from jaclang.project.jac_provider { JacGitProvider }
-        _registry.register(JacGitProvider());
+        import from jaclang.project.jac_provider { JacDepProvider }
+        _registry.register(JacDepProvider());
         initialize_provider_registry();
     }
     return _registry;
@@ -632,6 +632,7 @@ def get_python_provider -> PythonProvider {
     }
     return provider;
 }
+
 
 def reset_provider_registry {
     _registry = None;

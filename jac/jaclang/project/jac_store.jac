@@ -30,6 +30,13 @@ impl JacDepError.postinit -> None {
 }
 
 
+obj FetchResult {
+    has path: str = "",
+        sha: str = "",
+        tree: str = "";
+}
+
+
 def store_root -> Path {
     return jac_global_prefix() / STORE_DIR_NAME;
 }
@@ -51,7 +58,9 @@ def normalize_git_url(spec: str) -> str {
     } elif not known {
         spec = "https://" + spec;
     }
-    if spec.endswith(".git") {
+
+    if spec.endswith(".git")
+        and not spec.startswith(("file://", "/", "./", "../", "~/")) {
         spec = spec[:-4];
     }
     return spec;
@@ -59,8 +68,12 @@ def normalize_git_url(spec: str) -> str {
 
 
 def git_package_name(spec: str) -> str {
-    base = normalize_git_url(spec);
-    return base.rsplit("/", 1)[-1];
+    base = normalize_git_url(spec).rstrip("/");
+    name = base.rsplit("/", 1)[-1];
+    if name.endswith(".git") {
+        name = name[:-4];
+    }
+    return name;
 }
 
 
@@ -212,7 +225,7 @@ def _ref_agreement(url: str, ref: str, sha: str) -> tuple[bool, bool] | None {
 
 def _store_hit_for(
     store_dir: Path, url: str, sha: str, expected_tree: str, verify: bool
-) -> dict[str, any] | None {
+) -> FetchResult | None {
     for candidate in sorted(store_dir.glob(TREE_HASH_PREFIX + "*")) {
         if not candidate.is_dir() {
             continue;
@@ -226,18 +239,19 @@ def _store_hit_for(
             continue;
         }
         if expected_tree and candidate.name == expected_tree {
-            return {"path": str(candidate), "sha": sha, "tree": expected_tree};
+            if dirhash(candidate) == expected_tree {
+                return FetchResult(path=str(candidate), sha=sha, tree=expected_tree);
+            }
+            continue;
         }
         if not verify and not expected_tree {
-            return {
-                "path": str(candidate),
-                "sha": sha,
-                "tree": str(meta.get("tree", ""))
-            };
+            return FetchResult(
+                path=str(candidate), sha=sha, tree=str(meta.get("tree", ""))
+            );
         }
         expected = expected_tree or candidate.name;
         if dirhash(candidate) == expected {
-            return {"path": str(candidate), "sha": sha, "tree": expected};
+            return FetchResult(path=str(candidate), sha=sha, tree=expected);
         }
     }
     return None;
@@ -260,7 +274,7 @@ def fetch_package(
     expected_tree: str = "",
     verify: bool = True,
     frozen: bool = False
-) -> dict[str, any] {
+) -> FetchResult {
     url = normalize_git_url(url);
     store_dir = store_root();
     (store_dir / TMP_DIR_NAME).mkdir(parents=True, exist_ok=True);
@@ -300,7 +314,22 @@ def fetch_package(
         tree_hash = dirhash(tree_dest);
         final = store_dir / tree_hash;
         if final.exists() {
-            shutil.rmtree(tree_dest, ignore_errors=True);
+            if _tree_matches(final, tree_hash) {
+                shutil.rmtree(tree_dest, ignore_errors=True);
+            } else {
+                shutil.rmtree(final, ignore_errors=True);
+                _write_origin_meta(
+                    tree_dest, {"url": url, "sha": resolved_sha, "tree": tree_hash}
+                );
+                try {
+                    os.rename(str(tree_dest), str(final));
+                } except OSError {
+                    if not _tree_matches(final, tree_hash) {
+                        raise;
+                    }
+                    shutil.rmtree(tree_dest, ignore_errors=True);
+                }
+            }
         } else {
             _write_origin_meta(
                 tree_dest, {"url": url, "sha": resolved_sha, "tree": tree_hash}
@@ -316,7 +345,7 @@ def fetch_package(
                 }
             }
         }
-        return {"path": str(final), "sha": resolved_sha, "tree": tree_hash};
+        return FetchResult(path=str(final), sha=resolved_sha, tree=tree_hash);
     } finally {
         shutil.rmtree(staging, ignore_errors=True);
     }
