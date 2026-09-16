@@ -49,6 +49,7 @@ import from jaclang.compiler.frontend.roles {
     ItemsRole,
     NameRefRole,
     ReturnTypeRole,
+    Role,
     SignatureRole,
     SpecRole,
     TargetRole,
@@ -96,6 +97,13 @@ walker JacAutoLintPass(TreeWalker) {
     def combine_consecutive_glob(
         body: list[uni.ElementStmt | uni.String | uni.EmptyToken]
     ) -> list[uni.ElementStmt | uni.String | uni.EmptyToken];
+    def _merge_run_into_base(
+        base: uni.UniNode,
+        combined_items: list,
+        items_attr: str,
+        role: type[Role],
+        strip_semi: bool,
+    ) -> None;
 
     def _combine_has_in_node(nd: uni.Archetype | uni.Enum | uni.Ability) -> None;
     can enter_archetype with uni.Archetype entry;
