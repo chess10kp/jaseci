@@ -373,7 +373,7 @@ impl NativeBoolEmitter.emit_op_xor(
 
 impl NativeComplexEmitter._load_parts(
     self: NativeComplexEmitter, ctx: NativeEmitCtx, val: ir.Value
-) -> (tuple | None) {
+) -> (tuple[ir.Value, ir.Value] | None) {
     p = ctx.pass_ref;
     b = get_builder(p);
     i32 = ir.IntType(32);
@@ -3129,7 +3129,7 @@ impl NativeListEmitter.emit_sort(
     one = ir.Constant(i64, 1);
     elem_type = helpers["elem_type"];
 
-    _kw = ctx?.call_kwargs or {};
+    _kw: dict[str, UniNode] = ctx?.call_kwargs or {};
     _key_node = _kw.get("key");
     _rev_node = _kw.get("reverse");
     _unknown_kw = [
@@ -3138,7 +3138,7 @@ impl NativeListEmitter.emit_sort(
         if k not in ("key", "reverse")
     ];
     if _unknown_kw {
-        p.emit(
+        p.ctx.emit(
             E5092,
             node_override=_key_node or _rev_node,
             kind="sort keyword argument",
@@ -3156,7 +3156,7 @@ impl NativeListEmitter.emit_sort(
             or _key_caps is not None
             or len(_key_val.args) != 1
         ) {
-            p.emit(
+            p.ctx.emit(
                 E5092,
                 node_override=_key_node,
                 kind="sort key",
@@ -4719,7 +4719,7 @@ impl NativeTupleEmitter.emit_op_contains(
 
 impl NativeRangeEmitter._load_range(
     self: NativeRangeEmitter, ctx: NativeEmitCtx, target: ir.Value
-) -> (tuple | None) {
+) -> (tuple[ir.Value, ir.Value, ir.Value] | None) {
     p = ctx.pass_ref;
     b = get_builder(p);
     i32 = ir.IntType(32);
@@ -4940,7 +4940,7 @@ impl NativeBuiltinEmitter.emit_sum(
     i64 = ir.IntType(64);
     list_val = args[0];
 
-    helpers: (dict | None) = None;
+    helpers: (dict[str, any] | None) = None;
     elem_key: (str | None) = None;
     for (lk, lt) in p.list_types.items() {
         if list_val.type == lt.as_pointer() {
@@ -4986,7 +4986,7 @@ impl NativeBuiltinEmitter.emit_sorted(
     p = ctx.pass_ref;
     list_val = args[0];
 
-    helpers: (dict | None) = None;
+    helpers: (dict[str, any] | None) = None;
     elem_key: (str | None) = None;
     for (lk, lt) in p.list_types.items() {
         if list_val.type == lt.as_pointer() {
@@ -5029,7 +5029,7 @@ impl NativeBuiltinEmitter.emit_reversed(
     p = ctx.pass_ref;
     list_val = args[0];
 
-    helpers: (dict | None) = None;
+    helpers: (dict[str, any] | None) = None;
     elem_key: (str | None) = None;
     for (lk, lt) in p.list_types.items() {
         if list_val.type == lt.as_pointer() {
@@ -5089,7 +5089,7 @@ impl NativeBuiltinEmitter.emit_any(
     b = get_builder(p);
     i64 = ir.IntType(64);
     list_val = args[0];
-    helpers: (dict | None) = None;
+    helpers: (dict[str, any] | None) = None;
     for (lk, lt) in p.list_types.items() {
         if list_val.type == lt.as_pointer() {
             helpers = p.list_helpers.get(lk);
@@ -5141,7 +5141,7 @@ impl NativeBuiltinEmitter.emit_all(
     b = get_builder(p);
     i64 = ir.IntType(64);
     list_val = args[0];
-    helpers: (dict | None) = None;
+    helpers: (dict[str, any] | None) = None;
     for (lk, lt) in p.list_types.items() {
         if list_val.type == lt.as_pointer() {
             helpers = p.list_helpers.get(lk);
