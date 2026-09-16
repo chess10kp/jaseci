@@ -1,7 +1,7 @@
 """End-to-end tests for loop `else` clauses on the native backend (#8629).
 
 The else body of a for/while loop must run exactly when the loop
-exhausts normally; a `break` bypasses it (PEP 530/341 semantics). The
+exhausts normally; a `break` bypasses it (loop-else semantics). The
 probes return whether the else body ran, so each lowering path in the
 native backend -- while, C-style iter-for, the indexed range path and
 the iter-protocol list/string paths -- is checked for both edges.
@@ -58,7 +58,7 @@ test "break inside a nested loop's else exits only that loop" {
     );
 }
 
-test "flow-for else runs after the parallel join" {
+test "flow-for else runs with sequential lowering" {
     (_eng, _ir) = compile_native("loop_else.jac");
     f = get_func(_eng, "flow_for_else_ran", ctypes.c_bool);
     assert f() is True , "else must run when a flow for exhausts";

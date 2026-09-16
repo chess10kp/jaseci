@@ -740,6 +740,11 @@ test "for else" {
     assert "Done" in lines[1];
 }
 
+test "break in loop else stays in its owning loop" {
+    output = run_jac(os.path.join(FIXTURES, "loop_else_break.jac"));
+    assert output.strip() == "1444";
+}
+
 test "forever loop" {
     output = run_jac(os.path.join(FIXTURES, "forever_loop.jac"));
     lines = output.split("\n");

@@ -194,11 +194,7 @@ def compile_to_js -> str {
         f"Compilation errors: {[str(e) for e in prog.errors_had]}"
     );
     es_pass = run_pass(EsastGenPass, ir, prog);
-    _js = es_to_js(es_pass.module.gen.es_ast);
-    with open("/tmp/loop_else_dump.js", "w") as _f {
-        _f.write(_js);
-    }
-    return _js;
+    return es_to_js(es_pass.module.gen.es_ast);
 }
 
 test "while else lowers to labeled blocks with labeled breaks" {
@@ -298,7 +294,7 @@ test "break in a nested loop else exits only the inner construct" {
     breaks = re.findall("break (__jac_loop_[0-9]+)", region);
     labels = re.findall("(__jac_loop_[0-9]+):", region);
     assert len(breaks) == 1 and len(labels) == 1 and breaks[0] == labels[0] , (
-        f"the inner else break must target the one emitted label: "
+        "the inner else break must target the one emitted label: "
         f"{sorted(breaks)} vs {sorted(labels)}: {region[:600]}"
     );
     outer_for = region.find("for (const i of");
@@ -306,7 +302,7 @@ test "break in a nested loop else exits only the inner construct" {
     label_idx = region.find(labels[0] + ":");
     assert outer_for != -1 and inner_for != -1 , f"loops missing: {region[:600]}";
     assert outer_for < label_idx and label_idx < inner_for , (
-        f"the label must sit on the inner loop's own sequence, not the "
+        "the label must sit on the inner loop's own sequence, not the "
         f"outer construct: {region[:600]}"
     );
 }
@@ -318,7 +314,7 @@ test "switch case break binds to the switch, not the loop" {
     )];
     assert "switch (" in region , f"switch not lowered to a JS switch: {region[:400]}";
     assert "__jac_loop_" not in region , (
-        f"a loop whose breaks all belong to its switch must not emit a loop "
+        "a loop whose breaks all belong to its switch must not emit a loop "
         f"label: {region[:400]}"
     );
     assert "total += 1000;" in region , f"else body missing: {region[:400]}";
@@ -333,7 +329,7 @@ test "match case break exits the match via its labeled block" {
         f"match break was labeled to the loop: {region[:400]}"
     );
     assert "__jac_loop_" not in region , (
-        f"a loop whose breaks all belong to its match must not emit a loop "
+        "a loop whose breaks all belong to its match must not emit a loop "
         f"label: {region[:400]}"
     );
     breaks = re.findall("break (__jac_match_[0-9]+)", region);
