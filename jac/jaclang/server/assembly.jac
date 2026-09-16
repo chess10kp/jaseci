@@ -1,8 +1,10 @@
 import os;
+import type from jaclang.project.apps { AppConfig }
 import from jaclang.cli.console { console }
+import type from jaclang.runtime.prepared { PreparedApplication }
 
 
-def service_apps(cfg: any, served: any) -> list {
+def service_apps(cfg: any, served: any) -> list[AppConfig] {
     return [
         a
         for a in cfg.serving_apps()
@@ -11,12 +13,14 @@ def service_apps(cfg: any, served: any) -> list {
 }
 
 def gateway_colocates(cfg: any) -> bool {
-    scale_cfg = cfg.get_plugin_config("scale") or {};
+    scale_cfg: dict[str, any] = cfg.get_plugin_config("scale") or {};
     gateway = scale_cfg.get("gateway", {}) if isinstance(scale_cfg, dict) else {};
     return not (isinstance(gateway, dict) and gateway.get("colocate") is False);
 }
 
-def colocate_services(cfg: any, served: any, base: str) -> None {
+def colocate_services(
+    cfg: any, served: any, base: str, application: PreparedApplication | None = None
+) -> None {
     if cfg is None or served is None or os.environ.get("JAC_SV_SIBLING") == "1" {
         return;
     }
@@ -29,7 +33,19 @@ def colocate_services(cfg: any, served: any, base: str) -> None {
 
     project_root = str(cfg.project_root) if cfg.project_root else base;
     for svc in services {
-        entry_file = svc.entry_path(project_root);
+        prepared = next(
+            (
+                child
+                for child in application.applications
+                if child.name == svc.name
+            ),
+            None
+        )
+            if application is not None
+            else None;
+        entry_file = prepared.entry
+            if prepared is not None
+            else svc.entry_path(project_root);
         if not entry_file or not os.path.isfile(entry_file) {
             console.warning(
                 f"Service app '{svc.name}' has no entry_file file; not colocated."
@@ -47,8 +63,10 @@ def colocate_services(cfg: any, served: any, base: str) -> None {
 }
 
 
-def assemble_served_program(cfg: any, served: any, base: str) {
-    colocate_services(cfg, served, base);
+def assemble_served_program(
+    cfg: any, served: any, base: str, application: PreparedApplication | None = None
+) {
+    colocate_services(cfg, served, base, application);
     if served is not None {
         import from jaclang.server.sv_client { set_consumer_app }
         set_consumer_app(served.name);

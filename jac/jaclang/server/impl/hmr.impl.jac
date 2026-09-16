@@ -1,3 +1,4 @@
+import from jaclang.server.build_status { BuildMonitor }
 import json;
 import logging;
 import os;
@@ -25,7 +26,7 @@ impl HotReloader.start -> None {
 
     self.watcher.start();
     self._running = True;
-    HotReloader._active = self;
+    BuildMonitor.active = self;
     logger.debug(f"Hot reloader started for module: {self.module_name}");
 }
 
@@ -34,15 +35,15 @@ impl HotReloader.stop -> None {
         return;
     }
     self._running = False;
-    if HotReloader._active is self {
-        HotReloader._active = None;
+    if BuildMonitor.active is self {
+        BuildMonitor.active = None;
     }
 
     self.watcher.stop();
     logger.debug("Hot reloader stopped");
 }
 
-impl HotReloader.build_status -> dict {
+impl HotReloader.build_status -> dict[str, any] {
     diags = self.diagnostics();
     if diags {
         return {
@@ -53,7 +54,7 @@ impl HotReloader.build_status -> dict {
     return {"status": self._build_status.value, "diagnostics": []};
 }
 
-impl HotReloader.diagnostics -> list {
+impl HotReloader.diagnostics -> list[ClientDiagnostic] {
     with HotReloader._build_lock {
         if self._build_status is BuildStatus.ERROR {
             return list(self._diagnostics);
@@ -72,13 +73,15 @@ impl HotReloader.attach_client_bundler(bundler: any) -> None {
     bundler.on_client_event = self.record_client_event;
 }
 
-impl HotReloader.record_client_event(slot: str, payload: (dict | None)) -> None {
+impl HotReloader.record_client_event(
+    slot: str, payload: (dict[str, any] | None)
+) -> None {
     import from jaclang.client.client_diagnostics { classify_client_payload }
     import from jaclang.client.source_mapping { _error_rate_limiter }
     if slot not in ('vite', 'client', 'runtime', 'ready') {
         return;
     }
-    fresh: list = [];
+    fresh: list[ClientDiagnostic] = [];
     if slot != 'ready' and isinstance(payload, dict) and payload.get('message') {
         channel = 'vite' if slot == 'vite' else 'browser';
         try {
@@ -119,7 +122,7 @@ impl HotReloader.record_ok -> None {
 impl HotReloader.record_error(
     file_path: str,
     message: str,
-    alerts: (list | None) = None,
+    alerts: (list[Alert] | None) = None,
     line: int = 0,
     column: int = 0
 ) -> None {
@@ -161,14 +164,6 @@ impl HotReloader._sync_status_file -> None {
             status_file.unlink();
         }
     } except OSError {}
-}
-
-impl get_build_status -> dict {
-    reloader = HotReloader._active;
-    if not reloader {
-        return {"status": BuildStatus.UNAVAILABLE.value, "diagnostics": []};
-    }
-    return reloader.build_status();
 }
 
 impl HotReloader.on_file_change(event: any) -> None {

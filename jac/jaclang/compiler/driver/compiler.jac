@@ -3,6 +3,7 @@ import type from jaclang.compiler.types.stubcat.reader { StubCatalog }
 import ast as py_ast;
 import marshal;
 import os;
+import from collections.abc { Callable }
 import sys;
 import types;
 import from threading { Event }
@@ -36,13 +37,13 @@ import type from jaclang.compiler.frontend.codeinfo {
     ClientArtifact,
     NativeModuleLayout
 }
-import from jaclang.compiler.frontend.helpers { read_file_with_encoding }
+import from jaclang.project.source { read_file_with_encoding }
 import from jaclang.compiler.frontend.constant { CodeContext, Tokens as Tok }
 import from jaclang.compiler.backends.py.jcir_gen_pass { JcirGenPass }
 import from jaclang.compiler.passes.boundary_analysis_pass { BoundaryAnalysisPass }
 import from jaclang.compiler.passes.semantic_analysis_pass { SemanticAnalysisPass }
 import from jaclang.compiler.passes.sym_tab_build_pass { SymTabBuildPass }
-import from jaclang.compiler.passes.transform { Transform }
+
 import from jaclang.compiler.driver.program { JacProgram }
 import from jaclang.compiler.driver.selfhost { SelfHostCache }
 import from jaclang.compiler.driver.pass_driver {
@@ -161,7 +162,10 @@ obj JacCompiler {
     ) -> None;
 
     def _restore_sections(
-        full_target: str, actual_program: JacProgram, secs: dict[int, bytes]
+        full_target: str,
+        actual_program: JacProgram,
+        secs: dict[int, bytes],
+        base_dir: str = ""
     ) -> None;
 
     def _get_precompiled_jir_bytecode(
@@ -169,7 +173,7 @@ obj JacCompiler {
     ) -> (tuple[bytes, bytes] | None);
 
     def _sealed_jir_data(full_target: str) -> (tuple[bytes, str] | None);
-    def _build_interop_dict(result: uni.Module) -> dict;
+    def _build_interop_dict(result: uni.Module) -> dict[str, any];
     def _deserialize_interop_table(cached_interop: dict[str, any]) -> InteropManifest;
     def parse_str(
         source_str: str,
@@ -220,7 +224,7 @@ obj JacCompiler {
     def run_schedule(
         mod: uni.Module,
         target_program: JacProgram,
-        passes: list[type[Transform]],
+        passes: list[type],
         cancel_token: (Event | None) = None
     ) -> None;
 

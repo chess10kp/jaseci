@@ -1,9 +1,10 @@
-impl interpolate_env_vars(value: str) -> str {
+impl interpolate_env_vars(value: str, environ: dict[str, str] | None = None) -> str {
     import os;
     import re;
     if not isinstance(value, str) {
         return value;
     }
+    source = os.environ if environ is None else environ;
 
     pattern = r"\$\{([^}:]+)(?:(:[-?])([^}]*))?\}";
     def replace_env_var(`match: re.Match) -> str {
@@ -11,7 +12,7 @@ impl interpolate_env_vars(value: str) -> str {
         operator = `match.group(2);
         operand = `match.group(3) or "";
 
-        env_value = os.environ.get(var_name);
+        env_value = source.get(var_name);
 
         if env_value is not None {
             return env_value;
@@ -21,17 +22,17 @@ impl interpolate_env_vars(value: str) -> str {
             return operand;
         } elif operator == ":?" {
             raise ValueError(f"Environment variable {var_name} is required: {operand}");
-        } else {
-            raise ValueError(f"Environment variable {var_name} is not set");
         }
+        if not var_name.isidentifier() {
+            return `match.group(0);
+        }
+        raise ValueError(f"Environment variable {var_name} is not set");
     }
     return re.sub(pattern, replace_env_var, value);
 }
 
 impl find_project_root(start: Path | None = None) -> tuple[Path, Path] | None {
-    import from jaclang.compiler.driver.modresolver {
-        find_project_root as _find_project_root
-    }
+    import from jaclang.project.modresolver { find_project_root as _find_project_root }
     return _find_project_root(start);
 }
 
@@ -455,7 +456,7 @@ impl JacConfig.save -> None {
     old_doc: dict[str, any] = {};
     if self.toml_path.exists() {
         import tomllib;
-        import from jaclang.compiler.frontend.helpers { read_file_with_encoding }
+        import from jaclang.project.source { read_file_with_encoding }
         import from jaclang.project.tomlio { MalformedJacTomlError }
         text = read_file_with_encoding(str(self.toml_path));
         try {
@@ -1011,7 +1012,7 @@ impl JacConfig.remove_dependency(
     return False;
 }
 
-impl _parse_persons(raw: list[any]) -> list[PersonConfig] {
+impl _parse_persons(raw: list[object]) -> list[PersonConfig] {
     result: list[PersonConfig] = [];
     for item in raw {
         if isinstance(item, dict) {
@@ -1439,7 +1440,11 @@ impl get_config_for_path(
 ) -> JacConfig | None {
     explicit = get_explicit_config();
     if explicit is not None {
-        return explicit;
+        project_root = explicit.project_root;
+        if project_root is None
+            or start_path.resolve().is_relative_to(project_root.resolve()) {
+            return explicit;
+        }
     }
     result = find_project_root(start_path);
     if result is None {
@@ -1553,6 +1558,8 @@ impl JacConfig.app_for_target(entry_path: str = "") -> AppConfig | None {
 }
 
 impl JacConfig.app_for_path(abs_path: str) -> AppConfig | None {
+    import from jaclang.runtime.prepared { origin_for_source }
+    abs_path = origin_for_source(abs_path);
     if self.project_root is None {
         return None;
     }
@@ -1580,7 +1587,7 @@ impl JacConfig.default_app.getter -> str {
     return self.project.default_app;
 }
 
-def _apply_build_section(cfg: JacConfig, data: dict) -> None {
+def _apply_build_section(cfg: JacConfig, data: dict[str, any]) -> None {
     if "build" not in data or not isinstance(data["build"], dict) {
         return;
     }
@@ -1615,7 +1622,7 @@ def _apply_build_section(cfg: JacConfig, data: dict) -> None {
     );
 }
 
-def _apply_memory_native_placement(cfg: JacConfig, data: dict) {
+def _apply_memory_native_placement(cfg: JacConfig, data: dict[str, any]) {
     import from jaclang.cli.console { console }
     for (_old, _new) in [("gc", "[memory] profile / enforce / exempt")] {
         if _old in data {
@@ -1650,6 +1657,13 @@ def _apply_memory_native_placement(cfg: JacConfig, data: dict) {
     }
     if "native" in data and isinstance(data["native"], dict) {
         nat = data["native"];
+        if "require" in nat {
+            if not isinstance(nat["require"], list)
+                or not all(isinstance(pattern, str) for pattern in nat["require"]) {
+                raise ValueError("[native] require must be a list of module patterns");
+            }
+            cfg.native.require = list(nat["require"]);
+        }
         cfg.native.target = str(nat.get("target", cfg.native.target));
         try {
             cfg.native.opt = int(nat.get("opt", cfg.native.opt));

@@ -612,12 +612,15 @@ impl EsastGenPass._emit_boundary_type_stubs(nd: uni.Module) -> list[es.Statement
                 if info.type_scope == nd.loc.mod_path
                 else None;
             if osp_class is not None {
+                assert osp_class.body is not None;
                 if info.kind == "node" {
                     for member in osp_class.body.body {
                         if (
                             isinstance(member, es.MethodDefinition)
                             and (member.kind == "constructor")
                         ) {
+                            assert member.value is not None
+                                and member.value.body is not None;
                             member.value.body.body.append(
                                 es.IfStatement(
                                     `test=es.CallExpression(
@@ -690,8 +693,8 @@ impl EsastGenPass._emit_boundary_type_stubs(nd: uni.Module) -> list[es.Statement
 }
 
 impl EsastGenPass._boundary_type_name(info: BoundaryTypeInfo) -> str {
-    manifest = self.ir_in.gen.interop_manifest;
-    if info.type_scope == self.ir_in.loc.mod_path {
+    manifest = self.module.gen.interop_manifest;
+    if info.type_scope == self.module.loc.mod_path {
         return info.name;
     }
     matches = [

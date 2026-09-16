@@ -2,8 +2,8 @@ import os;
 import sys;
 import jaclang.compiler.frontend.unitree as uni;
 import from jaclang.compiler.frontend.relations { ScopeChild }
-import from jaclang.compiler.passes.transform { Alert, PassResult }
-import type from jaclang.compiler.driver.mtp { Info }
+import from jaclang.compiler.passes.context { Alert, PassResult }
+import type from jaclang.runtime.semantic { Info }
 import type from jaclang.compiler.frontend.codeinfo { ClientArtifact }
 import from jaclang.compiler.driver.pipeline_types {
     AnalysisFact,
@@ -77,12 +77,12 @@ obj ModuleHub {
         }
     }
 
-    def reset {
+    def reset(retain_stubs: bool = True) {
         retained_mods: dict[str, uni.Module] = {};
         retained_stamps: dict[str, float] = {};
         dropped: list[uni.Module] = [];
         for (path, mod) in self.mod.hub.items() {
-            if path.endswith(".pyi") {
+            if retain_stubs and path.endswith(".pyi") {
                 retained_mods[path] = mod;
                 if path in self.stamps {
                     retained_stamps[path] = self.stamps[path];
@@ -241,7 +241,7 @@ obj BuildScratch {
     has na_dep_units: dict[str, (uni.Module | str)] = {},
         na_dep_inflight: set[str] postinit,
         na_verdict_resolving: set[str] postinit,
-        na_unverified_live: dict[str, dict] = {},
+        na_unverified_live: dict[str, dict[str, set[str]]] = {},
         na_verdict_misses: int = 0,
         compile_depth: int = 0;
 

@@ -1,11 +1,11 @@
-import from jaclang.compiler.backends.py.jacpython.compiler_dispatch { stmt_handlers }
+import from jaclang.runtime.python.compiler_integer { PyBigInt, integer_negate }
+
 # Expression-side lowering: visit_expr, expression/comprehension/lambda
 # visitors, call/slice/await emission primitives, and the shared name/
 # const/cell plumbing used by both expression and statement lowering.
 
-# Split from compiler_codegen.jac (band-11 modularization): statement
-# dispatch stays in compiler_codegen.jac and imports this module; this
-# module only imports lower layers (no cycles).
+# Statement dispatch lives in compiler_codegen.jac. Imports of statement and
+# exception helpers stay at their call sites to allow module initialization.
 
 import from jaclang.runtime.python.objects {
     PyFloat,
@@ -502,18 +502,19 @@ def cellvars_from_sym(block: sym_block) -> list[str] {
 
 def freevars_from_sym(block: sym_block) -> list[str] {
     names = sym_block_tuple_names(block.symbols, SCOPE_FREE);
-    return sorted(set(names + block.class_free_names));
+    seen = set(names);
+    for name in block.class_free_names {
+        if name not in seen {
+            seen.add(name);
+            names.append(name);
+        }
+    }
+    names.sort();
+    return names;
 }
 
 def varname_index(u: unverified_cfg, name: str) -> int {
-    vi = 0;
-    while vi < len(u.varnames) {
-        if u.varnames[vi] == name {
-            return vi;
-        }
-        vi = vi + 1;
-    }
-    return -1;
+    return u.varname_index(name);
 }
 
 # Merged locals-plus index for MAKE_CELL / LOAD_DEREF / LOAD_FAST_BORROW (CPython 3.11+).
@@ -903,6 +904,7 @@ def emit_await_send_except_regions(
 def emit_control_unwind(
     g: cfg_builder, wloc: cloc, preserve_value: bool, stop_depth: int = 0
 ) -> control_unwind {
+    import jaclang.compiler.backends.py.jacpython.compiler_exc as dispatch_exc;
     frames = g.cleanup_stack[:];
     if len(frames) <= stop_depth {
         return control_unwind();
@@ -937,7 +939,7 @@ def emit_control_unwind(
                     );
                     g.handler_nest_depth += 1;
                 }
-                cont = stmt_handlers["visit_cleanup_stmts"](g, fb.body, fb.ann_ctx);
+                cont = dispatch_exc.visit_cleanup_stmts(g, fb.body, fb.ann_ctx);
                 if preserve_value {
                     g.handler_nest_depth -= 1;
                 }
@@ -959,9 +961,7 @@ def emit_control_unwind(
                     g.emit_op(OP_POP_EXCEPT, 0, wloc);
                     g.handler_nest_depth -= 1;
                     if fb.exception_name is not None {
-                        stmt_handlers["clear_exception_name"](
-                            g, fb.exception_name, wloc
-                        );
+                        dispatch_exc.clear_exception_name(g, fb.exception_name, wloc);
                     }
                 }
             } elif fb.kind == "with" {
@@ -1474,7 +1474,7 @@ def visit_compare(
 ) -> basicblock | None {
     n = len(c.ops);
     cloc_cmp = nloc(c.lineno, c.end_lineno, c.col_offset, c.end_col_offset);
-    visit_expr(g, c.left, false_shortcircuit_returns=false_shortcircuit_returns);
+    visit_expr(g, c.left);
     cleanup: basicblock | None = None;
     if n > 1 {
         cleanup = g.new_block();
@@ -1545,6 +1545,10 @@ def register_int_literal_const(g: cfg_builder, e: expr, register_int_const: bool
         return;
     }
     c = e as Constant;
+    if isinstance(c.value, PyBigInt) {
+        g.u.add_const(c.value);
+        return;
+    }
     if not isinstance(c.value, PyInt) {
         return;
     }
@@ -1788,10 +1792,7 @@ def visit_expr(
     if isinstance(e, Name) {
         n = e as Name;
         if n.id == "__debug__" {
-            import from jaclang.compiler.backends.py.jacpython.compiler_context {
-                current_optimization_level
-            }
-            value = PyBool(t="bool", val=current_optimization_level() == 0);
+            value = PyBool(t="bool", val=g.u.context.optimize == 0);
             g.emit_op(OP_LOAD_CONST, g.u.add_const(value), expr_loc(n));
             return None;
         }
@@ -1804,10 +1805,14 @@ def visit_expr(
         b = e as BinOp;
         bl = nloc(b.lineno, b.end_lineno, b.col_offset, b.end_col_offset);
         folded = try_fold_binop(b.left, b.op as PyObj, b.right);
-        if folded is not None and isinstance(folded, PyInt) {
+        if folded is not None {
             register_int_literal_const(g, b.left, register_int_const);
             register_int_literal_const(g, b.right, register_int_const);
-            emit_folded_int(g, (folded as PyInt).val, bl);
+            if isinstance(folded, PyInt) {
+                emit_folded_int(g, folded.val, bl);
+            } else {
+                g.emit_op(OP_LOAD_CONST, g.u.add_const(folded), bl);
+            }
             return None;
         }
         opid = binop_id(b.op);
@@ -1843,7 +1848,7 @@ def visit_expr(
                 g.emit_op(OP_LOAD_CONST, idx, expr_loc(un));
                 return None;
             }
-            if isinstance(cv, PyInt) {
+            if isinstance(cv, (PyInt, PyBigInt)) {
                 uloc = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
                 # The operand's own const is removed by CPython's optimizer
                 # unless it occupies the protected index-0 dead slot.
@@ -1855,9 +1860,7 @@ def visit_expr(
                         g.u.dead_small_int_const = True;
                     }
                 }
-                late_idx = g.u.stage_late_const(
-                    PyInt(t="int", val=-((cv as PyInt).val))
-                );
+                late_idx = g.u.stage_late_const(integer_negate(cv));
                 g.emit_op(OP_LOAD_CONST, late_idx, uloc);
                 return None;
             }
@@ -1978,7 +1981,6 @@ def visit_expr(
             visit_expr(g, ca.func);
             g.emit_op(OP_PUSH_NULL, 0, floc);
         }
-        cmp_cleanup: basicblock | None = None;
         call_args = call_effective_args(ca);
         cloc_call = nloc(ca.lineno, ca.end_lineno, ca.col_offset, ca.end_col_offset);
         kws = call_effective_keywords(ca);
@@ -2003,17 +2005,16 @@ def visit_expr(
         if call_has_unpacking(ca) {
             # CALL_FUNCTION_EX site: build the positional slot here; the kwargs
             # mapping and the call itself go through emit_call_keyword_values /
-            # emit_call_instruction below (and in the compare-cleanup paths).
+            # emit_call_instruction below.
             emit_call_ex_positional(g, ca, cloc_call, not g.u.nested_code_emitted);
         } else {
             ai = 0;
             while ai < len(call_args) {
-                arg_cleanup = visit_expr(
-                    g, call_args[ai], False, False, not g.u.nested_code_emitted
-                );
-                if arg_cleanup is not None {
-                    cmp_cleanup = arg_cleanup;
-                }
+                # Each argument must join its own short-circuit paths before
+                # evaluating the next argument or invoking the callee. Returning
+                # a cleanup block to the surrounding statement skipped later
+                # arguments (and lost the call entirely in nested expressions).
+                visit_expr(g, call_args[ai], False, True, not g.u.nested_code_emitted);
                 ai = ai + 1;
             }
         }
@@ -2022,11 +2023,11 @@ def visit_expr(
                 g, ca, cloc_call, False, not g.u.nested_code_emitted
             );
             if codegen_busy(g) {
-                return cmp_cleanup;
+                return None;
             }
         }
         emit_call_instruction(g, ca, cloc_call);
-        return cmp_cleanup;
+        return None;
     }
     if isinstance(e, Attribute) {
         a = e as Attribute;
@@ -2723,14 +2724,7 @@ def fast_local_index(g: cfg_builder, name: str) -> int {
         }
     }
     name = g.scope_names.get(name, name);
-    vi = 0;
-    while vi < len(g.u.varnames) {
-        if g.u.varnames[vi] == name {
-            return vi;
-        }
-        vi = vi + 1;
-    }
-    return -1;
+    return g.u.varname_index(name);
 }
 
 # CPython 3.14 fuses two fast-local loads for binops (e.g. `return x + y`).
@@ -3067,7 +3061,7 @@ def visit_comp_elt(
         # folds comprehension elements too; negated consts are interned late).
         if isinstance(un.op, USub) and isinstance(un.operand, Constant) {
             cv = (un.operand as Constant).value;
-            if isinstance(cv, PyInt) {
+            if isinstance(cv, (PyInt, PyBigInt)) {
                 ul = nloc(un.lineno, un.end_lineno, un.col_offset, un.end_col_offset);
                 if len(g.u.consts) == 0 {
                     in_class_body = g.sym_top is not None
@@ -3077,9 +3071,7 @@ def visit_comp_elt(
                         g.u.dead_small_int_const = True;
                     }
                 }
-                late_idx = g.u.stage_late_const(
-                    PyInt(t="int", val=-((cv as PyInt).val))
-                );
+                late_idx = g.u.stage_late_const(integer_negate(cv));
                 g.emit_op(OP_LOAD_CONST, late_idx, ul);
                 return;
             }
@@ -3536,7 +3528,10 @@ def visit_inline_comprehension(
     parent_names = g.scope_names;
     parent_classdict_names = g.u.classdict_names;
     g.sym_top = scope;
-    g.scope_names = parent_names | scope.inline_aliases;
+    aliases: dict[str, str] = {};
+    aliases.update(parent_names);
+    aliases.update(scope.inline_aliases);
+    g.scope_names = aliases;
     g.u.classdict_names = False;
     try {
         slots: list[int] = [];
@@ -3758,6 +3753,7 @@ def compile_lambda_cfg(
     in_class: bool = False,
     qualname: str | None = None
 ) -> unverified_cfg {
+    import jaclang.compiler.backends.py.jacpython.compiler_exc as dispatch_exc;
     (argcount, posonly, kwonly) = function_argcounts(lam.args);
     u = unverified_cfg(
         filename=filename,
@@ -3770,7 +3766,7 @@ def compile_lambda_cfg(
     u.kwonlyargcount = kwonly;
     u.param_count = len(sym_fn.varnames);
     u.flags = function_code_flags(lam.args, in_class);
-    u.varnames = fast_varnames_from_sym(sym_fn);
+    u.set_varnames(fast_varnames_from_sym(sym_fn));
     if sym_fn.nested {
         u.flags = u.flags | CO_NESTED;
     }
@@ -3790,7 +3786,7 @@ def compile_lambda_cfg(
     # unit, interning the const after all body consts (kept at index 0 by
     # remove_unused_consts, dropped otherwise).
     u.add_const(py_none());
-    stmt_handlers["deferred_comp_handlers"](g);
+    dispatch_exc.emit_deferred_comp_handlers(g);
     if sym_fn.generator {
         emit_generator_except_handler(g, protect_start);
     }
@@ -3863,6 +3859,7 @@ def visit_genexp(g: cfg_builder, ge: GeneratorExp) -> None {
 def compile_genexp_cfg(
     ge: GeneratorExp, filename: str, sym_fn: sym_block, private: str | None = None
 ) -> unverified_cfg {
+    import jaclang.compiler.backends.py.jacpython.compiler_exc as dispatch_exc;
     u = unverified_cfg(
         filename=filename, name="<genexpr>", qualname="<genexpr>", firstlineno=ge.lineno
     );
@@ -3873,7 +3870,7 @@ def compile_genexp_cfg(
     if sym_fn.nested {
         u.flags = u.flags | CO_NESTED;
     }
-    u.varnames = fast_varnames_from_sym(sym_fn);
+    u.set_varnames(fast_varnames_from_sym(sym_fn));
     entry_blk = u.add_block();
     g = new_cfg_builder(u, entry_blk, sym_fn, private);
     protect_start = emit_function_prologue(g, sym_fn, ge.lineno, True);
@@ -3882,7 +3879,7 @@ def compile_genexp_cfg(
     elt_loc = expr_loc(ge.elt);
     g.emit_op(OP_LOAD_CONST, u.add_const(py_none()), elt_loc);
     g.emit_op(OP_RETURN_VALUE, 0, elt_loc);
-    stmt_handlers["deferred_comp_handlers"](g);
+    dispatch_exc.emit_deferred_comp_handlers(g);
     emit_generator_except_handler(g, protect_start);
     u.flush_late_consts();
     return u;
