@@ -698,9 +698,9 @@ test "native sort never silently orders object-returning keys" {
     # independently refuses one before emitting comparisons (#9144).
     errors = compile_native_errors("prim_sort_key_object.jac");
     assert len(errors) > 0 , "object-returning sort key compiled silently";
-    assert any(
-        "No matching overload" in e or "E5092" in e for e in errors
-    ) , (f"object-returning sort key must be rejected: {errors}");
+    assert any("No matching overload" in e or "E5092" in e for e in errors) , (
+        f"object-returning sort key must be rejected: {errors}"
+    );
 }
 
 test "native gradual object keys demote, never pointer-sort (#9158)" {

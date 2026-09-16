@@ -2624,7 +2624,6 @@ impl NaIRGenPass._unify_int_widths(
     assert isinstance(left_type, ir.IntType) and isinstance(right_type, ir.IntType);
     _i32 = ir.IntType(32);
     if left_type.width == 1 and right_type.width == 1 {
-        # i1 has no signedness, so pair both up to i32 before comparing.
         left = self.builder.zext(left, _i32, name="bool.widen");
         right = self.builder.zext(right, _i32, name="bool.widen");
     } elif left_type.width == 1 and right_type.width > 1 {
@@ -2642,11 +2641,13 @@ impl NaIRGenPass._int_lt_gt_pair(
         return (
             self.builder.icmp_unsigned("<", left, right, name=f"{name}.lt"),
             self.builder.icmp_unsigned(">", left, right, name=f"{name}.gt"),
+
         );
     }
     return (
         self.builder.icmp_signed("<", left, right, name=f"{name}.lt"),
         self.builder.icmp_signed(">", left, right, name=f"{name}.gt"),
+
     );
 }
 
@@ -3607,7 +3608,7 @@ impl NaIRGenPass._emit_comparison(
                             Tok.EE, ea, eb, isinstance(ea.type, ir.FloatType)
                         );
                         if _sub_eq is None {
-                            self.emit(
+                            self.ctx.emit(
                                 E5090,
                                 kind="comparison",
                                 name=f"tuple element {i}",
@@ -3809,7 +3810,7 @@ impl NaIRGenPass._emit_comparison(
                             Tok.EE, lcmp_ea, lcmp_eb, isinstance(lcmp_et, ir.FloatType)
                         );
                         if _lsub_eq is None {
-                            self.emit(
+                            self.ctx.emit(
                                 E5090,
                                 kind="comparison",
                                 name="list element",
@@ -4223,7 +4224,7 @@ impl NaIRGenPass._emit_order_pair(
         Tok.LT, left, right, is_float, unsigned=unsigned, key_ret=key_ret
     );
     if _lt is None {
-        self.emit(
+        self.ctx.emit(
             E5090,
             kind="comparison",
             name=name,
@@ -4235,7 +4236,7 @@ impl NaIRGenPass._emit_order_pair(
         Tok.GT, left, right, is_float, unsigned=unsigned, key_ret=key_ret
     );
     if _gt is None {
-        self.emit(
+        self.ctx.emit(
             E5090,
             kind="comparison",
             name=name,

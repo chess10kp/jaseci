@@ -23,7 +23,7 @@ def u64_pair_key(w: str) -> (u64, int) {
     return (u64(len(w)) * u64(2305843009213693952), len(w));
 }
 
-def sort_key_py -> dict {
+def sort_key_py -> dict[str, any] {
     words: list[str] = ["pear", "fig", "apple", "kiwi"];
     by_str: list[str] = sorted(words, key=lambda (w: str) -> str { w; });
     by_rev: list[str] = sorted(words, key=lambda (w: str) -> str { w; }, reverse=True);
@@ -130,7 +130,7 @@ def sort_key_py -> dict {
     };
 }
 
-def sort_key_cl -> dict {
+def sort_key_cl -> dict[str, any] {
     words: list[str] = ["pear", "fig", "apple", "kiwi"];
     by_str: list[str] = sorted(words, key=lambda (w: str) -> str { w; });
     by_rev: list[str] = sorted(words, key=lambda (w: str) -> str { w; }, reverse=True);
@@ -237,7 +237,7 @@ def sort_key_cl -> dict {
     };
 }
 
-def sort_key_na -> dict {
+def sort_key_na -> dict[str, any] {
     words: list[str] = ["pear", "fig", "apple", "kiwi"];
     by_str: list[str] = sorted(words, key=lambda (w: str) -> str { w; });
     by_rev: list[str] = sorted(words, key=lambda (w: str) -> str { w; }, reverse=True);

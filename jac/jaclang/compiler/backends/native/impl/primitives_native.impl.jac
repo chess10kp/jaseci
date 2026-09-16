@@ -3237,7 +3237,7 @@ impl NativeListEmitter.emit_sort(
     _key_orderable = p._sort_key_orderable(_key_ret);
     if _key_orderable is False
         or (_key_orderable is None and not p._sort_key_supported(cmp_type)) {
-        p.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
+        p.ctx.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
         return None;
     }
     _cmp_float = isinstance(cmp_type, (ir.DoubleType, ir.FloatType));
@@ -3245,7 +3245,7 @@ impl NativeListEmitter.emit_sort(
     if _cmp_float {
         (cj, cj1) = p._promote_to_float(cj, cj1, unsigned=_cmp_unsigned);
     }
-    _sort_errs = len(p.errors_had);
+    _sort_errs = len(p.ctx.errors_had);
     cmp_gt: (ir.Value | None) = p._emit_comparison(
         Tok.GT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned, key_ret=_key_ret
     );
@@ -3259,8 +3259,8 @@ impl NativeListEmitter.emit_sort(
         if key_fn is not None {
             p._release_owned_operands(cj, cj1, op="sort_key");
         }
-        if len(p.errors_had) == _sort_errs {
-            p.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
+        if len(p.ctx.errors_had) == _sort_errs {
+            p.ctx.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
         }
         return None;
     }

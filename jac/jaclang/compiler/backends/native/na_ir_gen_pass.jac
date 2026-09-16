@@ -2258,6 +2258,7 @@ walker NaIRGenPass {
     def _int_lt_gt_pair(
         left: ir.Value, right: ir.Value, unsigned: bool, name: str
     ) -> tuple[(ir.Value, ir.Value)];
+
     def _emit_order_pair(
         left: ir.Value,
         right: ir.Value,
@@ -2274,7 +2275,9 @@ walker NaIRGenPass {
     def _sort_key_return_type(nd: (uni.UniNode | None)) -> (TypeBase | None);
     def _sort_key_orderable(ty: (TypeBase | None)) -> (bool | None);
     def _sort_key_unsigned(nd: (uni.UniNode | None)) -> bool;
-    def _agg_key_args(key_ret: (TypeBase | None), agg_name: str) -> (list[TypeBase] | None);
+    def _agg_key_args(
+        key_ret: (TypeBase | None), agg_name: str
+    ) -> (list[TypeBase] | None);
     def _key_elem_unsigned(et: (TypeBase | None)) -> bool;
     def _emit_jacval_ordering(
         op: str, jv: ir.Value, peer: ir.Value, jv_on_left: bool

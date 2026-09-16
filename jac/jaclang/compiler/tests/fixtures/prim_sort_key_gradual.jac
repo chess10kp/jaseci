@@ -13,13 +13,13 @@ node Gthing {
     has name: str = "";
 }
 
-def grad_obj_na -> dict {
+def grad_obj_na -> dict[str, str] {
     things: list[Gthing] = [Gthing(name="b2"), Gthing(name="a9")];
     by_grad: list[Gthing] = sorted(things, key=lambda (t: Gthing) -> any { t; });
     return {"g0": by_grad[0].name};
 }
 
-def grad_str_na -> dict {
+def grad_str_na -> dict[str, str] {
     things: list[Gthing] = [Gthing(name="b2"), Gthing(name="a9")];
     by_name: list[Gthing] = sorted(things, key=lambda (t: Gthing) -> str { t.name; });
     return {"s0": by_name[0].name};
