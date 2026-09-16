@@ -3260,7 +3260,9 @@ impl NativeListEmitter.emit_sort(
             p._release_owned_operands(cj, cj1, op="sort_key");
         }
         if len(p.ctx.errors_had) == _sort_errs {
-            p.ctx.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
+            p.ctx.emit(
+                E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG
+            );
         }
         return None;
     }

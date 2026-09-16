@@ -2278,6 +2278,7 @@ walker NaIRGenPass {
     def _agg_key_args(
         key_ret: (TypeBase | None), agg_name: str
     ) -> (list[TypeBase] | None);
+
     def _key_elem_unsigned(et: (TypeBase | None)) -> bool;
     def _emit_jacval_ordering(
         op: str, jv: ir.Value, peer: ir.Value, jv_on_left: bool
