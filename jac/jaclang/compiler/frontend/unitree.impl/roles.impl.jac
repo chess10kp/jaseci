@@ -1,3 +1,8 @@
+"""Role-edge accessors for Unitree.
+
+Pruned of 186 trivial __repr__ impls (Phase 1); remaining file is pure
+per-role getters. Future split: roles/modules.jac, stmts.jac, exprs.jac.
+"""
 import from collections.abc { Sequence }
 
 import from jaclang.compiler.frontend.roles {
