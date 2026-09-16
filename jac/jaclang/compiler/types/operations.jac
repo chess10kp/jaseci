@@ -364,7 +364,7 @@ def get_type_of_binary_operation(
         }
         (magic, rmagic) = BINARY_OPERATOR_MAP[expr.op.name];
 
-        if expr.op.name not in (Tok.EE, Tok.NE, Tok.BW_OR) {
+        if expr.op.name not in (Tok.EE, Tok.NE) {
             for operand_type in (left_type, right_type) {
                 if evaluator._diag_unnarrowed_optional(
                     expr, operand_type, "a binary operand"

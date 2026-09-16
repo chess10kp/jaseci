@@ -132,8 +132,8 @@ test "un-narrowed optional use at strict sites is E1121, never runtime UB" {
     assert len(subscript) == 1 , (
         f"expected E1121 for the dict-key vector (segfaulted on old main), got: {msgs}"
     );
-    assert len(arithmetic) == 2 , (
-        f"expected E1121 for both forward and reflected arithmetic vectors, got: {msgs}"
+    assert len(arithmetic) == 4 , (
+        f"expected E1121 for forward/reflected arithmetic and bitwise-or vectors, got: {msgs}"
     );
 }
 

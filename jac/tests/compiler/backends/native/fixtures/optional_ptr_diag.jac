@@ -39,3 +39,11 @@ def scalar_add_bad(x: int | None) -> int {
 def scalar_radd_bad(x: int | None) -> int {
     return 1 + x;
 }
+
+def scalar_bwor_bad(x: int | None) -> int {
+    return x | 1;
+}
+
+def scalar_rbwor_bad(x: int | None) -> int {
+    return 1 | x;
+}
