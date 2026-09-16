@@ -425,10 +425,17 @@ def module_env_fingerprint(source_path: str) -> str {
     return h.hexdigest();
 }
 
-def compute_module_key(source_path: str) -> str {
+def _module_cache_context_identity(source_path: str) -> str {
+    if is_stub_like_path(source_path) or is_compiler_source_path(source_path) {
+        return "";
+    }
     import from jaclang.compiler.driver.compilation_context { cache_identity }
+    return cache_identity();
+}
+
+def compute_module_key(source_path: str) -> str {
     h = hashlib.sha256();
-    h.update(cache_identity().encode());
+    h.update(_module_cache_context_identity(source_path).encode());
     h.update(_env_fingerprint_for(source_path).encode());
     h.update(compute_content_sha256(source_path).encode());
     for (rel, digest) in _related_files(source_path) {
@@ -740,10 +747,11 @@ def _get_module_cache_dir(source_path: str) -> Path {
 }
 
 def get_module_cache_path(source_path: str) -> Path {
-    import from jaclang.compiler.driver.compilation_context { cache_identity }
     cache_dir = _get_module_cache_dir(source_path);
     source = Path(source_path).resolve();
-    path_hash = hashlib.sha256((str(source) + cache_identity()).encode()).hexdigest()[:8];
+    path_hash = hashlib.sha256(
+        (str(source) + _module_cache_context_identity(str(source))).encode()
+    ).hexdigest()[:8];
     (major, minor) = (sys.version_info.major, sys.version_info.minor);
     return cache_dir / f"{source.stem}.{path_hash}.cpython-{major}{minor}.jir";
 }

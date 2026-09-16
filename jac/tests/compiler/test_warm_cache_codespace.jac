@@ -115,6 +115,24 @@ test "a compiler-source module keys the same under every ambient codespace" {
     }
 }
 
+test "compiler-source cache paths ignore the requesting context" {
+    import from jaclang.compiler.driver.compilation_context { cache_scope }
+    with cache_scope("entry-a") {
+        first_path = get_module_cache_path(SYMBOL_UTILS);
+        first_key = module_cache_key(SYMBOL_UTILS);
+    }
+    with cache_scope("entry-b") {
+        second_path = get_module_cache_path(SYMBOL_UTILS);
+        second_key = module_cache_key(SYMBOL_UTILS);
+    }
+    assert first_path == second_path , (
+        "a compiler-source module got one cache file per requesting context"
+    );
+    assert first_key == second_key , (
+        "a compiler-source JIR key still includes the requesting context"
+    );
+}
+
 
 test "the symtab-ir schedule pre-imports what its passes reach at run time" {
     saved_mod = sys.modules.pop("jaclang.compiler.symbol_utils");
