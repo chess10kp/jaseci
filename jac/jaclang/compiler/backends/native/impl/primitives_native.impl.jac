@@ -1,6 +1,6 @@
 import from jaclang.compiler.frontend.diagnostics { E5092 }
 
-glob SORT_KEY_MSG: str = "comparison requires orderable key values (int, float, bool, str, bytes, tuple, list, or set)";
+glob SORT_KEY_MSG: str = "comparison requires orderable key values (int, float, bool, str, bytes, tuple, list, set, or frozenset)";
 
 impl NativeIntEmitter.emit_to_bytes(
     self: NativeIntEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
@@ -3233,9 +3233,8 @@ impl NativeListEmitter.emit_sort(
 
     cj = p._cast_to_list_elem(b, cj, cmp_type, "sort.cj");
     cj1 = p._cast_to_list_elem(b, cj1, cmp_type, "sort.cj1");
-    _key_orderable = p._sort_key_orderable(
-        p._sort_key_return_type(_key_node) if key_fn is not None else None
-    );
+    _key_ret = p._sort_key_return_type(_key_node) if key_fn is not None else None;
+    _key_orderable = p._sort_key_orderable(_key_ret);
     if _key_orderable is False
         or (_key_orderable is None and not p._sort_key_supported(cmp_type)) {
         p.emit(E5092, node_override=_key_node, kind="sort key", name=SORT_KEY_MSG);
@@ -3248,12 +3247,12 @@ impl NativeListEmitter.emit_sort(
     }
     _sort_errs = len(p.errors_had);
     cmp_gt: (ir.Value | None) = p._emit_comparison(
-        Tok.GT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned
+        Tok.GT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned, key_ret=_key_ret
     );
     cmp_lt: (ir.Value | None) = None;
     if cmp_gt is not None and rev_i1 is not None {
         cmp_lt = p._emit_comparison(
-            Tok.LT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned
+            Tok.LT, cj, cj1, _cmp_float, unsigned=_cmp_unsigned, key_ret=_key_ret
         );
     }
     if cmp_gt is None or (rev_i1 is not None and cmp_lt is None) {

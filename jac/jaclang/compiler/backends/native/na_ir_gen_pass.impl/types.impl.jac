@@ -2621,7 +2621,12 @@ impl NaIRGenPass._unify_int_widths(
     left_type = left.type;
     right_type = right.type;
     assert isinstance(left_type, ir.IntType) and isinstance(right_type, ir.IntType);
-    if left_type.width == 1 and right_type.width > 1 {
+    _i32 = ir.IntType(32);
+    if left_type.width == 1 and right_type.width == 1 {
+        # i1 has no signedness, so pair both up to i32 before comparing.
+        left = self.builder.zext(left, _i32, name="bool.widen");
+        right = self.builder.zext(right, _i32, name="bool.widen");
+    } elif left_type.width == 1 and right_type.width > 1 {
         left = self.builder.zext(left, right_type, name="bool.widen");
     } elif right_type.width == 1 and left_type.width > 1 {
         right = self.builder.zext(right, left_type, name="bool.widen");
@@ -2629,20 +2634,19 @@ impl NaIRGenPass._unify_int_widths(
     return (left, right);
 }
 
-impl NaIRGenPass._widen_i1_pair(
-    left: ir.Value, right: ir.Value
+impl NaIRGenPass._int_lt_gt_pair(
+    left: ir.Value, right: ir.Value, unsigned: bool, name: str
 ) -> tuple[(ir.Value, ir.Value)] {
-    if (
-        isinstance(left.type, ir.IntType)
-        and isinstance(right.type, ir.IntType)
-        and left.type.width == 1
-        and right.type.width == 1
-    ) {
-        _i32 = ir.IntType(32);
-        left = self.builder.zext(left, _i32, name="bool.widen");
-        right = self.builder.zext(right, _i32, name="bool.widen");
+    if unsigned {
+        return (
+            self.builder.icmp_unsigned("<", left, right, name=f"{name}.lt"),
+            self.builder.icmp_unsigned(">", left, right, name=f"{name}.gt"),
+        );
     }
-    return (left, right);
+    return (
+        self.builder.icmp_signed("<", left, right, name=f"{name}.lt"),
+        self.builder.icmp_signed(">", left, right, name=f"{name}.gt"),
+    );
 }
 
 impl NaIRGenPass._codegen_int_floor_divmod(
@@ -3488,7 +3492,12 @@ impl NaIRGenPass._emit_mixed_jacval_comparison(
 }
 
 impl NaIRGenPass._emit_comparison(
-    op: str, left: ir.Value, right: ir.Value, is_float: bool, unsigned: bool = False
+    op: str,
+    left: ir.Value,
+    right: ir.Value,
+    is_float: bool,
+    unsigned: bool = False,
+    key_ret: (TypeBase | None) = None
 ) -> (ir.Value | None) {
     if self?.jacval_type
         and left.type == self.jacval_type
@@ -3613,6 +3622,7 @@ impl NaIRGenPass._emit_comparison(
                 return tuple_equal;
             }
             if op in (Tok.LT, Tok.GT, Tok.LTE, Tok.GTE) and n > 0 {
+                _tup_args: list = self._agg_key_args(key_ret, "tuple") or [];
                 func = self.builder.basic_block.function;
                 tcmp_true_bb = func.append_basic_block(name="tcmp.lex.true");
                 tcmp_false_bb = func.append_basic_block(name="tcmp.lex.false");
@@ -3624,13 +3634,15 @@ impl NaIRGenPass._emit_comparison(
                     eb = self.builder.extract_value(
                         tcmp_right_val, i, name=f"tcmp.lex.eb.{i}"
                     );
+                    _elem_unsigned = (
+                        self._key_elem_unsigned(_tup_args[i])
+                            if i < len(_tup_args)
+                            else False
+                    );
                     if isinstance(ea.type, ir.IntType) {
-                        (ea, eb) = self._widen_i1_pair(ea, eb);
-                        lt_i = self.builder.icmp_signed(
-                            "<", ea, eb, name=f"tcmp.lt.{i}"
-                        );
-                        gt_i = self.builder.icmp_signed(
-                            ">", ea, eb, name=f"tcmp.gt.{i}"
+                        (ea, eb) = self._unify_int_widths(ea, eb);
+                        (lt_i, gt_i) = self._int_lt_gt_pair(
+                            ea, eb, _elem_unsigned, f"tcmp.{i}"
                         );
                     } elif isinstance(ea.type, ir.DoubleType) {
                         lt_i = self.builder.fcmp_ordered(
@@ -3645,7 +3657,8 @@ impl NaIRGenPass._emit_comparison(
                             eb,
                             isinstance(ea.type, ir.FloatType),
                             unsigned,
-                            f"tuple element {i}"
+                            f"tuple element {i}",
+                            _tup_args[i] if i < len(_tup_args) else None
                         );
                         if _tup_ord is None {
                             return None;
@@ -3860,13 +3873,16 @@ impl NaIRGenPass._emit_comparison(
                     lcmp_leb = self.builder.call(
                         lcmp_h["get"], [right, lcmp_li], name="lcmp.lex.eb"
                     );
+                    _largs: list = self._agg_key_args(key_ret, "list") or [];
+                    _lelem_unsigned = (
+                        self._key_elem_unsigned(_largs[0]) if _largs else False
+                    );
                     if isinstance(lcmp_et, ir.IntType) {
-                        (lcmp_lea, lcmp_leb) = self._widen_i1_pair(lcmp_lea, lcmp_leb);
-                        lcmp_lex_lt = self.builder.icmp_signed(
-                            "<", lcmp_lea, lcmp_leb, name="lcmp.lex.lt"
+                        (lcmp_lea, lcmp_leb) = self._unify_int_widths(
+                            lcmp_lea, lcmp_leb
                         );
-                        lcmp_lex_gt = self.builder.icmp_signed(
-                            ">", lcmp_lea, lcmp_leb, name="lcmp.lex.gt"
+                        (lcmp_lex_lt, lcmp_lex_gt) = self._int_lt_gt_pair(
+                            lcmp_lea, lcmp_leb, _lelem_unsigned, "lcmp.lex"
                         );
                     } elif isinstance(lcmp_et, ir.DoubleType) {
                         lcmp_lex_lt = self.builder.fcmp_ordered(
@@ -3881,7 +3897,8 @@ impl NaIRGenPass._emit_comparison(
                             lcmp_leb,
                             isinstance(lcmp_et, ir.FloatType),
                             unsigned,
-                            "list element"
+                            "list element",
+                            _largs[0] if _largs else None
                         );
                         if _lst_ord is None {
                             return None;
@@ -4168,7 +4185,6 @@ impl NaIRGenPass._emit_comparison(
                 );
                 return None;
             }
-            (left, right) = self._widen_i1_pair(left, right);
             (left, right) = self._unify_int_widths(left, right);
             if left.type != right.type {
                 self.emit(
@@ -4191,9 +4207,16 @@ impl NaIRGenPass._emit_comparison(
 }
 
 impl NaIRGenPass._emit_order_pair(
-    left: ir.Value, right: ir.Value, is_float: bool, unsigned: bool, name: str
+    left: ir.Value,
+    right: ir.Value,
+    is_float: bool,
+    unsigned: bool,
+    name: str,
+    key_ret: (TypeBase | None) = None
 ) -> (tuple[(ir.Value, ir.Value)] | None) {
-    _lt = self._emit_comparison(Tok.LT, left, right, is_float, unsigned=unsigned);
+    _lt = self._emit_comparison(
+        Tok.LT, left, right, is_float, unsigned=unsigned, key_ret=key_ret
+    );
     if _lt is None {
         self.emit(
             E5090,
@@ -4203,7 +4226,9 @@ impl NaIRGenPass._emit_order_pair(
         );
         return None;
     }
-    _gt = self._emit_comparison(Tok.GT, left, right, is_float, unsigned=unsigned);
+    _gt = self._emit_comparison(
+        Tok.GT, left, right, is_float, unsigned=unsigned, key_ret=key_ret
+    );
     if _gt is None {
         self.emit(
             E5090,
@@ -4252,9 +4277,6 @@ impl NaIRGenPass._sort_key_supported_d(ty: ir.Type, depth: int) -> bool {
     if self._bytes_struct_type is not None and ty.pointee == self._bytes_struct_type {
         return True;
     }
-    if ty == ir.IntType(8).as_pointer() {
-        return True;
-    }
     for (lk, lt) in self.list_types.items() {
         if ty.pointee == lt {
             lh = self.list_helpers.get(lk);
@@ -4268,6 +4290,10 @@ impl NaIRGenPass._sort_key_supported_d(ty: ir.Type, depth: int) -> bool {
         if ty.pointee == st {
             return self.set_helpers.get(sk) is not None;
         }
+    }
+
+    if ty.pointee == ir.IntType(8) {
+        return False;
     }
     return self._sort_key_supported_d(ty.pointee, depth + 1);
 }
@@ -4337,6 +4363,29 @@ impl NaIRGenPass._sort_key_unsigned(nd: (uni.UniNode | None)) -> bool {
     _shape = self._scalar_shape_named(
         primitive_type_name_of(self._sort_key_return_type(nd))
     );
+    return _shape is not None
+        and _shape.sized
+        and not _shape.is_float
+        and not _shape.signed;
+}
+
+impl NaIRGenPass._agg_key_args(
+    key_ret: (TypeBase | None), agg_name: str
+) -> (list | None) {
+    import from jaclang.compiler.types.types { ClassType }
+    import from jaclang.compiler.types.type_utils { primitive_type_name_of }
+    if not isinstance(key_ret, ClassType) {
+        return None;
+    }
+    if primitive_type_name_of(key_ret) != agg_name {
+        return None;
+    }
+    return list(key_ret.private.type_args or []);
+}
+
+impl NaIRGenPass._key_elem_unsigned(et: (TypeBase | None)) -> bool {
+    import from jaclang.compiler.types.type_utils { primitive_type_name_of }
+    _shape = self._scalar_shape_named(primitive_type_name_of(et));
     return _shape is not None
         and _shape.sized
         and not _shape.is_float

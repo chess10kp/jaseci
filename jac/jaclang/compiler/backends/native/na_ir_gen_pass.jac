@@ -2141,12 +2141,24 @@ walker NaIRGenPass(Transform) {
     ) -> (ir.Value | None);
 
     def _emit_comparison(
-        op: str, left: ir.Value, right: ir.Value, is_float: bool, unsigned: bool = False
+        op: str,
+        left: ir.Value,
+        right: ir.Value,
+        is_float: bool,
+        unsigned: bool = False,
+        key_ret: (TypeBase | None) = None
     ) -> (ir.Value | None);
 
-    def _widen_i1_pair(left: ir.Value, right: ir.Value) -> tuple[(ir.Value, ir.Value)];
+    def _int_lt_gt_pair(
+        left: ir.Value, right: ir.Value, unsigned: bool, name: str
+    ) -> tuple[(ir.Value, ir.Value)];
     def _emit_order_pair(
-        left: ir.Value, right: ir.Value, is_float: bool, unsigned: bool, name: str
+        left: ir.Value,
+        right: ir.Value,
+        is_float: bool,
+        unsigned: bool,
+        name: str,
+        key_ret: (TypeBase | None) = None
     ) -> (tuple[(ir.Value, ir.Value)] | None);
 
     def _is_jacval_ty(t: ir.Type) -> bool;
@@ -2156,6 +2168,8 @@ walker NaIRGenPass(Transform) {
     def _sort_key_return_type(nd: (uni.UniNode | None)) -> (TypeBase | None);
     def _sort_key_orderable(ty: (TypeBase | None)) -> (bool | None);
     def _sort_key_unsigned(nd: (uni.UniNode | None)) -> bool;
+    def _agg_key_args(key_ret: (TypeBase | None), agg_name: str) -> (list | None);
+    def _key_elem_unsigned(et: (TypeBase | None)) -> bool;
     def _emit_jacval_ordering(
         op: str, jv: ir.Value, peer: ir.Value, jv_on_left: bool
     ) -> (ir.Value | None);
