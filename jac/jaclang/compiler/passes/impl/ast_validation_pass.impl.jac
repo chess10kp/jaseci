@@ -306,7 +306,7 @@ impl ASTValidationPass.enter_ctrl_stmt with CtrlStmt entry {
         }
         if kw == "continue" and isinstance(parent, ElseStmt) {
             if isinstance(parent.parent, (InForStmt, IterForStmt, WhileStmt)) {
-                self.emit(E0059, node_override=here);
+                self.ctx.emit(E0059, node_override=here);
                 return;
             }
         }
