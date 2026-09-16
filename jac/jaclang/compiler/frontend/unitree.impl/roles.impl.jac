@@ -1,7 +1,7 @@
 """Role-edge accessors for Unitree.
 
-Pruned of 186 trivial __repr__ impls (Phase 1); remaining file is pure
-per-role getters. Future split: roles/modules.jac, stmts.jac, exprs.jac.
+Pure per-role getters/setters backed by the TokRole/ChildRole edge graph.
+Future split: roles/modules.jac, stmts.jac, exprs.jac.
 """
 import from collections.abc { Sequence }
 
@@ -114,44 +114,89 @@ impl UniNode.__repr__ -> str {
     return f"{type(self).__name__}";
 }
 
+impl AstSymbolNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl AstSymbolStubNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AstAccessNode.access.getter -> (SubTag[Token] | None) {
     found = [self->:AccessRole:->];
     return found[0] if found else None;
 }
 
+impl AstAccessNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl ContextAwareNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AstDocNode.doc.getter -> (String | None) {
     found = [self->:DocRole:->];
     return found[0] if found else None;
 }
 
+impl AstDocNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl AstAsyncNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AstElseBodyNode.else_body.getter -> (ElseStmt | ElseIf | None) {
     found = [self->:ElseBodyRole:->];
     return found[0] if found else None;
 }
 
+impl AstElseBodyNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AstTypedVarNode.type_tag.getter -> (SubTag[Expr] | None) {
     found = [self->:TypeTagRole:->];
     return found[0] if found else None;
 }
 
+impl AstTypedVarNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl WalkerStmtOnlyNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl UniCFGNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl ConditionalNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl Expr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl CfgExpr.expr.getter -> Expr {
     return [self->:ExprRole:->][0];
 }
 
+impl CfgExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl EnumBlockStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl CodeBlockStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AstImplNeedingNode.body.getter -> (Sequence[UniNode] | UniNode | None) {
     impl_of = [self->:ImplOf:->];
@@ -161,23 +206,41 @@ impl AstImplNeedingNode.body.getter -> (Sequence[UniNode] | UniNode | None) {
     return self._role_shaped(BodyRole, [self->:BodyRole:->]);
 }
 
+impl AstImplNeedingNode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl NameAtom.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ArchSpec.decorators.getter -> (Sequence[Expr] | None) {
     return [self->:DecoratorsRole:->];
 }
 
+impl ArchSpec.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl SubTag.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl Module.body.getter -> Sequence[ElementStmt | String | EmptyToken] {
     return [self->:BodyRole:->];
 }
 
+impl Module.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ProgramModule.main.getter -> Module {
     return [self->:MainRole:->][0];
 }
 
+impl ProgramModule.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl TypeParam.name.getter -> Name {
     return [self->:NameRole:->][0];
@@ -193,6 +256,9 @@ impl TypeParam.default_val.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl TypeParam.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl TypeAlias.name.getter -> Name {
     return [self->:NameRole:->][0];
@@ -206,11 +272,17 @@ impl TypeAlias.value.getter -> Expr {
     return [self->:ValueRole:->][0];
 }
 
+impl TypeAlias.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl GlobalVars.assignments.getter -> Sequence[Assignment] {
     return [self->:AssignmentsRole:->];
 }
 
+impl GlobalVars.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl Test.name.getter -> Name {
     return [self->:NameRole:->][0];
@@ -229,6 +301,9 @@ impl Test.decorators.getter -> (Sequence[Expr] | None) {
     return [self->:DecoratorsRole:->];
 }
 
+impl Test.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ModuleCode.name.getter -> (Name | None) {
     found = [self->:NameRole:->];
@@ -239,11 +314,17 @@ impl ModuleCode.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl ModuleCode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl PyInlineCode.code.getter -> Token {
     return [self->:CodeRole:->][0];
 }
 
+impl PyInlineCode.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl Import.from_loc.getter -> (ModulePath | None) {
     found = [self->:FromLocRole:->];
@@ -263,6 +344,9 @@ impl Import.hint.getter -> (SubTag[Token] | None) {
     return found[0] if found else None;
 }
 
+impl Import.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ModulePath.path.getter -> (Sequence[(Name | String)] | None) {
     return [self->:PathRole:->];
@@ -273,6 +357,9 @@ impl ModulePath.alias.getter -> (Name | None) {
     return found[0] if found else None;
 }
 
+impl ModulePath.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ModuleItem.name.getter -> (Name | Token) {
     return [self->:NameRole:->][0];
@@ -283,6 +370,9 @@ impl ModuleItem.alias.getter -> (Name | None) {
     return found[0] if found else None;
 }
 
+impl ModuleItem.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl Archetype.name.getter -> Name {
     return [self->:NameRole:->][0];
@@ -314,6 +404,9 @@ impl Archetype.tgt_endpoint.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl Archetype.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ImplDef.decl_link.getter -> (UniNode | None) {
     found = [self<-:ImplOf:<-];
@@ -336,6 +429,9 @@ impl ImplDef.body.getter -> Sequence[CodeBlockStmt] | Sequence[EnumBlockStmt] | 
     return self._role_shaped(BodyRole, [self->:BodyRole:->]);
 }
 
+impl ImplDef.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl SemDef.target.getter -> Sequence[NameAtom] {
     return [self->:TargetRole:->];
@@ -345,6 +441,9 @@ impl SemDef.value.getter -> MultiString {
     return [self->:ValueRole:->][0];
 }
 
+impl SemDef.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl Enum.name.getter -> Name {
     return [self->:NameRole:->][0];
@@ -359,6 +458,9 @@ impl Enum.base_classes.getter -> list[Expr] {
     return [self->:BaseClassesRole:->][?:Expr];
 }
 
+impl Enum.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl Ability.name_ref.getter -> (NameAtom | None) {
     found = [self->:NameRefRole:->];
@@ -378,6 +480,9 @@ impl Ability.type_params.getter -> list[TypeParam] {
     return [self->:TypeParamsRole:->][?:TypeParam];
 }
 
+impl Ability.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl FuncSignature.posonly_params.getter -> Sequence[ParamVar] {
     return [self->:PosonlyParamsRole:->];
@@ -406,6 +511,9 @@ impl FuncSignature.return_type.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl FuncSignature.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl EventSignature.event.getter -> Token {
     return [self->:EventRole:->][0];
@@ -416,6 +524,9 @@ impl EventSignature.arch_tag_info.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl EventSignature.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ParamVar.name.getter -> Name {
     return [self->:NameRole:->][0];
@@ -431,11 +542,17 @@ impl ParamVar.value.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl ParamVar.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ArchHas.vars.getter -> Sequence[HasVar] {
     return [self->:VarsRole:->];
 }
 
+impl ArchHas.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl HasVar.name.getter -> Name {
     return [self->:NameRole:->][0];
@@ -450,6 +567,9 @@ impl HasVar.accessors.getter -> (Sequence[Ability] | None) {
     return self._role_shaped(AccessorsRole, [self->:AccessorsRole:->]);
 }
 
+impl HasVar.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl TypedCtxBlock.type_ctx.getter -> Expr {
     return [self->:TypeCtxRole:->][0];
@@ -459,6 +579,9 @@ impl TypedCtxBlock.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl TypedCtxBlock.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl OpenStmt.target.getter -> Expr {
     return [self->:TargetRole:->][0];
@@ -468,6 +591,9 @@ impl OpenStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl OpenStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl IfStmt.condition.getter -> Expr {
     return [self->:ConditionRole:->][0];
@@ -477,17 +603,29 @@ impl IfStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl IfStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
+impl ElseIf.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ElseStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl ElseStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ExprStmt.expr.getter -> Expr {
     return [self->:ExprRole:->][0];
 }
 
+impl ExprStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl TryStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
@@ -507,11 +645,17 @@ impl TryStmt.finally_body.getter -> (FinallyStmt | None) {
     return found[0] if found else None;
 }
 
+impl TryStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl AwaitingClause.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl AwaitingClause.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl Except.ex_type.getter -> Expr {
     return [self->:ExTypeRole:->][0];
@@ -526,11 +670,17 @@ impl Except.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl Except.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl FinallyStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl FinallyStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl IterForStmt.iter.getter -> Assignment {
     return [self->:IterRole:->][0];
@@ -548,6 +698,9 @@ impl IterForStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl IterForStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl InForStmt.target.getter -> Expr {
     return [self->:TargetRole:->][0];
@@ -561,6 +714,9 @@ impl InForStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl InForStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl WhileStmt.condition.getter -> Expr {
     return [self->:ConditionRole:->][0];
@@ -570,11 +726,17 @@ impl WhileStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl WhileStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ForeverStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl ForeverStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl WithStmt.exprs.getter -> Sequence[ExprAsItem] {
     return [self->:ExprsRole:->];
@@ -584,6 +746,9 @@ impl WithStmt.body.getter -> Sequence[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl WithStmt.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ExprAsItem.expr.getter -> Expr {
     return [self->:ExprRole:->][0];
@@ -594,6 +759,9 @@ impl ExprAsItem.alias.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl ExprAsItem.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl RaiseStmt.cause.getter -> (Expr | None) {
     found = [self->:CauseRole:->];
@@ -605,6 +773,9 @@ impl RaiseStmt.from_target.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl RaiseStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AssertStmt.condition.getter -> Expr {
     return [self->:ConditionRole:->][0];
@@ -615,27 +786,42 @@ impl AssertStmt.error_msg.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl AssertStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl CtrlStmt.ctrl.getter -> Token {
     return [self->:CtrlRole:->][0];
 }
 
+impl CtrlStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl DeleteStmt.targets.getter -> list[Expr] {
     return [self->:TargetRole:->];
 }
 
+impl DeleteStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ReportStmt.expr.getter -> Expr {
     return [self->:ExprRole:->][0];
 }
 
+impl ReportStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ReturnStmt.expr.getter -> (Expr | None) {
     found = [self->:ExprRole:->];
     return found[0] if found else None;
 }
 
+impl ReturnStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl VisitStmt.insert_loc.getter -> (Expr | None) {
     found = [self->:InsertLocRole:->];
@@ -646,12 +832,21 @@ impl VisitStmt.target.getter -> Expr {
     return [self->:TargetRole:->][0];
 }
 
+impl VisitStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl DisengageStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AwaitExpr.target.getter -> Expr {
     return [self->:TargetRole:->][0];
 }
 
+impl AwaitExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl CastExpr.value.getter -> Expr {
     return [self->:ValueRole:->][0];
@@ -661,6 +856,9 @@ impl CastExpr.cast_type.getter -> Expr {
     return [self->:CastTypeRole:->][0];
 }
 
+impl CastExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl Assignment.target.getter -> Sequence[Expr] {
     return [self->:TargetRole:->];
@@ -676,6 +874,9 @@ impl Assignment.aug_op.getter -> (Token | None) {
     return found[0] if found else None;
 }
 
+impl Assignment.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ConcurrentExpr.tok.getter -> (Token | None) {
     found = [self->:TokRole:->];
@@ -686,6 +887,9 @@ impl ConcurrentExpr.target.getter -> Expr {
     return [self->:TargetRole:->][0];
 }
 
+impl ConcurrentExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl BinaryExpr.left.getter -> Expr {
     return [self->:LeftRole:->][0];
@@ -699,6 +903,9 @@ impl BinaryExpr.op.getter -> Token | DisconnectOp | ConnectOp {
     return [self->:OpRole:->][0];
 }
 
+impl BinaryExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl CompareExpr.left.getter -> Expr {
     return [self->:LeftRole:->][0];
@@ -712,6 +919,9 @@ impl CompareExpr.ops.getter -> list[Token] {
     return [self->:OpsRole:->];
 }
 
+impl CompareExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl BoolExpr.op.getter -> Token {
     return [self->:OpRole:->][0];
@@ -721,6 +931,9 @@ impl BoolExpr.values.getter -> list[CfgExpr] {
     return [self->:ValuesRole:->];
 }
 
+impl BoolExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl LambdaExpr.body.getter -> (Expr | Sequence[CodeBlockStmt]) {
     return self._role_shaped(BodyRole, [self->:BodyRole:->]);
@@ -731,6 +944,9 @@ impl LambdaExpr.signature.getter -> (FuncSignature | None) {
     return found[0] if found else None;
 }
 
+impl LambdaExpr.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl UnaryExpr.operand.getter -> Expr {
     return [self->:OperandRole:->][0];
@@ -740,6 +956,9 @@ impl UnaryExpr.op.getter -> Token {
     return [self->:OpRole:->][0];
 }
 
+impl UnaryExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl IfElseExpr.condition.getter -> CfgExpr {
     return [self->:ConditionRole:->][0];
@@ -753,11 +972,17 @@ impl IfElseExpr.else_value.getter -> CfgExpr {
     return [self->:ElseValueRole:->][0];
 }
 
+impl IfElseExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MultiString.strings.getter -> Sequence[(String | FString)] {
     return [self->:StringsRole:->];
 }
 
+impl MultiString.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl FString.start.getter -> (Token | None) {
     found = [self->:StartRole:->];
@@ -773,6 +998,9 @@ impl FString.end.getter -> (Token | None) {
     return found[0] if found else None;
 }
 
+impl FString.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl FormattedValue.format_part.getter -> Expr {
     return [self->:FormatPartRole:->][0];
@@ -783,26 +1011,41 @@ impl FormattedValue.format_spec.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl FormattedValue.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ListVal.values.getter -> Sequence[Expr] {
     return [self->:ValuesRole:->];
 }
 
+impl ListVal.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl SetVal.values.getter -> (Sequence[Expr] | None) {
     return [self->:ValuesRole:->];
 }
 
+impl SetVal.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl TupleVal.values.getter -> Sequence[(Expr | KWPair)] {
     return [self->:ValuesRole:->];
 }
 
+impl TupleVal.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl DictVal.kv_pairs.getter -> Sequence[KVPair] {
     return [self->:KvPairsRole:->];
 }
 
+impl DictVal.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl KVPair.key.getter -> (Expr | None) {
     found = [self->:KeyRole:->];
@@ -813,6 +1056,9 @@ impl KVPair.value.getter -> Expr {
     return [self->:ValueRole:->][0];
 }
 
+impl KVPair.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl KWPair.key.getter -> (NameAtom | None) {
     found = [self->:KeyRole:->];
@@ -823,6 +1069,9 @@ impl KWPair.value.getter -> Expr {
     return [self->:ValueRole:->][0];
 }
 
+impl KWPair.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl InnerCompr.target.getter -> Expr {
     return [self->:TargetRole:->][0];
@@ -836,6 +1085,9 @@ impl InnerCompr.conditional.getter -> (list[Expr] | None) {
     return [self->:ConditionalRole:->];
 }
 
+impl InnerCompr.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl ListCompr.out_expr.getter -> Expr {
     return [self->:OutExprRole:->][0];
@@ -845,8 +1097,17 @@ impl ListCompr.compr.getter -> list[InnerCompr] {
     return [self->:ComprRole:->];
 }
 
+impl ListCompr.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
+impl GenCompr.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
+impl SetCompr.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl DictCompr.kv_pair.getter -> KVPair {
     return [self->:KvPairRole:->][0];
@@ -856,6 +1117,9 @@ impl DictCompr.compr.getter -> list[InnerCompr] {
     return [self->:ComprRole:->];
 }
 
+impl DictCompr.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl AtomTrailer.target.getter -> Expr {
     return [self->:TargetRole:->][0];
@@ -865,17 +1129,26 @@ impl AtomTrailer.right.getter -> (AtomExpr | Expr) {
     return [self->:RightRole:->][0];
 }
 
+impl AtomTrailer.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AtomUnit.value.getter -> Expr | YieldExpr | Ability {
     return [self->:ValueRole:->][0];
 }
 
+impl AtomUnit.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl YieldExpr.expr.getter -> (Expr | None) {
     found = [self->:ExprRole:->];
     return found[0] if found else None;
 }
 
+impl YieldExpr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl FuncCall.target.getter -> Expr {
     return [self->:TargetRole:->][0];
@@ -885,6 +1158,9 @@ impl FuncCall.params.getter -> (Sequence[(Expr | KWPair)] | None) {
     return [self->:ParamsRole:->];
 }
 
+impl FuncCall.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl Slice.start.getter -> (Expr | None) {
     found = [self->:StartRole:->];
@@ -901,27 +1177,42 @@ impl Slice.step.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl Slice.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl IndexSlice.slices.getter -> list[Slice] {
     return [self->:SlicesRole:->];
 }
 
+impl IndexSlice.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl EdgeRefTrailer.chain.getter -> list[(Expr | FilterCompr)] {
     return [self->:ChainRole:->];
 }
 
+impl EdgeRefTrailer.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl EdgeOpRef.filter_cond.getter -> (FilterCompr | None) {
     found = [self->:FilterCondRole:->];
     return found[0] if found else None;
 }
 
+impl EdgeOpRef.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl DisconnectOp.edge_spec.getter -> EdgeOpRef {
     return [self->:EdgeSpecRole:->][0];
 }
 
+impl DisconnectOp.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl ConnectOp.conn_type.getter -> (Expr | None) {
     found = [self->:ConnTypeRole:->];
@@ -933,6 +1224,9 @@ impl ConnectOp.conn_assign.getter -> (AssignCompr | None) {
     return found[0] if found else None;
 }
 
+impl ConnectOp.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl FilterCompr.f_type.getter -> (Expr | None) {
     found = [self->:FTypeRole:->];
@@ -943,11 +1237,17 @@ impl FilterCompr.compares.getter -> Sequence[Expr] {
     return [self->:ComparesRole:->];
 }
 
+impl FilterCompr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl AssignCompr.assigns.getter -> Sequence[KWPair] {
     return [self->:AssignsRole:->];
 }
 
+impl AssignCompr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl JsxElement.name.getter -> (JsxElementName | None) {
     found = [self->:NameRole:->];
@@ -967,17 +1267,29 @@ impl JsxElement.dynamic_tag.getter -> (Expr | None) {
     return found[0] if found else None;
 }
 
+impl JsxElement.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl JsxElementName.parts.getter -> Sequence[(Name | Token)] {
     return [self->:PartsRole:->];
 }
 
+impl JsxElementName.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl JsxAttribute.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl JsxSpreadAttribute.expr.getter -> Expr {
     return [self->:ExprRole:->][0];
 }
 
+impl JsxSpreadAttribute.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl JsxNormalAttribute.name.getter -> (Name | Token) {
     return [self->:NameRole:->][0];
@@ -988,23 +1300,41 @@ impl JsxNormalAttribute.value.getter -> String | Expr | None {
     return found[0] if found else None;
 }
 
+impl JsxNormalAttribute.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl JsxChild.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl JsxText.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl JsxExpression.expr.getter -> Expr {
     return [self->:ExprRole:->][0];
 }
 
+impl JsxExpression.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl JsxSlot.body.getter -> list[UniNode] {
     return [self->:BodyRole:->];
 }
 
+impl JsxSlot.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl JsxComment.value.getter -> Token {
     return [self->:ValueRole:->][0];
 }
 
+impl JsxComment.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchStmt.target.getter -> Expr {
     return [self->:TargetRole:->][0];
@@ -1014,6 +1344,9 @@ impl MatchStmt.cases.getter -> list[MatchCase] {
     return [self->:CasesRole:->];
 }
 
+impl MatchStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchCase.pattern.getter -> MatchPattern {
     return [self->:PatternRole:->][0];
@@ -1028,6 +1361,9 @@ impl MatchCase.body.getter -> list[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl MatchCase.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl SwitchStmt.target.getter -> Expr {
     return [self->:TargetRole:->][0];
@@ -1037,6 +1373,9 @@ impl SwitchStmt.cases.getter -> list[SwitchCase] {
     return [self->:CasesRole:->];
 }
 
+impl SwitchStmt.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl SwitchCase.pattern.getter -> (MatchPattern | None) {
     found = [self->:PatternRole:->];
@@ -1047,11 +1386,17 @@ impl SwitchCase.body.getter -> list[CodeBlockStmt] {
     return [self->:BodyRole:->];
 }
 
+impl SwitchCase.__repr__ -> str {
+    return UniScopeNode.__repr__(self);
+}
 
 impl MatchOr.patterns.getter -> list[MatchPattern] {
     return [self->:PatternsRole:->];
 }
 
+impl MatchOr.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchAs.name.getter -> NameAtom {
     return [self->:NameRole:->][0];
@@ -1062,27 +1407,45 @@ impl MatchAs.pattern.getter -> (MatchPattern | None) {
     return found[0] if found else None;
 }
 
+impl MatchAs.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl MatchWild.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchValue.value.getter -> Expr {
     return [self->:ValueRole:->][0];
 }
 
+impl MatchValue.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchSingleton.value.getter -> (Bool | Null) {
     return [self->:ValueRole:->][0];
 }
 
+impl MatchSingleton.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchSequence.values.getter -> list[MatchPattern] {
     return [self->:ValuesRole:->];
 }
 
+impl MatchSequence.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchMapping.values.getter -> list[(MatchKVPair | MatchStar)] {
     return [self->:ValuesRole:->];
 }
 
+impl MatchMapping.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchKVPair.key.getter -> MatchPattern | NameAtom | AtomExpr {
     return [self->:KeyRole:->][0];
@@ -1092,11 +1455,17 @@ impl MatchKVPair.value.getter -> MatchPattern {
     return [self->:ValueRole:->][0];
 }
 
+impl MatchKVPair.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchStar.name.getter -> NameAtom {
     return [self->:NameRole:->][0];
 }
 
+impl MatchStar.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
 impl MatchArch.name.getter -> (AtomTrailer | NameAtom) {
     return [self->:NameRole:->][0];
@@ -1110,21 +1479,69 @@ impl MatchArch.kw_patterns.getter -> (Sequence[MatchKVPair] | None) {
     return [self->:KwPatternsRole:->];
 }
 
+impl MatchArch.__repr__ -> str {
+    return f"{type(self).__name__}";
+}
 
+impl Name.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl SpecialVarRef.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Literal.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl BuiltinType.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Float.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Int.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl String.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Bool.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Null.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Ellipsis.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl EmptyToken.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Semi.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl CommentToken.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl Source.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
+impl PythonModuleAst.__repr__ -> str {
+    return Token.__repr__(self);
+}
 
 
 impl UniScopeNode.init(*, kid: Sequence[UniNode] = []) -> None {
