@@ -497,8 +497,13 @@ def _full_env_fingerprint(source_path: str) -> str {
     return h.hexdigest();
 }
 
+def _is_context_independent_module(source_path: str) -> bool {
+    return is_stub_like_path(source_path)
+        or is_compiler_source_path(source_path);
+}
+
 def _env_fingerprint_for(source_path: str) -> str {
-    if is_stub_like_path(source_path) or is_compiler_source_path(source_path) {
+    if _is_context_independent_module(source_path) {
         return _toolchain_env_fingerprint();
     }
     return _full_env_fingerprint(source_path);
@@ -512,7 +517,7 @@ def module_env_fingerprint(source_path: str) -> str {
 }
 
 def _module_cache_context_identity(source_path: str) -> str {
-    if is_stub_like_path(source_path) or is_compiler_source_path(source_path) {
+    if _is_context_independent_module(source_path) {
         return "";
     }
     import from jaclang.compiler.driver.compilation_context { cache_identity }

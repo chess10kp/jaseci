@@ -179,6 +179,8 @@ real-AST derivation (a pinned identity contract; their frontend is the
 cheap phase) -- they participate in `SEC_DEPS` through their content key
 instead, so a stub edit still re-analyzes its importers.
 
+Stub-like and compiler-source modules are context-independent: their `ENVKEY`, `MODKEY`, and cache filename intentionally omit requesting-context identity, while ordinary project/application modules retain it.
+
 The compiler's own tree is an ordinary citizen of the cache. The selfhost
 program (the compiler compiling itself) hydrates and persists like any
 other program; the one bootstrap rule is readiness, not identity. While the
