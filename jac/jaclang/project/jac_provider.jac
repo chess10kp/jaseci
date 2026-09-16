@@ -22,7 +22,7 @@ import from jaclang.project.jac_store {
 
 glob REF_HEX: str = "^[0-9a-fA-F]{40}$",
      DEPS_MAP_VERSION: str = "1",
-     _deps_roots_cache: dict = {};
+     _deps_roots_cache: dict[str, any] = {};
 
 obj JacPackage {
     has name: str = "",
@@ -35,14 +35,14 @@ obj JacPackage {
         version: str = "",
         local_path: Path | None = None,
         requested_by: list[str] = [],
-        manifest: dict = {};
+        manifest: dict[str, any] = {};
 }
 
 
-def manifest_jac_deps(config: JacConfig) -> tuple[dict, dict] {
+def manifest_jac_deps(config: JacConfig) -> tuple[dict[str, any], dict[str, any]] {
     raw = config.plugin_dependencies.get("jac", {});
-    deps: dict[str, dict] = {};
-    dev_deps: dict[str, dict] = {};
+    deps: dict[str, dict[str, any]] = {};
+    dev_deps: dict[str, dict[str, any]] = {};
     for (name, value) in raw.items() {
         if name == "dev" {
             if isinstance(value, dict) {
@@ -85,7 +85,7 @@ def entry_error(name: str, dep: any, why: str) -> JacDepError {
 }
 
 
-def _entry_key(name: str, dep: dict, base_dir: Path) -> tuple[str, str] {
+def _entry_key(name: str, dep: dict[str, any], base_dir: Path) -> tuple[str, str] {
     git_val = dep.get("git");
     path_val = dep.get("path");
     has_git = isinstance(git_val, str) and bool(git_val.strip());
@@ -141,7 +141,7 @@ def _safe_dep_name(name: str) -> bool {
 }
 
 
-def _entry_ref(name: str, dep: dict) -> tuple[str, str] {
+def _entry_ref(name: str, dep: dict[str, any]) -> tuple[str, str] {
     ref = "";
     for field in ("ref", "branch", "tag") {
         value = dep.get(field);
@@ -163,7 +163,7 @@ def _entry_ref(name: str, dep: dict) -> tuple[str, str] {
 }
 
 
-def parse_jac_spec(spec: str) -> tuple[str, dict] {
+def parse_jac_spec(spec: str) -> tuple[str, dict[str, any]] {
     if not spec.startswith("jac:") {
         raise JacDepError(f"Not a jac: spec: {spec}");
     }
@@ -186,7 +186,7 @@ def parse_jac_spec(spec: str) -> tuple[str, dict] {
             "Bare names need a registry (deferred); use jac:<git-url> or jac:<path>."
         );
     }
-    dep: dict = {"git": url_part};
+    dep: dict[str, any] = {"git": url_part};
     if ref_part {
         if re.match(REF_HEX, ref_part) {
             dep["commit"] = ref_part;
@@ -198,8 +198,8 @@ def parse_jac_spec(spec: str) -> tuple[str, dict] {
 }
 
 
-def _vtuple(version: str) -> tuple {
-    parts: list = [];
+def _vtuple(version: str) -> tuple[int, int, int] {
+    parts: list[int] = [];
     for piece in re.findall(r"\d+", version.split("+")[0].split("-")[0])[:3] {
         parts.append(int(piece));
     }
@@ -241,7 +241,7 @@ def version_satisfied(constraint: str, actual: str) -> bool {
 }
 
 
-def _read_tree_manifest(pkg_root: Path) -> dict {
+def _read_tree_manifest(pkg_root: Path) -> dict[str, any] {
     toml_path = pkg_root / "jac.toml";
     if not toml_path.is_file() {
         raise JacDepError(
@@ -259,7 +259,7 @@ def _read_tree_manifest(pkg_root: Path) -> dict {
 }
 
 
-def _validate_package_field(pkg_root: Path, name: str, dep: dict) -> None {
+def _validate_package_field(pkg_root: Path, name: str, dep: dict[str, any]) -> None {
     module = dep.get("package");
     if not isinstance(module, str) or not module.strip() {
         return;
@@ -281,7 +281,7 @@ def deps_map_path(config: JacConfig) -> Path {
 }
 
 
-def read_deps_map(config: JacConfig) -> dict {
+def read_deps_map(config: JacConfig) -> dict[str, any] {
     map_path = deps_map_path(config);
     try {
         data = json.loads(map_path.read_text(encoding="utf-8"));
@@ -434,8 +434,8 @@ def write_pth(config: JacConfig, resolved: dict[str, JacPackage]) -> None {
 
 
 def _apply_override(
-    overrides: dict, noted: set, name: str, dep: dict, requirer: str
-) -> dict {
+    overrides: dict[str, any], noted: set[str], name: str, dep: dict[str, any], requirer: str
+) -> dict[str, any] {
     if name in overrides and isinstance(overrides[name], dict) {
         if name not in noted {
             console.print(
@@ -494,7 +494,7 @@ obj JacGitProvider(EcosystemProvider) {
     def resolve_closure(
         config: JacConfig,
         ctx: InstallContext | None = None,
-        frozen_pins: dict[str, dict] | None = None,
+        frozen_pins: dict[str, dict[str, any]] | None = None,
         collect_only: bool = False
     ) -> dict[str, JacPackage] {
         frozen_pins = frozen_pins or {};
@@ -506,9 +506,9 @@ obj JacGitProvider(EcosystemProvider) {
         root_entries = {** root_deps, ** root_dev};
         packages_root = config.get_build_dir() / "packages";
 
-        queue: list[tuple] = [];
+        queue: list[tuple[any, ...]] = [];
         resolved: dict[str, JacPackage] = {};
-        seen: dict[str, tuple] = {};
+        seen: dict[str, tuple[any, any, any]] = {};
         queued: set[str] = set();
         for (name, dep) in root_entries.items() {
             dep = _apply_override(overrides, noted_overrides, name, dep, "root");
@@ -668,7 +668,7 @@ obj JacGitProvider(EcosystemProvider) {
         key: str,
         ref: str,
         commit: str,
-        dep: dict,
+        dep: dict[str, any],
         requirer: str
     ) {
         if existing.key != key {
@@ -704,14 +704,14 @@ obj JacGitProvider(EcosystemProvider) {
 
     def _resolve_one(
         name: str,
-        dep: dict,
+        dep: dict[str, any],
         source: str,
         key: str,
         ref: str,
         commit: str,
         base_dir: str,
         requirer: str,
-        pins: dict,
+        pins: dict[str, any],
         ctx: InstallContext | None
     ) -> JacPackage {
         if not _safe_dep_name(name) {
@@ -934,7 +934,7 @@ obj JacGitProvider(EcosystemProvider) {
         # the deps map untouched.
         original = config.plugin_dependencies.get("jac");
         had_section = isinstance(original, dict);
-        backup: dict = dict(original) if had_section else {};
+        backup: dict[str, any] = dict(original) if had_section else {};
         try {
             section = config.plugin_dependencies.setdefault("jac", {});
             for spec in specs {

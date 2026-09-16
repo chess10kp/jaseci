@@ -13,7 +13,7 @@ def lock_path(project_root: Path) -> Path {
 }
 
 
-def read_lock(project_root: Path) -> dict {
+def read_lock(project_root: Path) -> dict[str, any] {
     path = lock_path(project_root);
     if not path.is_file() {
         return {};
@@ -34,22 +34,22 @@ def read_lock(project_root: Path) -> dict {
 }
 
 
-def jac_lock_rows(lock_data: dict) -> dict {
+def jac_lock_rows(lock_data: dict[str, any]) -> dict[str, any] {
     rows = lock_data.get("jac", {});
     return rows if isinstance(rows, dict) else {};
 }
 
 
-def write_lock(project_root: Path, lock_data: dict) -> bool {
-    doc: dict = {};
+def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
+    doc: dict[str, any] = {};
     jac_rows = jac_lock_rows(lock_data);
-    jac_doc: dict = {};
+    jac_doc: dict[str, any] = {};
     for name in sorted(jac_rows.keys()) {
         row = jac_rows[name];
         if not isinstance(row, dict) {
             continue;
         }
-        entry_row: dict = {};
+        entry_row: dict[str, any] = {};
         for field in ("git", "path", "ref", "sha", "tree", "version") {
             value = str(row.get(field, ""));
             if value {
@@ -67,7 +67,7 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
     }
     py_pins = lock_data.get("python", {});
     if isinstance(py_pins, dict) and py_pins {
-        pins_doc: dict = {};
+        pins_doc: dict[str, any] = {};
         for name in sorted(py_pins.keys()) {
             pins_doc[str(name)] = str(py_pins[name]);
         }
@@ -75,7 +75,7 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
     }
     py_graph = lock_data.get("python_graph", {});
     if isinstance(py_graph, dict) and py_graph {
-        graph_doc: dict = {};
+        graph_doc: dict[str, any] = {};
         for name in sorted(py_graph.keys()) {
             reqs = py_graph[name];
             if isinstance(reqs, list) and reqs {
@@ -88,7 +88,7 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
     }
     npm_pins = lock_data.get("npm", {});
     if isinstance(npm_pins, dict) and npm_pins {
-        npm_doc: dict = {};
+        npm_doc: dict[str, any] = {};
         for name in sorted(npm_pins.keys()) {
             npm_doc[str(name)] = str(npm_pins[name]);
         }
@@ -118,9 +118,9 @@ def write_lock(project_root: Path, lock_data: dict) -> bool {
 }
 
 
-def update_jac_rows(project_root: Path, resolved: dict) -> bool {
+def update_jac_rows(project_root: Path, resolved: dict[str, any]) -> bool {
     lock_data = read_lock(project_root);
-    rows: dict = {};
+    rows: dict[str, any] = {};
     for pkg in resolved.values() {
         row = {
             "version": pkg.version,
@@ -144,9 +144,9 @@ def update_jac_rows(project_root: Path, resolved: dict) -> bool {
 
 def update_python_rows(
     project_root: Path,
-    pins: dict | None,
-    py_graph: dict | None,
-    npm_pins: dict | None = None
+    pins: dict[str, any] | None,
+    py_graph: dict[str, any] | None,
+    npm_pins: dict[str, any] | None = None
 ) -> bool {
     lock_data = read_lock(project_root);
     if pins is not None {
@@ -162,7 +162,7 @@ def update_python_rows(
 }
 
 
-def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] | None {
+def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict[str, any], dict[str, any]] | None {
     import from jaclang.project.pyvenv { get_venv_site_packages }
     site = get_venv_site_packages(venv_dir);
     if not site or not Path(site).is_dir() {
@@ -175,7 +175,7 @@ def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] 
         return re.sub(r"[-_.]+", "-", name).lower();
     }
 
-    by_norm: dict = {};
+    by_norm: dict[str, any] = {};
     try {
         for dist in importlib.metadata.distributions(path=[str(site)]) {
             meta = dist.metadata;
@@ -192,10 +192,10 @@ def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] 
         norm(str(n))
         for n in list(config.dependencies.keys()) + list(config.dev_dependencies.keys())
     ];
-    pins: dict = {};
-    py_graph: dict = {};
+    pins: dict[str, any] = {};
+    py_graph: dict[str, any] = {};
     seen: set[str] = set();
-    queue: list[tuple] = [];
+    queue: list[tuple[str, str]] = [];
     for dep_name in roots {
         if dep_name in by_norm and dep_name not in seen {
             seen.add(dep_name);
@@ -244,7 +244,7 @@ def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict, dict] 
 }
 
 
-def harvest_npm_lock(config: JacConfig) -> dict | None {
+def harvest_npm_lock(config: JacConfig) -> dict[str, any] | None {
     if config.project_root is None {
         return None;
     }
@@ -253,7 +253,7 @@ def harvest_npm_lock(config: JacConfig) -> dict | None {
         return None;
     }
     (deps, dev_deps) = manifest_plugin_deps(config, "npm");
-    pins: dict = {};
+    pins: dict[str, any] = {};
     for name in list(deps.keys()) + list(dev_deps.keys()) {
         meta_path = (
             Path(str(config.project_root)) / "node_modules" / str(name) / "package.json"
@@ -273,7 +273,7 @@ def harvest_npm_lock(config: JacConfig) -> dict | None {
 }
 
 
-def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list[list[str]] {
+def _walk_chains(edges: dict[str, any], name: str, jac_mode: bool) -> list[list[str]] {
     found: list[list[str]] = [];
 
     def requirers_of(cur: str) -> list[str] {
@@ -295,7 +295,7 @@ def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list[list[str]] {
         return [];
     }
 
-    def walk(cur: str, trail: list) -> None {
+    def walk(cur: str, trail: list[str]) -> None {
         if cur in trail {
             return;
         }
@@ -320,7 +320,7 @@ def _walk_chains(edges: dict, name: str, jac_mode: bool) -> list[list[str]] {
 }
 
 
-def why_chains(lock_data: dict, name: str) -> list[tuple[str, list[str]]] {
+def why_chains(lock_data: dict[str, any], name: str) -> list[tuple[str, list[str]]] {
     jac_rows = jac_lock_rows(lock_data);
     py_graph = lock_data.get("python_graph", {});
     if not isinstance(py_graph, dict) {

@@ -18,7 +18,7 @@ import from jaclang.project.providers { InstallContext }
 import from jaclang.project.lockfile { jac_lock_rows, read_lock }
 
 
-def make_git_repo_on_main(path: Path, jac_toml: str, files: dict) -> str {
+def make_git_repo_on_main(path: Path, jac_toml: str, files: dict[str, str]) -> str {
     path.mkdir(parents=True, exist_ok=True);
     (path / "jac.toml").write_text(jac_toml, encoding="utf-8");
     for (name, content) in files.items() {
@@ -82,7 +82,7 @@ def git_commit_all(path: Path, marker: str, message: str = "next") -> str {
 }
 
 
-def isolate_store -> tuple {
+def isolate_store -> tuple[str, str | None] {
     tmp = tempfile.mkdtemp(prefix="jac_update_store_");
     old = os.environ.get("JAC_GLOBAL_DIR");
     os.environ["JAC_GLOBAL_DIR"] = tmp;

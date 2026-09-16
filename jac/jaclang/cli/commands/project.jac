@@ -513,7 +513,7 @@ comptime SPEC_WHY: CommandSpec = CommandSpec(
          handler_name=ct_name(why)
      );
 
-def why(packages: list = []) -> int;
+def why(packages: list[str] = []) -> int;
 def script(name: str = "", list_scripts: bool = False) -> int;
 
 comptime SPEC_CLEAN: CommandSpec = CommandSpec(

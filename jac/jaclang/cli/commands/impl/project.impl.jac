@@ -861,7 +861,7 @@ impl install(
             # the in-memory manifest is restored.
             original = config.plugin_dependencies.get("jac");
             had_section = isinstance(original, dict);
-            backup: dict = dict(original) if had_section else {};
+            backup: dict[str, any] = dict(original) if had_section else {};
             try {
                 section = config.plugin_dependencies.setdefault("jac", {});
                 for spec in jac_specs {
@@ -1385,7 +1385,7 @@ def _major_minor(version: str) -> str {
     return version;
 }
 
-def _requirer_closure(requirers: dict, seeds: list[str]) -> set[str] {
+def _requirer_closure(requirers: dict[str, any], seeds: list[str]) -> set[str] {
     reach: set[str] = set(seeds);
     frontier: list[str] = list(seeds);
     while frontier {
@@ -2212,7 +2212,7 @@ impl bundle(
     return 0;
 }
 
-impl why(packages: list = []) -> int {
+impl why(packages: list[str] = []) -> int {
     import from pathlib { Path }
     import from jaclang.project.config { get_config }
     import from jaclang.project.lockfile { jac_lock_rows, read_lock, why_chains }
@@ -2253,7 +2253,7 @@ impl why(packages: list = []) -> int {
             exit_code = 1;
             continue;
         }
-        by_eco: dict = {};
+        by_eco: dict[str, any] = {};
         for (eco, chain) in chains {
             if eco not in by_eco {
                 by_eco[eco] = [];

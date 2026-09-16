@@ -10,7 +10,7 @@ glob TREE_HASH_PREFIX: str = "sha256-",
      STORE_DIR_NAME: str = "store",
      TMP_DIR_NAME: str = "_tmp",
      ORIGIN_MARKER: str = ".jac-origin",
-     HASH_EXCLUDE: set = {".git", ".jac", "node_modules", "__pycache__", ORIGIN_MARKER};
+     HASH_EXCLUDE: set[str] = {".git", ".jac", "node_modules", "__pycache__", ORIGIN_MARKER};
 
 
 obj JacDepError(Exception) {
@@ -146,13 +146,13 @@ def checkout_tree(url: str, ref: str, sha: str | None, dest: Path) -> str {
 }
 
 
-def _read_origin_meta(marker: Path) -> dict {
+def _read_origin_meta(marker: Path) -> dict[str, any] {
     import json;
     return json.loads(marker.read_text(encoding="utf-8"));
 }
 
 
-def _write_origin_meta(dest: Path, meta: dict) {
+def _write_origin_meta(dest: Path, meta: dict[str, any]) {
     import json;
     marker = dest / ORIGIN_MARKER;
     # The fetched tree is dependency-controlled input: a checked-out
@@ -209,7 +209,7 @@ def _ref_agreement(url: str, ref: str, sha: str) -> tuple[bool, bool] | None {
 
 def _store_hit_for(
     store_dir: Path, url: str, sha: str, expected_tree: str, verify: bool
-) -> dict | None {
+) -> dict[str, any] | None {
     for candidate in sorted(store_dir.glob(TREE_HASH_PREFIX + "*")) {
         if not candidate.is_dir() {
             continue;
@@ -257,7 +257,7 @@ def fetch_package(
     expected_tree: str = "",
     verify: bool = True,
     frozen: bool = False
-) -> dict {
+) -> dict[str, any] {
     url = normalize_git_url(url);
     store_dir = store_root();
     (store_dir / TMP_DIR_NAME).mkdir(parents=True, exist_ok=True);

@@ -41,7 +41,7 @@ import from jaclang.project.lockfile {
 }
 
 
-def make_git_repo(path: Path, jac_toml: str, files: dict, branch: str = "") -> str {
+def make_git_repo(path: Path, jac_toml: str, files: dict[str, str], branch: str = "") -> str {
     path.mkdir(parents=True, exist_ok=True);
     (path / "jac.toml").write_text(jac_toml, encoding="utf-8");
     for (name, content) in files.items() {
@@ -102,7 +102,7 @@ def make_project(toml_text: str) -> tuple[JacConfig, str] {
 }
 
 
-def isolate_store -> tuple {
+def isolate_store -> tuple[str, str | None] {
     tmp = tempfile.mkdtemp(prefix="jac_store_test_");
     old = os.environ.get("JAC_GLOBAL_DIR");
     os.environ["JAC_GLOBAL_DIR"] = tmp;
@@ -234,7 +234,7 @@ test "dirhash stable, sensitive, ignores junk dirs" {
 }
 
 
-def make_plain_pkg(path: Path, jac_toml: str, files: dict) -> str {
+def make_plain_pkg(path: Path, jac_toml: str, files: dict[str, str]) -> str {
     path.mkdir(parents=True, exist_ok=True);
     (path / "jac.toml").write_text(jac_toml, encoding="utf-8");
     for (name, content) in files.items() {
