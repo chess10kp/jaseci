@@ -187,7 +187,7 @@ def _default_codespace_is_native -> bool {
     return effective == 'native';
 }
 
-def _build_c_argv(argv: list[str]) -> tuple {
+def _build_c_argv(argv: list[str]) -> tuple[any, any, any] {
     import ctypes;
 
     argc = len(argv);
