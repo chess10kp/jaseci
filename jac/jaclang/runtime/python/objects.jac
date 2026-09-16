@@ -197,79 +197,43 @@ obj PyInt(PyObj) {
         }
         b = (other as PyInt).val;
         a = self.val;
-        if kind == NB_ADD {
-            return PyInt(t="int", val=a + b);
-        }
-        if kind == NB_MULTIPLY {
-            return PyInt(t="int", val=a * b);
-        }
-        if kind == NB_REMAINDER {
-            if b == 0 {
-                return py_error("ZeroDivisionError", "division by zero");
-            }
-            return PyInt(t="int", val=a % b);
-        }
-        if kind == NB_SUBTRACT {
-            return PyInt(t="int", val=a - b);
-        }
-        if kind == NB_AND {
-            return PyInt(t="int", val=a & b);
-        }
-        if kind == NB_FLOOR_DIVIDE {
-            if b == 0 {
-                return py_error("ZeroDivisionError", "division by zero");
-            }
-            return PyInt(t="int", val=a // b);
-        }
-        if kind == NB_OR {
-            return PyInt(t="int", val=a | b);
-        }
-        # NB_TRUE_DIVIDE: int / int is always float, even when it divides
-        # evenly (6 / 2 == 3.0, not 3).
-        if kind == NB_TRUE_DIVIDE {
-            return int_true_divide(a, b);
-        }
-        if kind == NB_XOR {
-            return PyInt(t="int", val=a ^ b);
-        }
-        if kind == NB_LSHIFT {
-            if b < 0 {
-                return py_error("ValueError", "negative shift count");
-            }
-            # CPython long_lshift short-circuits a zero left operand before
-            # any digit allocation: 0 << huge is 0, never an overflow.
-            if a == 0 {
-                return PyInt(t="int", val=0);
-            }
-            # A shift count at or beyond 2**63 overflows the C ssize_t shift
-            # bound; CPython rejects it before allocating
-            # (OverflowError "too many digits in integer"), never MemoryError.
-            # Without this guard the underlying bigint op escapes as a fatal
-            # runtime error instead of a guest-visible Python exception.
-            if b >= 9223372036854775808 {
-                return py_error("OverflowError", "too many digits in integer");
-            }
-            return PyInt(t="int", val=a << b);
-        }
-        if kind == NB_RSHIFT {
-            if b < 0 {
-                return py_error("ValueError", "negative shift count");
-            }
-            return PyInt(t="int", val=a >> b);
-        }
-        if kind == NB_POWER {
-            # int ** negative -> float (2 ** -1 == 0.5); 0 ** negative raises
-            # with CPython's INT wording -- the float slot says "0.0 cannot be
-            # raised...", the int slot says "zero to a negative power".
-            if b < 0 {
-                if a == 0 {
-                    return py_error("ZeroDivisionError", "zero to a negative power");
+        match kind {
+            NB_ADD => { return PyInt(t="int", val=a + b); },
+            NB_MULTIPLY => { return PyInt(t="int", val=a * b); },
+            NB_REMAINDER => {
+                if b == 0 { return py_error("ZeroDivisionError", "division by zero"); }
+                return PyInt(t="int", val=a % b);
+            },
+            NB_SUBTRACT => { return PyInt(t="int", val=a - b); },
+            NB_AND => { return PyInt(t="int", val=a & b); },
+            NB_FLOOR_DIVIDE => {
+                if b == 0 { return py_error("ZeroDivisionError", "division by zero"); }
+                return PyInt(t="int", val=a // b);
+            },
+            NB_OR => { return PyInt(t="int", val=a | b); },
+            NB_TRUE_DIVIDE => { return int_true_divide(a, b); },
+            NB_XOR => { return PyInt(t="int", val=a ^ b); },
+            NB_LSHIFT => {
+                if b < 0 { return py_error("ValueError", "negative shift count"); }
+                if a == 0 { return PyInt(t="int", val=0); }
+                if b >= 9223372036854775808 {
+                    return py_error("OverflowError", "too many digits in integer");
                 }
-                return PyFloat(t="float", val=float(a) ** float(b));
-            }
-            return PyInt(t="int", val=(a ** b) as int);
+                return PyInt(t="int", val=a << b);
+            },
+            NB_RSHIFT => {
+                if b < 0 { return py_error("ValueError", "negative shift count"); }
+                return PyInt(t="int", val=a >> b);
+            },
+            NB_POWER => {
+                if b < 0 {
+                    if a == 0 { return py_error("ZeroDivisionError", "zero to a negative power"); }
+                    return PyFloat(t="float", val=float(a) ** float(b));
+                }
+                return PyInt(t="int", val=(a ** b) as int);
+            },
+            _ => { return py_error("TypeError", "unsupported operand types"); }
         }
-        return py_error("TypeError", "unsupported operand types");
     }
 
     def tp_richcompare(kind: int, other: PyObj) -> PyObj {
