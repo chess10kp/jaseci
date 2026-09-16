@@ -498,8 +498,7 @@ def _full_env_fingerprint(source_path: str) -> str {
 }
 
 def _is_context_independent_module(source_path: str) -> bool {
-    return is_stub_like_path(source_path)
-        or is_compiler_source_path(source_path);
+    return is_stub_like_path(source_path) or is_compiler_source_path(source_path);
 }
 
 def _env_fingerprint_for(source_path: str) -> str {
