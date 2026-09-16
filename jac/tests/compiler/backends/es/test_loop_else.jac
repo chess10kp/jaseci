@@ -194,7 +194,7 @@ def compile_to_js -> str {
         f"Compilation errors: {[str(e) for e in prog.errors_had]}"
     );
     es_pass = run_pass(EsastGenPass, ir, prog);
-    _js = es_to_js(es_pass.ir_out.gen.es_ast);
+    _js = es_to_js(es_pass.module.gen.es_ast);
     with open("/tmp/loop_else_dump.js", "w") as _f {
         _f.write(_js);
     }
