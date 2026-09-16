@@ -85,10 +85,7 @@ test "why_chains appends the direct npm chain" {
         "jac": {"direct": {"git": "https://x", "requested_by": []}},
         "npm": {"direct": "1.0.0"}
     };
-    assert why_chains(direct, "direct") == [
-        ("jac", ["direct"]),
-        ("npm", ["direct"])
-    ];
+    assert why_chains(direct, "direct") == [("jac", ["direct"]), ("npm", ["direct"])];
 
     # Jac/python chains without npm stay untouched; unknown names keep the
     # [[name]] fallback.
@@ -106,15 +103,11 @@ test "origin marker write replaces a planted symlink" {
     try {
         tree = Path(tmp) / "tree";
         tree.mkdir();
-        (tree / "lib.jac").write_text(
-            "def f -> int { return 1; }\n", encoding="utf-8"
-        );
+        (tree / "lib.jac").write_text("def f -> int { return 1; }\n", encoding="utf-8");
         outside = Path(tmp) / "outside.txt";
         outside.write_text("keep", encoding="utf-8");
         os.symlink(str(outside), str(tree / ORIGIN_MARKER));
-        _write_origin_meta(
-            tree, {"url": "https://x/y", "sha": "b" * 40, "tree": "t"}
-        );
+        _write_origin_meta(tree, {"url": "https://x/y", "sha": "b" * 40, "tree": "t"});
         assert not (tree / ORIGIN_MARKER).is_symlink();
         assert outside.read_text(encoding="utf-8") == "keep";
         import json;

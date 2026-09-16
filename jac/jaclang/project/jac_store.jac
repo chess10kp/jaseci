@@ -10,7 +10,13 @@ glob TREE_HASH_PREFIX: str = "sha256-",
      STORE_DIR_NAME: str = "store",
      TMP_DIR_NAME: str = "_tmp",
      ORIGIN_MARKER: str = ".jac-origin",
-     HASH_EXCLUDE: set[str] = {".git", ".jac", "node_modules", "__pycache__", ORIGIN_MARKER};
+     HASH_EXCLUDE: set[str] = {
+         ".git",
+         ".jac",
+         "node_modules",
+         "__pycache__",
+         ORIGIN_MARKER
+     };
 
 
 obj JacDepError(Exception) {
@@ -155,10 +161,7 @@ def _read_origin_meta(marker: Path) -> dict[str, any] {
 def _write_origin_meta(dest: Path, meta: dict[str, any]) {
     import json;
     marker = dest / ORIGIN_MARKER;
-    # The fetched tree is dependency-controlled input: a checked-out
-    # .jac-origin could be a symlink to a file outside the staging tree,
-    # and Path.write_text follows it. Unlink first (removes a symlink,
-    # never its target) so the marker is always a regular file we own.
+
     if marker.is_symlink() or marker.exists() {
         marker.unlink();
     }
@@ -291,9 +294,7 @@ def fetch_package(
     staging = Path(tempfile.mkdtemp(prefix="jac_stage_", dir=store_dir / TMP_DIR_NAME));
     try {
         tree_dest = staging / "tree";
-        # Frozen replay addresses the recorded commit directly: a moved
-        # branch/tag must not block a lockfile replay (normal installs keep
-        # the ref-agreement checks above).
+
         checkout_ref = "" if (frozen and sha) else ref;
         resolved_sha = checkout_tree(url, checkout_ref, sha, tree_dest);
         tree_hash = dirhash(tree_dest);

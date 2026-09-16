@@ -856,9 +856,6 @@ impl install(
             frozen=frozen
         );
         if dry_run {
-            # Preview only: resolve the requested closure transiently and
-            # print what a real install would do; nothing is persisted and
-            # the in-memory manifest is restored.
             original = config.plugin_dependencies.get("jac");
             had_section = isinstance(original, dict);
             backup: dict[str, any] = dict(original) if had_section else {};
@@ -892,8 +889,6 @@ impl install(
             }
         }
         if no_save {
-            # Install into the project's dependency state without saving
-            # to jac.toml/jac.lock.
             console.print(
                 f"\nInstalling {len(jac_specs)} pure-jac package(s) "
                 "(not saved to jac.toml)",
@@ -1494,12 +1489,7 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
             console.error(str(e));
             return 1;
         }
-        # The convergence passes ran collect-only, so neither .jac/packages
-        # nor any metadata was touched while a conflict, fetch error, or
-        # discovery iteration could still abort the command. Commit the
-        # final closure now: materialize first, then the deps map and lock
-        # rows, so a failure above this point leaves the previous install
-        # fully intact.
+
         try {
             jac_provider.materialize_closure(config, resolved, ctx);
         } except Exception as e {

@@ -162,7 +162,9 @@ def update_python_rows(
 }
 
 
-def harvest_python_lock(config: JacConfig, venv_dir: Path) -> tuple[dict[str, any], dict[str, any]] | None {
+def harvest_python_lock(
+    config: JacConfig, venv_dir: Path
+) -> tuple[dict[str, any], dict[str, any]] | None {
     import from jaclang.project.pyvenv { get_venv_site_packages }
     site = get_venv_site_packages(venv_dir);
     if not site or not Path(site).is_dir() {
@@ -282,7 +284,11 @@ def _walk_chains(edges: dict[str, any], name: str, jac_mode: bool) -> list[list[
             if isinstance(row, dict) {
                 reqs = row.get("requested_by", []);
                 if isinstance(reqs, list) {
-                    return [str(r) for r in reqs if isinstance(r, str)];
+                    return [
+                        str(r)
+                        for r in reqs
+                        if isinstance(r, str)
+                    ];
                 }
                 return [];
             }
@@ -290,7 +296,11 @@ def _walk_chains(edges: dict[str, any], name: str, jac_mode: bool) -> list[list[
         }
         reqs = edges.get(cur, []);
         if isinstance(reqs, list) {
-            return [str(r) for r in reqs if isinstance(r, str)];
+            return [
+                str(r)
+                for r in reqs
+                if isinstance(r, str)
+            ];
         }
         return [];
     }
@@ -338,8 +348,7 @@ def why_chains(lock_data: dict[str, any], name: str) -> list[tuple[str, list[str
     for chain in _walk_chains(py_graph, name, False) {
         chains.append(("python", chain));
     }
-    # The dedupe compares ecosystem AND chain: a same-shaped chain in a
-    # different ecosystem is a separate provenance fact and must survive.
+
     if name in npm_pins and ("npm", [name]) not in chains {
         chains.append(("npm", [name]));
     }

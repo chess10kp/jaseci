@@ -326,9 +326,8 @@ test "failed convergence leaves materialized state and metadata untouched" {
         assert not (build / "packages" / "t" / "changes.log").exists() , (
             "materialized t was replaced even though convergence failed"
         );
-        assert "not_a_repo" not in (
-            build / "packages" / "t" / "jac.toml"
-        ).read_text() , (
+        assert "not_a_repo"
+            not in (build / "packages" / "t" / "jac.toml").read_text() , (
             "materialized t carries the failed candidate manifest"
         );
         assert rows_after["t"]["sha"] == t1 and rows_after["u"]["sha"] == u1;

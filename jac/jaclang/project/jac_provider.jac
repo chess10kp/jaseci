@@ -109,11 +109,6 @@ def _entry_key(name: str, dep: dict[str, any], base_dir: Path) -> tuple[str, str
 
 
 def _safe_dep_name(name: str) -> bool {
-    # A dependency name becomes a single directory under .jac/packages, so
-    # it must be exactly one safe path component on every platform. TOML
-    # keys of fetched packages are dependency-controlled input; on Windows,
-    # backslashes are separators and drive colons escape the root, so the
-    # check is explicit rather than delegated to Path.
     if not name or name in (".", "..") {
         return False;
     }
@@ -124,17 +119,34 @@ def _safe_dep_name(name: str) -> bool {
         return False;
     }
     if name != name.strip() or name.endswith(".") {
-        # Trailing dots/spaces are component-significant on Windows.
         return False;
     }
     stem = name.split(".", 1)[0].upper();
-    if stem in {
-        "CON", "PRN", "AUX", "NUL",
-        "COM1", "COM2", "COM3", "COM4", "COM5",
-        "COM6", "COM7", "COM8", "COM9",
-        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5",
-        "LPT6", "LPT7", "LPT8", "LPT9"
-    } {
+    if stem
+        in {
+            "CON",
+            "PRN",
+            "AUX",
+            "NUL",
+            "COM1",
+            "COM2",
+            "COM3",
+            "COM4",
+            "COM5",
+            "COM6",
+            "COM7",
+            "COM8",
+            "COM9",
+            "LPT1",
+            "LPT2",
+            "LPT3",
+            "LPT4",
+            "LPT5",
+            "LPT6",
+            "LPT7",
+            "LPT8",
+            "LPT9"
+        } {
         return False;
     }
     return True;
@@ -292,12 +304,7 @@ def read_deps_map(config: JacConfig) -> dict[str, any] {
 }
 
 
-def restore_saved_packages(config: JacConfig) -> None {
-    # Rebuild .jac/packages from the deps map recorded on disk. Used when
-    # a materialization sweep fails midway so live packages keep matching
-    # the metadata that is still on disk: recorded packages are
-    # re-materialized from their roots, unrecorded leftover dirs from the
-    # failed sweep are removed.
+def restore_saved_packages(config: JacConfig) {
     data = read_deps_map(config);
     packages_root = config.get_build_dir() / "packages";
     known: set[str] = set();
@@ -434,7 +441,11 @@ def write_pth(config: JacConfig, resolved: dict[str, JacPackage]) -> None {
 
 
 def _apply_override(
-    overrides: dict[str, any], noted: set[str], name: str, dep: dict[str, any], requirer: str
+    overrides: dict[str, any],
+    noted: set[str],
+    name: str,
+    dep: dict[str, any],
+    requirer: str
 ) -> dict[str, any] {
     if name in overrides and isinstance(overrides[name], dict) {
         if name not in noted {
@@ -622,9 +633,6 @@ obj JacGitProvider(EcosystemProvider) {
             return;
         }
         if collect_only {
-            # Resolution-only sweep (update convergence, no-save install):
-            # leave local_path unset; materialize_closure copies the final
-            # closure once the whole graph has resolved.
             return;
         }
         if not _safe_dep_name(pkg.name) {
@@ -652,10 +660,7 @@ obj JacGitProvider(EcosystemProvider) {
         config: JacConfig,
         resolved: dict[str, JacPackage],
         ctx: InstallContext | None = None
-    ) -> None {
-        # Copy the final resolved closure into .jac/packages. Callers resolve
-        # with collect_only=True first so a failed resolution never touches
-        # materialized state, then commit everything here in one sweep.
+    ) {
         packages_root = config.get_build_dir() / "packages";
         for pkg in resolved.values() {
             self._materialize_pkg(pkg, packages_root, ctx);
@@ -729,11 +734,6 @@ obj JacGitProvider(EcosystemProvider) {
             }
             pkg_tree = dirhash(Path(key));
             if ctx is not None and ctx.frozen {
-                # A path dep must replay exactly what the lock recorded:
-                # verify the row exists, is still a path row, and that the
-                # live tree hash matches the recorded one. Hashing the live
-                # filesystem without this check lets a frozen install
-                # consume code that differs from the lock closure.
                 row = pins if isinstance(pins, dict) else {};
                 if not row {
                     raise JacDepError(
@@ -925,13 +925,6 @@ obj JacGitProvider(EcosystemProvider) {
     def install_no_save(
         config: JacConfig, specs: list[str], ctx: InstallContext
     ) -> bool {
-        # Project-scoped no-save install: resolves and materializes the
-        # requested pure-jac closure into the project's dependency state
-        # (.jac/deps.json + venv import path) without recording anything
-        # in jac.toml or jac.lock. The in-memory manifest section is
-        # only a transient scratch pad and is restored below. Resolution
-        # runs collect-only so a failed resolve leaves .jac/packages and
-        # the deps map untouched.
         original = config.plugin_dependencies.get("jac");
         had_section = isinstance(original, dict);
         backup: dict[str, any] = dict(original) if had_section else {};
@@ -945,9 +938,6 @@ obj JacGitProvider(EcosystemProvider) {
             try {
                 self.materialize_closure(config, resolved, ctx);
             } except Exception as e {
-                # A mid-closure copy failure must not leave .jac/packages
-                # holding code the deps map does not describe: rebuild the
-                # package dirs from the deps map still on disk.
                 console.error(str(e));
                 try {
                     restore_saved_packages(config);

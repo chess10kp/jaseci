@@ -41,7 +41,9 @@ import from jaclang.project.lockfile {
 }
 
 
-def make_git_repo(path: Path, jac_toml: str, files: dict[str, str], branch: str = "") -> str {
+def make_git_repo(
+    path: Path, jac_toml: str, files: dict[str, str], branch: str = ""
+) -> str {
     path.mkdir(parents=True, exist_ok=True);
     (path / "jac.toml").write_text(jac_toml, encoding="utf-8");
     for (name, content) in files.items() {
@@ -749,6 +751,7 @@ test "override resolves a genuine cross-parent conflict" {
         shutil.rmtree(tmp, ignore_errors=True);
     }
 }
+
 test "failed replacement restores the previous dependency entry" {
     # Replacing an existing dep with a spec that fails to resolve must
     # restore the overwritten entry in jac.toml: the valid dependency
@@ -807,7 +810,9 @@ test "failed no-save install restores the recorded package state" {
         );
         toml_text = (
             '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
-            '[dependencies.jac]\nlibb = { git = "file://' + libb_origin + '" }\n'
+            '[dependencies.jac]\nlibb = { git = "file://'
+            + libb_origin
+            + '" }\n'
         );
         (config, tmp) = make_project(toml_text);
         provider = JacGitProvider();
@@ -822,9 +827,7 @@ test "failed no-save install restores the recorded package state" {
             }
             return materialize(src, dest);
         }
-        with patch(
-            "jaclang.project.jac_provider.materialize", fake_materialize
-        ) {
+        with patch("jaclang.project.jac_provider.materialize", fake_materialize) {
             ok = provider.install_no_save(
                 config,
                 ["jac:file://" + fresh_origin, "jac:file://" + broken_origin],
@@ -1188,7 +1191,9 @@ test "transitive dependency with unsafe name is rejected" {
             origin_path,
             "[project]\nname = \"outer\"\nversion = \"1.0.0\"\n\n"
             "[dependencies.jac]\n"
-            + "\"" + bad_name + "\" = { path = \"../sibling\" }\n",
+                + "\""
+                + bad_name
+                + "\" = { path = \"../sibling\" }\n",
             {"outer.jac": "def o() -> int { return 1; }\n"}
         );
         (config, tmp) = make_project(
@@ -1240,9 +1245,10 @@ test "frozen install validates path dependency tree hashes" {
             provider = JacGitProvider();
             assert provider.install_all(config, [], InstallContext());
             rows = jac_lock_rows(read_lock(project_dir));
-            assert os.path.realpath(rows["utils"]["path"]) == os.path.realpath(
-                str(utils)
-            ) , f"lock row path mismatch: {rows['utils']}";
+            assert os.path.realpath(rows["utils"]["path"])
+                == os.path.realpath(str(utils)) , f"lock row path mismatch: {rows[
+                'utils'
+            ]}";
             assert rows["utils"]["tree"] , "lock row records no tree hash";
 
             # Unchanged content: frozen replay succeeds.
@@ -1252,9 +1258,7 @@ test "frozen install validates path dependency tree hashes" {
             (utils / "utils.jac").write_text(
                 "def u() -> int { return 999; }\n", encoding="utf-8"
             );
-            assert not provider.install_all(
-                config, [], InstallContext(frozen=True)
-            ) , "frozen replay accepted drifted path dependency content";
+            assert not provider.install_all(config, [], InstallContext(frozen=True)) , "frozen replay accepted drifted path dependency content";
 
             # Restoring the recorded content unblocks the replay.
             (utils / "utils.jac").write_text(
@@ -1299,11 +1303,13 @@ test "frozen install requires lock rows for transitive path deps" {
 
             # Drop the transitive path row: frozen replay must fail.
             import from jaclang.project.lockfile { write_lock }
-            trimmed = {name: row for (name, row) in rows.items() if name != "tv"};
+            trimmed = {
+                name: row
+                for (name, row) in rows.items()
+                if name != "tv"
+            };
             assert write_lock(project_dir, {"jac": trimmed});
-            assert not provider.install_all(
-                config, [], InstallContext(frozen=True)
-            ) , "frozen replay accepted a missing transitive path lock row";
+            assert not provider.install_all(config, [], InstallContext(frozen=True)) , "frozen replay accepted a missing transitive path lock row";
 
             # Restore the full lock: frozen replay succeeds again.
             assert write_lock(project_dir, {"jac": rows});
@@ -1333,24 +1339,19 @@ test "no-save install materializes without touching manifest or lock" {
             '[project]\nname = "mylib"\nversion = "1.2.0"\n',
             {"mylib.jac": "def hello() -> int { return 42; }\n"}
         );
-        (config, tmp) = make_project(
-            '[project]\nname = "proj"\nversion = "0.1.0"\n'
-        );
+        (config, tmp) = make_project('[project]\nname = "proj"\nversion = "0.1.0"\n');
         project_dir = Path(tmp) / "proj";
         try {
             os.chdir(project_dir);
             set_config(None);
             toml_before = (project_dir / "jac.toml").read_text(encoding="utf-8");
 
-            result = project.install(
-                packages=[f"jac:file://{origin}"], no_save=True
-            );
+            result = project.install(packages=[f"jac:file://{origin}"], no_save=True);
             assert result == 0 , f"no-save install failed: {result}";
 
             # Manifest untouched; no lock created.
-            assert (project_dir / "jac.toml").read_text(
-                encoding="utf-8"
-            ) == toml_before , "jac.toml was modified by --no-save";
+            assert (project_dir / "jac.toml").read_text(encoding="utf-8")
+                == toml_before , "jac.toml was modified by --no-save";
             assert not (project_dir / "jac.lock").exists() , (
                 "--no-save wrote a lockfile"
             );
@@ -1359,8 +1360,7 @@ test "no-save install materializes without touching manifest or lock" {
             fresh = JacConfig.load(project_dir / "jac.toml");
             fresh.project_root = project_dir;
             installed = {
-                p.get("name", "")
-                for p in read_deps_map(fresh).get("packages", [])
+                p.get("name", "") for p in read_deps_map(fresh).get("packages", [])
             };
             assert "mylib" in installed , f"deps map missing mylib: {installed}";
             assert (
