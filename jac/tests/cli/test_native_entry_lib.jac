@@ -313,15 +313,15 @@ test "run_jab_image execs the sealed exe first when the app is not interop" {
         img = Path(tmp) / "img";
         img.mkdir();
         _fake_jab_image(img, interop=False);
-        exec_calls: list = [];
-        lib_calls: list = [];
+        exec_calls: list[any] = [];
+        lib_calls: list[str] = [];
 
-        def fake_execv(path: str, argv: list) {
+        def fake_execv(path: str, argv: list[str]) {
             exec_calls.append((path, list(argv)));
             raise SystemExit(7);
         }
 
-        def fake_run_lib(lib_path: str, argv: list) -> (int | None) {
+        def fake_run_lib(lib_path: str, argv: list[str]) -> (int | None) {
             lib_calls.append(lib_path);
             return 0;
         }
@@ -363,21 +363,21 @@ test "run_jab_image stays host-driven when the manifest says interop" {
         img = Path(tmp) / "img";
         img.mkdir();
         _fake_jab_image(img, interop=True);
-        exec_calls: list = [];
-        lib_calls: list = [];
-        run_calls: list = [];
+        exec_calls: list[str] = [];
+        lib_calls: list[str] = [];
+        run_calls: list[str] = [];
 
-        def fake_execv(path: str, argv: list) {
+        def fake_execv(path: str, argv: list[str]) {
             exec_calls.append(path);
             raise SystemExit(7);
         }
 
-        def fake_run_lib(lib_path: str, argv: list) -> (int | None) {
+        def fake_run_lib(lib_path: str, argv: list[str]) -> (int | None) {
             lib_calls.append(lib_path);
             return 0;
         }
 
-        def fake_run(target: str, args: list) -> int {
+        def fake_run(target: str, args: list[str]) -> int {
             run_calls.append(target);
             return 0;
         }
