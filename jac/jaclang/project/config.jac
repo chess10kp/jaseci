@@ -49,7 +49,8 @@ obj RunConfig {
 }
 
 obj NativeConfig {
-    has target: str = "",
+    has require: list[str] = [],
+        target: str = "",
         opt: int = 2,
         debug: bool = False,
         threads: int = 4;
@@ -240,7 +241,7 @@ obj DevConfig {
         fmt_jobs: str = "";
 }
 
-def interpolate_env_vars(value: str) -> str;
+def interpolate_env_vars(value: str, environ: dict[str, str] | None = None) -> str;
 
 def find_project_root(start: Path | None = None) -> tuple[Path, Path] | None;
 
@@ -352,7 +353,7 @@ obj JacConfig {
 
 def _parse_toml_data(data: dict[str, any], toml_path: Path | None = None) -> JacConfig;
 
-def _parse_persons(raw: list[any]) -> list[PersonConfig];
+def _parse_persons(raw: list[object]) -> list[PersonConfig];
 
 def _parse_include(raw: dict[str, any]) -> PackageIncludeConfig;
 

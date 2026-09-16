@@ -264,7 +264,7 @@ def _module_codespace_mode(source_path: str) -> str {
     }
 }
 
-glob COMPILER_DIGEST_ROOTS: tuple = (
+glob COMPILER_DIGEST_ROOTS: tuple[str, ...] = (
          "jac0.py",
          "bootstrap_manifest.py",
          "meta_importer.py",
@@ -273,12 +273,12 @@ glob COMPILER_DIGEST_ROOTS: tuple = (
          "runtime",
          "lib",
          "cli/cli_boot.jac",
-         "project/tomlio.jac",
+         "project",
          "dist/precompile_bytecode.jac"
      ),
-     COMPILER_DIGEST_SUFFIXES: tuple = (".jac", ".py"),
-     COMPILER_DIGEST_SKIP_DIRS: tuple = ("tests", "test", "__pycache__"),
-     COMPILER_DIGEST_SKIP: tuple = ();
+     COMPILER_DIGEST_SUFFIXES: tuple[str, ...] = (".jac", ".py"),
+     COMPILER_DIGEST_SKIP_DIRS: tuple[str, ...] = ("tests", "test", "__pycache__"),
+     COMPILER_DIGEST_SKIP: tuple[str, ...] = ();
 
 def compiler_source_files(pkg_dir: str) -> list[str] {
     base = str(Path(pkg_dir));
@@ -333,7 +333,7 @@ def compiler_source_digest(pkg_dir: str) -> str {
     return f"{len(rels)}:{h.hexdigest()}";
 }
 
-glob _COMPILER_DIGEST_CACHE: list = [];
+glob _COMPILER_DIGEST_CACHE: list[str] = [];
 
 def _digest_manifest_path(pkg_dir: str) -> Path {
     tag = hashlib.sha256(str(Path(pkg_dir).resolve()).encode()).hexdigest()[:8];
@@ -345,18 +345,18 @@ def _manifest_compiler_digest(pkg_dir: str) -> str {
     base = str(Path(pkg_dir));
     rels = compiler_source_files(base);
     manifest_path = _digest_manifest_path(base);
-    entries: dict = {};
+    entries: dict[str, any] = {};
     stored_digest = "";
     try {
         raw = json.loads(manifest_path.read_text());
-        entries = raw.get("entries", {}) or {};
+        entries: any = raw.get("entries", {}) or {};
         stored_digest = raw.get("digest", "") or "";
     } except Exception {
         entries = {};
         stored_digest = "";
     }
     changed = False;
-    new_entries: dict = {};
+    new_entries: dict[str, list[float | int | str]] = {};
     h = hashlib.sha256();
     for rel in rels {
         full = os.path.join(base, rel.replace("/", os.sep));
@@ -409,7 +409,7 @@ def running_compiler_digest -> str {
     return _COMPILER_DIGEST_CACHE[0];
 }
 
-glob _COMPILER_GENERATION_CACHE: list = [];
+glob _COMPILER_GENERATION_CACHE: list[str] = [];
 
 def compiler_generation -> str {
     if not _COMPILER_GENERATION_CACHE {
@@ -420,7 +420,7 @@ def compiler_generation -> str {
     return _COMPILER_GENERATION_CACHE[0];
 }
 
-glob _JAC_VERSION_CACHE: list = [];
+glob _JAC_VERSION_CACHE: list[str] = [];
 
 def jaclang_version -> str {
     if not _JAC_VERSION_CACHE {
@@ -459,6 +459,7 @@ def _analysis_fingerprint_for(source_path: str) -> str {
     mem_cfg = cfg.memory if cfg is not None else None;
     native_cfg = cfg.native if cfg is not None else None;
     return CompileOptions(
+        native_require=(list(native_cfg.require) if native_cfg else []),
         memory_profile=(mem_cfg.profile if mem_cfg else "managed"),
         memory_enforce=(list(mem_cfg.enforce) if mem_cfg else []),
         memory_exempt=(list(mem_cfg.exempt) if mem_cfg else []),
@@ -475,7 +476,7 @@ def _project_env_fingerprint(source_path: str) -> str {
         pins_digest,
         config_kind_space
     }
-    import from jaclang.compiler.placement.workspace {
+    import from jaclang.project.workspace {
         app_fact_digest,
         app_for_path,
         workspace_for_path

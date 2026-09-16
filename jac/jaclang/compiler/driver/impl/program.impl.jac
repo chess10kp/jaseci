@@ -186,14 +186,14 @@ impl JacProgram.load_dependency_module(
             import from jaclang.compiler.passes.pyast_load_pass { PyastBuildPass }
             import from jaclang.compiler.driver.pipeline { run_utility, UtilityProduct }
             import from jaclang.compiler.passes.sym_tab_build_pass { SymTabBuildPass }
-            import from jaclang.compiler.frontend.helpers { read_file_with_encoding }
+            import from jaclang.project.source { read_file_with_encoding }
             src = use_str or read_file_with_encoding(source_path);
             uni_source = uni.Source(src, source_path);
             converted = run_utility(
                 UtilityProduct.PYTHON_AST,
                 uni.PythonModuleAst(py_ast.parse(src), orig_src=uni_source,),
                 self
-            ).ir_out;
+            ).module;
             assert isinstance(converted, uni.Module);
             mod = converted;
             mod.stub_only = True;
@@ -499,7 +499,7 @@ impl JacProgram.build(
 impl JacProgram.run_schedule(
     self: JacProgram,
     mod: uni.Module,
-    passes: list[type[Transform]],
+    passes: list[type],
     cancel_token: (Event | None) = None
 ) -> None {
     self._get_compiler().run_schedule(mod, self, passes, cancel_token);

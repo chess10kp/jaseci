@@ -34,7 +34,7 @@ def _store(s: Session) -> Store {
 }
 
 
-def _server_txn_state(s: Session) -> list {
+def _server_txn_state(s: Session) -> list[any] {
     r = _store(s).rows(
         "SELECT current_setting('transaction_isolation'),"
         " current_setting('transaction_read_only')",
@@ -183,7 +183,7 @@ test "isolation: a pending write inside a read scope forces SERIALIZABLE" {
 
 
 test "isolation: scale context construction declares read intent" {
-    import from jaclang.compiler.frontend.constant { Constants as Con }
+    import from jaclang.runtime.constants { Constants as Con }
     with TemporaryDirectory() as td {
         s = _mk_session(td);
         try {

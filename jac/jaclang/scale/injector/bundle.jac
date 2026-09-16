@@ -48,7 +48,7 @@ glob _EXCLUDE_FILES: set[str] = {
          "id_ecdsa",
          "id_ed25519"
      };
-glob _EXCLUDE_SUFFIXES: tuple = (
+glob _EXCLUDE_SUFFIXES: tuple[str, ...] = (
          ".pem",
          ".key",
          ".crt",
@@ -90,7 +90,7 @@ obj BundleSourceFilter {
     has ignore_patterns: list[str];
 
     def parks(rel: Path) -> bool {
-        import from jaclang.compiler.frontend.helpers { path_matches_exclude }
+        import from jaclang.project.source { path_matches_exclude }
 
         return path_matches_exclude(rel.as_posix(), self.ignore_patterns);
     }
@@ -124,7 +124,7 @@ obj BundleSourceFilter {
     }
 
     def matching_ignore_pattern(rel: Path) -> str {
-        import from jaclang.compiler.frontend.helpers { path_matches_exclude }
+        import from jaclang.project.source { path_matches_exclude }
 
         for pattern in self.ignore_patterns {
             if path_matches_exclude(rel.as_posix(), [pattern]) {
@@ -166,7 +166,7 @@ obj BundleSourceFilter {
 
 
 def source_filter_for(base: Path) -> BundleSourceFilter {
-    import from jaclang.compiler.frontend.helpers { read_jacignore_patterns }
+    import from jaclang.project.source { read_jacignore_patterns }
 
     return BundleSourceFilter(ignore_patterns=read_jacignore_patterns(str(base)));
 }
@@ -445,6 +445,31 @@ def sanitized_jac_toml(base: Path) -> (str | None) {
     }
     out.extend(pending);
     return "\n".join(out) + "\n";
+}
+
+
+def unresolved_toml_references(text: str, environ: dict[str, str]) -> list[str] {
+    import from jaclang.project.config { interpolate_env_vars }
+    found: list[str] = [];
+    def collect(item: any, path: str) {
+        if isinstance(item, dict) {
+            for (key, value) in item.items() {
+                collect(value, f"{path}.{key}" if path else str(key));
+            }
+        } elif isinstance(item, list) {
+            for (i, element) in enumerate(item) {
+                collect(element, f"{path}[{i}]");
+            }
+        } elif isinstance(item, str) {
+            try {
+                interpolate_env_vars(item, environ);
+            } except ValueError as e {
+                found.append(f"{path}: {e}");
+            }
+        }
+    }
+    collect(tomllib.loads(text), "");
+    return found;
 }
 
 

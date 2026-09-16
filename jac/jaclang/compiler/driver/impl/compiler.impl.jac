@@ -31,7 +31,7 @@ impl JacCompiler.note_stub_tree_served(path: str, program: JacProgram) -> None {
     if self.stub_catalog() is not None {
         return;
     }
-    import from jaclang.compiler.driver.modresolver { _in_typeshed_tree }
+    import from jaclang.project.modresolver { _in_typeshed_tree }
     if _in_typeshed_tree(path) {
         self._stub_trees_served = True;
     }
@@ -129,6 +129,13 @@ impl JacCompiler.get_bytecode(
         bind_options,
         context_program,
         compilation_scope
+    }
+    if full_target.endswith('.py') {
+        import builtins;
+        import from jaclang.project.source { read_file_with_encoding }
+        return builtins.compile(
+            read_file_with_encoding(full_target), full_target, 'exec'
+        );
     }
     actual = self.selfhost.resolve(full_target, target_program);
     if not self.selfhost.is_selfhost(actual) {
@@ -340,8 +347,8 @@ impl JacCompiler._load_native_from_cache(
         }
         gen = CodeGenTarget();
         gen.native_engine = engine;
-        py_func_table: dict = {};
-        callbacks_list: list = [];
+        py_func_table: dict[str, Callable[..., object]] = {};
+        callbacks_list: list[object] = [];
         gen.interop_py_funcs = py_func_table;
         gen._interop_callbacks = callbacks_list;
         if cached_interop {
@@ -349,7 +356,12 @@ impl JacCompiler._load_native_from_cache(
             manifest = self._deserialize_interop_table(cached_interop);
             gen.interop_manifest = manifest;
             if manifest.native_imports {
-                register_py_callbacks(manifest, py_func_table, callbacks_list);
+                register_py_callbacks(
+                    manifest.native_imports,
+                    py_func_table,
+                    callbacks_list,
+                    llvm.add_symbol
+                );
             }
         }
         install_native_static_init(engine, gen.interop_manifest);
@@ -408,8 +420,8 @@ impl JacCompiler._load_native_from_bitcode(
     }
     gen = CodeGenTarget();
     gen.native_engine = engine;
-    py_func_table: dict = {};
-    callbacks_list: list = [];
+    py_func_table: dict[str, Callable[..., object]] = {};
+    callbacks_list: list[object] = [];
     gen.interop_py_funcs = py_func_table;
     gen._interop_callbacks = callbacks_list;
     if cached_interop {
@@ -417,7 +429,9 @@ impl JacCompiler._load_native_from_bitcode(
         manifest = self._deserialize_interop_table(cached_interop);
         gen.interop_manifest = manifest;
         if manifest.native_imports {
-            register_py_callbacks(manifest, py_func_table, callbacks_list);
+            register_py_callbacks(
+                manifest.native_imports, py_func_table, callbacks_list, llvm.add_symbol
+            );
         }
     }
     install_native_static_init(engine, gen.interop_manifest);
@@ -604,12 +618,12 @@ impl JacCompiler._get_precompiled_jir_bytecode(
     return None;
 }
 
-impl JacCompiler._build_interop_dict(result: uni.Module) -> dict {
+impl JacCompiler._build_interop_dict(result: uni.Module) -> dict[str, any] {
     manifest = result.gen.interop_manifest;
     if manifest is None {
         return {};
     }
-    interop_data: dict = {'bindings': {}};
+    interop_data: dict[str, any] = {'bindings': {}};
     for (name, binding) in manifest.bindings.items() {
         interop_data['bindings'][name] = {
             'name': binding.name,
@@ -689,8 +703,8 @@ impl JacCompiler.parse_str(
             target_program,
             cancel_token=cancel_token
         );
-        had_error = len(py_ast_ret.errors_had) > 0;
-        converted = py_ast_ret.ir_out;
+        had_error = len(py_ast_ret.ctx.errors_had) > 0;
+        converted = py_ast_ret.module;
         assert isinstance(converted, uni.Module);
         mod = converted;
     } else {
@@ -950,8 +964,8 @@ impl JacCompiler.stamp_native_import_facts(
 }
 
 impl JacCompiler.stamp_app_facts(mod: uni.Module, target_program: JacProgram) -> None {
-    import from jaclang.compiler.driver.modresolver { find_jac_project_root }
-    import from jaclang.compiler.placement.workspace { workspace_for_path }
+    import from jaclang.project.modresolver { find_jac_project_root }
+    import from jaclang.project.workspace { workspace_for_path }
     opts = target_program.options;
     mod_path = mod.loc.mod_path if mod.loc else '';
     mod.jac_project_root = find_jac_project_root(mod_path) if mod_path else None;
@@ -970,7 +984,7 @@ impl JacCompiler.stamp_app_facts(mod: uni.Module, target_program: JacProgram) ->
     } else {
         mod.app_kind = '';
     }
-    import from jaclang.compiler.placement.workspace { UI_MOBUI }
+    import from jaclang.project.workspace { UI_MOBUI }
     override_ui = opts.ui if (opts is not None and opts.ui) else '';
     ui = override_ui or (app.ui if app is not None else '');
     if ui == UI_MOBUI {
@@ -1016,10 +1030,10 @@ impl JacCompiler.stamp_boundary_facts(
         );
 
     def resolve_native(module_name: str, inferred_ok: bool) -> (str | None) {
-        (src_mod_str, _full_path) = resolve_native_module(
+        (src_mod_str, full_path) = resolve_native_module(
             module_name, base_dir, allow_inferred=inferred_ok
         );
-        return src_mod_str;
+        return os.path.realpath(full_path) if full_path is not None else src_mod_str;
     }
 
     def source_mod_for(resolved_path: (str | None)) -> (uni.Module | None) {
@@ -1300,7 +1314,7 @@ impl JacCompiler.compile(
             if _depth_prev == 0 {
                 self._closure_opts = options;
             }
-            _gc_prev: (tuple | None) = None;
+            _gc_prev: (tuple[int, int, int] | None) = None;
             if _depth_prev == 0 and not os.environ.get('JAC_GC_NO_COMPILE_BOOST') {
                 import gc;
                 _gc_prev = gc.get_threshold();
@@ -1713,7 +1727,7 @@ impl JacCompiler.build(
 impl JacCompiler.run_schedule(
     mod: uni.Module,
     target_program: JacProgram,
-    passes: list[type[Transform]],
+    passes: list[type],
     cancel_token: (Event | None) = None
 ) -> None {
     import from jaclang.compiler.driver.pipeline { execute_passes }
@@ -1811,7 +1825,7 @@ impl JacCompiler._report_missing_native_ir(
     }
     import from jaclang.compiler.frontend.diagnostics { E5092 }
     import from jaclang.compiler.frontend.module_facts { ModuleFacts }
-    import from jaclang.compiler.passes.transform { Alert }
+    import from jaclang.compiler.passes.context { Alert }
     reason = native_schedule_failure();
     if not reason {
         (_avail, _why) = native_pipeline_available();
@@ -1939,6 +1953,9 @@ impl JacCompiler.client_artifact_of(mod: uni.Module) -> (ClientArtifact | None) 
         return None;
     }
     native_sources: list[str] = [];
+    if mod.declares_codespace(CodeContext.NATIVE) {
+        native_sources.append(mod.loc.mod_path);
+    }
     for binding in mod.gen.interop_manifest.client_native_imports {
         if binding.source_module {
             native_sources.append(str(binding.source_module));

@@ -1,5 +1,6 @@
 import type from jaclang.compiler.driver.program { JacProgram }
 import hashlib;
+import type from jaclang.compiler.driver.program { JacProgram }
 import json;
 import marshal;
 import os;
@@ -154,7 +155,7 @@ glob _sealable_cache: dict[tuple[str, str], list[str]] = {},
 
 def _application_sources(package_dir: str, app: str) -> list[str] | None {
     import from jaclang.compiler.driver.program { JacProgram }
-    import from jaclang.compiler.placement.workspace { workspace_for_path }
+    import from jaclang.project.workspace { workspace_for_path }
     import from jaclang.compiler.driver.compilation_context { bind_options }
     import from jaclang.compiler.driver.compile_options { CompileOptions }
     import from jaclang.compiler.driver.pipeline { compile_application }
@@ -304,7 +305,7 @@ def placement_facts_map(package_dir: str, app: str = "") -> dict[str, list[str]]
     return out;
 }
 
-def _emit_unit_diagnostics(jac_path: str, programs: list) {
+def _emit_unit_diagnostics(jac_path: str, programs: list[JacProgram]) {
     import from jaclang.compiler.driver.source_failures {
         compiler_source_failure_details
     }
@@ -1005,13 +1006,30 @@ def write_manifest(
 }
 
 def _precompile_retire(served: int, rss_mb: int) -> bool {
-    import from jaclang.cli.workpool { env_int, should_retire }
-    return should_retire(
-        served,
-        env_int("JAC_PRECOMPILE_RECYCLE", 0),
-        rss_mb,
-        env_int("JAC_PRECOMPILE_RECYCLE_MB", 4096)
-    );
+    import from jaclang.cli.workpool {
+        WORKER_MEM_BYTES,
+        env_int,
+        maybe_malloc_trim,
+        should_retire,
+        worker_rss_mb
+    }
+    recycle = env_int("JAC_PRECOMPILE_RECYCLE", 0);
+    cap = env_int("JAC_PRECOMPILE_RECYCLE_MB", WORKER_MEM_BYTES // (1024 * 1024));
+    if should_retire(served, recycle, 0, 0) {
+        return True;
+    }
+    if cap > 0 and rss_mb >= cap {
+        import gc;
+        gc.collect();
+        maybe_malloc_trim();
+        current = worker_rss_mb();
+        if os.environ.get("JAC_PRECOMPILE_RSS_LOG") {
+            sys.stderr.write(f"[gc] precompile rss={rss_mb}->{current}MB\n");
+            sys.stderr.flush();
+        }
+        rss_mb = current;
+    }
+    return should_retire(served, recycle, rss_mb, cap);
 }
 
 def precompile_exit(code: int) {
@@ -1159,6 +1177,8 @@ def run_precompile(
 
     import from jaclang.compiler.driver.jir { read_debug_source }
     import from jaclang.cli.workpool {
+        WORKER_MEM_BYTES,
+        env_int,
         WorkPool,
         forced_serial,
         jobs_setting,
@@ -1167,7 +1187,12 @@ def run_precompile(
     }
 
     raw_jobs = jobs_setting("precompile", jobs_arg);
-    workers = resolve_jobs(raw_jobs, env_var="JAC_PRECOMPILE_JOBS");
+    worker_mb = env_int("JAC_PRECOMPILE_RECYCLE_MB", WORKER_MEM_BYTES // (1024 * 1024));
+    workers = resolve_jobs(
+        raw_jobs,
+        env_var="JAC_PRECOMPILE_JOBS",
+        worker_bytes=max(0, worker_mb) * 1024 * 1024
+    );
     use_pool = (
         pool_available()
         and not forced_serial(raw_jobs)

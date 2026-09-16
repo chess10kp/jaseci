@@ -13,7 +13,7 @@ import type from jaclang.compiler.backends.es.estree { Node as EsNode }
 import type from jaclang.compiler.frontend.unitree { CommentToken }
 import type from jaclang.compiler.tools.doc_ir { Doc }
 import type from jaclang.compiler.frontend.unitree { Source, Token }
-import type from jaclang.runtime.osp_model { OspModel }
+import type from jaclang.compiler.passes.osp_analysis { OspModel }
 import type from jaclang.compiler.backends.native.llvm.ir { Module as IRModule }
 import type from jaclang.compiler.backends.native.llvm.binding {
     ModuleRef,
@@ -21,14 +21,14 @@ import type from jaclang.compiler.backends.native.llvm.binding {
 }
 
 obj ClientManifest {
-    has exports: list = [],
-        globals: list = [],
-        params: dict[(str, list)] = field(default_factory=`dict),
+    has exports: list[str] = [],
+        globals: list[str] = [],
+        params: dict[str, list[str]] = field(default_factory=`dict),
         globals_values: dict[(str, any)] = field(default_factory=`dict),
         has_client: bool = False,
         imports: dict[(str, str)] = field(default_factory=`dict),
         runtime_imports: dict[str, list[str]] = field(default_factory=`dict),
-        endpoint_effects: dict[(str, dict)] = field(default_factory=`dict),
+        endpoint_effects: dict[(str, dict[str, any])] = field(default_factory=`dict),
         tests: list[dict[(str, str)]] = field(default_factory=`list),
         server_imports: list[str] = field(default_factory=`list),
         server_import_routes: dict[(str, dict[(str, str)])] = field(
@@ -44,7 +44,7 @@ obj ClientArtifact {
         native_import_sources: list[str] = field(default_factory=`list),
         source_map: list[tuple[int, int, int, int, str]] = field(default_factory=`list),
         dep_digests: dict[str, str] = field(default_factory=`dict),
-        boundary_contracts: dict = field(default_factory=`dict),
+        boundary_contracts: dict[str, any] = field(default_factory=`dict),
         framework: str = "";
 
     def to_bytes -> bytes;
@@ -56,8 +56,8 @@ enum InteropContext { SERVER = 'server', NATIVE = 'native', CLIENT = 'client' }
 obj NativeFunctionInfo {
     has name: str,
         ret_type: str = 'int',
-        param_types: list = [],
-        param_names: list = [];
+        param_types: list[str] = [],
+        param_names: list[str] = [];
 }
 
 obj NativeModuleInfo {
@@ -82,7 +82,7 @@ glob HDR_MAGIC: int = 44061,
 glob STR_LEN_TAG_BIT: int = 1,
      STR_LEN_TAG_SHIFT: int = 1;
 
-glob JACSTR_DESC_FIELDS: dict[(str, tuple)] = {
+glob JACSTR_DESC_FIELDS: dict[(str, tuple[str, ...])] = {
          'jacstr3': ('root', 'data', 'len'),
          'jacstr2': ('data', 'len')
      };
@@ -99,7 +99,7 @@ obj NativeFieldInfo {
         is_func_ptr: bool = False,
         func_param_types: (list[str] | None) = None,
         func_ret_type: (str | None) = None,
-        elem_keys: (list | None) = None,
+        elem_keys: (list[str] | None) = None,
         foreign: bool = False;
 }
 
@@ -113,13 +113,13 @@ obj NativeStructLayout {
 obj NativeEnumLayout {
     has name: str,
         is_string_valued: bool = False,
-        members: list = field(default_factory=`list);
+        members: list[tuple[str, any, int]] = field(default_factory=`list);
 }
 
 obj NativeTupleLayout {
     has key: str,
         element_types: list[str] = field(default_factory=`list),
-        element_struct_hints: list = field(default_factory=`list);
+        element_struct_hints: list[str | None] = field(default_factory=`list);
 }
 
 obj NativeFuncLayout {
@@ -130,7 +130,7 @@ obj NativeFuncLayout {
         ret_struct_name: (str | None) = None,
         ret_tuple_layout: (NativeTupleLayout | None) = None,
         ret_enum_type: (str | None) = None,
-        ret_elem_keys: (list | None) = None;
+        ret_elem_keys: (list[str] | None) = None;
 }
 
 obj NativeTestLayout {
@@ -532,6 +532,39 @@ def resolve_native_module(
     clean = module_name.lstrip('.');
     path_name = clean.replace('.', os.sep);
 
+    if clean.startswith('jaclang.') {
+        import from jaclang.project.modresolver { resolve_module }
+        import from jaclang.compiler.native_scope {
+            in_native_scope_path,
+            scope_lowering_active
+        }
+        (candidate, language) = resolve_module(clean, os.path.join(base_dir, ""));
+        if language != 'jac' or not candidate.endswith('.jac') {
+            return (None, None);
+        }
+        candidate = os.path.realpath(candidate);
+        if (scope_lowering_active() and in_native_scope_path(candidate))
+            or clean in SHARED_RUNTIME_MODULES {
+            return (candidate, candidate);
+        }
+        if allow_inferred {
+            search = os.path.abspath(base_dir);
+            while True {
+                local = _native_variant_path(os.path.join(search, path_name));
+                if local is not None {
+                    native = _inferred_native_path(candidate);
+                    return (native, native);
+                }
+                parent = os.path.dirname(search);
+                if parent == search {
+                    break;
+                }
+                search = parent;
+            }
+        }
+        return (None, None);
+    }
+
     if allow_inferred {
         local = _inferred_native_path(
             _native_variant_path(os.path.join(base_dir, clean))
@@ -555,25 +588,6 @@ def resolve_native_module(
                 }
                 search = parent;
             }
-        }
-    }
-
-    if clean.startswith('jaclang.') {
-        import jaclang as _jl;
-        _pkg = os.path.dirname(os.path.abspath(_jl.__file__));
-        _parts = clean.split('.')[1:];
-        _cand = os.path.join(_pkg, *_parts) + '.jac';
-        import from jaclang.compiler.native_scope {
-            in_native_scope_path,
-            scope_lowering_active
-        }
-        if scope_lowering_active() {
-            if in_native_scope_path(_cand) and os.path.isfile(_cand) {
-                return (path_name, _cand);
-            }
-        }
-        if clean in SHARED_RUNTIME_MODULES and os.path.isfile(_cand) {
-            return (path_name, _cand);
         }
     }
 
@@ -612,7 +626,7 @@ obj NativeModuleLayout {
         str_headerless: (bool | None) = None;
 }
 
-def _tuple_layout_to_dict(t: (NativeTupleLayout | None)) -> (dict | None) {
+def _tuple_layout_to_dict(t: (NativeTupleLayout | None)) -> (dict[str, any] | None) {
     if t is None {
         return None;
     }
@@ -623,7 +637,7 @@ def _tuple_layout_to_dict(t: (NativeTupleLayout | None)) -> (dict | None) {
     };
 }
 
-def _func_layout_to_dict(f: NativeFuncLayout) -> dict {
+def _func_layout_to_dict(f: NativeFuncLayout) -> dict[str, any] {
     return {
         "name": f.name,
         "param_types": list(f.param_types),
@@ -638,7 +652,7 @@ def _func_layout_to_dict(f: NativeFuncLayout) -> dict {
     };
 }
 
-def native_layout_to_dict(layout: NativeModuleLayout) -> dict {
+def native_layout_to_dict(layout: NativeModuleLayout) -> dict[str, any] {
     return {
         "abi_version": layout.abi_version,
         "structs": {
@@ -646,7 +660,8 @@ def native_layout_to_dict(layout: NativeModuleLayout) -> dict {
                 "name": s.name,
                 "has_vtable": s.has_vtable,
                 "accessors": {
-                    fname: dict(kinds) for (fname, kinds) in s.accessors.items()
+                    fname: dict[str, str](kinds)
+                    for (fname, kinds) in s.accessors.items()
                 },
                 "fields": [
                     {
@@ -711,18 +726,18 @@ obj InteropBinding {
         type_scope: str = '',
         kind: str = 'function',
         provider_app: str = '',
-        native_contract: dict = field(default_factory=`dict),
+        native_contract: dict[str, any] = field(default_factory=`dict),
         endpoint_id: str = '';
 
     has is_cross_module: bool { getter; }
 }
 
 obj InteropManifest {
-    has native_host_imports: dict[str, dict] = field(default_factory=`dict),
+    has native_host_imports: dict[str, dict[str, any]] = field(default_factory=`dict),
         bindings: dict[(str, InteropBinding)] = field(default_factory=`dict),
         boundary_types: dict[(str, BoundaryTypeInfo)] = field(default_factory=`dict),
         boundary_type_names: dict[str, dict[str, str]] = field(default_factory=`dict),
-        endpoint_effects: dict[(str, dict)] = field(default_factory=`dict),
+        endpoint_effects: dict[(str, dict[str, any])] = field(default_factory=`dict),
         func_access: dict[(str, bool)] = field(default_factory=`dict),
         walker_access: dict[(str, bool)] = field(default_factory=`dict),
         app_edges: list[tuple[(str, str)]] = field(default_factory=`list),
@@ -758,7 +773,7 @@ obj CodeGenTarget {
         js: str = '',
         css: str = '',
         _client_manifest: (ClientManifest | None) = None,
-        py_ast: list = field(default_factory=`list),
+        py_ast: list[any] = field(default_factory=`list),
         py_bytecode: (bytes | None) = None,
         jcir: (bytes | None) = None,
         es_ast: EsNode | Sequence[EsNode] | SliceInfo | IndexInfo | None = None,
@@ -771,6 +786,7 @@ obj CodeGenTarget {
         _interop_callbacks: list[any] = field(default_factory=`list),
         native_layout: (NativeModuleLayout | None) = None,
         osp_model: (OspModel | None) = None,
+        component_call_abi: str = "",
         jc_layout: (str | None) = None,
         has_root_access: (bool | None) = None,
         nogc_enforced: bool = False,
@@ -786,9 +802,9 @@ obj CodeGenTarget {
     has interop_manifest: InteropManifest { getter; setter(value: InteropManifest); }
 }
 
-def endpoint_descriptor(module: any, kind: str, name: str) -> dict {
+def endpoint_descriptor(module: any, kind: str, name: str) -> dict[str, str] {
     import os;
-    import from jaclang.compiler.placement.workspace { workspace_for_path }
+    import from jaclang.project.workspace { workspace_for_path }
     path = module.loc.mod_path;
     workspace = workspace_for_path(path);
     owner = workspace.app_for_path(path) if workspace else None;

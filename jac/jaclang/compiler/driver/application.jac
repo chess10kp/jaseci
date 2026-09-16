@@ -6,11 +6,12 @@ import tempfile;
 import time;
 import from pathlib { Path }
 import type from jaclang.runtime.prepared { PreparedApplication }
-glob _FORMAT: int = 4,
+import type from jaclang.compiler.frontend { unitree as uni }
+glob _FORMAT: int = 5,
      _SKIP: set[str] = {'.jac', '.git', '.venv', 'venv', 'node_modules', '__pycache__'};
 
-def _inventory(`root: any, inputs: bool = False) -> dict {
-    result = {};
+def _inventory(`root: any, inputs: bool = False) -> dict[str, tuple[int, int]] {
+    result: dict[str, tuple[int, int]] = {};
     for (directory, dirs, files) in os.walk(`root) {
         dirs[:] = sorted(
             d
@@ -36,7 +37,7 @@ def _inventory(`root: any, inputs: bool = False) -> dict {
     return result;
 }
 
-def _identity -> tuple {
+def _identity -> tuple[str, str | None, str] {
     import from jaclang.compiler.driver.jir { compiler_generation }
     return (
         compiler_generation(),
@@ -61,7 +62,7 @@ def _write(path: any, value: any) {
     }
 }
 
-def _sections(path: any, program: any) -> dict {
+def _sections(path: any, program: any) -> dict[int, bytes] {
     import from jaclang.compiler.driver.compilation_context { cache_scope, program_for }
     actual = program_for(path, program);
     with cache_scope(actual.context_key, actual.options) {
@@ -69,7 +70,7 @@ def _sections(path: any, program: any) -> dict {
     }
 }
 
-def _context_sections(path: any) -> dict {
+def _context_sections(path: any) -> dict[int, bytes] {
     import from jaclang.compiler.driver.jir {
         get_module_cache_path,
         HEADER_SIZE,
@@ -85,8 +86,8 @@ def _context_sections(path: any) -> dict {
     return read_sections(data, (pos + len(SECTIONS_MAGIC))) if (pos >= 0) else {};
 }
 
-def _project_modules(program: any, `root: any) -> dict {
-    result = {};
+def _project_modules(program: any, `root: any) -> dict[str, uni.Module] {
+    result: dict[str, uni.Module] = {};
     for hub in program._search_hubs() {
         for (path, module) in `list(hub.items()) {
             if (module and os.path.realpath(path).startswith((`root + os.sep))) {
@@ -97,7 +98,21 @@ def _project_modules(program: any, `root: any) -> dict {
     return result;
 }
 
-def _manifest(program: any, path: any, `root: any, mod: any = None) -> dict {
+def _semantic_metadata(revision: PreparedApplication, program: any) {
+    import from jaclang.compiler.driver.compilation_context { program_for }
+    import from jaclang.jac0core.ext_registry { base_stem }
+    for path in revision.code {
+        actual = program_for(path, program);
+        prefix = base_stem(path) + '.';
+        revision.semantic[path] = {
+            key: value
+            for (key, value) in actual.mtir_map.items()
+            if key.startswith(prefix)
+        };
+    }
+}
+
+def _manifest(program: any, path: any, `root: any, mod: any = None) -> dict[str, any] {
     import from jaclang.compiler.frontend { unitree as uni }
     import from jaclang.compiler.frontend.constant { Tokens as Tok }
     mod = mod if (mod is not None) else program.find_module(path);
@@ -188,7 +203,7 @@ def _check(program: any, before: any) {
 }
 
 def _prepare_sealed(
-    `entry: str, program: any, image_root: str, entries: list
+    `entry: str, program: any, image_root: str, entries: list[str]
 ) -> PreparedApplication {
     import json;
     import from jaclang.runtime.prepared { PreparedApplication, publish }
@@ -259,6 +274,19 @@ def _prepare_sealed(
         if path in revision.code {
             continue;
         }
+        if Path(path).suffix == '.py' {
+            code = compiler.get_bytecode(path, program);
+            if code is None {
+                raise RuntimeError(
+                    f'Sealed application has no Python artifact: {path}'
+                );
+            }
+            revision.code[path] = code;
+            pending.update(
+                runtime_sources(code, path, image_root) - revision.code.keys()
+            );
+            continue;
+        }
         sealed = compiler._sealed_jir_data(path);
         if sealed is None {
             raise RuntimeError(
@@ -313,7 +341,7 @@ def prepare_application(
     }
     import from jaclang.compiler.driver.pass_driver { compile_progress }
     started = time.monotonic();
-    active = [];
+    active: list[str] = [];
     completed: list[int] = [0];
     def begin(path: any) {
         active.append(path);
@@ -346,7 +374,7 @@ def prepare_application(
                 }
                 import from jaclang.compiler.driver.compile_options { CompileOptions }
                 import from jaclang.runtime.prepared { publish }
-                applications = [];
+                applications: list[PreparedApplication] = [];
                 for path in entries {
                     options = bind_options(
                         path,
@@ -371,6 +399,13 @@ def prepare_application(
                     );
                 }
                 revision = applications[0];
+                for application in applications {
+                    application.name = application.manifests.get(
+                        application.entry, {}
+                    ).get(
+                        'app', ''
+                    );
+                }
                 revision.services = tuple(entries[1:]);
                 revision.applications = applications[1:];
                 publish(revision);
@@ -428,7 +463,9 @@ def _prepare(
     builder = None;
     if client {
         import from jaclang.client.vite_client_bundle { make_client_bundle_builder }
-        builder = make_client_bundle_builder(Path(`root));
+        builder = make_client_bundle_builder(
+            Path(`root), entry_path=`entry, program=program
+        );
         revision.client_compiler = builder._get_compiler();
         revision.client_dist = str(revision.client_compiler.vite_bundler.output_dir);
     }
@@ -437,6 +474,15 @@ def _prepare(
         if not record['has_client'] {
             revision.client_compiler = None;
             revision.client_dist = '';
+        }
+        if revision.client_compiler is not None {
+            revision.client_compiler.jac_client_compiler.na_wasm_modules = set(
+                record['client_native_sources']
+            );
+            revision.client_compiler._has_pages = record['client_has_pages'];
+            revision.client_compiler.jac_client_compiler._has_pages = record[
+                'client_has_pages'
+            ];
         }
         revision.code = record['code'];
         revision.manifests = record['manifests'];
@@ -451,12 +497,13 @@ def _prepare(
         for path in revision.code {
             revision.native[path] = compiler.get_native_interop_setup(path, program);
         }
+        _semantic_metadata(revision, program);
         return revision;
     }
     console.print('  Compiling server modules and placement metadata...');
     before = len(program.errors_had);
     import copy;
-    modules = {};
+    modules: dict[str, uni.Module] = {};
     import from jaclang.compiler.driver.pipeline { compile_application }
     for path in entries {
         options = copy.copy(program.options);
@@ -472,6 +519,7 @@ def _prepare(
                 or (Path(`entry).parent / 'pages').is_dir()
         );
     if has_client {
+        assert revision.client_compiler is not None;
         console.print('  Compiling client and native artifacts...');
         revision.client_compiler.compile(None, Path(`entry));
         if not dev {
@@ -534,6 +582,7 @@ def _prepare(
     }
     outputs = {};
     if has_client {
+        assert revision.client_compiler is not None;
         for directory in (
             revision.client_compiler.compiled_dir,
             revision.client_compiler.vite_bundler.output_dir
@@ -576,6 +625,14 @@ def _prepare(
         `dict(
             key=key,
             has_client=has_client,
+            client_native_sources=sorted(
+                revision.client_compiler.jac_client_compiler.na_wasm_modules
+            )
+                if revision.client_compiler is not None
+                else [],
+            client_has_pages=revision.client_compiler._has_pages
+                if revision.client_compiler is not None
+                else False,
             code=revision.code,
             manifests=revision.manifests,
             sections=sections,
@@ -583,6 +640,7 @@ def _prepare(
             dependencies=dependencies
         )
     );
+    _semantic_metadata(revision, program);
     return revision;
 }
 

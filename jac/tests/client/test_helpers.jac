@@ -1,10 +1,11 @@
 """Shared test utilities for jac-client tests."""
 
+import from tests.support { jac_command }
+
 import gc;
 import os;
 import shutil;
 import socket;
-import sys;
 import time;
 import from pathlib { Path }
 import from http.client { RemoteDisconnected }
@@ -28,7 +29,7 @@ def get_jac_command -> list[str] {
     if jac_path {
         return [jac_path];
     }
-    return [sys.executable, "-m", "jaclang"];
+    return jac_command();
 }
 
 """Get environment dict with bun in PATH."""
@@ -146,8 +147,8 @@ to the app instead. Returns ``(server_process, port)``. Caller must
 ``stop_server`` it.
 """
 def start_app_server(
-    project_path: any, extra_args: list | None = None, app: str = ""
-) -> tuple {
+    project_path: any, extra_args: list[any] | None = None, app: str = ""
+) -> tuple[any, ...] {
     import tempfile;
     port = get_free_port();
     jac_cmd = get_jac_command();
