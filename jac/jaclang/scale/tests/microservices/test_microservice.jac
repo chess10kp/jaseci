@@ -7,7 +7,7 @@ import tempfile;
 import from pathlib { Path }
 import from jaclang { JacRuntime as Jac }
 import from jaclang.compiler.driver.application { prepare_application }
-import from jaclang.compiler.frontend.constant { Constants as Con }
+import from jaclang.runtime.constants { Constants as Con }
 import from jaclang.server { sv_client as __jac_sv }
 import from jaclang.testing.testkit { ServingTestClient as TestClient }
 import from jaclang.server.server { JacAPIServer }
@@ -225,6 +225,12 @@ test "sv-to-sv: sv-imported walker round-trips report and fields" {
             "result"
         ];
         assert rpt2 == "hello, ada";
+
+        fields = xd(cons.post("/function/remote_walker_fields", json={"who": "ada"}))[
+            "result"
+        ];
+        assert fields
+            == {"name": "ada", "greeting": "hello, ada", "body": "[ops] hello"};
     } finally {
         done(tmp);
     }

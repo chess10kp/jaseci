@@ -23,6 +23,7 @@
 //!   zig build test                # offline bootstrap tests
 //!   zig build stub                # just the launcher
 //!   zig build                     # complete binary -> zig-out/bin/jac
+//!   JACPYTHON=1 zig build         # opt in to the native Python compiler
 //!   zig build -Ddev               # link compiler sources from this checkout
 //!   zig build -Djaclang-dir=PATH   # link another compiler source tree
 //!   zig build -Dpayload=PATH       # pack an existing payload
@@ -116,7 +117,8 @@ pub fn build(b: *std.Build) void {
     else
         b.resolveTargetQuery(.{ .cpu_model = .baseline });
     const optimize = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseSmall });
-    const jacpython = b.option(bool, "jacpython", "Replace CPython's C compiler with JacPython (experimental)") orelse false;
+    // Opt in at build time; each binary bundles exactly one Python runtime.
+    const jacpython = std.mem.eql(u8, b.graph.environ_map.get("JACPYTHON") orelse "0", "1");
     const python_variant = if (jacpython) "jacpython" else "cpython";
 
     // --- LLVMPY_* shim: compile jac/native/*.cpp + statically link host LLVM ---
@@ -149,7 +151,7 @@ pub fn build(b: *std.Build) void {
     const host_python_dir = b.pathFromRoot(b.fmt(".python-build/{s}/{s}", .{ python_variant, host_osarch }));
     const fetch_host = b.addRunArtifact(seed);
     fetch_host.addArgs(&.{ host_osarch, host_python_dir, b.pathFromRoot("."), b.graph.zig_exe });
-    if (jacpython) fetch_host.addArg("--jacpython");
+    if (!jacpython) fetch_host.addArg("--host");
     fetch_host.has_side_effects = true;
     b.step("build-python", "Build the source-pinned Python runtime and native libraries").dependOn(&fetch_host.step);
     const root = b.pathFromRoot(".");
@@ -165,7 +167,8 @@ pub fn build(b: *std.Build) void {
     });
     const ts_seed = b.addExecutable(.{ .name = "fetch_typeshed", .root_module = ts_seed_mod });
     const fetch_ts = b.addRunArtifact(ts_seed);
-    if (jacpython) fetch_host.step.dependOn(&fetch_ts.step);
+    fetch_host.step.dependOn(&fetch_ts.step);
+    if (jacllvm) |shim| fetch_host.step.dependOn(shim.place);
     fetch_ts.addArg(b.pathFromRoot("jaclang/vendor/typeshed"));
     // has_side_effects: the output lands in the source tree, not the cache, so
     // the step must run even when its (unchanging) argv would otherwise cache
@@ -271,7 +274,7 @@ pub fn build(b: *std.Build) void {
     const fetch_target: *std.Build.Step = if (std.mem.eql(u8, osarch, host_osarch)) &fetch_host.step else blk: {
         const fetch = b.addRunArtifact(seed);
         fetch.addArgs(&.{ osarch, python_dir, root, b.graph.zig_exe });
-        if (jacpython) fetch.addArg("--jacpython");
+        if (!jacpython) fetch.addArg("--host");
         fetch.has_side_effects = true;
         break :blk &fetch.step;
     };
@@ -283,6 +286,9 @@ pub fn build(b: *std.Build) void {
     // see the bundled per-OS native floors the launcher imports.) Needs the
     // LLVMPY_* shim placed in-tree and the target's C floor archives.
     const build_stub = tool.run("jac", &.{ "build", "--native" });
+    // Pin the selected runtime's libraries and certificates when both variants are cached.
+    build_stub.setEnvironmentVariable("JAC_NATIVE_FLOOR_DIR", b.fmt("{s}/build/lib", .{python_tree}));
+    build_stub.setEnvironmentVariable("JAC_NATIVE_CA_BUNDLE", b.fmt("{s}/build/cacert.pem", .{python_tree}));
     build_stub.addFileArg(b.path("launcher/launcher.jac"));
     build_stub.addArg("-o");
     const stub = build_stub.addOutputFileArg("jac-stub");

@@ -186,14 +186,14 @@ impl JacProgram.load_dependency_module(
             import from jaclang.compiler.passes.pyast_load_pass { PyastBuildPass }
             import from jaclang.compiler.driver.pipeline { run_utility, UtilityProduct }
             import from jaclang.compiler.passes.sym_tab_build_pass { SymTabBuildPass }
-            import from jaclang.compiler.frontend.helpers { read_file_with_encoding }
+            import from jaclang.project.source { read_file_with_encoding }
             src = use_str or read_file_with_encoding(source_path);
             uni_source = uni.Source(src, source_path);
             converted = run_utility(
                 UtilityProduct.PYTHON_AST,
                 uni.PythonModuleAst(py_ast.parse(src), orig_src=uni_source,),
                 self
-            ).ir_out;
+            ).module;
             assert isinstance(converted, uni.Module);
             mod = converted;
             mod.stub_only = True;
@@ -346,7 +346,7 @@ impl JacProgram.release_check_caches(self: JacProgram) -> None {
 }
 
 impl JacProgram.release_compile_closure(
-    self: JacProgram, collect: bool = True
+    self: JacProgram, collect: bool = True, retain_stubs: bool = True
 ) -> None {
     import os;
     if os.environ.get("JAC_NO_UNIT_EVICT") {
@@ -356,7 +356,9 @@ impl JacProgram.release_compile_closure(
     if self.context_root is None {
         for context in list(self.contexts.values()) {
             if context is not self {
-                context.release_compile_closure(collect=False);
+                context.release_compile_closure(
+                    collect=False, retain_stubs=retain_stubs
+                );
             }
         }
         self.contexts.clear();
@@ -365,7 +367,7 @@ impl JacProgram.release_compile_closure(
         self.source_store.revisions.clear();
     }
     self.release_native_dep_units();
-    self.hub.reset();
+    self.hub.reset(retain_stubs=retain_stubs);
     self.mod = self.hub.mod;
     self.deps.clear();
     self.type_evaluator = None;
@@ -497,7 +499,7 @@ impl JacProgram.build(
 impl JacProgram.run_schedule(
     self: JacProgram,
     mod: uni.Module,
-    passes: list[type[Transform]],
+    passes: list[type],
     cancel_token: (Event | None) = None
 ) -> None {
     self._get_compiler().run_schedule(mod, self, passes, cancel_token);

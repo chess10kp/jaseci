@@ -1,4 +1,4 @@
-import from jaclang.compiler.backends.native.linker_common {
+import from jaclang.compiler.backends.native.floor {
     collect_floor_archives,
     floor_lib_dir,
     resolve_floor_dir,
@@ -11,20 +11,9 @@ import sys;
 
 import from jaclang.cli.console { console }
 
-
-def _scan_rc_machinery(llvm_ir_str: str) -> tuple[list[str], list[str]] {
-    import re;
-    syms: set = set();
-    for m in re.finditer(r"__rc_[A-Za-z0-9_]*", llvm_ir_str) {
-        syms.add(m.group(0));
-    }
-    probes: list[str] = [];
-    for probe in ["JAC_GC"] {
-        if probe in llvm_ir_str {
-            probes.append(probe);
-        }
-    }
-    return (sorted(syms), probes);
+import from jaclang.compiler.backends.native.entry_points {
+    finalize_native_ir,
+    validate_native_application
 }
 
 
@@ -333,36 +322,16 @@ impl native_build(  # jac:ignore[W3030]
     console.print(f"Compiling {filename} to native binary");
 
     import from jaclang.compiler.driver.program { JacProgram }
-    import from jaclang.compiler.driver.compile_options {
-        CompileOptions,
-        push_native_target,
-        pop_native_target
-    }
     import from jaclang.compiler.backends.native.na_compile_pass {
         native_linked_ir_text
     }
 
     try {
         prog = JacProgram();
-        _prev_target = push_native_target(_triple) if _triple else None;
-        try {
-            options = CompileOptions(
-                aot_mode=True,
-                default_codespace=('native' if auto_promote else ''),
-                force_target_program=True,
-                memory_profile=memory,
-                native_target=(_triple or None),
-                native_debug=(True if debug else None),
-                no_ir_cache=debug or no_ir_cache
-            );
-            ir_module = prog.compile(
-                file_path=os.path.abspath(filename), options=options
-            );
-        } finally {
-            if _triple {
-                pop_native_target(_prev_target);
-            }
-        }
+        import from jaclang.compiler.driver.pipeline_runner { native_application }
+        (ir_module, options) = native_application(
+            prog, filename, _triple or '', memory, debug, no_ir_cache
+        );
     } except Exception as e {
         console.error(f"Jac compilation failed: {e}");
         import traceback;
@@ -429,64 +398,10 @@ impl native_build(  # jac:ignore[W3030]
         return 0;
     }
 
-    manifest = ir_module.gen.interop_manifest;
-    if not lib and manifest and manifest.native_imports {
-        console.error(
-            "Cannot compile to standalone binary: "
-            "file has Python/server dependencies (native_imports)."
-        );
-        for binding in manifest.native_imports {
-            console.error(f"  - {binding.name}");
-        }
-        return 1;
-    }
-
-    llvm_ir_str = native_linked_ir_text(ir_module);
-    import from jaclang.compiler.backends.native.na_compile_pass {
-        native_demoted_ir_symbols as _demoted_syms
-    }
-    import from jaclang.compiler.backends.native.lowering { native_lowering_issues }
-    _issues = native_lowering_issues(llvm_ir_str);
-    _demoted = sorted(
-        set(_demoted_syms(llvm_ir_str)) | {issue.symbol for issue in _issues}
-    );
-    if _demoted and not lib {
-        console.error(
-            f"{len(_demoted)} declaration(s) in the native closure could not lower: "
-                + ", ".join(_demoted),
-            hint="A self-contained binary cannot run a demoted function; run `jac explain placement` on the file to see why each one failed to lower."
-        );
-        return 1;
-    }
-
-    if assert_no_rc {
-        (_rc_syms, _rc_probes) = _scan_rc_machinery(llvm_ir_str);
-        if _rc_syms or _rc_probes {
-            _parts: list[str] = [];
-            if _rc_syms {
-                _parts.append("RC/collector symbols: " + ", ".join(_rc_syms));
-            }
-            if _rc_probes {
-                _parts.append("entry-point env probes: " + ", ".join(_rc_probes));
-            }
-            console.error(
-                "nogc invariant violated (compiler bug): emitted IR contains "
-                    + "; ".join(_parts)
-                    + "\n  (module has managed heap types or RC-emitting code;"
-                    + " see rc-stats coverage)"
-            );
-            return 1;
-        }
-        console.print(
-            "  nogc invariant ok: 0 __rc_* symbols · 0 trace fns"
-            " · no roots buffer · no entry-point env probes"
-        );
-    }
-
-    if not shared and "jac_entry" not in llvm_ir_str {
-        console.error(
-            "No entry point found. " "The file must have a 'with entry { }' block."
-        );
+    try {
+        llvm_ir_str = validate_native_application(ir_module, shared, memory);
+    } except ValueError as error {
+        console.error(str(error));
         return 1;
     }
 
@@ -525,7 +440,7 @@ impl native_build(  # jac:ignore[W3030]
     _is_linux_exec = (not shared) and (not is_windows) and (not is_macos);
     _static_musl = _is_linux_exec and (len(needed_libs) == 0);
 
-    (llvm_ir_str, _extra_exports) = _finalize_native_ir(
+    (llvm_ir_str, _extra_exports) = finalize_native_ir(
         llvm_ir_str,
         triple,
         clib_paths or [],
@@ -598,6 +513,14 @@ impl native_build(  # jac:ignore[W3030]
 
     try {
         mod = llvm.parse_assembly(llvm_ir_str);
+        if shared {
+            import from jaclang.compiler.backends.native.shared_emit {
+                internalize_native_implementation
+            }
+            internalize_native_implementation(
+                mod, export_symbols + ["__jac_shared_init"]
+            );
+        }
         mod.verify();
     } except Exception as e {
         console.error(f"LLVM IR verification failed: {e}");
@@ -770,23 +693,15 @@ def _resolve_ca_bundle(pkg_root: str) -> (str | None) {
     }
 
     import glob;
-    for variant in ["cpython", "jacpython"] {
-        bundles = sorted(
-            `glob.`glob(
-                os.path.join(
-                    pkg_root,
-                    ".python-build",
-                    variant,
-                    "*",
-                    "python",
-                    "build",
-                    "cacert.pem"
-                )
+    bundles = sorted(
+        `glob.`glob(
+            os.path.join(
+                pkg_root, ".python-build", "*", "*", "python", "build", "cacert.pem"
             )
-        );
-        if bundles {
-            return bundles[0];
-        }
+        )
+    );
+    if bundles {
+        return bundles[0];
     }
     source_bundles = sorted(
         `glob.`glob(
@@ -872,7 +787,9 @@ def _musl_lib_dir(triple: str) -> (str | None) {
 }
 
 
-def _collect_musl_static(obj_bytes: bytes, triple: str) -> (tuple | None) {
+def _collect_musl_static(
+    obj_bytes: bytes, triple: str
+) -> (tuple[list[bytes], list[bytes]] | None) {
     import os;
     import from jaclang.compiler.backends.native.linker_common {
         select_ar_members,

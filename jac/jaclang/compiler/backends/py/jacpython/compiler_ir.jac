@@ -1,3 +1,6 @@
+import from jaclang.compiler.backends.py.jacpython.compiler_context { compile_context }
+import from jaclang.compiler.backends.py.jacpython.constant_keys { constant_key }
+
 # Compiler IR for the P4 back track (PLAN.md P0.10).
 #
 # Source-location, instruction, basic-block, and compile-unit objects shared by
@@ -21,59 +24,17 @@ import from jaclang.runtime.python.objects {
     PyCode,
     py_none
 }
-import from jaclang.runtime.python.opcode_meta { opcode_cache_count, OP_LOAD_CONST }
+import from jaclang.runtime.python.opcode_meta {
+    opcode_cache_count,
+    opcode_has_const,
+    OP_LOAD_CONST
+}
 import from jaclang.compiler.frontend.python.compiler_diagnostics {
     compiler_diagnostic
 }
 import from jaclang.compiler.frontend.python.compiler_symtable { sym_block }
 import from jaclang.compiler.frontend.python.ast_nodes { stmt }
 
-def constant_key(value: PyObj) -> str {
-    if isinstance(value, PyCode) {
-        return "code:" + str(id(value));
-    }
-    if isinstance(value, PyTuple) {
-        keys = [constant_key(item) for item in value.items];
-        return "tuple:" + "".join(str(len(key)) + ":" + key for key in keys);
-    }
-    if isinstance(value, PySet) and value.frozen {
-        keys = sorted([constant_key(item) for item in value.items.values()]);
-        return "frozenset:" + "".join(str(len(key)) + ":" + key for key in keys);
-    }
-    if isinstance(value, PySlice) {
-        keys = [
-            constant_key(value.start),
-            constant_key(value.stop),
-            constant_key(value.step)
-        ];
-        return "slice:" + "".join(str(len(key)) + ":" + key for key in keys);
-    }
-    if isinstance(value, PyFloat) {
-        if value.val != value.val {
-            return "nan:" + str(id(value));
-        }
-        return "float:" + repr(value.val);
-    }
-    if isinstance(value, PyComplex) {
-        if value.real != value.real or value.imag != value.imag {
-            return "complex-nan:" + str(id(value));
-        }
-        return "complex:" + repr(value.real) + ":" + repr(value.imag);
-    }
-    if isinstance(value, PyInt) {
-        return "int:" + str(value.val);
-    }
-    if isinstance(value, PyBool) {
-        return "bool:" + str(value.val);
-    }
-    if isinstance(value, PyStr) {
-        return "str:" + value.val;
-    }
-    if isinstance(value, PyBytes) {
-        return "bytes:" + str(value.val);
-    }
-    return value.t;
-}
 
 # A source location. lineno/end_lineno are 1-based; col_offset/end_col_offset are
 # 0-based. Matches CPython's `location` struct (Python/compile.c).
@@ -158,17 +119,6 @@ obj loop_frame {
         cleanup_depth: int = 0,
         # Per-break emission sites recorded by visit_stmt (Break).
         break_sites: list[break_site] = [];
-}
-
-# Deferred break-edge finish job (see compiler_loops.jac). Lives here so the
-# per-compilation context holder can type its queue without importing loops.
-obj pending_break_finish {
-    has frame: loop_frame,
-        join: basicblock,
-        allow_nop: bool,
-        test_blk: basicblock | None = None,
-        branch_idx: int = -1,
-        body_hdr: basicblock | None = None;
 }
 
 # Enclosing with / async-with frame tracked for return unwinding (mirrors
@@ -391,6 +341,9 @@ def new_cfg_builder(
     sym_top: sym_block | None = None,
     private: str | None = None
 ) -> cfg_builder {
+    if sym_top is not None {
+        u.context = sym_top.context;
+    }
     return cfg_builder(u=u, cur=start_blk, sym_top=sym_top, private=private);
 }
 
@@ -456,6 +409,7 @@ obj unverified_cfg {
         name: str,
         qualname: str,
         firstlineno: int,
+        context: compile_context = compile_context(),
         argcount: int = 0,
         posonlyargcount: int = 0,
         # Total bound-at-entry parameter slots (posonly + pos-or-kw + kwonly +
@@ -466,6 +420,7 @@ obj unverified_cfg {
         flags: int = 0,
         interactive: bool = False,
         varnames: list[str] = [],
+        varname_indices: dict[str, int] = {},
         cellvars: list[str] = [],
         freevars: list[str] = [],
         consts: list[PyObj] = [],
@@ -528,6 +483,23 @@ obj unverified_cfg {
         # regions carve out its body/handler coverage.
         nested_try_except_start: int = -1;
 
+    # Preserve slot order while avoiding repeated linear searches for every
+    # local load. Replace a unit's names through this method before lowering.
+    def set_varnames(names: list[str]) {
+        self.varnames = names;
+        self.varname_indices = {};
+    }
+
+    def varname_index(name: str) -> int {
+        if len(self.varname_indices) != len(self.varnames) {
+            self.varname_indices = {};
+            for (index, value) in enumerate(self.varnames) {
+                self.varname_indices[value] = index;
+            }
+        }
+        return self.varname_indices.get(name, -1);
+    }
+
     def add_block -> basicblock {
         b = basicblock(id=self.next_block_id, instrs=[]);
         self.next_block_id = self.next_block_id + 1;
@@ -560,6 +532,24 @@ obj unverified_cfg {
         self.const_indices[key] = idx;
         self.indexed_consts += 1;
         return idx;
+    }
+
+    # Late scope metadata may need a slot before the epilogue's None. Keep
+    # every existing operand and the constant interning index synchronized;
+    # deferred negative operands are resolved by flush_late_consts afterward.
+    def insert_const(c: PyObj, index: int, placeholder: cinstr | None = None) {
+        self.consts.insert(index, c);
+        self.const_indices.clear();
+        self.indexed_consts = 0;
+        for block in self.blocks {
+            for ins in block.instrs {
+                if ins is not placeholder
+                    and opcode_has_const(ins.opcode)
+                    and ins.oparg >= index {
+                    ins.oparg += 1;
+                }
+            }
+        }
     }
 
     def add_name(n: str) -> int {

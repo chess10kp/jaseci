@@ -9,7 +9,7 @@ host=${5:-}
 root=$6
 mode=$7
 case "$mode:$host" in
-    cpython:|host:|jacpython:?*) ;;
+    host:|jacpython:?*) ;;
     *) echo "Invalid Python build mode/host: $mode" >&2; exit 1 ;;
 esac
 jobs=${JAC_PYTHON_JOBS:-4}
@@ -150,11 +150,10 @@ cpython() {
         patch -f -F0 -p1 -i "$recipe/compiler-bridge.patch"
         cp "$recipe/compiler_bridge.c" Python/jac_compile.c
         cp "$recipe/compiler_bridge.h" Python/jac_compile.h
-        cp "$work/seed/jac_seed.h" Python/jac_seed.h
-        # The seed is compressed data; this archive contains only zlib.
-        export LIBS="$deps/lib/libz.a"
-    elif [ "$mode" = host ]; then
-        patch -f -F0 -p1 -i "$recipe/host-compiler.patch"
+        cp "$recipe/compiler_runtime.c" Python/jac_runtime.c
+        cp "$recipe/object_api.c" Python/jac_objects.c
+        cp "$recipe/binding_api.c" Python/jac_bindings.c
+        cp "$work/native/jacpython.o" Python/jacpython.o
     fi
     # The shared interpreter must survive relocation into the Jac payload.
     case "$platform" in
@@ -210,7 +209,38 @@ _curses
 _curses_panel
 readline
 SETUP
+    if [ -n "$host" ]; then
+        cat >> Modules/Setup.local <<'SETUP'
+*static*
+_bisect
+_heapq
+_random
+binascii
+_operator -lcrypto
+_queue
+_json
+_csv
+_struct
+cmath
+math
+_collections
+_functools
+itertools
+array
+_pickle
+SETUP
+    fi
+    # CPython runs the compiler itself; dependency-oriented -O2 flags above
+    # must not override the release interpreter's optimization settings.
+    export CFLAGS='-O3 -fPIC -fno-semantic-interposition' LLVM_AR="$AR"
+    # Zig 0.16's Mach-O linker cannot consume LTO objects. Keep the supported
+    # interpreter optimizations there; Linux uses the bundled LLVM linker.
+    case "$platform" in
+        linux-*) python_lto=--with-lto=thin ;;
+        macos-*) python_lto=--without-lto ;;
+    esac
     ./configure --prefix="$prefix" --enable-shared --without-static-libpython \
+        --with-tail-call-interp "$python_lto" \
         --disable-test-modules --with-ensurepip=no --with-pkg-config=no \
         --with-openssl="$deps" --with-openssl-rpath=no \
         --with-system-expat --with-system-libmpdec --without-readline
@@ -235,7 +265,7 @@ SETUP
 python_make() {
     if [ -n "$host" ]; then
         # Freeze with the explicit build-time interpreter. Neither helper
-        # executable links the reduced runtime before its seed is available.
+        # executable needs to run before the reduced runtime is linked.
         freezer="$host/python/install/bin/python3.14 $src/cpython/Programs/_freeze_module.py"
         make "$@" "FREEZE_MODULE_BOOTSTRAP=$freezer" FREEZE_MODULE_BOOTSTRAP_DEPS= \
             "FREEZE_MODULE=$freezer" FREEZE_MODULE_DEPS=
@@ -248,7 +278,7 @@ if [ -n "$host" ]; then
     cp -R "$host/python/build/include/." "$deps/include/"
     cp "$host/python/build/lib/"*.a "$deps/lib/"
     cp -R "$host/python/licenses" "$work/python/licenses"
-    step seed "$host/python/install/bin/python3.14" -I "$recipe/prepare_seed.py" prepare "$root" "$work/seed"
+    step native "$host/python/install/bin/python3.14" -I "$recipe/prepare_native.py" "$root" "$work/native" "$platform"
 else
     # Preserve notices before discarding each dependency's installed build tree.
     mkdir -p "$work/python/licenses"
@@ -274,15 +304,15 @@ mkdir -p "$work/python/build/lib" "$work/python/licenses"
 cp "$deps/lib/"*.a "$work/python/build/lib/"
 if [ -n "$host" ]; then
     cp "$host/python/build/cacert.pem" "$work/python/build/cacert.pem"
-    cp "$work/seed/sha256" "$work/python/build/jacpython-seed-sha256"
-    rm -rf "$work/seed"
+    cp "$work/native/sha256" "$work/python/build/jacpython-native-sha256"
+    rm -rf "$work/native"
 else
     # Only dependency headers/archives are reused by the target build. Host
     # CPython objects and libpython are never copied into the reduced runtime.
     cp -R "$deps/include" "$work/python/build/include"
     cp "$src/certifi/certifi/cacert.pem" "$work/python/build/cacert.pem"
 fi
-step smoke "$prefix/bin/python3.14" -I "$recipe/smoke.py" "$mode"
+step smoke env PYTHONFAULTHANDLER=1 "$prefix/bin/python3.14" -X faulthandler -I "$recipe/smoke.py" "$mode"
 # No compiled test modules, docs, or configuration machinery in the runtime.
 rm -rf "$prefix/share" "$prefix/lib/python3.14/test" \
     "$prefix/lib/python3.14/idlelib" "$prefix/lib/python3.14/tkinter" \

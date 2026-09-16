@@ -55,6 +55,7 @@ impl EsastGenPass.exit_ability with uni.Ability exit {
         return;
     }
 
+    assert here.name_ref is not None;
     ref_param: (uni.ParamVar | None) = None;
     if (
         here.code_context == CodeContext.CLIENT
@@ -167,7 +168,7 @@ impl EsastGenPass.exit_ability with uni.Ability exit {
             ];
         } else {
             if component_call_abi == 'props_passthrough' {
-                self.emit(
+                self.ctx.emit(
                     W5015,
                     node_override=value_params[0],
                     component=here.name_ref.sym_name
@@ -215,7 +216,7 @@ impl EsastGenPass.exit_ability with uni.Ability exit {
             } elif here.accessor_kind == 'setter' {
                 method_kind = 'set';
             } else {
-                self.emit(E5097, node_override=here, kind='property deleters');
+                self.ctx.emit(E5097, node_override=here, kind='property deleters');
                 return;
             }
         }

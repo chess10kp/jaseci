@@ -2,7 +2,97 @@
 
 This document provides a summary of new features, improvements, and bug fixes in each version of **Jaclang**. For details on changes that might require updates to your existing code, please refer to the [Breaking Changes](../breaking-changes.md) page.
 
-## jaclang 0.37.13 (Latest Release)
+## jaclang 0.37.17 (Latest Release)
+
+### Breaking Changes
+
+- **Breaking: byLLM's `MockLLM` now parses replies like a real model**: queue typed answers as values (`36`, not `"36"`), offer the tools a `MockToolCall` names, and pass replies directly with `MockLLM(outputs=[...])`.
+
+### Bug Fixes
+
+- **Fix: comparing an optional to a number no longer erases its type**: after `if x == 0` (or `x != 0`) on a value typed `int | None`, the checker treated `x` as `None` for the rest of the function. That let an `int` be bound to a `None`-typed name and returned from a `-> None` function with nothing reported, so wrong values passed the checker, and later `is None` guards reasoned from the collapsed type. A comparison against a value now narrows only on the branch that confirms the value; the useful direction of each form is unchanged.
+- **Fix: byLLM counts a streamed call that reports no usage**: the usage event no longer shows `requests: 0` for a call that happened.
+- **Fix: byLLM no longer prints litellm's provider-list hint** on every call to a model name litellm cannot map.
+- **Fix: `jac check` no longer stops with "No scope found"** when the endpoint effect pass meets a call whose name has no scope; that endpoint is recorded with unknown effects instead.
+- **Fix: CPython release launcher on macOS**: Find static libraries and CA certificates in CPython build trees, and pin the launcher to its selected runtime's libraries so it can start without external `libzstd.dylib` or `libcrypto.dylib` files.
+
+## jaclang 0.37.16
+
+### Bug Fixes
+
+- **Fix: `jac fix` no longer crashes while verifying placement markers**: Running `jac fix` on files that carry placement markers stopped with an import error when it checked where each marked element landed. It now finishes and reports the verified placements as before.
+- **Fix: Make JacPython opt-in**: Builds and default release binaries use stock CPython. Set `JACPYTHON=1` when building to select the native JacPython compiler. Stable and dev releases publish both variants with checksums; pass `--jacpython` to the installer to select the experimental variant.
+- **Fix: React Native state and authentication helpers**: Add the missing `useJacState` and `jacSetToken` exports so mobile apps can use Jac state and authentication helpers.
+
+## jaclang 0.37.15
+
+### Breaking Changes
+
+- **Breaking: `jac fmt` now exits 0 after successfully reformatting files**: Previously `jac fmt` exited 1 whenever any file was changed, conflating "made changes" with "error" and breaking `jac fmt . && jac test` pipelines. It now follows the standard formatter convention (black, gofmt, prettier): exit 0 on success - including when files were reformatted - and nonzero only for syntax/format failures, invalid paths, or unfixable lint errors. Scripts and CI that relied on the old changed→exit-1 behavior should gate with `jac fmt --check`, which exits 1 when files *would* be reformatted without writing them.
+- **Breaking: Source export now produces a complete polyglot project**: `jac build <app> --as source` writes editable Python, JavaScript and native C to `dist/source`, with standalone build/run entry points. Exports reuse prepared application contracts, service initialization, client compilation and the actual required runtime modules. The separate FastAPI adapter and export-specific runtime shims are removed. Native C export requires the LLVM 22 C backend toolchain; the exported project builds without Jac. Internal project resolution and semantic metadata APIs now live under `jaclang.project` and `jaclang.runtime`.
+
+### New Features
+
+- **Native Python standard-library modules**: Extend JacPython's native compilation to standard-library extension modules while preserving Python object protocols, and exclude their original CPython C sources from release builds.
+- **Native compiler correctness and scaling**: Preserve Jac object ownership across C calls, fixed-width scalar list types, and string split direction and limits. Native value sorting now uses stable merge passes. JacPython also preserves module-level qualified names for explicitly global class and function definitions.
+
+### Bug Fixes
+
+- **Fix: Walker endpoints no longer return Python tracebacks to callers**: a `walker:pub` that raised sent the full traceback (absolute paths, OS account name, Python version) in `error.details` to any caller, while a `def:pub` sent only the message and neither wrote anything to the server log. Both now return `{code, message}` and log the exception with its stack on the `jaclang.serve` logger at the point it is caught.
+- **Fix: Read import levels past a module's single-byte name pool when sealing**: Sealing dropped `EXTENDED_ARG` before reading the import level two instructions before each `IMPORT_NAME`, so a module carrying more than 255 names no longer aborts preparation with "Nonconstant import level".
+- **Native C callback record ownership**: Jac-created C callback records now use the shared object allocator and cleanup rules, preserving their C field layout while supporting managed fields, containers, and optional values. This fixes invalid header reads during JacPython startup. C borrows the record's data pointer; code that retains that pointer must keep the Jac owner alive, just as with other Jac-created records.
+- **Native package provider consistency**: Native dependency discovery now uses the same package resolver as semantic analysis, preventing duplicate checkout and packaged compiler modules from being linked into one binary.
+- **Fix: Graph visualizer login**: The Login button on `/graph` sends the `{identity, credential}` body `/user/login` expects, so it signs users in again, and a failed sign-in shows the server's reason instead of a generic "Invalid credentials".
+- **Fix: Bounded OSP traversal frames**: Entry-only OSP traversals reuse completed frames, keeping frame storage bounded while preserving pending exit abilities.
+- **Fix: Native optional temporary lifetimes**: Native boolean expressions and dictionary lookups preserve optional-value ownership and release unused defaults without invalidating returned containers or strings.
+- **Fix: Precompile worker memory budgets**: Precompile worker scheduling honors the configured memory budget and reclaims released graphs before deciding to retire a worker; macOS retirement uses current resident memory.
+- **Fix: Native container and read lifetimes**: Native container calls and field/index reads now release owned temporary arguments and receivers while retaining values that escape the read.
+- **Fix: Type member and ancestor lookup**: Stop ordinary member lookup at local declarations while preserving conditional overload merging, and merge cached ancestor copies by canonical class identity when calculating inheritance order.
+- **Fix: typed graph hops no longer read the whole anchors table**: `[node -->][?:T]` compiled to `arch_type = :t OR arch_type IN (SELECT ... FROM graph_types)` plus an `OR` direction test and a `CASE` join key, which the Postgres planner could not estimate or index, so a hop's latency grew with everything stored (197 ms for a 5-node result at 600k anchors). The subtype set is now resolved from `graph_types` before the statement runs and bound as one array, each hop's edge side is two direct index probes, and the first hop binds its origin ids so the planner can use per-node statistics. The same hop takes about 1 ms at any size.
+- **Fix: loading a node no longer aggregates its full edge-id list in SQL**: `load_full` computed every node's adjacency with a `string_agg` subquery and parsed it back on every load, so a node load cost its degree whatever the caller needed. The edge list is now fetched in pages the first time something walks it, and reflects the edge rows as they are when it is read.
+- **Fix: Python generator syntax diagnostics**: The native Python compiler distinguishes `yield from` outside a function from `yield`, identifies invalid assignment expressions instead of emitting a literal `%s`, and reports the offending expression's source span.
+
+## jaclang 0.37.14
+
+### New Features
+
+- **Build bundled Python from source with Zig**: Build CPython and its native dependencies from checksum-pinned sources, replacing python-build-standalone downloads. Cache the runtime by source and build inputs independently of Jac compiler changes. Discard completed dependency build trees and transient C caches to reduce runner disk usage. Validate regular Linux/macOS release targets in CI; Intel macOS remains in the manual release flow. Building requires make, Perl and patch alongside Zig.
+- **Scope the Python replacement to source compilation**: Keep Python parsing and semantic analysis in the frontend, bytecode generation in the Python backend, and shared compiler values, opcode metadata and symbol-table support in the runtime. Maintain these Jac sources directly; remove the generators, separate Jac interpreter, standard-library replacements, guest bridges and bundled JacPython tests. The compiler remains under development and is not yet connected to CPython's execution engine in release builds.
+- **Declare the remaining CPython sources**: Use a single file/directory allowlist to select the CPython inputs retained for the release build. Changes invalidate the runtime cache; missing or overlapping entries fail early. Remove entries as integrated Jac replacements retire their C implementations.
+- **Exercise the JacPython compiler during development**: Convert JacPython output into executable CPython 3.14 code objects and accept Python AST input/output. Allow Jac's codegen shim to use the replacement compiler explicitly. Add opt-in C dispatch for built-in compilation, evaluation, execution, source imports and C string/file APIs, with upstream compiler tests exercising both paths. Editing these development modules no longer rebuilds the whole producing compiler. Full compatibility, remaining C entry points and cold bootstrap integration remain outstanding; the C compiler is still retained.
+
+### Bug Fixes
+
+- **JS target: `min`/`max` no longer silently return `NaN` on the single-iterable form**: `min([1, 2, 3])` and `max([1, 2, 3])` lowered straight to `Math.min`/`Math.max`, which only understands the varargs form (`Math.min(1, 2, 3)`); the single-iterable form silently evaluated to `NaN` instead of scanning the list. `key=` was also broken: keyword arguments were flattened into the same positional list `Math.min` received, so `min(a, b, key=f)` passed `f` to `Math.min` as a bogus third number. Both call shapes now route through a proper `_jac.builtin.min`/`max` runtime helper that supports `key=` and raises like Python on an empty sequence. Fixes #8589.
+- **Fix: Consistent profile configuration**: CLI, compiler, plugin, and deployment readers share profile resolution, so per-app replica, resource, HPA, and pod overrides reach deployment fleets alongside gateway settings. Explicit profiles replace previous overlays and survive plugin configuration refreshes.
+- **Fix: JavaScript primitive conversions**: Client calls to `Boolean`, `Number`, and `String`, including aliases, return primitives instead of constructing truthy wrapper objects. Static helpers and user-defined constructors remain supported.
+- **Fix: Local MCP examples**: Repository checkouts use their local examples instead of requiring GitHub access after the documentation tree moved.
+- **Fix: Native host contracts**: Validate inherited host methods through the type evaluator, preserving method resolution order and signatures loaded from cached interfaces.
+- **Compiler: Reduce client build memory retention and filesystem work**: Reuse canonical module identities throughout interface serialization and share workspace resolution within compilation requests. Configure the embedded runtime's allocator to return unused pages so sparse surviving objects do not keep large released compiler heaps resident while the client bundler runs.
+- **Fix: Native JacPython compiler**: Every Jac binary now runs its Python parser, compiler, and adapters as native Jac machine code. Remove the interpreted replacement and its embedded seed while retaining CPython's object runtime and execution engine. Remove the compiler selection flag and duplicate release variants; CI and releases all use native JacPython.
+- **Fix: Native method dispatch, loop lifetimes, and byte decoding**: Preserve inherited method-slot ordering when imported methods are overridden, keep loop-created values alive when referenced after the loop, and retain embedded NUL bytes when decoding UTF-8 strings.
+- **Fix: Calls returning Never terminate control flow**: Recognize imported `Never` and `NoReturn` helpers when checking for implicit returns, including calls in exception handlers, while still rejecting paths that can fall through.
+- **Fix: Native optional values and string checks**: Keep objects held in optional fields alive, preserve absent values when converting optional payloads, and recognize native string values in `isinstance` checks.
+- **Fix: Native bytes representation**: Compile `repr(bytes)` through the length-aware native formatter, preserving embedded NULs, quotes, and non-ASCII bytes without demoting the caller to Python.
+- **Fix: Native writes through union types**: Assign common fields through each concrete class layout while preserving optional-object ownership, even when union members store the field at different offsets.
+- **Fix: Native iterator element ownership**: Retain borrowed object elements when binding iterator loop variables, and release prior bindings on reassignment so AST nodes remain alive after validation traverses them.
+- **Fix: Native string containment**: Search using explicit string lengths so embedded NUL characters are matched correctly, including compiler source validation and searches beyond a NUL.
+- **Fix: Native sized casts after optional narrowing**: Unwrap guarded optional fields before fixed-width integer conversion, including fields inherited by AST node classes.
+- **Fix: Native string operations after local rebinding**: Restore the narrowed string representation when a local previously held an object, so comparisons, concatenation, and membership use string values.
+- **Fix: Native dictionary unpacking**: Preserve spread entries, insertion order, overwrites, and object ownership in dictionary displays such as `{**defaults, "name": value}`.
+- **Fix: Native optional parameter ownership**: Retain borrowed optional object and container parameters before rebinding them, so assignment cannot destroy a value still held by the caller.
+- **Fix: Native optional list elements**: Honor declared object-element storage in list displays and preserve absent values when copying optional pointers into that storage.
+- **Fix: Field annotation lookup**: Resolve a type name outside a field's own declaration when both share a name, preserving native constructor values such as `MatchAs.pattern`. Propagate nested Python compiler diagnostics instead of assembling partial bytecode.
+- **Fix: Native optional tuple elements**: Preserve `None` when storing optional object values in tuples, using the same nullable-pointer conversion as lists and representing a `None` tuple slot with null storage rather than LLVM `void`.
+- **Fix: macOS function-pointer rebasing**: Rebase stored pointers to imported-function stubs when an executable or shared library moves under ASLR, fixing the packaged launcher’s OpenSSL startup crash.
+- **Compiler: Improve cold builds and reclaim catalog state**: Restore O3 and the tail-call interpreter in the bundled Python runtime, with ThinLTO on Linux. Keep catalog type stubs in a temporary compiler so their state can be reclaimed after generation. Check native availability without eagerly importing code generators or LLVM bindings. Make native dictionary and set deletion amortized constant time by indexing insertion-order positions and compacting deleted entries on ordered reads.
+- Preserve relocatable type interfaces in precompiled packages, including bootstrap modules, so first builds can reuse dependency analysis. Release bootstrap stub roots when the catalog takes over and release all stub trees at completed-build boundaries.
+- Keep compiler dependency interfaces lazy during application analysis, and avoid loading the server runtime to render static HTML metadata.
+- Release transient semantic graphs when their last owner lets go, including inside an execution context. The graph handle registry no longer retains catalog evaluators and compiler type graphs after their compilation ends.
+- Reuse already-local include bindings, preventing self-includes from growing overload lists indefinitely while analyzing Python dependencies.
+- Apply interface source eligibility to preparation and persistence as well as replay, keeping typed Python dependencies lazy instead of recursively encoding their imported packages.
+
+## jaclang 0.37.13
 
 ### New Features
 
