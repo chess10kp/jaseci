@@ -357,11 +357,15 @@ impl NaIRGenPass._emit_struct_unpack_from(
     buf_len = view[1];
     neg = self.builder.icmp_signed("<", off_val, ir.Constant(i64, 0), name="uf.neg");
     off_adj = self.builder.select(
-        neg, self.builder.add(off_val, buf_len, name="uf.neg.adjusted"), off_val,
+        neg,
+        self.builder.add(off_val, buf_len, name="uf.neg.adjusted"),
+        off_val,
         name="uf.offset"
     );
     end_off = self.builder.add(off_adj, ir.Constant(i64, total), name="uf.end");
-    too_low = self.builder.icmp_signed("<", off_adj, ir.Constant(i64, 0), name="uf.low");
+    too_low = self.builder.icmp_signed(
+        "<", off_adj, ir.Constant(i64, 0), name="uf.low"
+    );
     oob = self.builder.icmp_signed(">", end_off, buf_len, name="uf.oob");
     self._emit_runtime_raise(
         self.builder.or_(too_low, oob, name="uf.bad"),
