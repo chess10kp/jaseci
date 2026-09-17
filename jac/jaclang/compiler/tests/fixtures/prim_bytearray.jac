@@ -78,6 +78,7 @@ def bytearray_unpack_py -> dict[any, any] {
     buf = bytearray(b"\x01\x02\x03\x04");
     word_buf = bytearray(b"\x01\x02");
     (w, ) = struct.unpack("H", word_buf);
+    (neg_mid, ) = struct.unpack_from("H", word_buf, -2);
     blob = b"\x78\x56\x34\x12";
     (v, ) = struct.unpack("<I", blob);
     (hi, lo) = struct.unpack(">hh", b"\xff\xfe\x00\x01");
@@ -90,6 +91,7 @@ def bytearray_unpack_py -> dict[any, any] {
     return {
         "word": w,
         "word_ok": w == 0x0201,
+        "negative_ok": neg_mid == 0x0201,
         "dword": v,
         "be_hi": hi,
         "be_lo": lo,
@@ -187,6 +189,7 @@ def bytearray_unpack_na -> dict[str, any] {
     buf = bytearray(b"\x01\x02\x03\x04");
     word_buf = bytearray(b"\x01\x02");
     (w, ) = struct.unpack("H", word_buf);
+    (neg_mid, ) = struct.unpack_from("H", word_buf, -2);
     blob = b"\x78\x56\x34\x12";
     (v, ) = struct.unpack("<I", blob);
     (hi, lo) = struct.unpack(">hh", b"\xff\xfe\x00\x01");
@@ -199,6 +202,7 @@ def bytearray_unpack_na -> dict[str, any] {
     return {
         "word": w,
         "word_ok": w == 0x0201,
+        "negative_ok": neg_mid == 0x0201,
         "dword": v,
         "be_hi": hi,
         "be_lo": lo,
