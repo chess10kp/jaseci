@@ -340,7 +340,7 @@ impl NaIRGenPass._emit_struct_unpack_from(
         );
         return None;
     }
-    off_val = ir.Constant(i64, 0);
+    off_val: ir.Value = ir.Constant(i64, 0);
     if len(params) >= 3 {
         _off_raw = self._codegen_expr(params[2]);
         if _off_raw is None {
