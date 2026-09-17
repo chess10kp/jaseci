@@ -2417,9 +2417,8 @@ glob _OPCODE_HAS_CONST_SET: set[int] = {
          OP_LOAD_CONST,
          OP_LOAD_CONST_IMMORTAL,
          OP_LOAD_CONST_MORTAL
-     };
-
-glob _OPCODE_HAS_NAME_SET: set[int] = {
+     },
+     _OPCODE_HAS_NAME_SET: set[int] = {
          OP_DELETE_ATTR,
          OP_DELETE_GLOBAL,
          OP_DELETE_NAME,
@@ -2439,9 +2438,8 @@ glob _OPCODE_HAS_NAME_SET: set[int] = {
          OP_LOAD_SUPER_ATTR_METHOD,
          OP_STORE_ATTR_WITH_HINT,
          OP_INSTRUMENTED_LOAD_SUPER_ATTR
-     };
-
-glob _OPCODE_HAS_LOCAL_SET: set[int] = {
+     },
+     _OPCODE_HAS_LOCAL_SET: set[int] = {
          OP_BINARY_OP_INPLACE_ADD_UNICODE,
          OP_DELETE_FAST,
          OP_LOAD_DEREF,
