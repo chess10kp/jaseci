@@ -249,8 +249,6 @@ def require_product(
             task.state = TaskState.CANCELLED;
         } elif len(program.errors_had) != before {
             task.state = TaskState.FAILED;
-        } elif not _product_ready(program, module, product) {
-            task.state = TaskState.FAILED;
         } else {
             task.state = TaskState.SUCCEEDED;
         }
