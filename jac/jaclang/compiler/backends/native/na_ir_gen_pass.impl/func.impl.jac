@@ -598,7 +598,8 @@ impl NaIRGenPass._codegen_test(nd: uni.Test) -> None {
     } finally {
         self._leave_function(state);
     }
-    desc = nd.description.lit_value if nd.description else "";
+    _desc_lit = nd.description.lit_value if nd.description else "";
+    desc = _desc_lit if isinstance(_desc_lit, str) else _desc_lit.decode("utf-8");
     self.native_tests.append((test_name, symbol, desc, line));
     self.has_native_code = True;
 
@@ -803,7 +804,10 @@ impl NaIRGenPass._predeclare_nested_siblings(nd: uni.Ability) -> None {
     }
     _sib_by_name: dict[str, uni.Ability] = {};
     for s in sibs {
-        _sib_by_name[s.name_ref.sym_name] = s;
+        _sref = s.name_ref;
+        if _sref is not None {
+            _sib_by_name[_sref.sym_name] = s;
+        }
     }
     _cap_order: dict[uni.Ability, list[str]] = {};
     _cap_modes: dict[uni.Ability, dict[str, str]] = {};
@@ -866,7 +870,7 @@ impl NaIRGenPass._predeclare_nested_siblings(nd: uni.Ability) -> None {
         }
     }
     for s in sibs {
-        _sname = s.name_ref.sym_name;
+        _sname = s.name_ref.sym_name if s.name_ref else "unnamed";
         _ssig = s.signature;
 
         _defer = False;
@@ -902,7 +906,9 @@ impl NaIRGenPass._predeclare_nested_siblings(nd: uni.Ability) -> None {
         }
         _ptypes: list[ir.Type] = [];
         _pnames: list[str] = [];
-        _sparams = _ssig.get_parameters() if _ssig is not None else [];
+        _sparams = _ssig.get_parameters()
+            if isinstance(_ssig, uni.FuncSignature)
+            else [];
         for (i, p) in enumerate(_sparams) {
             _pn = p.name.value if p?.name and p.name else f"arg{i}";
             _pt = self._resolve_jac_type(p)
@@ -912,7 +918,7 @@ impl NaIRGenPass._predeclare_nested_siblings(nd: uni.Ability) -> None {
             _pnames.append(_pn);
         }
         _rt: ir.Type = ir.IntType(64);
-        if _ssig is not None and _ssig.return_type is not None {
+        if isinstance(_ssig, uni.FuncSignature) and _ssig.return_type is not None {
             _rt = self._resolve_jac_type(_ssig.return_type);
         }
         _caps: list[tuple[str, str, ir.Type]] = [];

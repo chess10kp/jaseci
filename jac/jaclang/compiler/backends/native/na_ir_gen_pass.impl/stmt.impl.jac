@@ -33,12 +33,13 @@ impl NaIRGenPass._codegen_body(stmts: Sequence[uni.UniNode]) -> None {
                 for _di_blk2 in _di_func2.blocks {
                     _prev_count = _di_blk_instr_counts.get(id(_di_blk2), 0);
                     _all_instrs = _di_blk2.instructions;
-                    if len(_all_instrs) > _prev_count {
-                        _new_instrs = _all_instrs[_prev_count:];
-                        for _instr in _new_instrs {
-                            if "dbg" not in getattr(_instr, "metadata", {}) {
-                                _instr.set_metadata("dbg", _di_loc);
-                            }
+                    _new_instrs = _all_instrs[_prev_count:];
+                    for _instr in _new_instrs {
+                        if (
+                            isinstance(_instr, ir.Instruction)
+                            and "dbg" not in getattr(_instr, "metadata", {})
+                        ) {
+                            _instr.set_metadata("dbg", _di_loc);
                         }
                     }
                 }
@@ -1759,15 +1760,15 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                         name=type(target_expr).__name__
                     );
                 }
-                _unbound: list[uni.UniNode] = [target_expr];
-                while _unbound {
-                    _t = _unbound.pop();
-                    if isinstance(_t, uni.Name) {
-                        self._mark_local_unlowered(_t.value);
-                    } elif isinstance(_t, (uni.TupleVal, uni.ListVal)) {
-                        _unbound.extend(_t.values or []);
-                    } elif isinstance(_t, uni.UnaryExpr) {
-                        _unbound.append(_t.operand);
+                _unbound2: list[uni.Expr] = [target_expr];
+                while _unbound2 {
+                    _t2 = _unbound2.pop();
+                    if isinstance(_t2, uni.Name) {
+                        self._mark_local_unlowered(_t2.value);
+                    } elif isinstance(_t2, (uni.TupleVal, uni.ListVal)) {
+                        _unbound2.extend(_t2.values or []);
+                    } elif isinstance(_t2, uni.UnaryExpr) {
+                        _unbound2.append(_t2.operand);
                     }
                 }
             }

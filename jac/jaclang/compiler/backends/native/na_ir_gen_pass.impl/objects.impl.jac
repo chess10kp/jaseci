@@ -831,7 +831,9 @@ impl NaIRGenPass._register_one_class_const(
         if not self?._global_init_nodes {
             self._global_init_nodes: list[tuple[str, uni.Expr, ir.Type]] = [];
         }
-        self._global_init_nodes.append((full_name, assign.value, ftype));
+        if isinstance(assign.value, uni.Expr) {
+            self._global_init_nodes.append((full_name, assign.value, ftype));
+        }
     }
 }
 
@@ -2791,9 +2793,10 @@ impl NaIRGenPass._codegen_method_call_inner(nd: uni.FuncCall) -> (ir.Value | Non
                     _prep_e = (
                         _prep_e.value if isinstance(_prep_e, uni.KWPair) else _prep_e
                     );
-                    arg_vals[_prep_idx] = self._nogc_elem_prep(
-                        _prep_e, arg_vals[_prep_idx]
-                    );
+                    _prep_v = self._nogc_elem_prep(_prep_e, arg_vals[_prep_idx]);
+                    if _prep_v is not None {
+                        arg_vals[_prep_idx] = _prep_v;
+                    }
                 }
             }
 
@@ -2862,7 +2865,10 @@ impl NaIRGenPass._codegen_method_call_inner(nd: uni.FuncCall) -> (ir.Value | Non
                     _sprep_e = (
                         _sprep_e.value if isinstance(_sprep_e, uni.KWPair) else _sprep_e
                     );
-                    arg_vals[0] = self._nogc_elem_prep(_sprep_e, arg_vals[0]);
+                    _sprep_v = self._nogc_elem_prep(_sprep_e, arg_vals[0]);
+                    if _sprep_v is not None {
+                        arg_vals[0] = _sprep_v;
+                    }
                 }
             }
             result = self._dispatch_primitive_method(

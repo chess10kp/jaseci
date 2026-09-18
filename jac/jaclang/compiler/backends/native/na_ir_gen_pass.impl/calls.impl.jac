@@ -294,7 +294,7 @@ impl NaIRGenPass._codegen_bound_args(
                 if _tup_ptr and _tv is not None and self._is_owned(_tv) {
                     self._emit_rc_release_simple(_tv, op="spread_tuple", loc="");
                 }
-            } elif _is_list_sp {
+            } elif _is_list_sp and _tv is not None {
                 positional.append(("spread.list.val", _tv));
             } else {
                 _unpack_names.append(param.op.value);
@@ -329,18 +329,18 @@ impl NaIRGenPass._codegen_bound_args(
 
     if callee_sig is None {
         for p in positional {
-            if isinstance(p, tuple) and p and p[0] == "spread.val" {
-                args.append(p[1]);
-                continue;
-            }
-            if isinstance(p, tuple) and p and p[0] == "spread.list.val" {
-                self.ctx.emit(
-                    E5092,
-                    node_override=nd,
-                    kind="call argument unpacking",
-                    name="*",
-                    help_text="A list spread has no static arity, so it cannot fill fixed parameters; spread a tuple instead, or make the callee variadic."
-                );
+            if isinstance(p, tuple) {
+                if p[0] == "spread.val" {
+                    args.append(p[1]);
+                } else {
+                    self.ctx.emit(
+                        E5092,
+                        node_override=nd,
+                        kind="call argument unpacking",
+                        name="*",
+                        help_text="A list spread has no static arity, so it cannot fill fixed parameters; spread a tuple instead, or make the callee variadic."
+                    );
+                }
                 continue;
             }
             v = self._codegen_expr(p);
@@ -430,7 +430,7 @@ impl NaIRGenPass._codegen_bound_args(
             expected_type = func.args[slot].type
                 if slot < len(func.args)
                 else ir.IntType(64);
-            chosen: (uni.Expr | None) = None;
+            chosen: (uni.Expr | tuple[str, ir.Value] | None) = None;
             if pix < len(positional) {
                 chosen = positional[pix];
             } elif sp.name.sym_name in kw_map {
@@ -442,6 +442,7 @@ impl NaIRGenPass._codegen_bound_args(
                     chosen = None;
                 }
             }
+            val: (ir.Value | None) = None;
             if isinstance(chosen, tuple) and chosen and chosen[0] == "spread.val" {
                 val = chosen[1];
             } elif isinstance(chosen, tuple)
@@ -469,15 +470,10 @@ impl NaIRGenPass._codegen_bound_args(
 
         for pix in range(len(sig_params), len(positional)) {
             _extra_p = positional[pix];
-            if isinstance(_extra_p, tuple)
-                and _extra_p
-                and _extra_p[0] == "spread.val" {
-                args.append(_extra_p[1]);
-                continue;
-            }
-            if isinstance(_extra_p, tuple)
-                and _extra_p
-                and _extra_p[0] == "spread.list.val" {
+            if isinstance(_extra_p, tuple) {
+                if _extra_p[0] == "spread.val" {
+                    args.append(_extra_p[1]);
+                }
                 continue;
             }
             v = self._codegen_expr(_extra_p);
@@ -514,6 +510,7 @@ impl NaIRGenPass._codegen_bound_args(
                     chosen = None;
                 }
             }
+            val: (ir.Value | None) = None;
             if isinstance(chosen, tuple) and chosen and chosen[0] == "spread.val" {
                 val = chosen[1];
             } elif isinstance(chosen, tuple)
@@ -577,6 +574,7 @@ impl NaIRGenPass._codegen_bound_args(
                     chosen = None;
                 }
             }
+            val: (ir.Value | None) = None;
             if isinstance(chosen, tuple) and chosen and chosen[0] == "spread.val" {
                 val = chosen[1];
             } elif isinstance(chosen, tuple)
@@ -807,8 +805,13 @@ impl NaIRGenPass._codegen_varargs_list(
             }
             continue;
         }
-        if isinstance(e, tuple) and e and e[0] == "spread.val" {
-            v = e[1];
+        v: (ir.Value | None) = None;
+        if isinstance(e, tuple) {
+            if e[0] == "spread.val" {
+                v = e[1];
+            } else {
+                continue;
+            }
         } else {
             v = self._codegen_expr(e);
             if v is None {
@@ -896,7 +899,7 @@ impl NaIRGenPass._codegen_kwargs_dict(
     _seen_spread = False;
     for _entry in (order or []) {
         (_kind, _payload) = _entry;
-        if _kind == "lit" {
+        if _kind == "lit" and isinstance(_payload, str) {
             kname: str = _payload;
             if kname not in leftover {
                 continue;
@@ -933,6 +936,9 @@ impl NaIRGenPass._codegen_kwargs_dict(
             continue;
         }
         _seen_spread = True;
+        if isinstance(_payload, str) {
+            continue;
+        }
         sp_expr = _payload;
         sv = self._codegen_expr(sp_expr);
         if sv is None {
@@ -2847,7 +2853,11 @@ impl NaIRGenPass._emit_isinstance_core(
     unresolved: list[str] = [];
     static_seen = False;
     static_hit = False;
-    source_type = params[0].type;
+    _operand_param = params[0];
+    if not isinstance(_operand_param, uni.Expr) {
+        return None;
+    }
+    source_type = _operand_param.type;
     source_members = source_type.types
         if isinstance(source_type, UnionType)
         else [source_type];
