@@ -1440,3 +1440,34 @@ test "add_spec persists the manifest only after resolution succeeds" {
         restore_store(store_tmp, old_env);
     }
 }
+
+
+test "add_spec reports failure when jac.lock cannot be written" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        outer = tempfile.mkdtemp(prefix="jac_addspec_lockfail_");
+        origin = make_git_repo(
+            Path(outer) / "mylib",
+            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
+            {"mylib.jac": "def hello() -> int { return 42; }\n"}
+        );
+        (config, tmp) = make_project('[project]\nname = "proj"\nversion = "0.1.0"\n');
+        try {
+            project_dir = Path(tmp) / "proj";
+            (project_dir / "jac.lock").mkdir();
+            provider = JacDepProvider();
+            via = provider.add_spec(config, "jac:file://" + str(origin));
+            assert via is None , "add_spec must fail when jac.lock cannot be written";
+            reloaded = JacConfig.load(project_dir / "jac.toml");
+            (deps, _) = manifest_jac_deps(reloaded);
+            assert deps["mylib"]["git"] == "file://" + str(origin) , (
+                "saved metadata must stay consistent so 'jac install' can repair"
+            );
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+        shutil.rmtree(outer, ignore_errors=True);
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}

@@ -899,7 +899,12 @@ obj JacDepProvider(EcosystemProvider) {
         }
         self.save_deps_map(config, resolved);
         if not ctx.is_dry_run() {
-            update_jac_rows(config.project_root or Path.cwd(), resolved);
+            if not update_jac_rows(config.project_root or Path.cwd(), resolved) {
+                console.error(
+                    "Could not update jac.lock; run 'jac install' to refresh it."
+                );
+                return False;
+            }
             write_pth(config, resolved);
             for pkg in resolved.values() {
                 via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
@@ -974,10 +979,36 @@ obj JacDepProvider(EcosystemProvider) {
         } else {
             section[name] = dep;
         }
-        config.save();
-        self.save_deps_map(config, resolved);
+        try {
+            config.save();
+            self.save_deps_map(config, resolved);
+        } except OSError as e {
+            console.error(f"Could not save dependency metadata: {e}");
+            try {
+                restore_saved_packages(config);
+            } except (JacDepError, OSError) {
+                console.warning(
+                    "Could not restore previous packages; run "
+                    "'jac install' to repair .jac/ state."
+                );
+            }
+            return None;
+        }
         if ctx is None or not ctx.is_dry_run() {
-            update_jac_rows(config.project_root or Path.cwd(), resolved);
+            if not update_jac_rows(config.project_root or Path.cwd(), resolved) {
+                console.error(
+                    "Could not update jac.lock; run 'jac install' to refresh it."
+                );
+                try {
+                    restore_saved_packages(config);
+                } except (JacDepError, OSError) {
+                    console.warning(
+                        "Could not restore previous packages; run "
+                        "'jac install' to repair .jac/ state."
+                    );
+                }
+                return None;
+            }
             write_pth(config, resolved);
             pkg = resolved[name];
             via = f"{pkg.key}@{pkg.sha[:12]}" if pkg.sha else pkg.key;
@@ -1047,7 +1078,12 @@ obj JacDepProvider(EcosystemProvider) {
         }
         self.save_deps_map(config, resolved);
         import from jaclang.project.lockfile { update_jac_rows }
-        update_jac_rows(config.project_root or Path.cwd(), resolved);
+        if not update_jac_rows(config.project_root or Path.cwd(), resolved) {
+            console.error(
+                "Could not update jac.lock; run 'jac install' to refresh it."
+            );
+            return False;
+        }
         write_pth(config, resolved);
         console.print(f"  ✔ Removed {name} from [dependencies.jac]", style="success");
         return True;
