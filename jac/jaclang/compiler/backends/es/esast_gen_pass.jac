@@ -526,6 +526,7 @@ walker EsastGenPass(BaseAstGenPass[es.Statement]) {
     def _finish_loop(
         nd: (uni.InForStmt | uni.IterForStmt | uni.WhileStmt), loop_stmt: es.Statement
     ) -> es.Statement;
+
     def _innermost_breakable(nd: uni.CtrlStmt) -> (uni.UniNode | None);
     def _match_break_label(nd: uni.MatchStmt) -> str;
     def _view_chain_open(nd: uni.UniNode) -> None;
