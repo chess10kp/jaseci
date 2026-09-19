@@ -404,10 +404,7 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
         }
 
         if self.ctx.errors_had {
-            module.gen.llvm_ir = None;
-            module.gen.native_linked_ir = None;
-            module.gen.native_bitcode = None;
-            module.gen.native_engine = None;
+            module.gen.clear_native_artifacts();
             return ir_in;
         }
 
@@ -452,10 +449,7 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
         }
         module.gen.native_linked_ir = str(mod) if _kernel_linked else None;
         if self.ctx.errors_had {
-            module.gen.llvm_ir = None;
-            module.gen.native_linked_ir = None;
-            module.gen.native_bitcode = None;
-            module.gen.native_engine = None;
+            module.gen.clear_native_artifacts();
             return ir_in;
         }
 
@@ -509,10 +503,7 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
         }
 
         if self.ctx.errors_had {
-            module.gen.llvm_ir = None;
-            module.gen.native_linked_ir = None;
-            module.gen.native_bitcode = None;
-            module.gen.native_engine = None;
+            module.gen.clear_native_artifacts();
             return ir_in;
         }
 
@@ -567,10 +558,7 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
         }
     } except Exception as e {
         self.ctx.emit(E5020, error=str(e));
-        module.gen.llvm_ir = None;
-        module.gen.native_linked_ir = None;
-        module.gen.native_bitcode = None;
-        module.gen.native_engine = None;
+        module.gen.clear_native_artifacts();
     }
     return ir_in;
 }

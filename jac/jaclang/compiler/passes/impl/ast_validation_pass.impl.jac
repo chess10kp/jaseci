@@ -1,3 +1,5 @@
+import from jaclang.compiler.frontend.module_facts { ModuleFacts }
+
 impl ASTValidationPass.enter_match_stmt with MatchStmt entry {
     if len(here.cases) == 0 {
         self.ctx.emit(E0041, node_override=here);
@@ -354,14 +356,7 @@ impl ASTValidationPass.enter_module with Module entry {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        decorated = False;
-        for dec in (item.decorators or []) {
-            if isinstance(dec, Name) and dec.value == "overload" {
-                decorated = True;
-                break;
-            }
-        }
-        if decorated {
+        if ModuleFacts.ability_is_overload(item) {
             overload_names.add(item.name_ref.value);
         }
     }
@@ -370,14 +365,7 @@ impl ASTValidationPass.enter_module with Module entry {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        decorated = False;
-        for dec in (item.decorators or []) {
-            if isinstance(dec, Name) and dec.value == "overload" {
-                decorated = True;
-                break;
-            }
-        }
-        if decorated {
+        if ModuleFacts.ability_is_overload(item) {
             continue;
         }
         name = item.name_ref.value;
@@ -449,7 +437,7 @@ impl ASTValidationPass.enter_archetype with Archetype entry {
         accessor_target: (str | None) = None;
         if item.decorators is not None {
             for dec in item.decorators {
-                if isinstance(dec, Name) and dec.value == "overload" {
+                if ModuleFacts.is_overload_decorator(dec) {
                     has_overload = True;
                 } elif (
                     isinstance(dec, AtomTrailer)

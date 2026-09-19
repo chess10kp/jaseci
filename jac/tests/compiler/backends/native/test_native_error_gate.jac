@@ -189,3 +189,48 @@ test "undefined native names refuse codegen instead of emitting a hole" {
         "an unresolved native name must not publish a native engine"
     );
 }
+
+test "native compile failure clears every artifact including layout" {
+    # Drives NativeCompilePass directly -- the same invocation
+    # pipeline_runner.native_checks makes, with no driver-level scrub as a
+    # safety net. A poisoned llvm_ir forces the unexpected-exception gate
+    # (E5020); every native artifact must be dropped, including
+    # native_layout, which later native lowering consumes: a stale layout
+    # would silently feed a subsequent compilation of the same module.
+    src = write_module("gate_clear_all.jac", GOOD_NA_SOURCE);
+    prog = JacProgram();
+    mod = prog.compile(file_path=src, options=native_force_opts());
+    assert not prog.errors_had , f"unexpected errors: {fmt_errors(prog)}";
+    assert mod.gen.native_layout is not None , (
+        "good module must publish a native layout before the failure injection"
+    );
+    holder: any = mod.gen;
+    holder.llvm_ir = "definitely not llvm ir";
+    import from jaclang.compiler.backends.native { NativeCompilePass }
+    import from jaclang.compiler.driver.pass_driver {
+        run_pass,
+        build_diagnostic_policy
+    }
+    run_pass(NativeCompilePass, mod, prog, policy=build_diagnostic_policy(prog));
+    assert has_error_code(prog, "E5020") , (
+        f"poisoned IR must trip the native compile gate, got: {fmt_errors(prog)}"
+    );
+    assert mod.gen.llvm_ir is None , (
+        "failed native compile must not publish llvm ir"
+    );
+    assert mod.gen.native_linked_ir is None , (
+        "failed native compile must not publish linked native IR"
+    );
+    assert mod.gen.native_bitcode is None , (
+        "failed native compile must not publish native bitcode"
+    );
+    assert mod.gen.native_engine is None , (
+        "failed native compile must not publish a jit engine"
+    );
+    assert mod.gen.py_bytecode is None , (
+        "failed native compile must not publish python bytecode"
+    );
+    assert mod.gen.native_layout is None , (
+        "failed native compile must not leave native_layout behind for later lowering"
+    );
+}
