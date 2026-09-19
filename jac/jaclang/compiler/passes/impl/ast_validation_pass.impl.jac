@@ -346,26 +346,46 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
 }
 
 impl ASTValidationPass.enter_module with Module entry {
-    seen: set[str] = set();
+    # E0078 fires when a function name is shared by declarations that are
+    # not ALL @overload-decorated. Collect decorated names first so the
+    # check is order-independent: a mixed set (some decorated, some not)
+    # must still fail whichever order the declarations appear in.
+    overload_names: set[str] = set();
     for item in (here.body or []) {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        has_overload = False;
+        decorated = False;
         for dec in (item.decorators or []) {
             if isinstance(dec, Name) and dec.value == "overload" {
-                has_overload = True;
+                decorated = True;
                 break;
             }
         }
-        if has_overload {
+        if decorated {
+            overload_names.add(item.name_ref.value);
+        }
+    }
+    plain_seen: set[str] = set();
+    for item in (here.body or []) {
+        if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
+            continue;
+        }
+        decorated = False;
+        for dec in (item.decorators or []) {
+            if isinstance(dec, Name) and dec.value == "overload" {
+                decorated = True;
+                break;
+            }
+        }
+        if decorated {
             continue;
         }
         name = item.name_ref.value;
-        if name in seen {
+        if name in plain_seen or name in overload_names {
             self.ctx.emit(E0078, node_override=item.name_ref, name=name);
         } else {
-            seen.add(name);
+            plain_seen.add(name);
         }
     }
 }
