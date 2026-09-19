@@ -346,10 +346,6 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
 }
 
 impl ASTValidationPass.enter_module with Module entry {
-    # E0078 fires when a function name is shared by declarations that are
-    # not ALL @overload-decorated. Collect decorated names first so the
-    # check is order-independent: a mixed set (some decorated, some not)
-    # must still fail whichever order the declarations appear in.
     overload_names: set[str] = set();
     for item in (here.body or []) {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
