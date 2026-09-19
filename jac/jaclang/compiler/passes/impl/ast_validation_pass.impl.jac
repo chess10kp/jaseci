@@ -345,6 +345,31 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
     }
 }
 
+impl ASTValidationPass.enter_module with Module entry {
+    seen: set[str] = set();
+    for item in (here.body or []) {
+        if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
+            continue;
+        }
+        has_overload = False;
+        for dec in (item.decorators or []) {
+            if isinstance(dec, Name) and dec.value == "overload" {
+                has_overload = True;
+                break;
+            }
+        }
+        if has_overload {
+            continue;
+        }
+        name = item.name_ref.value;
+        if name in seen {
+            self.ctx.emit(E0078, node_override=item.name_ref, name=name);
+        } else {
+            seen.add(name);
+        }
+    }
+}
+
 impl ASTValidationPass.enter_archetype with Archetype entry {
     if here.base_classes is not None {
         seen_bases: set[str] = set();
