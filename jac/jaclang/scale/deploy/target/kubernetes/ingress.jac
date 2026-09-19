@@ -6,7 +6,14 @@ import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
 }
 import from jaclang.scale.observability.logger { Logger }
 import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
-    delete_if_exists
+    app_labels,
+    apply_cluster_rbac,
+    apply_k8s_resource,
+    delete_resource,
+    k8s_manifest,
+    patch_k8s_resource,
+    pod_spec,
+    workload_manifest
 }
 import from jaclang.scale.deploy.target.kubernetes.cluster_provider { ClusterProvider }
 
@@ -29,35 +36,11 @@ obj IngressDeployer {
         ingress_class_name = f"{namespace}-{app_name}-nginx";
         service_name = f"{controller_name}-service";
 
-        sa = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {
-                'name': controller_name,
-                'namespace': namespace,
-                'labels': {'app': controller_name, 'managed': 'jac-scale'}
-            }
-        };
-        try {
-            core_v1.read_namespaced_service_account(
-                name=controller_name, namespace=namespace
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                core_v1.create_namespaced_service_account(namespace=namespace, body=sa);
-            } else {
-                raise;
-            }
-        }
-
-        cluster_role = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRole',
-            'metadata': {
-                'name': cluster_resource_name,
-                'labels': {'app': controller_name, 'managed': 'jac-scale'}
-            },
-            'rules': [
+        apply_cluster_rbac(
+            core_v1,
+            controller_name,
+            namespace,
+            [
                 {
                     'apiGroups': [''],
                     'resources': [
@@ -110,221 +93,126 @@ obj IngressDeployer {
                     'resources': ['endpointslices'],
                     'verbs': ['get', 'list', 'watch']
                 }
-            ]
-        };
-        try {
-            rbac_v1.read_cluster_role(name=cluster_resource_name);
-            rbac_v1.replace_cluster_role(name=cluster_resource_name, body=cluster_role);
-        } except ApiException as e {
-            if e.status == 404 {
-                rbac_v1.create_cluster_role(body=cluster_role);
-            } else {
-                raise;
-            }
-        }
+            ],
+            sa_name=controller_name
+        );
 
-        crb = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRoleBinding',
-            'metadata': {
-                'name': cluster_resource_name,
-                'labels': {'app': controller_name, 'managed': 'jac-scale'}
-            },
-            'roleRef': {
-                'apiGroup': 'rbac.authorization.k8s.io',
-                'kind': 'ClusterRole',
-                'name': cluster_resource_name
-            },
-            'subjects': [
-                {
-                    'kind': 'ServiceAccount',
-                    'name': controller_name,
-                    'namespace': namespace
+        cm = k8s_manifest(
+            "ConfigMap",
+            configmap_name,
+            {
+                'data': {
+                    'allow-snippet-annotations': 'true',
+                    'annotations-risk-level': 'Critical',
+                    'use-gzip': 'true',
+                    'gzip-types': 'application/javascript text/css application/json image/svg+xml'
                 }
-            ]
-        };
-        try {
-            rbac_v1.read_cluster_role_binding(name=cluster_resource_name);
-            rbac_v1.replace_cluster_role_binding(name=cluster_resource_name, body=crb);
-        } except ApiException as e {
-            if e.status == 404 {
-                rbac_v1.create_cluster_role_binding(body=crb);
-            } else {
-                raise;
-            }
-        }
-
-        cm = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': configmap_name,
-                'namespace': namespace,
-                'labels': {'app': controller_name, 'managed': 'jac-scale'}
             },
-            'data': {
-                'allow-snippet-annotations': 'true',
-                'annotations-risk-level': 'Critical',
-                'use-gzip': 'true',
-                'gzip-types': 'application/javascript text/css application/json image/svg+xml'
-            }
-        };
-        try {
-            core_v1.patch_namespaced_config_map(
-                name=configmap_name, namespace=namespace, body=cm
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                core_v1.create_namespaced_config_map(namespace=namespace, body=cm);
-            } else {
-                raise;
-            }
-        }
+            namespace,
+            app_labels(controller_name)
+        );
+        patch_k8s_resource(core_v1, "ConfigMap", cm, namespace);
 
-        ingress_class = {
-            'apiVersion': 'networking.k8s.io/v1',
-            'kind': 'IngressClass',
-            'metadata': {
-                'name': ingress_class_name,
-                'labels': {'app': controller_name, 'managed': 'jac-scale'}
-            },
-            'spec': {'controller': 'k8s.io/ingress-nginx'}
-        };
-        try {
-            networking_v1.read_ingress_class(name=ingress_class_name);
-        } except ApiException as e {
-            if e.status == 404 {
-                networking_v1.create_ingress_class(body=ingress_class);
-            } else {
-                raise;
-            }
-        }
+        ingress_class = k8s_manifest(
+            "IngressClass",
+            ingress_class_name,
+            {'spec': {'controller': 'k8s.io/ingress-nginx'}},
+            labels=app_labels(controller_name)
+        );
+        apply_k8s_resource(
+            networking_v1,
+            "IngressClass",
+            ingress_class_name,
+            ingress_class,
+            replace=False
+        );
 
-        controller_deployment = {
-            'apiVersion': 'apps/v1',
-            'kind': 'Deployment',
-            'metadata': {
-                'name': controller_name,
-                'namespace': namespace,
-                'labels': {'app': controller_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'replicas': 1,
-                'selector': {'matchLabels': {'app': controller_name}},
-                'template': {
-                    'metadata': {'labels': {'app': controller_name}},
-                    'spec': {
-                        'serviceAccountName': controller_name,
+        controller_deployment = workload_manifest(
+            "Deployment",
+            controller_name,
+            namespace,
+            pod_spec(
+                [
+                    {
+                        'name': 'controller',
+                        'image': 'registry.k8s.io/ingress-nginx/controller:v1.12.0',
                         'securityContext': {
+                            'runAsNonRoot': True,
+                            'runAsUser': 101,
+                            'allowPrivilegeEscalation': False,
+                            'capabilities': {
+                                'drop': ['ALL'],
+                                'add': ['NET_BIND_SERVICE']
+                            },
                             'seccompProfile': {'type': 'RuntimeDefault'}
                         },
-                        'containers': [
+                        'args': [
+                            '/nginx-ingress-controller',
+                            f"--ingress-class={ingress_class_name}",
+                            '--controller-class=k8s.io/ingress-nginx',
+                            f"--watch-namespace={namespace}",
+                            f"--configmap={namespace}/{configmap_name}",
+                            '--election-id=ingress-controller-leader',
+                            '--validating-webhook=',
+                            '--sync-period=5s'
+                        ],
+                        'env': [
                             {
-                                'name': 'controller',
-                                'image': 'registry.k8s.io/ingress-nginx/controller:v1.12.0',
-                                'securityContext': {
-                                    'runAsNonRoot': True,
-                                    'runAsUser': 101,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {
-                                        'drop': ['ALL'],
-                                        'add': ['NET_BIND_SERVICE']
-                                    },
-                                    'seccompProfile': {'type': 'RuntimeDefault'}
-                                },
-                                'args': [
-                                    '/nginx-ingress-controller',
-                                    f"--ingress-class={ingress_class_name}",
-                                    '--controller-class=k8s.io/ingress-nginx',
-                                    f"--watch-namespace={namespace}",
-                                    f"--configmap={namespace}/{configmap_name}",
-                                    '--election-id=ingress-controller-leader',
-                                    '--validating-webhook=',
-                                    '--sync-period=5s'
-                                ],
-                                'env': [
-                                    {
-                                        'name': 'POD_NAME',
-                                        'valueFrom': {
-                                            'fieldRef': {'fieldPath': 'metadata.name'}
-                                        }
-                                    },
-                                    {
-                                        'name': 'POD_NAMESPACE',
-                                        'valueFrom': {
-                                            'fieldRef': {
-                                                'fieldPath': 'metadata.namespace'
-                                            }
-                                        }
-                                    }
-                                ],
-                                'ports': [
-                                    {'name': 'http', 'containerPort': 80},
-                                    {'name': 'https', 'containerPort': 443},
-                                    {'name': 'webhook', 'containerPort': 8443}
-                                ],
-                                'readinessProbe': {
-                                    'httpGet': {
-                                        'path': '/healthz',
-                                        'port': 10254,
-                                        'scheme': 'HTTP'
-                                    },
-                                    'initialDelaySeconds': 10,
-                                    'periodSeconds': 10,
-                                    'timeoutSeconds': 5,
-                                    'failureThreshold': 5
-                                },
-                                'livenessProbe': {
-                                    'httpGet': {
-                                        'path': '/healthz',
-                                        'port': 10254,
-                                        'scheme': 'HTTP'
-                                    },
-                                    'initialDelaySeconds': 10,
-                                    'periodSeconds': 10,
-                                    'timeoutSeconds': 5,
-                                    'failureThreshold': 5
-                                },
-                                'resources': {
-                                    'requests': {'cpu': '100m', 'memory': '90Mi'},
-                                    'limits': {'cpu': '500m', 'memory': '256Mi'}
+                                'name': 'POD_NAME',
+                                'valueFrom': {
+                                    'fieldRef': {'fieldPath': 'metadata.name'}
+                                }
+                            },
+                            {
+                                'name': 'POD_NAMESPACE',
+                                'valueFrom': {
+                                    'fieldRef': {'fieldPath': 'metadata.namespace'}
                                 }
                             }
-                        ]
+                        ],
+                        'ports': [
+                            {'name': 'http', 'containerPort': 80},
+                            {'name': 'https', 'containerPort': 443},
+                            {'name': 'webhook', 'containerPort': 8443}
+                        ],
+                        'readinessProbe': {
+                            'httpGet': {
+                                'path': '/healthz',
+                                'port': 10254,
+                                'scheme': 'HTTP'
+                            },
+                            'initialDelaySeconds': 10,
+                            'periodSeconds': 10,
+                            'timeoutSeconds': 5,
+                            'failureThreshold': 5
+                        },
+                        'livenessProbe': {
+                            'httpGet': {
+                                'path': '/healthz',
+                                'port': 10254,
+                                'scheme': 'HTTP'
+                            },
+                            'initialDelaySeconds': 10,
+                            'periodSeconds': 10,
+                            'timeoutSeconds': 5,
+                            'failureThreshold': 5
+                        },
+                        'resources': {
+                            'requests': {'cpu': '100m', 'memory': '90Mi'},
+                            'limits': {'cpu': '500m', 'memory': '256Mi'}
+                        }
                     }
-                }
-            }
-        };
-        try {
-            apps_v1.patch_namespaced_deployment(
-                name=controller_name, namespace=namespace, body=controller_deployment
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                apps_v1.create_namespaced_deployment(
-                    namespace=namespace, body=controller_deployment
-                );
-            } else {
-                raise;
-            }
-        }
+                ],
+                service_account=controller_name
+            ),
+            {'app': controller_name}
+        );
+        patch_k8s_resource(apps_v1, "Deployment", controller_deployment, namespace);
 
         controller_service = provider.ingress_controller_service(
             service_name, namespace, controller_name, self.k8s_config.ingress_node_port
         );
-        try {
-            core_v1.patch_namespaced_service(
-                name=service_name, namespace=namespace, body=controller_service
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                core_v1.create_namespaced_service(
-                    namespace=namespace, body=controller_service
-                );
-            } else {
-                raise;
-            }
-        }
+        patch_k8s_resource(core_v1, "Service", controller_service, namespace);
 
         provider.log_ingress_deployed(
             self.logger, app_name, self.k8s_config.ingress_node_port
@@ -490,30 +378,15 @@ obj IngressDeployer {
                 main_spec['tls'] = None;
             }
         }
-        main_ingress = {
-            'apiVersion': 'networking.k8s.io/v1',
-            'kind': 'Ingress',
-            'metadata': {
-                'name': ingress_name,
-                'namespace': namespace,
-                'labels': {'app': app_name, 'managed': 'jac-scale'},
-                'annotations': ingress_annotations
-            },
-            'spec': main_spec
-        };
-        try {
-            networking_v1.patch_namespaced_ingress(
-                name=ingress_name, namespace=namespace, body=main_ingress
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                networking_v1.create_namespaced_ingress(
-                    namespace=namespace, body=main_ingress
-                );
-            } else {
-                raise;
-            }
-        }
+        main_ingress = k8s_manifest(
+            "Ingress",
+            ingress_name,
+            {'spec': main_spec},
+            namespace,
+            app_labels(app_name),
+            ingress_annotations
+        );
+        patch_k8s_resource(networking_v1, "Ingress", main_ingress, namespace);
 
         if self.logger {
             self.logger.info(f"Ingress routing rules deployed for '{app_name}'");
@@ -836,18 +709,9 @@ obj IngressDeployer {
         service_name = f"{controller_name}-service";
         configmap_name = f"{app_name}-nginx-configuration";
 
-        delete_if_exists(
-            networking_v1.delete_namespaced_ingress, ingress_name, namespace, 'Ingress'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_secret, f"{app_name}-tls", namespace, 'Secret'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_secret,
-            'letsencrypt-prod-key',
-            namespace,
-            'Secret'
-        );
+        delete_resource(networking_v1, 'Ingress', ingress_name, namespace);
+        delete_resource(core_v1, 'Secret', f"{app_name}-tls", namespace);
+        delete_resource(core_v1, 'Secret', 'letsencrypt-prod-key', namespace);
         try {
             custom_api = client.CustomObjectsApi();
             custom_api.delete_namespaced_custom_object(
@@ -877,47 +741,16 @@ obj IngressDeployer {
         }
 
         if not self.k8s_config.shared_ingress {
-            delete_if_exists(
-                apps_v1.delete_namespaced_deployment,
-                controller_name,
-                namespace,
-                'Deployment'
-            );
-            delete_if_exists(
-                core_v1.delete_namespaced_service, service_name, namespace, 'Service'
-            );
-            delete_if_exists(
-                core_v1.delete_namespaced_service_account,
-                controller_name,
-                namespace,
-                'ServiceAccount'
-            );
-            delete_if_exists(
-                core_v1.delete_namespaced_config_map,
-                configmap_name,
-                namespace,
-                'ConfigMap'
-            );
-            try {
-                rbac_v1.delete_cluster_role(name=cluster_resource_name);
-            } except ApiException as e {
-                if e.status != 404 {
-                    raise;
-                }
-            }
-            try {
-                rbac_v1.delete_cluster_role_binding(name=cluster_resource_name);
-            } except ApiException as e {
-                if e.status != 404 {
-                    raise;
-                }
-            }
-            try {
-                networking_v1.delete_ingress_class(name=ingress_class_name);
-            } except ApiException as e {
-                if e.status != 404 {
-                    raise;
-                }
+            for (api, kind, name, ns) in [
+                (apps_v1, 'Deployment', controller_name, namespace),
+                (core_v1, 'Service', service_name, namespace),
+                (core_v1, 'ServiceAccount', controller_name, namespace),
+                (core_v1, 'ConfigMap', configmap_name, namespace),
+                (rbac_v1, 'ClusterRole', cluster_resource_name, ""),
+                (rbac_v1, 'ClusterRoleBinding', cluster_resource_name, ""),
+                (networking_v1, 'IngressClass', ingress_class_name, "")
+            ] {
+                delete_resource(api, kind, name, ns);
             }
         }
 

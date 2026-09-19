@@ -1,3 +1,8 @@
+import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
+    k8s_manifest
+}
+
+
 glob OPS_READ_RULES: list[dict[str, any]] = [
          {
              "apiGroups": [""],
@@ -66,28 +71,26 @@ def build_ops_rbac(
         rules = rules + list(OPS_MUTATE_RULES);
     }
     labels = {"app": app_name, "managed": "jac-scale"};
-    role = {
-        "apiVersion": "rbac.authorization.k8s.io/v1",
-        "kind": "Role",
-        "metadata": {"name": name, "namespace": namespace, "labels": labels},
-        "rules": rules
-    };
-    role_binding = {
-        "apiVersion": "rbac.authorization.k8s.io/v1",
-        "kind": "RoleBinding",
-        "metadata": {"name": name, "namespace": namespace, "labels": labels},
-        "roleRef": {
-            "apiGroup": "rbac.authorization.k8s.io",
-            "kind": "Role",
-            "name": name
+    role = k8s_manifest("Role", name, {"rules": rules}, namespace, labels);
+    role_binding = k8s_manifest(
+        "RoleBinding",
+        name,
+        {
+            "roleRef": {
+                "apiGroup": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": name
+            },
+            "subjects": [
+                {
+                    "kind": "ServiceAccount",
+                    "name": sa_name or "default",
+                    "namespace": namespace
+                }
+            ]
         },
-        "subjects": [
-            {
-                "kind": "ServiceAccount",
-                "name": sa_name or "default",
-                "namespace": namespace
-            }
-        ]
-    };
+        namespace,
+        labels
+    );
     return {"role": role, "role_binding": role_binding};
 }

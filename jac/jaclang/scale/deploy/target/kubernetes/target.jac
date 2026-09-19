@@ -11,11 +11,13 @@ import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
     apply_k8s_resource,
     ensure_namespace_exists,
     create_k8s_secret,
-    delete_if_exists,
+    delete_collection_if_exists,
     delete_k8s_secret,
     delete_namespace,
+    delete_resource,
     get_cluster_provider,
     namespace_is_owned,
+    patch_k8s_resource,
     privileged_pss_labels,
     PSS_ENFORCE_LABEL,
     _resolve_current_rs_hashes,
@@ -1208,14 +1210,7 @@ obj KubernetesTarget(KubernetesTargetBase) {
 
         services: dict[str, dict[str, any]] = bundle["services"];
         for (svc_name, svc_manifest) in services.items() {
-            self._apply_or_replace(
-                core_v1,
-                "read_namespaced_service",
-                "patch_namespaced_service",
-                "create_namespaced_service",
-                namespace,
-                svc_manifest
-            );
+            patch_k8s_resource(core_v1, "Service", svc_manifest, namespace);
             if self.logger {
                 self.logger.info(
                     f"Applied Service for '{svc_name}'",
@@ -1239,14 +1234,8 @@ obj KubernetesTarget(KubernetesTargetBase) {
                     if k != "replicas"
                 };
             }
-            self._apply_or_replace(
-                apps_v1,
-                "read_namespaced_deployment",
-                "patch_namespaced_deployment",
-                "create_namespaced_deployment",
-                namespace,
-                dep_manifest,
-                patch_body
+            patch_k8s_resource(
+                apps_v1, "Deployment", dep_manifest, namespace, patch_body
             );
             if self.logger {
                 self.logger.info(
@@ -1296,13 +1285,8 @@ obj KubernetesTarget(KubernetesTargetBase) {
 
         pdbs: dict[str, dict[str, any]] = bundle.get("pdbs", {}) or {};
         for (svc_name, pdb_manifest) in pdbs.items() {
-            self._apply_or_replace(
-                policy_v1,
-                "read_namespaced_pod_disruption_budget",
-                "patch_namespaced_pod_disruption_budget",
-                "create_namespaced_pod_disruption_budget",
-                namespace,
-                pdb_manifest
+            patch_k8s_resource(
+                policy_v1, "PodDisruptionBudget", pdb_manifest, namespace
             );
             if self.logger {
                 self.logger.info(
@@ -1314,14 +1298,7 @@ obj KubernetesTarget(KubernetesTargetBase) {
 
         ingress_manifest: any = bundle.get("ingress");
         if ingress_manifest {
-            self._apply_or_replace(
-                networking_v1,
-                "read_namespaced_ingress",
-                "patch_namespaced_ingress",
-                "create_namespaced_ingress",
-                namespace,
-                ingress_manifest
-            );
+            patch_k8s_resource(networking_v1, "Ingress", ingress_manifest, namespace);
             if self.logger {
                 self.logger.info(
                     "Applied Ingress for gateway",
@@ -1341,7 +1318,9 @@ obj KubernetesTarget(KubernetesTargetBase) {
 
             apply_k8s_resource(rbac_v1, "Role", role_name, role, namespace=namespace);
 
-            apply_k8s_resource(rbac_v1, "RoleBinding", binding_name, binding, namespace=namespace);
+            apply_k8s_resource(
+                rbac_v1, "RoleBinding", binding_name, binding, namespace=namespace
+            );
 
             if self.logger {
                 subj = binding["subjects"][0]["name"];
@@ -1404,9 +1383,7 @@ obj KubernetesTarget(KubernetesTargetBase) {
             if current is None or current == name {
                 continue;
             }
-            delete_if_exists(
-                apps_v1.delete_namespaced_deployment, name, namespace, "Deployment"
-            );
+            delete_resource(apps_v1, "Deployment", name, namespace);
             self._emit(
                 "apply",
                 "ok",
@@ -1700,39 +1677,6 @@ obj KubernetesTarget(KubernetesTargetBase) {
         );
     }
 
-    def _apply_or_replace(
-        api: any,
-        read: str,
-        update: str,
-        create: str,
-        namespace: str,
-        manifest: dict[str, any],
-        patch_body: (dict[str, any] | None) = None
-    ) {
-        """patch_body, when given, is sent to `update` instead of `manifest` --
-        e.g. a copy with `spec.replicas` stripped so a strategic-merge PATCH
-        leaves an externally-scaled field (KEDA's ScaledObject) alone, while a
-        fresh `create` still gets the full manifest including that field.
-        HTTP activation relies on exactly this: KEDA owns `replicas` once a
-        Deployment scales via HTTP_ACTIVATION, and the strategic-merge PATCH
-        this omission produces is what keeps this apply from resetting the
-        live value KEDA set.
-        """;
-        name: str = manifest["metadata"]["name"];
-        try {
-            getattr(api, read)(name=name, namespace=namespace);
-            getattr(api, update)(
-                name=name, namespace=namespace, body=patch_body or manifest
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                getattr(api, create)(namespace=namespace, body=manifest);
-            } else {
-                raise;
-            }
-        }
-    }
-
     def _apply_or_replace_pvc(core_v1: any, namespace: str, manifest: dict[str, any]) {
         name: str = manifest["metadata"]["name"];
         try {
@@ -1762,15 +1706,9 @@ obj KubernetesTarget(KubernetesTargetBase) {
     ) {
         ms_selector: str = "managed=jac-scale";
 
-        try {
-            apps_v1.delete_collection_namespaced_deployment(
-                namespace=namespace, label_selector=FLEET_SELECTOR
-            );
-        } except ApiException as e {
-            if e.status != 404 {
-                raise;
-            }
-        }
+        delete_collection_if_exists(
+            apps_v1.delete_collection_namespaced_deployment, namespace, FLEET_SELECTOR
+        );
 
         try {
             AutoscalerFactory.create(
@@ -1798,33 +1736,21 @@ obj KubernetesTarget(KubernetesTargetBase) {
             }
         }
 
-        try {
-            policy_v1.delete_collection_namespaced_pod_disruption_budget(
-                namespace=namespace, label_selector=ms_selector
-            );
-        } except ApiException as e {
-            if e.status != 404 {
-                raise;
-            }
-        }
-
-        try {
-            networking_v1.delete_collection_namespaced_ingress(
-                namespace=namespace, label_selector=ms_selector
-            );
-        } except ApiException as e {
-            if e.status != 404 {
-                raise;
-            }
-        }
+        delete_collection_if_exists(
+            policy_v1.delete_collection_namespaced_pod_disruption_budget,
+            namespace,
+            ms_selector
+        );
+        delete_collection_if_exists(
+            networking_v1.delete_collection_namespaced_ingress, namespace, ms_selector
+        );
 
         try {
             services = core_v1.list_namespaced_service(
                 namespace=namespace, label_selector=ms_selector
             );
-            service_items: list[any] = services.items;
-            for svc in service_items {
-                delete_if_exists(core_v1.delete_namespaced_service, svc.metadata.name, namespace, "Service");
+            for svc in (services.items or []) {
+                delete_resource(core_v1, "Service", svc.metadata.name, namespace);
             }
         } except ApiException as e {
             if e.status != 404 {
@@ -1832,16 +1758,11 @@ obj KubernetesTarget(KubernetesTargetBase) {
             }
         }
 
-        try {
-            core_v1.delete_collection_namespaced_config_map(
-                namespace=namespace,
-                label_selector="managed=jac-scale,jac-scale.role=source"
-            );
-        } except ApiException as e {
-            if e.status != 404 {
-                raise;
-            }
-        }
+        delete_collection_if_exists(
+            core_v1.delete_collection_namespaced_config_map,
+            namespace,
+            "managed=jac-scale,jac-scale.role=source"
+        );
     }
 
     def _destroy_monitoring(
@@ -1881,12 +1802,7 @@ obj KubernetesTarget(KubernetesTargetBase) {
 
     def _destroy_pvcs(pvc_names: list[str], namespace: str, core_v1: any) {
         for pvc_name in pvc_names {
-            delete_if_exists(
-                core_v1.delete_namespaced_persistent_volume_claim,
-                pvc_name,
-                namespace,
-                'PersistentVolumeClaim'
-            );
+            delete_resource(core_v1, 'PersistentVolumeClaim', pvc_name, namespace);
         }
     }
 
@@ -1929,15 +1845,11 @@ obj KubernetesTarget(KubernetesTargetBase) {
             self._report_unowned_shared_volumes(namespace, core_v1);
         }
         for selector in selectors {
-            try {
-                core_v1.delete_collection_namespaced_persistent_volume_claim(
-                    namespace=namespace, label_selector=selector
-                );
-            } except ApiException as e {
-                if e.status != 404 {
-                    raise;
-                }
-            }
+            delete_collection_if_exists(
+                core_v1.delete_collection_namespaced_persistent_volume_claim,
+                namespace,
+                selector
+            );
         }
     }
 
@@ -2026,13 +1938,7 @@ obj KubernetesTarget(KubernetesTargetBase) {
             rbac_v1.delete_collection_namespaced_role_binding,
             rbac_v1.delete_collection_namespaced_role
         ] {
-            try {
-                delete_collection(namespace=namespace, label_selector=ms_selector);
-            } except ApiException as e {
-                if e.status != 404 {
-                    raise;
-                }
-            }
+            delete_collection_if_exists(delete_collection, namespace, ms_selector);
         }
     }
 
@@ -2081,23 +1987,11 @@ obj KubernetesTarget(KubernetesTargetBase) {
         app_name: str, namespace: str, apps_v1: any, core_v1: any
     ) {
         pg_name: str = f"{app_name}-postgres";
-        delete_if_exists(
-            apps_v1.delete_namespaced_stateful_set, pg_name, namespace, 'StatefulSet'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{pg_name}-service",
-            namespace,
-            'Service'
-        );
+        delete_resource(apps_v1, 'StatefulSet', pg_name, namespace);
+        delete_resource(core_v1, 'Service', f"{pg_name}-service", namespace);
         delete_k8s_secret(core_v1, namespace, f"{pg_name}-secret");
         delete_k8s_secret(core_v1, namespace, f"{app_name}-external-db");
-        delete_if_exists(
-            core_v1.delete_namespaced_service_account,
-            f"{pg_name}-sa",
-            namespace,
-            'ServiceAccount'
-        );
+        delete_resource(core_v1, 'ServiceAccount', f"{pg_name}-sa", namespace);
     }
 
     def _destroy_in_shared_namespace(

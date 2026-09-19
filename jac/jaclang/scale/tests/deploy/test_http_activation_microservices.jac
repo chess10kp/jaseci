@@ -5,9 +5,11 @@ import from jaclang.scale.deploy.target.kubernetes.manifest_builder {
 }
 import from jaclang.scale.runtime.context.util { GATEWAY_NAME }
 import from jaclang.scale.deploy.target.kubernetes.target {
-    KubernetesTarget,
     apply_http_activations_for_bundle,
     reap_stale_scaling_resources_for_bundle
+}
+import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
+    patch_k8s_resource
 }
 import unittest.mock;
 import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
@@ -428,78 +430,49 @@ test "generate_manifests raises when two services inherit the shared catch-all r
 }
 
 
-# --- Section F: _apply_or_replace's patch_body contract ---------------------
+# --- Section F: patch_k8s_resource's patch_body contract ---------------------
 # HTTP activation's "a redeploy doesn't reset a scaled-to-zero target" guarantee
-# depends entirely on _apply_or_replace sending patch_body (with replicas
-# stripped) to `update` instead of the full manifest, while a fresh `create`
+# depends entirely on patch_k8s_resource sending patch_body (with replicas
+# stripped) to `patch` instead of the full manifest, while a fresh `create`
 # still gets the full manifest. Pin that contract directly so a future change
-# to _apply_or_replace can't silently break it.
+# to patch_k8s_resource can't silently break it.
 
-def _target -> KubernetesTarget {
-    return KubernetesTarget(config=KubernetesConfig(app_name="t", namespace="t-ns"));
-}
-
-
-test "_apply_or_replace sends patch_body, not the full manifest, to update when the target exists" {
+test "patch_k8s_resource sends patch_body, not the full manifest, to update when the target exists" {
     mock_api = unittest.mock.MagicMock();
     manifest = {
         "metadata": {"name": "svc-deployment"},
         "spec": {"replicas": 3, "template": {}}
     };
     patch_body = {"metadata": {"name": "svc-deployment"}, "spec": {"template": {}}};
-    _target()._apply_or_replace(
-        mock_api,
-        "read_namespaced_deployment",
-        "patch_namespaced_deployment",
-        "create_namespaced_deployment",
-        "t-ns",
-        manifest,
-        patch_body
-    );
+    patch_k8s_resource(mock_api, "Deployment", manifest, "t-ns", patch_body);
     mock_api.patch_namespaced_deployment.assert_called_once_with(
-        name="svc-deployment", namespace="t-ns", body=patch_body
+        name="svc-deployment", body=patch_body, namespace="t-ns"
     );
     mock_api.create_namespaced_deployment.assert_not_called();
 }
 
 
-test "_apply_or_replace's create path gets the full manifest, replicas included, even when patch_body omits it" {
+test "patch_k8s_resource's create path gets the full manifest, replicas included, even when patch_body omits it" {
     mock_api = unittest.mock.MagicMock();
-    mock_api.read_namespaced_deployment.side_effect = ApiException(status=404);
+    mock_api.patch_namespaced_deployment.side_effect = ApiException(status=404);
     manifest = {
         "metadata": {"name": "svc-deployment"},
         "spec": {"replicas": 3, "template": {}}
     };
     patch_body = {"metadata": {"name": "svc-deployment"}, "spec": {"template": {}}};
-    _target()._apply_or_replace(
-        mock_api,
-        "read_namespaced_deployment",
-        "patch_namespaced_deployment",
-        "create_namespaced_deployment",
-        "t-ns",
-        manifest,
-        patch_body
-    );
+    patch_k8s_resource(mock_api, "Deployment", manifest, "t-ns", patch_body);
     mock_api.create_namespaced_deployment.assert_called_once_with(
-        namespace="t-ns", body=manifest
+        body=manifest, namespace="t-ns"
     );
-    mock_api.patch_namespaced_deployment.assert_not_called();
 }
 
 
-test "_apply_or_replace sends the full manifest to update when no patch_body is given" {
+test "patch_k8s_resource sends the full manifest to update when no patch_body is given" {
     mock_api = unittest.mock.MagicMock();
     manifest = {"metadata": {"name": "svc-deployment"}, "spec": {"replicas": 3}};
-    _target()._apply_or_replace(
-        mock_api,
-        "read_namespaced_deployment",
-        "patch_namespaced_deployment",
-        "create_namespaced_deployment",
-        "t-ns",
-        manifest
-    );
+    patch_k8s_resource(mock_api, "Deployment", manifest, "t-ns");
     mock_api.patch_namespaced_deployment.assert_called_once_with(
-        name="svc-deployment", namespace="t-ns", body=manifest
+        name="svc-deployment", body=manifest, namespace="t-ns"
     );
 }
 

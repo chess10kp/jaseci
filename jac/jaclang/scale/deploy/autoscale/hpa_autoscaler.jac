@@ -7,7 +7,8 @@ import from jaclang.scale.deploy.autoscale.autoscaler {
 }
 import from jaclang.scale.observability.logger { Logger }
 import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
-    delete_if_exists
+    delete_resource,
+    k8s_manifest
 }
 
 obj HPAAutoscaler(Autoscaler) {

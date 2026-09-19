@@ -40,29 +40,26 @@ impl HPAAutoscaler._build_manifests{
         );
     }
     return [
-        {
-            "apiVersion": "autoscaling/v2",
-            "kind": "HorizontalPodAutoscaler",
-            "metadata": {
-                "name": hpa_name,
-                "namespace": spec.namespace,
-                "labels": {
-                    "app": spec.scale_target_name,
-                    ** Autoscaler._managed_labels()
+        k8s_manifest(
+            "HorizontalPodAutoscaler",
+            hpa_name,
+            {
+                "spec": {
+                    "scaleTargetRef": {
+                        "apiVersion": "apps/v1",
+                        "kind": "Deployment",
+                        "name": spec.scale_target_name
+                    },
+                    "minReplicas": spec.min_replicas,
+                    "maxReplicas": spec.max_replicas,
+                    "metrics": metrics,
+                    "behavior": Autoscaler._build_behavior(spec)
                 }
             },
-            "spec": {
-                "scaleTargetRef": {
-                    "apiVersion": "apps/v1",
-                    "kind": "Deployment",
-                    "name": spec.scale_target_name
-                },
-                "minReplicas": spec.min_replicas,
-                "maxReplicas": spec.max_replicas,
-                "metrics": metrics,
-                "behavior": Autoscaler._build_behavior(spec)
-            }
-        }
+            spec.namespace,
+            {"app": spec.scale_target_name, ** Autoscaler._managed_labels()},
+            api_version="autoscaling/v2"
+        )
     ];
 }
 
@@ -113,12 +110,11 @@ impl HPAAutoscaler.apply{
 }
 
 impl HPAAutoscaler.destroy{
-    autoscaling_v2 = AutoscalingV2Api();
-    delete_if_exists(
-        autoscaling_v2.delete_namespaced_horizontal_pod_autoscaler,
+    delete_resource(
+        AutoscalingV2Api(),
+        'HorizontalPodAutoscaler',
         self.resource_name_for(app_name),
-        namespace,
-        'HorizontalPodAutoscaler'
+        namespace
     );
 }
 

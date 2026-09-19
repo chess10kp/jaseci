@@ -1,14 +1,24 @@
 import re;
 import hashlib;
-import from jaclang.scale._optdeps.kubernetes { client, ApiException }
+import from jaclang.scale._optdeps.kubernetes { client }
 import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
     KubernetesConfig
 }
 import from jaclang.scale.observability.logger { Logger }
 import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
+    app_labels,
+    apply_cluster_rbac,
+    apply_config_map,
     apply_k8s_resource,
-    delete_if_exists,
-    delete_k8s_secret
+    apply_secret,
+    apply_service,
+    apply_service_account,
+    delete_resource,
+    patch_k8s_resource,
+    pod_spec,
+    restricted_container_security,
+    svc_port,
+    workload_manifest
 }
 import from jaclang.scale.deploy.target.kubernetes.cluster_provider { ClusterProvider }
 
@@ -16,8 +26,10 @@ obj MonitoringDeployer {
     has k8s_config: KubernetesConfig,
         logger: (Logger | None) = None;
 
-    def ensure_service(core_v1: any, name: str, namespace: str, body: dict[str, any]) {
-        apply_k8s_resource(core_v1, "Service", name, body, namespace=namespace, replace=False);
+    def _log(msg: str) {
+        if self.logger {
+            self.logger.info(msg);
+        }
     }
 
     def _deploy_prometheus(
@@ -73,7 +85,7 @@ obj MonitoringDeployer {
                     "    relabel_configs:\n"
                     "      - action: labelmap\n"
                     "        regex: __meta_kubernetes_node_label_(.+)\n"
-                    "      - target_label: __address__\n"
+                    "        target_label: __address__\n"
                     "        replacement: kubernetes.default.svc:443\n"
                     "      - source_labels: [__meta_kubernetes_node_name]\n"
                     "        regex: (.+)\n"
@@ -83,57 +95,27 @@ obj MonitoringDeployer {
         }
 
         config_hash = hashlib.md5(scrape_config.encode()).hexdigest()[:12];
+        labels = app_labels(prometheus_name);
 
-        prometheus_configmap = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': f"{prometheus_name}-config",
-                'namespace': namespace,
-                'labels': {'app': prometheus_name, 'managed': 'jac-scale'}
-            },
-            'data': {'prometheus.yml': scrape_config}
-        };
-        apply_k8s_resource(core_v1, "ConfigMap", f"{prometheus_name}-config", prometheus_configmap, namespace=namespace);
-
-        scrape_secret_name = f"{prometheus_name}-scrape-secret";
-        scrape_secret = {
-            'apiVersion': 'v1',
-            'kind': 'Secret',
-            'metadata': {
-                'name': scrape_secret_name,
-                'namespace': namespace,
-                'labels': {'app': prometheus_name, 'managed': 'jac-scale'}
-            },
-            'type': 'Opaque',
-            'stringData': {'password': self.k8s_config.prometheus_admin_password}
-        };
-        apply_k8s_resource(core_v1, "Secret", scrape_secret_name, scrape_secret, namespace=namespace);
-
-        prometheus_sa_name = f"{prometheus_name}-sa";
-
-        prometheus_sa = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {
-                'name': prometheus_sa_name,
-                'namespace': namespace,
-                'labels': {'app': prometheus_name, 'managed': 'jac-scale'}
-            },
-            'automountServiceAccountToken': True
-        };
-        apply_k8s_resource(core_v1, "ServiceAccount", prometheus_sa_name, prometheus_sa, namespace=namespace, replace=False);
-
-        prometheus_cluster_role_name = f"{namespace}-{prometheus_name}";
-        prometheus_rbac_v1 = client.RbacAuthorizationV1Api();
-        prometheus_cluster_role = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRole',
-            'metadata': {
-                'name': prometheus_cluster_role_name,
-                'labels': {'app': prometheus_name, 'managed': 'jac-scale'}
-            },
-            'rules': [
+        apply_config_map(
+            core_v1,
+            f"{prometheus_name}-config",
+            namespace,
+            labels,
+            {'prometheus.yml': scrape_config}
+        );
+        apply_secret(
+            core_v1,
+            f"{prometheus_name}-scrape-secret",
+            namespace,
+            labels,
+            {'password': self.k8s_config.prometheus_admin_password}
+        );
+        apply_cluster_rbac(
+            core_v1,
+            prometheus_name,
+            namespace,
+            [
                 {
                     'apiGroups': [''],
                     'resources': [
@@ -147,173 +129,81 @@ obj MonitoringDeployer {
                     'verbs': ['get', 'list', 'watch']
                 },
                 {'nonResourceURLs': ['/metrics', '/metrics/cadvisor'], 'verbs': ['get']}
-            ]
-        };
-        apply_k8s_resource(prometheus_rbac_v1, "ClusterRole", prometheus_cluster_role_name, prometheus_cluster_role);
-        prometheus_crb = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRoleBinding',
-            'metadata': {
-                'name': prometheus_cluster_role_name,
-                'labels': {'app': prometheus_name, 'managed': 'jac-scale'}
-            },
-            'roleRef': {
-                'apiGroup': 'rbac.authorization.k8s.io',
-                'kind': 'ClusterRole',
-                'name': prometheus_cluster_role_name
-            },
-            'subjects': [
-                {
-                    'kind': 'ServiceAccount',
-                    'name': prometheus_sa_name,
-                    'namespace': namespace
-                }
-            ]
-        };
-        apply_k8s_resource(prometheus_rbac_v1, "ClusterRoleBinding", prometheus_cluster_role_name, prometheus_crb);
+            ],
+            sa_fields={'automountServiceAccountToken': True}
+        );
 
-        prometheus_deployment = {
-            'apiVersion': 'apps/v1',
-            'kind': 'Deployment',
-            'metadata': {
-                'name': prometheus_name,
-                'namespace': namespace,
-                'labels': {'app': prometheus_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'replicas': 1,
-                'selector': {'matchLabels': {'app': prometheus_name}},
-                'template': {
-                    'metadata': {
-                        'labels': {'app': prometheus_name},
-                        'annotations': {'checksum/config': config_hash}
-                    },
-                    'spec': {
-                        'automountServiceAccountToken': True,
-                        'serviceAccountName': prometheus_sa_name,
-                        'securityContext': {
-                            'seccompProfile': {'type': 'RuntimeDefault'}
-                        },
-                        'containers': [
-                            {
-                                'name': 'prometheus',
-                                'image': 'prom/prometheus:v3.14.0',
-                                'securityContext': {
-                                    'runAsNonRoot': True,
-                                    'runAsUser': 65534,
-                                    'readOnlyRootFilesystem': True,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {'drop': ['ALL']}
-                                },
-                                'args': [
-                                    '--config.file=/etc/prometheus/prometheus.yml',
-                                    '--storage.tsdb.path=/prometheus',
-                                    '--web.console.libraries=/usr/share/prometheus/console_libraries',
-                                    '--web.console.templates=/usr/share/prometheus/consoles',
-                                    '--web.enable-lifecycle'
-                                ],
-                                'ports': [{'containerPort': 9090}],
-                                'volumeMounts': [
-                                    {
-                                        'name': 'prometheus-config-vol',
-                                        'mountPath': '/etc/prometheus'
-                                    },
-                                    {
-                                        'name': 'prometheus-scrape-secret',
-                                        'mountPath': '/etc/prometheus/scrape-secret',
-                                        'readOnly': True
-                                    },
-                                    {
-                                        'name': 'prometheus-data',
-                                        'mountPath': '/prometheus'
-                                    },
-                                    {'name': 'tmp', 'mountPath': '/tmp'}
-                                ]
-                            }
+        prometheus_deployment = workload_manifest(
+            "Deployment",
+            prometheus_name,
+            namespace,
+            pod_spec(
+                [
+                    {
+                        'name': 'prometheus',
+                        'image': 'prom/prometheus:v3.14.0',
+                        'securityContext': restricted_container_security(65534),
+                        'args': [
+                            '--config.file=/etc/prometheus/prometheus.yml',
+                            '--storage.tsdb.path=/prometheus',
+                            '--web.console.libraries=/usr/share/prometheus/console_libraries',
+                            '--web.console.templates=/usr/share/prometheus/consoles',
+                            '--web.enable-lifecycle'
                         ],
-                        'volumes': [
+                        'ports': [{'containerPort': 9090}],
+                        'volumeMounts': [
                             {
                                 'name': 'prometheus-config-vol',
-                                'configMap': {'name': f"{prometheus_name}-config"}
+                                'mountPath': '/etc/prometheus'
                             },
                             {
                                 'name': 'prometheus-scrape-secret',
-                                'secret': {'secretName': scrape_secret_name}
+                                'mountPath': '/etc/prometheus/scrape-secret',
+                                'readOnly': True
                             },
-                            {'name': 'prometheus-data', 'emptyDir': {}},
-                            {'name': 'tmp', 'emptyDir': {}}
+                            {'name': 'prometheus-data', 'mountPath': '/prometheus'},
+                            {'name': 'tmp', 'mountPath': '/tmp'}
                         ]
                     }
-                }
-            }
-        };
+                ],
+                [
+                    {
+                        'name': 'prometheus-config-vol',
+                        'configMap': {'name': f"{prometheus_name}-config"}
+                    },
+                    {
+                        'name': 'prometheus-scrape-secret',
+                        'secret': {'secretName': f"{prometheus_name}-scrape-secret"}
+                    },
+                    {'name': 'prometheus-data', 'emptyDir': {}},
+                    {'name': 'tmp', 'emptyDir': {}}
+                ],
+                service_account=f"{prometheus_name}-sa",
+                automount=True
+            ),
+            {'app': prometheus_name},
+            {'checksum/config': config_hash}
+        );
+        patch_k8s_resource(apps_v1, "Deployment", prometheus_deployment, namespace);
 
-        try {
-            apps_v1.patch_namespaced_deployment(
-                name=prometheus_name, namespace=namespace, body=prometheus_deployment
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                apps_v1.create_namespaced_deployment(
-                    namespace=namespace, body=prometheus_deployment
-                );
-            } else {
-                raise;
-            }
-        }
-
-        prometheus_service = {
-            'apiVersion': 'v1',
-            'kind': 'Service',
-            'metadata': {
-                'name': f"{prometheus_name}-service",
-                'namespace': namespace,
-                'labels': {'app': prometheus_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'type': 'ClusterIP',
-                'selector': {'app': prometheus_name},
-                'ports': [{'protocol': 'TCP', 'port': 9090, 'targetPort': 9090}]
-            }
-        };
-        self.ensure_service(
-            core_v1, f"{prometheus_name}-service", namespace, prometheus_service
+        apply_service(
+            core_v1, f"{prometheus_name}-service", namespace, labels, [svc_port(9090)]
         );
 
-        if self.logger {
-            self.logger.info(f"Prometheus deployed for '{app_name}'");
-        }
+        self._log(f"Prometheus deployed for '{app_name}'");
     }
 
     def _deploy_kube_state_metrics(
         app_name: str, namespace: str, apps_v1: any, core_v1: any
     ) {
         ksm_name = f"{app_name}-kube-state-metrics";
-        ksm_sa_name = f"{ksm_name}-sa";
+        labels = app_labels(ksm_name);
 
-        cluster_role_name = f"{namespace}-{ksm_name}";
-        cluster_role_binding_name = f"{namespace}-{ksm_name}";
-        rbac_v1 = client.RbacAuthorizationV1Api();
-
-        sa_body = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {
-                'name': ksm_sa_name,
-                'namespace': namespace,
-                'labels': {'app': ksm_name, 'managed': 'jac-scale'}
-            }
-        };
-        apply_k8s_resource(core_v1, "ServiceAccount", ksm_sa_name, sa_body, namespace=namespace, replace=False);
-
-        cluster_role_body = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRole',
-            'metadata': {
-                'name': cluster_role_name,
-                'labels': {'app': ksm_name, 'managed': 'jac-scale'}
-            },
-            'rules': [
+        apply_cluster_rbac(
+            core_v1,
+            ksm_name,
+            namespace,
+            [
                 {
                     'apiGroups': [''],
                     'resources': [
@@ -362,106 +252,59 @@ obj MonitoringDeployer {
                     'resources': ['storageclasses', 'volumeattachments'],
                     'verbs': ['list', 'watch']
                 }
-            ]
-        };
-        apply_k8s_resource(rbac_v1, "ClusterRole", cluster_role_name, cluster_role_body, replace=False);
+            ],
+            replace=False
+        );
 
-        crb_body = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRoleBinding',
-            'metadata': {
-                'name': cluster_role_binding_name,
-                'labels': {'app': ksm_name, 'managed': 'jac-scale'}
-            },
-            'roleRef': {
-                'apiGroup': 'rbac.authorization.k8s.io',
-                'kind': 'ClusterRole',
-                'name': cluster_role_name
-            },
-            'subjects': [
-                {'kind': 'ServiceAccount', 'name': ksm_sa_name, 'namespace': namespace}
-            ]
-        };
-        apply_k8s_resource(rbac_v1, "ClusterRoleBinding", cluster_role_binding_name, crb_body, replace=False);
-
-        ksm_deployment = {
-            'apiVersion': 'apps/v1',
-            'kind': 'Deployment',
-            'metadata': {
-                'name': ksm_name,
-                'namespace': namespace,
-                'labels': {'app': ksm_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'replicas': 1,
-                'selector': {'matchLabels': {'app': ksm_name}},
-                'template': {
-                    'metadata': {'labels': {'app': ksm_name, 'managed': 'jac-scale'}},
-                    'spec': {
-                        'automountServiceAccountToken': True,
-                        'serviceAccountName': ksm_sa_name,
-                        'securityContext': {
-                            'seccompProfile': {'type': 'RuntimeDefault'}
-                        },
-                        'containers': [
-                            {
-                                'name': 'kube-state-metrics',
-                                'image': 'registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1',
-                                'securityContext': {
-                                    'runAsNonRoot': True,
-                                    'runAsUser': 65534,
-                                    'readOnlyRootFilesystem': True,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {'drop': ['ALL']}
-                                },
-                                'ports': [
-                                    {'containerPort': 8080, 'name': 'http-metrics'},
-                                    {'containerPort': 8081, 'name': 'telemetry'}
-                                ],
-                                'readinessProbe': {
-                                    'httpGet': {'path': '/healthz', 'port': 8080},
-                                    'initialDelaySeconds': 5,
-                                    'timeoutSeconds': 5
-                                },
-                                'livenessProbe': {
-                                    'httpGet': {'path': '/healthz', 'port': 8080},
-                                    'initialDelaySeconds': 5,
-                                    'timeoutSeconds': 5
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        };
-        apply_k8s_resource(apps_v1, "Deployment", ksm_name, ksm_deployment, namespace=namespace, replace=False);
-
-        ksm_service = {
-            'apiVersion': 'v1',
-            'kind': 'Service',
-            'metadata': {
-                'name': f"{ksm_name}-service",
-                'namespace': namespace,
-                'labels': {'app': ksm_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'type': 'ClusterIP',
-                'selector': {'app': ksm_name},
-                'ports': [
+        ksm_deployment = workload_manifest(
+            "Deployment",
+            ksm_name,
+            namespace,
+            pod_spec(
+                [
                     {
-                        'name': 'http-metrics',
-                        'protocol': 'TCP',
-                        'port': 8080,
-                        'targetPort': 8080
+                        'name': 'kube-state-metrics',
+                        'image': 'registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1',
+                        'securityContext': restricted_container_security(65534),
+                        'ports': [
+                            {'containerPort': 8080, 'name': 'http-metrics'},
+                            {'containerPort': 8081, 'name': 'telemetry'}
+                        ],
+                        'readinessProbe': {
+                            'httpGet': {'path': '/healthz', 'port': 8080},
+                            'initialDelaySeconds': 5,
+                            'timeoutSeconds': 5
+                        },
+                        'livenessProbe': {
+                            'httpGet': {'path': '/healthz', 'port': 8080},
+                            'initialDelaySeconds': 5,
+                            'timeoutSeconds': 5
+                        }
                     }
-                ]
-            }
-        };
-        self.ensure_service(core_v1, f"{ksm_name}-service", namespace, ksm_service);
+                ],
+                service_account=f"{ksm_name}-sa",
+                automount=True
+            ),
+            labels
+        );
+        apply_k8s_resource(
+            apps_v1,
+            "Deployment",
+            ksm_name,
+            ksm_deployment,
+            namespace=namespace,
+            replace=False
+        );
 
-        if self.logger {
-            self.logger.info(f"kube-state-metrics deployed for '{app_name}'");
-        }
+        apply_service(
+            core_v1,
+            f"{ksm_name}-service",
+            namespace,
+            labels,
+            [svc_port(8080, 'http-metrics')]
+        );
+
+        self._log(f"kube-state-metrics deployed for '{app_name}'");
     }
 
     def _deploy_node_exporter(
@@ -469,112 +312,74 @@ obj MonitoringDeployer {
     ) {
         ne_name = f"{app_name}-node-exporter";
 
-        ne_daemonset = {
-            'apiVersion': 'apps/v1',
-            'kind': 'DaemonSet',
-            'metadata': {
-                'name': ne_name,
-                'namespace': namespace,
-                'labels': {'app': ne_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'selector': {'matchLabels': {'app': ne_name}},
-                'template': {
-                    'metadata': {'labels': {'app': ne_name, 'managed': 'jac-scale'}},
-                    'spec': {
-                        'automountServiceAccountToken': False,
-                        'tolerations': [{'operator': 'Exists', 'effect': 'NoSchedule'}],
-                        'securityContext': {
-                            'seccompProfile': {'type': 'RuntimeDefault'}
-                        },
-                        'containers': [
+        ne_daemonset = workload_manifest(
+            "DaemonSet",
+            ne_name,
+            namespace,
+            pod_spec(
+                [
+                    {
+                        'name': 'node-exporter',
+                        'image': 'prom/node-exporter:v1.10.2',
+                        'securityContext': restricted_container_security(65534),
+                        'args': ['--path.procfs=/host/proc', '--path.sysfs=/host/sys'],
+                        'ports': [{'containerPort': 9100, 'name': 'metrics'}],
+                        'volumeMounts': [
                             {
-                                'name': 'node-exporter',
-                                'image': 'prom/node-exporter:v1.10.2',
-                                'securityContext': {
-                                    'runAsNonRoot': True,
-                                    'runAsUser': 65534,
-                                    'readOnlyRootFilesystem': True,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {'drop': ['ALL']}
-                                },
-                                'args': [
-                                    '--path.procfs=/host/proc',
-                                    '--path.sysfs=/host/sys'
-                                ],
-                                'ports': [{'containerPort': 9100, 'name': 'metrics'}],
-                                'volumeMounts': [
-                                    {
-                                        'name': 'proc',
-                                        'mountPath': '/host/proc',
-                                        'readOnly': True
-                                    },
-                                    {
-                                        'name': 'sys',
-                                        'mountPath': '/host/sys',
-                                        'readOnly': True
-                                    }
-                                ]
-                            }
-                        ],
-                        'volumes': [
-                            {'name': 'proc', 'hostPath': {'path': '/proc'}},
-                            {'name': 'sys', 'hostPath': {'path': '/sys'}}
+                                'name': 'proc',
+                                'mountPath': '/host/proc',
+                                'readOnly': True
+                            },
+                            {'name': 'sys', 'mountPath': '/host/sys', 'readOnly': True}
                         ]
                     }
-                }
-            }
-        };
-        apply_k8s_resource(apps_v1, "DaemonSet", ne_name, ne_daemonset, namespace=namespace, replace=False);
+                ],
+                [
+                    {'name': 'proc', 'hostPath': {'path': '/proc'}},
+                    {'name': 'sys', 'hostPath': {'path': '/sys'}}
+                ],
+                automount=False,
+                tolerations=[{'operator': 'Exists', 'effect': 'NoSchedule'}]
+            ),
+            app_labels(ne_name)
+        );
+        apply_k8s_resource(
+            apps_v1,
+            "DaemonSet",
+            ne_name,
+            ne_daemonset,
+            namespace=namespace,
+            replace=False
+        );
 
-        ne_service = {
-            'apiVersion': 'v1',
-            'kind': 'Service',
-            'metadata': {
-                'name': f"{ne_name}-service",
-                'namespace': namespace,
-                'labels': {'app': ne_name}
-            },
-            'spec': {
-                'type': 'ClusterIP',
-                'selector': {'app': ne_name},
-                'ports': [
-                    {
-                        'name': 'metrics',
-                        'protocol': 'TCP',
-                        'port': 9100,
-                        'targetPort': 9100
-                    }
-                ]
-            }
-        };
-        self.ensure_service(core_v1, f"{ne_name}-service", namespace, ne_service);
+        apply_service(
+            core_v1,
+            f"{ne_name}-service",
+            namespace,
+            {'app': ne_name},
+            [svc_port(9100, 'metrics')]
+        );
 
-        if self.logger {
-            self.logger.info(f"node-exporter deployed for '{app_name}'");
-        }
+        self._log(f"node-exporter deployed for '{app_name}'");
     }
 
     def _deploy_grafana(app_name: str, namespace: str, apps_v1: any, core_v1: any) {
         grafana_name = f"{app_name}-grafana";
         prometheus_name = f"{app_name}-prometheus";
         grafana_secret_name = f"{grafana_name}-secret";
+        labels = app_labels(grafana_name);
 
-        grafana_secret = {
-            'apiVersion': 'v1',
-            'kind': 'Secret',
-            'metadata': {
-                'name': grafana_secret_name,
-                'namespace': namespace,
-                'labels': {'app': grafana_name, 'managed': 'jac-scale'}
-            },
-            'type': 'Opaque',
-            'stringData': {
+        apply_secret(
+            core_v1,
+            grafana_secret_name,
+            namespace,
+            labels,
+            {
                 'GF_SECURITY_ADMIN_USER': 'admin',
                 'GF_SECURITY_ADMIN_PASSWORD': self.k8s_config.prometheus_admin_password
-            }
-        };
-        apply_k8s_resource(core_v1, "Secret", grafana_secret_name, grafana_secret, namespace=namespace, replace=False);
+            },
+            replace=False
+        );
 
         prometheus_url = f"http://{prometheus_name}-service:9090";
         loki_name = f"{app_name}-loki";
@@ -628,17 +433,13 @@ obj MonitoringDeployer {
             }
             datasource_yaml = datasource_yaml + tempo_ds;
         }
-        grafana_ds_configmap = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': f"{grafana_name}-datasources",
-                'namespace': namespace,
-                'labels': {'app': grafana_name, 'managed': 'jac-scale'}
-            },
-            'data': {'datasource.yaml': datasource_yaml}
-        };
-        apply_k8s_resource(core_v1, "ConfigMap", f"{grafana_name}-datasources", grafana_ds_configmap, namespace=namespace);
+        apply_config_map(
+            core_v1,
+            f"{grafana_name}-datasources",
+            namespace,
+            labels,
+            {'datasource.yaml': datasource_yaml}
+        );
 
         dashboard_provider_yaml = (
             "apiVersion: 1\n"
@@ -652,17 +453,13 @@ obj MonitoringDeployer {
             "    options:\n"
             "      path: /var/lib/grafana/dashboards\n"
         );
-        grafana_provider_configmap = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': f"{grafana_name}-dashboard-provider",
-                'namespace': namespace,
-                'labels': {'app': grafana_name, 'managed': 'jac-scale'}
-            },
-            'data': {'provider.yaml': dashboard_provider_yaml}
-        };
-        apply_k8s_resource(core_v1, "ConfigMap", f"{grafana_name}-dashboard-provider", grafana_provider_configmap, namespace=namespace);
+        apply_config_map(
+            core_v1,
+            f"{grafana_name}-dashboard-provider",
+            namespace,
+            labels,
+            {'provider.yaml': dashboard_provider_yaml}
+        );
 
         pfx = re.sub(r'[^a-zA-Z0-9]', '_', namespace);
         pfx = re.sub(r'_+', '_', pfx).strip('_');
@@ -732,32 +529,31 @@ obj MonitoringDeployer {
             + '}]},'
             '{"id":7,"type":"timeseries","title":"p95 Latency by Path",'
             '"gridPos":{"x":0,"y":24,"w":12,"h":8},'
-            f'"datasource":{ds},'
             '"fieldConfig":{"defaults":{"unit":"s"}},'
+            f'"datasource":{ds},'
             '"targets":[{"refId":"A",'
             f'"expr":"histogram_quantile(0.95,sum(rate({pfx}_http_request_duration_seconds_bucket[5m])) by (le,path))",'
             f'"legendFormat":"{{{{path}}}}","datasource":{ds}'
             + '}]},'
             '{"id":8,"type":"timeseries","title":"p95 Latency by Method",'
             '"gridPos":{"x":12,"y":24,"w":12,"h":8},'
-            f'"datasource":{ds},'
             '"fieldConfig":{"defaults":{"unit":"s"}},'
+            f'"datasource":{ds},'
             '"targets":[{"refId":"A",'
             f'"expr":"histogram_quantile(0.95,sum(rate({pfx}_http_request_duration_seconds_bucket[5m])) by (le,method))",'
             f'"legendFormat":"{{{{method}}}}","datasource":{ds}'
             + '}]},'
             '{"id":9,"type":"timeseries","title":"Average Request Duration",'
             '"gridPos":{"x":0,"y":32,"w":12,"h":8},'
-            f'"datasource":{ds},'
             '"fieldConfig":{"defaults":{"unit":"s"}},'
-            '"targets":[{"refId":"A",'
+            f'"datasource":{ds},'
             f'"expr":"rate({pfx}_http_request_duration_seconds_sum[5m]) / rate({pfx}_http_request_duration_seconds_count[5m])",'
             f'"legendFormat":"avg latency","datasource":{ds}'
             + '}]},'
             '{"id":10,"type":"timeseries","title":"Average Latency per Path",'
             '"gridPos":{"x":12,"y":32,"w":12,"h":8},'
-            f'"datasource":{ds},'
             '"fieldConfig":{"defaults":{"unit":"s"}},'
+            f'"datasource":{ds},'
             '"targets":[{"refId":"A",'
             f'"expr":"sum(rate({pfx}_http_request_duration_seconds_sum[5m])) by (path) / sum(rate({pfx}_http_request_duration_seconds_count[5m])) by (path)",'
             f'"legendFormat":"{{{{path}}}}","datasource":{ds}'
@@ -981,165 +777,96 @@ obj MonitoringDeployer {
             dashboard_data['pod-logs.json'] = logs_dashboard_json;
         }
 
-        grafana_dashboard_configmap = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': f"{grafana_name}-dashboard",
-                'namespace': namespace,
-                'labels': {'app': grafana_name, 'managed': 'jac-scale'}
-            },
-            'data': dashboard_data
-        };
-        apply_k8s_resource(core_v1, "ConfigMap", f"{grafana_name}-dashboard", grafana_dashboard_configmap, namespace=namespace);
+        apply_config_map(
+            core_v1, f"{grafana_name}-dashboard", namespace, labels, dashboard_data
+        );
 
         grafana_sa_name = f"{grafana_name}-sa";
-        grafana_sa = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {
-                'name': grafana_sa_name,
-                'namespace': namespace,
-                'labels': {'app': grafana_name, 'managed': 'jac-scale'}
-            },
-            'automountServiceAccountToken': False
-        };
-        apply_k8s_resource(core_v1, "ServiceAccount", grafana_sa_name, grafana_sa, namespace=namespace, replace=False);
+        apply_service_account(
+            core_v1,
+            grafana_sa_name,
+            namespace,
+            labels,
+            {'automountServiceAccountToken': False}
+        );
 
-        grafana_deployment = {
-            'apiVersion': 'apps/v1',
-            'kind': 'Deployment',
-            'metadata': {
-                'name': grafana_name,
-                'namespace': namespace,
-                'labels': {'app': grafana_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'replicas': 1,
-                'selector': {'matchLabels': {'app': grafana_name}},
-                'template': {
-                    'metadata': {'labels': {'app': grafana_name}},
-                    'spec': {
-                        'automountServiceAccountToken': False,
-                        'serviceAccountName': grafana_sa_name,
-                        'securityContext': {
-                            'seccompProfile': {'type': 'RuntimeDefault'}
-                        },
-                        'containers': [
+        grafana_deployment = workload_manifest(
+            "Deployment",
+            grafana_name,
+            namespace,
+            pod_spec(
+                [
+                    {
+                        'name': 'grafana',
+                        'image': 'grafana/grafana:13.2.0',
+                        'securityContext': restricted_container_security(472),
+                        'ports': [{'containerPort': 3000}],
+                        'envFrom': [{'secretRef': {'name': grafana_secret_name}}],
+                        'env': [
                             {
-                                'name': 'grafana',
-                                'image': 'grafana/grafana:13.2.0',
-                                'securityContext': {
-                                    'runAsNonRoot': True,
-                                    'runAsUser': 472,
-                                    'readOnlyRootFilesystem': True,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {'drop': ['ALL']}
-                                },
-                                'ports': [{'containerPort': 3000}],
-                                'envFrom': [
-                                    {'secretRef': {'name': grafana_secret_name}}
-                                ],
-                                'env': [
-                                    {
-                                        'name': 'GF_SERVER_ROOT_URL',
-                                        'value': f"http://{self.k8s_config.domain}/grafana"
-                                            if self.k8s_config.domain
-                                            else '%(protocol)s://%(domain)s/grafana'
-                                    },
-                                    {
-                                        'name': 'GF_SERVER_SERVE_FROM_SUB_PATH',
-                                        'value': 'true'
-                                    }
-                                ],
-                                'volumeMounts': [
-                                    {
-                                        'name': 'grafana-datasources-vol',
-                                        'mountPath': '/etc/grafana/provisioning/datasources'
-                                    },
-                                    {
-                                        'name': 'grafana-dashboard-provider-vol',
-                                        'mountPath': '/etc/grafana/provisioning/dashboards'
-                                    },
-                                    {
-                                        'name': 'grafana-dashboard-vol',
-                                        'mountPath': '/var/lib/grafana/dashboards'
-                                    },
-                                    {
-                                        'name': 'grafana-data',
-                                        'mountPath': '/var/lib/grafana'
-                                    },
-                                    {'name': 'tmp', 'mountPath': '/tmp'}
-                                ]
-                            }
+                                'name': 'GF_SERVER_ROOT_URL',
+                                'value': f"http://{self.k8s_config.domain}/grafana"
+                                    if self.k8s_config.domain
+                                    else '%(protocol)s://%(domain)s/grafana'
+                            },
+                            {'name': 'GF_SERVER_SERVE_FROM_SUB_PATH', 'value': 'true'}
                         ],
-                        'volumes': [
+                        'volumeMounts': [
                             {
                                 'name': 'grafana-datasources-vol',
-                                'configMap': {'name': f"{grafana_name}-datasources"}
+                                'mountPath': '/etc/grafana/provisioning/datasources'
                             },
                             {
                                 'name': 'grafana-dashboard-provider-vol',
-                                'configMap': {
-                                    'name': f"{grafana_name}-dashboard-provider"
-                                }
+                                'mountPath': '/etc/grafana/provisioning/dashboards'
                             },
                             {
                                 'name': 'grafana-dashboard-vol',
-                                'configMap': {'name': f"{grafana_name}-dashboard"}
+                                'mountPath': '/var/lib/grafana/dashboards'
                             },
-                            {'name': 'grafana-data', 'emptyDir': {}},
-                            {'name': 'tmp', 'emptyDir': {}}
+                            {'name': 'grafana-data', 'mountPath': '/var/lib/grafana'},
+                            {'name': 'tmp', 'mountPath': '/tmp'}
                         ]
                     }
-                }
-            }
-        };
-        try {
-            apps_v1.patch_namespaced_deployment(
-                name=grafana_name, namespace=namespace, body=grafana_deployment
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                apps_v1.create_namespaced_deployment(
-                    namespace=namespace, body=grafana_deployment
-                );
-            } else {
-                raise;
-            }
-        }
+                ],
+                [
+                    {
+                        'name': 'grafana-datasources-vol',
+                        'configMap': {'name': f"{grafana_name}-datasources"}
+                    },
+                    {
+                        'name': 'grafana-dashboard-provider-vol',
+                        'configMap': {'name': f"{grafana_name}-dashboard-provider"}
+                    },
+                    {
+                        'name': 'grafana-dashboard-vol',
+                        'configMap': {'name': f"{grafana_name}-dashboard"}
+                    },
+                    {'name': 'grafana-data', 'emptyDir': {}},
+                    {'name': 'tmp', 'emptyDir': {}}
+                ],
+                service_account=grafana_sa_name,
+                automount=False
+            ),
+            {'app': grafana_name}
+        );
+        patch_k8s_resource(apps_v1, "Deployment", grafana_deployment, namespace);
 
-        grafana_service = {
-            'apiVersion': 'v1',
-            'kind': 'Service',
-            'metadata': {
-                'name': f"{grafana_name}-service",
-                'namespace': namespace,
-                'labels': {'app': grafana_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'type': 'ClusterIP',
-                'selector': {'app': grafana_name},
-                'ports': [{'protocol': 'TCP', 'port': 3000, 'targetPort': 3000}]
-            }
-        };
-
-        self.ensure_service(
-            core_v1, f"{grafana_name}-service", namespace, grafana_service
+        apply_service(
+            core_v1, f"{grafana_name}-service", namespace, labels, [svc_port(3000)]
         );
 
-        if self.logger {
-            self.logger.info(
-                f"Grafana deployed for '{app_name}' (ClusterIP service "
-                f"{grafana_name}-service:3000; served at /grafana when the app "
-                "ingress is deployed, otherwise reach it via kubectl port-forward)"
-            );
-        }
+        self._log(
+            f"Grafana deployed for '{app_name}' (ClusterIP service "
+            f"{grafana_name}-service:3000; served at /grafana when the app "
+            "ingress is deployed, otherwise reach it via kubectl port-forward)"
+        );
     }
 
     def _deploy_tempo(app_name: str, namespace: str, apps_v1: any, core_v1: any) {
         tempo_name = f"{app_name}-tempo";
         tempo_sa_name = f"{tempo_name}-sa";
+        labels = app_labels(tempo_name);
 
         tempo_config_yaml = (
             "server:\n"
@@ -1168,155 +895,89 @@ obj MonitoringDeployer {
             "usage_report:\n"
             "  reporting_enabled: false\n"
         );
-        tempo_configmap = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': f"{tempo_name}-config",
-                'namespace': namespace,
-                'labels': {'app': tempo_name, 'managed': 'jac-scale'}
-            },
-            'data': {'tempo.yaml': tempo_config_yaml}
-        };
-        apply_k8s_resource(core_v1, "ConfigMap", f"{tempo_name}-config", tempo_configmap, namespace=namespace);
+        apply_config_map(
+            core_v1,
+            f"{tempo_name}-config",
+            namespace,
+            labels,
+            {'tempo.yaml': tempo_config_yaml}
+        );
 
-        tempo_sa = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {
-                'name': tempo_sa_name,
-                'namespace': namespace,
-                'labels': {'app': tempo_name, 'managed': 'jac-scale'}
-            },
-            'automountServiceAccountToken': False
-        };
-        apply_k8s_resource(core_v1, "ServiceAccount", tempo_sa_name, tempo_sa, namespace=namespace, replace=False);
+        apply_service_account(
+            core_v1,
+            tempo_sa_name,
+            namespace,
+            labels,
+            {'automountServiceAccountToken': False}
+        );
 
-        tempo_deployment = {
-            'apiVersion': 'apps/v1',
-            'kind': 'Deployment',
-            'metadata': {
-                'name': tempo_name,
-                'namespace': namespace,
-                'labels': {'app': tempo_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'replicas': 1,
-                'selector': {'matchLabels': {'app': tempo_name}},
-                'template': {
-                    'metadata': {'labels': {'app': tempo_name}},
-                    'spec': {
-                        'automountServiceAccountToken': False,
-                        'serviceAccountName': tempo_sa_name,
-                        'securityContext': {
-                            'seccompProfile': {'type': 'RuntimeDefault'}
-                        },
-                        'containers': [
-                            {
-                                'name': 'tempo',
-                                'image': 'grafana/tempo:2.7.0',
-                                'securityContext': {
-                                    'runAsNonRoot': True,
-                                    'runAsUser': 10001,
-                                    'readOnlyRootFilesystem': True,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {'drop': ['ALL']}
-                                },
-                                'args': ['-config.file=/etc/tempo/tempo.yaml'],
-                                'ports': [
-                                    {'containerPort': 3200, 'name': 'http'},
-                                    {'containerPort': 4317, 'name': 'otlp-grpc'},
-                                    {'containerPort': 4318, 'name': 'otlp-http'}
-                                ],
-                                'readinessProbe': {
-                                    'httpGet': {'path': '/ready', 'port': 3200},
-                                    'initialDelaySeconds': 15,
-                                    'timeoutSeconds': 5
-                                },
-                                'livenessProbe': {
-                                    'httpGet': {'path': '/ready', 'port': 3200},
-                                    'initialDelaySeconds': 15,
-                                    'timeoutSeconds': 5
-                                },
-                                'volumeMounts': [
-                                    {
-                                        'name': 'tempo-config-vol',
-                                        'mountPath': '/etc/tempo'
-                                    },
-                                    {'name': 'tempo-data', 'mountPath': '/var/tempo'},
-                                    {'name': 'tmp', 'mountPath': '/tmp'}
-                                ]
-                            }
+        tempo_deployment = workload_manifest(
+            "Deployment",
+            tempo_name,
+            namespace,
+            pod_spec(
+                [
+                    {
+                        'name': 'tempo',
+                        'image': 'grafana/tempo:2.7.0',
+                        'securityContext': restricted_container_security(10001),
+                        'args': ['-config.file=/etc/tempo/tempo.yaml'],
+                        'ports': [
+                            {'containerPort': 3200, 'name': 'http'},
+                            {'containerPort': 4317, 'name': 'otlp-grpc'},
+                            {'containerPort': 4318, 'name': 'otlp-http'}
                         ],
-                        'volumes': [
-                            {
-                                'name': 'tempo-config-vol',
-                                'configMap': {'name': f"{tempo_name}-config"}
-                            },
-                            {'name': 'tempo-data', 'emptyDir': {}},
-                            {'name': 'tmp', 'emptyDir': {}}
+                        'readinessProbe': {
+                            'httpGet': {'path': '/ready', 'port': 3200},
+                            'initialDelaySeconds': 15,
+                            'timeoutSeconds': 5
+                        },
+                        'livenessProbe': {
+                            'httpGet': {'path': '/ready', 'port': 3200},
+                            'initialDelaySeconds': 15,
+                            'timeoutSeconds': 5
+                        },
+                        'volumeMounts': [
+                            {'name': 'tempo-config-vol', 'mountPath': '/etc/tempo'},
+                            {'name': 'tempo-data', 'mountPath': '/var/tempo'},
+                            {'name': 'tmp', 'mountPath': '/tmp'}
                         ]
                     }
-                }
-            }
-        };
-        try {
-            apps_v1.patch_namespaced_deployment(
-                name=tempo_name, namespace=namespace, body=tempo_deployment
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                apps_v1.create_namespaced_deployment(
-                    namespace=namespace, body=tempo_deployment
-                );
-            } else {
-                raise;
-            }
-        }
-
-        tempo_service = {
-            'apiVersion': 'v1',
-            'kind': 'Service',
-            'metadata': {
-                'name': f"{tempo_name}-service",
-                'namespace': namespace,
-                'labels': {'app': tempo_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'type': 'ClusterIP',
-                'selector': {'app': tempo_name},
-                'ports': [
+                ],
+                [
                     {
-                        'name': 'http',
-                        'protocol': 'TCP',
-                        'port': 3200,
-                        'targetPort': 3200
+                        'name': 'tempo-config-vol',
+                        'configMap': {'name': f"{tempo_name}-config"}
                     },
-                    {
-                        'name': 'otlp-grpc',
-                        'protocol': 'TCP',
-                        'port': 4317,
-                        'targetPort': 4317
-                    },
-                    {
-                        'name': 'otlp-http',
-                        'protocol': 'TCP',
-                        'port': 4318,
-                        'targetPort': 4318
-                    }
-                ]
-            }
-        };
-        self.ensure_service(core_v1, f"{tempo_name}-service", namespace, tempo_service);
+                    {'name': 'tempo-data', 'emptyDir': {}},
+                    {'name': 'tmp', 'emptyDir': {}}
+                ],
+                service_account=tempo_sa_name,
+                automount=False
+            ),
+            {'app': tempo_name}
+        );
+        patch_k8s_resource(apps_v1, "Deployment", tempo_deployment, namespace);
 
-        if self.logger {
-            self.logger.info(f"Tempo deployed for '{app_name}'");
-        }
+        apply_service(
+            core_v1,
+            f"{tempo_name}-service",
+            namespace,
+            labels,
+            [
+                svc_port(3200, 'http'),
+                svc_port(4317, 'otlp-grpc'),
+                svc_port(4318, 'otlp-http')
+            ]
+        );
+
+        self._log(f"Tempo deployed for '{app_name}'");
     }
 
     def _deploy_loki(app_name: str, namespace: str, apps_v1: any, core_v1: any) {
         loki_name = f"{app_name}-loki";
         loki_sa_name = f"{loki_name}-sa";
+        labels = app_labels(loki_name);
 
         loki_config_yaml = (
             "auth_enabled: false\n"
@@ -1347,136 +1008,76 @@ obj MonitoringDeployer {
             "  reject_old_samples: true\n"
             "  reject_old_samples_max_age: 168h\n"
         );
-        loki_configmap = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': f"{loki_name}-config",
-                'namespace': namespace,
-                'labels': {'app': loki_name, 'managed': 'jac-scale'}
-            },
-            'data': {'loki.yaml': loki_config_yaml}
-        };
-        apply_k8s_resource(core_v1, "ConfigMap", f"{loki_name}-config", loki_configmap, namespace=namespace);
+        apply_config_map(
+            core_v1,
+            f"{loki_name}-config",
+            namespace,
+            labels,
+            {'loki.yaml': loki_config_yaml}
+        );
 
-        loki_sa = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {
-                'name': loki_sa_name,
-                'namespace': namespace,
-                'labels': {'app': loki_name, 'managed': 'jac-scale'}
-            },
-            'automountServiceAccountToken': False
-        };
-        apply_k8s_resource(core_v1, "ServiceAccount", loki_sa_name, loki_sa, namespace=namespace, replace=False);
+        apply_service_account(
+            core_v1,
+            loki_sa_name,
+            namespace,
+            labels,
+            {'automountServiceAccountToken': False}
+        );
 
-        loki_deployment = {
-            'apiVersion': 'apps/v1',
-            'kind': 'Deployment',
-            'metadata': {
-                'name': loki_name,
-                'namespace': namespace,
-                'labels': {'app': loki_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'replicas': 1,
-                'selector': {'matchLabels': {'app': loki_name}},
-                'template': {
-                    'metadata': {'labels': {'app': loki_name}},
-                    'spec': {
-                        'automountServiceAccountToken': False,
-                        'serviceAccountName': loki_sa_name,
-                        'securityContext': {
-                            'seccompProfile': {'type': 'RuntimeDefault'}
+        loki_deployment = workload_manifest(
+            "Deployment",
+            loki_name,
+            namespace,
+            pod_spec(
+                [
+                    {
+                        'name': 'loki',
+                        'image': 'grafana/loki:3.4.2',
+                        'securityContext': restricted_container_security(10001),
+                        'args': ['-config.file=/etc/loki/loki.yaml'],
+                        'ports': [{'containerPort': 3100, 'name': 'http'}],
+                        'readinessProbe': {
+                            'httpGet': {'path': '/ready', 'port': 3100},
+                            'initialDelaySeconds': 15,
+                            'timeoutSeconds': 5
                         },
-                        'containers': [
-                            {
-                                'name': 'loki',
-                                'image': 'grafana/loki:3.4.2',
-                                'securityContext': {
-                                    'runAsNonRoot': True,
-                                    'runAsUser': 10001,
-                                    'readOnlyRootFilesystem': True,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {'drop': ['ALL']}
-                                },
-                                'args': ['-config.file=/etc/loki/loki.yaml'],
-                                'ports': [{'containerPort': 3100, 'name': 'http'}],
-                                'readinessProbe': {
-                                    'httpGet': {'path': '/ready', 'port': 3100},
-                                    'initialDelaySeconds': 15,
-                                    'timeoutSeconds': 5
-                                },
-                                'livenessProbe': {
-                                    'httpGet': {'path': '/ready', 'port': 3100},
-                                    'initialDelaySeconds': 15,
-                                    'timeoutSeconds': 5
-                                },
-                                'volumeMounts': [
-                                    {
-                                        'name': 'loki-config-vol',
-                                        'mountPath': '/etc/loki'
-                                    },
-                                    {'name': 'loki-data', 'mountPath': '/loki'},
-                                    {'name': 'tmp', 'mountPath': '/tmp'}
-                                ]
-                            }
-                        ],
-                        'volumes': [
-                            {
-                                'name': 'loki-config-vol',
-                                'configMap': {'name': f"{loki_name}-config"}
-                            },
-                            {'name': 'loki-data', 'emptyDir': {}},
-                            {'name': 'tmp', 'emptyDir': {}}
+                        'livenessProbe': {
+                            'httpGet': {'path': '/ready', 'port': 3100},
+                            'initialDelaySeconds': 15,
+                            'timeoutSeconds': 5
+                        },
+                        'volumeMounts': [
+                            {'name': 'loki-config-vol', 'mountPath': '/etc/loki'},
+                            {'name': 'loki-data', 'mountPath': '/loki'},
+                            {'name': 'tmp', 'mountPath': '/tmp'}
                         ]
                     }
-                }
-            }
-        };
-        try {
-            apps_v1.patch_namespaced_deployment(
-                name=loki_name, namespace=namespace, body=loki_deployment
-            );
-        } except ApiException as e {
-            if e.status == 404 {
-                apps_v1.create_namespaced_deployment(
-                    namespace=namespace, body=loki_deployment
-                );
-            } else {
-                raise;
-            }
-        }
+                ],
+                [
+                    {
+                        'name': 'loki-config-vol',
+                        'configMap': {'name': f"{loki_name}-config"}
+                    },
+                    {'name': 'loki-data', 'emptyDir': {}},
+                    {'name': 'tmp', 'emptyDir': {}}
+                ],
+                service_account=loki_sa_name,
+                automount=False
+            ),
+            {'app': loki_name}
+        );
+        patch_k8s_resource(apps_v1, "Deployment", loki_deployment, namespace);
 
-        loki_service = {
-            'apiVersion': 'v1',
-            'kind': 'Service',
-            'metadata': {
-                'name': f"{loki_name}-service",
-                'namespace': namespace,
-                'labels': {'app': loki_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'type': 'ClusterIP',
-                'selector': {'app': loki_name},
-                'ports': [{'protocol': 'TCP', 'port': 3100, 'targetPort': 3100}]
-            }
-        };
-        self.ensure_service(core_v1, f"{loki_name}-service", namespace, loki_service);
+        apply_service(
+            core_v1, f"{loki_name}-service", namespace, labels, [svc_port(3100)]
+        );
 
-        if self.logger {
-            self.logger.info(f"Loki deployed for '{app_name}'");
-        }
+        self._log(f"Loki deployed for '{app_name}'");
     }
 
     def _deploy_alloy(app_name: str, namespace: str, apps_v1: any, core_v1: any) {
         loki_name = f"{app_name}-loki";
         alloy_name = f"{app_name}-alloy";
-        alloy_sa_name = f"{alloy_name}-sa";
-        cluster_role_name = f"{namespace}-{alloy_name}";
-        cluster_role_binding_name = f"{namespace}-{alloy_name}";
-        rbac_v1 = client.RbacAuthorizationV1Api();
         loki_push_url = f"http://{loki_name}-service:3100/loki/api/v1/push";
         tempo_name = f"{app_name}-tempo";
         tempo_otlp_endpoint = f"{tempo_name}-service:4317";
@@ -1616,37 +1217,20 @@ obj MonitoringDeployer {
         }
 
         alloy_config_river = alloy_header + alloy_logs_lane + alloy_otel_lane;
-        alloy_configmap = {
-            'apiVersion': 'v1',
-            'kind': 'ConfigMap',
-            'metadata': {
-                'name': f"{alloy_name}-config",
-                'namespace': namespace,
-                'labels': {'app': alloy_name, 'managed': 'jac-scale'}
-            },
-            'data': {'config.alloy': alloy_config_river}
-        };
-        apply_k8s_resource(core_v1, "ConfigMap", f"{alloy_name}-config", alloy_configmap, namespace=namespace);
+        labels = app_labels(alloy_name);
+        apply_config_map(
+            core_v1,
+            f"{alloy_name}-config",
+            namespace,
+            labels,
+            {'config.alloy': alloy_config_river}
+        );
 
-        alloy_sa = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {
-                'name': alloy_sa_name,
-                'namespace': namespace,
-                'labels': {'app': alloy_name, 'managed': 'jac-scale'}
-            }
-        };
-        apply_k8s_resource(core_v1, "ServiceAccount", alloy_sa_name, alloy_sa, namespace=namespace, replace=False);
-
-        cluster_role_body = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRole',
-            'metadata': {
-                'name': cluster_role_name,
-                'labels': {'app': alloy_name, 'managed': 'jac-scale'}
-            },
-            'rules': [
+        apply_cluster_rbac(
+            core_v1,
+            alloy_name,
+            namespace,
+            [
                 {
                     'apiGroups': [''],
                     'resources': [
@@ -1659,31 +1243,9 @@ obj MonitoringDeployer {
                     ],
                     'verbs': ['get', 'watch', 'list']
                 }
-            ]
-        };
-        apply_k8s_resource(rbac_v1, "ClusterRole", cluster_role_name, cluster_role_body, replace=False);
-
-        crb_body = {
-            'apiVersion': 'rbac.authorization.k8s.io/v1',
-            'kind': 'ClusterRoleBinding',
-            'metadata': {
-                'name': cluster_role_binding_name,
-                'labels': {'app': alloy_name, 'managed': 'jac-scale'}
-            },
-            'roleRef': {
-                'apiGroup': 'rbac.authorization.k8s.io',
-                'kind': 'ClusterRole',
-                'name': cluster_role_name
-            },
-            'subjects': [
-                {
-                    'kind': 'ServiceAccount',
-                    'name': alloy_sa_name,
-                    'namespace': namespace
-                }
-            ]
-        };
-        apply_k8s_resource(rbac_v1, "ClusterRoleBinding", cluster_role_binding_name, crb_body, replace=False);
+            ],
+            replace=False
+        );
 
         alloy_ports = [{'containerPort': 12345, 'name': 'http'}];
         if self.k8s_config.tracing_enabled {
@@ -1691,115 +1253,79 @@ obj MonitoringDeployer {
             alloy_ports.append({'containerPort': 4318, 'name': 'otlp-http'});
         }
 
-        alloy_daemonset = {
-            'apiVersion': 'apps/v1',
-            'kind': 'DaemonSet',
-            'metadata': {
-                'name': alloy_name,
-                'namespace': namespace,
-                'labels': {'app': alloy_name, 'managed': 'jac-scale'}
-            },
-            'spec': {
-                'selector': {'matchLabels': {'app': alloy_name}},
-                'template': {
-                    'metadata': {'labels': {'app': alloy_name, 'managed': 'jac-scale'}},
-                    'spec': {
-                        'automountServiceAccountToken': True,
-                        'serviceAccountName': alloy_sa_name,
-                        'tolerations': [{'operator': 'Exists', 'effect': 'NoSchedule'}],
+        alloy_daemonset = workload_manifest(
+            "DaemonSet",
+            alloy_name,
+            namespace,
+            pod_spec(
+                [
+                    {
+                        'name': 'alloy',
+                        'image': 'grafana/alloy:v1.6.0',
                         'securityContext': {
-                            'seccompProfile': {'type': 'RuntimeDefault'}
+                            'runAsUser': 0,
+                            'allowPrivilegeEscalation': False,
+                            'capabilities': {'drop': ['ALL']}
                         },
-                        'containers': [
-                            {
-                                'name': 'alloy',
-                                'image': 'grafana/alloy:v1.6.0',
-                                'securityContext': {
-                                    'runAsUser': 0,
-                                    'allowPrivilegeEscalation': False,
-                                    'capabilities': {'drop': ['ALL']}
-                                },
-                                'args': [
-                                    'run',
-                                    '--server.http.listen-addr=0.0.0.0:12345',
-                                    '--storage.path=/tmp/alloy',
-                                    '/etc/alloy/config.alloy'
-                                ],
-                                'ports': alloy_ports,
-                                'volumeMounts': [
-                                    {
-                                        'name': 'alloy-config-vol',
-                                        'mountPath': '/etc/alloy'
-                                    },
-                                    {
-                                        'name': 'varlogpods',
-                                        'mountPath': '/var/log/pods',
-                                        'readOnly': True
-                                    },
-                                    {
-                                        'name': 'varlogcontainers',
-                                        'mountPath': '/var/lib/docker/containers',
-                                        'readOnly': True
-                                    }
-                                ]
-                            }
+                        'args': [
+                            'run',
+                            '--server.http.listen-addr=0.0.0.0:12345',
+                            '--storage.path=/tmp/alloy',
+                            '/etc/alloy/config.alloy'
                         ],
-                        'volumes': [
-                            {
-                                'name': 'alloy-config-vol',
-                                'configMap': {'name': f"{alloy_name}-config"}
-                            },
+                        'ports': alloy_ports,
+                        'volumeMounts': [
+                            {'name': 'alloy-config-vol', 'mountPath': '/etc/alloy'},
                             {
                                 'name': 'varlogpods',
-                                'hostPath': {'path': '/var/log/pods'}
+                                'mountPath': '/var/log/pods',
+                                'readOnly': True
                             },
                             {
                                 'name': 'varlogcontainers',
-                                'hostPath': {'path': '/var/lib/docker/containers'}
+                                'mountPath': '/var/lib/docker/containers',
+                                'readOnly': True
                             }
                         ]
                     }
-                }
-            }
-        };
-        apply_k8s_resource(apps_v1, "DaemonSet", alloy_name, alloy_daemonset, namespace=namespace, replace=False);
+                ],
+                [
+                    {
+                        'name': 'alloy-config-vol',
+                        'configMap': {'name': f"{alloy_name}-config"}
+                    },
+                    {'name': 'varlogpods', 'hostPath': {'path': '/var/log/pods'}},
+                    {
+                        'name': 'varlogcontainers',
+                        'hostPath': {'path': '/var/lib/docker/containers'}
+                    }
+                ],
+                service_account=f"{alloy_name}-sa",
+                automount=True,
+                tolerations=[{'operator': 'Exists', 'effect': 'NoSchedule'}]
+            ),
+            labels
+        );
+        apply_k8s_resource(
+            apps_v1,
+            "DaemonSet",
+            alloy_name,
+            alloy_daemonset,
+            namespace=namespace,
+            replace=False
+        );
 
         if self.k8s_config.tracing_enabled {
-            alloy_service = {
-                'apiVersion': 'v1',
-                'kind': 'Service',
-                'metadata': {
-                    'name': f"{alloy_name}-service",
-                    'namespace': namespace,
-                    'labels': {'app': alloy_name, 'managed': 'jac-scale'}
-                },
-                'spec': {
-                    'type': 'ClusterIP',
-                    'selector': {'app': alloy_name},
-                    'ports': [
-                        {
-                            'name': 'otlp-grpc',
-                            'protocol': 'TCP',
-                            'port': 4317,
-                            'targetPort': 4317
-                        },
-                        {
-                            'name': 'otlp-http',
-                            'protocol': 'TCP',
-                            'port': 4318,
-                            'targetPort': 4318
-                        }
-                    ]
-                }
-            };
-            self.ensure_service(
-                core_v1, f"{alloy_name}-service", namespace, alloy_service
+            apply_service(
+                core_v1,
+                f"{alloy_name}-service",
+                namespace,
+                labels,
+                [svc_port(4317, 'otlp-grpc'), svc_port(4318, 'otlp-http')]
             );
         }
 
-        if self.logger {
-            self.logger.info(f"Alloy deployed for '{app_name}'");
-        }
+        self._log(f"Alloy deployed for '{app_name}'");
     }
 
     def deploy(
@@ -1837,129 +1363,56 @@ obj MonitoringDeployer {
     }
 
     def destroy(app_name: str, namespace: str, apps_v1: any, core_v1: any) {
-        prometheus_name = f"{app_name}-prometheus";
-        grafana_name = f"{app_name}-grafana";
-        ksm_name = f"{app_name}-kube-state-metrics";
-        ne_name = f"{app_name}-node-exporter";
-        loki_name = f"{app_name}-loki";
-        alloy_name = f"{app_name}-alloy";
-        cluster_role_name = f"{namespace}-{ksm_name}";
-        cluster_role_binding_name = f"{namespace}-{ksm_name}";
-        prometheus_cluster_role_name = f"{namespace}-{prometheus_name}";
-
-        delete_if_exists(
-            apps_v1.delete_namespaced_deployment,
-            prometheus_name,
-            namespace,
-            'Deployment'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{prometheus_name}-service",
-            namespace,
-            'Service'
-        );
-        delete_if_exists(core_v1.delete_namespaced_config_map, f"{prometheus_name}-config", namespace, "ConfigMap");
-        delete_k8s_secret(core_v1, namespace, f"{prometheus_name}-scrape-secret");
-        delete_if_exists(core_v1.delete_namespaced_service_account, f"{prometheus_name}-sa", namespace, "ServiceAccount");
-
-        delete_if_exists(
-            apps_v1.delete_namespaced_deployment, ksm_name, namespace, 'Deployment'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{ksm_name}-service",
-            namespace,
-            'Service'
-        );
-        delete_if_exists(core_v1.delete_namespaced_service_account, f"{ksm_name}-sa", namespace, "ServiceAccount");
+        components = [
+            f"{app_name}-prometheus",
+            f"{app_name}-kube-state-metrics",
+            f"{app_name}-node-exporter",
+            f"{app_name}-loki",
+            f"{app_name}-alloy",
+            f"{app_name}-tempo",
+            f"{app_name}-grafana"
+        ];
+        for (api, kind, name) in [
+            (apps_v1, 'Deployment', components[0]),
+            (core_v1, 'Service', f"{components[0]}-service"),
+            (core_v1, 'ConfigMap', f"{components[0]}-config"),
+            (core_v1, 'Secret', f"{components[0]}-scrape-secret"),
+            (core_v1, 'ServiceAccount', f"{components[0]}-sa"),
+            (apps_v1, 'Deployment', components[1]),
+            (core_v1, 'Service', f"{components[1]}-service"),
+            (core_v1, 'ServiceAccount', f"{components[1]}-sa"),
+            (apps_v1, 'DaemonSet', components[2]),
+            (core_v1, 'Service', f"{components[2]}-service"),
+            (apps_v1, 'Deployment', components[3]),
+            (core_v1, 'Service', f"{components[3]}-service"),
+            (core_v1, 'ConfigMap', f"{components[3]}-config"),
+            (core_v1, 'ServiceAccount', f"{components[3]}-sa"),
+            (apps_v1, 'DaemonSet', components[4]),
+            (core_v1, 'ConfigMap', f"{components[4]}-config"),
+            (core_v1, 'ServiceAccount', f"{components[4]}-sa"),
+            (core_v1, 'Service', f"{components[4]}-service"),
+            (apps_v1, 'Deployment', components[5]),
+            (core_v1, 'Service', f"{components[5]}-service"),
+            (core_v1, 'ConfigMap', f"{components[5]}-config"),
+            (core_v1, 'ServiceAccount', f"{components[5]}-sa"),
+            (apps_v1, 'Deployment', components[6]),
+            (core_v1, 'Service', f"{components[6]}-service"),
+            (core_v1, 'ConfigMap', f"{components[6]}-datasources"),
+            (core_v1, 'ConfigMap', f"{components[6]}-dashboard-provider"),
+            (core_v1, 'ConfigMap', f"{components[6]}-dashboard"),
+            (core_v1, 'Secret', f"{components[6]}-secret"),
+            (core_v1, 'ServiceAccount', f"{components[6]}-sa")
+        ] {
+            delete_resource(api, kind, name, namespace);
+        }
 
         rbac_v1 = client.RbacAuthorizationV1Api();
-        delete_if_exists(rbac_v1.delete_cluster_role, cluster_role_name, "", "ClusterRole");
-        delete_if_exists(rbac_v1.delete_cluster_role_binding, cluster_role_binding_name, "", "ClusterRoleBinding");
-
-        delete_if_exists(rbac_v1.delete_cluster_role, prometheus_cluster_role_name, "", "ClusterRole");
-        delete_if_exists(rbac_v1.delete_cluster_role_binding, prometheus_cluster_role_name, "", "ClusterRoleBinding");
-
-        delete_if_exists(apps_v1.delete_namespaced_daemon_set, ne_name, namespace, "DaemonSet");
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{ne_name}-service",
-            namespace,
-            'Service'
-        );
-
-        delete_if_exists(
-            apps_v1.delete_namespaced_deployment, loki_name, namespace, 'Deployment'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{loki_name}-service",
-            namespace,
-            'Service'
-        );
-        delete_if_exists(core_v1.delete_namespaced_config_map, f"{loki_name}-config", namespace, "ConfigMap");
-        delete_if_exists(core_v1.delete_namespaced_service_account, f"{loki_name}-sa", namespace, "ServiceAccount");
-
-        delete_if_exists(apps_v1.delete_namespaced_daemon_set, alloy_name, namespace, "DaemonSet");
-        delete_if_exists(core_v1.delete_namespaced_config_map, f"{alloy_name}-config", namespace, "ConfigMap");
-        delete_if_exists(core_v1.delete_namespaced_service_account, f"{alloy_name}-sa", namespace, "ServiceAccount");
-
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{alloy_name}-service",
-            namespace,
-            'Service'
-        );
-        alloy_cr_name = f"{namespace}-{alloy_name}";
-        delete_if_exists(rbac_v1.delete_cluster_role, alloy_cr_name, "", "ClusterRole");
-        delete_if_exists(rbac_v1.delete_cluster_role_binding, alloy_cr_name, "", "ClusterRoleBinding");
-
-        tempo_name = f"{app_name}-tempo";
-        delete_if_exists(
-            apps_v1.delete_namespaced_deployment, tempo_name, namespace, 'Deployment'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{tempo_name}-service",
-            namespace,
-            'Service'
-        );
-        delete_if_exists(core_v1.delete_namespaced_config_map, f"{tempo_name}-config", namespace, "ConfigMap");
-        delete_if_exists(core_v1.delete_namespaced_service_account, f"{tempo_name}-sa", namespace, "ServiceAccount");
-
-        delete_if_exists(
-            apps_v1.delete_namespaced_deployment, grafana_name, namespace, 'Deployment'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_service,
-            f"{grafana_name}-service",
-            namespace,
-            'Service'
-        );
-        for cm_name in [
-            f"{grafana_name}-datasources",
-            f"{grafana_name}-dashboard-provider",
-            f"{grafana_name}-dashboard"
-        ] {
-            delete_if_exists(core_v1.delete_namespaced_config_map, cm_name, namespace, "ConfigMap");
+        for name in [components[1], components[0], components[4]] {
+            cr_name = f"{namespace}-{name}";
+            delete_resource(rbac_v1, 'ClusterRole', cr_name);
+            delete_resource(rbac_v1, 'ClusterRoleBinding', cr_name);
         }
-        delete_k8s_secret(core_v1, namespace, f"{grafana_name}-secret");
-        delete_if_exists(
-            core_v1.delete_namespaced_service_account,
-            f"{prometheus_name}-sa",
-            namespace,
-            'ServiceAccount'
-        );
-        delete_if_exists(
-            core_v1.delete_namespaced_service_account,
-            f"{grafana_name}-sa",
-            namespace,
-            'ServiceAccount'
-        );
 
-        if self.logger {
-            self.logger.info(f"Monitoring stack destroyed for '{app_name}'");
-        }
+        self._log(f"Monitoring stack destroyed for '{app_name}'");
     }
 }

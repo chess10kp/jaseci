@@ -1,5 +1,6 @@
 import os;
 import pathlib;
+import re;
 import from jaclang.cli.console { console }
 import from jaclang.scale._optdeps.kubernetes { client }
 import from jaclang.scale.deploy.target.kubernetes.cluster_provider {
@@ -452,21 +453,14 @@ impl namespace_is_owned(core_v1: client.CoreV1Api, namespace: str, owner: str) -
 }
 
 
-impl delete_if_exists(
-    delete_func: Callable, name: str, namespace: str, kind: str
-) -> None {
-    try {
-        # cluster-scoped resources (empty namespace) take no namespace arg;
-        if namespace {
-            delete_func(name, namespace);
-        } else {
-            delete_func(name);
-        }
-    } except ApiException as e {
-        if (e.status == 404) {} else {
-            raise;
-        }
-    }
+def _kind_stem(kind: str) -> str {
+    # "ClusterRoleBinding" -> "cluster_role_binding", the method-name stem
+    # the python k8s client uses for every verb.
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', kind).lower();
+}
+
+def _ns_kwarg(namespace: (str | None)) -> dict[str, any] {
+    return {"namespace": namespace} if namespace else {};
 }
 
 impl apply_k8s_resource(
@@ -478,16 +472,15 @@ impl apply_k8s_resource(
     replace: bool = True
 ) -> None {
     # kubectl-apply semantics for the python k8s client: read the resource,
-    # replace its manifest when present, create it on 404. `kind` is the API
-    # method stem ("config_map", "cluster_role", ...); namespaced resources
-    # pass `namespace`, cluster-scoped leave it None. `replace=False` makes
-    # this create-only for resources k8s forbids updating in place (services,
-    # PVCs, service accounts).
-    stem = ("namespaced_" + kind) if namespace else kind;
-    read = getattr(api, "read_" + stem);
-    ns_kw: dict[str, any] = {"namespace": namespace} if namespace else {};
+    # replace its manifest when present, create it on 404. `kind` is the
+    # CamelCase resource kind ("ConfigMap", "ClusterRole", ...); namespaced
+    # resources pass `namespace`, cluster-scoped leave it None.
+    # `replace=False` makes this create-only for resources k8s forbids
+    # updating in place (services, PVCs, service accounts).
+    stem = ("namespaced_" + _kind_stem(kind)) if namespace else _kind_stem(kind);
+    ns_kw = _ns_kwarg(namespace);
     try {
-        read(name=name, **ns_kw);
+        getattr(api, "read_" + stem)(name=name, **ns_kw);
         if replace {
             getattr(api, "replace_" + stem)(name=name, body=body, **ns_kw);
         }
@@ -495,6 +488,58 @@ impl apply_k8s_resource(
         if e.status == 404 {
             getattr(api, "create_" + stem)(body=body, **ns_kw);
         } else {
+            raise;
+        }
+    }
+}
+
+impl patch_k8s_resource(
+    api: any,
+    kind: str,
+    manifest: dict[str, any],
+    namespace: (str | None) = None,
+    patch_body: (dict[str, any] | None) = None
+) -> None {
+    # Strategic-merge PATCH variant of apply_k8s_resource: a missing resource
+    # is created. `patch_body`, when given, is what gets PATCHed while `manifest`
+    # is what gets CREATEd -- e.g. a copy with `spec.replicas` stripped so the
+    # patch leaves an externally-scaled field (KEDA's ScaledObject) alone.
+    stem = ("namespaced_" + _kind_stem(kind)) if namespace else _kind_stem(kind);
+    ns_kw = _ns_kwarg(namespace);
+    name = manifest["metadata"]["name"];
+    try {
+        getattr(api, "patch_" + stem)(name=name, body=patch_body or manifest, **ns_kw);
+    } except ApiException as e {
+        if e.status == 404 {
+            getattr(api, "create_" + stem)(body=manifest, **ns_kw);
+        } else {
+            raise;
+        }
+    }
+}
+
+impl delete_resource(api: any, kind: str, name: str, namespace: str = "") -> None {
+    stem = ("namespaced_" + _kind_stem(kind)) if namespace else _kind_stem(kind);
+    try {
+        if namespace {
+            getattr(api, "delete_" + stem)(name, namespace);
+        } else {
+            getattr(api, "delete_" + stem)(name);
+        }
+    } except ApiException as e {
+        if e.status != 404 {
+            raise;
+        }
+    }
+}
+
+impl delete_collection_if_exists(
+    delete_func: Callable, namespace: str, selector: str
+) -> None {
+    try {
+        delete_func(namespace=namespace, label_selector=selector);
+    } except ApiException as e {
+        if e.status != 404 {
             raise;
         }
     }
@@ -547,4 +592,246 @@ impl delete_k8s_secret(
             raise;
         }
     }
+}
+
+impl app_labels(app: str) -> dict[str, str] {
+    return {'app': app, 'managed': MANAGED_LABEL};
+}
+
+impl managed_labels -> dict[str, str] {
+    return {'managed': MANAGED_LABEL};
+}
+
+impl k8s_manifest(
+    kind: str,
+    name: str,
+    fields: (dict[str, any] | None) = None,
+    namespace: str = "",
+    labels: (dict[str, str] | None) = None,
+    annotations: (dict[str, str] | None) = None,
+    api_version: str = ""
+) -> dict[str, any] {
+    metadata: dict[str, any] = {'name': name};
+    if namespace {
+        metadata['namespace'] = namespace;
+    }
+    if labels {
+        metadata['labels'] = labels;
+    }
+    if annotations {
+        metadata['annotations'] = annotations;
+    }
+    return {
+        'apiVersion': api_version or KIND_API_VERSION[kind],
+        'kind': kind,
+        'metadata': metadata,
+        ** (fields or {})
+    };
+}
+
+impl pod_security_context -> dict[str, any] {
+    return {'seccompProfile': {'type': 'RuntimeDefault'}};
+}
+
+impl restricted_container_security(uid: int) -> dict[str, any] {
+    # PSS-restricted container securityContext shared by the monitoring stack.
+    return {
+        'runAsNonRoot': True,
+        'runAsUser': uid,
+        'readOnlyRootFilesystem': True,
+        'allowPrivilegeEscalation': False,
+        'capabilities': {'drop': ['ALL']}
+    };
+}
+
+impl svc_port(port: int, name: str = "") -> dict[str, any] {
+    p: dict[str, any] = {'protocol': 'TCP', 'port': port, 'targetPort': port};
+    if name {
+        p['name'] = name;
+    }
+    return p;
+}
+
+impl service_manifest(
+    name: str, namespace: str, ports: list[dict[str, any]], labels: dict[str, str]
+) -> dict[str, any] {
+    return k8s_manifest(
+        "Service",
+        name,
+        {
+            'spec': {
+                'type': 'ClusterIP',
+                'selector': {'app': labels['app']},
+                'ports': ports
+            }
+        },
+        namespace,
+        labels
+    );
+}
+
+impl pod_spec(
+    containers: list[dict[str, any]],
+    volumes: (list[dict[str, any]] | None) = None,
+    service_account: str = "",
+    automount: (bool | None) = None,
+    tolerations: (list[dict[str, any]] | None) = None
+) -> dict[str, any] {
+    spec: dict[str, any] = {
+        'securityContext': pod_security_context(),
+        'containers': containers
+    };
+    if service_account {
+        spec['serviceAccountName'] = service_account;
+    }
+    if automount is not None {
+        spec['automountServiceAccountToken'] = automount;
+    }
+    if volumes {
+        spec['volumes'] = volumes;
+    }
+    if tolerations {
+        spec['tolerations'] = tolerations;
+    }
+    return spec;
+}
+
+impl workload_manifest(
+    kind: str,
+    name: str,
+    namespace: str,
+    pod: dict[str, any],
+    pod_labels: dict[str, str],
+    annotations: (dict[str, str] | None) = None
+) -> dict[str, any] {
+    template_meta: dict[str, any] = {'labels': pod_labels};
+    if annotations {
+        template_meta['annotations'] = annotations;
+    }
+    spec: dict[str, any] = {
+        'selector': {'matchLabels': {'app': name}},
+        'template': {'metadata': template_meta, 'spec': pod}
+    };
+    if kind == 'Deployment' {
+        spec = {'replicas': 1, ** spec};
+    }
+    return k8s_manifest(kind, name, {'spec': spec}, namespace, app_labels(name));
+}
+
+impl apply_service(
+    core_v1: any,
+    name: str,
+    namespace: str,
+    labels: dict[str, str],
+    ports: list[dict[str, any]]
+) -> None {
+    apply_k8s_resource(
+        core_v1,
+        "Service",
+        name,
+        service_manifest(name, namespace, ports, labels),
+        namespace=namespace,
+        replace=False
+    );
+}
+
+impl apply_config_map(
+    core_v1: any,
+    name: str,
+    namespace: str,
+    labels: dict[str, str],
+    data: dict[str, str]
+) -> None {
+    apply_k8s_resource(
+        core_v1,
+        "ConfigMap",
+        name,
+        k8s_manifest("ConfigMap", name, {'data': data}, namespace, labels),
+        namespace=namespace
+    );
+}
+
+impl apply_secret(
+    core_v1: any,
+    name: str,
+    namespace: str,
+    labels: dict[str, str],
+    string_data: dict[str, str],
+    replace: bool = True
+) -> None {
+    apply_k8s_resource(
+        core_v1,
+        "Secret",
+        name,
+        k8s_manifest(
+            "Secret",
+            name,
+            {'type': 'Opaque', 'stringData': string_data},
+            namespace,
+            labels
+        ),
+        namespace=namespace,
+        replace=replace
+    );
+}
+
+impl apply_service_account(
+    core_v1: any,
+    name: str,
+    namespace: str,
+    labels: dict[str, str],
+    fields: (dict[str, any] | None) = None
+) -> None {
+    apply_k8s_resource(
+        core_v1,
+        "ServiceAccount",
+        name,
+        k8s_manifest("ServiceAccount", name, fields, namespace, labels),
+        namespace=namespace,
+        replace=False
+    );
+}
+
+impl apply_cluster_rbac(
+    core_v1: any,
+    name: str,
+    namespace: str,
+    rules: list[dict[str, any]],
+    sa_name: str = "",
+    sa_fields: (dict[str, any] | None) = None,
+    replace: bool = True
+) -> None {
+    sa_name = sa_name or f"{name}-sa";
+    labels = app_labels(name);
+    apply_service_account(core_v1, sa_name, namespace, labels, sa_fields);
+    rbac_v1 = client.RbacAuthorizationV1Api();
+    cr_name = f"{namespace}-{name}";
+    apply_k8s_resource(
+        rbac_v1,
+        "ClusterRole",
+        cr_name,
+        k8s_manifest("ClusterRole", cr_name, {'rules': rules}, labels=labels),
+        replace=replace
+    );
+    apply_k8s_resource(
+        rbac_v1,
+        "ClusterRoleBinding",
+        cr_name,
+        k8s_manifest(
+            "ClusterRoleBinding",
+            cr_name,
+            {
+                'roleRef': {
+                    'apiGroup': 'rbac.authorization.k8s.io',
+                    'kind': 'ClusterRole',
+                    'name': cr_name
+                },
+                'subjects': [
+                    {'kind': 'ServiceAccount', 'name': sa_name, 'namespace': namespace}
+                ]
+            },
+            labels=labels
+        ),
+        replace=replace
+    );
 }

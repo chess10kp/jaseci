@@ -16,6 +16,9 @@ import from jaclang.scale.deploy.autoscale.keda_capabilities {
     SUPPORTED_HTTP_INTERCEPTOR_API_VERSIONS
 }
 import from jaclang.scale.observability.logger { Logger }
+import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
+    k8s_manifest
+}
 import hashlib;
 
 obj KEDAAutoscaler(Autoscaler) {
@@ -57,6 +60,26 @@ obj KEDAAutoscaler(Autoscaler) {
         name: str,
         body: dict[str, any]
     ) -> None;
+
+    def _list_custom_items(
+        api: any,
+        group: str,
+        version: str,
+        namespace: str,
+        plural: str,
+        selector: str,
+        tolerated: (list[int] | None) = None
+    ) -> list[any];
+
+    def _delete_custom_object(
+        api: any,
+        group: str,
+        version: str,
+        namespace: str,
+        plural: str,
+        name: str,
+        tolerated: (list[int] | None) = None
+    ) -> (ApiException | None);
 
     def _prune_orphan_trigger_auths(
         api: any, namespace: str, owner: str, desired_auth_names: set[str]

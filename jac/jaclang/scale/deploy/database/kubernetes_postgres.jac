@@ -3,6 +3,11 @@ import os;
 import secrets as _pysecrets;
 import from jaclang.scale.deploy.target.deployment_target { DeploymentTarget }
 import from jaclang.scale.config.config_loader { get_scale_config }
+import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
+    k8s_manifest,
+    managed_labels,
+    restricted_container_security
+}
 
 glob PG_PORT = 5432,
      PG_IMAGE = 'postgres:18',
@@ -167,23 +172,25 @@ obj KubernetesPostgresProvider {
         }
         password = _pysecrets.token_urlsafe(24);
         url = f"postgresql://jac:{password}@{n['service']}:{PG_PORT}/jac";
-        secret = {
-            'apiVersion': 'v1',
-            'kind': 'Secret',
-            'metadata': {'name': n['secret'], 'labels': {'managed': 'jac-scale'}},
-            'type': 'Opaque',
-            'stringData': {
-                'username': 'jac',
-                'password': password,
-                'connection-string': url
-            }
-        };
-        service_account = {
-            'apiVersion': 'v1',
-            'kind': 'ServiceAccount',
-            'metadata': {'name': n['sa'], 'labels': {'managed': 'jac-scale'}},
-            'automountServiceAccountToken': False
-        };
+        secret = k8s_manifest(
+            'Secret',
+            n['secret'],
+            {
+                'type': 'Opaque',
+                'stringData': {
+                    'username': 'jac',
+                    'password': password,
+                    'connection-string': url
+                }
+            },
+            labels=managed_labels()
+        );
+        service_account = k8s_manifest(
+            'ServiceAccount',
+            n['sa'],
+            {'automountServiceAccountToken': False},
+            labels=managed_labels()
+        );
         embedded = mode == 'embedded';
         image = (
             str(self.config.get('app_image') or self._db_cfg().get('app_image') or '')
@@ -277,62 +284,70 @@ obj KubernetesPostgresProvider {
                 }
             ];
         }
-        statefulset = {
-            'apiVersion': 'apps/v1',
-            'kind': 'StatefulSet',
-            'metadata': {'name': n['name'], 'labels': {'managed': 'jac-scale'}},
-            'spec': {
-                'serviceName': n['service'],
-                'replicas': 1,
-                'selector': {'matchLabels': {'app': n['name']}},
-                'template': {
-                    'metadata': {'labels': {'app': n['name']}},
-                    'spec': {
-                        'automountServiceAccountToken': False,
-                        'serviceAccountName': n['sa'],
-                        'terminationGracePeriodSeconds': 60,
-                        'securityContext': {
-                            'runAsNonRoot': True,
-                            'runAsUser': 999,
-                            'fsGroup': 999,
-                            'seccompProfile': {'type': 'RuntimeDefault'}
-                        },
-                        'containers': [container],
-                        'volumes': [
-                            {
-                                'name': 'dshm',
-                                'emptyDir': {'medium': 'Memory', 'sizeLimit': '256Mi'}
-                            }
-                        ]
-                    }
-                },
-                'volumeClaimTemplates': [
-                    {
-                        'metadata': {'name': n['volume']},
+        statefulset = k8s_manifest(
+            'StatefulSet',
+            n['name'],
+            {
+                'spec': {
+                    'serviceName': n['service'],
+                    'replicas': 1,
+                    'selector': {'matchLabels': {'app': n['name']}},
+                    'template': {
+                        'metadata': {'labels': {'app': n['name']}},
                         'spec': {
-                            'accessModes': ['ReadWriteOnce'],
-                            'resources': {
-                                'requests': {
-                                    'storage': str(
-                                        self._db_cfg().get('postgres_storage') or '2Gi'
-                                    )
+                            'automountServiceAccountToken': False,
+                            'serviceAccountName': n['sa'],
+                            'terminationGracePeriodSeconds': 60,
+                            'securityContext': {
+                                'runAsNonRoot': True,
+                                'runAsUser': 999,
+                                'fsGroup': 999,
+                                'seccompProfile': {'type': 'RuntimeDefault'}
+                            },
+                            'containers': [container],
+                            'volumes': [
+                                {
+                                    'name': 'dshm',
+                                    'emptyDir': {
+                                        'medium': 'Memory',
+                                        'sizeLimit': '256Mi'
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    'volumeClaimTemplates': [
+                        {
+                            'metadata': {'name': n['volume']},
+                            'spec': {
+                                'accessModes': ['ReadWriteOnce'],
+                                'resources': {
+                                    'requests': {
+                                        'storage': str(
+                                            self._db_cfg().get('postgres_storage')
+                                                or '2Gi'
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                ]
-            }
-        };
-        service = {
-            'apiVersion': 'v1',
-            'kind': 'Service',
-            'metadata': {'name': n['service'], 'labels': {'managed': 'jac-scale'}},
-            'spec': {
-                'selector': {'app': n['name']},
-                'ports': [{'port': PG_PORT, 'targetPort': PG_PORT}],
-                'clusterIP': 'None'
-            }
-        };
+                    ]
+                }
+            },
+            labels=managed_labels()
+        );
+        service = k8s_manifest(
+            'Service',
+            n['service'],
+            {
+                'spec': {
+                    'selector': {'app': n['name']},
+                    'ports': [{'port': PG_PORT, 'targetPort': PG_PORT}],
+                    'clusterIP': 'None'
+                }
+            },
+            labels=managed_labels()
+        );
         self.connection_string = url;
         return {
             'mode': mode,
@@ -355,13 +370,7 @@ obj KubernetesPostgresProvider {
         return {
             'name': 'wait-for-postgres',
             'image': wait_image,
-            'securityContext': {
-                'runAsNonRoot': True,
-                'runAsUser': 1000,
-                'readOnlyRootFilesystem': True,
-                'allowPrivilegeEscalation': False,
-                'capabilities': {'drop': ['ALL']}
-            },
+            'securityContext': restricted_container_security(1000),
             'command': [
                 'sh',
                 '-c',

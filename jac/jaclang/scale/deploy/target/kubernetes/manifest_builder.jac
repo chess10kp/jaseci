@@ -15,6 +15,9 @@ import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
 import from jaclang.scale.deploy.autoscale.http_activation_config {
     build_http_activation_spec
 }
+import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
+    k8s_manifest
+}
 import from enum { StrEnum }
 
 
@@ -1092,21 +1095,18 @@ obj ManifestBuilder {
             if storage_class {
                 spec["storageClassName"] = storage_class;
             }
-            pvcs[pvc_name] = {
-                "apiVersion": "v1",
-                "kind": "PersistentVolumeClaim",
-                "metadata": {
-                    "name": pvc_name,
-                    "namespace": self.k8s_config.namespace,
-                    "labels": {
-                        "app": "jac-scale-shared",
-                        "managed": "jac-scale",
-                        "jac-scale.role": "shared-volume",
-                        "jac-scale.owner": k8s_safe_name(self.k8s_config.app_name)
-                    }
-                },
-                "spec": spec
-            };
+            pvcs[pvc_name] = k8s_manifest(
+                "PersistentVolumeClaim",
+                pvc_name,
+                {"spec": spec},
+                self.k8s_config.namespace,
+                {
+                    "app": "jac-scale-shared",
+                    "managed": "jac-scale",
+                    "jac-scale.role": "shared-volume",
+                    "jac-scale.owner": k8s_safe_name(self.k8s_config.app_name)
+                }
+            );
         }
         return pvcs;
     }
@@ -1114,21 +1114,17 @@ obj ManifestBuilder {
     def _build_user_secret_manifest -> dict[str, any] | None {
         data: dict[str, str] = {k: str(v) for (k, v) in self.secrets.items()};
         data["JAC_SERVE_AUTH_SECRET"] = self._signing_secret();
-        return {
-            "apiVersion": "v1",
-            "kind": "Secret",
-            "metadata": {
-                "name": f"{self.k8s_config.app_name}-secrets",
-                "namespace": self.k8s_config.namespace,
-                "labels": {
-                    "app": "jac-scale-user-secrets",
-                    "managed": "jac-scale",
-                    "jac-scale.role": "user-secrets"
-                }
-            },
-            "type": "Opaque",
-            "stringData": data
-        };
+        return k8s_manifest(
+            "Secret",
+            f"{self.k8s_config.app_name}-secrets",
+            {"type": "Opaque", "stringData": data},
+            self.k8s_config.namespace,
+            {
+                "app": "jac-scale-user-secrets",
+                "managed": "jac-scale",
+                "jac-scale.role": "user-secrets"
+            }
+        );
     }
 
     def _user_secret_name -> str {
@@ -1336,25 +1332,24 @@ obj ManifestBuilder {
         };
         svc_cfg = self._service_config(svc_name);
         replicas: int = int(svc_cfg.get("replicas", 1));
-        manifest: dict[str, any] = {
-            "apiVersion": "apps/v1",
-            "kind": "Deployment",
-            "metadata": {
-                "name": f"{k8s_name}-deployment",
-                "namespace": self.k8s_config.namespace,
-                "labels": labels
+        manifest: dict[str, any] = k8s_manifest(
+            "Deployment",
+            f"{k8s_name}-deployment",
+            {
+                "spec": {
+                    "replicas": replicas,
+                    "revisionHistoryLimit": self.k8s_config.revision_history_limit,
+                    "strategy": {
+                        "type": "RollingUpdate",
+                        "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 0}
+                    },
+                    "selector": {"matchLabels": {"app": k8s_name}},
+                    "template": {"metadata": {"labels": labels}, "spec": pod_spec}
+                }
             },
-            "spec": {
-                "replicas": replicas,
-                "revisionHistoryLimit": self.k8s_config.revision_history_limit,
-                "strategy": {
-                    "type": "RollingUpdate",
-                    "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 0}
-                },
-                "selector": {"matchLabels": {"app": k8s_name}},
-                "template": {"metadata": {"labels": labels}, "spec": pod_spec}
-            }
-        };
+            self.k8s_config.namespace,
+            labels
+        );
         overlay = svc_cfg.get("deployment_overlay");
         if isinstance(overlay, dict) and overlay {
             manifest = merge_manifest_overlay(manifest, overlay);
@@ -1385,20 +1380,13 @@ obj ManifestBuilder {
             spec["sessionAffinity"] = "ClientIP";
             spec["sessionAffinityConfig"] = {"clientIP": {"timeoutSeconds": 10800}};
         }
-        return {
-            "apiVersion": "v1",
-            "kind": "Service",
-            "metadata": {
-                "name": f"{k8s_name}-service",
-                "namespace": self.k8s_config.namespace,
-                "labels": {
-                    ** self._owner_labels(),
-                    "app": k8s_name,
-                    "managed": "jac-scale"
-                }
-            },
-            "spec": spec
-        };
+        return k8s_manifest(
+            "Service",
+            f"{k8s_name}-service",
+            {"spec": spec},
+            self.k8s_config.namespace,
+            {** self._owner_labels(), "app": k8s_name, "managed": "jac-scale"}
+        );
     }
 
     def _resolve_scaling(
@@ -1618,19 +1606,6 @@ obj ManifestBuilder {
             rule["host"] = host;
         }
 
-        metadata: dict[str, any] = {
-            "name": "gateway-ingress",
-            "namespace": cfg.namespace,
-            "labels": {
-                "app": "gateway",
-                "managed": "jac-scale",
-                "jac-scale.role": "gateway"
-            }
-        };
-        if annotations {
-            metadata["annotations"] = annotations;
-        }
-
         spec: dict[str, any] = {"rules": [rule]};
         if ingress_class {
             spec["ingressClassName"] = ingress_class;
@@ -1644,12 +1619,14 @@ obj ManifestBuilder {
             spec["tls"] = [{"hosts": [host], "secretName": "gateway-tls"}];
         }
 
-        return {
-            "apiVersion": "networking.k8s.io/v1",
-            "kind": "Ingress",
-            "metadata": metadata,
-            "spec": spec
-        };
+        return k8s_manifest(
+            "Ingress",
+            "gateway-ingress",
+            {"spec": spec},
+            cfg.namespace,
+            {"app": "gateway", "managed": "jac-scale", "jac-scale.role": "gateway"},
+            annotations
+        );
     }
 
     def _replica_floor(svc_name: str) -> int {
@@ -1702,16 +1679,13 @@ obj ManifestBuilder {
         }
         k8s_name = k8s_safe_name(svc_name);
         spec["selector"] = {"matchLabels": {"app": k8s_name}};
-        return {
-            "apiVersion": "policy/v1",
-            "kind": "PodDisruptionBudget",
-            "metadata": {
-                "name": f"{k8s_name}-pdb",
-                "namespace": self.k8s_config.namespace,
-                "labels": {"app": k8s_name, "managed": "jac-scale"}
-            },
-            "spec": spec
-        };
+        return k8s_manifest(
+            "PodDisruptionBudget",
+            f"{k8s_name}-pdb",
+            {"spec": spec},
+            self.k8s_config.namespace,
+            {"app": k8s_name, "managed": "jac-scale"}
+        );
     }
 
     def _pod_entrypoint -> dict[str, any] {
