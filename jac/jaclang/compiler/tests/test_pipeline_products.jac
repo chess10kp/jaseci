@@ -23,6 +23,17 @@ test "cancelled flow does not fabricate CFG facts or schedule analysis" {
     );
     assert not program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC);
     assert not program.analysis.analyses_run.provides(module, AnalysisFact.TYPE_OF);
-    task = program.analysis.product_tasks[id(module)][CompilationProduct.FLOW];
-    assert task.state == TaskState.CANCELLED , task.state;
+    flow_task = program.analysis.product_tasks[id(module)][CompilationProduct.FLOW];
+    analysis_task = program.analysis.product_tasks[id(module)][
+        CompilationProduct.ANALYSIS
+    ];
+    assert flow_task.state == TaskState.CANCELLED , flow_task.state;
+    assert analysis_task.state == TaskState.CANCELLED , analysis_task.state;
+
+    token.clear();
+    assert require_product(program, module, CompilationProduct.ANALYSIS);
+    assert program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC);
+    assert program.analysis.analyses_run.provides(module, AnalysisFact.TYPE_OF);
+    assert flow_task.state == TaskState.SUCCEEDED , flow_task.state;
+    assert analysis_task.state == TaskState.SUCCEEDED , analysis_task.state;
 }

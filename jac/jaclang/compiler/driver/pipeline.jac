@@ -151,26 +151,21 @@ def invalidate_client_product(program: JacProgram, module: Module) {
     }
 }
 
-def _product_ready(
+glob PRODUCT_FACTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
+         CompilationProduct.FLOW: (AnalysisFact.CFG_SUCC, ),
+         CompilationProduct.ANALYSIS: (AnalysisFact.CFG_SUCC, AnalysisFact.TYPE_OF, ),
+         CompilationProduct.CLIENT: (AnalysisFact.TYPE_OF, ),
+         CompilationProduct.NATIVE_IR: (AnalysisFact.CFG_SUCC, AnalysisFact.TYPE_OF, ),
+
+     };
+
+def product_ready(
     program: JacProgram, module: Module, product: CompilationProduct
 ) -> bool {
-    if product == CompilationProduct.FLOW {
-        return program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC);
-    }
-    if product == CompilationProduct.ANALYSIS {
-        return (
-            program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC)
-            and program.analysis.analyses_run.provides(module, AnalysisFact.TYPE_OF)
-        );
-    }
-    if product == CompilationProduct.CLIENT {
-        return program.analysis.analyses_run.provides(module, AnalysisFact.TYPE_OF);
-    }
-    if product == CompilationProduct.NATIVE_IR {
-        return (
-            program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC)
-            and program.analysis.analyses_run.provides(module, AnalysisFact.TYPE_OF)
-        );
+    for fact in PRODUCT_FACTS.get(product, ()) {
+        if not program.analysis.analyses_run.provides(module, fact) {
+            return False;
+        }
     }
     return True;
 }
@@ -193,11 +188,14 @@ def require_product(
                 f"Compilation dependency cycle: {product.value} of {module.loc.mod_path}"
             );
         }
-        if task.state != TaskState.SUCCEEDED {
+        if task.state == TaskState.SUCCEEDED {
+            if product_ready(program, module, product) {
+                return True;
+            }
+        } elif task.state != TaskState.CANCELLED
+            or active_cancel is None
+            or active_cancel.is_set() {
             return False;
-        }
-        if _product_ready(program, module, product) {
-            return True;
         }
         task.state = TaskState.RUNNING;
     } else {
@@ -208,9 +206,7 @@ def require_product(
     before = len(program.errors_had);
     try {
         if product in (CompilationProduct.ANALYSIS, CompilationProduct.NATIVE_IR)
-            and not program.analysis.analyses_run.provides(
-                module, AnalysisFact.CFG_SUCC
-            ) {
+            and not product_ready(program, module, CompilationProduct.FLOW) {
             if not require_product(
                 program, module, CompilationProduct.FLOW, cancel_token=active_cancel
             ) {
@@ -221,9 +217,7 @@ def require_product(
             }
         }
         if product in (CompilationProduct.CLIENT, CompilationProduct.NATIVE_IR)
-            and not program.analysis.analyses_run.provides(
-                module, AnalysisFact.TYPE_OF
-            ) {
+            and not product_ready(program, module, CompilationProduct.ANALYSIS) {
             if not require_product(
                 program, module, CompilationProduct.ANALYSIS, cancel_token=active_cancel
             ) {

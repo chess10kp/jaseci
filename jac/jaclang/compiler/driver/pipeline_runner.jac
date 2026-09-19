@@ -95,6 +95,7 @@ obj ModuleCompilation {
     def analysis {
         import from jaclang.compiler.driver.pipeline {
             require_product,
+            product_ready,
             CompilationProduct
         }
         import from jaclang.compiler.frontend.constant { CodeContext as _CodeCtx }
@@ -127,13 +128,8 @@ obj ModuleCompilation {
             );
 
         if _analyze
-            and (
-                not self.program.analysis.analyses_run.provides(
-                    self.module, AnalysisFact.CFG_SUCC
-                )
-                or not self.program.analysis.analyses_run.provides(
-                    self.module, AnalysisFact.TYPE_OF
-                )
+            and not product_ready(
+                self.program, self.module, CompilationProduct.ANALYSIS
             ) {
             if not require_product(
                 self.program,
@@ -169,6 +165,11 @@ obj ModuleCompilation {
     }
 
     def native_checks {
+        import from jaclang.compiler.driver.pipeline {
+            require_product,
+            product_ready,
+            CompilationProduct
+        }
         if (
             self.options.no_cgen
             and (
@@ -178,18 +179,12 @@ obj ModuleCompilation {
             and not self.options.symtab_ir_only
             and not self.parse_failed
             and not self.blocked
-            and self.program.analysis.analyses_run.provides(
-                self.module, AnalysisFact.TYPE_OF
-            )
+            and product_ready(self.program, self.module, CompilationProduct.CLIENT)
         ) {
             import from jaclang.compiler.frontend.module_facts {
                 ModuleFacts as _PtyMcp
             }
             if self.native or _PtyMcp.has_native_context_stmts(self.module) {
-                import from jaclang.compiler.driver.pipeline {
-                    require_product,
-                    CompilationProduct
-                }
                 lowered = require_product(
                     self.program, self.module, CompilationProduct.NATIVE_IR
                 );
@@ -326,6 +321,7 @@ obj ModuleCompilation {
     def codegen {
         import from jaclang.compiler.driver.pipeline {
             require_product,
+            product_ready,
             CompilationProduct,
             get_py_code_gen
         }
@@ -340,14 +336,10 @@ obj ModuleCompilation {
             import from jaclang.compiler.frontend.module_facts { ModuleFacts }
             needs_native = self.native
                 or ModuleFacts.has_native_context_stmts(self.module);
-            has_cfg = self.program.analysis.analyses_run.provides(
-                self.module, AnalysisFact.CFG_SUCC
-            );
-            has_types = self.program.analysis.analyses_run.provides(
-                self.module, AnalysisFact.TYPE_OF
-            );
-
-            if (needs_native and (not has_cfg or not has_types)) {
+            if needs_native
+                and not product_ready(
+                    self.program, self.module, CompilationProduct.NATIVE_IR
+                ) {
                 if not require_product(
                     self.program,
                     self.module,
