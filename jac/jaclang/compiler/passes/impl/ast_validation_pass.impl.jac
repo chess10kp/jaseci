@@ -346,6 +346,9 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
 }
 
 impl ASTValidationPass.enter_module with Module entry {
+    if here.is_raised_from_py or here.stub_only {
+        return;
+    }
     overload_names: set[str] = set();
     for item in (here.body or []) {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
