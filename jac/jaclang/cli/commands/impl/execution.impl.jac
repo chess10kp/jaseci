@@ -4,6 +4,7 @@ import os;
 import sys;
 import types;
 import from pathlib { Path }
+import from ctypes { CDLL }
 import from jaclang.cli.console { console, use_line_buffered_output }
 import from jaclang.cli.commands.cli_helpers { proc_file as _proc_file }
 import from jaclang.server.assembly {
@@ -186,6 +187,35 @@ def _default_codespace_is_native -> bool {
     return effective == 'native';
 }
 
+def _build_c_argv(argv: list[str]) -> tuple[any, any, any] {
+    import ctypes;
+
+    argc = len(argv);
+    c_strings = [ctypes.c_char_p(arg.encode("utf-8")) for arg in argv];
+    c_argv = (ctypes.c_char_p * argc)(*c_strings);
+    return (argc, c_argv, c_strings);
+}
+
+def _set_native_argv_in_dll(lib: CDLL, argv: list[str]) -> bool {
+    import ctypes;
+
+    (argc, c_argv, c_strings) = _build_c_argv(argv);
+    try {
+        ctypes.c_int32.in_dll(lib, "__jac_argc").value = argc;
+        ctypes.c_void_p.in_dll(lib, "__jac_argv").value = ctypes.cast(
+            c_argv, ctypes.c_void_p
+        ).value;
+    } except ValueError as e {
+        console.warning(
+            f"native library missing __jac_argc/__jac_argv globals ({e}); "
+            "running entry with argc=0"
+        );
+        return False;
+    }
+    setattr(lib, "_jac_argv_refs", (c_strings, c_argv));
+    return True;
+}
+
 def _populate_native_argv(engine: ExecutionEngine, argv: list[str]) -> None {
     import ctypes;
 
@@ -195,9 +225,7 @@ def _populate_native_argv(engine: ExecutionEngine, argv: list[str]) -> None {
         return;
     }
 
-    argc = len(argv);
-    c_strings = [ctypes.c_char_p(arg.encode("utf-8")) for arg in argv];
-    c_argv = (ctypes.c_char_p * argc)(*c_strings);
+    (argc, c_argv, c_strings) = _build_c_argv(argv);
 
     argc_ptr = ctypes.cast(argc_addr, ctypes.POINTER(ctypes.c_int32));
     argc_ptr[0] = argc;
@@ -563,9 +591,46 @@ impl run_jab_image(
     }
     if kind in ["cli", "cli-native", "native-binary"] {
         if kind != "cli" {
-            native_bin = _jab_native_bin(img_root, entry_rel);
-            if native_bin {
-                os.execv(native_bin, [native_bin] + [str(a) for a in args]);
+            _interop = (meta.get("native") or {}).get("interop", False);
+            _argv = [entry_abs] + [str(a) for a in args];
+            if _interop {
+                native_lib = _jab_native_lib(img_root, entry_rel);
+                if native_lib {
+                    rc = _run_native_lib(
+                        native_lib,
+                        _argv,
+                        callbacks=_jab_interop_callbacks(img_root, native_lib)
+                    );
+                    if rc is not None {
+                        return rc;
+                    }
+                    console.warning(
+                        "in-process native entry library failed to load; "
+                        "falling back to the JIT interpreter."
+                    );
+                } else {
+                    console.warning(
+                        "interop jab carries no native entry library; "
+                        "falling back to the JIT interpreter."
+                    );
+                }
+            } else {
+                native_bin = _jab_native_bin(img_root, entry_rel);
+                if native_bin {
+                    os.execv(native_bin, [native_bin] + _argv);
+                }
+                native_lib = _jab_native_lib(img_root, entry_rel);
+                if native_lib {
+                    try {
+                        rc = _run_native_lib(native_lib, _argv);
+                        if rc is not None {
+                            return rc;
+                        }
+                    } except NativeEntryStartedError as e {
+                        console.error(str(e));
+                        return 1;
+                    }
+                }
             }
         }
         return run(target=entry_abs, args=args);
@@ -577,8 +642,9 @@ impl run_jab_image(
     return 1;
 }
 
-def _jab_native_bin(img_root: Path, entry_rel: str) -> (str | None) {
-    import from jaclang.jac0core.ext_registry { base_stem }
+def _jab_native_artifact(
+    img_root: Path, filename: str, need_exec: bool = False
+) -> (str | None) {
     import from jaclang.server.sealed_serve { NATIVE_DIR_REL }
     try {
         import jaclang.compiler.backends.native.llvm.binding as llvm;
@@ -586,12 +652,155 @@ def _jab_native_bin(img_root: Path, entry_rel: str) -> (str | None) {
     } except Exception {
         return None;
     }
-    stem = base_stem(os.path.basename(entry_rel));
-    cand = os.path.join(str(img_root), NATIVE_DIR_REL, triple, stem);
-    if os.path.isfile(cand) and os.access(cand, os.X_OK) {
-        return cand;
+    cand = os.path.join(str(img_root), NATIVE_DIR_REL, triple, filename);
+    if not os.path.isfile(cand) {
+        return None;
     }
-    return None;
+    if need_exec and not os.access(cand, os.X_OK) {
+        return None;
+    }
+    return cand;
+}
+
+def _jab_native_bin(img_root: Path, entry_rel: str) -> (str | None) {
+    import from jaclang.jac0core.ext_registry { base_stem }
+    stem = base_stem(os.path.basename(entry_rel));
+    return _jab_native_artifact(img_root, stem, need_exec=True);
+}
+
+def _jab_native_lib(img_root: Path, entry_rel: str) -> (str | None) {
+    import from jaclang.jac0core.ext_registry { base_stem }
+    import from jaclang.server.sealed_serve { native_lib_name }
+    stem = base_stem(os.path.basename(entry_rel));
+    return _jab_native_artifact(img_root, native_lib_name(stem));
+}
+
+
+class NativeEntryStartedError(Exception) {}
+
+
+def _jab_interop_callbacks(img_root: Path, lib_path: str) -> list[dict[str, any]] {
+    """Read the na->sv callback contract recorded beside an entry library.""";
+    import json;
+    import from jaclang.server.sealed_serve { interop_record_path }
+    record = interop_record_path(lib_path);
+    if not record.is_file() {
+        return [];
+    }
+    try {
+        data = json.loads(record.read_text(encoding="utf-8"));
+    } except Exception as e {
+        console.warning(f"unreadable interop record ({record}): {e}");
+        return [];
+    }
+    callbacks = data.get("callbacks") or [];
+    return [
+        cb
+        for cb in callbacks
+        if isinstance(cb, dict) and cb.get("name")
+    ];
+}
+
+
+def _resolve_sv_functions(
+    callbacks: list[dict[str, any]], img_root: Path
+) -> dict[str, any] {
+    """Resolve each na->sv callback to its Python callable in the sealed app.""";
+    import os;
+    import from jaclang.runtime.interop_bridge { _pyb_import_module }
+    functions: dict[str, any] = {};
+    for cb in callbacks {
+        name = cb["name"];
+        src = cb.get("source_module") or "";
+        if not src {
+            console.warning(
+                f"na->sv callback '{name}' has no recorded source module; "
+                "its dispatch slot stays empty."
+            );
+            continue;
+        }
+        mod_path = src if os.path.isabs(src) else os.path.join(str(img_root), src);
+        try {
+            mod = _pyb_import_module(mod_path);
+            fn = getattr(mod, name, None);
+        } except Exception as e {
+            console.warning(f"failed to load '{src}' for callback '{name}': {e}");
+            continue;
+        }
+        if fn is None {
+            console.warning(f"'{name}' not found in {src}; dispatch slot stays empty.");
+            continue;
+        }
+        functions[name] = fn;
+    }
+    return functions;
+}
+
+
+def _run_native_lib(
+    lib_path: str, argv: list[str], callbacks: list[dict[str, any]] = []
+) -> (int | None) {
+    """dlopen the native library and run its entry in-process.
+
+    Loading and initialization go through ``NativeLibrary`` so na->sv
+    callbacks are registered into their ``__jac_bind_*`` slots and
+    ``__jac_shared_init`` runs exactly once. Returns 0 on success and None
+    on load/link errors, which the caller may treat as a signal to fall
+    back to the execv/JIT lane. Once ``jac_entry`` has started running the
+    fallback would re-run the entry and double its side effects, so
+    failures past that point raise ``NativeEntryStartedError`` instead.
+    """;
+    import ctypes;
+    import from jaclang.runtime.interop_bridge { NativeCallback, NativeLibrary }
+    bindings = [
+        NativeCallback(
+            name=cb["name"],
+            ret_type=cb.get("ret_type", "int"),
+            param_types=list(cb.get("param_types", []))
+        ) for cb in callbacks
+    ];
+    lib = NativeLibrary(
+        path=lib_path,
+        bindings=bindings,
+        functions=_resolve_sv_functions(callbacks, _jab_pkg_root(lib_path))
+    );
+    try {
+        handle = lib.handle();
+    } except OSError as e {
+        console.error(f"native library load failed ({lib_path}): {e}");
+        return None;
+    }
+    if not _set_native_argv_in_dll(handle, argv) {
+        console.warning("proceeding into __jac_shared_init with argv unset (argc=0)");
+    }
+    try {
+        lib.initialize();
+    } except Exception as e {
+        console.error(f"native codespace init failed ({lib_path}): {e}");
+        return None;
+    }
+    try {
+        entry_fn = handle.jac_entry;
+        entry_fn.restype = None;
+        entry_fn.argtypes = [];
+        entry_fn();
+    } except AttributeError as e {
+        console.error(f"native library missing required export: {e}");
+        return None;
+    } except Exception as e {
+        raise NativeEntryStartedError(
+            f"native entry failed after __jac_shared_init ({lib_path}): {e}"
+        );
+    }
+    return 0;
+}
+
+
+def _jab_pkg_root(lib_path: str) -> Path {
+    """Package root of the sealed jab that carries ``lib_path``.""";
+    return Path(lib_path).parents[2]
+        if len(Path(lib_path).parents) > 2
+        else Path(lib_path).parent;
 }
 
 

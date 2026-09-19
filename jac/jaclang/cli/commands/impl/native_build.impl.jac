@@ -25,101 +25,32 @@ impl native_build(
     memory: str = "",
     no_ir_cache: bool = False
 ) -> int {
-    import from jaclang.jac0core.ext_registry {
-        is_jac,
-        is_retired_native_marker,
-        base_stem
-    }
-    import from jaclang.project { get_config }
+    import from jaclang.jac0core.ext_registry { base_stem }
 
-    _cfg = get_config();
-    _mem_cfg = _cfg.memory if _cfg else None;
-    if not memory {
-        memory = _mem_cfg.profile if _mem_cfg else "managed";
-    }
-    if memory not in ("managed", "rc", "nogc") {
-        console.error(
-            f"Invalid --memory profile '{memory}' (expected: managed, rc, nogc)"
-        );
+    ctx = _build_context(filename, target, memory, debug, no_ir_cache);
+    if ctx is None {
         return 1;
     }
     shared = lib;
-    if not is_jac(filename) {
-        console.error("Input must be a .jac file.");
-        return 1;
-    }
-
-    if not os.path.exists(filename) {
-        console.error(f"File not found: {filename}");
-        return 1;
-    }
-
-    is_wasm = target in ["wasm", "wasm32", "wasm32-unknown-unknown"];
-    _triple = "wasm32-unknown-unknown" if is_wasm else "";
-
-    is_windows = (sys.platform == "win32")
-        or ("windows" in target)
-        or (target in ["win", "win64", "mingw"]);
-    if is_windows {
-        _triple = target if "-" in target else "x86_64-pc-windows-msvc";
-    }
-
-    is_macos_target = (target in ["macos", "darwin", "osx", "macosx"])
-        or ("apple" in target)
-        or ("darwin" in target);
-    if is_macos_target {
-        _triple = target if "-" in target else "arm64-apple-darwin";
-    }
-
-    is_linux_target = (target in ["linux", "elf"])
-        or ("linux-gnu" in target)
-        or ("linux-musl" in target);
-    if is_linux_target {
-        _triple = target if "-" in target else "x86_64-unknown-linux-gnu";
-    }
-
-    if is_retired_native_marker(filename) {
-        console.error(
-            f"{filename}: the .na.jac marker was retired in 0.35 -- rename the "
-            "file to .jac; 'jac build --native' compiles plain .jac natively."
-        );
-        return 1;
-    }
-    auto_promote = is_jac(filename);
-
-    is_macos = ((sys.platform == "darwin") and not is_windows and not is_linux_target)
-        or is_macos_target;
 
     if not output {
         output = base_stem(filename);
         if shared {
-            _so_ext = ".dll" if is_windows else (".dylib" if is_macos else ".so");
+            _so_ext = ".dll" if ctx.is_windows else (".dylib" if ctx.is_macos else ".so");
             output = "lib" + output + _so_ext;
-        } elif is_wasm {
+        } elif ctx.is_wasm {
             output = output + ".wasm";
-        } elif is_windows {
+        } elif ctx.is_windows {
             output = output + ".exe";
         }
     }
 
-    ctx = NativeBuildContext(
-        filename=filename,
-        triple=_triple,
-        is_wasm=is_wasm,
-        is_windows=is_windows,
-        is_macos=is_macos,
-        is_linux_target=is_linux_target,
-        auto_promote=auto_promote,
-        memory=memory,
-        debug=debug,
-        no_ir_cache=no_ir_cache
-    );
     if not _compile_native_module(ctx) {
         return 1;
     }
     ir_module = ctx.ir_module;
 
-    if is_wasm {
+    if ctx.is_wasm {
         import from jaclang.compiler.backends.native.na_compile_pass {
             native_linked_ir_text
         }
@@ -152,7 +83,9 @@ impl native_build(
     return _link_native_artifact(ctx, output, shared);
 }
 
-def _link_native_artifact(ctx: NativeBuildContext, output: str, shared: bool) -> int {
+def _link_native_artifact(
+    ctx: NativeBuildContext, output: str, shared: bool, entry_lib: bool = False
+) -> int {
     """Finalize, codegen, and link one native artifact from a prepared compile.
 
     Holds the per-artifact half of the pipeline (IR finalization, verification,
@@ -173,6 +106,7 @@ def _link_native_artifact(ctx: NativeBuildContext, output: str, shared: bool) ->
     console.print("  LLVM IR generated successfully.");
 
     import jaclang.compiler.backends.native.llvm.binding as llvm;
+    import jaclang.compiler.backends.native.shared_emit as _shared_emit;
     import from jaclang.compiler.backends.native.shared_emit { init_object_codegen }
     init_object_codegen();
 
@@ -212,10 +146,28 @@ def _link_native_artifact(ctx: NativeBuildContext, output: str, shared: bool) ->
         shared,
         is_windows,
         is_macos,
-        _static_musl
+        _static_musl,
+        emit_entry_stub=entry_lib
     );
+    _bound_callbacks: list[any] = [];
+    if entry_lib {
+        import from jaclang.compiler.backends.native.shared_emit {
+            bind_shared_callbacks
+        }
+        (llvm_ir_str, _bound_callbacks) = bind_shared_callbacks(
+            llvm_ir_str, ctx.ir_module.gen.interop_manifest.native_imports or []
+        );
+    }
     if shared {
-        init_funcs = ["__jac_shared_init"];
+        _had_entry = _shared_emit.jac_entry_defined(llvm_ir_str);
+        if entry_lib and not _had_entry {
+            console.print(
+                "  No 'with entry { }' block; synthesized an empty jac_entry"
+                " for the entry-lib host protocol."
+            );
+        }
+
+        init_funcs = [] if entry_lib else ["__jac_shared_init"];
         for _s in ir_module.gen._exported_symbols {
             if _s not in export_symbols {
                 export_symbols.append(_s);
@@ -224,6 +176,24 @@ def _link_native_artifact(ctx: NativeBuildContext, output: str, shared: bool) ->
         for _s in _extra_exports {
             if _s not in export_symbols {
                 export_symbols.append(_s);
+            }
+        }
+        if entry_lib {
+            if not _shared_emit.argv_globals_defined(llvm_ir_str) {
+                llvm_ir_str += (
+                    "\n@__jac_argc = global i32 0\n" + "@__jac_argv = global ptr null\n"
+                );
+            }
+            for _s in ["jac_entry", "__jac_argc", "__jac_argv", "__jac_shared_init"] {
+                if _s not in export_symbols {
+                    export_symbols.append(_s);
+                }
+            }
+            for _cb in _bound_callbacks {
+                _bind_name = "__jac_bind_" + _cb.name;
+                if _bind_name not in export_symbols {
+                    export_symbols.append(_bind_name);
+                }
             }
         }
         if not export_symbols {
@@ -446,7 +416,8 @@ def _compile_native_module(ctx: NativeBuildContext) -> bool {
     try {
         prog = JacProgram();
         (_ir_module, _options) = native_application(
-            prog, ctx.filename, ctx.triple or '', ctx.memory, ctx.debug, ctx.no_ir_cache
+            prog, ctx.filename, ctx.triple or '', ctx.memory, ctx.debug,
+            ctx.no_ir_cache
         );
         ctx.ir_module = _ir_module;
         ctx.options = _options;
@@ -466,7 +437,9 @@ def _compile_native_module(ctx: NativeBuildContext) -> bool {
 
     if ctx.ir_module is None or ctx.ir_module.gen.llvm_ir is None {
         if ctx.auto_promote
-            and not (ctx.ir_module and ctx.ir_module.decided_codespace == 'native') {
+            and not (
+                ctx.ir_module and ctx.ir_module.decided_codespace == 'native'
+            ) {
             console.error(
                 "This .jac file is not compatible with native compilation.\n"
                 "  It may use walkers, nodes, edges, async, lambdas, or other\n"
@@ -677,4 +650,191 @@ def _collect_musl_static(
     }
 
     return (member_bytes, crt_objects);
+}
+
+
+def _build_context(
+    filename: str,
+    target: str = "",
+    memory: str = "",
+    debug: bool = False,
+    no_ir_cache: bool = False
+) -> (NativeBuildContext | None) {
+    """Resolve config/target and validate inputs for a native build.
+
+    Returns None (after printing diagnostics) when the input is not a
+    native-buildable Jac file or the memory profile is invalid.
+    """;
+    import sys;
+    import from jaclang.jac0core.ext_registry {
+        is_jac,
+        is_retired_native_marker,
+        base_stem
+    }
+    import from jaclang.project { get_config }
+    import from jaclang.cli.console { console }
+
+    _cfg = get_config();
+    _mem_cfg = _cfg.memory if _cfg else None;
+    if not memory {
+        memory = _mem_cfg.profile if _mem_cfg else "managed";
+    }
+    if memory not in ("managed", "rc", "nogc") {
+        console.error(
+            f"Invalid --memory profile '{memory}' (expected: managed, rc, nogc)"
+        );
+        return None;
+    }
+    if not is_jac(filename) {
+        console.error("Input must be a .jac file.");
+        return None;
+    }
+    if not os.path.exists(filename) {
+        console.error(f"File not found: {filename}");
+        return None;
+    }
+    if is_retired_native_marker(filename) {
+        console.error(
+            f"{filename}: the .na.jac marker was retired in 0.35 -- rename the "
+            "file to .jac; 'jac build --native' compiles plain .jac natively."
+        );
+        return None;
+    }
+
+    is_wasm = target in ["wasm", "wasm32", "wasm32-unknown-unknown"];
+    _triple = "wasm32-unknown-unknown" if is_wasm else "";
+
+    is_windows = (sys.platform == "win32")
+        or ("windows" in target)
+        or (target in ["win", "win64", "mingw"]);
+    if is_windows {
+        _triple = target if "-" in target else "x86_64-pc-windows-msvc";
+    }
+
+    is_macos_target = (target in ["macos", "darwin", "osx", "macosx"])
+        or ("apple" in target)
+        or ("darwin" in target);
+    if is_macos_target {
+        _triple = target if "-" in target else "arm64-apple-darwin";
+    }
+
+    is_linux_target = (target in ["linux", "elf"])
+        or ("linux-gnu" in target)
+        or ("linux-musl" in target);
+    if is_linux_target {
+        _triple = target if "-" in target else "x86_64-unknown-linux-gnu";
+    }
+
+    is_macos = ((sys.platform == "darwin") and not is_windows and not is_linux_target)
+        or is_macos_target;
+
+    return NativeBuildContext(
+        filename=filename,
+        triple=_triple,
+        is_wasm=is_wasm,
+        is_windows=is_windows,
+        is_macos=is_macos,
+        is_linux_target=is_linux_target,
+        auto_promote=is_jac(filename),
+        memory=memory,
+        debug=debug,
+        no_ir_cache=no_ir_cache
+    );
+}
+
+def build_native_entry_lib(filename: str, output: str) -> int {
+    """Build the host-driven entry library for one Jac file.
+
+    Compiles once, binds every na->sv callback through host-fillable
+    ``__jac_bind_*`` slots (so the library carries no unresolved Python
+    symbols), defers ``__jac_shared_init`` to the loading host, and links
+    the ``jac_entry``-exporting shared library to ``output``.
+    """;
+    ctx = _build_context(filename);
+    if ctx is None {
+        return 1;
+    }
+    if not _compile_native_module(ctx) {
+        return 1;
+    }
+    return _link_native_artifact(ctx, output, shared=True, entry_lib=True);
+}
+
+impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -> int {
+    """Build the sealed-artifact native pair from a single compilation.
+
+    The one Jac compile answers the interop question for free: an app whose
+    native closure calls back into Python (``native_imports``) cannot be
+    self-contained, so the standalone executable is dropped, the entry
+    library is bound for host-driven loading, and the decision is recorded
+    in the ``<lib>.interop.json`` sidecar the jab host reads. Otherwise both
+    artifacts are linked: the entry library last, since the sealed bundle
+    still runs via the standalone exe if the lib link fails.
+    """;
+    import json;
+    import os;
+    import from jaclang.server.sealed_serve { interop_record_path }
+    import from jaclang.cli.console { console }
+
+    ctx = _build_context(filename);
+    if ctx is None {
+        return 1;
+    }
+    if not _compile_native_module(ctx) {
+        return 1;
+    }
+    _mf = ctx.ir_module.gen.interop_manifest;
+    _interop_record = interop_record_path(lib_output);
+    if _mf is not None and _mf.native_imports {
+        console.warning(
+            "App calls from native code into Python (native_imports): "
+            "dropping the standalone executable (it cannot be "
+            "self-contained) and sealing the host-driven native library only."
+        );
+        _interop_record.parent.mkdir(parents=True, exist_ok=True);
+        _interop_record.write_text(
+            json.dumps(
+                {
+                    "interop": True,
+                    "unresolved": [b.name for b in _mf.native_imports],
+                    "callbacks": [
+                        {
+                            "name": b.name,
+                            "ret_type": b.ret_type,
+                            "param_types": list(b.param_types),
+                            "source_module": b.source_module or ""
+                        }
+                        for b in _mf.native_imports
+                    ]
+                },
+                sort_keys=True
+            )
+                + "\n",
+            encoding="utf-8"
+        );
+    } else {
+        if _interop_record.exists() {
+            _interop_record.unlink();
+        }
+        rc = _link_native_artifact(ctx, exe_output, shared=False);
+        if rc != 0 {
+            console.error("Native compilation failed; seal aborted.");
+            return rc;
+        }
+    }
+
+    lib_rc = _link_native_artifact(ctx, lib_output, shared=True, entry_lib=True);
+    if lib_rc != 0 {
+        if _mf is not None and _mf.native_imports {
+            console.error(
+                "Host-driven native library compilation failed; seal aborted."
+            );
+            return lib_rc;
+        }
+        console.warning(
+            "In-process native library compilation failed; the sealed bundle "
+            "will run via the standalone binary only."
+        );
+    }
+    return 0;
 }
