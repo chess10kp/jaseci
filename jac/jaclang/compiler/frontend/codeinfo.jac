@@ -774,6 +774,7 @@ obj CodeGenTarget {
         native_engine: (ExecutionEngine | None) = None,
         native_bitcode: (bytes | None) = None,
         native_linked_ir: (str | None) = None,
+        native_codespace: bool = False,
         _interop_manifest: (InteropManifest | None) = None,
         interop_py_funcs: dict[(str, any)] = {},
         _interop_callbacks: list[any] = [],
