@@ -28,6 +28,40 @@ def _pin_run_scope(filename: str, takeover: (bool | None)) -> None;
 
 def _default_codespace_is_native -> bool;
 
+obj NativeArgv {
+    has argc: int,
+        refs: list[any],
+        vector: any;
+
+    def init(argv: list[str]) {
+        import ctypes;
+
+        self.argc = len(argv);
+        self.refs = [ctypes.c_char_p(arg.encode("utf-8")) for arg in argv];
+        self.vector = (ctypes.c_char_p * self.argc)(*self.refs);
+    }
+}
+
+def _set_native_argv_in_dll(lib: CDLL, argv: list[str]) -> bool {
+    import ctypes;
+
+    native_argv = NativeArgv(argv);
+    try {
+        ctypes.c_int32.in_dll(lib, "__jac_argc").value = native_argv.argc;
+        ctypes.c_void_p.in_dll(lib, "__jac_argv").value = ctypes.cast(
+            native_argv.vector, ctypes.c_void_p
+        ).value;
+    } except ValueError as e {
+        console.warning(
+            f"native library missing __jac_argc/__jac_argv globals ({e}); "
+            "running entry with argc=0"
+        );
+        return False;
+    }
+    setattr(lib, "_jac_argv_refs", (native_argv.refs, native_argv.vector));
+    return True;
+}
+
 def _populate_native_argv(
     engine: ExecutionEngine | SharedNativeEngine, argv: list[str]
 ) -> None;
@@ -134,9 +168,29 @@ impl run_jab_image(
     }
     if kind in ["cli", "cli-native", "native-binary"] {
         if kind != "cli" {
-            native_bin = _jab_native_bin(img_root, entry_rel);
-            if native_bin {
-                os.execv(native_bin, [native_bin] + [str(a) for a in args]);
+            _interop = (meta.get("native") or {}).get("interop", False);
+            host_argv = [entry_abs] + [str(a) for a in args];
+            if _interop {
+                rc = _jab_run_entry_lib(img_root, entry_rel, host_argv, interop=True);
+                if rc is not None {
+                    return rc;
+                }
+            } else {
+                native_bin = _jab_native_bin(img_root, entry_rel);
+                if native_bin {
+                    try {
+                        os.execv(native_bin, [native_bin] + [str(a) for a in args]);
+                    } except OSError as e {
+                        console.warning(
+                            f"sealed native binary failed to exec ({e}); "
+                            "trying the entry library instead"
+                        );
+                    }
+                }
+                rc = _jab_run_entry_lib(img_root, entry_rel, host_argv, interop=False);
+                if rc is not None {
+                    return rc;
+                }
             }
         }
         return run(target=entry_abs, args=args);

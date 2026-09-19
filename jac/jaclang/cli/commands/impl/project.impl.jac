@@ -516,7 +516,7 @@ impl remove(
 def _major_minor(version: str) -> str;
 
 impl update(
-    packages: list[str] = [],
+    packages: (list[str] | None) = None,
     pypi: bool = False,
     dev: bool = False,
     self_update: bool = False,
