@@ -345,6 +345,15 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
     }
 }
 
+impl ASTValidationPass._is_overload(ability: Ability) -> bool {
+    for dec in (ability.decorators or []) {
+        if isinstance(dec, Name) and dec.value == "overload" {
+            return True;
+        }
+    }
+    return False;
+}
+
 impl ASTValidationPass.enter_module with Module entry {
     if here.is_raised_from_py or here.stub_only {
         return;
@@ -354,14 +363,7 @@ impl ASTValidationPass.enter_module with Module entry {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        decorated = False;
-        for dec in (item.decorators or []) {
-            if isinstance(dec, Name) and dec.value == "overload" {
-                decorated = True;
-                break;
-            }
-        }
-        if decorated {
+        if self._is_overload(item) {
             overload_names.add(item.name_ref.value);
         }
     }
@@ -370,14 +372,7 @@ impl ASTValidationPass.enter_module with Module entry {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        decorated = False;
-        for dec in (item.decorators or []) {
-            if isinstance(dec, Name) and dec.value == "overload" {
-                decorated = True;
-                break;
-            }
-        }
-        if decorated {
+        if self._is_overload(item) {
             continue;
         }
         name = item.name_ref.value;
@@ -444,14 +439,12 @@ impl ASTValidationPass.enter_archetype with Archetype entry {
         if not (isinstance(item, Ability) and item.name_ref is not None) {
             continue;
         }
-        has_overload = False;
+        has_overload = self._is_overload(item);
         accessor_kind: (str | None) = None;
         accessor_target: (str | None) = None;
         if item.decorators is not None {
             for dec in item.decorators {
-                if isinstance(dec, Name) and dec.value == "overload" {
-                    has_overload = True;
-                } elif (
+                if (
                     isinstance(dec, AtomTrailer)
                     and isinstance(dec.right, Name)
                     and dec.right.value in ("setter", "getter", "deleter")

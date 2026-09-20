@@ -145,6 +145,8 @@ impl CodeGenTarget.clear_native_artifacts -> None {
     self.native_engine = None;
     self.native_bitcode = None;
     self.native_layout = None;
+    self.interop_py_funcs = {};
+    self._interop_callbacks = [];
 }
 
 impl ClientArtifact.to_bytes -> bytes {
