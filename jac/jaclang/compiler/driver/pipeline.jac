@@ -34,7 +34,6 @@ import from jaclang.compiler.driver.pipeline_types {
     ProductTask,
     TaskState
 }
-import from jaclang.compiler.driver.client_graph { collect_client_graph }
 
 glob PASS_CONTRACTS: dict[str, PassContract] = {
          'AccessCheckPass': PassContract((), (AnalysisFact.ACCESS_CHECKS, )),

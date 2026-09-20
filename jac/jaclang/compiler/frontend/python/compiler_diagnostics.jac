@@ -1,4 +1,3 @@
-import from jaclang.compiler.frontend.python.syntax_error { syntax_failure }
 # Compiler-owned diagnostics (INTEGRATION_PLAN Phase 2).
 #
 # Internal compiler phases record structured diagnostics here. product_compile.jac

@@ -1,7 +1,6 @@
 import argparse;
 import builtins;
 import json;
-import os;
 import pickle;
 import from pathlib { Path }
 import from jaclang.runtime.prepared {

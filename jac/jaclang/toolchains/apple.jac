@@ -2,7 +2,6 @@ import from jaclang.toolchains.host { use_system_tools }
 import os;
 import shutil;
 import subprocess;
-import from pathlib { Path }
 import from jaclang.toolchains.host { host_platform, run_step }
 import from jaclang.toolchains.store { cache_root, InstallLock, offline }
 

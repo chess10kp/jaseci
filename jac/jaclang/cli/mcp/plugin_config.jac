@@ -1,4 +1,4 @@
-import from jaclang.project.config_schema { opt, opt_group }
+import from jaclang.project.config_schema { opt }
 
 
 class JacMcpPluginConfig {

@@ -5,7 +5,7 @@ import type from jaclang.project.apps { AppConfig }
 import type from jaclang.project.providers { EcosystemProvider }
 import os;
 
-import from jaclang.client.targets.registry { ClientTarget, target_for_app }
+import from jaclang.client.targets.registry { target_for_app }
 import from pathlib { Path }
 
 comptime SPEC_SETUP: CommandSpec = CommandSpec(

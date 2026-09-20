@@ -3,7 +3,6 @@ import from jaclang.compiler.passes.context { CompileContext }
 import jaclang.compiler.frontend.unitree as uni;
 
 import from jaclang.runtime.constants { EdgeDir }
-import from jaclang.compiler.frontend.constant { CodeContext }
 import from jaclang.compiler.frontend.roles { BodyRole, ItemsRole }
 
 walker NormalizePass(TreeWalker) {

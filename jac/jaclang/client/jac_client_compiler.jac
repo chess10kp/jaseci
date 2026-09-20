@@ -1,4 +1,3 @@
-import contextlib;
 import from pathlib { Path }
 import from types { ModuleType }
 import from typing { TYPE_CHECKING }

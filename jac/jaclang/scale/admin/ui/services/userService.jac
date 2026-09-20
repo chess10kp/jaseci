@@ -1,6 +1,6 @@
 """User management service functions."""
 
-import from .api { get, post, put, `del }
+import from .api { get, post, put }
 async def:pub getUsers(token: str) -> dict[str, any] {
     return await get("/admin/users", token);
 }

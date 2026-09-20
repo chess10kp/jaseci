@@ -318,7 +318,6 @@ import from jaclang.compiler.backends.py.jacpython.flowgraph {
     verify_cfg,
     optimize_swap_range
 }
-import from jaclang.compiler.backends.py.jacpython.assembler { assemble }
 import from jaclang.compiler.backends.py.jacpython.compiler_emit {
     emit_suspendable_prologue,
     emit_generator_except_handler,

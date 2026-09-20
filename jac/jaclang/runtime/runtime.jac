@@ -1,12 +1,10 @@
-import fnmatch;
 import html;
 import inspect;
-import json;
 import os;
 import sys;
 import types;
 import from collections { OrderedDict, deque }
-import from collections.abc { Callable, Coroutine, Iterable, Mapping, Sequence }
+import from collections.abc { Callable, Coroutine, Mapping, Sequence }
 import from concurrent.futures { Future, ThreadPoolExecutor }
 import from contextvars { ContextVar }
 import from jaclang.runtime.object_model { make_object }

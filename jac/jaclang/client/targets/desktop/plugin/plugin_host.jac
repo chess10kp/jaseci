@@ -4,7 +4,6 @@ import sys;
 import ctypes;
 import queue;
 import threading;
-import from pathlib { Path }
 import from desktop_plugin { PluginError, ErrorCode, DesktopPlugin }
 import from webview_lib { libwebview_name }
 

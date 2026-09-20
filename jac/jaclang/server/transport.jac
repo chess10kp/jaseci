@@ -1,4 +1,3 @@
-import json;
 enum MessageType {
     RESPONSE = "response",
     EVENT = "event",

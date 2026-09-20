@@ -6,7 +6,6 @@ import from jaclang.compiler.frontend.constant {
     NATIVE_ERASED_TYPE_MARKERS,
     TYPE_PARAM_CONSTRUCTORS
 }
-import from jaclang.compiler.frontend.srcloc { CodeLocInfo }
 import type from jaclang.compiler.backends.es.estree { IndexInfo, SliceInfo }
 import type from jaclang.compiler.backends.es.estree { Node as EsNode }
 import type from jaclang.compiler.frontend.unitree { CommentToken }

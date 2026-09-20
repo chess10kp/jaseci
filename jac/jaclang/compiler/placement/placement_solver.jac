@@ -1,7 +1,7 @@
 import from jaclang.compiler.passes.context { CompileContext }
 import os;
 import jaclang.compiler.frontend.unitree as uni;
-import from jaclang.compiler.frontend.constant { CodeContext, Tokens as Tok }
+import from jaclang.compiler.frontend.constant { CodeContext }
 import from jaclang.compiler.frontend.diagnostics { DiagnosticInfo }
 
 import type from jaclang.compiler.driver.program { JacProgram }

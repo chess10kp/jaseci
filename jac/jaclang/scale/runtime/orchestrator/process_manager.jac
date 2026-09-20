@@ -1,8 +1,5 @@
 import subprocess;
 import logging;
-import threading;
-import from urllib.request { urlopen, Request as URLRequest }
-import from urllib.error { URLError }
 import from jaclang.scale.deploy.target.service_deployer { ServiceDeployer }
 import from jaclang.scale.runtime.gateway.service_registry {
     ServiceRegistry,
