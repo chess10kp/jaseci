@@ -974,6 +974,14 @@ test "E0078: mixed overload set reports duplicates (decorated first)" {
         "def collide(x: str) -> str { return x; }\n"
     );
     assert has_diagnostic_code(prog, "E0078");
+    # Same redefinition path under the qualified spelling, which parses to
+    # an AtomTrailer rather than a bare Name.
+    (_, prog_q) = parse_and_validate(
+        "@typing.overload\n"
+        "def collide(x: int) -> int;\n"
+        "def collide(x: str) -> str { return x; }\n"
+    );
+    assert has_diagnostic_code(prog_q, "E0078");
 }
 
 test "E0078: mixed overload set reports duplicates (plain first)" {
@@ -986,11 +994,16 @@ test "E0078: mixed overload set reports duplicates (plain first)" {
 }
 
 test "E0078: fully decorated overload set is allowed" {
+    # Bare @overload and qualified @typing.overload must both count as
+    # overloads: the qualified form parses to an AtomTrailer, not a bare
+    # Name, and an unrecognized spelling would false-positive E0078 here.
     (_, prog) = parse_and_validate(
         "@overload\n"
         "def collide(x: int) -> int;\n"
-        "@overload\n"
+        "@typing.overload\n"
         "def collide(x: str) -> str;\n"
+        "@typing.overload\n"
+        "def collide(x: bool) -> bool;\n"
         "def unrelated() -> int { return 1; }\n"
     );
     assert not has_diagnostic_code(prog, "E0078");

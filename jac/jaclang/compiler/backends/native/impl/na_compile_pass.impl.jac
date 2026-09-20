@@ -334,6 +334,7 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
         return ir_in;
     }
     llvm_ir_str = str(module.gen.llvm_ir);
+    committed = False;
     try {
         import ctypes as _ct;
         import ctypes.util;
@@ -403,12 +404,7 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
             module.gen.llvm_ir = mod;
         }
 
-        # Artifacts are assigned into module.gen stage by stage, so every
-        # errors_had gate below must clear before returning: a gate that skips
-        # clearing publishes a half-built module (bytecode, IR, engines,
-        # interop callbacks) to the cache for later runs to load.
         if self.ctx.errors_had {
-            module.gen.clear_codegen_artifacts();
             return ir_in;
         }
 
@@ -453,7 +449,6 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
         }
         module.gen.native_linked_ir = str(mod) if _kernel_linked else None;
         if self.ctx.errors_had {
-            module.gen.clear_codegen_artifacts();
             return ir_in;
         }
 
@@ -503,11 +498,14 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
         }
 
         if _compile_opts.aot_mode {
+            # AOT deliberately keeps its bitcode even when errors_had: the
+            # caller inspects errors_had itself, so these artifacts are
+            # committed.
+            committed = True;
             return ir_in;
         }
 
         if self.ctx.errors_had {
-            module.gen.clear_codegen_artifacts();
             return ir_in;
         }
 
@@ -560,9 +558,19 @@ impl NativeCompilePass._run_impl(ir_in: uni.Module) -> uni.Module {
                 } else {}
             } except Exception as _sym_err {}
         }
+        committed = True;
     } except Exception as e {
         self.ctx.emit(E5020, error=str(e));
-        module.gen.clear_codegen_artifacts();
+    } finally {
+        # Single artifact invariant for every exit path: a native compile
+        # that ends with errors_had publishes nothing unless committed --
+        # full JIT success above, or the AOT return, which keeps bitcode
+        # for the caller to discard via errors_had. Covers the errors_had
+        # gate returns and this except path alike, so any gate added below
+        # only needs `if self.ctx.errors_had { return ir_in; }`.
+        if not committed and self.ctx.errors_had {
+            module.gen.clear_codegen_artifacts();
+        }
     }
     return ir_in;
 }
