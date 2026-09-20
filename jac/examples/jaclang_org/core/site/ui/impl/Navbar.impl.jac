@@ -4,6 +4,12 @@ impl Navbar -> JsxElement {
 
     can with [dark] entry {
         document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.setProperty(
+            "color-scheme", "dark" if dark else "light"
+        );
+        document.documentElement.style.backgroundColor = (
+            "oklch(0.145 0 0)" if dark else "oklch(1 0 0)"
+        );
     }
 
     async can with entry {
