@@ -151,7 +151,10 @@ def invalidate_client_product(program: JacProgram, module: Module) {
     }
 }
 
-glob PRODUCT_REQUIREMENTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
+# Minimum live analysis facts marking each product as usable. Every fact must
+# be produced by the product's own pipeline or by one of its prerequisites;
+# validate_product_specs enforces that against PASS_CONTRACTS.
+glob PRODUCT_READY_FACTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
          CompilationProduct.FLOW: (AnalysisFact.CFG_SUCC, ),
          CompilationProduct.ANALYSIS: (AnalysisFact.CFG_SUCC, AnalysisFact.TYPE_OF, ),
          CompilationProduct.CLIENT: (AnalysisFact.TYPE_OF, ),
@@ -159,10 +162,21 @@ glob PRODUCT_REQUIREMENTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = 
 
      };
 
-def _product_requirements_met(
+glob PRODUCT_PREREQUISITES:
+         dict[CompilationProduct, tuple[CompilationProduct, ...]] = {
+         CompilationProduct.ANALYSIS: (CompilationProduct.FLOW, ),
+         CompilationProduct.CLIENT: (CompilationProduct.ANALYSIS, ),
+         CompilationProduct.NATIVE_IR: (
+             CompilationProduct.FLOW,
+             CompilationProduct.ANALYSIS,
+
+         )
+     };
+
+def _ready_facts_live(
     program: JacProgram, module: Module, product: CompilationProduct
 ) -> bool {
-    for fact in PRODUCT_REQUIREMENTS.get(product, ()) {
+    for fact in PRODUCT_READY_FACTS.get(product, ()) {
         if not program.analysis.analyses_run.provides(module, fact) {
             return False;
         }
@@ -173,13 +187,49 @@ def _product_requirements_met(
 def product_ready(
     program: JacProgram, module: Module, product: CompilationProduct
 ) -> bool {
-    if not _product_requirements_met(program, module, product) {
+    if not _ready_facts_live(program, module, product) {
         return False;
     }
-    program.analysis.retain_tasks(module);
     tasks = program.analysis.product_tasks.get(id(module));
     task = tasks.get(product) if tasks is not None else None;
     return task is None or task.state == TaskState.SUCCEEDED;
+}
+
+def validate_product_specs -> None {
+    providers: dict[CompilationProduct, set[AnalysisFact]] = {};
+
+    def providers_of_product(
+        product: CompilationProduct, visiting: set[CompilationProduct]
+    ) -> set[AnalysisFact] {
+        known = providers.get(product);
+        if known is not None {
+            return known;
+        }
+        if product in visiting {
+            raise RuntimeError(f"product prerequisite cycle through {product.value}");
+        }
+        visiting.add(product);
+        facts = set(providers_of(product_pipeline(product)));
+        for prereq in PRODUCT_PREREQUISITES.get(product, ()) {
+            facts |= providers_of_product(prereq, visiting);
+        }
+        visiting.discard(product);
+        providers[product] = facts;
+        return facts;
+    }
+
+    for product in PRODUCT_READY_FACTS {
+        available = providers_of_product(product, set());
+        for fact in PRODUCT_READY_FACTS[product] {
+            if fact not in available {
+                raise RuntimeError(
+                    f"product {product.value} declares readiness fact "
+                    f"'{fact.value}' that neither its pipeline nor its "
+                    f"prerequisites provide"
+                );
+            }
+        }
+    }
 }
 
 def require_product(
@@ -204,9 +254,8 @@ def require_product(
             if product_ready(program, module, product) {
                 return True;
             }
-        } elif task.state != TaskState.CANCELLED
-            or active_cancel is None
-            or active_cancel.is_set() {
+        } elif task.state == TaskState.FAILED
+            or (active_cancel is not None and active_cancel.is_set()) {
             return False;
         }
         task.state = TaskState.RUNNING;
@@ -217,21 +266,12 @@ def require_product(
     start = time.perf_counter();
     before = len(program.errors_had);
     try {
-        if product in (CompilationProduct.ANALYSIS, CompilationProduct.NATIVE_IR)
-            and not product_ready(program, module, CompilationProduct.FLOW) {
-            if not require_product(
-                program, module, CompilationProduct.FLOW, cancel_token=active_cancel
-            ) {
-                task.state = TaskState.CANCELLED
-                    if active_cancel is not None and active_cancel.is_set()
-                    else TaskState.FAILED;
-                return False;
+        for prereq in PRODUCT_PREREQUISITES.get(product, ()) {
+            if product_ready(program, module, prereq) {
+                continue;
             }
-        }
-        if product in (CompilationProduct.CLIENT, CompilationProduct.NATIVE_IR)
-            and not product_ready(program, module, CompilationProduct.ANALYSIS) {
             if not require_product(
-                program, module, CompilationProduct.ANALYSIS, cancel_token=active_cancel
+                program, module, prereq, cancel_token=active_cancel
             ) {
                 task.state = TaskState.CANCELLED
                     if active_cancel is not None and active_cancel.is_set()
@@ -247,8 +287,13 @@ def require_product(
                 return False;
             }
         } else {
-            program.run_schedule(
-                module, product_pipeline(product), cancel_token=active_cancel
+            schedule = product_pipeline(product);
+            if not schedule {
+                task.state = TaskState.PENDING;
+                return False;
+            }
+            module = execute_passes(
+                program, module, schedule, cancel_token=active_cancel
             );
         }
         if active_cancel is not None and active_cancel.is_set() {
@@ -785,7 +830,7 @@ def execute_passes(
             continue;
         }
         if cancel_token is not None and cancel_token.is_set() {
-            break;
+            return module;
         }
         module = run_pass(
             step, module, program, cancel_token=cancel_token, policy=policy
@@ -793,6 +838,8 @@ def execute_passes(
         provided.update(pass_provides(step));
         if cancel_token is None or not cancel_token.is_set() {
             completed.add(step.__name__);
+        } else {
+            return module;
         }
     }
     return module;
