@@ -47,19 +47,6 @@ obj ModuleFacts {
         return False;
     }
 
-    static def is_overload_decorator(dec: UniNode) -> bool {
-        return isinstance(dec, Name) and dec.value == "overload";
-    }
-
-    static def ability_is_overload(ability: Ability) -> bool {
-        for dec in (ability.decorators or []) {
-            if ModuleFacts.is_overload_decorator(dec) {
-                return True;
-            }
-        }
-        return False;
-    }
-
     static def literal_exports(module: Module) -> set[str] | None {
         assignments: list[Assignment] = [];
         for stmt in module.body {
