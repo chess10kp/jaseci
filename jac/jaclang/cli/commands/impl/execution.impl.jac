@@ -189,10 +189,10 @@ def _default_codespace_is_native -> bool {
 
 obj NativeArgv {
     has argc: int,
-        refs: list,
+        refs: list[any],
         vector: any;
 
-    def init(self: NativeArgv, argv: list[str]) {
+    def init(argv: list[str]) {
         import ctypes;
 
         self.argc = len(argv);
