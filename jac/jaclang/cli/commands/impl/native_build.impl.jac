@@ -36,7 +36,9 @@ impl native_build(
     if not output {
         output = base_stem(filename);
         if shared {
-            _so_ext = ".dll" if ctx.is_windows else (".dylib" if ctx.is_macos else ".so");
+            _so_ext = ".dll"
+                if ctx.is_windows
+                else (".dylib" if ctx.is_macos else ".so");
             output = "lib" + output + _so_ext;
         } elif ctx.is_wasm {
             output = output + ".wasm";
@@ -416,8 +418,7 @@ def _compile_native_module(ctx: NativeBuildContext) -> bool {
     try {
         prog = JacProgram();
         (_ir_module, _options) = native_application(
-            prog, ctx.filename, ctx.triple or '', ctx.memory, ctx.debug,
-            ctx.no_ir_cache
+            prog, ctx.filename, ctx.triple or '', ctx.memory, ctx.debug, ctx.no_ir_cache
         );
         ctx.ir_module = _ir_module;
         ctx.options = _options;
@@ -437,9 +438,7 @@ def _compile_native_module(ctx: NativeBuildContext) -> bool {
 
     if ctx.ir_module is None or ctx.ir_module.gen.llvm_ir is None {
         if ctx.auto_promote
-            and not (
-                ctx.ir_module and ctx.ir_module.decided_codespace == 'native'
-            ) {
+            and not (ctx.ir_module and ctx.ir_module.decided_codespace == 'native') {
             console.error(
                 "This .jac file is not compatible with native compilation.\n"
                 "  It may use walkers, nodes, edges, async, lambdas, or other\n"
@@ -803,8 +802,7 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
                             "ret_type": b.ret_type,
                             "param_types": list(b.param_types),
                             "source_module": b.source_module or ""
-                        }
-                        for b in _mf.native_imports
+                        } for b in _mf.native_imports
                     ]
                 },
                 sort_keys=True
