@@ -138,8 +138,6 @@ impl CodeGenTarget.interop_manifest.setter(value: InteropManifest) -> None {
     self._interop_manifest = value;
 }
 
-"""Drop every native-execution artifact so a failed native compile can
-never leave a stale engine, IR, bytecode, or layout behind."""
 impl CodeGenTarget.clear_native_artifacts -> None {
     self.py_bytecode = None;
     self.llvm_ir = None;
