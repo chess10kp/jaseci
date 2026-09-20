@@ -1,4 +1,4 @@
-import from jaclang.project.config_schema { validate_against_schema }
+import from jaclang.project.config_schema { opt, validate_against_schema }
 import from jaclang.scale.config.plugin_config {
     JacScalePluginConfig,
     app_scale_schema
@@ -15,11 +15,9 @@ impl scale_schema_options -> dict[str, any] {
     options: dict[str, any] = dict(declared) if isinstance(declared, dict) else {};
     for name in known_deploy_targets() {
         if name not in options {
-            options[name] = {
-                "type": "dict",
-                "default": {},
-                "description": f"Deployment settings for the '{name}' target"
-            };
+            options[name] = opt(
+                "dict", {}, f"Deployment settings for the '{name}' target"
+            );
         }
     }
     return options;

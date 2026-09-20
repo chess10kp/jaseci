@@ -13,3 +13,7 @@ def _walk_schema(
 ) -> None;
 
 def _unknown_key_message(path: str, key: str, known: list[str]) -> str;
+
+def opt(type: str, default_value: any, description: str) -> dict[str, any];
+
+def opt_group(description: str, nested: dict[str, any]) -> dict[str, any];

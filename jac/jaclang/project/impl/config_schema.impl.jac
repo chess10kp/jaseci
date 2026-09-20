@@ -81,3 +81,16 @@ impl report_schema_findings(
         console.warning(msg);
     }
 }
+
+impl opt(type: str, default_value: any, description: str) -> dict[str, any] {
+    return {"type": type, "default": default_value, "description": description};
+}
+
+impl opt_group(description: str, nested: dict[str, any]) -> dict[str, any] {
+    return {
+        "type": "dict",
+        "default": {},
+        "description": description,
+        "nested": nested
+    };
+}

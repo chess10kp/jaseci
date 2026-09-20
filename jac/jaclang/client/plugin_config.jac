@@ -1,5 +1,6 @@
 import from pathlib { Path }
 import type from jaclang.project.providers { EcosystemProvider }
+import from jaclang.project.config_schema { opt, opt_group }
 
 
 class JacClientPluginConfig {
@@ -15,70 +16,44 @@ class JacClientPluginConfig {
         return {
             "section": "client",
             "options": {
-                "vite": {
-                    "type": "dict",
-                    "default": {},
-                    "description": "Vite bundler configuration",
-                    "nested": {
-                        "plugins": {
-                            "type": "list",
-                            "default": [],
-                            "description": "Vite plugins to include"
-                        },
-                        "lib_imports": {
-                            "type": "list",
-                            "default": [],
-                            "description": "Library imports for vite.config.js"
-                        },
-                        "build": {
-                            "type": "dict",
-                            "default": {},
-                            "description": "Vite build options"
-                        },
-                        "server": {
-                            "type": "dict",
-                            "default": {},
-                            "description": "Vite dev server options"
-                        },
-                        "resolve": {
-                            "type": "dict",
-                            "default": {},
-                            "description": "Vite resolve options"
-                        }
+                "vite": opt_group(
+                    "Vite bundler configuration",
+                    {
+                        "plugins": opt("list", [], "Vite plugins to include"),
+                        "lib_imports": opt(
+                            "list", [], "Library imports for vite.config.js"
+                        ),
+                        "build": opt("dict", {}, "Vite build options"),
+                        "server": opt("dict", {}, "Vite dev server options"),
+                        "resolve": opt("dict", {}, "Vite resolve options")
                     }
-                },
-                "ts": {
-                    "type": "dict",
-                    "default": {},
-                    "description": "TypeScript configuration overrides"
-                },
-                "configs": {
-                    "type": "dict",
-                    "default": {},
-                    "description": "Generate config files for npm packages. Keys are config names (e.g., 'postcss', 'tailwind'), values are the config objects to export."
-                },
-                "npm": {
-                    "type": "dict",
-                    "default": {},
-                    "description": "NPM registry configuration for .npmrc generation. Supports 'settings' for global options, 'scoped_registries' for scope-to-registry mappings, and 'auth' for registry authentication tokens.",
-                    "nested": {
-                        "settings": {
-                            "type": "dict",
-                            "default": {},
-                            "description": "Global .npmrc settings as key-value pairs (e.g., registry, always-auth, strict-ssl, proxy)"
-                        },
-                        "scoped_registries": {
-                            "type": "dict",
-                            "default": {},
-                            "description": "Map npm scopes to custom registries (e.g., '@myorg' = 'https://npm.pkg.github.com')"
-                        },
-                        "auth": {
-                            "type": "dict",
-                            "default": {},
-                            "description": "Registry authentication tokens (e.g., '//npm.pkg.github.com/' = { _authToken = '${NODE_AUTH_TOKEN}' })"
-                        }
+                ),
+                "ts": opt("dict", {}, "TypeScript configuration overrides"),
+                "configs": opt(
+                    "dict",
+                    {},
+                    "Generate config files for npm packages. Keys are config names (e.g., 'postcss', 'tailwind'), values are the config objects to export."
+                ),
+                "npm": opt_group(
+                    "NPM registry configuration for .npmrc generation. Supports 'settings' for global options, 'scoped_registries' for scope-to-registry mappings, and 'auth' for registry authentication tokens.",
+                    {
+                        "settings": opt(
+                            "dict",
+                            {},
+                            "Global .npmrc settings as key-value pairs (e.g., registry, always-auth, strict-ssl, proxy)"
+                        ),
+                        "scoped_registries": opt(
+                            "dict",
+                            {},
+                            "Map npm scopes to custom registries (e.g., '@myorg' = 'https://npm.pkg.github.com')"
+                        ),
+                        "auth": opt(
+                            "dict",
+                            {},
+                            "Registry authentication tokens (e.g., '//npm.pkg.github.com/' = { _authToken = '${NODE_AUTH_TOKEN}' })"
+                        )
                     }
-                }
+                )
             }
         };
     }
