@@ -31,17 +31,17 @@ import from jaclang.project.jac_store {
     normalize_git_url,
     store_root
 }
+import from jaclang.project.dep_roots { read_deps_map, read_deps_roots }
 import from jaclang.project.jac_provider {
     JacDepProvider,
     JacPackage,
     manifest_jac_deps,
     parse_jac_spec,
     pth_lines,
-    read_deps_map,
-    read_deps_roots,
     version_satisfied
 }
 import from jaclang.project.providers { InstallContext, get_provider_registry }
+import from jaclang.project.dependency_model { ResolutionPlan }
 import from jaclang.project.lockfile {
     jac_lock_rows,
     read_lock,
@@ -58,11 +58,15 @@ test "normalize_git_url canonical forms" {
         == "https://github.com/foo/bar"
     );
     assert (
-        normalize_git_url("git@github.com:foo/bar/") == "https://github.com/foo/bar"
+        normalize_git_url("git@github.com:foo/bar/") == "ssh://git@github.com/foo/bar"
     );
     assert (
         normalize_git_url("ssh://git@github.com/foo/bar")
-        == "https://github.com/foo/bar"
+        == "ssh://git@github.com/foo/bar"
+    );
+    assert (
+        normalize_git_url("ssh://git@github.com:2222/foo/bar")
+        == "ssh://git@github.com:2222/foo/bar"
     );
     assert normalize_git_url("/tmp/some/repo") == "/tmp/some/repo";
     assert normalize_git_url("../local/repo") == "../local/repo";
@@ -88,6 +92,18 @@ test "parse_jac_spec forms" {
     assert ent == {"git": "github.com/foo/mylib", "ref": "v1.2"};
     (name, ent) = parse_jac_spec("jac:github.com/foo/mylib@" + "a" * 40);
     assert ent == {"git": "github.com/foo/mylib", "commit": "a" * 40};
+    (name, ent) = parse_jac_spec("jac:git@github.com:org/repo");
+    assert name == "repo";
+    assert ent == {"git": "git@github.com:org/repo"};
+    (name, ent) = parse_jac_spec("jac:ssh://git@example.com:2222/org/repo");
+    assert name == "repo";
+    assert ent == {"git": "ssh://git@example.com:2222/org/repo"};
+    (name, ent) = parse_jac_spec("jac:ssh://git@example.com:2222/org/repo@v1");
+    assert name == "repo";
+    assert ent == {"git": "ssh://git@example.com:2222/org/repo", "ref": "v1"};
+    (name, ent) = parse_jac_spec("jac:https://user@github.com/org/repo");
+    assert name == "repo";
+    assert ent == {"git": "https://user@github.com/org/repo"};
     (name, ent) = parse_jac_spec("jac:../utils");
     assert name == "utils";
     assert ent == {"path": "../utils"};
@@ -908,23 +924,24 @@ test "moved tag fails and moved branch replays" {
 }
 
 
-test "materialization copies files and preserves symlinks" {
+test "materialization rejects symlinks" {
     tmp = tempfile.mkdtemp(prefix="jac_material_");
     try {
         src = Path(tmp) / "src";
-        (src / "sub").mkdir(parents=True);
+        src.mkdir(parents=True);
         (src / "a.txt").write_text("one", encoding="utf-8");
-        (src / "sub" / "b.txt").write_text("two", encoding="utf-8");
         outside = Path(tmp) / "outside";
         outside.mkdir();
         os.symlink(str(outside), str(src / "link"));
         dest = Path(tmp) / "dest";
-        materialize(src, dest);
-        assert (dest / "a.txt").is_file();
-        assert (dest / "link").is_symlink();
-        (dest / "a.txt").write_text("CHANGED", encoding="utf-8");
-        assert (src / "a.txt").read_text(encoding="utf-8") == "one";
-        assert (dest / "link").resolve() == outside.resolve();
+        raised = False;
+        try {
+            materialize(src, dest);
+        } except JacDepError {
+            raised = True;
+        }
+        assert raised;
+        assert not dest.exists();
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -1400,7 +1417,7 @@ test "lock carries a schema version" {
             }
         );
         data = read_lock(Path(tmp));
-        assert data["version"] == 1;
+        assert data["version"] == 2;
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -1469,5 +1486,327 @@ test "add_spec reports failure when jac.lock cannot be written" {
         shutil.rmtree(outer, ignore_errors=True);
     } finally {
         restore_store(store_tmp, old_env);
+    }
+}
+
+
+# ===== package field validation =====
+test "package field accepts module file and package dir" {
+    toml_text = (
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+        '[dependencies.jac]\n'
+        'liba = { path = "../liba", package = "liba" }\n'
+        'libn = { path = "../libn", package = "a.b" }\n'
+    );
+    (config, tmp) = make_project(toml_text);
+    try {
+        base = Path(tmp);
+        liba = base / "liba";
+        make_plain_pkg(
+            liba,
+            '[project]\nname = "liba"\nversion = "1.0.0"\n',
+            {"liba.jac": "def a -> int { return 1; }\n"}
+        );
+        libn = base / "libn";
+        make_plain_pkg(libn, '[project]\nname = "libn"\nversion = "1.0.0"\n', {});
+        (libn / "a").mkdir();
+        (libn / "a" / "b.jac").write_text(
+            "def n -> int { return 2; }\n", encoding="utf-8"
+        );
+        provider = JacDepProvider();
+        resolved = provider.resolve_closure(config, InstallContext());
+        assert sorted(resolved.keys()) == ["liba", "libn"];
+
+        (bad_config, bad_tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            '[dependencies.jac]\n'
+            'liba = { path = "../liba", package = "ghost" }\n'
+        );
+        try {
+            ghost_base = Path(bad_tmp);
+            make_plain_pkg(
+                ghost_base / "liba",
+                '[project]\nname = "liba"\nversion = "1.0.0"\n',
+                {"liba.jac": "def a -> int { return 1; }\n"}
+            );
+            provider = JacDepProvider();
+            raised = False;
+            try {
+                provider.resolve_closure(bad_config, InstallContext());
+            } except JacDepError as e {
+                raised = "provides no ghost.jac" in str(e);
+            }
+            assert raised , "missing package root was accepted";
+        } finally {
+            shutil.rmtree(bad_tmp, ignore_errors=True);
+        }
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+# ===== selector unification is order-independent =====
+test "mixed selectors conflict regardless of declaration order" {
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_selector_"));
+        repo = outer / "libc_repo";
+        make_git_repo(
+            repo,
+            '[project]\nname = "libc"\nversion = "1.0.0"\n',
+            {"libc.jac": "def c -> int { return 3; }\n"},
+            branch="main"
+        );
+        subprocess.run(["git", "-C", str(repo), "tag", "v1"], check=True);
+        libb = outer / "libb";
+        make_plain_pkg(
+            libb,
+            '[project]\nname = "libb"\nversion = "1.0.0"\n\n'
+            f'[dependencies.jac]\nlibc = {{ git = "{repo}", branch = "main" }}\n',
+            {"libb.jac": "def b -> int { return 2; }\n"}
+        );
+
+        # Manifest order A: libc declared after libb, so the conflict must
+        # surface from the transitive edge while libc is still only queued.
+        (config, tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            '[dependencies.jac]\n'
+            f'libb = {{ path = "{libb}" }}\n'
+            f'libc = {{ git = "{repo}", tag = "v1" }}\n'
+        );
+        try {
+            provider = JacDepProvider();
+            raised = False;
+            try {
+                provider.resolve_closure(config, InstallContext());
+            } except JacDepError as e {
+                raised = "Version conflict for 'libc'" in str(e);
+            }
+            assert raised , "default-vs-ref divergence on queued dep was accepted";
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+
+        # Manifest order B: libc first (resolved, tag v1), then libb's
+        # transitive branch=main request must hit the same hard conflict.
+        (config, tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            '[dependencies.jac]\n'
+            f'libc = {{ git = "{repo}", tag = "v1" }}\n'
+            f'libb = {{ path = "{libb}" }}\n'
+        );
+        try {
+            provider = JacDepProvider();
+            raised = False;
+            try {
+                provider.resolve_closure(config, InstallContext());
+            } except JacDepError as e {
+                raised = "Version conflict for 'libc'" in str(e);
+            }
+            assert raised , "ref-vs-branch divergence on resolved dep was accepted";
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+    } finally {
+        os.chdir(cwd);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}
+
+
+test "identical selectors unify across requirers" {
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_unify_"));
+        repo = outer / "libc_repo";
+        make_git_repo(
+            repo,
+            '[project]\nname = "libc"\nversion = "1.0.0"\n',
+            {"libc.jac": "def c -> int { return 3; }\n"},
+            branch="main"
+        );
+        subprocess.run(["git", "-C", str(repo), "tag", "v1"], check=True);
+        libb = outer / "libb";
+        make_plain_pkg(
+            libb,
+            '[project]\nname = "libb"\nversion = "1.0.0"\n\n'
+            f'[dependencies.jac]\nlibc = {{ git = "{repo}", tag = "v1" }}\n',
+            {"libb.jac": "def b -> int { return 2; }\n"}
+        );
+        (config, tmp) = make_project(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            '[dependencies.jac]\n'
+            f'libc = {{ git = "{repo}", tag = "v1" }}\n'
+            f'libb = {{ path = "{libb}" }}\n'
+        );
+        try {
+            provider = JacDepProvider();
+            resolved = provider.resolve_closure(config, InstallContext());
+            assert sorted(resolved.keys()) == ["libb", "libc"];
+            assert sorted(resolved["libc"].requested_by) == ["libb", "root"];
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+    } finally {
+        os.chdir(cwd);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}
+
+
+# ===== Backend install-plan sync on commit =====
+
+import from unittest.mock { MagicMock }
+
+
+def _plan_with_python_rows(dep_root: Path) -> ResolutionPlan {
+    import from jaclang.project.dependency_model {
+        DependencyNode,
+        ProviderResolution,
+        ResolutionPlan
+    }
+    python_rows = ProviderResolution();
+    python_rows.install_plan = [
+        {"id": "python:six", "name": "six", "version": "1.16.0", "url": ""},
+        {"id": "python:ghost", "name": "ghost", "version": "", "url": ""}
+    ];
+    return ResolutionPlan(
+        nodes={
+            "jac:dep": DependencyNode(
+                id="jac:dep",
+                ecosystem="jac",
+                alias="dep",
+                project_name="dep",
+                source="path",
+                source_location=str(dep_root),
+                import_root="dep"
+            )
+        },
+        lock_data={"version": 2, "nodes": {}, "edges": []},
+        staged_materializations={
+            "jac:dep": {"source": str(dep_root), "tree": "t", "alias": "dep"}
+        },
+        provider_resolutions={"python": python_rows}
+    );
+}
+
+
+test "commit plan pins resolved backend deps into the venv" {
+    import from jaclang.project.package_manager { commit_plan }
+    import from jaclang.project.providers { PythonProvider }
+    (config, tmp) = make_project(
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n[dependencies.jac]\n'
+    );
+    try {
+        dep_root = Path(tmp) / "dep";
+        make_plain_pkg(
+            dep_root,
+            '[project]\nname = "dep"\nversion = "1.0.0"\n',
+            {"dep.jac": "def d -> int { return 1; }\n"}
+        );
+        plan = _plan_with_python_rows(dep_root);
+        pip = MagicMock(return_value=(0, "", ""));
+        with patch("jaclang.project.providers.ensure_venv") as _ev, patch.object(
+            PythonProvider, "_run_project_pip", pip
+        ) {
+            assert commit_plan(config, plan);
+        }
+        install_calls = [
+            list(call.args[1])
+            for call in pip.call_args_list
+            if len(call.args) > 1 and call.args[1] and call.args[1][0] == "install"
+        ];
+        assert install_calls == [["install", "--upgrade", "six==1.16.0"]] , (
+            f"pip received {install_calls}; expected the exact resolved pin"
+        );
+        assert (config.project_root / "jac.lock").is_file();
+        assert read_deps_map(config)["packages"][0]["name"] == "dep";
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "commit plan aborts publication when backend sync fails" {
+    import from jaclang.project.package_manager { commit_plan }
+    import from jaclang.project.providers { PythonProvider }
+    (config, tmp) = make_project(
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n[dependencies.jac]\n'
+    );
+    try {
+        dep_root = Path(tmp) / "dep";
+        make_plain_pkg(
+            dep_root,
+            '[project]\nname = "dep"\nversion = "1.0.0"\n',
+            {"dep.jac": "def d -> int { return 1; }\n"}
+        );
+        plan = _plan_with_python_rows(dep_root);
+        pip = MagicMock(return_value=(1, "", "boom"));
+        raised = False;
+        with patch("jaclang.project.providers.ensure_venv") as _ev, patch.object(
+            PythonProvider, "_run_project_pip", pip
+        ) {
+            try {
+                commit_plan(config, plan);
+            } except JacDepError as e {
+                raised = "python" in str(e);
+            }
+        }
+        assert raised , "failed backend sync must abort the transaction";
+        assert not (config.project_root / "jac.lock").exists();
+        assert read_deps_map(config) == {};
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "commit plan stays offline when no backend plan is staged" {
+    import from jaclang.project.dependency_model { DependencyNode, ResolutionPlan }
+    import from jaclang.project.package_manager { commit_plan }
+    import from jaclang.project.providers { PythonProvider }
+    (config, tmp) = make_project(
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n[dependencies.jac]\n'
+    );
+    try {
+        dep_root = Path(tmp) / "dep";
+        make_plain_pkg(
+            dep_root,
+            '[project]\nname = "dep"\nversion = "1.0.0"\n',
+            {"dep.jac": "def d -> int { return 1; }\n"}
+        );
+        plan = ResolutionPlan(
+            nodes={
+                "jac:dep": DependencyNode(
+                    id="jac:dep",
+                    ecosystem="jac",
+                    alias="dep",
+                    project_name="dep",
+                    source="path",
+                    source_location=str(dep_root),
+                    import_root="dep"
+                )
+            },
+            lock_data={"version": 2, "nodes": {}, "edges": []},
+            staged_materializations={
+                "jac:dep": {"source": str(dep_root), "tree": "t", "alias": "dep"}
+            },
+            provider_resolutions={}
+        );
+        pip = MagicMock(return_value=(0, "", ""));
+        with patch("jaclang.project.providers.ensure_venv") as _ev, patch.object(
+            PythonProvider, "_run_project_pip", pip
+        ) {
+            assert commit_plan(config, plan);
+        }
+        assert pip.call_args_list == [] , "no staged backend plan must not touch pip";
+        assert (config.project_root / "jac.lock").is_file();
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
     }
 }

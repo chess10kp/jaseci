@@ -325,7 +325,7 @@ test "update -d advances the dev closure and freezes main deps" {
         assert config is not None;
 
         provider = JacDepProvider();
-        assert provider.install_all(config, [], InstallContext());
+        assert provider.install_all(config, [], InstallContext(include_dev=True));
         rows = jac_lock_rows(read_lock(project_dir));
         assert rows["u"]["sha"] == u1;
         assert rows["d"]["sha"] == d1;
@@ -351,6 +351,159 @@ test "update -d advances the dev closure and freezes main deps" {
         rows = jac_lock_rows(read_lock(project_dir));
         assert rows["d"]["sha"] == d3 , "update -d did not advance the dev dep";
         assert rows["u"]["sha"] == u2 , "update -d churned the main dep";
+    } finally {
+        os.chdir(cwd);
+        set_config(None);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}
+
+
+test "plain install skips dev deps but keeps them pinned in the lock" {
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_plain_dev_"));
+
+        origin_m = outer / "m_repo";
+        make_git_repo(
+            origin_m,
+            '[project]\nname = "m"\nversion = "1.0.0"\n',
+            {"m.jac": "def m() -> int { return 1; }\n"},
+            branch="main"
+        );
+        m1 = git_head(origin_m);
+        origin_d = outer / "d_repo";
+        make_git_repo(
+            origin_d,
+            '[project]\nname = "d"\nversion = "1.0.0"\n',
+            {"d.jac": "def d() -> int { return 2; }\n"},
+            branch="main"
+        );
+        d1 = git_head(origin_d);
+
+        project_dir = outer / "proj";
+        project_dir.mkdir();
+        (project_dir / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nm = {{ git = "{origin_m}", branch = "main" }}\n\n'
+            f'[dev-dependencies.jac]\nd = {{ git = "{origin_d}", branch = "main" }}\n',
+            encoding="utf-8"
+        );
+        os.chdir(project_dir);
+        set_config(None);
+        import from jaclang.project.config { get_config }
+        config = get_config();
+        assert config is not None;
+        build = config.get_build_dir();
+
+        result = project.install(packages=[]);
+        assert result == 0 , f"plain install failed: {result}";
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["m"]["sha"] == m1 , "plain install missed the main dep";
+        assert "d" not in rows , "plain install recorded a dev dep";
+        assert (build / "packages" / "m" / "m.jac").is_file();
+        assert not (build / "packages" / "d").exists() , (
+            "plain install materialized a dev dep"
+        );
+
+        result = project.install(packages=[], dev=True);
+        assert result == 0 , f"dev install failed: {result}";
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["d"]["sha"] == d1 , "dev install missed the dev dep";
+        assert (build / "packages" / "d" / "d.jac").is_file();
+
+        (origin_d / "changes.log").write_text("d2\n", encoding="utf-8");
+        d2 = git_commit_all(origin_d, "advance d");
+        (origin_m / "changes.log").write_text("m2\n", encoding="utf-8");
+        m2 = git_commit_all(origin_m, "advance m");
+
+        result = project.install(packages=[]);
+        assert result == 0 , f"second plain install failed: {result}";
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["d"]["sha"] == d1 , "plain install advanced a dev dep";
+        assert not (build / "packages" / "d").exists() , (
+            "plain install materialized the preserved dev dep"
+        );
+        assert rows["m"]["sha"] == m1 , "plain install churned the main dep";
+    } finally {
+        os.chdir(cwd);
+        set_config(None);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}
+
+
+test "frozen operations reject stale and legacy lock state" {
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_frozen_fp_"));
+        origin_m = outer / "m_repo";
+        make_git_repo(
+            origin_m,
+            '[project]\nname = "m"\nversion = "1.0.0"\n',
+            {"m.jac": "def m() -> int { return 1; }\n"},
+            branch="main"
+        );
+        project_dir = outer / "proj";
+        project_dir.mkdir();
+        (project_dir / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nm = {{ git = "{origin_m}", branch = "main" }}\n',
+            encoding="utf-8"
+        );
+        os.chdir(project_dir);
+        set_config(None);
+        import from jaclang.project.config { get_config }
+        config = get_config();
+        assert config is not None;
+        provider = JacDepProvider();
+        assert provider.install_all(config, [], InstallContext());
+
+        import from jaclang.project.dependency_model { PackageOperation }
+        import from jaclang.project.jac_store { JacDepError }
+        import from jaclang.project.package_manager { plan_operation }
+
+        # A manifest that differs from the lock's fingerprint must not
+        # be replayable with --frozen.
+        (project_dir / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\n'
+            f'm = {{ git = "{origin_m}", branch = "main", version = "2.0.0" }}\n',
+            encoding="utf-8"
+        );
+        set_config(None);
+        fresh = get_config();
+        assert fresh is not None;
+        raised = False;
+        try {
+            plan_operation(
+                fresh, PackageOperation(action="install", ecosystem="jac", frozen=True)
+            );
+        } except JacDepError as e {
+            raised = "manifest_fingerprint" in str(e);
+        }
+        assert raised , "--frozen accepted a stale manifest fingerprint";
+
+        # A pre-v2 lock with harvested python state must also be rejected.
+        (project_dir / "jac.lock").write_text(
+            'version = 1\n\n[python]\nrequests = "2.31.0"\n', encoding="utf-8"
+        );
+        set_config(None);
+        fresh = get_config();
+        assert fresh is not None;
+        raised = False;
+        try {
+            plan_operation(
+                fresh, PackageOperation(action="install", ecosystem="jac", frozen=True)
+            );
+        } except JacDepError as e {
+            raised = "legacy" in str(e);
+        }
+        assert raised , "--frozen accepted legacy partial lock state";
     } finally {
         os.chdir(cwd);
         set_config(None);

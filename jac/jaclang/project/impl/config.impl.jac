@@ -502,10 +502,21 @@ impl JacConfig.save -> None {
             for (k, v) in deps.items()
             if k != "dev"
         };
-
         doc["dependencies"][dep_type] = regular_deps.copy();
+
+        dev_doc = doc.get("dev-dependencies", {});
+        if not isinstance(dev_doc, dict) {
+            dev_doc = {};
+        }
         if dev_deps {
-            doc["dependencies"][dep_type]["dev"] = dev_deps;
+            dev_doc[dep_type] = dev_deps.copy();
+        } elif dep_type in dev_doc {
+            del dev_doc[dep_type];
+        }
+        if dev_doc {
+            doc["dev-dependencies"] = dev_doc;
+        } elif "dev-dependencies" in doc {
+            del doc["dev-dependencies"];
         }
     }
 

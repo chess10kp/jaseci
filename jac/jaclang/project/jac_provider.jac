@@ -6,6 +6,13 @@ import tomllib;
 import from pathlib { Path }
 import from jaclang.cli.console { console }
 import from jaclang.project.config { JacConfig }
+import from jaclang.project.dependency_model {
+    DependencySpec,
+    PendingRequest,
+    validate_dependency_spec,
+    validate_import_root
+}
+import from jaclang.project.dep_roots { deps_map_path, read_deps_map }
 import from jaclang.project.providers {
     EcosystemProvider,
     InstallContext,
@@ -23,14 +30,14 @@ import from jaclang.project.jac_store {
 import from jaclang.project.versioning { caret_upper, parse_release, vtuple }
 
 glob REF_HEX: str = "^[0-9a-fA-F]{40}$",
-     DEPS_MAP_VERSION: str = "1",
-     _deps_roots_cache: dict[str, any] = {};
+     DEPS_MAP_VERSION: str = "1";
 
 obj JacPackage {
     has name: str = "",
         key: str = "",
         source: str = "git",
         ref: str = "",
+        req_commit: str = "",
         sha: str = "",
         tree: str = "",
         pkg_root: str = "",
@@ -47,17 +54,20 @@ def manifest_jac_deps(config: JacConfig) -> tuple[dict[str, any], dict[str, any]
     dev_deps: dict[str, dict[str, any]] = {};
     for (name, value) in raw.items() {
         if name == "dev" {
-            if isinstance(value, dict) {
-                for (dname, dval) in value.items() {
-                    if isinstance(dval, dict) {
-                        dev_deps[dname] = dval;
-                    } else {
-                        raise entry_error(
-                            dname,
-                            dval,
-                            "[dev-dependencies.jac] entries must be inline tables"
-                        );
-                    }
+            if not isinstance(value, dict) {
+                raise entry_error(
+                    name, value, "legacy [dependencies.jac.dev] must be a table"
+                );
+            }
+            for (dname, dval) in value.items() {
+                if isinstance(dval, dict) {
+                    dev_deps[dname] = dval;
+                } else {
+                    raise entry_error(
+                        dname,
+                        dval,
+                        "[dev-dependencies.jac] entries must be inline tables"
+                    );
                 }
             }
             continue;
@@ -74,6 +84,66 @@ def manifest_jac_deps(config: JacConfig) -> tuple[dict[str, any], dict[str, any]
         }
     }
     return (deps, dev_deps);
+}
+
+
+def manifest_jac_specs(
+    config: JacConfig
+) -> tuple[list[DependencySpec], list[DependencySpec]] {
+    raw = config.plugin_dependencies.get("jac", {});
+    raw = raw if isinstance(raw, dict) else {};
+    main: dict[str, any] = {
+        str(name): value
+        for (name, value) in raw.items()
+        if name != "dev"
+    };
+    dev_raw = raw.get("dev", {});
+    dev: dict[str, any] = dev_raw if isinstance(dev_raw, dict) else {};
+    base_dir = config.project_root or Path.cwd();
+
+    def parse_entry(alias: str, dep_value: any, is_dev: bool) -> DependencySpec {
+        if not isinstance(dep_value, dict) {
+            raise entry_error(
+                alias, dep_value, "dependency entries must be inline tables"
+            );
+        }
+        (source, location) = _entry_key(alias, dep_value, base_dir);
+        (ref, commit) = _entry_ref(alias, dep_value);
+        import_root = str(dep_value.get("package", "") or "").strip();
+        if import_root {
+            try {
+                import_root = validate_import_root(import_root);
+            } except ValueError as e {
+                raise entry_error(alias, dep_value, str(e)) from None;
+            }
+        }
+        spec = DependencySpec(
+            ecosystem="jac",
+            alias=str(alias),
+            source=source,
+            source_location=(
+                str(dep_value.get("path", "")) if source == "path" else location
+            ),
+            ref=ref,
+            commit=commit,
+            version_constraint=str(dep_value.get("version", "") or ""),
+            import_root=import_root,
+            dev=is_dev
+        );
+        try {
+            return validate_dependency_spec(spec);
+        } except ValueError as e {
+            raise entry_error(alias, dep_value, str(e)) from None;
+        }
+    }
+
+    main_specs = [
+        parse_entry(str(alias), value, False) for (alias, value) in main.items()
+    ];
+    dev_specs = [
+        parse_entry(str(alias), value, True) for (alias, value) in dev.items()
+    ];
+    return (main_specs, dev_specs);
 }
 
 
@@ -177,6 +247,42 @@ def _entry_ref(name: str, dep: dict[str, any]) -> tuple[str, str] {
 }
 
 
+def _selector_key(ref: str, commit: str) -> str {
+    if commit {
+        return f"commit {commit[:12]}";
+    }
+    if ref {
+        return f"ref {ref}";
+    }
+    return "default branch";
+}
+
+
+def _looks_like_git_url(value: str) -> bool {
+    scheme = re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://([^/]+)(/.*)?$", value);
+    if scheme is not None {
+        return scheme.group(2) is not None;
+    }
+    if re.match(r"^[^/]+@[^:/]+:.+$", value) {
+        return True;
+    }
+    return "/" in value and "." in value.split("/")[0];
+}
+
+
+def _split_git_ref(body: str) -> tuple[str, str] {
+    at = body.rfind("@");
+    if at <= 0 {
+        return (body, "");
+    }
+    candidate = body[:at];
+    if _looks_like_git_url(body) and not _looks_like_git_url(candidate) {
+        return (body, "");
+    }
+    return (candidate, body[at + 1:]);
+}
+
+
 def parse_jac_spec(spec: str) -> tuple[str, dict[str, any]] {
     if not spec.startswith("jac:") {
         raise JacDepError(f"Not a jac: spec: {spec}");
@@ -190,9 +296,7 @@ def parse_jac_spec(spec: str) -> tuple[str, dict[str, any]] {
         name = ppath.resolve().name if ppath.exists() else ppath.name;
         return (name, {"path": body});
     }
-    at = body.rfind("@");
-    url_part = body[:at] if at > 0 else body;
-    ref_part = body[at + 1:] if at > 0 else "";
+    (url_part, ref_part) = _split_git_ref(body);
     name = git_package_name(url_part);
     if not name or ("/" not in url_part and "." not in url_part) {
         raise JacDepError(
@@ -210,7 +314,6 @@ def parse_jac_spec(spec: str) -> tuple[str, dict[str, any]] {
     }
     return (name, dep);
 }
-
 
 def version_satisfied(constraint: str, actual: str) -> bool {
     constraint = constraint.strip();
@@ -263,29 +366,14 @@ def _validate_package_field(pkg_root: Path, name: str, dep: dict[str, any]) -> N
     }
     module = module.strip();
     base = pkg_root / module.replace(".", "/");
-    if not base.is_file() and not (base / "__init__.jac").is_file() {
+    module_file = base.with_suffix(".jac");
+    if not module_file.is_file() and not (base / "__init__.jac").is_file() {
         raise JacDepError(
             f"[dependencies.jac] '{name}' declares package = \"{module}\", "
             f"but the fetched tree provides no {module}.jac "
             f"(or {module}/__init__.jac) at its root"
         );
     }
-}
-
-
-def deps_map_path(config: JacConfig) -> Path {
-    return config.get_build_dir() / "deps.json";
-}
-
-
-def read_deps_map(config: JacConfig) -> dict[str, any] {
-    map_path = deps_map_path(config);
-    try {
-        data = json.loads(map_path.read_text(encoding="utf-8"));
-    } except (OSError, ValueError) {
-        return {};
-    }
-    return data if isinstance(data, dict) else {};
 }
 
 
@@ -319,56 +407,6 @@ def restore_saved_packages(config: JacConfig) {
             }
         }
     }
-}
-
-
-def read_deps_roots(project_root: Path) -> list[str] {
-    import from jaclang.project.config { get_config_for_path }
-    try {
-        config = get_config_for_path(project_root);
-    } except (OSError, ValueError) {
-        return [];
-    }
-    if config is None {
-        return [];
-    }
-    map_path = deps_map_path(config);
-    if not map_path.is_file() {
-        return [];
-    }
-    try {
-        mtime = map_path.stat().st_mtime;
-    } except OSError {
-        return [];
-    }
-    cached = _deps_roots_cache.get(str(map_path));
-    if cached is not None and cached[0] == mtime {
-        return list(cached[1]);
-    }
-    roots: list[str] = [];
-    try {
-        data = json.loads(map_path.read_text(encoding="utf-8"));
-    } except (OSError, ValueError) {
-        return [];
-    }
-    if not isinstance(data, dict) {
-        return [];
-    }
-    packages = data.get("packages", []);
-    if not isinstance(packages, list) {
-        return [];
-    }
-    for pkg in packages {
-        if not isinstance(pkg, dict) {
-            continue;
-        }
-        loc = pkg.get("local", "") or pkg.get("root", "");
-        if isinstance(loc, str) and loc and os.path.isdir(loc) {
-            roots.append(loc);
-        }
-    }
-    _deps_roots_cache[str(map_path)] = (mtime, list(roots));
-    return roots;
 }
 
 
@@ -501,10 +539,14 @@ obj JacDepProvider(EcosystemProvider) {
         project_root = config.project_root or Path.cwd();
         (root_deps, root_dev) = manifest_jac_deps(config);
 
-        root_entries = {** root_deps, ** root_dev, ** (extra_specs or {})};
+        root_entries = dict(root_deps);
+        if ctx is not None and ctx.include_dev {
+            root_entries.update(root_dev);
+        }
+        root_entries.update(extra_specs or {});
         packages_root = config.get_build_dir() / "packages";
 
-        queue: list[tuple[any, ...]] = [];
+        queue: list[PendingRequest] = [];
         resolved: dict[str, JacPackage] = {};
         seen: dict[str, tuple[any, any, any]] = {};
         queued: set[str] = set();
@@ -514,14 +556,33 @@ obj JacDepProvider(EcosystemProvider) {
             (ref, commit) = _entry_ref(name, dep);
             seen[name] = (key, ref, commit);
             queue.append(
-                (name, dep, str(project_root), "root", source, key, ref, commit)
+                PendingRequest(
+                    name=name,
+                    dep=dep,
+                    base_dir=str(project_root),
+                    requirer="root",
+                    source=source,
+                    key=key,
+                    ref=ref,
+                    commit=commit
+                )
             );
             queued.add(name);
         }
         idx = 0;
         while idx < len(queue) {
-            (name, dep, base_dir, requirer, source, key, ref, commit) = queue[idx];
+            request = queue[idx];
             idx += 1;
+            (name, dep, base_dir, requirer, source, key, ref, commit) = (
+                request.name,
+                request.dep,
+                request.base_dir,
+                request.requirer,
+                request.source,
+                request.key,
+                request.ref,
+                request.commit
+            );
             if not isinstance(dep, dict) {
                 raise entry_error(
                     name,
@@ -537,24 +598,33 @@ obj JacDepProvider(EcosystemProvider) {
                 );
                 continue;
             }
-            pkg = self._resolve_one(
-                name,
-                dep,
-                source,
-                key,
-                ref,
-                commit,
-                base_dir,
-                requirer,
-                frozen_pins.get(name, {}),
-                ctx
-            );
+            pkg = self._resolve_one(request, frozen_pins.get(name, {}), ctx);
             resolved[name] = pkg;
             self._materialize_pkg(pkg, packages_root, ctx, collect_only);
-            transitive = pkg.manifest.get("dependencies", {}).get("jac", {});
+            dependency_table = pkg.manifest.get("dependencies", {});
+            if dependency_table is None {
+                dependency_table = {};
+            }
+            if not isinstance(dependency_table, dict) {
+                raise JacDepError(f"Malformed dependencies table in '{name}'");
+            }
+            transitive = dependency_table.get("jac", {});
+            if transitive is None {
+                transitive = {};
+            }
+            if not isinstance(transitive, dict) {
+                raise JacDepError(f"Malformed [dependencies.jac] table in '{name}'");
+            }
             for (tname, tentry) in transitive.items() {
+                if str(tname) == name {
+                    raise JacDepError(
+                        f"Dependency '{name}' declares itself as a dependency"
+                    );
+                }
                 if not isinstance(tentry, dict) {
-                    continue;
+                    raise entry_error(
+                        str(tname), tentry, "transitive entries must be inline tables"
+                    );
                 }
                 tentry = _apply_override(
                     overrides, noted_overrides, tname, tentry, name
@@ -577,13 +647,12 @@ obj JacDepProvider(EcosystemProvider) {
                             f"packages or use [override]."
                         );
                     }
-                    if (sref and tref and sref != tref)
-                        or (scommit and tcommit and scommit != tcommit) {
+                    if _selector_key(sref, scommit) != _selector_key(tref, tcommit) {
                         raise JacDepError(
                             f"Version conflict for '{tname}': "
-                            f"{sref or scommit[:12]} vs "
-                            f"{tref or tcommit[:12] or 'default branch'} "
-                            f"(via {name}). Unify the refs or use [override]."
+                            f"{_selector_key(sref, scommit)} vs "
+                            f"{_selector_key(tref, tcommit)} "
+                            f"(via {name}). Unify the selectors or use [override]."
                         );
                     }
                 } else {
@@ -592,15 +661,15 @@ obj JacDepProvider(EcosystemProvider) {
                 if tname not in queued {
                     queued.add(tname);
                     queue.append(
-                        (
-                            tname,
-                            tentry,
-                            pkg.pkg_root,
-                            name,
-                            tsource,
-                            tkey,
-                            tref,
-                            tcommit
+                        PendingRequest(
+                            name=tname,
+                            dep=tentry,
+                            base_dir=pkg.pkg_root,
+                            requirer=name,
+                            source=tsource,
+                            key=tkey,
+                            ref=tref,
+                            commit=tcommit
                         )
                     );
                 }
@@ -670,14 +739,15 @@ obj JacDepProvider(EcosystemProvider) {
                 f"(via {requirer})"
             );
         }
-        if (existing.sha and commit and existing.sha != commit)
-            or (existing.ref and ref and existing.ref != ref) {
+        existing_selector = _selector_key(existing.ref, existing.req_commit);
+        incoming_selector = _selector_key(ref, commit);
+        if existing_selector != incoming_selector {
             raise JacDepError(
                 f"Version conflict for '{name}': "
-                f"{existing.ref or existing.sha[:12]} "
+                f"{existing_selector} "
                 f"(via {', '.join(existing.requested_by)}) vs "
-                f"{ref or commit[:12] or 'default branch'} (via {requirer}). "
-                f"Unify the refs or use [override]."
+                f"{incoming_selector} (via {requirer}). "
+                f"Unify the selectors or use [override]."
             );
         }
         constraint = str(dep.get("version", "")) if dep.get("version") else "";
@@ -695,17 +765,18 @@ obj JacDepProvider(EcosystemProvider) {
     }
 
     def _resolve_one(
-        name: str,
-        dep: dict[str, any],
-        source: str,
-        key: str,
-        ref: str,
-        commit: str,
-        base_dir: str,
-        requirer: str,
-        pins: dict[str, any],
-        ctx: InstallContext | None
+        request: PendingRequest, pins: dict[str, any], ctx: InstallContext | None
     ) -> JacPackage {
+        (name, dep, source, key, ref, commit, base_dir, requirer) = (
+            request.name,
+            request.dep,
+            request.source,
+            request.key,
+            request.ref,
+            request.commit,
+            request.base_dir,
+            request.requirer
+        );
         if not _safe_dep_name(name) {
             raise JacDepError(
                 f"Unsafe dependency name: '{name}' (requested by {requirer}). "
@@ -753,13 +824,19 @@ obj JacDepProvider(EcosystemProvider) {
                     );
                 }
                 recorded_path = str(row.get("path", ""));
-                if recorded_path
-                    and os.path.realpath(recorded_path) != os.path.realpath(key) {
-                    raise JacDepError(
-                        f"'{name}': manifest path resolves to {key} but "
-                        f"jac.lock records {recorded_path}. Run 'jac install' "
-                        f"to refresh the lockfile."
-                    );
+                if recorded_path {
+                    recorded_abs_candidates = [
+                        os.path.realpath(str(Path(base_dir) / recorded_path)),
+                        os.path.realpath(recorded_path),
+                        os.path.realpath(str(Path.cwd() / recorded_path))
+                    ];
+                    if os.path.realpath(key) not in recorded_abs_candidates {
+                        raise JacDepError(
+                            f"'{name}': manifest path resolves to {key} but "
+                            f"jac.lock records {recorded_path}. Run 'jac install' "
+                            f"to refresh the lockfile."
+                        );
+                    }
                 }
             }
             pkg = JacPackage(
@@ -814,6 +891,7 @@ obj JacDepProvider(EcosystemProvider) {
                 key=key,
                 source="git",
                 ref=ref,
+                req_commit=commit,
                 sha=fetched.sha,
                 tree=fetched.tree,
                 pkg_root=fetched.path,
@@ -868,7 +946,7 @@ obj JacDepProvider(EcosystemProvider) {
         config: JacConfig, deps: list[ResolvedDependency], ctx: InstallContext
     ) -> bool {
         (root_deps, root_dev) = manifest_jac_deps(config);
-        if not root_deps and not root_dev {
+        if not root_deps and not (root_dev if ctx.include_dev else {}) {
             return True;
         }
         import from jaclang.project.lockfile {
@@ -877,10 +955,14 @@ obj JacDepProvider(EcosystemProvider) {
             update_jac_rows
         }
         pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
+        active_roots = dict(root_deps);
+        if ctx.include_dev {
+            active_roots.update(root_dev);
+        }
         if ctx.frozen {
             missing = [
                 n
-                for n in {** root_deps, ** root_dev}
+                for n in active_roots
                 if n not in pins
             ];
             if missing {
@@ -899,7 +981,10 @@ obj JacDepProvider(EcosystemProvider) {
         }
         self.save_deps_map(config, resolved);
         if not ctx.is_dry_run() {
-            if not update_jac_rows(config.project_root or Path.cwd(), resolved) {
+            skipped_dev = set() if ctx.include_dev else set(root_dev.keys());
+            if not update_jac_rows(
+                config.project_root or Path.cwd(), resolved, preserve=skipped_dev
+            ) {
                 console.error(
                     "Could not update jac.lock; run 'jac install' to refresh it."
                 );
@@ -995,7 +1080,12 @@ obj JacDepProvider(EcosystemProvider) {
             return None;
         }
         if ctx is None or not ctx.is_dry_run() {
-            if not update_jac_rows(config.project_root or Path.cwd(), resolved) {
+            (_, spec_dev) = manifest_jac_deps(config);
+            if not update_jac_rows(
+                config.project_root or Path.cwd(),
+                resolved,
+                preserve=set(spec_dev.keys())
+            ) {
                 console.error(
                     "Could not update jac.lock; run 'jac install' to refresh it."
                 );
@@ -1078,7 +1168,12 @@ obj JacDepProvider(EcosystemProvider) {
         }
         self.save_deps_map(config, resolved);
         import from jaclang.project.lockfile { update_jac_rows }
-        if not update_jac_rows(config.project_root or Path.cwd(), resolved) {
+        (_, remaining_dev) = manifest_jac_deps(config);
+        if not update_jac_rows(
+            config.project_root or Path.cwd(),
+            resolved,
+            preserve=set(remaining_dev.keys())
+        ) {
             console.error(
                 "Could not update jac.lock; run 'jac install' to refresh it."
             );

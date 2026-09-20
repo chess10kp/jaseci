@@ -44,15 +44,11 @@ def store_root -> Path {
 
 def normalize_git_url(spec: str) -> str {
     spec = spec.strip().rstrip("/");
-    known = spec.startswith(("https://", "http://", "file://", "/", "./", "../", "~/"));
+    known = spec.startswith(
+        ("https://", "http://", "ssh://", "file://", "/", "./", "../", "~/")
+    );
     if not known and spec.startswith("git@") and ":" in spec {
-        spec = "https://" + spec[4:].replace(":", "/", 1);
-    } elif not known and spec.startswith("ssh://") {
-        rest = spec[len("ssh://"):];
-        if rest.startswith("git@") {
-            rest = rest[4:];
-        }
-        spec = "https://" + (rest.replace(":", "/", 1) if ":" in rest else rest);
+        spec = "ssh://" + spec.replace(":", "/", 1);
     } elif not known and "://" in spec {
         raise JacDepError(f"Unsupported git URL scheme: {spec}");
     } elif not known {
@@ -87,24 +83,51 @@ def _run_git(args: list[str], cwd: str | None = None) -> str {
 }
 
 
+def _assert_no_symlinks(tree_dir: Path) {
+    for (dir_root, dirs, files) in os.walk(tree_dir, followlinks=False) {
+        tree_root = Path(str(dir_root));
+        for name in list(dirs) + list(files) {
+            candidate = tree_root / str(name);
+            if os.path.islink(str(candidate)) {
+                raise JacDepError(
+                    f"Dependency tree contains a symlink: "
+                    f"{candidate.relative_to(tree_dir)}"
+                );
+            }
+            os.lstat(str(candidate));
+        }
+    }
+}
+
+
 def dirhash(tree_dir: Path) -> str {
     import hashlib;
+    if not tree_dir.is_dir() or tree_dir.is_symlink() {
+        raise JacDepError(f"Dependency tree is not a real directory: {tree_dir}");
+    }
+    _assert_no_symlinks(tree_dir);
     entries: list[str] = [];
     prefix_len = len(str(tree_dir)) + 1;
-    for (dir_root, dirs, files) in os.walk(tree_dir) {
+    for (dir_root, dirs, files) in os.walk(tree_dir, followlinks=False) {
         dirs[:] = sorted(
             d
             for d in dirs
             if d not in HASH_EXCLUDE
         );
+        tree_root = Path(str(dir_root));
+        for dirname in dirs {
+            dpath = tree_root / str(dirname);
+            rel = str(dpath)[prefix_len:].replace(os.sep, "/");
+            entries.append(f"D\\n{rel}\\n");
+        }
         for fname in sorted(files) {
             if fname in HASH_EXCLUDE {
                 continue;
             }
-            fpath = Path(str(dir_root)) / str(fname);
+            fpath = tree_root / str(fname);
             rel = str(fpath)[prefix_len:].replace(os.sep, "/");
             digest = hashlib.sha256(fpath.read_bytes()).hexdigest();
-            entries.append(f"{rel}\n{digest}\n");
+            entries.append(f"F\\n{rel}\\n{digest}\\n");
         }
     }
     joined = "".join(entries).encode("utf-8");
@@ -157,6 +180,7 @@ def checkout_tree(url: str, ref: str, sha: str | None, dest: Path) -> str {
             shutil.rmtree(dest);
         }
         shutil.copytree(repo, dest, symlinks=True);
+        _assert_no_symlinks(dest);
         shutil.rmtree(dest / ".git", ignore_errors=True);
         return resolved;
     } finally {
@@ -222,46 +246,64 @@ def _ref_agreement(url: str, ref: str, sha: str) -> tuple[bool, bool] | None {
     return (agrees, is_tag);
 }
 
+def _sidecar_path(store_dir: Path, tree: str) -> Path {
+    return store_dir / f"{tree}.json";
+}
+
+
+def _read_sidecar(store_dir: Path, tree: str) -> dict[str, any] {
+    import json;
+    sidecar = _sidecar_path(store_dir, tree);
+    try {
+        data = json.loads(sidecar.read_text(encoding="utf-8"));
+    } except (OSError, ValueError) {
+        return {};
+    }
+    return data if isinstance(data, dict) else {};
+}
+
+
+def _write_sidecar(store_dir: Path, tree: str, meta: dict[str, any]) {
+    import json;
+    sidecar = _sidecar_path(store_dir, tree);
+    tmp = sidecar.with_name(sidecar.name + f".{os.getpid()}.tmp");
+    tmp.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8");
+    os.replace(str(tmp), str(sidecar));
+}
+
 
 def _store_hit_for(
     store_dir: Path, url: str, sha: str, expected_tree: str, verify: bool
 ) -> FetchResult | None {
-    for candidate in sorted(store_dir.glob(TREE_HASH_PREFIX + "*")) {
-        if not candidate.is_dir() {
-            continue;
-        }
+    if not expected_tree {
+        return None;
+    }
+    candidate = store_dir / expected_tree;
+    if not candidate.is_dir() or candidate.is_symlink() {
+        return None;
+    }
+    if not _tree_matches(candidate, expected_tree) {
+        return None;
+    }
+    meta = _read_sidecar(store_dir, expected_tree);
+    if not meta {
         try {
             meta = _read_origin_meta(candidate / ORIGIN_MARKER);
         } except (OSError, ValueError) {
-            continue;
-        }
-        if meta.get("sha") != sha or meta.get("url") != url {
-            continue;
-        }
-        if expected_tree and candidate.name == expected_tree {
-            if dirhash(candidate) == expected_tree {
-                return FetchResult(path=str(candidate), sha=sha, tree=expected_tree);
-            }
-            continue;
-        }
-        if not verify and not expected_tree {
-            return FetchResult(
-                path=str(candidate), sha=sha, tree=str(meta.get("tree", ""))
-            );
-        }
-        expected = expected_tree or candidate.name;
-        if dirhash(candidate) == expected {
-            return FetchResult(path=str(candidate), sha=sha, tree=expected);
+            meta = {};
         }
     }
-    return None;
+    if meta and (meta.get("sha") != sha or meta.get("url") != url) {
+        return None;
+    }
+    return FetchResult(path=str(candidate), sha=sha, tree=expected_tree);
 }
 
 
 def _tree_matches(tree_dir: Path, expected: str) -> bool {
     try {
         return dirhash(tree_dir) == expected;
-    } except OSError {
+    } except (OSError, JacDepError) {
         return False;
     }
 }
@@ -306,57 +348,85 @@ def fetch_package(
         }
     }
     staging = Path(tempfile.mkdtemp(prefix="jac_stage_", dir=store_dir / TMP_DIR_NAME));
+    publication_lock: Path | None = None;
     try {
         tree_dest = staging / "tree";
-
         checkout_ref = "" if (frozen and sha) else ref;
         resolved_sha = checkout_tree(url, checkout_ref, sha, tree_dest);
         tree_hash = dirhash(tree_dest);
         final = store_dir / tree_hash;
-        if final.exists() {
+        publication_lock = store_dir / f"{tree_hash}.lock";
+        try {
+            publication_lock.mkdir();
+        } except OSError {
+            import time;
+            for _ in range(1000) {
+                if _tree_matches(final, tree_hash) {
+                    return FetchResult(
+                        path=str(final), sha=resolved_sha, tree=tree_hash
+                    );
+                }
+                if not publication_lock.exists() {
+                    break;
+                }
+                time.sleep(0.01);
+            }
+            if _tree_matches(final, tree_hash) {
+                return FetchResult(path=str(final), sha=resolved_sha, tree=tree_hash);
+            }
+            try {
+                publication_lock.mkdir();
+            } except OSError {
+                raise JacDepError(
+                    f"Store publication for {tree_hash} is already in progress"
+                );
+            }
+        }
+        try {
             if _tree_matches(final, tree_hash) {
                 shutil.rmtree(tree_dest, ignore_errors=True);
             } else {
-                shutil.rmtree(final, ignore_errors=True);
-                _write_origin_meta(
-                    tree_dest, {"url": url, "sha": resolved_sha, "tree": tree_hash}
-                );
-                try {
-                    os.rename(str(tree_dest), str(final));
-                } except OSError {
-                    if not _tree_matches(final, tree_hash) {
-                        raise;
+                if final.exists() or final.is_symlink() {
+                    quarantine = store_dir
+                        / (f".{tree_hash}.quarantine-{os.getpid()}-{id(final)}");
+                    os.rename(str(final), str(quarantine));
+                    if quarantine.is_dir() and not quarantine.is_symlink() {
+                        shutil.rmtree(quarantine, ignore_errors=True);
+                    } else {
+                        quarantine.unlink(missing_ok=True);
                     }
-                    shutil.rmtree(tree_dest, ignore_errors=True);
                 }
-            }
-        } else {
-            _write_origin_meta(
-                tree_dest, {"url": url, "sha": resolved_sha, "tree": tree_hash}
-            );
-            try {
                 os.rename(str(tree_dest), str(final));
-            } except OSError {
-                if _tree_matches(final, tree_hash) {
-                    shutil.rmtree(tree_dest, ignore_errors=True);
-                } else {
-                    shutil.rmtree(final, ignore_errors=True);
-                    os.rename(str(tree_dest), str(final));
-                }
             }
+            _write_sidecar(
+                store_dir,
+                tree_hash,
+                {"url": url, "sha": resolved_sha, "tree": tree_hash}
+            );
+        } finally {
+            publication_lock.rmdir();
+            publication_lock = None;
         }
         return FetchResult(path=str(final), sha=resolved_sha, tree=tree_hash);
     } finally {
+        if publication_lock is not None {
+            publication_lock.rmdir();
+        }
         shutil.rmtree(staging, ignore_errors=True);
     }
 }
 
 
 def _copy_tree(src: Path, dest: Path) {
+    if src.is_symlink() {
+        raise JacDepError(f"Dependency tree contains a symlink: {src}");
+    }
     dest.mkdir(parents=True);
     for item in sorted(src.iterdir()) {
         target = dest / item.name;
-        if item.is_symlink() or not item.is_dir() {
+        if item.is_symlink() {
+            raise JacDepError(f"Dependency tree contains a symlink: {item}");
+        } elif not item.is_dir() {
             shutil.copy2(item, target, follow_symlinks=False);
         } else {
             _copy_tree(item, target);
@@ -366,10 +436,72 @@ def _copy_tree(src: Path, dest: Path) {
 
 
 def materialize(src: Path, dest: Path) -> Path {
-    if dest.exists() {
+    _assert_no_symlinks(src);
+    if dest.is_symlink() or (dest.exists() and not dest.is_dir()) {
+        dest.unlink(missing_ok=True);
+    } elif dest.exists() {
         shutil.rmtree(dest);
     }
     dest.parent.mkdir(parents=True, exist_ok=True);
     _copy_tree(src, dest);
     return dest;
+}
+
+
+def snapshot_path(source: Path) -> FetchResult {
+    source = source.resolve();
+    if not source.is_dir() {
+        raise JacDepError(f"Path dependency is not a directory: {source}");
+    }
+    _assert_no_symlinks(source);
+    store_dir = store_root();
+    (store_dir / TMP_DIR_NAME).mkdir(parents=True, exist_ok=True);
+    staging = Path(tempfile.mkdtemp(prefix="jac_path_", dir=store_dir / TMP_DIR_NAME));
+    publication_lock: Path | None = None;
+    try {
+        tree_dest = staging / "tree";
+        _copy_tree(source, tree_dest);
+        tree_hash = dirhash(tree_dest);
+        final = store_dir / tree_hash;
+        publication_lock = store_dir / f"{tree_hash}.lock";
+        try {
+            publication_lock.mkdir();
+        } except OSError {
+            if _tree_matches(final, tree_hash) {
+                return FetchResult(path=str(final), sha="", tree=tree_hash);
+            }
+            raise JacDepError(
+                f"Store publication for {tree_hash} is already in progress"
+            );
+        }
+        try {
+            if _tree_matches(final, tree_hash) {
+                shutil.rmtree(tree_dest, ignore_errors=True);
+            } else {
+                if final.exists() or final.is_symlink() {
+                    quarantine = store_dir
+                        / (f".{tree_hash}.quarantine-{os.getpid()}-{id(final)}");
+                    os.rename(str(final), str(quarantine));
+                    if quarantine.is_dir() and not quarantine.is_symlink() {
+                        shutil.rmtree(quarantine, ignore_errors=True);
+                    } else {
+                        quarantine.unlink(missing_ok=True);
+                    }
+                }
+                os.rename(str(tree_dest), str(final));
+            }
+            _write_sidecar(
+                store_dir, tree_hash, {"path": str(source), "tree": tree_hash}
+            );
+        } finally {
+            publication_lock.rmdir();
+            publication_lock = None;
+        }
+        return FetchResult(path=str(final), sha="", tree=tree_hash);
+    } finally {
+        if publication_lock is not None {
+            publication_lock.rmdir();
+        }
+        shutil.rmtree(staging, ignore_errors=True);
+    }
 }

@@ -7,7 +7,7 @@ import from jaclang.project.providers { manifest_plugin_deps }
 import from jaclang.project.versioning { norm_pkg_name }
 
 glob LOCK_FILE_NAME: str = "jac.lock",
-     LOCK_VERSION: int = 1;
+     LOCK_VERSION: int = 2;
 
 
 def lock_path(project_root: Path) -> Path {
@@ -32,19 +32,100 @@ def read_lock(project_root: Path) -> dict[str, any] {
         console.warning(f"Could not parse {path}; ignoring it: {e}");
         return {};
     }
+    if "version" not in data {
+        data["version"] = 1;
+    }
+    if int(data.get("version", 1)) < 2 {
+        data["legacy_version"] = int(data.get("version", 1));
+        if data.get("python") or data.get("npm") or data.get("python_graph") {
+            data["legacy_partial"] = True;
+        }
+    }
     return data if isinstance(data, dict) else {};
 }
 
-
 def jac_lock_rows(lock_data: dict[str, any]) -> dict[str, any] {
     rows = lock_data.get("jac", {});
-    return rows if isinstance(rows, dict) else {};
+    if isinstance(rows, dict) and rows {
+        return rows;
+    }
+    nodes = lock_data.get("nodes", {});
+    edges = lock_data.get("edges", []);
+    if not isinstance(nodes, dict) {
+        return {};
+    }
+    requirers: dict[str, list[str]] = {};
+    if isinstance(edges, list) {
+        for graph_edge in edges {
+            if not isinstance(graph_edge, dict) {
+                continue;
+            }
+            target = str(graph_edge.get("to_id", ""));
+            parent = str(graph_edge.get("from_id", ""));
+            if target.startswith("jac:") {
+                requirers.setdefault(target, []).append(
+                    "root" if parent == "root" else parent.removeprefix("jac:")
+                );
+            }
+        }
+    }
+    result: dict[str, any] = {};
+    for (node_id, graph_node) in nodes.items() {
+        if not isinstance(graph_node, dict) or not str(node_id).startswith("jac:") {
+            continue;
+        }
+        alias = str(graph_node.get("alias", str(node_id)[4:]));
+        row = {
+            "version": str(graph_node.get("version", "")),
+            "ref": str(graph_node.get("ref", "")),
+            "sha": str(graph_node.get("commit", "")),
+            "tree": str(graph_node.get("tree", "")),
+            "requested_by": sorted(requirers.get(str(node_id), []))
+        };
+        if str(graph_node.get("source", "")) == "path" {
+            row["path"] = str(graph_node.get("source_location", ""));
+        } else {
+            row["git"] = str(graph_node.get("source_location", ""));
+        }
+        result[alias] = row;
+    }
+    return result;
 }
 
 
 def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
     doc: dict[str, any] = {};
     doc["version"] = LOCK_VERSION;
+    if lock_data.get("manifest_fingerprint") {
+        doc["manifest_fingerprint"] = str(lock_data["manifest_fingerprint"]);
+    }
+    if "include_dev" in lock_data {
+        doc["include_dev"] = bool(lock_data["include_dev"]);
+    }
+    graph_nodes = lock_data.get("nodes", {});
+    if isinstance(graph_nodes, dict) and graph_nodes {
+        doc["nodes"] = {
+            str(node_id): graph_nodes[node_id]
+            for node_id in sorted(graph_nodes.keys())
+            if isinstance(graph_nodes[node_id], dict)
+        };
+    }
+    graph_edges = lock_data.get("edges", []);
+    if isinstance(graph_edges, list) and graph_edges {
+        doc["edges"] = [
+            graph_edge
+            for graph_edge in graph_edges
+            if isinstance(graph_edge, dict)
+        ];
+    }
+    unresolved_backend = lock_data.get("unresolved_backend", []);
+    if isinstance(unresolved_backend, list) and unresolved_backend {
+        doc["unresolved_backend"] = [
+            backend_entry
+            for backend_entry in unresolved_backend
+            if isinstance(backend_entry, dict)
+        ];
+    }
     jac_rows = jac_lock_rows(lock_data);
     jac_doc: dict[str, any] = {};
     for name in sorted(jac_rows.keys()) {
@@ -121,7 +202,9 @@ def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
 }
 
 
-def update_jac_rows(project_root: Path, resolved: dict[str, any]) -> bool {
+def update_jac_rows(
+    project_root: Path, resolved: dict[str, any], preserve: set[str] = set()
+) -> bool {
     lock_data = read_lock(project_root);
     rows: dict[str, any] = {};
     for pkg in resolved.values() {
@@ -139,6 +222,13 @@ def update_jac_rows(project_root: Path, resolved: dict[str, any]) -> bool {
             row["git"] = pkg.key;
         }
         rows[pkg.name] = row;
+    }
+    if preserve {
+        for (prior_name, prior_row) in jac_lock_rows(lock_data).items() {
+            if prior_name not in rows and prior_name in preserve {
+                rows[prior_name] = prior_row;
+            }
+        }
     }
     lock_data["jac"] = rows;
     return write_lock(project_root, lock_data);
@@ -334,6 +424,10 @@ def _walk_chains(
 
 
 def why_chains(lock_data: dict[str, any], name: str) -> list[tuple[str, list[str]]] {
+    if isinstance(lock_data.get("nodes", {}), dict) and lock_data.get("nodes", {}) {
+        (graph_chains, graph_target) = graph_why_chains(lock_data, name);
+        return [("graph", chain) for chain in graph_chains];
+    }
     jac_rows = jac_lock_rows(lock_data);
     py_graph = lock_data.get("python_graph", {});
     if not isinstance(py_graph, dict) {
@@ -360,4 +454,59 @@ def why_chains(lock_data: dict[str, any], name: str) -> list[tuple[str, list[str
     }
     fallback = "npm" if name in npm_pins else ("python" if name in py_graph else "jac");
     return [(fallback, [name])];
+}
+
+def graph_why_chains(
+    lock_data: dict[str, any], selector: str
+) -> tuple[list[list[str]], str | None] {
+    nodes = lock_data.get("nodes", {});
+    edges = lock_data.get("edges", []);
+    if not isinstance(nodes, dict) or not isinstance(edges, list) {
+        return ([], None);
+    }
+    matches: list[str] = [];
+    for raw_id in nodes.keys() {
+        node_id = str(raw_id);
+        node_data = nodes[node_id];
+        alias = str(node_data.get("alias", "")) if isinstance(node_data, dict) else "";
+        if selector == node_id or selector == alias {
+            matches.append(node_id);
+        }
+    }
+    if len(matches) != 1 {
+        return ([], None if not matches else "ambiguous");
+    }
+    target = matches[0];
+    parents: dict[str, list[str]] = {};
+    for graph_edge in edges {
+        if not isinstance(graph_edge, dict) {
+            continue;
+        }
+        child = str(graph_edge.get("to_id", ""));
+        parent = str(graph_edge.get("from_id", "root"));
+        parents.setdefault(child, []).append(parent);
+    }
+    chains: list[list[str]] = [];
+    pending: list[tuple[str, list[str]]] = [(target, [])];
+    while pending {
+        (cur, trail) = pending.pop();
+        if cur in trail {
+            chains.append(trail + ["[cycle]"]);
+            continue;
+        }
+        current = trail + [cur];
+        reqs = parents.get(cur, []);
+        if not reqs {
+            chains.append(current + ["root"]);
+            continue;
+        }
+        for parent in reqs {
+            if parent == "root" {
+                chains.append(current + ["root"]);
+            } else {
+                pending.append((parent, current));
+            }
+        }
+    }
+    return (chains, target);
 }

@@ -1,6 +1,15 @@
 import from pathlib { Path }
 import from jaclang.cli.console { console }
 import from jaclang.project.config { JacConfig }
+import from jaclang.project.dependency_model {
+    DependencyEdge,
+    DependencyNode,
+    LockGraph,
+    ProviderRequirement,
+    ProviderResolution,
+    ProviderStage,
+    ResolutionContext
+}
 import from jaclang.project.pyvenv {
     ensure_venv,
     get_venv_site_packages,
@@ -73,7 +82,8 @@ obj InstallContext {
     has verbose: bool = False,
         install_flags: list[str] = [],
         target: str = "project",
-        frozen: bool = False;
+        frozen: bool = False,
+        include_dev: bool = False;
 
     def is_dry_run -> bool {
         return "--dry-run" in self.install_flags;
@@ -84,6 +94,64 @@ obj EcosystemProvider {
     has name: str = "",
         manifest_key: str = "",
         cli_flag: str = "";
+
+    def resolve_requirements(
+        context: ResolutionContext,
+        requirements: list[ProviderRequirement],
+        prior_lock: LockGraph
+    ) -> ProviderResolution {
+        import from jaclang.project.dependency_model {
+            canonical_dependency_id,
+            normalize_dependency_name
+        }
+        resolution = ProviderResolution();
+        for requirement in requirements {
+            if requirement.ecosystem != self.name {
+                continue;
+            }
+            normalized = normalize_dependency_name(self.name, requirement.name);
+            node_id = canonical_dependency_id(self.name, normalized);
+            if node_id not in resolution.nodes {
+                resolution.nodes[node_id] = DependencyNode(
+                    id=node_id,
+                    ecosystem=self.name,
+                    alias=normalized,
+                    project_name=normalized,
+                    source=requirement.source or self.name,
+                    source_location=requirement.location,
+                    version=requirement.constraint,
+                    dev=requirement.dev
+                );
+            }
+            resolution.edges.append(
+                DependencyEdge(
+                    from_id=requirement.consumer_id or "root",
+                    to_id=node_id,
+                    kind="requirement",
+                    requirement=requirement.constraint,
+                    dev=requirement.dev
+                )
+            );
+        }
+        return resolution;
+    }
+
+    def stage_install(
+        config: JacConfig,
+        resolution: ProviderResolution,
+        stage_root: Path,
+        context: ResolutionContext
+    ) -> ProviderStage {
+        return ProviderStage();
+    }
+
+    def execute_install_plan(
+        config: JacConfig, resolution: ProviderResolution, ctx: InstallContext
+    ) -> bool {
+        # Recorded-only providers (e.g. npm, whose packages are installed by
+        # the client bundler at build time) have nothing to sync here.
+        return True;
+    }
 
     def resolve(
         config: JacConfig, include_dev: bool = False
@@ -173,6 +241,175 @@ obj PythonProvider(EcosystemProvider) {
     has name: str = "python",
         manifest_key: str = "",
         cli_flag: str = "";
+
+    override def resolve_requirements(
+        context: ResolutionContext,
+        requirements: list[ProviderRequirement],
+        prior_lock: LockGraph
+    ) -> ProviderResolution {
+        import json;
+        import re;
+        import subprocess;
+        import sys;
+        import tempfile;
+        import from jaclang.project.dependency_model {
+            canonical_dependency_id,
+            normalize_dependency_name
+        }
+        selected: list[ProviderRequirement] = [
+            requirement
+            for requirement in requirements
+            if requirement.ecosystem == self.name
+        ];
+        resolution = ProviderResolution();
+        if not selected {
+            return resolution;
+        }
+        if context.frozen {
+            for (node_id, graph_node) in prior_lock.nodes.items() {
+                if graph_node.ecosystem == self.name {
+                    resolution.nodes[node_id] = graph_node;
+                }
+            }
+            for graph_edge in prior_lock.edges {
+                if (
+                    graph_edge.to_id in resolution.nodes
+                    and (
+                        graph_edge.from_id == "root"
+                        or graph_edge.from_id in resolution.nodes
+                    )
+                ) {
+                    resolution.edges.append(graph_edge);
+                }
+            }
+            resolution.install_plan = [];
+            return resolution;
+        }
+        project_root = Path(selected[0].location or Path.cwd());
+        report_path = Path(tempfile.mktemp(prefix="jac-pip-", suffix=".json"));
+        specs: list[str] = [];
+        for requirement in selected {
+            specs.append(requirement.name + requirement.constraint);
+        }
+        command: list[str] = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--dry-run",
+            "--ignore-installed",
+            "--report",
+            str(report_path)
+        ]
+            + specs;
+        try {
+            result = subprocess.run(
+                command, cwd=str(project_root), capture_output=True, text=True
+            );
+            if result.returncode != 0 {
+                raise ValueError(
+                    "pip dependency resolution failed: "
+                        + (result.stderr or result.stdout or "unknown error")
+                );
+            }
+            pip_payload = json.loads(report_path.read_text(encoding="utf-8"));
+            install_rows = pip_payload.get("install", []);
+            by_name: dict[str, str] = {};
+            metadata_by_id: dict[str, dict[str, any]] = {};
+            for install_row in install_rows {
+                metadata = install_row.get("metadata", {});
+                if not isinstance(metadata, dict) {
+                    continue;
+                }
+                package_name = str(metadata.get("name", ""));
+                if not package_name {
+                    continue;
+                }
+                normalized = normalize_dependency_name(self.name, package_name);
+                node_id = canonical_dependency_id(self.name, normalized);
+                download = install_row.get("download_info", {});
+                download = download if isinstance(download, dict) else {};
+                archive = download.get("archive_info", {});
+                archive = archive if isinstance(archive, dict) else {};
+                hashes = archive.get("hashes", {});
+                hashes = hashes if isinstance(hashes, dict) else {};
+                tree = str(archive.get("hash", ""));
+                url = str(download.get("url", ""));
+                dist_node = DependencyNode(
+                    id=node_id,
+                    ecosystem=self.name,
+                    alias=normalized,
+                    project_name=package_name,
+                    source="artifact",
+                    source_location=url,
+                    tree=tree,
+                    version=str(metadata.get("version", "")),
+                    dev=any(
+                        requirement.dev
+                        for requirement in selected
+                        if normalize_dependency_name(self.name, requirement.name)
+                            == normalized
+                    )
+                );
+                resolution.nodes[node_id] = dist_node;
+                metadata_by_id[node_id] = metadata;
+                resolution.install_plan.append(
+                    {
+                        "id": node_id,
+                        "name": package_name,
+                        "version": str(metadata.get("version", "")),
+                        "url": url,
+                        "hashes": hashes
+                    }
+                );
+                direct = bool(install_row.get("is_direct", False));
+                if direct {
+                    for requirement in selected {
+                        if normalize_dependency_name(self.name, requirement.name)
+                            == normalized {
+                            resolution.edges.append(
+                                DependencyEdge(
+                                    from_id=requirement.consumer_id or "root",
+                                    to_id=node_id,
+                                    kind="requirement",
+                                    requirement=requirement.constraint,
+                                    dev=requirement.dev
+                                )
+                            );
+                        }
+                    }
+                }
+            }
+            for (node_id, node_metadata) in metadata_by_id.items() {
+                for requires_dist in node_metadata.get("requires_dist", []) {
+                    requirement_match = re.`match(
+                        r"^([A-Za-z0-9_.-]+)", str(requires_dist)
+                    );
+                    if requirement_match is None {
+                        continue;
+                    }
+                    child_name = normalize_dependency_name(
+                        self.name, requirement_match.group(1)
+                    );
+                    child_id = by_name.get(child_name);
+                    if child_id is not None {
+                        resolution.edges.append(
+                            DependencyEdge(
+                                from_id=node_id,
+                                to_id=child_id,
+                                kind="dependency",
+                                requirement=str(requires_dist),
+                                dev=False
+                            )
+                        );
+                    }
+                }
+            }
+            return resolution;
+        } finally {
+            report_path.unlink(missing_ok=True);
+        }
+    }
 
     override def resolve(
         config: JacConfig, include_dev: bool = False
@@ -407,6 +644,28 @@ obj PythonProvider(EcosystemProvider) {
         return self.install_specs(config, self.specs_for(deps), ctx);
     }
 
+    override def execute_install_plan(
+        config: JacConfig, resolution: ProviderResolution, ctx: InstallContext
+    ) -> bool {
+        # The resolution's install plan carries the exact closure pip resolved
+        # for the pure-jac packages' python requirements (root-declared and
+        # transitive). Pinning name==version replays it into the project venv;
+        # already-satisfied pins are pip no-ops.
+        specs: list[str] = [];
+        for row in resolution.install_plan {
+            if not isinstance(row, dict) {
+                continue;
+            }
+            name = str(row.get("name", ""));
+            version = str(row.get("version", ""));
+            if not name or not version or version == "*" {
+                continue;
+            }
+            specs.append(f"{name}=={version}");
+        }
+        return self.install_specs(config, specs, ctx);
+    }
+
     override def add_package(
         config: JacConfig, name: str, version: str, dev: bool, ctx: InstallContext
     ) -> str | None {
@@ -619,7 +878,8 @@ def get_provider_registry -> ProviderRegistry {
         _registry = ProviderRegistry();
         _registry.register(PythonProvider());
         import from jaclang.project.jac_provider { JacDepProvider }
-        _registry.register(JacDepProvider());
+        jac_provider: any = JacDepProvider();
+        _registry.register(jac_provider);
         initialize_provider_registry();
     }
     return _registry;

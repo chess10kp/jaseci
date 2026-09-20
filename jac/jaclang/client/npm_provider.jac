@@ -1,5 +1,15 @@
+import json;
 import from pathlib { Path }
 import from jaclang.project.config { JacConfig }
+import from jaclang.project.dependency_model {
+    DependencyEdge,
+    DependencyNode,
+    ProviderRequirement,
+    ProviderResolution,
+    ResolutionContext,
+    canonical_dependency_id,
+    normalize_dependency_name
+}
 import from jaclang.project.providers {
     EcosystemProvider,
     InstallContext,
@@ -135,6 +145,125 @@ obj NpmProvider(EcosystemProvider) {
     has name: str = "npm",
         manifest_key: str = "npm",
         cli_flag: str = "--npm";
+
+    override def resolve_requirements(
+        context: ResolutionContext,
+        requirements: list[ProviderRequirement],
+        prior_lock: any
+    ) -> ProviderResolution {
+        resolution = ProviderResolution();
+        selected: list[ProviderRequirement] = [
+            requirement
+            for requirement in requirements
+            if requirement.ecosystem == self.name
+        ];
+        if not selected {
+            return resolution;
+        }
+        project_root = Path(selected[0].location or Path.cwd());
+        lock_path = project_root / "package-lock.json";
+        lock_payload: dict[str, any] = {};
+        if lock_path.is_file() {
+            lock_payload = json.loads(lock_path.read_text(encoding="utf-8"));
+        }
+        package_rows = lock_payload.get("packages", {});
+        package_rows = package_rows if isinstance(package_rows, dict) else {};
+        by_name: dict[str, str] = {};
+        for (package_path, package_data) in package_rows.items() {
+            if (
+                not isinstance(package_data, dict)
+                or not package_path.startswith("node_modules/")
+            ) {
+                continue;
+            }
+            if "/node_modules/" in package_name {
+                package_name = package_name.rsplit("/node_modules/", 1)[1];
+            }
+            normalized = normalize_dependency_name(self.name, package_name);
+            node_id = canonical_dependency_id(self.name, normalized);
+            by_name[normalized] = node_id;
+            resolution.nodes[node_id] = DependencyNode(
+                id=node_id,
+                ecosystem=self.name,
+                alias=normalized,
+                project_name=package_name,
+                source="npm",
+                source_location=str(lock_path),
+                version=str(package_data.get("version", "")),
+                dev=bool(package_data.get("dev", False))
+            );
+            resolution.install_plan.append(
+                {
+                    "id": node_id,
+                    "name": package_name,
+                    "version": str(package_data.get("version", "")),
+                    "resolved": str(package_data.get("resolved", "")),
+                    "integrity": str(package_data.get("integrity", ""))
+                }
+            );
+        }
+        for requirement in selected {
+            normalized = normalize_dependency_name(self.name, requirement.name);
+            node_id: str = by_name.get(normalized) or "";
+            if not node_id {
+                node_id = canonical_dependency_id(self.name, normalized);
+                resolution.nodes[node_id] = DependencyNode(
+                    id=node_id,
+                    ecosystem=self.name,
+                    alias=normalized,
+                    project_name=requirement.name,
+                    source="npm",
+                    source_location=str(lock_path),
+                    version=requirement.constraint,
+                    dev=requirement.dev
+                );
+            }
+            resolution.edges.append(
+                DependencyEdge(
+                    from_id=requirement.consumer_id or "root",
+                    to_id=node_id,
+                    kind="requirement",
+                    requirement=requirement.constraint,
+                    dev=requirement.dev
+                )
+            );
+        }
+        for (package_path, package_data) in package_rows.items() {
+            if (
+                not isinstance(package_data, dict)
+                or not package_path.startswith("node_modules/")
+            ) {
+                continue;
+            }
+            package_name = package_path[len("node_modules/"):];
+            if "/node_modules/" in package_name {
+                package_name = package_name.rsplit("/node_modules/", 1)[1];
+            }
+            from_id: str = by_name.get(
+                normalize_dependency_name(self.name, package_name)
+            )
+                or "";
+            if not from_id {
+                continue;
+            }
+            for (child_name, child_constraint) in package_data.get(
+                "dependencies", {}
+            ).items() {
+                to_id = by_name.get(normalize_dependency_name(self.name, child_name));
+                if to_id is not None {
+                    resolution.edges.append(
+                        DependencyEdge(
+                            from_id=from_id,
+                            to_id=to_id,
+                            kind="dependency",
+                            requirement=str(child_constraint)
+                        )
+                    );
+                }
+            }
+        }
+        return resolution;
+    }
 
     override def resolve(
         config: JacConfig, include_dev: bool = False

@@ -149,8 +149,13 @@ def get_jac_search_paths(base_path: (str | None) = None) -> list[str] {
         paths.append(project_root);
     }
 
+    # Lazy: modresolver is a frozen bootstrap module executed by
+    # meta_importer before JacMetaImporter is registered. A module-level
+    # import here would make PathFinder cache jaclang.project as a bare
+    # namespace package (no __init__.py) for the whole process, hiding the
+    # compiled package (__all__, exports) from every later importer.
     try {
-        import from jaclang.project.jac_provider { read_deps_roots }
+        import from jaclang.project.dep_roots { read_deps_roots }
         for dep_root in read_deps_roots(Path(str(project_root or os.getcwd()))) {
             paths.append(dep_root);
         }
