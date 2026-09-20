@@ -1,6 +1,4 @@
-import subprocess;
 import logging;
-import from pathlib { Path }
 import from jaclang.scale.deploy.target.service_deployer { ServiceDeployer }
 import from jaclang.scale.runtime.gateway.service_registry {
     ServiceRegistry,

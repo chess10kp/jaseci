@@ -1,5 +1,3 @@
-import shutil;
-
 import from jaclang.server.serving.ws { WebSocket }
 import from jaclang.server.serving.endpoint { WSEndPoint }
 import from jaclang.scale.runtime.routing {

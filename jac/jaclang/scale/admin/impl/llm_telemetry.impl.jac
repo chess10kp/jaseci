@@ -5,7 +5,6 @@ import uuid;
 import from collections { OrderedDict }
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
-import from jaclang.server.transport { TransportResponse, Meta }
 import from jaclang.server.server { JsonValue }
 import from jaclang.server.serving.endpoint {
     HTTPMethod,

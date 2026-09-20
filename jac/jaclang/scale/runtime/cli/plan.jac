@@ -5,8 +5,7 @@ import from jaclang.scale.deploy.target.kubernetes.manifest_builder { ScalingMod
 import from jaclang.scale.runtime.context.util { GATEWAY_NAME }
 import from jaclang.scale.runtime.cli.diagnostics {
     Diagnostic,
-    PlanValidator,
-    has_errors
+    PlanValidator
 }
 import from jaclang.scale.runtime.cli._narrow { dget, fget, iget, lget, pod_spec, sget }
 import from jaclang.scale.runtime.fleet { FleetSpec }

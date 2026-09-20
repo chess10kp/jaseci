@@ -1,5 +1,3 @@
-import os;
-import pathlib;
 import re;
 import from jaclang.cli.console { console }
 import from jaclang.scale._optdeps.kubernetes { client }

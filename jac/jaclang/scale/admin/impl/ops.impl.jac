@@ -6,9 +6,7 @@ import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
 import from jaclang.server.serving.endpoint {
     HTTPMethod,
-    JEndPoint,
-    APIParameter,
-    ParameterType
+    JEndPoint
 }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.admin.service_urls { service_base_url }

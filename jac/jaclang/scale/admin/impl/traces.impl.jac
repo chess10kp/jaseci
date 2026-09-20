@@ -1,4 +1,3 @@
-import os;
 import logging;
 import time;
 import from jaclang.server.serving.datatypes { Request }
@@ -9,7 +8,6 @@ import from jaclang.server.serving.endpoint {
     APIParameter,
     ParameterType
 }
-import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.admin.service_urls { service_base_url }
 
 glob logger = logging.getLogger(__name__);

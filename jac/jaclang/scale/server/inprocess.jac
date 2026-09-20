@@ -2,7 +2,6 @@ import os;
 import sys;
 
 import from jaclang { JacRuntime as Jac }
-import from jaclang.runtime.constants { Constants as Con }
 import type from jaclang.runtime.context { ExecutionContext }
 import from jaclang.jac0core.ext_registry { base_stem }
 import from jaclang.server.server { JacAPIServer, ServerExtension }

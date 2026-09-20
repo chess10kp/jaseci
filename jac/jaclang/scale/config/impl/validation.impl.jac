@@ -1,7 +1,4 @@
-import from jaclang.project.config_schema {
-    report_schema_findings,
-    validate_against_schema
-}
+import from jaclang.project.config_schema { validate_against_schema }
 import from jaclang.scale.config.plugin_config {
     JacScalePluginConfig,
     app_scale_schema

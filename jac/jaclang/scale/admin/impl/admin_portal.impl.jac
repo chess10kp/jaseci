@@ -11,7 +11,6 @@ import mimetypes;
 import subprocess;
 import from pathlib { Path }
 import from jaclang.server.transport { TransportResponse, Meta }
-import from jaclang.server.server { JsonValue }
 import from jaclang.server.serving.endpoint {
     HTTPMethod,
     JEndPoint,
@@ -19,7 +18,7 @@ import from jaclang.server.serving.endpoint {
     ParameterType
 }
 import from jaclang.scale.config.config_loader { get_scale_config }
-import from jaclang.server.identity.user_manager { UserRole, UserManager }
+import from jaclang.server.identity.user_manager { UserManager }
 import from jaclang.runtime.runtime { JacRuntime as Jac }
 import from jaclang.runtime.constants { Constants as Con }
 

@@ -7,8 +7,7 @@ import from jaclang.scale.runtime.gateway.gateway { Gateway }
 import from jaclang.scale.runtime.gateway.service_registry { ServiceRegistry }
 import from jaclang.scale.runtime.gateway.dispatch {
     classify_route,
-    ROUTE_PROXY,
-    ROUTE_STATIC
+    ROUTE_PROXY
 }
 import from jaclang.scale.runtime.transport.transport { ServiceTransport }
 import from jaclang.scale.runtime.context.util {

@@ -1,5 +1,4 @@
 import from pathlib { Path }
-import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes {
     FileResponse,
     HTMLResponse,
