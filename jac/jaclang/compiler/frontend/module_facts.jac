@@ -47,16 +47,13 @@ obj ModuleFacts {
         return False;
     }
 
-    # Syntax-only mirror of TypeUtils.is_overload_sym
-    # (types/impl/type_utils.impl.jac), which additionally resolves the
-    # decorated name's origin via origin_of_local_name (typing /
-    # typing_extensions, incl. aliased imports). The frontend cannot
-    # import types/, so origin resolution stays there; do not dedupe one
-    # into the other. Decorators parse via parse_atomic_chain, so @overload
-    # arrives as a bare Name and @typing.overload as an AtomTrailer;
-    # aliased imports (overload as ovl) still need origin resolution and
-    # remain a known gap here.
     static def ability_is_overload(ability: Ability) -> bool {
+        """Syntax-only mirror of TypeUtils.is_overload_sym, which
+        additionally resolves the decorated name's origin via
+        origin_of_local_name (aliased imports of ``overload`` remain a
+        known gap here). The frontend cannot import types/, so origin
+        resolution stays there; do not dedupe one into the other.
+        """;
         for dec in (ability.decorators or []) {
             tail = dec.right if isinstance(dec, AtomTrailer) else dec;
             if isinstance(tail, Name) and tail.value == "overload" {

@@ -345,14 +345,14 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
     }
 }
 
-# Pass-local mirror of ModuleFacts.ability_is_overload. This pass impl
-# is natively lowered during the self-build (jac build --native --lib
-# jc_unit.jac), and a static call into module_facts -- a module the
-# native lane does not lower -- hard-fails with E5092 there, so the
-# shared predicate cannot be used from lowered pass code. Keep in sync
-# with ModuleFacts.ability_is_overload, including the AtomTrailer
-# unwrap for the qualified @typing.overload spelling.
 impl ASTValidationPass._is_overload(ability: Ability) -> bool {
+    """Pass-local mirror of ModuleFacts.ability_is_overload. This pass
+    impl is natively lowered during the self-build (jac build --native
+    --lib jc_unit.jac), and a static call into module_facts -- a module
+    the native lane does not lower -- hard-fails with E5092 there. Keep
+    in sync, including the AtomTrailer unwrap for the qualified
+    @typing.overload spelling.
+    """;
     for dec in (ability.decorators or []) {
         tail = dec.right if isinstance(dec, AtomTrailer) else dec;
         if isinstance(tail, Name) and tail.value == "overload" {
