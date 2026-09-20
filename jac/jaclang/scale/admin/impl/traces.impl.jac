@@ -2,12 +2,7 @@ import logging;
 import time;
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
-import from jaclang.server.serving.endpoint {
-    HTTPMethod,
-    JEndPoint,
-    APIParameter,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 import from jaclang.scale.admin.service_urls { service_base_url }
 
 glob logger = logging.getLogger(__name__);
@@ -179,12 +174,10 @@ impl JacAPIServerTraces.register_traces_endpoints -> None {
         );
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/traces/services",
-            callback=services_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/traces/services",
+            services_handler,
             tags=["Traces"],
             summary="Service dropdown options",
             description=(
@@ -275,12 +268,10 @@ impl JacAPIServerTraces.register_traces_endpoints -> None {
         );
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/traces",
-            callback=search_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/traces",
+            search_handler,
             tags=["Traces"],
             summary="TraceQL search",
             description=(
@@ -320,21 +311,13 @@ impl JacAPIServerTraces.register_traces_endpoints -> None {
         return JSONResponse(content={"ok": True, "data": flat});
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/traces/{trace_id}",
-            callback=trace_handler,
+        ep(
+            HTTPMethod.GET,
+            "/admin/traces/{trace_id}",
+            trace_handler,
             parameters=[
-                APIParameter(
-                    name="trace_id",
-                    data_type="string",
-                    required=True,
-                    default_value=None,
-                    description="Trace id (dashed UUID or 32-hex Tempo form)",
-                    kind=ParameterType.PATH
-                )
+                path_param("trace_id", "Trace id (dashed UUID or 32-hex Tempo form)")
             ],
-            response_model=None,
             tags=["Traces"],
             summary="One trace's spans (flame graph)",
             description=(

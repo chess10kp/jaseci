@@ -4,10 +4,7 @@ import logging;
 import time;
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
-import from jaclang.server.serving.endpoint {
-    HTTPMethod,
-    JEndPoint
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.admin.service_urls { service_base_url }
 import from jaclang.scale.admin.traces { _tempo_base_url }
@@ -401,12 +398,10 @@ impl JacAPIServerOps.register_ops_endpoints -> None {
         return;
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/ops/health",
-            callback=health_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/ops/health",
+            health_handler,
             tags=["Operations"],
             summary="Signal self-check (traces/logs/metrics/postgres/admin)",
             description=(

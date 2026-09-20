@@ -9,7 +9,7 @@ import from jaclang.server.serving.datatypes { Request, Response, StreamingRespo
 import from jaclang.server.serving.endpoint {
     APIParameter,
     HTTPMethod,
-    JEndPoint,
+    ep,
     ParameterType
 }
 import from jaclang.server.outbox {
@@ -224,10 +224,10 @@ def register_walker_endpoints(server: JacAPIServer) {
         requires_auth = server.introspector.is_auth_required_for_walker(walker_name);
         callback = walker_callback(server, walker_name);
         server.add_endpoint(
-            JEndPoint(
-                method=method,
-                path=f"{path}/{{nd}}",
-                callback=callback,
+            ep(
+                method,
+                f"{path}/{{nd}}",
+                callback,
                 parameters=walker_parameters(
                     server, walker_name, invoke_on_root=False, method=method
                 ),
@@ -239,10 +239,10 @@ def register_walker_endpoints(server: JacAPIServer) {
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=method,
-                path=path,
-                callback=callback,
+            ep(
+                method,
+                path,
+                callback,
                 parameters=walker_parameters(
                     server, walker_name, invoke_on_root=True, method=method
                 ),
@@ -378,10 +378,10 @@ def register_function_endpoints(server: JacAPIServer) {
             str(restspec.produces or 'text/plain') if raw_body else None
         );
         server.add_endpoint(
-            JEndPoint(
-                method=method,
-                path=path,
-                callback=function_callback(server, func_name),
+            ep(
+                method,
+                path,
+                function_callback(server, func_name),
                 parameters=function_parameters(server, func_name, method=method),
                 media_type=raw_media,
                 tags=['Functions'],

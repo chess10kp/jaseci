@@ -5,10 +5,11 @@ import from jaclang.server.middleware { require_user }
 import from jaclang.server.server { JacAPIServer, ServerExtension }
 import from jaclang.server.serving.datatypes { RedirectResponse, Request, Response }
 import from jaclang.server.serving.endpoint {
-    APIParameter,
     HTTPMethod,
-    JEndPoint,
-    ParameterType
+    ep,
+    path_param,
+    query_param,
+    body_param
 }
 import from jaclang.server.transport { TransportResponse }
 import from jaclang.scale.config.config_loader { get_scale_config }
@@ -34,13 +35,7 @@ obj SSOExtension(ServerExtension) {
     def register(server: JacAPIServer) {
         sso = SSOAuth(users=server.user_manager);
         self.sso = sso;
-        platform_param = APIParameter(
-            name='platform',
-            data_type='string',
-            required=True,
-            description='SSO platform: google, apple, github',
-            kind=ParameterType.PATH
-        );
+        platform_param = path_param('platform', 'SSO platform: google, apple, github');
 
         async def sso_initiate(
             platform: str, operation: str, client_callback: (str | None) = None
@@ -48,25 +43,17 @@ obj SSOExtension(ServerExtension) {
             return await sso.sso_initiate(platform, operation, client_callback);
         }
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path='/sso/{platform}/{operation}',
-                callback=sso_initiate,
+            ep(
+                HTTPMethod.GET,
+                '/sso/{platform}/{operation}',
+                sso_initiate,
                 parameters=[
                     platform_param,
-                    APIParameter(
-                        name='operation',
-                        data_type='string',
-                        required=True,
-                        description='Operation: "login" or "register"',
-                        kind=ParameterType.PATH
-                    ),
-                    APIParameter(
-                        name='client_callback',
-                        data_type='string',
-                        required=False,
-                        description='Optional loopback URL for native clients; the token is redirected there after auth. Ignored unless it is a loopback address.',
-                        kind=ParameterType.QUERY
+                    path_param('operation', 'Operation: "login" or "register"'),
+                    query_param(
+                        'client_callback',
+                        'Optional loopback URL for native clients; the token is redirected there after auth. Ignored unless it is a loopback address.',
+                        default_value=None
                     )
                 ],
                 tags=['SSO APIs'],
@@ -141,18 +128,15 @@ obj SSOExtension(ServerExtension) {
             ("poll", oauth_poll, ["poll"])
         ] {
             server.add_endpoint(
-                JEndPoint(
-                    method=HTTPMethod.POST,
-                    path="/sso/{platform}/" + path,
-                    callback=callback,
+                ep(
+                    HTTPMethod.POST,
+                    "/sso/{platform}/" + path,
+                    callback,
                     parameters=[platform_param]
                         + [
-                            APIParameter(
-                                name=name,
-                                data_type="string",
-                                required=name != "mode",
-                                kind=ParameterType.BODY
-                            ) for name in names
+                            body_param(name, default_value=None)
+                                if name == "mode"
+                                else body_param(name) for name in names
                         ],
                     tags=["SSO APIs"],
                     summary="OAuth session " + path
@@ -223,10 +207,10 @@ obj SSOExtension(ServerExtension) {
         }
         for method in (HTTPMethod.GET, HTTPMethod.POST) {
             server.add_endpoint(
-                JEndPoint(
-                    method=method,
-                    path='/sso/{platform}/callback',
-                    callback=sso_callback,
+                ep(
+                    method,
+                    '/sso/{platform}/callback',
+                    sso_callback,
                     parameters=[platform_param],
                     tags=['SSO APIs'],
                     summary=f"SSO callback ({method.value})",
@@ -239,10 +223,10 @@ obj SSOExtension(ServerExtension) {
             return await sso.firebase_token_auth_with_id_token(body_data.id_token);
         }
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path='/sso/firebase/token',
-                callback=firebase_token,
+            ep(
+                HTTPMethod.POST,
+                '/sso/firebase/token',
+                firebase_token,
                 request_model=FirebaseTokenRequest,
                 tags=['SSO APIs'],
                 summary='Firebase Auth token verification',
@@ -308,32 +292,22 @@ obj ApiKeyExtension(ServerExtension) {
             return keys().revoke_api_key(str(user_id), api_key_id);
         }
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path='/api-key/create',
-                callback=create_api_key,
+            ep(
+                HTTPMethod.POST,
+                '/api-key/create',
+                create_api_key,
                 parameters=[
-                    APIParameter(
-                        name='name',
-                        data_type='string',
-                        required=True,
-                        description='A friendly name for the API key',
-                        kind=ParameterType.BODY
+                    body_param('name', 'A friendly name for the API key'),
+                    body_param(
+                        'expiry_days',
+                        'Days until expiry (default from config)',
+                        'integer',
+                        default_value=None
                     ),
-                    APIParameter(
-                        name='expiry_days',
-                        data_type='integer',
-                        required=False,
-                        description='Days until expiry (default from config)',
-                        kind=ParameterType.BODY
-                    ),
-                    APIParameter(
-                        name='allowed_walkers',
-                        data_type='string',
-                        required=False,
-                        default_value='',
-                        description='Comma-separated webhook walker names this key may call; empty for an unscoped key.',
-                        kind=ParameterType.BODY
+                    body_param(
+                        'allowed_walkers',
+                        'Comma-separated webhook walker names this key may call; empty for an unscoped key.',
+                        default_value=''
                     )
                 ],
                 tags=['API Keys'],
@@ -343,29 +317,22 @@ obj ApiKeyExtension(ServerExtension) {
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path='/api-key/list',
-                callback=list_api_keys,
-                parameters=[],
+            ep(
+                HTTPMethod.GET,
+                '/api-key/list',
+                list_api_keys,
                 tags=['API Keys'],
                 summary='List API keys',
                 requires_auth=True
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.DELETE,
-                path='/api-key/{api_key_id}',
-                callback=revoke_api_key,
+            ep(
+                HTTPMethod.DELETE,
+                '/api-key/{api_key_id}',
+                revoke_api_key,
                 parameters=[
-                    APIParameter(
-                        name='api_key_id',
-                        data_type='string',
-                        required=True,
-                        description='The ID of the API key to revoke',
-                        kind=ParameterType.PATH
-                    )
+                    path_param('api_key_id', 'The ID of the API key to revoke')
                 ],
                 tags=['API Keys'],
                 summary='Revoke an API key',

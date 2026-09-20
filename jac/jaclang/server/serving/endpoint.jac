@@ -50,3 +50,69 @@ obj WSEndPoint {
         handler: Callable[..., any],
         summary: (str | None) = None;
 }
+
+obj _NoDefault {}
+
+glob _NO_DEFAULT: _NoDefault = _NoDefault();
+
+def _param(
+    name: str, description: str, data_type: str, default_value: any, kind: ParameterType
+) -> APIParameter {
+    has_default = default_value is not _NO_DEFAULT;
+    return APIParameter(
+        name=name,
+        kind=kind,
+        data_type=data_type,
+        required=not has_default,
+        default_value=(default_value if has_default else None),
+        description=description
+    );
+}
+
+def path_param(
+    name: str,
+    description: str = '',
+    data_type: str = 'string',
+    default_value: any = _NO_DEFAULT
+) -> APIParameter {
+    return _param(name, description, data_type, default_value, ParameterType.PATH);
+}
+
+def query_param(
+    name: str,
+    description: str = '',
+    data_type: str = 'string',
+    default_value: any = _NO_DEFAULT
+) -> APIParameter {
+    return _param(name, description, data_type, default_value, ParameterType.QUERY);
+}
+
+def body_param(
+    name: str,
+    description: str = '',
+    data_type: str = 'string',
+    default_value: any = _NO_DEFAULT
+) -> APIParameter {
+    return _param(name, description, data_type, default_value, ParameterType.BODY);
+}
+
+def header_param(
+    name: str,
+    description: str = '',
+    data_type: str = 'string',
+    default_value: any = _NO_DEFAULT
+) -> APIParameter {
+    return _param(name, description, data_type, default_value, ParameterType.HEADER);
+}
+
+def ep(
+    method: HTTPMethod,
+    path: str,
+    callback: Callable[..., any],
+    parameters: (list[APIParameter] | None) = None,
+    **kw: any
+) -> JEndPoint {
+    return JEndPoint(
+        method=method, path=path, callback=callback, parameters=parameters, **kw
+    );
+}

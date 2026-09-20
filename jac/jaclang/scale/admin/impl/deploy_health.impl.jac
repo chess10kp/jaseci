@@ -2,7 +2,7 @@ import asyncio;
 import logging;
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
-import from jaclang.server.serving.endpoint { HTTPMethod, JEndPoint }
+import from jaclang.server.serving.endpoint { HTTPMethod, ep }
 import from jaclang.scale.admin.k8s_ops {
     apps_api,
     core_api,
@@ -200,12 +200,10 @@ impl JacAPIServerDeployHealth.register_deploy_health_endpoints -> None {
         return;
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/ops/deploy",
-            callback=deploy_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/ops/deploy",
+            deploy_handler,
             tags=["Operations"],
             summary="Deploy health (pods + deployments)",
             description=(

@@ -4,12 +4,7 @@ import time;
 import re;
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
-import from jaclang.server.serving.endpoint {
-    HTTPMethod,
-    JEndPoint,
-    APIParameter,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.admin.service_urls { service_base_url }
 
@@ -235,12 +230,10 @@ impl JacAPIServerLogs.register_logs_endpoints -> None {
         );
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/logs/services",
-            callback=services_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/logs/services",
+            services_handler,
             tags=["Logs"],
             summary="Service dropdown options",
             description=(
@@ -340,12 +333,10 @@ impl JacAPIServerLogs.register_logs_endpoints -> None {
         );
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/logs",
-            callback=query_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/logs",
+            query_handler,
             tags=["Logs"],
             summary="Paginated log query",
             description=(
@@ -417,21 +408,13 @@ impl JacAPIServerLogs.register_logs_endpoints -> None {
         );
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/logs/trace/{trace_id}",
-            callback=trace_handler,
+        ep(
+            HTTPMethod.GET,
+            "/admin/logs/trace/{trace_id}",
+            trace_handler,
             parameters=[
-                APIParameter(
-                    name="trace_id",
-                    data_type="string",
-                    required=True,
-                    default_value=None,
-                    description="K-12 trace id (full UUID or 8-char short form)",
-                    kind=ParameterType.PATH
-                )
+                path_param("trace_id", "K-12 trace id (full UUID or 8-char short form)")
             ],
-            response_model=None,
             tags=["Logs"],
             summary="All log lines for one trace",
             description=(

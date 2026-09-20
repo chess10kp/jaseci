@@ -2,15 +2,9 @@ import os;
 import time;
 import math;
 import logging;
-import from jaclang.server.serving.datatypes { Request }
-import asyncio;
 import from jaclang.server.transport { TransportResponse, Meta }
-import from jaclang.server.serving.endpoint {
-    HTTPMethod,
-    JEndPoint,
-    APIParameter,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, query_param }
+import from jaclang.scale.admin.auth_wrap { authed_thread }
 import from jaclang.scale.observability.prometheus_client {
     query as prom_query,
     query_range as prom_query_range,
@@ -114,83 +108,48 @@ impl JacAPIServerWorkloads.register_workloads_endpoints -> None {
         return;
     }
 
-    async def summary_handler(request: Request) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return await asyncio.to_thread(self.admin_workloads_summary, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/workloads',
-            callback=summary_handler,
-            parameters=[],
-            response_model=None,
-            tags=['Admin'],
+    for endpoint in [
+        ep(
+            HTTPMethod.GET,
+            '/admin/workloads',
+            authed_thread(self.admin_workloads_summary),
             summary='Workloads summary',
             description='Top-line workload health stats for the admin dashboard (admin only)'
-        )
-    );
-    async def list_handler(request: Request) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return await asyncio.to_thread(self.admin_workloads_list, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/workloads/list',
-            callback=list_handler,
-            parameters=[],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/workloads/list',
+            authed_thread(self.admin_workloads_list),
             summary='List workloads',
             description='Per-workload health table (Deployments, StatefulSets, DaemonSets) for the admin dashboard (admin only)'
-        )
-    );
-    async def pods_handler(request: Request) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return await asyncio.to_thread(self.admin_workloads_pods, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/workloads/pods',
-            callback=pods_handler,
-            parameters=[],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/workloads/pods',
+            authed_thread(self.admin_workloads_pods),
             summary='List pods',
             description='Per-pod health table for the admin dashboard (admin only)'
-        )
-    );
-    async def all_timeseries_handler(
-        request: Request, range_minutes: int = 60
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return await asyncio.to_thread(
-            self.admin_workloads_timeseries, range_minutes, authorization
-        );
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/workloads/timeseries',
-            callback=all_timeseries_handler,
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/workloads/timeseries',
+            authed_thread(self.admin_workloads_timeseries),
             parameters=[
-                APIParameter(
-                    name='range_minutes',
-                    data_type='integer',
-                    required=False,
-                    default_value=60,
-                    description='Range in minutes (60=1h, 360=6h, 1440=24h, 10080=7d)',
-                    kind=ParameterType.QUERY
+                query_param(
+                    'range_minutes',
+                    'Range in minutes (60=1h, 360=6h, 1440=24h, 10080=7d)',
+                    'integer',
+                    60
                 )
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='All-workload time-series',
             description='CPU + memory time-series for every workload over a range (admin only)'
         )
-    );
+    ] {
+        endpoint.tags = ['Admin'];
+        endpoint.forward_undeclared_query_params = False;
+        server.add_endpoint(endpoint);
+    }
 }
 
 impl JacAPIServerWorkloads.admin_workloads_summary(

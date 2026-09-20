@@ -13,7 +13,8 @@ import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.endpoint {
     APIParameter,
     HTTPMethod,
-    JEndPoint,
+    ep,
+    header_param,
     ParameterType
 }
 import from jaclang.server.transport { Meta, TransportResponse }
@@ -72,50 +73,35 @@ obj WebhookExtension(ServerExtension) {
         if walker_scheme(server, walker_name) == GITHUB_SCHEME {
             header = github_signature_header(get_scale_config().get_webhook_config());
             parameters = [
-                APIParameter(
-                    name=header_param_name(header),
-                    data_type='string',
-                    required=True,
-                    description=f"sha256= plus HMAC-SHA256 of the raw body, keyed by [scale.webhook].github_secret ({header} header, the name set by [scale.webhook].github_signature_header)",
-                    kind=ParameterType.HEADER
+                header_param(
+                    header_param_name(header),
+                    f"sha256= plus HMAC-SHA256 of the raw body, keyed by [scale.webhook].github_secret ({header} header, the name set by [scale.webhook].github_signature_header)"
                 ),
-                APIParameter(
-                    name='x_github_event',
-                    data_type='string',
-                    required=False,
-                    description='Event name, copied into a declared `event` field (X-GitHub-Event header)',
-                    kind=ParameterType.HEADER
+                header_param(
+                    'x_github_event',
+                    'Event name, copied into a declared `event` field (X-GitHub-Event header)',
+                    default_value=None
                 ),
-                APIParameter(
-                    name='x_github_delivery',
-                    data_type='string',
-                    required=False,
-                    description='Delivery id, copied into a declared `delivery` field (X-GitHub-Delivery header)',
-                    kind=ParameterType.HEADER
+                header_param(
+                    'x_github_delivery',
+                    'Delivery id, copied into a declared `delivery` field (X-GitHub-Delivery header)',
+                    default_value=None
                 )
             ];
         } else {
             parameters = [
-                APIParameter(
-                    name='x_api_key',
-                    data_type='string',
-                    required=True,
-                    description='API key for webhook authentication (X-API-Key header)',
-                    kind=ParameterType.HEADER
+                header_param(
+                    'x_api_key', 'API key for webhook authentication (X-API-Key header)'
                 ),
-                APIParameter(
-                    name='x_webhook_signature',
-                    data_type='string',
-                    required=False,
-                    description='HMAC-SHA256 of "<timestamp>." + body, keyed by the signing secret (X-Webhook-Signature header)',
-                    kind=ParameterType.HEADER
+                header_param(
+                    'x_webhook_signature',
+                    'HMAC-SHA256 of "<timestamp>." + body, keyed by the signing secret (X-Webhook-Signature header)',
+                    default_value=None
                 ),
-                APIParameter(
-                    name='x_webhook_timestamp',
-                    data_type='string',
-                    required=False,
-                    description='Unix timestamp (seconds) bound into the signature (X-Webhook-Timestamp header)',
-                    kind=ParameterType.HEADER
+                header_param(
+                    'x_webhook_timestamp',
+                    'Unix timestamp (seconds) bound into the signature (X-Webhook-Timestamp header)',
+                    default_value=None
                 )
             ];
         }
@@ -390,10 +376,10 @@ obj WebhookExtension(ServerExtension) {
                 description = f"Webhook for {walker_name}: API key plus HMAC-SHA256 signature.";
             }
             server.add_endpoint(
-                JEndPoint(
-                    method=HTTPMethod.POST,
-                    path=f"/webhook/{walker_name}",
-                    callback=self.webhook_callback(server, walker_name),
+                ep(
+                    HTTPMethod.POST,
+                    f"/webhook/{walker_name}",
+                    self.webhook_callback(server, walker_name),
                     parameters=self.webhook_parameters(server, walker_name),
                     tags=['Webhooks'],
                     summary=f"Webhook endpoint for {walker_name}",

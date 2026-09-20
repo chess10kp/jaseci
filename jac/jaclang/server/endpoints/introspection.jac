@@ -1,11 +1,6 @@
 import from jaclang.server.middleware { unauthorized }
 import from jaclang.server.serving.datatypes { Request }
-import from jaclang.server.serving.endpoint {
-    APIParameter,
-    HTTPMethod,
-    JEndPoint,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 import from jaclang.server.server { JacAPIServer }
 import from jaclang.server.transport { Meta, TransportResponse }
 
@@ -20,11 +15,7 @@ def _not_found(kind: str, name: str) -> TransportResponse {
 
 
 def register_introspection_endpoints(server: JacAPIServer) {
-    name_param = [
-        APIParameter(
-            name='name', data_type='string', required=True, kind=ParameterType.PATH
-        )
-    ];
+    name_param = [path_param('name', '')];
 
     def list_functions(request: Request) -> TransportResponse {
         return TransportResponse.success(
@@ -89,10 +80,10 @@ def register_introspection_endpoints(server: JacAPIServer) {
         (HTTPMethod.GET, '/walker/{name}', walker_info, name_param, 'Walker fields')
     ] {
         server.add_endpoint(
-            JEndPoint(
-                method=method,
-                path=path,
-                callback=cb,
+            ep(
+                method,
+                path,
+                cb,
                 parameters=params,
                 tags=['Introspection'],
                 summary=summary,

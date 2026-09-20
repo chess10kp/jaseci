@@ -1,5 +1,4 @@
 import logging;
-import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes {
     FileResponse,
     HTMLResponse,
@@ -13,11 +12,13 @@ import from pathlib { Path }
 import from jaclang.server.transport { TransportResponse, Meta }
 import from jaclang.server.serving.endpoint {
     HTTPMethod,
-    JEndPoint,
-    APIParameter,
-    ParameterType
+    ep,
+    path_param,
+    query_param,
+    body_param
 }
 import from jaclang.scale.config.config_loader { get_scale_config }
+import from jaclang.scale.admin.auth_wrap { authed }
 import from jaclang.server.identity.user_manager { UserManager }
 import from jaclang.runtime.runtime { JacRuntime as Jac }
 import from jaclang.runtime.constants { Constants as Con }
@@ -48,274 +49,98 @@ impl JacAPIServerAdmin.register_admin_endpoints -> None {
         return;
     }
 
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/admin/login',
-            callback=self.admin_login,
+    for endpoint in [
+        ep(
+            HTTPMethod.POST,
+            '/admin/login',
+            self.admin_login,
             parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Admin username',
-                    kind=ParameterType.BODY
-                ),
-                APIParameter(
-                    name='password',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Admin password',
-                    kind=ParameterType.BODY
-                )
+                body_param('username', 'Admin username'),
+                body_param('password', 'Admin password')
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Admin login',
             description='Authenticate as admin user'
-        )
-    );
-
-    import from jaclang.server.serving.datatypes { Request }
-    async def reset_password_handler(
-        request: Request, current_password: str, new_password: str
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.reset_password(current_password, new_password, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/admin/reset-password',
-            callback=reset_password_handler,
+        ),
+        ep(
+            HTTPMethod.POST,
+            '/admin/reset-password',
+            authed(self.reset_password),
             parameters=[
-                APIParameter(
-                    name='current_password',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Current password',
-                    kind=ParameterType.BODY
-                ),
-                APIParameter(
-                    name='new_password',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='New password',
-                    kind=ParameterType.BODY
-                )
+                body_param('current_password', 'Current password'),
+                body_param('new_password', 'New password')
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Reset password',
             description='Reset password for users requiring password change'
-        )
-    );
-
-    async def list_users_handler(
-        request: Request, limit: int = 100, offset: int = 0
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_list_users(limit, offset, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/users',
-            callback=list_users_handler,
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/users',
+            authed(self.admin_list_users),
             parameters=[
-                APIParameter(
-                    name='limit',
-                    data_type='integer',
-                    required=False,
-                    default_value=100,
-                    description='Max users to return',
-                    kind=ParameterType.QUERY
-                ),
-                APIParameter(
-                    name='offset',
-                    data_type='integer',
-                    required=False,
-                    default_value=0,
-                    description='Offset for pagination',
-                    kind=ParameterType.QUERY
-                )
+                query_param('limit', 'Max users to return', 'integer', 100),
+                query_param('offset', 'Offset for pagination', 'integer', 0)
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='List users',
             description='List all users (admin only)'
-        )
-    );
-    async def get_user_handler(request: Request, username: str) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_get_user(username, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/users/{username}',
-            callback=get_user_handler,
-            parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Username to get',
-                    kind=ParameterType.PATH
-                )
-            ],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/users/{username}',
+            authed(self.admin_get_user),
+            parameters=[path_param('username', 'Username to get')],
             summary='Get user',
             description='Get user details (admin only)'
-        )
-    );
-    async def create_user_handler(
-        request: Request, username: str, password: str, role: str = 'user'
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_create_user(username, password, role, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/admin/users',
-            callback=create_user_handler,
+        ),
+        ep(
+            HTTPMethod.POST,
+            '/admin/users',
+            authed(self.admin_create_user),
             parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Username for new user',
-                    kind=ParameterType.BODY
-                ),
-                APIParameter(
-                    name='password',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Password for new user',
-                    kind=ParameterType.BODY
-                ),
-                APIParameter(
-                    name='role',
-                    data_type='string',
-                    required=False,
-                    default_value='user',
-                    description='Role for new user (admin, user)',
-                    kind=ParameterType.BODY
+                body_param('username', 'Username for new user'),
+                body_param('password', 'Password for new user'),
+                body_param(
+                    'role', 'Role for new user (admin, user)', default_value='user'
                 )
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Create user',
             description='Create a new user (admin only). User will be required to reset password on first login.'
-        )
-    );
-    async def update_user_handler(
-        request: Request,
-        username: str,
-        role: str | None = None,
-        requires_password_reset: bool | None = None
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_update_user(
-            username, role, requires_password_reset, authorization
-        );
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.PUT,
-            path='/admin/users/{username}',
-            callback=update_user_handler,
+        ),
+        ep(
+            HTTPMethod.PUT,
+            '/admin/users/{username}',
+            authed(self.admin_update_user),
             parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Username to update',
-                    kind=ParameterType.PATH
-                ),
-                APIParameter(
-                    name='role',
-                    data_type='string',
-                    required=False,
-                    default_value=None,
-                    description='New role (admin, user)',
-                    kind=ParameterType.BODY
-                ),
-                APIParameter(
-                    name='requires_password_reset',
-                    data_type='boolean',
-                    required=False,
-                    default_value=None,
-                    description='Force password reset on next login',
-                    kind=ParameterType.BODY
+                path_param('username', 'Username to update'),
+                body_param('role', 'New role (admin, user)', default_value=None),
+                body_param(
+                    'requires_password_reset',
+                    'Force password reset on next login',
+                    'boolean',
+                    default_value=None
                 )
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Update user',
             description='Update user role or settings (admin only)'
-        )
-    );
-    async def delete_user_handler(
-        request: Request, username: str
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_delete_user(username, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.DELETE,
-            path='/admin/users/{username}',
-            callback=delete_user_handler,
-            parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Username to delete',
-                    kind=ParameterType.PATH
-                )
-            ],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.DELETE,
+            '/admin/users/{username}',
+            authed(self.admin_delete_user),
+            parameters=[path_param('username', 'Username to delete')],
             summary='Delete user',
             description='Delete a user (admin only)'
-        )
-    );
-    async def expire_legacy_credentials_handler(
-        request: Request, username: str | None = None
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_expire_legacy_credentials(username, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/admin/users/expire-legacy-credentials',
-            callback=expire_legacy_credentials_handler,
+        ),
+        ep(
+            HTTPMethod.POST,
+            '/admin/users/expire-legacy-credentials',
+            authed(self.admin_expire_legacy_credentials),
             parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=False,
-                    default_value=None,
-                    description='Limit to one user; omit to sweep every account',
-                    kind=ParameterType.BODY
+                body_param(
+                    'username',
+                    'Limit to one user; omit to sweep every account',
+                    default_value=None
                 )
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Expire pre-scrypt credentials',
             description=(
                 'Flag accounts whose stored password hash predates the 0.36 '
@@ -324,211 +149,99 @@ impl JacAPIServerAdmin.register_admin_endpoints -> None {
                 'users silently failing to log in. Bulk by default; pass '
                 'username to target one account (admin only).'
             )
-        )
-    );
-
-    async def list_sso_providers_handler(request: Request) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_list_sso_providers(authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/sso/providers',
-            callback=list_sso_providers_handler,
-            parameters=[],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/sso/providers',
+            authed(self.admin_list_sso_providers),
             summary='List SSO providers',
             description='List configured SSO providers (admin only)'
-        )
-    );
-    async def get_user_sso_handler(
-        request: Request, username: str
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_get_user_sso_accounts(username, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/users/{username}/sso',
-            callback=get_user_sso_handler,
-            parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Username',
-                    kind=ParameterType.PATH
-                )
-            ],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/users/{username}/sso',
+            authed(self.admin_get_user_sso_accounts),
+            parameters=[path_param('username', 'Username')],
             summary='Get user SSO accounts',
             description='Get SSO accounts linked to a user (admin only)'
-        )
-    );
-
-    async def get_config_handler(
-        request: Request, profile: str = "default"
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_get_config(profile, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/config',
-            callback=get_config_handler,
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/config',
+            authed(self.admin_get_config),
             parameters=[
-                APIParameter(
-                    name='profile',
-                    data_type='string',
-                    required=False,
-                    default_value='default',
-                    description='Config profile (default, development, production)',
-                    kind=ParameterType.QUERY
+                query_param(
+                    'profile',
+                    'Config profile (default, development, production)',
+                    default_value='default'
                 )
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Get configuration',
             description='Get jac.toml configuration content (admin only)'
-        )
-    );
-    async def update_config_handler(
-        request: Request, content: str, profile: str = "default"
-    ) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_update_config(content, profile, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/admin/config',
-            callback=update_config_handler,
+        ),
+        ep(
+            HTTPMethod.POST,
+            '/admin/config',
+            authed(self.admin_update_config),
             parameters=[
-                APIParameter(
-                    name='content',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='TOML configuration content',
-                    kind=ParameterType.BODY
-                ),
-                APIParameter(
-                    name='profile',
-                    data_type='string',
-                    required=False,
-                    default_value='default',
-                    description='Config profile (default, development, production)',
-                    kind=ParameterType.QUERY
+                body_param('content', 'TOML configuration content'),
+                query_param(
+                    'profile',
+                    'Config profile (default, development, production)',
+                    default_value='default'
                 )
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Update configuration',
             description='Update jac.toml configuration content (admin only)'
-        )
-    );
-
-    async def admin_graph_handler(
-        request: Request, username: str | None = None
-    ) -> JSONResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_graph_data(username, authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/graph',
-            callback=admin_graph_handler,
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/graph',
+            authed(self.admin_graph_data),
             parameters=[
-                APIParameter(
-                    name='username',
-                    data_type='string',
-                    required=False,
-                    default_value=None,
-                    description='Username to view graph for (defaults to all users)',
-                    kind=ParameterType.QUERY
+                query_param(
+                    'username',
+                    'Username to view graph for (defaults to all users)',
+                    default_value=None
                 )
             ],
-            response_model=None,
-            tags=['Admin'],
             summary='Admin graph data',
             description='Get graph data for any user (admin only)'
-        )
-    );
-
-    async def get_metrics_handler(request: Request) -> TransportResponse {
-        authorization = request.headers.get('Authorization');
-        return self.admin_get_metrics(authorization);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/metrics',
-            callback=get_metrics_handler,
-            parameters=[],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/metrics',
+            authed(self.admin_get_metrics),
             summary='Get metrics data',
             description='Get parsed Prometheus metrics as JSON (admin only)'
-        )
-    );
-
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin',
-            callback=self.serve_admin_page,
-            parameters=[],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin',
+            self.serve_admin_page,
             summary='Admin Portal Redirect',
             description='Redirect to /admin/'
-        )
-    );
-
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/',
-            callback=self.serve_admin_index,
-            parameters=[],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/',
+            self.serve_admin_index,
             summary='Admin Portal',
             description='Admin portal UI'
-        )
-    );
-
-    async def serve_admin_catchall_handler(request: Request, path: str) -> Response {
-        return self.serve_admin_asset(path);
-    }
-    server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/admin/{path:path}',
-            callback=serve_admin_catchall_handler,
-            parameters=[
-                APIParameter(
-                    name='path',
-                    data_type='string',
-                    required=True,
-                    default_value=None,
-                    description='Asset path',
-                    kind=ParameterType.PATH
-                )
-            ],
-            response_model=None,
-            tags=['Admin'],
+        ),
+        ep(
+            HTTPMethod.GET,
+            '/admin/{path:path}',
+            self.serve_admin_asset,
+            parameters=[path_param('path', 'Asset path')],
             summary='Admin static assets',
             description='Serve admin portal static assets'
         )
-    );
+    ] {
+        endpoint.tags = ['Admin'];
+        endpoint.forward_undeclared_query_params = False;
+        server.add_endpoint(endpoint);
+    }
     logger.info("Admin portal endpoints registered at /admin");
 }
 

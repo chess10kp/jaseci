@@ -6,12 +6,7 @@ import from collections { OrderedDict }
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
 import from jaclang.server.server { JsonValue }
-import from jaclang.server.serving.endpoint {
-    HTTPMethod,
-    JEndPoint,
-    APIParameter,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 
 import json as json_module;
 
@@ -664,12 +659,10 @@ impl JacAPIServerLLMTelemetry.register_llm_telemetry_endpoints -> None {
     }
 
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/llm/telemetry/summary",
-            callback=summary_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/llm/telemetry/summary",
+            summary_handler,
             tags=["LLM Telemetry"],
             summary="LLM Telemetry Summary",
             description="Aggregate LLM usage statistics: total calls, tokens, cost, latency, per-model/per-caller breakdowns."
@@ -709,12 +702,10 @@ impl JacAPIServerLLMTelemetry.register_llm_telemetry_endpoints -> None {
     }
 
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/llm/telemetry/traces",
-            callback=traces_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/llm/telemetry/traces",
+            traces_handler,
             tags=["LLM Telemetry"],
             summary="LLM Telemetry Traces",
             description="Paginated list of agent invocation traces with optional filters (query params: limit, offset, model, status, caller)."
@@ -739,21 +730,11 @@ impl JacAPIServerLLMTelemetry.register_llm_telemetry_endpoints -> None {
     }
 
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/llm/telemetry/traces/{invocation_id}",
-            callback=trace_detail_handler,
-            parameters=[
-                APIParameter(
-                    name="invocation_id",
-                    data_type="string",
-                    required=True,
-                    default_value=None,
-                    description="The invocation ID of the trace",
-                    kind=ParameterType.PATH
-                )
-            ],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/llm/telemetry/traces/{invocation_id}",
+            trace_detail_handler,
+            parameters=[path_param("invocation_id", "The invocation ID of the trace")],
             tags=["LLM Telemetry"],
             summary="LLM Telemetry Trace Detail",
             description="Full detail of a single agent invocation trace including conversation history and per-LLM-call breakdown."
@@ -770,12 +751,10 @@ impl JacAPIServerLLMTelemetry.register_llm_telemetry_endpoints -> None {
     }
 
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/llm/telemetry/filters",
-            callback=filters_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/llm/telemetry/filters",
+            filters_handler,
             tags=["LLM Telemetry"],
             summary="LLM Telemetry Filters",
             description="Available filter values (models, callers, statuses) for the traces view."

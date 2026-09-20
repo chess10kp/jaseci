@@ -2,7 +2,7 @@ import asyncio;
 import logging;
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
-import from jaclang.server.serving.endpoint { HTTPMethod, JEndPoint }
+import from jaclang.server.serving.endpoint { HTTPMethod, ep }
 import from jaclang.scale.admin.k8s_ops {
     core_api,
     networking_api,
@@ -222,12 +222,10 @@ impl JacAPIServerNetwork.register_network_endpoints -> None {
         return;
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/ops/network",
-            callback=network_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/ops/network",
+            network_handler,
             tags=["Operations"],
             summary="Endpoints, ingress, and PVC status",
             description=(

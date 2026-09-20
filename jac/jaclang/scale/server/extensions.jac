@@ -11,7 +11,7 @@ import from jaclang.server.middleware { require_user }
 import from jaclang.server.server { JacAPIServer, ServerExtension }
 import from jaclang.server.serving.datatypes { JSONResponse, Request, Response }
 import from jaclang.server.serving.drain { HEALTH_PATHS }
-import from jaclang.server.serving.endpoint { HTTPMethod, JEndPoint }
+import from jaclang.server.serving.endpoint { HTTPMethod, ep }
 import from jaclang.server.transport { Meta, TransportResponse }
 import from jaclang.scale.admin.admin_portal { JacAPIServerAdmin }
 import from jaclang.scale.admin.deploy_health { JacAPIServerDeployHealth }
@@ -201,11 +201,10 @@ obj MetricsExtension(ServerExtension) {
             return expose();
         }
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path=endpoint,
-                callback=metrics_handler,
-                parameters=[],
+            ep(
+                HTTPMethod.GET,
+                endpoint,
+                metrics_handler,
                 tags=['Monitoring'],
                 summary='Prometheus metrics (admin only)',
                 description='Application metrics in Prometheus exposition format. Requires an admin token or the scrape credential.',
@@ -379,10 +378,10 @@ obj RecoveryMailExtension(ServerExtension) {
             );
         }
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path='/user/send-verification',
-                callback=send_verification,
+            ep(
+                HTTPMethod.POST,
+                '/user/send-verification',
+                send_verification,
                 request_model=SendVerificationRequest,
                 tags=['User APIs'],
                 summary='Send a verification email for an unverified identity',
@@ -474,10 +473,10 @@ obj RecoveryMailExtension(ServerExtension) {
             return ok_response;
         }
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path='/user/forgot-password',
-                callback=forgot_password,
+            ep(
+                HTTPMethod.POST,
+                '/user/forgot-password',
+                forgot_password,
                 request_model=ForgotPasswordRequest,
                 tags=['User APIs'],
                 summary='Start a password reset flow',

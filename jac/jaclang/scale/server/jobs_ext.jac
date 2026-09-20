@@ -6,12 +6,7 @@ import from jaclang.server.identity.user_manager { SYSTEM_USER, UserRole }
 import from jaclang.server.middleware { require_user }
 import from jaclang.server.server { JacAPIServer, ServerExtension }
 import from jaclang.server.serving.datatypes { Request }
-import from jaclang.server.serving.endpoint {
-    APIParameter,
-    HTTPMethod,
-    JEndPoint,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 import from jaclang.server.transport { Meta, TransportResponse }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.scheduler.scheduler { JacScaleScheduler, TriggerSpec }
@@ -263,21 +258,12 @@ obj JobsExtension(ServerExtension) {
             }
         }
 
-        job_id_param = [
-            APIParameter(
-                name='job_id',
-                data_type='str',
-                required=True,
-                description='Job ID',
-                kind=ParameterType.PATH
-            )
-        ];
+        job_id_param = [path_param('job_id', 'Job ID')];
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path='/jobs',
-                callback=create_job,
-                parameters=[],
+            ep(
+                HTTPMethod.POST,
+                '/jobs',
+                create_job,
                 request_model=CreateJobRequest,
                 tags=['Scheduler'],
                 summary='Create scheduled job',
@@ -286,21 +272,20 @@ obj JobsExtension(ServerExtension) {
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path='/jobs',
-                callback=list_jobs,
-                parameters=[],
+            ep(
+                HTTPMethod.GET,
+                '/jobs',
+                list_jobs,
                 tags=['Scheduler'],
                 summary='List scheduled jobs',
                 requires_auth=True
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path='/jobs/{job_id}',
-                callback=get_job,
+            ep(
+                HTTPMethod.GET,
+                '/jobs/{job_id}',
+                get_job,
                 parameters=job_id_param,
                 tags=['Scheduler'],
                 summary='Get scheduled job',
@@ -308,10 +293,10 @@ obj JobsExtension(ServerExtension) {
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.PUT,
-                path='/jobs/{job_id}',
-                callback=update_job,
+            ep(
+                HTTPMethod.PUT,
+                '/jobs/{job_id}',
+                update_job,
                 parameters=job_id_param,
                 request_model=UpdateJobRequest,
                 tags=['Scheduler'],
@@ -320,10 +305,10 @@ obj JobsExtension(ServerExtension) {
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.DELETE,
-                path='/jobs/{job_id}',
-                callback=delete_job,
+            ep(
+                HTTPMethod.DELETE,
+                '/jobs/{job_id}',
+                delete_job,
                 parameters=job_id_param,
                 tags=['Scheduler'],
                 summary='Delete scheduled job',

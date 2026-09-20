@@ -8,12 +8,7 @@ import from jaclang.server.serving.datatypes {
     Request,
     Response
 }
-import from jaclang.server.serving.endpoint {
-    APIParameter,
-    HTTPMethod,
-    JEndPoint,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 import from jaclang.project.config { get_config }
 import from jaclang.server.serving.files { file_response }
 import from jaclang.server.server { JacAPIServer, JsonValue }
@@ -108,17 +103,13 @@ def register_page_endpoints(server: JacAPIServer) {
         return _render(server, page_name, kwargs);
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/cl/{page_name}',
-            callback=render_page,
+        ep(
+            HTTPMethod.GET,
+            '/cl/{page_name}',
+            render_page,
             parameters=[
-                APIParameter(
-                    name='page_name',
-                    data_type='string',
-                    required=True,
-                    description='Name of the client page to render, or a sibling app',
-                    kind=ParameterType.PATH
+                path_param(
+                    'page_name', 'Name of the client page to render, or a sibling app'
                 )
             ],
             tags=['Pages'],
@@ -137,25 +128,15 @@ def register_page_endpoints(server: JacAPIServer) {
             return _sibling_response(request, dist, file_path);
         }
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path='/cl/{app_name}/{file_path:path}',
-                callback=sibling_asset,
+            ep(
+                HTTPMethod.GET,
+                '/cl/{app_name}/{file_path:path}',
+                sibling_asset,
                 parameters=[
-                    APIParameter(
-                        name='app_name',
-                        data_type='string',
-                        required=True,
-                        description='Sibling app whose bundle lives at dist/<app>/',
-                        kind=ParameterType.PATH
+                    path_param(
+                        'app_name', 'Sibling app whose bundle lives at dist/<app>/'
                     ),
-                    APIParameter(
-                        name='file_path',
-                        data_type='string',
-                        required=True,
-                        description='Path inside the sibling app bundle',
-                        kind=ParameterType.PATH
-                    )
+                    path_param('file_path', 'Path inside the sibling app bundle')
                 ],
                 tags=['Pages'],
                 summary='Serve a sibling app bundle',
@@ -199,11 +180,10 @@ def register_page_endpoints(server: JacAPIServer) {
         );
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/',
-            callback=root_index,
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            '/',
+            root_index,
             tags=['Pages'],
             summary='Root',
             description=(
@@ -227,11 +207,10 @@ def register_page_endpoints(server: JacAPIServer) {
         return resp;
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/static/client.js',
-            callback=client_js,
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            '/static/client.js',
+            client_js,
             tags=['Static Files'],
             summary='Client bundle',
             include_in_schema=False
@@ -248,17 +227,14 @@ def register_page_endpoints(server: JacAPIServer) {
         return file_response(request, str(candidate));
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/static/{file_path:path}',
-            callback=static_file,
+        ep(
+            HTTPMethod.GET,
+            '/static/{file_path:path}',
+            static_file,
             parameters=[
-                APIParameter(
-                    name='file_path',
-                    data_type='string',
-                    required=True,
-                    description='Path of the static file, under the client dist, dist or assets directory',
-                    kind=ParameterType.PATH
+                path_param(
+                    'file_path',
+                    'Path of the static file, under the client dist, dist or assets directory'
                 )
             ],
             tags=['Static Files'],
@@ -293,17 +269,14 @@ def register_page_endpoints(server: JacAPIServer) {
         return JSONResponse(content={'error': 'Not found'}, status_code=404);
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/{file_path:path}',
-            callback=root_asset,
+        ep(
+            HTTPMethod.GET,
+            '/{file_path:path}',
+            root_asset,
             parameters=[
-                APIParameter(
-                    name='file_path',
-                    data_type='string',
-                    required=True,
-                    description='Asset path (img.png, icons/logo.svg) or a client route',
-                    kind=ParameterType.PATH
+                path_param(
+                    'file_path',
+                    'Asset path (img.png, icons/logo.svg) or a client route'
                 )
             ],
             tags=['Static Files'],
@@ -333,11 +306,10 @@ def register_graph_endpoints(server: JacAPIServer) {
         }
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/graph',
-            callback=graph_page,
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            '/graph',
+            graph_page,
             tags=['Graph Visualization'],
             summary='Graph visualizer',
             description='Interactive visualization of the graph reachable from the caller\'s root.',
@@ -384,11 +356,10 @@ def register_graph_endpoints(server: JacAPIServer) {
         return JSONResponse(content={'version': '1.0', 'nodes': nodes, 'edges': edges});
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/graph/data',
-            callback=graph_data,
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            '/graph/data',
+            graph_data,
             tags=['Graph Visualization'],
             summary='Graph data',
             description='Nodes and edges reachable from the caller\'s root as JSON (the guest root without a token).',
@@ -404,11 +375,10 @@ def register_diagnostics_endpoints(server: JacAPIServer) {
         return JSONResponse(content=get_build_status());
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/__build_status',
-            callback=build_status,
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            '/__build_status',
+            build_status,
             tags=['Health'],
             summary='Dev build health',
             description='Hot-reload build status: ok, compiling, error (with diagnostics), or unavailable outside dev mode.',
@@ -440,11 +410,10 @@ def register_diagnostics_endpoints(server: JacAPIServer) {
         return JSONResponse(content={'ok': True});
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/cl/__error__',
-            callback=client_error,
-            parameters=[],
+        ep(
+            HTTPMethod.POST,
+            '/cl/__error__',
+            client_error,
             tags=['Client'],
             summary='Report a client-side error',
             include_in_schema=False,

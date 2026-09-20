@@ -5,6 +5,7 @@ import from jaclang.server.serving.app { ServingApp }
 import from jaclang.server.serving.datatypes { HTMLResponse }
 import from jaclang.server.serving.endpoint {
     APIParameter,
+    ep,
     HTTPMethod,
     JEndPoint,
     ParameterType
@@ -302,10 +303,10 @@ def register_docs_endpoints(app: ServingApp) {
             return build_openapi(app);
         }
         app.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path=app.openapi_url,
-                callback=_openapi_callback,
+            ep(
+                HTTPMethod.GET,
+                app.openapi_url,
+                _openapi_callback,
                 include_in_schema=False,
                 forward_undeclared_query_params=False
             )
@@ -316,10 +317,10 @@ def register_docs_endpoints(app: ServingApp) {
             return HTMLResponse(content=swagger_ui_html(app.openapi_url, app.title));
         }
         app.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path=app.docs_url,
-                callback=_docs_callback,
+            ep(
+                HTTPMethod.GET,
+                app.docs_url,
+                _docs_callback,
                 include_in_schema=False,
                 forward_undeclared_query_params=False
             )

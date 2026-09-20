@@ -2,7 +2,7 @@ import logging;
 import from jaclang.server.serving.app { ServingApp }
 import from jaclang.server.serving.datatypes { JSONResponse }
 import from jaclang.server.serving.drain { DrainState }
-import from jaclang.server.serving.endpoint { HTTPMethod, JEndPoint }
+import from jaclang.server.serving.endpoint { HTTPMethod, ep }
 
 glob logger: logging.Logger = logging.getLogger(__name__);
 
@@ -79,11 +79,10 @@ def register_health_endpoints(
         )
     ] {
         app.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.GET,
-                path=path,
-                callback=cb,
-                parameters=[],
+            ep(
+                HTTPMethod.GET,
+                path,
+                cb,
                 tags=['Health'],
                 summary=summary,
                 description=description,

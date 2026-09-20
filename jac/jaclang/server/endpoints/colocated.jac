@@ -6,12 +6,7 @@ import from jaclang.project.config { get_config }
 import from jaclang.server.endpoints.walkers { idempotency_key, request_caller }
 import from jaclang.server.outbox { remember_response, replay_cached }
 import from jaclang.server.serving.datatypes { Request, Response }
-import from jaclang.server.serving.endpoint {
-    APIParameter,
-    HTTPMethod,
-    JEndPoint,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 import from jaclang.server.server { JacAPIServer, JsonValue, ModuleIntrospector }
 import from jaclang.server.sv_client { _local_providers }
 import from jaclang.server.transport { Meta, TransportResponse }
@@ -167,11 +162,10 @@ def _mount_provider(
     walkers = intro.get_walkers();
     functions = intro.get_functions();
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path=f"{route}/walkers",
-            callback=_listing(list(walkers.keys()), 'walkers'),
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            f"{route}/walkers",
+            _listing(list(walkers.keys()), 'walkers'),
             tags=['Colocated'],
             summary=f"Walkers of {provider_app}",
             description=f"Walkers served for the colocated app {provider_app}.",
@@ -179,11 +173,10 @@ def _mount_provider(
         )
     );
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path=f"{route}/functions",
-            callback=_listing(list(functions.keys()), 'functions'),
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            f"{route}/functions",
+            _listing(list(functions.keys()), 'functions'),
             tags=['Colocated'],
             summary=f"Functions of {provider_app}",
             description=f"Functions served for the colocated app {provider_app}.",
@@ -196,11 +189,11 @@ def _mount_provider(
             server, provider_app, walker_name, walker_cls, walker_auth
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path=f"{route}/walker/{walker_name}/{{nd}}",
-                callback=cb,
-                parameters=[APIParameter(name='nd', kind=ParameterType.PATH)],
+            ep(
+                HTTPMethod.POST,
+                f"{route}/walker/{walker_name}/{{nd}}",
+                cb,
+                parameters=[path_param('nd')],
                 tags=['Colocated'],
                 summary=f"{provider_app}.{walker_name}",
                 description=f"Spawn {walker_name} in the colocated app {provider_app} on a node.",
@@ -209,11 +202,10 @@ def _mount_provider(
             )
         );
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path=f"{route}/walker/{walker_name}",
-                callback=cb,
-                parameters=[],
+            ep(
+                HTTPMethod.POST,
+                f"{route}/walker/{walker_name}",
+                cb,
                 tags=['Colocated'],
                 summary=f"{provider_app}.{walker_name}",
                 description=f"Spawn {walker_name} in the colocated app {provider_app}.",
@@ -225,13 +217,12 @@ def _mount_provider(
     for (func_name, func_obj) in functions.items() {
         func_auth = intro.is_auth_required_for_function(func_name);
         server.add_endpoint(
-            JEndPoint(
-                method=HTTPMethod.POST,
-                path=f"{route}/function/{func_name}",
-                callback=_function_callback(
+            ep(
+                HTTPMethod.POST,
+                f"{route}/function/{func_name}",
+                _function_callback(
                     server, provider_app, func_name, func_obj, func_auth
                 ),
-                parameters=[],
                 tags=['Colocated'],
                 summary=f"{provider_app}.{func_name}",
                 description=f"Call {func_name} in the colocated app {provider_app}.",

@@ -11,12 +11,7 @@ import from jaclang.server.serving.datatypes {
     Response,
     StreamingResponse
 }
-import from jaclang.server.serving.endpoint {
-    APIParameter,
-    HTTPMethod,
-    JEndPoint,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { APIParameter, HTTPMethod, ep, path_param }
 import from jaclang.client.targets.desktop.native.oauth_broker {
     CLOSE_PAGE,
     DEFAULT_PREFIX,
@@ -270,10 +265,10 @@ obj DesktopBrokerExtension(ServerExtension) {
             params: (list[APIParameter] | None) = None
         ) {
             server.add_endpoint(
-                JEndPoint(
-                    method=method,
-                    path=path,
-                    callback=cb,
+                ep(
+                    method,
+                    path,
+                    cb,
                     parameters=params if params is not None else [],
                     tags=["Desktop"],
                     summary=path,
@@ -292,7 +287,7 @@ obj DesktopBrokerExtension(ServerExtension) {
             HTTPMethod.GET,
             callback_route + "/{state}",
             oauth_callback,
-            [APIParameter(name="state", kind=ParameterType.PATH)]
+            [path_param("state")]
         );
         add(HTTPMethod.GET, prefix + "/events", events);
         add(HTTPMethod.POST, prefix + "/invoke", invoke);

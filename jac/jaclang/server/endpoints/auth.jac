@@ -28,12 +28,7 @@ import from jaclang.server.identity.identity_storage {
 import from jaclang.server.identity.user_manager { UserRole }
 import from jaclang.server.middleware { require_user }
 import from jaclang.server.serving.datatypes { Request }
-import from jaclang.server.serving.endpoint {
-    APIParameter,
-    HTTPMethod,
-    JEndPoint,
-    ParameterType
-}
+import from jaclang.server.serving.endpoint { HTTPMethod, ep, body_param }
 import from jaclang.server.server { EndpointHost, JsonValue }
 import from jaclang.server.transport { Meta, TransportResponse }
 
@@ -121,10 +116,10 @@ def register_auth_endpoints(server: EndpointHost) {
         }
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/user/register/challenge',
-            callback=challenge_handler,
+        ep(
+            HTTPMethod.POST,
+            '/user/register/challenge',
+            challenge_handler,
             tags=['User APIs'],
             summary='Registration challenge'
         )
@@ -181,10 +176,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok(result, status=201);
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/user/register',
-            callback=register_handler,
+        ep(
+            HTTPMethod.POST,
+            '/user/register',
+            register_handler,
             request_model=RegisterRequest,
             tags=['User APIs'],
             summary='Register user',
@@ -207,10 +202,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok(dict[(str, JsonValue)](result));
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/user/login',
-            callback=login_handler,
+        ep(
+            HTTPMethod.POST,
+            '/user/login',
+            login_handler,
             request_model=LoginRequest,
             tags=['User APIs'],
             summary='User login',
@@ -236,17 +231,13 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok({'token': new_token, 'message': 'Token refreshed successfully'});
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/user/refresh-token',
-            callback=refresh_token_handler,
+        ep(
+            HTTPMethod.POST,
+            '/user/refresh-token',
+            refresh_token_handler,
             parameters=[
-                APIParameter(
-                    name='token',
-                    data_type='string',
-                    required=True,
-                    description='JWT to refresh (with or without the Bearer prefix)',
-                    kind=ParameterType.BODY
+                body_param(
+                    'token', 'JWT to refresh (with or without the Bearer prefix)'
                 )
             ],
             tags=['User APIs'],
@@ -285,10 +276,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok(payload);
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.PUT,
-            path='/user/password',
-            callback=update_password_handler,
+        ep(
+            HTTPMethod.PUT,
+            '/user/password',
+            update_password_handler,
             request_model=UpdatePasswordRequest,
             tags=['User APIs'],
             summary='Update password',
@@ -322,10 +313,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok(result);
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.PUT,
-            path='/user/username',
-            callback=update_username_handler,
+        ep(
+            HTTPMethod.PUT,
+            '/user/username',
+            update_username_handler,
             request_model=UpdateUsernameRequest,
             tags=['User APIs'],
             summary='Update username',
@@ -358,11 +349,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok(info);
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/user/info',
-            callback=user_info_handler,
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            '/user/info',
+            user_info_handler,
             tags=['User APIs'],
             summary='Get user info',
             description="The authenticated user's id, username, root id and the session token in use. Requires a Bearer token.",
@@ -404,11 +394,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok(me.model_dump(mode='json', exclude_none=True));
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path='/user/me',
-            callback=me_handler,
-            parameters=[],
+        ep(
+            HTTPMethod.GET,
+            '/user/me',
+            me_handler,
             response_model=MeResponse,
             tags=['User APIs'],
             summary='Get current user',
@@ -438,10 +427,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok(response.model_dump(mode='json'));
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.PATCH,
-            path='/user/me',
-            callback=update_me_handler,
+        ep(
+            HTTPMethod.PATCH,
+            '/user/me',
+            update_me_handler,
             request_model=UpdateProfileRequest,
             response_model=UpdateProfileResponse,
             tags=['User APIs'],
@@ -484,10 +473,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok({'status': 'added', 'verified': False});
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/user/add-identity',
-            callback=add_identity_handler,
+        ep(
+            HTTPMethod.POST,
+            '/user/add-identity',
+            add_identity_handler,
             request_model=AddIdentityRequest,
             tags=['User APIs'],
             summary='Attach a new identity to the authenticated user',
@@ -558,10 +547,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok({'status': 'verified', 'identity': identity_value});
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/user/verify-identity',
-            callback=verify_identity_handler,
+        ep(
+            HTTPMethod.POST,
+            '/user/verify-identity',
+            verify_identity_handler,
             request_model=VerifyIdentityRequest,
             tags=['User APIs'],
             summary='Verify an identity using a token from email',
@@ -613,10 +602,10 @@ def register_auth_endpoints(server: EndpointHost) {
         return ok({'status': 'password_reset'});
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.POST,
-            path='/user/reset-password',
-            callback=reset_password_handler,
+        ep(
+            HTTPMethod.POST,
+            '/user/reset-password',
+            reset_password_handler,
             request_model=ResetPasswordRequest,
             tags=['User APIs'],
             summary='Reset password using a token',

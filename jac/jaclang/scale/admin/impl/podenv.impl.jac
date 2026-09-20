@@ -3,7 +3,7 @@ import asyncio;
 import logging;
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.datatypes { JSONResponse }
-import from jaclang.server.serving.endpoint { HTTPMethod, JEndPoint }
+import from jaclang.server.serving.endpoint { HTTPMethod, ep }
 import from jaclang.scale.admin.k8s_ops {
     core_api,
     ops_namespace,
@@ -203,12 +203,10 @@ impl JacAPIServerPodEnv.register_podenv_endpoints -> None {
         return;
     }
     server.add_endpoint(
-        JEndPoint(
-            method=HTTPMethod.GET,
-            path="/admin/ops/podenv",
-            callback=podenv_handler,
-            parameters=[],
-            response_model=None,
+        ep(
+            HTTPMethod.GET,
+            "/admin/ops/podenv",
+            podenv_handler,
             tags=["Operations"],
             summary="Pod environment (allowlist-redacted)",
             description=(
