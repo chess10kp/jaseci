@@ -66,6 +66,7 @@ impl MicroserviceGateway.setup -> ServingApp {
         try {
             resp: Response | None = None;
 
+            import from inspect { iscoroutine }
             import from jaclang.scale.runtime.gateway.dispatch {
                 classify_route,
                 ROUTE_BUILTIN,
@@ -82,24 +83,23 @@ impl MicroserviceGateway.setup -> ServingApp {
             );
 
             if decision.kind == ROUTE_BUILTIN {
-                if path == "/healthz/live" {
-                    svc_label = "__health_live__";
-                    resp = gw.handle_health_live();
-                } elif path == "/healthz/ready" {
-                    svc_label = "__health_ready__";
-                    resp = gw.handle_health_ready();
-                } elif path == "/health" or path == "/healthz" {
+                builtin_routes: dict[str, tuple[str, any]] = {
+                    "/healthz/live": ("__health_live__", gw.handle_health_live),
+                    "/healthz/ready": ("__health_ready__", gw.handle_health_ready),
+                    "/metrics": ("__metrics__", gw.handle_metrics),
+                    "/openapi.json": ("__openapi__", gw.handle_openapi),
+                    "/docs": ("__docs__", gw.handle_docs)
+                };
+                if path == "/health" or path == "/healthz" {
                     svc_label = "__health__";
                     resp = gw.handle_health();
-                } elif path == "/metrics" {
-                    svc_label = "__metrics__";
-                    resp = gw.handle_metrics();
-                } elif path == "/openapi.json" {
-                    svc_label = "__openapi__";
-                    resp = await gw.handle_openapi();
-                } elif path == "/docs" {
-                    svc_label = "__docs__";
-                    resp = gw.handle_docs();
+                } elif path in builtin_routes {
+                    (svc_label, handler) = builtin_routes[path];
+                    result: any = handler();
+                    if iscoroutine(result) {
+                        result = await result;
+                    }
+                    resp = result;
                 }
             } elif decision.kind == ROUTE_CLIENT_PAGE {
                 page_resp: Response | None = None;
