@@ -15,7 +15,10 @@ import from jaclang.server.serving.endpoint {
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.server.server { EndpointHost }
 import from jaclang.server.identity.user_manager { UserManager }
+import logging;
 import from jaclang.scale.observability.metrics { MetricsCollector }
+
+glob logger = logging.getLogger(__name__);
 
 obj JacAPIServerAdmin {
     has server: (EndpointHost | None) = None,
