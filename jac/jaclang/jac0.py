@@ -3059,11 +3059,15 @@ def discover_impl_files(jac_path: str) -> list[str]:
     dir_path = os.path.dirname(jac_path) or "."
     base_name = os.path.basename(base)
 
-
-    # Same directory: foo.impl.jac
-    impl_file = f"{base}{impl_suffix}"
-    if os.path.isfile(impl_file):
-        impls.append(impl_file)
+    # Same directory and shared impl/ folder: foo.impl.jac plus
+    # foo.<topic>.impl.jac topic siblings — mirroring the full compiler's
+    # discover_annex_files so bootstrap modules can use topical annexes.
+    for d in (dir_path, os.path.join(dir_path, "impl")):
+        if not os.path.isdir(d):
+            continue
+        for f in sorted(os.listdir(d)):
+            if f.startswith(f"{base_name}.") and f.endswith(impl_suffix):
+                impls.append(os.path.join(d, f))
 
     # Module folder: foo.impl/*.impl.jac (or foo.sv.impl/*.impl.jac)
     impl_dir = f"{base}{impl_folder}"
@@ -3071,11 +3075,6 @@ def discover_impl_files(jac_path: str) -> list[str]:
         for f in sorted(os.listdir(impl_dir)):
             if f.endswith(impl_suffix):
                 impls.append(os.path.join(impl_dir, f))
-
-    # Shared folder: impl/foo.impl.jac (or impl/foo.sv.impl.jac)
-    shared_impl = os.path.join(dir_path, "impl", f"{base_name}{impl_suffix}")
-    if os.path.isfile(shared_impl):
-        impls.append(shared_impl)
 
     return impls
 
