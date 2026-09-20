@@ -152,7 +152,7 @@ impl native_build(
     return _link_native_artifact(ctx, output, shared);
 }
 
-impl _link_native_artifact(ctx: NativeBuildContext, output: str, shared: bool) -> int {
+def _link_native_artifact(ctx: NativeBuildContext, output: str, shared: bool) -> int {
     """Finalize, codegen, and link one native artifact from a prepared compile.
 
     Holds the per-artifact half of the pipeline (IR finalization, verification,
@@ -433,7 +433,7 @@ obj NativeBuildContext {
         options: any = None;
 }
 
-impl _compile_native_module(ctx: NativeBuildContext) -> bool {
+def _compile_native_module(ctx: NativeBuildContext) -> bool {
     """Run the Jac-to-LLVM-IR compilation once, stashing results on ctx.
 
     The compile is the expensive half of `native_build`; separating it from
