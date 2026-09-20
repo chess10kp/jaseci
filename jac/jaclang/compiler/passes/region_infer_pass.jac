@@ -1,4 +1,5 @@
 import from jaclang.compiler.passes.context { CompileContext }
+import from jaclang.compiler.passes.dataflow { is_def_name }
 import from jaclang.compiler.frontend.unitree {
     Ability,
     Archetype,
@@ -32,7 +33,6 @@ walker RegionInferPass {
         body: Sequence[UniNode], open_idx: int, close_idx: int, member_sids: set[int]
     ) -> bool;
 
-    def _is_def_name(nm: NameAtom) -> bool;
     def _wrap_in_open(
         owner: (Ability | ModuleCode | ImplDef | Test),
         body: Sequence[UniNode],

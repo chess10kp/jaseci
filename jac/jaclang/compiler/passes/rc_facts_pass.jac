@@ -40,7 +40,11 @@ import from jaclang.compiler.frontend.unitree {
     UniNode,
     WhileStmt
 }
-import from jaclang.compiler.passes.dataflow { solve_backward_gen_kill }
+import from jaclang.compiler.passes.dataflow {
+    cfg_owner,
+    is_def_name,
+    solve_backward_gen_kill
+}
 import from jaclang.compiler.frontend.constant {
     OwnershipKind,
     SymbolStorage,
@@ -148,8 +152,6 @@ walker RcFactsPass {
 
     def _param_plainly_rebound(sym: Symbol) -> bool;
     def _stamp_move_lowerable(ir_in: Module) -> None;
-    def _cfg_owner(sub: UniNode) -> (UniCFGNode | None);
-    def _is_def_name(nm: NameAtom) -> bool;
     def _is_alias_value(nm: Name) -> bool;
     def _move_candidate_source(nd: Assignment) -> (Name | None);
     def _solve_liveness(

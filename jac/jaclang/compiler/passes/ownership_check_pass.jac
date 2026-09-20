@@ -64,6 +64,7 @@ import from jaclang.compiler.frontend.constant {
 }
 
 import from jaclang.compiler.passes.dataflow {
+    cfg_owner,
     solve_backward,
     solve_forward,
     solve_forward_must
@@ -262,7 +263,6 @@ walker OwnershipCheckPass {
     def _borrow_target(nd: Assignment) -> (Name | None);
     def _borrow_source_owner(nd: Assignment) -> (Name | None);
     def _assign_kill_gen(nd: Assignment) -> tuple[set[SymId], set[SymId]];
-    def _cfg_owner(sub: UniNode) -> (UniCFGNode | None);
     def _call_move_gen(nd: UniCFGNode) -> set[SymId];
     def _return_move_gen(nd: UniCFGNode) -> set[SymId];
     def _solve_forward_dataflow(

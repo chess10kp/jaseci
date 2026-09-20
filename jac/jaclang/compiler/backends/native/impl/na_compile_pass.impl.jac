@@ -1,14 +1,4 @@
-def _mod_functions(mod: ModuleRef) -> list[ValueRef] {
-    fns = mod.functions;
-    assert isinstance(fns, Iterator);
-    return list(fns);
-}
-
-def _mod_globals(mod: ModuleRef) -> list[ValueRef] {
-    gvs = mod.global_variables;
-    assert isinstance(gvs, Iterator);
-    return list(gvs);
-}
+import from jaclang.compiler.backends.native.wasm_build { _mod_functions, _mod_globals }
 
 def _mod_bitcode(mod: ModuleRef) -> bytes {
     bitcode = mod.as_bitcode();

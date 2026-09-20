@@ -1,5 +1,10 @@
 import from typing { TypeAlias }
-import from jaclang.compiler.frontend.unitree { UniCFGNode }
+import from jaclang.compiler.frontend.unitree {
+    Assignment,
+    NameAtom,
+    UniCFGNode,
+    UniNode
+}
 
 glob SymId: TypeAlias = int,
      DataflowTransfer: TypeAlias = Callable[[UniCFGNode, set[SymId]], set[SymId]];
@@ -128,4 +133,23 @@ def solve_backward(
         }
     }
     return state;
+}
+
+def cfg_owner(sub: UniNode) -> (UniCFGNode | None) {
+    if isinstance(sub, UniCFGNode) {
+        return sub;
+    }
+    return sub.find_parent_of_type(UniCFGNode);
+}
+
+def is_def_name(nm: NameAtom) -> bool {
+    p = nm.parent;
+    if isinstance(p, Assignment) and p.aug_op is None {
+        for tgt in p.target {
+            if tgt is nm {
+                return True;
+            }
+        }
+    }
+    return False;
 }

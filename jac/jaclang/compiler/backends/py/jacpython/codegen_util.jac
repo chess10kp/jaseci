@@ -1,4 +1,8 @@
 import from jaclang.runtime.python.compiler_integer { PyBigInt, integer_add }
+import from jaclang.compiler.frontend.python.compiler_symtable {
+    sym_match_pattern_unwrap_or as match_pattern_unwrap_or,
+    sym_import_bind_name as import_bind_name
+}
 
 # Pure leaf helpers extracted from compiler_codegen.jac (no cfg_builder,
 # no visit_*/emit_* calls) so the recursive codegen core is smaller to read.
@@ -1133,16 +1137,6 @@ def match_pattern_loc(p: pattern) -> cloc {
     return nloc(p.lineno, p.end_lineno, p.col_offset, p.end_col_offset);
 }
 
-def match_pattern_unwrap_or(p: pattern) -> pattern {
-    if isinstance(p, MatchOr) {
-        mo = p as MatchOr;
-        if len(mo.patterns) == 1 {
-            return mo.patterns[0];
-        }
-    }
-    return p;
-}
-
 def match_pattern_wildcard(p: pattern) -> bool {
     p = match_pattern_unwrap_or(p);
     if not isinstance(p, MatchAs) {
@@ -1316,15 +1310,6 @@ def loop_body_has_break(stmts: list[stmt]) -> bool {
         si = si + 1;
     }
     return False;
-}
-
-# Module-local name bound by `import` / `from ... import`.
-def import_bind_name(a: alias) -> str {
-    if a.asname is not None {
-        return a.asname;
-    }
-    parts = a.name.split(".");
-    return parts[0];
 }
 
 def class_effective_bases(cd: ClassDef) -> list[expr] {

@@ -1,6 +1,7 @@
 import logging;
 import os;
 import threading;
+import from jaclang.server.settings { in_cluster }
 glob logger = logging.getLogger(__name__),
      _lock = threading.Lock(),
      _holder: dict[str, any] = {},
@@ -98,11 +99,6 @@ def _store_target(store: any) -> str {
 }
 
 
-def _in_cluster -> bool {
-    return bool(os.environ.get('KUBERNETES_SERVICE_HOST', '').strip());
-}
-
-
 def _fail(reason: str) {
     if _holder.get('failure') == reason {
         logger.debug(f"scale shared store still unavailable: {reason}");
@@ -149,7 +145,7 @@ def shared_store -> (any | None) {
             promotions = promotions_for(JacRuntime.get_base_path_dir());
             if url {
                 store = PgStore(conninfo=conninfo_from_url(url), promotions=promotions);
-            } elif _in_cluster() {
+            } elif in_cluster() {
                 _fail(NO_DATABASE_IN_CLUSTER);
                 return None;
             } else {

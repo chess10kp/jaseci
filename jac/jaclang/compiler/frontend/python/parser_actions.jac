@@ -1461,14 +1461,7 @@ def pa_ast_continue(
 def pa_constant_from_expr(
     value: expr, lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
 ) -> Constant {
-    return Constant(
-        value=py_none(),
-        kind=None,
-        lineno=lineno,
-        col_offset=col_offset,
-        end_lineno=end_lineno,
-        end_col_offset=end_col_offset
-    );
+    return pa_constant_none(lineno, col_offset, end_lineno, end_col_offset);
 }
 
 def pa_seq_append_to_end(head: object | None, item: object) -> list[object] {

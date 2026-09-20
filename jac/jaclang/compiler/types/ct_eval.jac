@@ -2,6 +2,7 @@ import os;
 import math as _pymath;
 import platform as _platform;
 import sys;
+import from jaclang.comptime { _host_os }
 import from jaclang.compiler.frontend.unitree {
     Ability,
     Archetype,
@@ -155,16 +156,6 @@ glob CT_FUEL_DEFAULT: int = 50000000,
          "ArithmeticError": ArithmeticError,
          "StopIteration": StopIteration
      };
-
-def _host_os -> str {
-    if sys.platform.startswith("win") {
-        return "windows";
-    }
-    if sys.platform == "darwin" {
-        return "darwin";
-    }
-    return "linux";
-}
 
 def _norm_path(p: str) -> str {
     return p.replace("\\", "/");

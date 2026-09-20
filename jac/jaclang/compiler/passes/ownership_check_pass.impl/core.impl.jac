@@ -481,7 +481,7 @@ impl OwnershipCheckPass._emit_element_space_conflicts -> None {
             continue;
         }
         owner_id = self._name_sym_id(_ownr);
-        cfg = self._cfg_owner(call);
+        cfg = cfg_owner(call);
         if cfg is None {
             continue;
         }
@@ -619,13 +619,6 @@ impl OwnershipCheckPass._call_params(call: FuncCall) -> Sequence[Expr | KWPair] 
     return call.params or [];
 }
 
-impl OwnershipCheckPass._cfg_owner(sub: UniNode) -> (UniCFGNode | None) {
-    if isinstance(sub, UniCFGNode) {
-        return sub;
-    }
-    return sub.find_parent_of_type(UniCFGNode);
-}
-
 impl _stdlib_attr_call_root(call: FuncCall) -> (str | None) {
     if not isinstance(call.target, AtomTrailer) {
         return None;
@@ -663,7 +656,7 @@ impl OwnershipCheckPass._call_consumes_args(call: FuncCall) -> bool {
 impl OwnershipCheckPass._call_move_gen(nd: UniCFGNode) -> set[SymId] {
     gen: set[SymId] = set();
     for call in nd.get_all_sub_nodes(FuncCall) {
-        if self._cfg_owner(call) is not nd {
+        if cfg_owner(call) is not nd {
             continue;
         }
         if self._method_call_mode(call) == OwnershipKind.OWN {
@@ -893,7 +886,7 @@ impl OwnershipCheckPass._return_move_gen(nd: UniCFGNode) -> set[SymId] {
         returns.append(ret);
     }
     for ret in returns {
-        if self._cfg_owner(ret) is not nd {
+        if cfg_owner(ret) is not nd {
             continue;
         }
         owned = self._owned_sym_of(ret.expr);
@@ -1106,7 +1099,7 @@ impl OwnershipCheckPass._stamp_overwrite_consumed -> None {
         if owned is None {
             continue;
         }
-        _cfg = self._cfg_owner(nd);
+        _cfg = cfg_owner(nd);
         if _cfg is None {
             continue;
         }
@@ -1282,7 +1275,7 @@ impl OwnershipCheckPass._stamp_move_sites -> None {
             and not self._is_consuming_receiver(nm) {
             continue;
         }
-        _cfg = self._cfg_owner(nm);
+        _cfg = cfg_owner(nm);
         if _cfg is not None and self._name_sym_id(nm) in self._consumed_gen_at(_cfg) {
             sites.add(id(nm));
         }
@@ -1606,7 +1599,7 @@ impl OwnershipCheckPass._check_mutating_receiver(
     if owner_id is None {
         return;
     }
-    cfg = self._cfg_owner(call);
+    cfg = cfg_owner(call);
     if cfg is None {
         return;
     }

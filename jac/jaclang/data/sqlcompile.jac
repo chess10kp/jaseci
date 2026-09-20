@@ -1,7 +1,7 @@
 import logging;
 import from uuid { UUID }
 
-import from jaclang.data.store { Store }
+import from jaclang.data.store { Store, _sanitize_ident }
 import from jaclang.runtime.graph_query { GraphQuery, QHop, QPred }
 
 glob logger = logging.getLogger(__name__),

@@ -58,18 +58,6 @@ impl RegionInferPass._run_impl(ir_in: Module) -> Module {
     return ir_in;
 }
 
-impl RegionInferPass._is_def_name(nm: NameAtom) -> bool {
-    p = nm.parent;
-    if isinstance(p, Assignment) and p.aug_op is None {
-        for tgt in p.target {
-            if tgt is nm {
-                return True;
-            }
-        }
-    }
-    return False;
-}
-
 impl RegionInferPass._sym_of(nm: NameAtom) -> (Symbol | None) {
     bound = nm.sym;
     if bound is not None {
@@ -83,7 +71,7 @@ impl RegionInferPass._uses_of(sym: Symbol) -> list[NameAtom] {
     if self._use_index is None {
         index: dict[int, list[NameAtom]] = {};
         for nm in self.module.get_all_sub_nodes(Name) {
-            if self._is_def_name(nm) {
+            if is_def_name(nm) {
                 continue;
             }
             p = nm.parent;

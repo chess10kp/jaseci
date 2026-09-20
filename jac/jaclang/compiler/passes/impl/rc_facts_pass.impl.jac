@@ -304,7 +304,7 @@ impl RcFactsPass._stamp_move_in(ir_in: Module) -> None {
         seen.add(id(sym));
         _use_map: dict[int, NameAtom] = {};
         for u in sym.uses {
-            if not self._is_def_name(u) {
+            if not is_def_name(u) {
                 _use_map[id(u)] = u;
             }
         }
@@ -366,7 +366,7 @@ impl RcFactsPass._stamp_move_lowerable(ir_in: Module) -> None {
         if nm.sym is None {
             continue;
         }
-        if self._is_def_name(nm) {
+        if is_def_name(nm) {
             continue;
         }
         sid = id(nm.sym);
@@ -422,25 +422,6 @@ impl RcFactsPass._stamp_move_lowerable(ir_in: Module) -> None {
             nd.na_move_lowerable = True;
         }
     }
-}
-
-impl RcFactsPass._cfg_owner(sub: UniNode) -> (UniCFGNode | None) {
-    if isinstance(sub, UniCFGNode) {
-        return sub;
-    }
-    return sub.find_parent_of_type(UniCFGNode);
-}
-
-impl RcFactsPass._is_def_name(nm: NameAtom) -> bool {
-    p = nm.parent;
-    if isinstance(p, Assignment) and p.aug_op is None {
-        for tgt in p.target {
-            if tgt is nm {
-                return True;
-            }
-        }
-    }
-    return False;
 }
 
 impl RcFactsPass._is_alias_value(nm: Name) -> bool {
@@ -503,14 +484,14 @@ impl RcFactsPass._solve_liveness(
         use: set[SymId] = set();
         dfn: set[SymId] = set();
         for nm in n.get_all_sub_nodes(Name) {
-            if self._cfg_owner(nm) is not n or nm.sym is None {
+            if cfg_owner(nm) is not n or nm.sym is None {
                 continue;
             }
             sid = id(nm.sym);
             if sid not in tracked {
                 continue;
             }
-            if self._is_def_name(nm) {
+            if is_def_name(nm) {
                 dfn.add(sid);
             } else {
                 use.add(sid);

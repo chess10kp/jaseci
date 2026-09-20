@@ -1,21 +1,13 @@
 import os;
 
+import from jaclang.data.store { _sqlstate }
+
 
 glob __all__ = ['humanize_error', 'show_tracebacks'];
 
 
 def show_tracebacks -> bool {
     return os.environ.get('JAC_DEBUG', '').lower() not in ('', '0', 'false');
-}
-
-
-def _sqlstate(e: Exception) -> str {
-    for arg in getattr(e, 'args', ()) {
-        if isinstance(arg, dict) and 'C' in arg {
-            return str(arg.get('C') or '');
-        }
-    }
-    return '';
 }
 
 

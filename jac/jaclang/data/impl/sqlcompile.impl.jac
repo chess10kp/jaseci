@@ -65,15 +65,6 @@ def _sql_type_of(v: any) -> str {
 }
 
 
-def _sanitize_ident(name: str) -> str {
-    out = '';
-    for ch in name.lower() {
-        out += ch if (ch.isalnum() or ch == '_') else '_';
-    }
-    return out;
-}
-
-
 def _promoted_col(
     alias: str, arch_names: list[str], field: str, promotions: (dict[str, any] | None)
 ) -> (str | None) {
