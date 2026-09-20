@@ -151,19 +151,14 @@ def invalidate_client_product(program: JacProgram, module: Module) {
     }
 }
 
-# Minimum live analysis facts marking each product as usable. Every fact must
-# be produced by the product's own pipeline or by one of its prerequisites;
-# validate_product_specs enforces that against PASS_CONTRACTS.
 glob PRODUCT_READY_FACTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
          CompilationProduct.FLOW: (AnalysisFact.CFG_SUCC, ),
          CompilationProduct.ANALYSIS: (AnalysisFact.CFG_SUCC, AnalysisFact.TYPE_OF, ),
          CompilationProduct.CLIENT: (AnalysisFact.TYPE_OF, ),
          CompilationProduct.NATIVE_IR: (AnalysisFact.CFG_SUCC, AnalysisFact.TYPE_OF, ),
 
-     };
-
-glob PRODUCT_PREREQUISITES:
-         dict[CompilationProduct, tuple[CompilationProduct, ...]] = {
+     },
+     PRODUCT_PREREQUISITES: dict[CompilationProduct, tuple[CompilationProduct, ...]] = {
          CompilationProduct.ANALYSIS: (CompilationProduct.FLOW, ),
          CompilationProduct.CLIENT: (CompilationProduct.ANALYSIS, ),
          CompilationProduct.NATIVE_IR: (
@@ -195,7 +190,7 @@ def product_ready(
     return task is None or task.state == TaskState.SUCCEEDED;
 }
 
-def validate_product_specs -> None {
+def validate_product_specs {
     providers: dict[CompilationProduct, set[AnalysisFact]] = {};
 
     def providers_of_product(
