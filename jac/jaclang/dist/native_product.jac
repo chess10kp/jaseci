@@ -8,16 +8,18 @@ def write_native_product(
     relative: Path,
     shared: bool = True,
     memory: str = '',
-    emit_source: bool = True
+    emit_source: bool = True,
+    triple: str = ""
 ) -> dict[str, any] {
     import from jaclang.compiler.backends.native.entry_points {
         inject_main,
         validate_native_application
     }
     import from jaclang.compiler.backends.native.shared_emit {
-        inject_shared_init,
+        prepare_shared_ir,
         bind_shared_callbacks,
-        emit_shared_library
+        emit_shared_library,
+        SharedLibOptions
     }
     manifest = module.gen.interop_manifest;
     llvm_ir = validate_native_application(module, shared, memory);
@@ -32,7 +34,7 @@ def write_native_product(
     if emit_source {
         import from jaclang.compiler.backends.native.c_emit { emit_c }
         if shared {
-            (llvm_ir, _) = inject_shared_init(llvm_ir, manifest);
+            (llvm_ir, _) = prepare_shared_ir(llvm_ir, manifest);
         } else {
             llvm_ir = inject_main(llvm_ir);
         }
@@ -49,8 +51,11 @@ def write_native_product(
             manifest,
             exports,
             str(target),
-            clib_paths=module.gen._clib_paths,
-            clib_symbol_lib=module.gen._clib_symbol_lib
+            SharedLibOptions(
+                clib_paths=module.gen._clib_paths,
+                clib_symbol_lib=module.gen._clib_symbol_lib,
+                triple=triple
+            )
         );
         if not ok {
             raise RuntimeError(error);

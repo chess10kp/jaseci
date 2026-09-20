@@ -193,7 +193,8 @@ def export_project(
                 directory,
                 Path('main'),
                 shared=kind == 'native-lib',
-                memory=native_options.memory_profile or ""
+                memory=native_options.memory_profile or "",
+                triple=native_options.native_target or ""
             );
             records.append(
                 {

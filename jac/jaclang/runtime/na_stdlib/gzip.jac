@@ -1,8 +1,7 @@
-import from _zlib_native { z_compress2, z_compress_bound, z_uncompress2, z_crc32 }
+import from _zlib_native { z_compress2, z_compress_bound, z_crc32 }
+import from _deflate { inflate_growable }
 
 glob Z_OK: int = 0,
-     Z_DATA_ERROR: int = -3,
-     Z_BUF_ERROR: int = -5,
      _MASK32: int = 4294967295;
 
 
@@ -100,8 +99,6 @@ def:pub decompress(data: bytes) -> bytes {
         }
 
         remaining: int = n - hpos;
-        rewrapped = b"\x78\x9c" + data[hpos:n];
-        src_total: int = len(rewrapped);
 
         ceiling: int = remaining * 1032 + 1024;
         cap: int = int.from_bytes(data[n - 4:n], "little");
@@ -111,27 +108,12 @@ def:pub decompress(data: bytes) -> bytes {
         if cap > ceiling {
             cap = ceiling;
         }
-        written: int = 0;
-        consumed: int = 0;
-        while True {
-            dest = b"\x00" * cap;
-            dest_len = cap.to_bytes(8, "little");
-            src_len = src_total.to_bytes(8, "little");
-            rc: int = z_uncompress2(dest, dest_len, rewrapped, src_len);
-            if rc == Z_OK or rc == Z_DATA_ERROR {
-                written = int.from_bytes(dest_len, "little");
-                consumed = int.from_bytes(src_len, "little");
-                break;
-            }
-            if rc == Z_BUF_ERROR and cap < ceiling {
-                cap = cap * 2;
-                if cap > ceiling {
-                    cap = ceiling;
-                }
-                continue;
-            }
+        inflated = inflate_growable(data[hpos:n], cap, ceiling);
+        if inflated is None {
             raise ValueError("gzip.decompress: invalid compressed data");
         }
+        (dest, consumed) = inflated;
+        written: int = len(dest);
 
         if consumed < 8 {
             raise ValueError("gzip.decompress: invalid compressed data");

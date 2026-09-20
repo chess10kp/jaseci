@@ -1,4 +1,5 @@
 import os;
+import sys;
 import type from jaclang.compiler.backends.native.llvm.binding {
     ModuleRef,
     ValueRef,
@@ -226,22 +227,20 @@ def _assert_abi64_adapters(
 def _link_wasm_libc(mod: ModuleRef) -> bool {
     libc_dir = _wasm_libc_dir();
     if libc_dir is None {
-        import from jaclang.cli.console { console }
-        console.warning(
+        sys.stderr.write(
             "vendored wasm libc not found (run `zig build vendor-wasm-libc`); "
                 + "libc symbols stay as raw env imports and the jac_host1 import "
-                + "contract is NOT enforced"
+                + "contract is NOT enforced\n"
         );
         return False;
     }
     drift = _floor_source_drift(libc_dir);
     if drift is None {
         if _is_dev_libc_dir(libc_dir) {
-            import from jaclang.cli.console { console }
-            console.warning(
+            sys.stderr.write(
                 f"vendored wasm libc at {libc_dir} carries no {FLOOR_MANIFEST}, "
                     + "so it cannot be checked against wasm_rt/; it predates the "
-                    + f"manifest -- {_rebuild_hint(libc_dir)}."
+                    + f"manifest -- {_rebuild_hint(libc_dir)}.\n"
             );
         }
     } elif drift {
@@ -346,13 +345,16 @@ def prepare_wasm_module(llvm_ir_str: str) -> tuple[ModuleRef, TargetMachine, boo
 }
 
 def emit_wasm_from_ir(
-    llvm_ir_str: str, export_funcs: list[str] = [], app_imports: (set | None) = None
+    llvm_ir_str: str,
+    export_funcs: (list[str] | None) = None,
+    app_imports: (set | None) = None
 ) -> bytes {
     import from jaclang.compiler.backends.native.wasm_linker { WasmLinker }
     import from jaclang.compiler.backends.native.wasm_host_abi {
         WASM_HOST_ABI,
         WASM_HOST_MODULE
     }
+    export_funcs = export_funcs or [];
     (mod, tm, libc_linked) = prepare_wasm_module(llvm_ir_str);
     obj_bytes = tm.emit_object(mod);
     assert isinstance(obj_bytes, bytes);
@@ -425,8 +427,8 @@ def _assert_ir_rc_free(llvm_ir_str: str, file_path: str) {
     }
 }
 
-def compile_to_wasm(file_path: str, export_funcs: list[str] = []) -> bytes {
+def compile_to_wasm(file_path: str, export_funcs: (list[str] | None) = None) -> bytes {
     import from jaclang.compiler.driver.pipeline { build_wasm }
     import from jaclang.runtime.runtime { JacRuntime }
-    return build_wasm(JacRuntime.get_program(), file_path, export_funcs);
+    return build_wasm(JacRuntime.get_program(), file_path, export_funcs or []);
 }

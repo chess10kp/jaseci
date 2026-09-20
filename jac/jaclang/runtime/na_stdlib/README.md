@@ -73,8 +73,10 @@ native layout records the emitted name separately from its source-level key.
   FEXTRA / FNAME / FCOMMENT skips; the 2 FHCRC bytes are skipped unverified,
   which is also CPython's behavior), re-frames the remaining input as a zlib
   stream so the member's own trailer bytes stand in for the adler32, inflates
-  through `uncompress2` -- whose consumed-source count locates the member
-  boundary; the near-certain final adler mismatch (`Z_DATA_ERROR`) and the
+  through `_deflate.inflate_growable` (the re-framing and `uncompress2`
+  driving shared with the ZIP reader) -- whose consumed-source count locates
+  the member boundary; the near-certain final adler mismatch (`Z_DATA_ERROR`)
+  and the
   2^-32 coincidence where the trailer bytes equal the output's adler32
   (`Z_OK`) are both accepted -- then enforces gzip's own CRC-32 and ISIZE
   (compared mod 2^32, per RFC 1952, so members over 4 GiB verify the same way
@@ -500,12 +502,14 @@ length, and CRC-32. Malformed archives raise `BadZipFile`; missing names raise
 `KeyError`; reading a closed archive raises `ValueError`. Invalid UTF-8 names
 raise `BadZipFile` (CPython raises `UnicodeDecodeError`).
 
-The DEFLATE decoder reuses the existing `_zlib_native` one-shot FFI. A first
-pass obtains the decoded bytes from a zlib frame with a placeholder Adler-32.
-A second pass supplies the computed Adler-32 and requires `Z_OK`, exact output
-length, and exact input consumption. A checksum failure alone is never accepted
-as proof of a complete stream. This trades a second decompression pass for
-reuse of the existing portable buffer API without a platform-dependent
+The DEFLATE decoder delegates to the bundled `_deflate` helper, which owns the
+synthetic-zlib re-framing (`0x78 0x9c` header, Adler-32 trailer) and the
+`z_uncompress2` status handling for both this reader and the native gzip
+reader. `inflate_exact` runs a first pass against a placeholder Adler-32, then
+a second pass supplying the computed Adler-32 and requiring `Z_OK`, exact
+output length, and exact input consumption. A checksum failure alone is never
+accepted as proof of a complete stream. This trades a second decompression pass
+for reuse of the existing portable buffer API without a platform-dependent
 `z_stream` layout. Output allocation is bounded by the declared member size
 and DEFLATE's expansion bound; ZIP's CRC-32 is checked separately.
 

@@ -287,17 +287,6 @@ impl NaIRGenPass._constructor_ability_for(cls: str, slot: str) -> (uni.Ability |
 }
 
 impl NaIRGenPass._predemote_capability_constructors -> None {
-    """Demote capability-blocked constructors before any body is lowered.
-
-    Every other seam demotes at its own body-codegen point, which is enough
-    because a call site that binds too early still resolves its callee by name.
-    A construction site does not: it reads `init`/`postinit` straight out of
-    `method_funcs` while lowering some OTHER archetype's body, so a constructor
-    that only demoted later would already have been bound -- silently, to what
-    becomes an abort stub. Running the constructor half of the capability
-    partition up front makes the refusal independent of which archetype the
-    backend reaches first.
-    """;
     if not self._capability_demotions {
         return;
     }
@@ -330,18 +319,6 @@ impl NaIRGenPass._predemote_capability_constructors -> None {
 }
 
 impl NaIRGenPass._codegen_constructors_first(archetypes: list[uni.Archetype]) -> None {
-    """Lower every constructor body before any other body is lowered.
-
-    The companion to `_predemote_capability_constructors`, for the demotions
-    the capability partition cannot predict: a structured error or an emitter
-    exception while lowering a constructor. Those only surface at the
-    constructor's own codegen point, and a construction site lowered before
-    that point would already hold a direct reference to what becomes an abort
-    stub. Lowering constructors first means every non-constructor body sees a
-    settled answer from `_demoted_init_of`. A constructor that constructs
-    another class whose constructor demotes later in this same pass is the one
-    case left, and it is bounded by construction order among constructors.
-    """;
     _slots = self._constructor_slots();
     for arch in archetypes {
         arch_name = arch.name.value if arch.name else "unknown";
@@ -360,14 +337,6 @@ impl NaIRGenPass._codegen_constructors_first(archetypes: list[uni.Archetype]) ->
 }
 
 impl NaIRGenPass._demoted_init_of(type_name: str) -> (str | None) {
-    """The demoted initializer a `type_name()` would have needed, or None.
-
-    Walks the MRO the way the construction site does and stops at the first
-    class that provides an initializer at all, so a live `init` on a subclass
-    still wins over a demoted one further up. The skipped-methods check comes
-    first per candidate because a demotion that kept its function (a virtual
-    slot) leaves the abort stub sitting in `method_funcs`.
-    """;
     if not self._native_skipped_methods {
         return None;
     }
@@ -630,14 +599,6 @@ impl NaIRGenPass._codegen_archetype(nd: uni.Archetype) -> None {
 }
 
 impl NaIRGenPass._erased_sig_typevars(nd: uni.Archetype) -> dict[str, list[str]] {
-    """The type params a method signature erases, keyed by the slot naming it.
-
-    A sequence of `T` in a signature lays out as the pointer-flavoured list,
-    exactly as a bare `T` lays out as a raw pointer, so an instantiation at a
-    by-value type is as unsound there as it is in a field. Recording those
-    slots alongside the erased fields lets the construction site refuse both
-    with one rule.
-    """;
     out: dict[str, list[str]] = {};
     if nd.body is None {
         return out;
@@ -1205,7 +1166,6 @@ impl NaIRGenPass._demote_method_if_unlowerable(
 }
 
 impl NaIRGenPass._seam_warnings_on -> bool {
-    """Whether a seam this run takes should also be announced on stderr.""";
     if self._na_debug_on() or bool(self.prog.options.native_debug) {
         return True;
     }
@@ -1222,21 +1182,6 @@ impl NaIRGenPass._seam_warnings_on -> bool {
 impl NaIRGenPass._opaque_field_if_unlowerable(
     arch_name: str, fname: str, local_mark: int
 ) -> (ir.Type | None) {
-    """Spend a field declaration's refusal on the field, not on the module.
-
-    A `has` type with no native layout sits outside every ability body, so
-    `_demote_method_if_unlowerable` has nothing to take it from and the
-    diagnostic used to survive to the end of the run, where a non-empty
-    `errors_had` withholds the module's IR. The declaration owns it here the
-    way #8285 made a signature's declaration own its own: the slot erases to
-    an opaque pointer, the field is recorded so that every read and write of
-    it refuses inside the callable that performs it, and the refusal is
-    re-published as a coverage seam keyed on the field rather than swallowed.
-
-    An erased slot is storage the native side never writes, so the field also
-    joins `struct_field_foreign` -- the constructor, the tracer, the arena and
-    the reference counter all already skip that set.
-    """;
     if len(self.ctx.errors_had) <= local_mark {
         return None;
     }
@@ -1250,7 +1195,7 @@ impl NaIRGenPass._opaque_field_if_unlowerable(
         import sys;
         sys.stderr.write(
             f"warning: native seam -- erasing field {arch_name}.{fname} to an "
-            f"opaque slot (un-lowerable declaration): "
+            "opaque slot (un-lowerable declaration): "
                 + "; ".join(str(e) for e in _own)
                 + "\n"
         );
@@ -1284,14 +1229,6 @@ impl NaIRGenPass._opaque_field_if_unlowerable(
 impl NaIRGenPass._refuse_opaque_field(
     nd: (uni.UniNode | None), type_name: (str | None), fname: str
 ) -> bool {
-    """Refuse a touch of an erased slot, inside the callable that touches it.
-
-    The slot carries no value the native side put there, so answering with
-    its bits would be wrong rather than merely un-lowered. Emitting here puts
-    the diagnostic inside the enclosing callable's demotion window, which is
-    what turns one un-lowerable declaration into a seam per method that reads
-    or writes it instead of a dead module.
-    """;
     if type_name is None {
         return False;
     }
@@ -1403,13 +1340,6 @@ impl NaIRGenPass._trigger_struct_names(method: uni.Ability) -> list[str] {
 impl NaIRGenPass._read_field_or_refuse(
     nd: uni.UniNode, obj_val: ir.Value, field_name: str, arch_name: str
 ) -> (ir.Value | None) {
-    """Read a field, naming the ancestor when an inherited one is unreachable.
-
-    Only the inherited case speaks up here. Every other way a name can miss
-    the layout already has an owner further out that reports it, and claiming
-    them from this depth would rename diagnostics this change has no business
-    touching.
-    """;
     _mark = len(self.ctx.errors_had);
     _val = self._codegen_field_access(obj_val, field_name, arch_name, nd);
     if _val is None and len(self.ctx.errors_had) == _mark {
@@ -1424,13 +1354,6 @@ impl NaIRGenPass._read_field_or_refuse(
 impl NaIRGenPass._unadopted_field_owner(
     arch_name: str, field_name: str
 ) -> (str | None) {
-    """The ancestor that declares a field this class's layout does not hold.
-
-    A subclass whose ancestor lays out in another unit adopts that unit's slot
-    assignment, and where the two disagree about the header slots there is no
-    assignment to adopt. Naming the ancestor turns the resulting refusal from
-    'some attribute did not lower' into the layout fact behind it.
-    """;
     _arch = self.arch_ast_map.get(arch_name);
     if _arch is None {
         return None;
@@ -2370,20 +2293,6 @@ impl NaIRGenPass._codegen_instantiation(
 }
 
 impl NaIRGenPass._unregistered_class_target(target: uni.UniNode) -> (str | None) {
-    """The class a `Cls.method(...)` names when the native lane has no `Cls`.
-
-    The native import walk registers a struct type for an imported archetype
-    only when it walked that archetype's module; a module it classified
-    Python-side (a Python base, a `::py::` body) leaves nothing behind, so the
-    class name resolves to no native type at all. That is the same crossing a
-    cross-module free-function call makes, and the free-function form refuses
-    out loud -- this lookup is what lets the class-qualified form say the same
-    thing instead of dropping the call on the floor.
-
-    Only a name that resolves to an archetype declared in *another* Jac module
-    answers, so an instance receiver, an enum, and an in-module class that has
-    simply not been registered yet all stay out of it.
-    """;
     import os;
     name = self._get_name(target);
     if name is None or name in self.struct_types or name in self.local_vars {
@@ -3293,17 +3202,6 @@ impl NaIRGenPass._opt_unwrap_attr(obj_val: ir.Value) -> ir.Value {
 impl NaIRGenPass._opt_unwrap_guarded(
     val: (ir.Value | None), what: str, msg: str
 ) -> (ir.Value | None) {
-    """Payload of an optional container, guarded by the absence CPython raises on.
-
-    `has parts: (list[Item] | None)` lowers to a `JacOpt` -- a presence tag
-    beside the container pointer -- so a loop, comprehension or slice reading
-    the slot receives the wrapper, not a list. Handing that wrapper to the
-    container helpers is what used to raise `Type of #1 arg mismatch` out of
-    the builder and cost the whole function an ICE. Unwrapping here restores
-    the container the rest of the lowering expects; the `None` arm raises
-    rather than reading a null, so the two pathways agree on the absent case
-    as well as the present one.
-    """;
     if val is None {
         return None;
     }
@@ -3388,7 +3286,6 @@ impl NaIRGenPass._receiver_union_parts(nd: (uni.UniNode | None)) -> (list[str] |
 impl NaIRGenPass._codegen_union_member(
     obj_val: ir.Value, field_name: str, nd: uni.AtomTrailer, parts: list[str]
 ) -> (ir.Value | None) {
-    """Read each union member through its own field layout or accessor.""";
     source_receiver = obj_val;
     result_type = self._lower_type(nd.type);
     if result_type is None {
@@ -4398,7 +4295,6 @@ impl NaIRGenPass._jc_reference_schema(
     layouts: dict[str, tuple[list[int], int]],
     semantic: TypeBase | None = None
 ) -> (dict[str, any] | None) {
-    """Combine semantic reference types with the backend's container ABI.""";
     args = semantic.private.type_args or [] if isinstance(semantic, ClassType) else [];
     semantic_name = semantic.shared.class_name
         if isinstance(semantic, ClassType)

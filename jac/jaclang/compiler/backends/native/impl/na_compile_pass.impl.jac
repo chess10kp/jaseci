@@ -897,9 +897,9 @@ impl NativeCompilePass._compile_and_link_native_imports(
                     for (_uv_c, _uv_n) in sorted(_uv_conflicts.items())
                 );
                 _uv_sys.stderr.write(
-                    f"warning: native seam -- re-emitting "
+                    "warning: native seam -- re-emitting "
                     f"{os.path.basename(real_path)}: it declared callables "
-                    f"live while their module's verdict was pending, and the "
+                    "live while their module's verdict was pending, and the "
                     f"landed verdict disagrees ({_uv_what})\n"
                 );
                 self.prog.scratch.na_unverified_live.pop(real_path, None);

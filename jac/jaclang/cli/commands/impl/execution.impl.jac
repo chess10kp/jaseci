@@ -187,23 +187,28 @@ def _default_codespace_is_native -> bool {
     return effective == 'native';
 }
 
-def _build_c_argv(argv: list[str]) -> tuple[any, any, any] {
-    import ctypes;
+obj NativeArgv {
+    has argc: int,
+        refs: list,
+        vector: any;
 
-    argc = len(argv);
-    c_strings = [ctypes.c_char_p(arg.encode("utf-8")) for arg in argv];
-    c_argv = (ctypes.c_char_p * argc)(*c_strings);
-    return (argc, c_argv, c_strings);
+    def init(self: NativeArgv, argv: list[str]) {
+        import ctypes;
+
+        self.argc = len(argv);
+        self.refs = [ctypes.c_char_p(arg.encode("utf-8")) for arg in argv];
+        self.vector = (ctypes.c_char_p * self.argc)(*self.refs);
+    }
 }
 
 def _set_native_argv_in_dll(lib: CDLL, argv: list[str]) -> bool {
     import ctypes;
 
-    (argc, c_argv, c_strings) = _build_c_argv(argv);
+    native_argv = NativeArgv(argv);
     try {
-        ctypes.c_int32.in_dll(lib, "__jac_argc").value = argc;
+        ctypes.c_int32.in_dll(lib, "__jac_argc").value = native_argv.argc;
         ctypes.c_void_p.in_dll(lib, "__jac_argv").value = ctypes.cast(
-            c_argv, ctypes.c_void_p
+            native_argv.vector, ctypes.c_void_p
         ).value;
     } except ValueError as e {
         console.warning(
@@ -212,7 +217,7 @@ def _set_native_argv_in_dll(lib: CDLL, argv: list[str]) -> bool {
         );
         return False;
     }
-    setattr(lib, "_jac_argv_refs", (c_strings, c_argv));
+    setattr(lib, "_jac_argv_refs", (native_argv.refs, native_argv.vector));
     return True;
 }
 
@@ -225,14 +230,14 @@ def _populate_native_argv(engine: ExecutionEngine, argv: list[str]) -> None {
         return;
     }
 
-    (argc, c_argv, c_strings) = _build_c_argv(argv);
+    native_argv = NativeArgv(argv);
 
     argc_ptr = ctypes.cast(argc_addr, ctypes.POINTER(ctypes.c_int32));
-    argc_ptr[0] = argc;
+    argc_ptr[0] = native_argv.argc;
     argv_ptr = ctypes.cast(argv_addr, ctypes.POINTER(ctypes.c_void_p));
-    argv_ptr[0] = ctypes.cast(c_argv, ctypes.c_void_p).value;
+    argv_ptr[0] = ctypes.cast(native_argv.vector, ctypes.c_void_p).value;
 
-    setattr(engine, "_jac_argv_refs", (c_strings, c_argv));
+    setattr(engine, "_jac_argv_refs", (native_argv.refs, native_argv.vector));
 }
 
 def _plan_ui(plan: RunPlan) -> str {
@@ -362,45 +367,46 @@ def _port_is_explicit(port: (int | None), cfg: any) -> bool {
     return not (isinstance(raw, dict) and raw.get("port") == port);
 }
 
-def _serve_overrides(
-    port: (int | None),
-    dev: (bool | None),
-    api_port: (int | None),
-    no_client: (bool | None),
-    faux: (bool | None),
-    host: (str | None),
-    platform: (str | None),
-    fleet: bool,
-    cfg: any,
-    workers: (str | None) = None
-) -> dict[str, any] {
+obj _ServeFlags {
+    has port: (int | None),
+        dev: (bool | None),
+        api_port: (int | None),
+        no_client: (bool | None),
+        faux: (bool | None),
+        host: (str | None),
+        platform: (str | None),
+        fleet: bool = False,
+        workers: (str | None) = None;
+}
+
+def _serve_overrides(flags: _ServeFlags, cfg: any) -> dict[str, any] {
     over: dict[str, any] = {};
-    if _port_is_explicit(port, cfg) {
-        over["port"] = port;
+    if _port_is_explicit(flags.port, cfg) {
+        over["port"] = flags.port;
     }
-    if dev is not None {
-        over["dev"] = dev;
+    if flags.dev is not None {
+        over["dev"] = flags.dev;
     }
-    if api_port is not None {
-        over["api_port"] = api_port;
+    if flags.api_port is not None {
+        over["api_port"] = flags.api_port;
     }
-    if no_client is not None {
-        over["no_client"] = no_client;
+    if flags.no_client is not None {
+        over["no_client"] = flags.no_client;
     }
-    if faux is not None {
-        over["faux"] = faux;
+    if flags.faux is not None {
+        over["faux"] = flags.faux;
     }
-    if host is not None {
-        over["host"] = host;
+    if flags.host is not None {
+        over["host"] = flags.host;
     }
-    if platform is not None {
-        over["platform"] = platform;
+    if flags.platform is not None {
+        over["platform"] = flags.platform;
     }
-    if fleet {
+    if flags.fleet {
         over["fleet"] = True;
     }
-    if workers is not None {
-        over["workers"] = workers;
+    if flags.workers is not None {
+        over["workers"] = flags.workers;
     }
     return over;
 }
@@ -592,44 +598,20 @@ impl run_jab_image(
     if kind in ["cli", "cli-native", "native-binary"] {
         if kind != "cli" {
             _interop = (meta.get("native") or {}).get("interop", False);
-            _argv = [entry_abs] + [str(a) for a in args];
+            host_argv = [entry_abs] + [str(a) for a in args];
             if _interop {
-                native_lib = _jab_native_lib(img_root, entry_rel);
-                if native_lib {
-                    rc = _run_native_lib(
-                        native_lib,
-                        _argv,
-                        callbacks=_jab_interop_callbacks(img_root, native_lib)
-                    );
-                    if rc is not None {
-                        return rc;
-                    }
-                    console.warning(
-                        "in-process native entry library failed to load; "
-                        "falling back to the JIT interpreter."
-                    );
-                } else {
-                    console.warning(
-                        "interop jab carries no native entry library; "
-                        "falling back to the JIT interpreter."
-                    );
+                rc = _jab_run_entry_lib(img_root, entry_rel, host_argv, interop=True);
+                if rc is not None {
+                    return rc;
                 }
             } else {
                 native_bin = _jab_native_bin(img_root, entry_rel);
                 if native_bin {
-                    os.execv(native_bin, [native_bin] + _argv);
+                    os.execv(native_bin, [native_bin] + [str(a) for a in args]);
                 }
-                native_lib = _jab_native_lib(img_root, entry_rel);
-                if native_lib {
-                    try {
-                        rc = _run_native_lib(native_lib, _argv);
-                        if rc is not None {
-                            return rc;
-                        }
-                    } except NativeEntryStartedError as e {
-                        console.error(str(e));
-                        return 1;
-                    }
+                rc = _jab_run_entry_lib(img_root, entry_rel, host_argv, interop=False);
+                if rc is not None {
+                    return rc;
                 }
             }
         }
@@ -679,8 +661,7 @@ def _jab_native_lib(img_root: Path, entry_rel: str) -> (str | None) {
 class NativeEntryStartedError(Exception) {}
 
 
-def _jab_interop_callbacks(img_root: Path, lib_path: str) -> list[dict[str, any]] {
-    """Read the na->sv callback contract recorded beside an entry library.""";
+def _jab_interop_callbacks(lib_path: str) -> list[dict[str, any]] {
     import json;
     import from jaclang.server.sealed_serve { interop_record_path }
     record = interop_record_path(lib_path);
@@ -705,7 +686,6 @@ def _jab_interop_callbacks(img_root: Path, lib_path: str) -> list[dict[str, any]
 def _resolve_sv_functions(
     callbacks: list[dict[str, any]], img_root: Path
 ) -> dict[str, any] {
-    """Resolve each na->sv callback to its Python callable in the sealed app.""";
     import os;
     import from jaclang.runtime.interop_bridge { _pyb_import_module }
     functions: dict[str, any] = {};
@@ -738,18 +718,12 @@ def _resolve_sv_functions(
 
 
 def _run_native_lib(
-    lib_path: str, argv: list[str], callbacks: list[dict[str, any]] = []
+    lib_path: str,
+    argv: list[str],
+    callbacks: (list[dict[str, any]] | None) = None,
+    img_root: Path = Path()
 ) -> (int | None) {
-    """dlopen the native library and run its entry in-process.
-
-    Loading and initialization go through ``NativeLibrary`` so na->sv
-    callbacks are registered into their ``__jac_bind_*`` slots and
-    ``__jac_shared_init`` runs exactly once. Returns 0 on success and None
-    on load/link errors, which the caller may treat as a signal to fall
-    back to the execv/JIT lane. Once ``jac_entry`` has started running the
-    fallback would re-run the entry and double its side effects, so
-    failures past that point raise ``NativeEntryStartedError`` instead.
-    """;
+    callbacks = callbacks or [];
     import ctypes;
     import from jaclang.runtime.interop_bridge { NativeCallback, NativeLibrary }
     bindings = [
@@ -762,7 +736,7 @@ def _run_native_lib(
     lib = NativeLibrary(
         path=lib_path,
         bindings=bindings,
-        functions=_resolve_sv_functions(callbacks, _jab_pkg_root(lib_path))
+        functions=_resolve_sv_functions(callbacks, img_root)
     );
     try {
         handle = lib.handle();
@@ -796,11 +770,35 @@ def _run_native_lib(
 }
 
 
-def _jab_pkg_root(lib_path: str) -> Path {
-    """Package root of the sealed jab that carries ``lib_path``.""";
-    return Path(lib_path).parents[2]
-        if len(Path(lib_path).parents) > 2
-        else Path(lib_path).parent;
+def _jab_run_entry_lib(
+    img_root: Path, entry_rel: str, host_argv: list[str], interop: bool
+) -> (int | None) {
+    native_lib = _jab_native_lib(img_root, entry_rel);
+    if not native_lib {
+        if interop {
+            console.warning(
+                "interop jab carries no native entry library; "
+                "falling back to the JIT interpreter."
+            );
+        }
+        return None;
+    }
+    callbacks = _jab_interop_callbacks(native_lib) if interop else [];
+    try {
+        rc = _run_native_lib(
+            native_lib, host_argv, callbacks=callbacks, img_root=img_root
+        );
+    } except NativeEntryStartedError as e {
+        console.error(str(e));
+        return 1;
+    }
+    if rc is None and interop {
+        console.warning(
+            "in-process native entry library failed to load; "
+            "falling back to the JIT interpreter."
+        );
+    }
+    return rc;
 }
 
 
@@ -983,7 +981,7 @@ def _invoke_entrypoint(
     return 0;
 }
 
-impl run(
+impl run(  # jac:ignore[W3030] -- signature mirrors the `jac run` command spec
     target: str = "",
     show: bool = False,
     main: bool = True,
@@ -1004,10 +1002,11 @@ impl run(
     takeover: (bool | None) = None,
     fleet: bool = False,
     workers: (str | None) = None,
-    args: list[str] = [],
+    args: (list[str] | None) = None,
     backend: str = ""
 ) -> int {
     use_line_buffered_output();
+    args = args or [];
     if backend not in ("", "python", "native") {
         console.error("--backend must be python or native.");
         return 1;
@@ -1050,7 +1049,18 @@ impl run(
     eff = _effective_config(cfg, app);
 
     over = _serve_overrides(
-        port, dev, api_port, no_client, faux, host, platform, fleet, eff, workers
+        _ServeFlags(
+            port=port,
+            dev=dev,
+            api_port=api_port,
+            no_client=no_client,
+            faux=faux,
+            host=host,
+            platform=platform,
+            fleet=fleet,
+            workers=workers
+        ),
+        eff
     );
     entry_flags = _entry_flags_used(entry_name, nd, root_id, debug_mode);
     kind_serves = plan is not None and plan.action == "serve";
@@ -1389,7 +1399,7 @@ def _serve_fleet(
 }
 
 
-impl serve(
+impl serve(  # jac:ignore[W3030] -- signature mirrors the `jac serve` command spec
     filename: str,
     port: int = 0,
     main: bool = True,
@@ -2140,8 +2150,9 @@ impl x(
     use_global: bool = False,
     use_node: bool = False,
     list_tools: bool = False,
-    args: list[str] = []
+    args: (list[str] | None) = None
 ) -> int {
+    args = args or [];
     tiers = _tool_tiers(use_global, use_node);
 
     if list_tools or not name {

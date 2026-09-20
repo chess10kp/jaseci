@@ -1127,7 +1127,7 @@ impl NaIRGenPass._register_imported_archetype(arch: uni.Archetype) -> None {
         _rc_sys.stderr.write(
             f"warning: native struct name collision -- '{aname}' from "
             f"{_arch_src} shadows the one from {_seen_src}; skipping "
-            f"re-registration\n"
+            "re-registration\n"
         );
         return;
     }

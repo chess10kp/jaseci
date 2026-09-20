@@ -741,7 +741,7 @@ def _build_context(
     );
 }
 
-def build_native_entry_lib(filename: str, output: str) -> int {
+impl build_native_entry_lib(filename: str, output: str) -> int {
     """Build the host-driven entry library for one Jac file.
 
     Compiles once, binds every na->sv callback through host-fillable

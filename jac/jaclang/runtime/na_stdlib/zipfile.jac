@@ -1,4 +1,5 @@
-import from _zlib_native { z_uncompress2, z_crc32, z_adler32 }
+import from _zlib_native { z_crc32 }
+import from _deflate { inflate_exact }
 
 glob:pub ZIP_STORED: int = 0,
      ZIP_DEFLATED: int = 8;
@@ -233,25 +234,8 @@ def _inflate(data: bytes, size: int) -> bytes {
     if size < 0 or size > len(data) * 1032 + 1024 {
         raise BadZipFile("Invalid DEFLATE output size");
     }
-    framed = b"\x78\x9c" + data + b"\x00\x00\x00\x00";
-    dest = b"\x00" * (size + 1);
-    dest_len = (size + 1).to_bytes(8, "little");
-    src_len = len(framed).to_bytes(8, "little");
-    rc = z_uncompress2(dest, dest_len, framed, src_len);
-    if (rc != 0 and rc != -3)
-        or int.from_bytes(dest_len, "little") != size
-        or int.from_bytes(src_len, "little") != len(framed) {
-        raise BadZipFile("Invalid or truncated DEFLATE stream");
-    }
-    result = dest[:size];
-    checksum = z_adler32(1, result, size);
-    verified = b"\x78\x9c" + data + checksum.to_bytes(4, "big");
-    dest_len = (size + 1).to_bytes(8, "little");
-    src_len = len(verified).to_bytes(8, "little");
-    rc = z_uncompress2(dest, dest_len, verified, src_len);
-    if rc != 0
-        or int.from_bytes(dest_len, "little") != size
-        or int.from_bytes(src_len, "little") != len(verified) {
+    result = inflate_exact(data, size);
+    if result is None {
         raise BadZipFile("Invalid or truncated DEFLATE stream");
     }
     return result;

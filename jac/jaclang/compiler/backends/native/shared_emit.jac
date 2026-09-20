@@ -188,21 +188,11 @@ def inject_shared_init(
 
 
 def jac_entry_defined(llvm_ir_str: str) -> bool {
-    """True when the IR carries a *definition* of ``@jac_entry``.
-
-    A define-site regex, not a substring probe: mentions of the symbol in
-    comments or declarations must not count.
-    """;
     import re;
     return bool(re.search(r'define[^@\n]*@"?jac_entry"?\s*\(', llvm_ir_str));
 }
 
 def argv_globals_defined(llvm_ir_str: str) -> bool {
-    """True when the IR *defines* the ``__jac_argc``/``__jac_argv`` globals.
-
-    A define-site regex, not a substring probe: uses of the symbols in
-    call sites or comments must not count.
-    """;
     import re;
     return bool(
         re.search(r'@\"?__jac_argc\"?\s*=\s*(?:hidden\s+)?global', llvm_ir_str)
@@ -370,6 +360,94 @@ obj SharedObject {
         exports: list[str];
 }
 
+obj _SharedLinkerSpec {
+    has platform: str,
+        linker: any,
+        needed_libs: list[str],
+        collect_floor_archives: bool = False,
+        floor_is_macos: bool = False;
+}
+
+def prepare_shared_ir(llvm_ir_str: str, manifest: any) -> tuple[str, list[str]] {
+    return inject_shared_init(llvm_ir_str, manifest);
+}
+
+def _shared_linker_spec(is_windows: bool, is_macos: bool) -> _SharedLinkerSpec {
+    if is_windows {
+        import from jaclang.compiler.backends.native.pe_linker { PeLinker }
+        return _SharedLinkerSpec(
+            platform="windows", linker=PeLinker, needed_libs=["msvcrt.dll"]
+        );
+    }
+    if is_macos {
+        import from jaclang.compiler.backends.native.macho_linker { MachOLinker }
+        return _SharedLinkerSpec(
+            platform="macos",
+            linker=MachOLinker,
+            needed_libs=["/usr/lib/libSystem.B.dylib"],
+            collect_floor_archives=True,
+            floor_is_macos=True
+        );
+    }
+    import from jaclang.compiler.backends.native.elf_linker { ElfLinker }
+    return _SharedLinkerSpec(
+        platform="elf",
+        linker=ElfLinker,
+        needed_libs=["libc.so.6", "libm.so.6"],
+        collect_floor_archives=True
+    );
+}
+
+obj _SharedLinkRequest {
+    has obj_bytes: bytes,
+        output_path: str,
+        exports: list[str],
+        init_funcs: list[str],
+        soname: str,
+        symbol_lib_map: dict[str, str],
+        archive_members: list[bytes];
+}
+
+def _link_shared_artifact(spec: _SharedLinkerSpec, req: _SharedLinkRequest) -> bool {
+    if spec.platform == "windows" {
+        return spec.linker.link(
+            obj_bytes=req.obj_bytes,
+            output_path=req.output_path,
+            needed_libs=spec.needed_libs,
+            symbol_lib_map=req.symbol_lib_map,
+            shared=True,
+            export_symbols=req.exports,
+            init_funcs=req.init_funcs,
+            soname=req.soname
+        );
+    }
+    if spec.platform == "macos" {
+        return spec.linker.link(
+            obj_bytes=req.obj_bytes,
+            output_path=req.output_path,
+            needed_libs=spec.needed_libs,
+            symbol_lib_map=req.symbol_lib_map,
+            shared=True,
+            export_symbols=req.exports,
+            init_funcs=req.init_funcs,
+            soname=req.soname,
+            archive_members=req.archive_members
+        );
+    }
+    return spec.linker.link(
+        obj_bytes=req.obj_bytes,
+        output_path=req.output_path,
+        needed_libs=spec.needed_libs,
+        crt_objects=[],
+        shared=True,
+        export_symbols=req.exports,
+        init_funcs=req.init_funcs,
+        soname=req.soname,
+        archive_members=req.archive_members,
+        static_link=False
+    );
+}
+
 def emit_shared_object(
     llvm_ir_str: str,
     manifest: any,
@@ -379,7 +457,7 @@ def emit_shared_object(
     clib_paths: (list[str] | None) = None
 ) -> SharedObject {
     import jaclang.compiler.backends.native.llvm.binding as llvm;
-    (ir_str, extra_exports) = inject_shared_init(llvm_ir_str, manifest);
+    (ir_str, extra_exports) = prepare_shared_ir(llvm_ir_str, manifest);
     exports: list[str] = [];
     for symbol in list(export_symbols) + extra_exports + ["__jac_shared_init"] {
         if symbol and symbol not in exports {
@@ -398,91 +476,83 @@ def emit_shared_object(
     return SharedObject(code=target_machine.emit_object(module), exports=exports);
 }
 
+obj SharedLibOptions {
+    has opt_level: int = 2,
+        auto_init: bool = False,
+        clib_paths: (list[str] | None) = None,
+        clib_symbol_lib: (dict[str, str] | None) = None,
+        triple: str = "";
+}
+
 def emit_shared_library(
     llvm_ir_str: str,
     manifest: any,
     export_symbols: list[str],
     output_path: str,
-    opt_level: int = 2,
-    auto_init: bool = False,
-    clib_paths: (list[str] | None) = None,
-    clib_symbol_lib: (dict[str, str] | None) = None
+    options: SharedLibOptions
 ) -> tuple[bool, str] {
     import os;
     import sys;
     import jaclang.compiler.backends.native.llvm.binding as llvm;
 
-    triple = llvm.get_default_triple();
+    resolved_triple = options.triple;
+    if not resolved_triple {
+        import from jaclang.compiler.frontend.codeinfo { effective_native_target }
+        resolved_triple = effective_native_target();
+    }
+    if not resolved_triple {
+        resolved_triple = llvm.get_default_triple();
+    }
     try {
         shared = emit_shared_object(
-            llvm_ir_str, manifest, export_symbols, triple, opt_level, clib_paths
+            llvm_ir_str,
+            manifest,
+            export_symbols,
+            resolved_triple,
+            options.opt_level,
+            options.clib_paths
         );
     } except Exception as e {
         return (False, f"LLVM IR verification failed: {e}");
     }
     obj_bytes = shared.code;
     exports = shared.exports;
-    init_funcs: list[str] = ["__jac_shared_init"] if auto_init else [];
+    init_funcs: list[str] = ["__jac_shared_init"] if options.auto_init else [];
 
     is_windows = sys.platform.startswith("win");
     is_macos = sys.platform == "darwin";
+    spec = _shared_linker_spec(is_windows, is_macos);
+    archive_members: list[bytes] = [];
+    if spec.collect_floor_archives {
+        import from jaclang.compiler.backends.native.floor { collect_floor_archives }
+        (_members, _handled) = collect_floor_archives(
+            options.clib_paths or [],
+            options.clib_symbol_lib or {},
+            resolved_triple,
+            spec.floor_is_macos
+        );
+        archive_members = _members;
+    }
+    symbol_lib_map: dict[str, str] = {};
+    if spec.floor_is_macos {
+        symbol_lib_map = {
+            _cs: "@process" for _cs in (options.clib_symbol_lib or {}).keys()
+        };
+    }
     soname = os.path.basename(output_path);
     try {
-        if is_windows {
-            import from jaclang.compiler.backends.native.pe_linker { PeLinker }
-            ok = PeLinker.link(
+        ok = _link_shared_artifact(
+            spec,
+            _SharedLinkRequest(
                 obj_bytes=obj_bytes,
                 output_path=output_path,
-                needed_libs=["msvcrt.dll"],
-                symbol_lib_map={},
-                shared=True,
-                export_symbols=exports,
-                init_funcs=init_funcs,
-                soname=soname
-            );
-        } elif is_macos {
-            import from jaclang.compiler.backends.native.macho_linker { MachOLinker }
-            import from jaclang.compiler.backends.native.floor {
-                collect_floor_archives
-            }
-            (_floor_members, _floor_handled) = collect_floor_archives(
-                clib_paths or [], clib_symbol_lib or {}, triple, True
-            );
-            _proc_syms: dict[str, str] = {
-                _cs: "@process" for _cs in (clib_symbol_lib or {}).keys()
-            };
-            ok = MachOLinker.link(
-                obj_bytes=obj_bytes,
-                output_path=output_path,
-                needed_libs=["/usr/lib/libSystem.B.dylib"],
-                symbol_lib_map=_proc_syms,
-                shared=True,
-                export_symbols=exports,
+                exports=exports,
                 init_funcs=init_funcs,
                 soname=soname,
-                archive_members=_floor_members
-            );
-        } else {
-            import from jaclang.compiler.backends.native.elf_linker { ElfLinker }
-            import from jaclang.compiler.backends.native.floor {
-                collect_floor_archives as _cfa_elf
-            }
-            (_floor_members_elf, _fh_elf) = _cfa_elf(
-                clib_paths or [], clib_symbol_lib or {}, triple, False
-            );
-            ok = ElfLinker.link(
-                obj_bytes=obj_bytes,
-                output_path=output_path,
-                needed_libs=["libc.so.6", "libm.so.6"],
-                crt_objects=[],
-                shared=True,
-                export_symbols=exports,
-                init_funcs=init_funcs,
-                soname=soname,
-                archive_members=_floor_members_elf,
-                static_link=False
-            );
-        }
+                symbol_lib_map=symbol_lib_map,
+                archive_members=archive_members
+            )
+        );
     } except Exception as e {
         return (False, f"shared-library link failed: {e}");
     }
@@ -491,7 +561,6 @@ def emit_shared_library(
     }
     return (True, "");
 }
-
 
 def bind_shared_callbacks(
     llvm_ir: str, bindings: list[InteropBinding]
