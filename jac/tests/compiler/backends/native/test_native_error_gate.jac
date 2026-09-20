@@ -215,9 +215,7 @@ test "native compile failure clears every artifact including layout" {
     assert has_error_code(prog, "E5020") , (
         f"poisoned IR must trip the native compile gate, got: {fmt_errors(prog)}"
     );
-    assert mod.gen.llvm_ir is None , (
-        "failed native compile must not publish llvm ir"
-    );
+    assert mod.gen.llvm_ir is None , ("failed native compile must not publish llvm ir");
     assert mod.gen.native_linked_ir is None , (
         "failed native compile must not publish linked native IR"
     );
