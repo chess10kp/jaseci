@@ -138,7 +138,7 @@ impl CodeGenTarget.interop_manifest.setter(value: InteropManifest) -> None {
     self._interop_manifest = value;
 }
 
-impl CodeGenTarget.clear_native_artifacts -> None {
+impl CodeGenTarget.clear_codegen_artifacts -> None {
     self.py_bytecode = None;
     self.llvm_ir = None;
     self.native_linked_ir = None;

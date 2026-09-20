@@ -345,25 +345,17 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
     }
 }
 
-impl ASTValidationPass._is_overload(ability: Ability) -> bool {
-    for dec in (ability.decorators or []) {
-        if isinstance(dec, Name) and dec.value == "overload" {
-            return True;
-        }
-    }
-    return False;
-}
-
 impl ASTValidationPass.enter_module with Module entry {
     if here.is_raised_from_py or here.stub_only {
         return;
     }
+    import from jaclang.compiler.frontend.module_facts { ModuleFacts }
     overload_names: set[str] = set();
     for item in (here.body or []) {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        if self._is_overload(item) {
+        if ModuleFacts.ability_is_overload(item) {
             overload_names.add(item.name_ref.value);
         }
     }
@@ -372,7 +364,7 @@ impl ASTValidationPass.enter_module with Module entry {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        if self._is_overload(item) {
+        if ModuleFacts.ability_is_overload(item) {
             continue;
         }
         name = item.name_ref.value;
@@ -385,6 +377,7 @@ impl ASTValidationPass.enter_module with Module entry {
 }
 
 impl ASTValidationPass.enter_archetype with Archetype entry {
+    import from jaclang.compiler.frontend.module_facts { ModuleFacts }
     if here.base_classes is not None {
         seen_bases: set[str] = set();
         for base in here.base_classes {
@@ -439,7 +432,7 @@ impl ASTValidationPass.enter_archetype with Archetype entry {
         if not (isinstance(item, Ability) and item.name_ref is not None) {
             continue;
         }
-        has_overload = self._is_overload(item);
+        has_overload = ModuleFacts.ability_is_overload(item);
         accessor_kind: (str | None) = None;
         accessor_target: (str | None) = None;
         if item.decorators is not None {

@@ -795,7 +795,7 @@ obj CodeGenTarget {
     has client_manifest: ClientManifest { getter; setter(value: ClientManifest); }
     has interop_manifest: InteropManifest { getter; setter(value: InteropManifest); }
 
-    def clear_native_artifacts -> None;
+    def clear_codegen_artifacts -> None;
 }
 
 def endpoint_descriptor(module: any, kind: str, name: str) -> dict[str, str] {

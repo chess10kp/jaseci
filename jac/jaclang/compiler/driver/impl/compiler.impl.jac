@@ -1804,7 +1804,7 @@ impl JacCompiler._scrub_native_artifacts_on_error(
     if not JacCompiler._module_scoped_errors(target_program, mod_path) {
         return False;
     }
-    mod.gen.clear_native_artifacts();
+    mod.gen.clear_codegen_artifacts();
     return True;
 }
 

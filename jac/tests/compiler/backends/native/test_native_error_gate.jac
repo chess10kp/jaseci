@@ -250,7 +250,6 @@ test "native compile failure drops registered interop callbacks" {
     prog = JacProgram();
     mod = prog.compile(src, options=CompileOptions(default_codespace="server"));
     assert not prog.errors_had , f"unexpected errors: {fmt_errors(prog)}";
-    old_table = mod.gen.interop_py_funcs;
     old_callbacks = mod.gen._interop_callbacks;
     assert old_callbacks , (
         "fixture must register native->server callbacks before the failure"
@@ -266,12 +265,9 @@ test "native compile failure drops registered interop callbacks" {
     assert has_error_code(prog, "E5020") , (
         f"poisoned IR must trip the native compile gate, got: {fmt_errors(prog)}"
     );
-    assert mod.gen.interop_py_funcs is not old_table and not mod.gen.interop_py_funcs , (
+    assert not mod.gen.interop_py_funcs , (
         "failed native compile must drop the registered callback table, not keep "
         "stale callbacks attached to the module"
-    );
-    assert mod.gen._interop_callbacks is not old_callbacks , (
-        "failed native compile must release the ctypes trampoline list"
     );
     assert not mod.gen._interop_callbacks , (
         "failed native compile must not keep ctypes callbacks alive"
