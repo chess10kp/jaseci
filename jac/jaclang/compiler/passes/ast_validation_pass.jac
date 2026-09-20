@@ -139,6 +139,7 @@ walker ASTValidationPass(TreeWalker) {
     can enter_global_vars with GlobalVars entry;
     can enter_func_call with FuncCall entry;
     can enter_archetype with Archetype entry;
+    def _is_overload(ability: Ability) -> bool;
     can enter_jsx_slot with JsxSlot entry;
     can enter_expr_stmt with ExprStmt entry;
     def _check_slot_body(stmts: list[UniNode], in_loop: bool, loop_kw: str) -> None;

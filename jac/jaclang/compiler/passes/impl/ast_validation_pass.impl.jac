@@ -345,17 +345,33 @@ impl ASTValidationPass.enter_func_call with FuncCall entry {
     }
 }
 
+# Pass-local mirror of ModuleFacts.ability_is_overload. This pass impl
+# is natively lowered during the self-build (jac build --native --lib
+# jc_unit.jac), and a static call into module_facts -- a module the
+# native lane does not lower -- hard-fails with E5092 there, so the
+# shared predicate cannot be used from lowered pass code. Keep in sync
+# with ModuleFacts.ability_is_overload, including the AtomTrailer
+# unwrap for the qualified @typing.overload spelling.
+impl ASTValidationPass._is_overload(ability: Ability) -> bool {
+    for dec in (ability.decorators or []) {
+        tail = dec.right if isinstance(dec, AtomTrailer) else dec;
+        if isinstance(tail, Name) and tail.value == "overload" {
+            return True;
+        }
+    }
+    return False;
+}
+
 impl ASTValidationPass.enter_module with Module entry {
     if here.is_raised_from_py or here.stub_only {
         return;
     }
-    import from jaclang.compiler.frontend.module_facts { ModuleFacts }
     overload_names: set[str] = set();
     for item in (here.body or []) {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        if ModuleFacts.ability_is_overload(item) {
+        if self._is_overload(item) {
             overload_names.add(item.name_ref.value);
         }
     }
@@ -364,7 +380,7 @@ impl ASTValidationPass.enter_module with Module entry {
         if not (isinstance(item, Ability) and isinstance(item.name_ref, Name)) {
             continue;
         }
-        if ModuleFacts.ability_is_overload(item) {
+        if self._is_overload(item) {
             continue;
         }
         name = item.name_ref.value;
@@ -377,7 +393,6 @@ impl ASTValidationPass.enter_module with Module entry {
 }
 
 impl ASTValidationPass.enter_archetype with Archetype entry {
-    import from jaclang.compiler.frontend.module_facts { ModuleFacts }
     if here.base_classes is not None {
         seen_bases: set[str] = set();
         for base in here.base_classes {
@@ -432,7 +447,7 @@ impl ASTValidationPass.enter_archetype with Archetype entry {
         if not (isinstance(item, Ability) and item.name_ref is not None) {
             continue;
         }
-        has_overload = ModuleFacts.ability_is_overload(item);
+        has_overload = self._is_overload(item);
         accessor_kind: (str | None) = None;
         accessor_target: (str | None) = None;
         if item.decorators is not None {
