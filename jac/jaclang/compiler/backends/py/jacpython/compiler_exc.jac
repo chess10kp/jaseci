@@ -142,68 +142,10 @@ def loop_protect_except_bump(g: cfg_builder) -> int {
     );
 }
 
-def try_protect_stack_depth(g: cfg_builder) -> int {
-    return 1 + g.handler_nest_depth + loop_protect_except_bump(g);
-}
-
-def try_unwind_stack_depth(g: cfg_builder) -> int {
-    return 3 + g.handler_nest_depth + loop_protect_except_bump(g);
-}
-
 # The try body's exception-table span, split around each await/yield-from
 # carve recorded while the body was visited. CPython's table has one row per
 # warm stretch between the CLEANUP_THROW windows; our find_handler takes the
 # first matching row, so the unsplit span would swallow the yield windows.
-def try_body_span_rows(
-    g: cfg_builder,
-    fr: try_await_frame | None,
-    start_blk: int,
-    end_blk: int,
-    handler_blk: int,
-    depth: int
-) -> list[except_region] {
-    rows: list[except_region] = [];
-    if fr is None or len((fr as try_await_frame).carves) == 0 {
-        rows.append(
-            except_region(
-                start_block=start_blk,
-                end_block=end_blk,
-                handler_block=handler_blk,
-                stack_depth=depth
-            )
-        );
-        return rows;
-    }
-    cur = start_blk;
-    ci = 0;
-    while ci < len((fr as try_await_frame).carves) {
-        (y_blk, r_blk) = (fr as try_await_frame).carves[ci];
-        if y_blk > cur {
-            rows.append(
-                except_region(
-                    start_block=cur,
-                    end_block=y_blk,
-                    handler_block=handler_blk,
-                    stack_depth=depth
-                )
-            );
-        }
-        cur = r_blk;
-        ci = ci + 1;
-    }
-    if end_blk > cur {
-        rows.append(
-            except_region(
-                start_block=cur,
-                end_block=end_blk,
-                handler_block=handler_blk,
-                stack_depth=depth
-            )
-        );
-    }
-    return rows;
-}
-
 # Flush the CLEANUP_THROW footers queued by awaits inside this try body.
 # Each cold pair is placed after all warm body code (before the handler
 # blocks; CPython push_cold_blocks_to_end), every pair gets its own
@@ -319,41 +261,6 @@ def push_try_await_frame(g: cfg_builder, nop_blk: int) -> try_await_frame {
 }
 
 # Inline footer before END_SEND (async-with except __aexit__ await).
-def emit_await_send_loop_inline_footer(
-    g: cfg_builder,
-    get_iter_op: int,
-    get_iter_arg: int,
-    resume_after_yield_arg: int,
-    yloc: cloc
-) -> tuple[await_send_loop, basicblock, basicblock] {
-    g.emit_op(get_iter_op, get_iter_arg, yloc);
-    none_idx = g.u.add_const(py_none());
-    g.emit_op(OP_LOAD_CONST, none_idx, yloc);
-    send_blk = g.new_block();
-    yield_blk = g.new_block();
-    after_resume_blk = g.new_block();
-    cleanup_throw_blk = g.new_block();
-    end_send_blk = g.new_block();
-    g.use(send_blk);
-    g.emit_jump(OP_SEND, end_send_blk.id, yloc);
-    g.use(yield_blk);
-    g.emit_op(OP_YIELD_VALUE, 1, yloc);
-    g.use(after_resume_blk);
-    g.emit_op(OP_RESUME, resume_after_yield_arg, yloc);
-    g.emit_jump(OP_JUMP_BACKWARD_NO_INTERRUPT, send_blk.id, yloc);
-    g.use(cleanup_throw_blk);
-    g.emit_op(OP_CLEANUP_THROW, 0, yloc);
-    g.use(end_send_blk);
-    als = await_send_loop(
-        send_blk=send_blk,
-        yield_blk=yield_blk,
-        after_resume_blk=after_resume_blk,
-        end_send_blk=end_send_blk
-    );
-    return (als, cleanup_throw_blk, end_send_blk);
-}
-
-
 def emit_anext_send_except_regions(
     g: cfg_builder,
     als: anext_send_loop,
@@ -416,14 +323,6 @@ def emit_anext_send_except_regions(
 
 
 # Clear an except-as binding (STORE None + DELETE) before handler exit.
-def emit_except_as_cleanup(g: cfg_builder, bind_name: str, cloc: cloc) {
-    none_idx = g.u.add_const(py_none());
-    g.emit_op(OP_LOAD_CONST, none_idx, cloc);
-    emit_name_store(g, bind_name, cloc);
-    emit_name_delete(g, bind_name, cloc);
-}
-
-
 # Emit comprehension cleanup handlers after the module RETURN_VALUE (dead code on
 # the normal path; reached only via the exception table).
 def emit_deferred_comp_handlers(g: cfg_builder) {
@@ -667,48 +566,6 @@ def visit_try_finally(
 }
 
 
-def emit_finally_inline_block(
-    g: cfg_builder,
-    finalbody: list[stmt],
-    blk: basicblock,
-    with_nop: bool,
-    more_code_follows: bool,
-    tail: list[stmt] | None,
-    tail_idx: int,
-    tloc: cloc,
-    ann_ctx: ann_scope_plan | None = None
-) {
-    g.use(blk);
-    if with_nop {
-        g.emit_op(OP_NOP, 0, tloc);
-    }
-    fc = visit_cleanup_stmts(g, finalbody, ann_ctx);
-    if codegen_busy(g) {
-        return;
-    }
-    fin_follows = more_code_follows;
-    if not fin_follows and tail is not None and tail_idx < len(tail) {
-        fin_follows = True;
-    }
-    if fin_follows and tail is not None {
-        tail_more = False;
-        if tail_idx + 1 < len(tail) {
-            tail_more = exec_tail_emits_code(tail, tail_idx + 1);
-        }
-        tc = visit_stmt_tail(g, tail, tail_idx, tail_more, ann_ctx);
-        if codegen_busy(g) {
-            return;
-        }
-        if not tc.terminated {
-            emit_module_return(g, tc.loc);
-        }
-    } else {
-        if not fc.terminated {
-            emit_module_return(g, fc.loc);
-        }
-    }
-}
-
 # Lower flat try/except[/else]/finally by forward-nesting the finally around the
 # try/except (CPython compiles them identically). Multiple handlers chained after
 # one try, optional else and finally. Handlers may bind via `except E as e`;
@@ -719,72 +576,6 @@ def emit_finally_inline_block(
 # spans with identical handler metadata also fold into the covering range).
 # Comparison is in LAYOUT position, not block id: deferred blocks are placed
 # at first use, so id order does not match layout order.
-def merge_except_spans(
-    g: cfg_builder, spans: list[except_region]
-) -> list[except_region] {
-    pos_of: dict[int, int] = {};
-    bi = 0;
-    while bi < len(g.u.blocks) {
-        pos_of[g.u.blocks[bi].id] = bi;
-        bi = bi + 1;
-    }
-    order: list[int] = [];
-    i = 0;
-    while i < len(spans) {
-        order.append(i);
-        i = i + 1;
-    }
-    ni = 0;
-    while ni < len(order) {
-        nj = ni + 1;
-        while nj < len(order) {
-            a = pos_of.get(spans[order[nj]].start_block, 0);
-            b = pos_of.get(spans[order[ni]].start_block, 0);
-            if a < b {
-                tmp = order[ni];
-                order[ni] = order[nj];
-                order[nj] = tmp;
-            }
-            nj = nj + 1;
-        }
-        ni = ni + 1;
-    }
-    out: list[except_region] = [];
-    oi = 0;
-    while oi < len(order) {
-        cur = spans[order[oi]];
-        oi = oi + 1;
-        while oi < len(order) {
-            nxt = spans[order[oi]];
-            if nxt.handler_block != cur.handler_block
-                or nxt.stack_depth != cur.stack_depth
-                or nxt.preserve_lasti != cur.preserve_lasti {
-                break;
-            }
-            nxt_pos = pos_of.get(nxt.start_block, -1);
-            cur_end_pos = pos_of.get(cur.end_block, -1);
-            if nxt_pos < 0 or cur_end_pos < 0 or nxt_pos > cur_end_pos {
-                break;
-            }
-            new_end = cur.end_block;
-            if pos_of.get(nxt.end_block, -1) > cur_end_pos {
-                new_end = nxt.end_block;
-            }
-            cur = except_region(
-                start_block=cur.start_block,
-                end_block=new_end,
-                handler_block=cur.handler_block,
-                stack_depth=cur.stack_depth,
-                preserve_lasti=cur.preserve_lasti
-            );
-            oi = oi + 1;
-        }
-        out.append(cur);
-    }
-    return out;
-}
-
-
 def visit_try(
     g: cfg_builder,
     t: Try,
@@ -986,34 +777,6 @@ def trystar_handler_loc(h: ExceptHandler) -> cloc {
     }
     return nloc(h.lineno, el, h.col_offset, ec);
 }
-
-def trystar_stmt_loc(t: TryStar) -> cloc {
-    best = nloc(t.lineno, t.lineno, t.col_offset, t.col_offset);
-    cand = trystar_last_body_loc(t.body);
-    if cand is not None {
-        best = trystar_best_end(best, cand.end_lineno, cand.end_col_offset);
-    }
-    if t.orelse is not None {
-        cand = trystar_last_body_loc(t.orelse);
-        if cand is not None {
-            best = trystar_best_end(best, cand.end_lineno, cand.end_col_offset);
-        }
-    }
-    if t.finalbody is not None {
-        cand = trystar_last_body_loc(t.finalbody);
-        if cand is not None {
-            best = trystar_best_end(best, cand.end_lineno, cand.end_col_offset);
-        }
-    }
-    hi = 0;
-    while hi < len(t.handlers) {
-        cand = trystar_handler_loc(t.handlers[hi] as ExceptHandler);
-        best = trystar_best_end(best, cand.end_lineno, cand.end_col_offset);
-        hi = hi + 1;
-    }
-    return best;
-}
-
 
 # Lower try/except* (ExceptionGroup handlers). Dispatch + guards; the byte
 # layout lives in visit_try_star_except. CPython: codegen_try_star.

@@ -250,7 +250,9 @@ test "native runtime file ships parallel to the web runtime" {
     runtime_core = _client_dir / "client_react_core.jac";
     runtime_core_impl = _client_dir / "impl" / "client_react_core.impl.jac";
     runtime_native = _client_dir / "client_runtime_native.jac";
-    runtime_native_impl = _client_dir / "impl" / "client_runtime_native.impl.jac";
+    runtime_native_impls = sorted(
+        (_client_dir / "impl").glob("client_runtime_native.*.impl.jac")
+    );
 
     assert runtime_core.exists() , (
         f"client_react_core.jac not found at {runtime_core}"
@@ -259,12 +261,12 @@ test "native runtime file ships parallel to the web runtime" {
     assert runtime_native.exists() , (
         f"client_runtime_native.jac not found at {runtime_native}"
     );
-    assert runtime_native_impl.exists();
+    assert len(runtime_native_impls) > 0;
     assert "import from client_react_core" in runtime_native.read_text();
 
     core_content = runtime_core.read_text();
     cl_content = runtime_native.read_text();
-    impl_content = runtime_native_impl.read_text();
+    impl_content = "".join([f.read_text() for f in runtime_native_impls]);
 
     # Renderer dispatch lives in core (R3); native supplies __jacNativeCreate.
     assert "__jacJsx" in core_content;

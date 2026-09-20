@@ -20,8 +20,7 @@ import from c { def PyGC_Disable -> int;  }
 import from c { def PyGC_Enable -> int;  }
 import from c { def PyGC_IsEnabled -> int;  }
 
-glob CODE_SKIP: int = 0,
-     CODE_INT: int = 1,
+glob CODE_INT: int = 1,
      CODE_BOOL: int = 2,
      CODE_STR: int = 3,
      CODE_ENUM: int = 4,

@@ -247,10 +247,6 @@ def effective_codegen_fingerprint -> str {
 }
 
 
-def effective_analysis_fingerprint -> str {
-    return CompileOptions().analysis_fingerprint();
-}
-
 def link_fingerprint_mismatches(
     participants: list[tuple[str, str]], current_fp: str
 ) -> list[str] {

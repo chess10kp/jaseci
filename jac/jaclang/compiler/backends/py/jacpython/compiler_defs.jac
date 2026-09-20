@@ -165,19 +165,6 @@ def sym_class_child_at(
     return None;
 }
 
-def sym_class_child(parent: sym_block, class_name: str) -> sym_block | None {
-    ci = 0;
-    while ci < len(parent.children) {
-        ch = parent.children[ci];
-        if ch.block_type == "class" and ch.name == class_name {
-            return ch;
-        }
-        ci = ci + 1;
-    }
-    return None;
-}
-
-
 def sym_function_child(parent: sym_block, fn_name: str) -> sym_block | None {
     ci = 0;
     while ci < len(parent.children) {
@@ -1015,15 +1002,6 @@ def compile_fn_cfg(
 
 
 # Build unverified_cfg for a `def` body (nested code object before assembly).
-def compile_function_cfg(
-    fd: FunctionDef, filename: str, sym_fn: sym_block, private: str | None = None
-) -> unverified_cfg {
-    return compile_fn_cfg(
-        fd.name, fd.args, fd.body, fd.lineno, filename, sym_fn, private
-    );
-}
-
-
 # ---------------- PEP 695 `type X = v` / `type X[T, ...] = v` ----------------
 #
 # CPython lowers a type alias into a lazily-evaluated value function whose only

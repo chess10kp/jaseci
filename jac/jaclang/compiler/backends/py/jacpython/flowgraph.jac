@@ -342,44 +342,6 @@ def stackdepth_push(
 }
 
 # Walk one block's instructions for max stack depth (exception-handler paths).
-def walk_block_maxdepth(
-    b: basicblock, start_depth: int, maxdepth: int
-) -> tuple[int, compiler_diagnostic | None] {
-    depth = start_depth;
-    maxd = maxdepth;
-    ii = 0;
-    while ii < len(b.instrs) {
-        ins = b.instrs[ii];
-        if depth > maxd {
-            maxd = depth;
-        }
-        eff = stack_effect(ins.opcode, ins.oparg, 0);
-        if eff is None {
-            return (
-                0,
-                stackdepth_diag(
-                    "SystemError",
-                    "Invalid stack effect for opcode="
-                        + str(ins.opcode)
-                        + ", arg="
-                        + str(ins.oparg)
-                )
-            );
-        }
-        new_depth = depth + eff;
-        if new_depth < 0 {
-            return (0, stackdepth_diag("ValueError", "Invalid CFG, stack underflow"));
-        }
-        depth = new_depth;
-        if is_scope_exit_opcode(ins.opcode)
-            or is_unconditional_jump_opcode(ins.opcode) {
-            break;
-        }
-        ii = ii + 1;
-    }
-    return (maxd, None);
-}
-
 # CPython flowgraph.c calculate_stackdepth: worklist over block edges with
 # generated stack_effect metadata (INTEGRATION_PLAN Phase 3).
 def calculate_stackdepth(u: unverified_cfg) -> tuple[int, compiler_diagnostic | None] {

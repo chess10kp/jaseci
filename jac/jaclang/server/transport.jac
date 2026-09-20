@@ -58,3 +58,9 @@ obj BaseTransport {
 
     async def send(data: any) -> None;
 }
+
+def fail_http(code: str, message: str, status: int) -> TransportResponse {
+    return TransportResponse.fail(
+        code=code, message=message, meta=Meta(extra={'http_status': status})
+    );
+}

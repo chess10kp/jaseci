@@ -158,18 +158,13 @@ glob FORBIDDEN: dict[str, str] = {
              "every binding-free comptime value is consumed from the "
              "stamped Expr.ct_value"
          ),
-         ("native/na_ir_gen_pass.impl/calls.impl.jac", "symbol_utils"): (
-             5,
+         ("native/na_ir_gen_pass.impl/calls.core.impl.jac", "symbol_utils"): (
+             4,
              "imported_module_name reads the stamped ModuleType and import "
              "declaration to preserve aliased module identity. "
              "resolved_callee consumes the resolved call declaration for "
              "ownership transfer and raises-effect lowering. "
-             "classify_call as the shadowing-aware builtin test for the "
-             "`type(None)` isinstance argument form (#6957) - consuming the "
-             "central classification instead of re-implementing name "
-             "resolution. The former classify_call fallback is deleted "
-             "(#7418): call_kind is stamped authoritatively by the required "
-             "inference schedule. Plus erased_identity_call_arg (#8223) "
+             "Plus erased_identity_call_arg (#8223) "
              "and the is_erased_field_marker pair (#8201), declaration-"
              "surface reads on the same terms: whether `cast` or `ObjectField` "
              "here is the erasable `typing.cast` / `jaclang.runtime.object_model.ObjectField` is "
@@ -184,16 +179,28 @@ glob FORBIDDEN: dict[str, str] = {
              "backend stopped reaching into the analysis module for it rather "
              "than merely renaming the reach"
          ),
+         ("native/na_ir_gen_pass.impl/calls.isinstance.impl.jac", "symbol_utils"): (
+             1,
+             "classify_call as the shadowing-aware builtin test for the "
+             "`type(None)` isinstance argument form (#6957) - consuming the "
+             "central classification instead of re-implementing name "
+             "resolution. The former classify_call fallback is deleted "
+             "(#7418): call_kind is stamped authoritatively by the required "
+             "inference schedule."
+         ),
          ("native/na_ir_gen_pass.impl/expr.impl.jac", "symbol_utils"): (
              1,
              "imported_module_name consumes the stamped ModuleType and "
              "resolved import declaration for native module attributes"
          ),
-         ("native/na_ir_gen_pass.impl/objects.impl.jac", "symbol_utils"): (
-             3,
+         ("native/na_ir_gen_pass.impl/objects.field.impl.jac", "symbol_utils"): (
+             2,
              "resolve_expr_symbol reads the expression attached symbol; "
              "imported_module_name reads its stamped ModuleType and import "
-             "declaration. Neither asks the evaluator to resolve a type. "
+             "declaration. Neither asks the evaluator to resolve a type."
+         ),
+         ("native/na_ir_gen_pass.impl/objects.class.impl.jac", "symbol_utils"): (
+             1,
              "collect_method_names as the central ancestor-method walk over "
              "an already-resolved archetype symbol - a symbol-FACT reader, "
              "not a re-run of member resolution"
@@ -205,18 +212,21 @@ glob FORBIDDEN: dict[str, str] = {
              "carve-out for dual-codespace modules) which reads the same "
              "declared annotation the adjacent _resolve_jac_type consumes"
          ),
-         ("native/na_ir_gen_pass.impl/calls.impl.jac", "type_tag.tag"): (
-             2,
+         ("native/na_ir_gen_pass.impl/calls.core.impl.jac", "type_tag.tag"): (
+             1,
              "declaration-surface read of foreign extern signatures: the "
              "clib membrane needs the DECLARED str params/returns of a "
              "foreign call to route them through the JacStr wrap/unwrap "
              "shims (#7870 strings step 2) - the C membrane always "
-             "trafficks NUL-terminated char*. Plus the mono isinstance "
-             "substitution: inside a stamped monomorph body a type[X] "
-             "parameter names its concrete mangle through its own declared "
-             "tag - the declaration is the binding surface"
+             "trafficks NUL-terminated char*."
          ),
-         ("native/na_ir_gen_pass.impl/types.impl.jac", "type_tag.tag"): (
+         ("native/na_ir_gen_pass.impl/calls.isinstance.impl.jac", "type_tag.tag"): (
+             1,
+             "the mono isinstance substitution: inside a stamped monomorph "
+             "body a type[X] parameter names its concrete mangle through "
+             "its own declared tag - the declaration is the binding surface"
+         ),
+         ("native/na_ir_gen_pass.impl/types.lower.impl.jac", "type_tag.tag"): (
              2,
              "declared-annotation resolution for has/param vars: "
              "_resolve_jac_type maps the declared tag to its IR type - the "
@@ -229,7 +239,7 @@ glob FORBIDDEN: dict[str, str] = {
              "at the declaration site - the backend's lowering role "
              "(sysv sig planning + fixed-param lowering, #6707, #6708)"
          ),
-         ("native/na_ir_gen_pass.impl/objects.impl.jac", "type_tag.tag"): (
+         ("native/na_ir_gen_pass.impl/objects.class.impl.jac", "type_tag.tag"): (
              1,
              "declaration-surface read during archetype field lowering: "
              "the field's declared annotation node is read once into a "
@@ -245,7 +255,7 @@ glob FORBIDDEN: dict[str, str] = {
              "unannotated empties as bare list too); the empty-literal "
              "storage-family decision must key on the explicit annotation"
          ),
-         ("native/na_ir_gen_pass.impl/stmt.impl.jac", "type_tag.tag"): (
+         ("native/na_ir_gen_pass.impl/stmt.core.impl.jac", "type_tag.tag"): (
              7,
              "surface-shape dispatch on declared annotation forms "
              "(assessed train 4: legitimately kept); the "

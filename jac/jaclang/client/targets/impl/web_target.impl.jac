@@ -8,15 +8,6 @@ glob DEFAULT_FUNCTION_NAME = "app",
      JAC_FILE_EXTENSION = ".jac",
      JAC_LANG_ID = "jac";
 
-def _parse_entry_file(entry_file: Path) -> tuple[str, str] {
-    (base, mod) = os.path.split(str(entry_file));
-    base = base or "./";
-    if mod.endswith(JAC_FILE_EXTENSION) {
-        mod = mod[:-len(JAC_FILE_EXTENSION)];
-    }
-    return (base, mod);
-}
-
 def _pwa_enabled(project_dir: Path) -> bool {
     import from jaclang.client.config_loader { JacClientConfig }
     return JacClientConfig(project_dir).is_pwa_enabled();

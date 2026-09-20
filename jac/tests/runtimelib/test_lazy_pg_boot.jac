@@ -291,14 +291,14 @@ test "no production module runs first-use schema DDL outside the gate" {
     # whichever side loses the DDL lock raises SessionConflictError at what is,
     # to the operator, a plain first request against a fresh database.
     src = REPO_ROOT / "jac" / "jaclang";
-    owner = {"data/store.jac", "data/impl/store.impl.jac"};
+    owner = {"data/store.jac"};
     offenders: list[str] = [];
     for path in sorted(src.rglob("*.jac")) {
         if not path.is_file() {
             continue;
         }
         rel = path.relative_to(src).as_posix();
-        if rel in owner or "tests/" in rel {
+        if rel in owner or rel.startswith("data/impl/store.") or "tests/" in rel {
             continue;
         }
         if ".ensure_schema(" in path.read_text() {

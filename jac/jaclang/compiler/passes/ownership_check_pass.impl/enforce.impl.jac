@@ -15,16 +15,6 @@ glob _NOGC_SCALARS: frozenset[str] = frozenset(
              + JAC_TYPE_REGISTRY.sized_scalar_names()
      );
 
-def _nogc_name_candidates(mod_name: str) -> list[str] {
-    _cands = [mod_name];
-    for _suf in (".na", ".cl") {
-        if mod_name.endswith(_suf) {
-            _cands.append(mod_name[:-len(_suf)]);
-        }
-    }
-    return _cands;
-}
-
 glob _NOGC_ALIASING_BUILTINS: dict[str, str] = {
          "iter": "iter() retains a raw reference to its collection",
          "globals": "globals() aliases module state",

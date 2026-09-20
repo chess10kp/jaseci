@@ -33,8 +33,7 @@ glob SHF_WRITE = 0x1,
      SHF_ALLOC = 0x2,
      SHF_EXECINSTR = 0x4;
 
-glob PT_NULL = 0,
-     PT_LOAD = 1,
+glob PT_LOAD = 1,
      PT_DYNAMIC = 2,
      PT_INTERP = 3,
      PT_PHDR = 6,
@@ -67,8 +66,7 @@ glob DT_NULL = 0,
 
 glob ET_DYN = 3;
 
-glob STB_LOCAL = 0,
-     STB_GLOBAL = 1,
+glob STB_GLOBAL = 1,
      STB_WEAK = 2,
      STT_NOTYPE = 0,
      STT_OBJECT = 1,

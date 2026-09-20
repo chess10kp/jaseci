@@ -122,10 +122,6 @@ impl CtValue.is_deferred.getter -> bool {
     return isinstance(self.v, CtDeferred);
 }
 
-def ct_box(v: any) -> CtValue {
-    return CtValue(v=v);
-}
-
 def ct_is_scalar(v: any) -> bool {
     return v is None or isinstance(v, (bool, int, float, str, bytes));
 }

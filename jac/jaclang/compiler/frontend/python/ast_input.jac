@@ -178,20 +178,6 @@ def read_alias(handle: u64, depth: int) -> alias {
     return result as alias;
 }
 
-def field_alias(handle: u64, name: str, depth: int, optional: bool = False) -> alias {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_alias(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
-}
-
 def read_arg(handle: u64, depth: int) -> arg {
     result = read_node(handle, depth);
     if not isinstance(result, arg) {
@@ -291,20 +277,6 @@ def read_cmpop(handle: u64, depth: int) -> cmpop {
     return result as cmpop;
 }
 
-def field_cmpop(handle: u64, name: str, depth: int, optional: bool = False) -> cmpop {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_cmpop(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
-}
-
 def read_comprehension(handle: u64, depth: int) -> comprehension {
     result = read_node(handle, depth);
     if not isinstance(result, comprehension) {
@@ -313,44 +285,12 @@ def read_comprehension(handle: u64, depth: int) -> comprehension {
     return result as comprehension;
 }
 
-def field_comprehension(
-    handle: u64, name: str, depth: int, optional: bool = False
-) -> comprehension {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_comprehension(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
-}
-
 def read_excepthandler(handle: u64, depth: int) -> excepthandler {
     result = read_node(handle, depth);
     if not isinstance(result, excepthandler) {
         raise TypeError("AST field requires excepthandler");
     }
     return result as excepthandler;
-}
-
-def field_excepthandler(
-    handle: u64, name: str, depth: int, optional: bool = False
-) -> excepthandler {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_excepthandler(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
 }
 
 def read_expr(handle: u64, depth: int) -> expr {
@@ -480,22 +420,6 @@ def read_keyword(handle: u64, depth: int) -> keyword {
         raise TypeError("AST field requires keyword");
     }
     return result as keyword;
-}
-
-def field_keyword(
-    handle: u64, name: str, depth: int, optional: bool = False
-) -> keyword {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_keyword(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
 }
 
 def read_list_alias(handle: u64, depth: int) -> list[alias] {
@@ -1031,22 +955,6 @@ def read_match_case(handle: u64, depth: int) -> match_case {
     return result as match_case;
 }
 
-def field_match_case(
-    handle: u64, name: str, depth: int, optional: bool = False
-) -> match_case {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_match_case(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
-}
-
 def read_operator(handle: u64, depth: int) -> operator {
     result = read_node(handle, depth);
     if not isinstance(result, operator) {
@@ -1126,20 +1034,6 @@ def read_stmt(handle: u64, depth: int) -> stmt {
     return result as stmt;
 }
 
-def field_stmt(handle: u64, name: str, depth: int, optional: bool = False) -> stmt {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_stmt(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
-}
-
 def read_str(handle: u64, depth: int) -> str {
     if jacpy_value_kind(handle) != 6 {
         raise TypeError("identifier must be of type str");
@@ -1192,44 +1086,12 @@ def read_type_ignore(handle: u64, depth: int) -> type_ignore {
     return result as type_ignore;
 }
 
-def field_type_ignore(
-    handle: u64, name: str, depth: int, optional: bool = False
-) -> type_ignore {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_type_ignore(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
-}
-
 def read_type_param(handle: u64, depth: int) -> type_param {
     result = read_node(handle, depth);
     if not isinstance(result, type_param) {
         raise TypeError("AST field requires type_param");
     }
     return result as type_param;
-}
-
-def field_type_param(
-    handle: u64, name: str, depth: int, optional: bool = False
-) -> type_param {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_type_param(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
 }
 
 def read_unaryop(handle: u64, depth: int) -> unaryop {
@@ -1262,22 +1124,6 @@ def read_withitem(handle: u64, depth: int) -> withitem {
         raise TypeError("AST field requires withitem");
     }
     return result as withitem;
-}
-
-def field_withitem(
-    handle: u64, name: str, depth: int, optional: bool = False
-) -> withitem {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_withitem(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
 }
 
 def read_node_Module(handle: u64, depth: int) -> Module {

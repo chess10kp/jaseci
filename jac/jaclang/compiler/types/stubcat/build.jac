@@ -13,19 +13,6 @@ import from jaclang.compiler.types.stubcat.locate {
 import from jaclang.compiler.types.stubcat.writer { CatalogWriter }
 import jaclang.compiler.types.stubcat.reader;
 
-glob PRELUDE_ORDER: tuple[str, ...] = (
-         "builtins",
-         "typing",
-         "types",
-         "enum",
-         "jac_builtins",
-         "dom_types",
-         "na_builtins",
-         "js_globals",
-         "builtin_overrides",
-         "typing_ambient"
-     );
-
 def parse_versions(stdlib_dir: str) -> dict[str, tuple[int, int]] {
     out: dict[str, tuple[int, int]] = {};
     path = os.path.join(stdlib_dir, "VERSIONS");

@@ -7,7 +7,7 @@ import from jaclang.server.middleware { require_user }
 import from jaclang.server.server { JacAPIServer, ServerExtension }
 import from jaclang.server.serving.datatypes { Request }
 import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
-import from jaclang.server.transport { Meta, TransportResponse }
+import from jaclang.server.transport { Meta, TransportResponse, fail_http }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.scheduler.scheduler { JacScaleScheduler, TriggerSpec }
 import from jaclang.scale.scheduler.scheduler_models {
@@ -18,20 +18,13 @@ import from jaclang.scale.scheduler.scheduler_models {
 glob logger: logging.Logger = logging.getLogger(__name__);
 
 
-def _fail(code: str, message: str, status: int) -> TransportResponse {
-    return TransportResponse.fail(
-        code=code, message=message, meta=Meta(extra={'http_status': status})
-    );
-}
-
-
 def _err_response(e: Exception) -> TransportResponse {
     if isinstance(e, (PgWireError, OSError)) {
         logger.error(f"Storage failure on /jobs: {type(e).__name__}: {e}");
-        return _fail('STORAGE_UNAVAILABLE', 'Job store temporarily unavailable', 503);
+        return fail_http('STORAGE_UNAVAILABLE', 'Job store temporarily unavailable', 503);
     }
     logger.error(f"Scheduler endpoint error: {type(e).__name__}: {e}");
-    return _fail('SCHEDULER_ERROR', 'Internal scheduler error', 500);
+    return fail_http('SCHEDULER_ERROR', 'Internal scheduler error', 500);
 }
 
 
@@ -40,7 +33,7 @@ def _build_spec(
 ) -> tuple[(TriggerSpec | None), (TransportResponse | None)] {
     trigger = body.get('trigger', '');
     if not trigger {
-        return (None, _fail('INVALID_REQUEST', 'Field "trigger" is required', 400));
+        return (None, fail_http('INVALID_REQUEST', 'Field "trigger" is required', 400));
     }
     interval = body.get('interval');
     try {
@@ -52,7 +45,7 @@ def _build_spec(
         );
         return (spec, None);
     } except (ValueError, TypeError) as e {
-        return (None, _fail('INVALID_REQUEST', str(e), 400));
+        return (None, fail_http('INVALID_REQUEST', str(e), 400));
     }
 }
 
@@ -93,12 +86,12 @@ obj JobsExtension(ServerExtension) {
             job: (dict[str, any] | None), user_id: str
         ) -> (TransportResponse | None) {
             if job is None {
-                return _fail('NOT_FOUND', 'Job not found', 404);
+                return fail_http('NOT_FOUND', 'Job not found', 404);
             }
             if job.get('created_by') == user_id or _is_admin(user_id) {
                 return None;
             }
-            return _fail('NOT_FOUND', 'Job not found', 404);
+            return fail_http('NOT_FOUND', 'Job not found', 404);
         }
 
         async def create_job(
@@ -112,12 +105,12 @@ obj JobsExtension(ServerExtension) {
             name = body.get('walker_or_function', '');
             (spec, spec_err) = _build_spec(body);
             if spec is None {
-                return spec_err or _fail('INVALID_REQUEST', 'Invalid schedule', 400);
+                return spec_err or fail_http('INVALID_REQUEST', 'Invalid schedule', 400);
             }
             target: any = server.get_walkers().get(name)
                 or server.get_functions().get(name);
             if target is None {
-                return _fail(
+                return fail_http(
                     'NOT_FOUND', f'Walker or function "{name}" not found', 404
                 );
             }
@@ -125,7 +118,7 @@ obj JobsExtension(ServerExtension) {
                 if target?.schedule_spec
                 else None;
             if schedule_spec is None {
-                return _fail(
+                return fail_http(
                     'INVALID_REQUEST',
                     f'"{name}" has no @schedule decorator. Add '
                     '@schedule(trigger=ScheduleTrigger.DYNAMIC) to enable dynamic scheduling.',
@@ -133,7 +126,7 @@ obj JobsExtension(ServerExtension) {
                 );
             }
             if schedule_spec.trigger != ScheduleTrigger.DYNAMIC {
-                return _fail(
+                return fail_http(
                     'INVALID_REQUEST',
                     f'"{name}" uses trigger={schedule_spec.trigger.value!r}; only DYNAMIC '
                     'targets can be scheduled through /jobs.',
@@ -162,7 +155,7 @@ obj JobsExtension(ServerExtension) {
                 limit = min(max(int(params.get('limit', '50')), 1), 500);
                 offset = max(int(params.get('offset', '0')), 0);
             } except (ValueError, TypeError) {
-                return _fail(
+                return fail_http(
                     'INVALID_REQUEST', 'limit and offset must be integers', 400
                 );
             }
@@ -219,7 +212,7 @@ obj JobsExtension(ServerExtension) {
             }
             (spec, spec_err) = _build_spec(body_data.model_dump(mode='python'));
             if spec is None {
-                return spec_err or _fail('INVALID_REQUEST', 'Invalid schedule', 400);
+                return spec_err or fail_http('INVALID_REQUEST', 'Invalid schedule', 400);
             }
             try {
                 acting_as = None if _is_admin(str(user_id)) else str(user_id);
@@ -227,7 +220,7 @@ obj JobsExtension(ServerExtension) {
                     job_id=job_id, spec=spec, acting_as=acting_as
                 );
                 if updated is None {
-                    return _fail('NOT_FOUND', 'Job not found', 404);
+                    return fail_http('NOT_FOUND', 'Job not found', 404);
                 }
                 return TransportResponse.success(
                     data=updated, meta=Meta(extra={'http_status': 200})
@@ -247,7 +240,7 @@ obj JobsExtension(ServerExtension) {
                 if not JacScaleScheduler.instance().delete_job(
                     job_id, acting_as=acting_as
                 ) {
-                    return _fail('NOT_FOUND', 'Job not found', 404);
+                    return fail_http('NOT_FOUND', 'Job not found', 404);
                 }
                 return TransportResponse.success(
                     data={'deleted': True, 'job_id': job_id},

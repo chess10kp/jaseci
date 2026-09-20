@@ -79,13 +79,3 @@ def guard_route_prefix(name: str, prefix: str) {
         );
     }
 }
-
-
-def format_route_lines(routes: dict[str, str]) -> list[str] {
-    names = sorted(routes.keys());
-    if not names {
-        return [];
-    }
-    pairs = ", ".join([f"{n} -> {routes[n]}" for n in names]);
-    return [f"routes: {pairs}"];
-}

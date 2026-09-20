@@ -67,8 +67,7 @@ def get_default_triple -> str {
     Get the name of the host's CPU, suitable for using with
     :meth:`Target.create_target_machine()`.
     """
-glob llvm_version_major = llvm_version_info[0],
-     _object_formats = {
+glob _object_formats = {
          0: "Unknown",
          1: "COFF",
          2: "DXContainer",
@@ -85,14 +84,6 @@ glob llvm_version_major = llvm_version_info[0],
     triple if omitted).
     A string is returned
     """
-def get_object_format(triple: any = None) -> object {
-    if (triple is None) {
-        triple = get_default_triple();
-    }
-    res = ffi.lib.LLVMPY_GetTripleObjectFormat(_encode_string(triple));
-    return _object_formats[res];
-}
-
 """
     Create a TargetData instance for the given *layout* string.
     """

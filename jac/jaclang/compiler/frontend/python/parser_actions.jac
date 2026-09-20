@@ -163,12 +163,6 @@ obj star_etc_node {
         kwarg: arg | None = None;
 }
 
-def pa_extra(
-    lineno: int, col_offset: int, end_lineno: int, end_col_offset: int
-) -> tuple[int, int, int, int] {
-    return (lineno, col_offset, end_lineno, end_col_offset);
-}
-
 def pa_name_id(ast_name: expr) -> str {
     if isinstance(ast_name, Name) {
         n = ast_name as Name;
@@ -1140,14 +1134,6 @@ def pa_stmt_list_or_empty(xs: list[stmt] | None) -> list[stmt] {
     return xs;
 }
 
-def pa_unsupported_action(p: peg_parser, label: str) -> None {
-    if peg_has_error(p) {
-        return None;
-    }
-    peg_raise_syntax_error(p, False, f"unsupported grammar action: {label}");
-    return None;
-}
-
 # ---------------- statement actions (file/exec profile, P0.12 band 2) ----------------
 # These lower the straight-line statement grammar actions into ast_nodes.jac
 # objects. Locations arrive as the EXTRA quad (start_lineno, start_col_offset,
@@ -1591,19 +1577,6 @@ def pa_seq_count_dots(seq: object) -> int {
         count += len(tokens[index].spelling);
     }
     return count;
-}
-
-def pa_body_end_span(body: list[stmt]) -> tuple[int, int] {
-    last = body[len(body) - 1];
-    end_lineno: int = last.lineno;
-    end_col_offset: int = last.col_offset;
-    if last.end_lineno is not None {
-        end_lineno = last.end_lineno as int;
-    }
-    if last.end_col_offset is not None {
-        end_col_offset = last.end_col_offset as int;
-    }
-    return (end_lineno, end_col_offset);
 }
 
 def pa_empty_arguments -> arguments {
@@ -2103,66 +2076,6 @@ def pa_join_sequences_kw_or_starred(
     return out;
 }
 
-def pa_join_sequences_expr(a: list[expr], b: list[expr]) -> list[expr] {
-    out: list[expr] = [];
-    i = 0;
-    while i < len(a) {
-        out.append(a[i]);
-        i = i + 1;
-    }
-    i = 0;
-    while i < len(b) {
-        out.append(b[i]);
-        i = i + 1;
-    }
-    return out;
-}
-
-def pa_join_sequences_stmt(a: list[stmt], b: list[stmt]) -> list[stmt] {
-    out: list[stmt] = [];
-    i = 0;
-    while i < len(a) {
-        out.append(a[i]);
-        i = i + 1;
-    }
-    i = 0;
-    while i < len(b) {
-        out.append(b[i]);
-        i = i + 1;
-    }
-    return out;
-}
-
-def pa_join_sequences_alias(a: list[alias], b: list[alias]) -> list[alias] {
-    out: list[alias] = [];
-    i = 0;
-    while i < len(a) {
-        out.append(a[i]);
-        i = i + 1;
-    }
-    i = 0;
-    while i < len(b) {
-        out.append(b[i]);
-        i = i + 1;
-    }
-    return out;
-}
-
-def pa_join_sequences_pattern(a: list[pattern], b: list[pattern]) -> list[pattern] {
-    out: list[pattern] = [];
-    i = 0;
-    while i < len(a) {
-        out.append(a[i]);
-        i = i + 1;
-    }
-    i = 0;
-    while i < len(b) {
-        out.append(b[i]);
-        i = i + 1;
-    }
-    return out;
-}
-
 def pa_alias_for_star(
     lineno: int, col_offset: int, end_lineno: int | None, end_col_offset: int | None
 ) -> alias | None {
@@ -2271,19 +2184,6 @@ def pa_check_fstring_conversion(
         );
     }
     return conv;
-}
-
-def _fstring_prefix_is_raw(start: peg_token) -> bool {
-    s = start.spelling;
-    i = 0;
-    while i < len(s) {
-        c = s[i];
-        if c == "r" or c == "R" {
-            return True;
-        }
-        i = i + 1;
-    }
-    return False;
 }
 
 def interpolation_text(

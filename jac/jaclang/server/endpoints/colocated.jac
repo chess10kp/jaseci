@@ -9,7 +9,7 @@ import from jaclang.server.serving.datatypes { Request, Response }
 import from jaclang.server.serving.endpoint { HTTPMethod, ep, path_param }
 import from jaclang.server.server { JacAPIServer, JsonValue, ModuleIntrospector }
 import from jaclang.server.sv_client { _local_providers }
-import from jaclang.server.transport { Meta, TransportResponse }
+import from jaclang.server.transport { Meta, TransportResponse, fail_http }
 
 glob logger: logging.Logger = logging.getLogger('jaclang.serve');
 
@@ -41,17 +41,10 @@ def _body(request: Request) -> (dict[str, any] | None) {
 }
 
 
-def _fail(code: str, message: str, status: int) -> TransportResponse {
-    return TransportResponse.fail(
-        code=code, message=message, meta=Meta(extra={'http_status': status})
-    );
-}
-
-
 def _outcome(result: any, fallback: str) -> TransportResponse {
     if isinstance(result, dict) and 'error' in result {
         if result.get('error') == 'User not found' {
-            return _fail('UNAUTHORIZED', 'Unauthorized: unknown user', 401);
+            return fail_http('UNAUTHORIZED', 'Unauthorized: unknown user', 401);
         }
         return TransportResponse.fail(
             code=str(result.get('error_code') or 'EXECUTION_ERROR').upper(),
@@ -77,11 +70,11 @@ def _walker_callback(
     ) -> (TransportResponse | Response) {
         username = request_caller(server, request);
         if requires_auth and not username {
-            return _fail('UNAUTHORIZED', 'Unauthorized', 401);
+            return fail_http('UNAUTHORIZED', 'Unauthorized', 401);
         }
         fields = _body(request);
         if fields is None {
-            return _fail('INVALID_JSON', 'Invalid JSON', 400);
+            return fail_http('INVALID_JSON', 'Invalid JSON', 400);
         }
         if nd {
             fields['_jac_spawn_node'] = nd;
@@ -119,11 +112,11 @@ def _function_callback(
     ) -> (TransportResponse | Response) {
         username = request_caller(server, request);
         if requires_auth and not username {
-            return _fail('UNAUTHORIZED', 'Unauthorized', 401);
+            return fail_http('UNAUTHORIZED', 'Unauthorized', 401);
         }
         args = _body(request);
         if args is None {
-            return _fail('INVALID_JSON', 'Invalid JSON', 400);
+            return fail_http('INVALID_JSON', 'Invalid JSON', 400);
         }
         mismatch = check_endpoint_contract(
             request, func_obj, "func", func_name, provider_app

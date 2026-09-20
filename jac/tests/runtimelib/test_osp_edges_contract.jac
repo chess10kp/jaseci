@@ -55,16 +55,20 @@ glob SCAN_ROOTS: list[str] = [
              "runs the Session loader the hydration left on the anchor, "
              "which pages the src/dst edge rows in seq order"
          ),
-         "runtime/impl/runtime.impl.jac": (
-             7,
-             "mutation bookkeeping and persistence: heavy_edge's dual-write "
-             "appends (the store write sits beside them), disconnect's "
-             "stub-populate priming before driver hydration, destroy's and "
-             "clear_edges' detach iterations, and reset_graph's "
-             "persistence-record rewrite (paired with sv_forget_by_id so the "
-             "store retracts in step); tier routing asks the anchor's "
-             "has_heavy_edges primitive and save's cascade reads through "
-             "all_edges so light edges materialize first"
+         "runtime/impl/runtime.graph.impl.jac": (
+             4,
+             "graph-state mutations: disconnect's stub-populate priming "
+             "before driver hydration, destroy's and clear_edges' detach "
+             "iterations; tier routing asks the anchor's has_heavy_edges "
+             "primitive"
+         ),
+         "runtime/impl/runtime.state.impl.jac": (
+             3,
+             "persistence bookkeeping: heavy_edge's dual-write appends "
+             "(the store write sits beside them), reset_graph's "
+             "persistence-record rewrite (paired with sv_forget_by_id so "
+             "the store retracts in step), and save's cascade reads "
+             "through all_edges so light edges materialize first"
          ),
          "runtime/osp_graph_sv.jac": (
              1,
@@ -80,10 +84,14 @@ glob SCAN_ROOTS: list[str] = [
              "SQL (epic #7945). Moved here from that planner in #8743: "
              "walking a graph is not a persistence concern"
          ),
-         "data/impl/serializer.impl.jac": (
-             3,
-             "serialization proper: writing data.edges on save and "
-             "rebuilding the stub list plus _initial_edge_ids on load"
+         "data/impl/serializer.serialize.impl.jac": (
+             1,
+             "serialization proper: writing data.edges on save"
+         ),
+         "data/impl/serializer.deserialize.impl.jac": (
+             2,
+             "deserialization: rebuilding the stub list plus "
+             "_initial_edge_ids on load"
          ),
 
      };

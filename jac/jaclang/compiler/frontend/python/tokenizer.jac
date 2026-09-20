@@ -1459,21 +1459,3 @@ def tokenizer_next(st: tok_state) -> tok_token | tok_diag {
     }
     return token;
 }
-
-def tokenize_all(
-    source: str, filename: str, exec_input: bool
-) -> list[tok_token | tok_diag] {
-    st = tokenizer_from_string(source, filename, exec_input);
-    out: list[tok_token | tok_diag] = [];
-    while True {
-        tok = tokenizer_next(st);
-        out.append(tok);
-        if isinstance(tok, tok_diag) {
-            break;
-        }
-        if tok.tok_type == ENDMARKER {
-            break;
-        }
-    }
-    return out;
-}

@@ -321,10 +321,6 @@ def set_native_closure_cap(value: int) {
     _closure_cap_ctx.set(value);
 }
 
-def get_native_closure_cap_override -> int {
-    return _closure_cap_ctx.get(0);
-}
-
 def effective_native_closure_cap -> int {
     cur = _closure_cap_ctx.get(0);
     if cur > 0 {
@@ -644,57 +640,6 @@ def _func_layout_to_dict(f: NativeFuncLayout) -> dict[str, any] {
         "ret_elem_keys": (
             list(f.ret_elem_keys) if f.ret_elem_keys is not None else None
         )
-    };
-}
-
-def native_layout_to_dict(layout: NativeModuleLayout) -> dict[str, any] {
-    return {
-        "abi_version": layout.abi_version,
-        "structs": {
-            name: {
-                "name": s.name,
-                "has_vtable": s.has_vtable,
-                "accessors": {
-                    fname: dict[str, str](kinds)
-                    for (fname, kinds) in s.accessors.items()
-                },
-                "fields": [
-                    {
-                        "name": fld.name,
-                        "llvm_type": fld.llvm_type,
-                        "index": fld.index,
-                        "enum_type": fld.enum_type,
-                        "is_func_ptr": fld.is_func_ptr,
-                        "func_param_types": (
-                            list(fld.func_param_types)
-                                if fld.func_param_types is not None
-                                else None
-                        ),
-                        "func_ret_type": fld.func_ret_type,
-                        "elem_keys": (
-                            list(fld.elem_keys) if fld.elem_keys is not None else None
-                        ),
-                        "foreign": fld.foreign
-                    } for fld in s.fields
-                ]
-            } for (name, s) in layout.structs.items()
-        },
-        "enums": {
-            name: {
-                "name": e.name,
-                "is_string_valued": e.is_string_valued,
-                "members": list(e.members)
-            } for (name, e) in layout.enums.items()
-        },
-        "functions": {
-            name: _func_layout_to_dict(f) for (name, f) in layout.functions.items()
-        },
-        "methods": {
-            name: _func_layout_to_dict(f) for (name, f) in layout.methods.items()
-        },
-        "list_elem_types": dict(layout.list_elem_types),
-        "tuples": {key: _tuple_layout_to_dict(t) for (key, t) in layout.tuples.items()},
-        "str_headerless": layout.str_headerless
     };
 }
 

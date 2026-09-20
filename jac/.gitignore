@@ -89,6 +89,8 @@ jaclang/client/_bun/
 # the stubs are tracked.
 jaclang/vendor/typeshed/stdlib
 .llvm-build/
+# worktree-local symlink to the shared canonical slice (see AGENTS.md)
+.llvm-build
 # CI staging dir for a cache-restored prebuilt shim (setup-jac -Dshim-bin).
 .shim-build/
 # Persistent JIR precompile cache: mkpayload seeds site/_precompiled from it

@@ -403,42 +403,6 @@ def sym_allows_async(block: sym_block) -> bool {
         );
 }
 
-def sym_visit_comprehension_generators(
-    b: sym_builder, generators: list[comprehension]
-) -> bool {
-    if len(generators) == 0 {
-        return True;
-    }
-    outer = generators[0];
-    if not sym_visit_load_expr(b, outer.iter) {
-        return False;
-    }
-    gi = 0;
-    while gi < len(generators) {
-        g = generators[gi];
-        if g.is_async {
-            b.cur.coroutine = True;
-        }
-        if gi > 0 {
-            if not sym_visit_load_expr(b, g.iter) {
-                return False;
-            }
-        }
-        if not sym_visit_comp_store_target(b, g.target) {
-            return False;
-        }
-        fi = 0;
-        while fi < len(g.ifs) {
-            if not sym_visit_load_expr(b, g.ifs[fi]) {
-                return False;
-            }
-            fi = fi + 1;
-        }
-        gi = gi + 1;
-    }
-    return True;
-}
-
 def sym_visit_inline_comprehension(
     b: sym_builder,
     expression: expr,

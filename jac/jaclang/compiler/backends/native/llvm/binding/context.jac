@@ -1,8 +1,4 @@
 import from jaclang.compiler.backends.native.llvm.binding { ffi }
-def create_context -> object {
-    return ContextRef(ffi.lib.LLVMPY_ContextCreate());
-}
-
 def get_global_context -> object {
     return GlobalContextRef(ffi.lib.LLVMPY_GetGlobalContext());
 }

@@ -38,15 +38,6 @@ def service_unavailable(service: str, reason: str) -> JSONResponse {
     );
 }
 
-def identity_unresolvable(detail: str) -> JSONResponse {
-    return error_response(
-        code="IDENTITY_UNRESOLVABLE",
-        message=f"The caller's identity could not be resolved: {detail}",
-        status=401
-    );
-}
-
-
 def gateway_timeout(service: str) -> JSONResponse {
     return error_response(
         code="GATEWAY_TIMEOUT",

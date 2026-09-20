@@ -17,7 +17,7 @@ import from jaclang.server.serving.endpoint {
     header_param,
     ParameterType
 }
-import from jaclang.server.transport { Meta, TransportResponse }
+import from jaclang.server.transport { Meta, TransportResponse, fail_http }
 import from jaclang.scale.config.config_loader { get_scale_config }
 import from jaclang.scale.webhook.webhook {
     ApiKeyManager,
@@ -29,13 +29,6 @@ glob logger: logging.Logger = logging.getLogger(__name__),
      GITHUB_SCHEME: str = 'github',
      GITHUB_EVENT_HEADER: str = 'X-GitHub-Event',
      GITHUB_DELIVERY_HEADER: str = 'X-GitHub-Delivery';
-
-
-def _fail(code: str, message: str, status: int) -> TransportResponse {
-    return TransportResponse.fail(
-        code=code, message=message, meta=Meta(extra={'http_status': status})
-    );
-}
 
 
 def walker_scheme(server: JacAPIServer, walker_name: str) -> str {
@@ -131,17 +124,17 @@ obj WebhookExtension(ServerExtension) {
     ) -> TransportResponse | None {
         secret = str(cfg.get('github_secret') or '');
         if not secret {
-            return _fail('UNAUTHORIZED', 'Webhook secret is not configured', 401);
+            return fail_http('UNAUTHORIZED', 'Webhook secret is not configured', 401);
         }
         header = github_signature_header(cfg);
         signature = request.headers.get(header);
         if not signature {
-            return _fail('UNAUTHORIZED', f"Missing {header} header", 401);
+            return fail_http('UNAUTHORIZED', f"Missing {header} header", 401);
         }
         if not WebhookUtils.verify_signature(
             raw_body, WebhookUtils.extract_signature(signature), secret
         ) {
-            return _fail('UNAUTHORIZED', 'Invalid webhook signature', 401);
+            return fail_http('UNAUTHORIZED', 'Invalid webhook signature', 401);
         }
         return None;
     }
@@ -183,7 +176,7 @@ obj WebhookExtension(ServerExtension) {
                     f"Webhook walker '{walker_name}' failed: {result.get('error')}"
                 );
             }
-            return _fail('EXECUTION_ERROR', 'Webhook processing failed', 500);
+            return fail_http('EXECUTION_ERROR', 'Webhook processing failed', 500);
         }
         return TransportResponse.success(
             data=result, meta=Meta(extra={'http_status': 200})
@@ -198,7 +191,7 @@ obj WebhookExtension(ServerExtension) {
         rate_limit = int(cfg.get('rate_limit_per_minute', 0));
         raw_body = request.body;
         if len(raw_body) > max_body_bytes {
-            return _fail('PAYLOAD_TOO_LARGE', 'Request body too large', 413);
+            return fail_http('PAYLOAD_TOO_LARGE', 'Request body too large', 413);
         }
         refused = self.github_gate(request, raw_body, cfg);
         if refused is not None {
@@ -207,7 +200,7 @@ obj WebhookExtension(ServerExtension) {
         if not rate_window_ok(
             self._scheme_rate, f"{GITHUB_SCHEME}:{walker_name}", rate_limit
         ) {
-            return _fail('RATE_LIMITED', 'Rate limit exceeded', 429);
+            return fail_http('RATE_LIMITED', 'Rate limit exceeded', 429);
         }
         media_type = (
             str(request.headers.get('Content-Type') or '').split(';', 1)[
@@ -215,7 +208,7 @@ obj WebhookExtension(ServerExtension) {
             ].strip().lower()
         );
         if media_type != 'application/json' {
-            return _fail(
+            return fail_http(
                 'UNSUPPORTED_MEDIA_TYPE',
                 'Set the webhook content type to application/json',
                 415
@@ -244,52 +237,52 @@ obj WebhookExtension(ServerExtension) {
 
         api_key = request.headers.get('X-API-Key');
         if not api_key {
-            return _fail('UNAUTHORIZED', 'Missing X-API-Key header', 401);
+            return fail_http('UNAUTHORIZED', 'Missing X-API-Key header', 401);
         }
         key_doc = keys().resolve_key(api_key);
         if key_doc is None {
-            return _fail('UNAUTHORIZED', 'Invalid or expired API key', 401);
+            return fail_http('UNAUTHORIZED', 'Invalid or expired API key', 401);
         }
         user_id: str = str(key_doc.get('user_id') or '');
         if not user_id or not server.user_manager.user_exists(user_id) {
-            return _fail('UNAUTHORIZED', 'Invalid or expired API key', 401);
+            return fail_http('UNAUTHORIZED', 'Invalid or expired API key', 401);
         }
         allowed_walkers: list[str] = list(key_doc.get('allowed_walkers') or []);
         if allowed_walkers and walker_name not in allowed_walkers {
-            return _fail(
+            return fail_http(
                 'FORBIDDEN', 'API key is not permitted to call this webhook', 403
             );
         }
         api_key_id: str = str(key_doc.get('api_key_id') or '');
         if not keys().check_rate_limit(api_key_id, rate_limit) {
-            return _fail('RATE_LIMITED', 'Rate limit exceeded', 429);
+            return fail_http('RATE_LIMITED', 'Rate limit exceeded', 429);
         }
         raw_body = request.body;
         if len(raw_body) > max_body_bytes {
-            return _fail('PAYLOAD_TOO_LARGE', 'Request body too large', 413);
+            return fail_http('PAYLOAD_TOO_LARGE', 'Request body too large', 413);
         }
         if verify_signature {
             signature = request.headers.get(signature_header);
             if not signature {
-                return _fail('UNAUTHORIZED', f"Missing {signature_header} header", 401);
+                return fail_http('UNAUTHORIZED', f"Missing {signature_header} header", 401);
             }
             timestamp = request.headers.get(timestamp_header);
             if not timestamp {
-                return _fail('UNAUTHORIZED', f"Missing {timestamp_header} header", 401);
+                return fail_http('UNAUTHORIZED', f"Missing {timestamp_header} header", 401);
             }
             try {
                 request_ts = int(timestamp);
             } except ValueError {
-                return _fail('UNAUTHORIZED', 'Invalid webhook timestamp', 401);
+                return fail_http('UNAUTHORIZED', 'Invalid webhook timestamp', 401);
             }
             if abs(int(time.time()) - request_ts) > replay_tolerance {
-                return _fail(
+                return fail_http(
                     'UNAUTHORIZED', 'Webhook timestamp outside allowed window', 401
                 );
             }
             signing_secret: str = str(key_doc.get('signing_secret') or '');
             if not signing_secret {
-                return _fail('UNAUTHORIZED', 'Invalid webhook signature', 401);
+                return fail_http('UNAUTHORIZED', 'Invalid webhook signature', 401);
             }
             signed_payload = f"{timestamp}.".encode('utf-8') + raw_body;
             if not WebhookUtils.verify_signature(
@@ -297,7 +290,7 @@ obj WebhookExtension(ServerExtension) {
                 WebhookUtils.extract_signature(signature),
                 signing_secret
             ) {
-                return _fail('UNAUTHORIZED', 'Invalid webhook signature', 401);
+                return fail_http('UNAUTHORIZED', 'Invalid webhook signature', 401);
             }
         }
         return await self.run_walker(server, walker_name, raw_body, user_id, {});

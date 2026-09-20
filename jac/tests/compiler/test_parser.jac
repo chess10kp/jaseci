@@ -835,8 +835,10 @@ test "parser core sources are foreign-free" {
     # W1/W2 (#6930): the sealed parser core may not reference host-side
     # machinery; all Alert construction lives in frontend.jac.
     pkg = Path(jaclang.__file__).parent / "compiler" / "frontend" / "parser";
-    core = (pkg / "parser.jac").read_text(encoding="utf-8")
-        + (pkg / "impl" / "parser.impl.jac").read_text(encoding="utf-8");
+    core = (pkg / "parser.jac").read_text(encoding="utf-8");
+    for annex in sorted((pkg / "impl").glob("*.impl.jac")) {
+        core += annex.read_text(encoding="utf-8");
+    }
     banned = [
         "passes.context",
         "CodeLocInfo",

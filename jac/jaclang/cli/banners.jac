@@ -19,21 +19,3 @@ def print_logo(version: str, platform_short: str | None = None) {
     }
     console.print(last, style='cyan');
 }
-
-def print_version_banner(version: str) {
-    platform_info = platform.platform();
-    if (platform.system() == 'Linux') {
-        platform_short = f"Linux {platform.machine()}";
-    } elif (platform.system() == 'Darwin') {
-        platform_short = f"macOS {platform.machine()}";
-    } elif (platform.system() == 'Windows') {
-        platform_short = f"Windows {platform.machine()}";
-    } else {
-        platform_short = platform_info;
-    }
-    print_logo(version, platform_short);
-    console.print(f'\nDocs:      {JAC_DOCS_URL}', style='dim');
-    console.print(f'Community: {JAC_DISCORD_URL}', style='dim');
-    console.print(f'Issues:    {JAC_ISSUES_URL}', style='dim');
-    console.print();
-}

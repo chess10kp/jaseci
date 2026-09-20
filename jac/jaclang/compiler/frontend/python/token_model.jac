@@ -220,10 +220,6 @@ def is_terminal(t: int) -> bool {
     return t < NT_OFFSET;
 }
 
-def is_nonterminal(t: int) -> bool {
-    return t >= NT_OFFSET;
-}
-
 def is_eof(t: int) -> bool {
     return t == ENDMARKER;
 }
@@ -232,22 +228,11 @@ def is_whitespace_token(t: int) -> bool {
     return t == ENDMARKER or t == NEWLINE or t == INDENT or t == DEDENT;
 }
 
-def is_stringlit_token(t: int) -> bool {
-    return t == STRING or t == FSTRING_MIDDLE or t == TSTRING_MIDDLE;
-}
-
 def exact_token_type(spelling: str) -> int {
     if spelling in EXACT_TOKEN_TYPES {
         return EXACT_TOKEN_TYPES[spelling];
     }
     return OP;
-}
-
-def token_name(t: int) -> str {
-    if t < 0 or t >= len(TOKEN_NAMES) {
-        return "<invalid>";
-    }
-    return TOKEN_NAMES[t];
 }
 
 # ---------------- source locations ----------------
@@ -278,22 +263,6 @@ def tok_loc_span(
     );
 }
 
-def same_tok_loc(a: tok_loc, b: tok_loc) -> bool {
-    if a.lineno != b.lineno {
-        return False;
-    }
-    if a.end_lineno != b.end_lineno {
-        return False;
-    }
-    if a.col_offset != b.col_offset {
-        return False;
-    }
-    if a.end_col_offset != b.end_col_offset {
-        return False;
-    }
-    return True;
-}
-
 # ---------------- token value ----------------
 obj tok_token {
     has tok_type: int,
@@ -304,10 +273,6 @@ obj tok_token {
         end_col_offset: int,
         level: int = 0,
         metadata: str | None = None;
-}
-
-def token_loc(tok: tok_token) -> tok_loc {
-    return tok_loc_span(tok.lineno, tok.end_lineno, tok.col_offset, tok.end_col_offset);
 }
 
 # ---------------- diagnostics ----------------

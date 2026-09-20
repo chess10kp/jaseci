@@ -27,8 +27,3 @@ obj SyncExecutor {
         }
     }
 }
-
-
-async def run_sync(fn: Callable[..., any], *args: any) -> any {
-    return await asyncio.to_thread(fn, *args);
-}

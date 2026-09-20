@@ -196,25 +196,6 @@ def _ms_section_enabled(section: str) -> bool {
 }
 
 
-def _mask_uri(uri: str) -> str {
-    if not uri {
-        return "";
-    }
-    try {
-        if "@" in uri and "://" in uri {
-            scheme = uri.split("://", 1)[0];
-            after = uri.split("://", 1)[1];
-
-            host_part = after.rsplit("@", 1)[1];
-            return f"{scheme}://***@{host_part}";
-        }
-    } except Exception {
-        return "configured";
-    }
-    return uri;
-}
-
-
 async def _http_ready(base: str, path: str) -> bool {
     import from jaclang.server.serving.client { arequest }
     url = base.rstrip("/") + path;

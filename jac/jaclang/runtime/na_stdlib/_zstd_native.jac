@@ -154,5 +154,3 @@ def:pub ZSTD_trace_decompress_end(ctx: u64, trace: int) -> None {
 def _trace_anchor -> int {
     return int(ZSTD_trace_compress_begin(0) + ZSTD_trace_decompress_begin(0));
 }
-
-glob _zstd_trace_anchor: int = _trace_anchor();

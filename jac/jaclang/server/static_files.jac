@@ -157,34 +157,6 @@ def find_root_asset(
     return None;
 }
 
-def is_asset_request(
-    path: str, cl_route_path: str, reserved_prefixes: (list[str] | None) = None
-) -> bool {
-    if path == '/' or path.startswith('/static/') {
-        return False;
-    }
-    if path.startswith(cl_route_path) {
-        return False;
-    }
-    reserved = reserved_prefixes
-        if reserved_prefixes is not None
-        else [
-            '/function/',
-            '/walker/',
-            '/user/',
-            '/functions',
-            '/walkers',
-            '/protected'
-        ];
-    for prefix in reserved {
-        if path.startswith(prefix) {
-            return False;
-        }
-    }
-    return Path(path).suffix in asset_extensions();
-}
-
-
 def sibling_app_dist(config: any, name: str, base_path: str) -> (Path | None) {
     if config is None or not config.is_workspace {
         return None;

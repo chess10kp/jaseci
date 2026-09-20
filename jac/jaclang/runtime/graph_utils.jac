@@ -23,18 +23,6 @@ def traverse_graph(
     edge_limit: int
 ) -> None;
 
-def storage_key(id: UUID) -> str {
-    return f"anchor:{str(id)}";
-}
-
-def to_uuid(id: (UUID | str)) -> UUID {
-    if isinstance(id, UUID) {
-        return id;
-    }
-    return UUID(str(id));
-}
-
-
 def release_arch(raw: str) -> str {
     m = raw.strip().lower();
     if m in ("arm64", "aarch64") {

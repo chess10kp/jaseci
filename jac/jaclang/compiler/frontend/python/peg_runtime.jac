@@ -35,7 +35,6 @@ import from jaclang.compiler.frontend.python.tokenizer {
 }
 
 # Keyword token ids start at 500 in CPython's pegen generator (parser_generator.py).
-glob PEG_KEYWORD_TYPE_BASE: int = 500;
 glob STAR_TARGETS: int = 0,
      DEL_TARGETS: int = 1,
      FOR_TARGETS: int = 2;
@@ -244,13 +243,6 @@ def peg_ensure_token(p: peg_parser) -> bool {
     return peg_fill_token(p);
 }
 
-def peg_peek_type(p: peg_parser) -> int {
-    if not peg_ensure_token(p) {
-        return ERRORTOKEN;
-    }
-    return p.tokens[p.mark].tok_type;
-}
-
 def peg_check_memo(p: peg_parser, rule_type: int) -> peg_memo_hit {
     if not peg_ensure_token(p) {
         # A terminal lexer error cannot seed a left-recursive rule.
@@ -328,10 +320,6 @@ def peg_expect_forced_token(
     }
     peg_raise_syntax_error_on_token(p, None, f"expected '{expected}'");
     return None;
-}
-
-def peg_expect_name(p: peg_parser) -> peg_token | None {
-    return peg_expect_token(p, NAME);
 }
 
 def peg_expect_soft_keyword(p: peg_parser, spelling: str) -> peg_token | None {

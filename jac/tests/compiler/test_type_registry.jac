@@ -264,9 +264,7 @@ test "the sized names, widths and signedness are defined in one table only" {
         "compiler/frontend/constant.jac",
         "compiler/frontend/parser/tokens.jac",
         "compiler/frontend/parser/parser.jac",
-        "compiler/frontend/parser/impl/parser.impl.jac",
-        "compiler/frontend/parser/seed_lexer.jac",
-        "compiler/frontend/parser/jac_lexer.jac"
+        "compiler/frontend/parser/lexer.jac"
     };
     # The unsigned spellings above eight bits can only ever be a language-type
     # name: LLVM spells widths as iN, `list_types["u8"]` is the native
@@ -279,6 +277,7 @@ test "the sized names, widths and signedness are defined in one table only" {
         rel = path.relative_to(pkg).as_posix();
         if not path.is_file()
             or rel in owners
+            or rel.startswith("compiler/frontend/parser/impl/")
             or "/tests/" in ("/" + rel)
             or rel.startswith("cli/docs")
             or rel.startswith("cli/skills") {

@@ -62,12 +62,6 @@ def emits_server_code(mod: (uni.Module | None)) -> bool {
 }
 
 
-def declared_path_spaces(source_path: str, prog: any) -> set[str] {
-    import from jaclang.compiler.placement.placement_solver { _materialize_module }
-    return module_spaces(_materialize_module(source_path, prog));
-}
-
-
 def _errors_for_path(prog: any, ap: str) -> int {
     count = 0;
     normed = os.path.normpath(ap);

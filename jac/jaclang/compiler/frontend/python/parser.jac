@@ -310,8 +310,7 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     ParamSpec,
 }
 
-glob RULE__gather_101: int = NT_OFFSET + 0,
-     RULE__gather_104: int = NT_OFFSET + 1,
+glob RULE__gather_104: int = NT_OFFSET + 1,
      RULE__gather_106: int = NT_OFFSET + 2,
      RULE__gather_108: int = NT_OFFSET + 3,
      RULE__gather_113: int = NT_OFFSET + 4,
@@ -7809,18 +7808,6 @@ def rule_in_bitwise_or(p: peg_parser) -> pa_cmpop_expr_pair | None {
             res = pa_make_cmpop_pair(In(), a);
             return res;
         }
-    }
-    peg_reset(p, mark);
-    return None;
-}
-
-def rule_interactive(p: peg_parser) -> mod | None {
-    mark = peg_mark(p);
-    res: mod | None = None;
-    a = rule_statement_newline(p);
-    if a is not None {
-        res = Interactive(body=a);
-        return res;
     }
     peg_reset(p, mark);
     return None;

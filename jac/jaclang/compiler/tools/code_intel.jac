@@ -214,37 +214,6 @@ obj EntryPoint {
 }
 
 
-def _combined_source_hash(file: str) -> int {
-    crc = 0;
-    try {
-        with open(file, 'rb') as f {
-            crc = zlib.crc32(f.read(), crc);
-        }
-    } except OSError as e {
-        _ = e;
-        return -1;
-    }
-    annexes: list[str] = [];
-    for suffix in ANNEX_SUFFIXES {
-        try {
-            annexes.extend(discover_annex_files(file, suffix));
-        } except Exception as e {
-            _ = e;
-        }
-    }
-    for annex in sorted(set(annexes)) {
-        try {
-            with open(annex, 'rb') as f {
-                crc = zlib.crc32(f.read(), crc);
-            }
-        } except OSError as e {
-            _ = e;
-        }
-    }
-    return crc & 0xFFFFFFFF;
-}
-
-
 obj ContextSlice {
     has query: str,
         target: SymbolInfo | None = None,

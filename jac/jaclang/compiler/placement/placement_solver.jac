@@ -12,6 +12,7 @@ import from jaclang.compiler.placement.placement {
     placement_state,
     record_placement_evidence,
     scan_native_blockers,
+    _summary_top_element,
     summarize_module
 }
 
@@ -207,14 +208,6 @@ def _endpoint_veto_applies(module: uni.Module) -> bool {
     return project_has_server(module);
 }
 
-def _top_element(module: uni.Module, nd: uni.UniNode) -> (uni.UniNode | None) {
-    cur: (uni.UniNode | None) = nd;
-    while (cur is not None and cur.parent is not module) {
-        cur = cur.parent;
-    }
-    return cur;
-}
-
 def _is_client_top(elem: uni.UniNode) -> bool {
     return isinstance(elem, uni.ContextAwareNode)
         and elem.code_context == CodeContext.CLIENT;
@@ -305,7 +298,7 @@ def _ref_top_ids(module: uni.Module, elem: uni.UniNode) -> set[int] {
         if decl is None {
             continue;
         }
-        top = _top_element(module, decl);
+        top = _summary_top_element(module, decl);
         if (top is None or top is elem) {
             continue;
         }
@@ -320,13 +313,13 @@ def _is_sv_import(elem: uni.UniNode) -> bool {
         and (elem.is_service_import or import_crosses_apps(elem));
 }
 
-def _named_top_element(target: uni.Module, name: str) -> (uni.UniNode | None) {
+def _named_summary_top_element(target: uni.Module, name: str) -> (uni.UniNode | None) {
     sym = target.names_in_scope.get(name) if target.names_in_scope else None;
     decl = sym.decl if sym is not None else None;
     if decl is None {
         return None;
     }
-    return _top_element(target, decl);
+    return _summary_top_element(target, decl);
 }
 
 def _materialize_module(path: str, prog: any) -> (uni.Module | None) {
@@ -384,7 +377,7 @@ def _closure_pullable(
             ) {
                 continue;
             }
-            item_top = _named_top_element(source_mod, item.name.value);
+            item_top = _named_summary_top_element(source_mod, item.name.value);
             if item_top is None
                 or not _closure_pullable(item_top, source_mod, prog, seen) {
                 return False;
@@ -763,7 +756,7 @@ def _pull_into_target(
         if not (isinstance(item, uni.ModuleItem) and isinstance(item.name, uni.Name)) {
             continue;
         }
-        top = _named_top_element(target, item.name.value);
+        top = _named_summary_top_element(target, item.name.value);
         if top is not None and _closure_pullable(top, target, prog, set()) {
             seed_ids.add(id(top));
         }
@@ -896,67 +889,6 @@ def invalidate_importers_es(prog: any, mod_path: str) -> list[uni.Module] {
         }
     }
     return cleared;
-}
-
-def demote_client_pulled_elements(
-    module: uni.Module, prog: any, err_mark: int, warn_mark: int
-) -> bool {
-    mod_path = module.loc.mod_path or '';
-    demoted: list[str] = [];
-    demote_pinned: set[int] = set();
-    for des in get_module_summary(module, prog).elements {
-        if des.pinned {
-            demote_pinned.add(des.index);
-        }
-    }
-    for (idx, stmt) in enumerate(module.body) {
-        if (
-            isinstance(stmt, uni.ContextAwareNode)
-            and stmt.codespace_dual
-            and stmt.code_context == CodeContext.CLIENT
-            and idx not in demote_pinned
-        ) {
-            stmt.code_context = CodeContext.SERVER;
-            stmt.codespace_dual = False;
-            ps = get_module_summary(module, prog);
-            dname = ps.elements[idx].name if idx < len(ps.elements) else 'element';
-            demoted.append(dname);
-            record_placement_evidence(
-                prog,
-                mod_path,
-                idx,
-                "demoted server: pulled client but failed ES lowering"
-            );
-        }
-    }
-    if not demoted {
-        return False;
-    }
-    first_err = '';
-    if err_mark < len(prog.errors_had) {
-        try {
-            first_err = prog.errors_had[err_mark].pretty_print().splitlines()[0];
-        } except Exception {
-            first_err = '';
-        }
-    }
-    del prog.errors_had[err_mark:];
-    del prog.warnings_had[warn_mark:];
-    import from jaclang.compiler.driver.pipeline { invalidate_client_product }
-    invalidate_client_product(prog, module);
-    placement_work(prog).changed(module);
-    invalidate_importers_es(prog, mod_path);
-    try {
-        import sys;
-        import from jaclang.cli.console { console }
-        console.print(
-            f"note: {mod_path} was pulled into the client but did not lower; "
-            f"demoted {', '.join(demoted)} back to the server ({first_err})",
-            style="dim",
-            file=sys.stderr
-        );
-    } except Exception {}
-    return True;
 }
 
 walker PlacementApplyPass {

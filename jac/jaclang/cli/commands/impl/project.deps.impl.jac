@@ -452,18 +452,10 @@ impl remove(
     return 0;
 }
 
-def _major_minor(version: str) -> str {
-    parts = version.split(".");
-    if len(parts) >= 2 {
-        return f"{parts[0]}.{parts[1]}";
-    }
-    return version;
-}
-
 impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) -> int {
     import from jaclang.project.config { get_config }
     import from jaclang.project.pyvenv { make_git_spec }
-    import from jaclang.project.providers { InstallContext, get_python_provider }
+    import from jaclang.project.providers { InstallContext, get_python_provider, _major_minor }
     config = get_config();
     if config is None {
         console.error(

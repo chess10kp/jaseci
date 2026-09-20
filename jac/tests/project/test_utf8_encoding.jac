@@ -63,13 +63,12 @@ test "cfg_build_pass opens file with utf-8" {
 """Verify project.impl.jac uses encoding='utf-8' for all open() calls."""
 test "project_impl opens files with utf-8" {
     import from pathlib { Path }
-    source_file = Path(__file__).parent.parent
+    source_dir = Path(__file__).parent.parent
         / "jaclang"
         / "cli"
         / "commands"
-        / "impl"
-        / "project.impl.jac";
-    if source_file.exists() {
+        / "impl";
+    for source_file in sorted(source_dir.glob("project*.impl.jac")) {
         with open(str(source_file), "r", encoding="utf-8") as f {
             content = f.read();
         }
@@ -77,7 +76,7 @@ test "project_impl opens files with utf-8" {
         lines = content.split("\n");
         for (i, line) in enumerate(lines) {
             if 'open(' in line and '"w"' in line and 'encoding' not in line {
-                assert False , f"Line {i
+                assert False , f"{source_file.name} line {i
                     + 1} has open() with 'w' mode but no encoding='utf-8': {line.strip()}";
             }
         }
