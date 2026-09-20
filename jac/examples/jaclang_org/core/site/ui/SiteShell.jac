@@ -3,12 +3,14 @@ import from core.site.ui.Navbar { Navbar }
 import from core.site.ui.Footer { Footer }
 
 def init_theme {
-    saved = localStorage.getItem("jac-theme");
-    if saved == "light" {
-        document.documentElement.classList.remove("dark");
-    } else {
-        document.documentElement.classList.add("dark");
-    }
+    dark = localStorage.getItem("jac-theme") != "light";
+    document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.style.setProperty(
+        "color-scheme", "dark" if dark else "light"
+    );
+    document.documentElement.style.backgroundColor = (
+        "oklch(0.145 0 0)" if dark else "oklch(1 0 0)"
+    );
 }
 
 def:pub SiteShell -> JsxElement {
