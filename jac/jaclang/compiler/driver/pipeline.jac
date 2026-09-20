@@ -168,7 +168,7 @@ glob PRODUCT_READY_FACTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
          )
      };
 
-def _ready_facts_live(
+def product_ready(
     program: JacProgram, module: Module, product: CompilationProduct
 ) -> bool {
     for fact in PRODUCT_READY_FACTS.get(product, ()) {
@@ -176,45 +176,40 @@ def _ready_facts_live(
             return False;
         }
     }
-    return True;
-}
-
-def product_ready(
-    program: JacProgram, module: Module, product: CompilationProduct
-) -> bool {
-    if not _ready_facts_live(program, module, product) {
-        return False;
-    }
     tasks = program.analysis.product_tasks.get(id(module));
     task = tasks.get(product) if tasks is not None else None;
     return task is None or task.state == TaskState.SUCCEEDED;
 }
 
-def validate_product_specs {
-    providers: dict[CompilationProduct, set[AnalysisFact]] = {};
-
-    def providers_of_product(
-        product: CompilationProduct, visiting: set[CompilationProduct]
-    ) -> set[AnalysisFact] {
-        known = providers.get(product);
-        if known is not None {
-            return known;
-        }
-        if product in visiting {
-            raise RuntimeError(f"product prerequisite cycle through {product.value}");
-        }
-        visiting.add(product);
-        facts = set(providers_of(product_pipeline(product)));
-        for prereq in PRODUCT_PREREQUISITES.get(product, ()) {
-            facts |= providers_of_product(prereq, visiting);
-        }
-        visiting.discard(product);
-        providers[product] = facts;
-        return facts;
+def providers_of_product(
+    product: CompilationProduct, visiting: (set[CompilationProduct] | None) = None
+) -> set[AnalysisFact] {
+    if visiting is None {
+        visiting = set();
     }
+    if product in visiting {
+        raise RuntimeError(f"product prerequisite cycle through {product.value}");
+    }
+    visiting.add(product);
+    facts = set(providers_of(product_pipeline(product)));
+    for prereq in PRODUCT_PREREQUISITES.get(product, ()) {
+        facts |= providers_of_product(prereq, visiting);
+    }
+    visiting.discard(product);
+    return facts;
+}
 
+def prereq_provides(product: CompilationProduct) -> set[AnalysisFact] {
+    facts: set[AnalysisFact] = set();
+    for prereq in PRODUCT_PREREQUISITES.get(product, ()) {
+        facts |= providers_of_product(prereq);
+    }
+    return facts;
+}
+
+def validate_product_specs {
     for product in PRODUCT_READY_FACTS {
-        available = providers_of_product(product, set());
+        available = providers_of_product(product);
         for fact in PRODUCT_READY_FACTS[product] {
             if fact not in available {
                 raise RuntimeError(
@@ -670,7 +665,7 @@ def get_analysis_sched -> list[type] {
                 PortabilityWarnPass,
                 JacLintCheckPass
             ],
-            preprovided={AnalysisFact.CFG_SUCC},
+            preprovided=prereq_provides(CompilationProduct.ANALYSIS),
             origin='analysis schedule'
         );
     } except ImportError as e {
@@ -751,7 +746,9 @@ def get_py_code_gen(
         passes.append(FreezeStructurePass);
         return validate_schedule(
             passes,
-            preprovided={AnalysisFact.CFG_SUCC} if provided is None else provided,
+            preprovided=providers_of_product(CompilationProduct.ANALYSIS)
+                if provided is None
+                else provided,
             origin='codegen schedule'
         );
     } except ImportError as e {

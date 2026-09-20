@@ -186,7 +186,10 @@ obj ModuleCompilation {
             }
             if self.native or _PtyMcp.has_native_context_stmts(self.module) {
                 lowered = require_product(
-                    self.program, self.module, CompilationProduct.NATIVE_IR
+                    self.program,
+                    self.module,
+                    CompilationProduct.NATIVE_IR,
+                    cancel_token=self.options.cancel_token
                 );
                 if lowered and self.options.native_required_for(self.path) {
                     import copy;
@@ -314,7 +317,12 @@ obj ModuleCompilation {
                 require_product,
                 CompilationProduct
             }
-            require_product(self.program, self.module, CompilationProduct.INTERFACE);
+            require_product(
+                self.program,
+                self.module,
+                CompilationProduct.INTERFACE,
+                cancel_token=self.options.cancel_token
+            );
         }
     }
 
