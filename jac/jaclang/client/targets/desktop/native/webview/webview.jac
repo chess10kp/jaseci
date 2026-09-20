@@ -1,8 +1,7 @@
 import from webview {
     obj BindingCallback {
-        has invoke: Callable[[int,
-    int
-}  def webview_create(debug: i32, window: int) -> int;  def webview_destroy(
+        has invoke: Callable[[int, int, int], None];
+    }  def webview_create(debug: i32, window: int) -> int;  def webview_destroy(
         w: int
     ) -> i32;  def webview_run(w: int) -> i32;  def webview_terminate(w: int) -> i32;  def webview_set_title(
         w: int, title: str

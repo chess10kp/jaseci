@@ -1,5 +1,7 @@
 import os;
 import time;
+import json;
+import zlib;
 import jaclang.compiler.frontend.unitree as uni;
 import from pathlib { Path }
 import from jaclang.compiler.driver.program { JacProgram }
@@ -15,6 +17,7 @@ import from jaclang.compiler.driver.jir {
     read_sections,
     get_module_cache_path
 }
+import from jaclang.compiler.driver.bccache { discover_annex_files }
 import from jaclang.jac0core.ext_registry {
     ANNEX_SUFFIXES,
     ANNEX_FOLDER,

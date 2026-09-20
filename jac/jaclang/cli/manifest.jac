@@ -1,4 +1,4 @@
-import from jaclang.cli.command { CommandSpec }
+import from jaclang.cli.command { Arg, ArgKind, CommandSpec }
 import from jaclang.comptime { module_of }
 
 comptime import from jaclang.cli.commands.analysis {

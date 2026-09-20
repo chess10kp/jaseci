@@ -11,6 +11,7 @@ import from jaclang.compiler.types.stubcat.locate {
     typeshed_stdlib_dir
 }
 import from jaclang.compiler.types.stubcat.writer { CatalogWriter }
+import jaclang.compiler.types.stubcat.reader;
 
 def parse_versions(stdlib_dir: str) -> dict[str, tuple[int, int]] {
     out: dict[str, tuple[int, int]] = {};

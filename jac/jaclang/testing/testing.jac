@@ -1,4 +1,6 @@
+import io;
 import json;
+import re;
 import from pathlib { Path }
 import from urllib.parse { urlencode }
 import type from jaclang.project.config { JacConfig }

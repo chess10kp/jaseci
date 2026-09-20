@@ -155,7 +155,8 @@ def unparse_node(nd: uni.UniNode) -> str {
 
 def unparse_module(mod: uni.Module, requires_format: bool = True) -> str {
     import from jaclang.compiler.tools.jac_formatter_pass { format_module }
-        import from jaclang.compiler.driver.program { JacProgram }
+    import from jaclang.compiler.tools.normalize_pass { NormalizePass }
+    import from jaclang.compiler.driver.program { JacProgram }
 
     own_path = mod.loc.mod_path;
     saved_body = mod.body;

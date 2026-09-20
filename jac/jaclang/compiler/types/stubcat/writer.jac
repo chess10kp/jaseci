@@ -690,7 +690,8 @@ obj CatalogWriter {
     }
 
     def property_facts(sym: Symbol) -> tuple[int, int, (TypeBase | None)] {
-                kind = 0;
+        import from jaclang.compiler.types.type_utils { PropertyWriteKind }
+        kind = 0;
         write_kind = 0;
         write_type: (TypeBase | None) = None;
         try {

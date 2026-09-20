@@ -1,4 +1,6 @@
 import type from jaclang.compiler.driver.program { JacProgram }
+import contextlib;
+import shutil;
 import from pathlib { Path }
 import from types { ModuleType }
 import from typing { cast }

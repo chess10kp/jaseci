@@ -6,7 +6,7 @@ import type from jaclang.compiler.types.stubcat.reader { CatScope, StubCatalog }
 import from typing { cast }
 import from jaclang.compiler.types.ct_eval { CtEvaluator }
 import from jaclang.compiler.types.ct_value { CtValue }
-import from jaclang.compiler.frontend.diagnostics { E0033, E0108 }
+import from jaclang.compiler.frontend.diagnostics { E0033, E0108, E0109 }
 import from jaclang.compiler.frontend.unitree {
     literal_string_value,
     Ability,
@@ -146,6 +146,7 @@ import from jaclang.compiler.types.types {
     UnknownType,
     create_callable_type
 }
+import from jaclang.project.source { read_file_with_encoding }
 
 import type from jaclang.compiler.driver.program { JacProgram }
 

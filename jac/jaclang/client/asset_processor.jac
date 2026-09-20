@@ -1,5 +1,7 @@
+import contextlib;
 import shutil;
 import from pathlib { Path }
+import from jaclang.project.config { get_config }
 
 class AssetProcessor {
     with entry {

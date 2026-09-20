@@ -1,3 +1,4 @@
+import os;
 import from pathlib { Path }
 import from jaclang.jac0core.ext_registry { ANNEX_FOLDER, MODULE_SUFFIXES }
 

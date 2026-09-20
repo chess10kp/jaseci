@@ -1,3 +1,5 @@
+import os;
+import sys;
 import from jaclang.comptime { name as ct_name }
 import from jaclang.cli.command { Arg, ArgKind, CommandSpec }
 import from jaclang.cli.console { console }

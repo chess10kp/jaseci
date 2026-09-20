@@ -1,3 +1,4 @@
+import from jaclang.project.config { JacConfig }
 import from pathlib { Path }
 import from jaclang.project.plugin_config { PluginConfigBase }
 

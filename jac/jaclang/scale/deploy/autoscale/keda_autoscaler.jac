@@ -1,9 +1,4 @@
-import hashlib;
-import from jaclang.scale._optdeps.kubernetes {
-    client,
-    ApiException,
-    AutoscalingV2Api
-}
+import from jaclang.scale._optdeps.kubernetes { client, ApiException, AutoscalingV2Api }
 import from jaclang.scale.deploy.autoscale.autoscaler {
     Autoscaler,
     AutoscalerSpec,
@@ -23,6 +18,7 @@ import from jaclang.scale.observability.logger { Logger }
 import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
     k8s_manifest
 }
+import hashlib;
 
 obj KEDAAutoscaler(Autoscaler) {
     has _custom_api: (any | None) = None,

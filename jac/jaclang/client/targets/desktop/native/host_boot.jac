@@ -3,6 +3,7 @@ import sys;
 import json;
 import hashlib;
 import importlib;
+import from pathlib { Path }
 
 
 glob PLUGIN_BOOTSTRAP_MODULES: list[str] = [

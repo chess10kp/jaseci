@@ -1900,7 +1900,8 @@ def build_osp_core_js -> str {
         store_unit_artifact
     }
     import from jaclang.compiler.driver.program { JacProgram }
-        import from jaclang.compiler.backends.es.es_unparse { es_to_js }
+    import from jaclang.compiler.backends.es.esast_gen_pass { EsastGenPass }
+    import from jaclang.compiler.backends.es.es_unparse { es_to_js }
     import from jaclang.compiler.backends.es { estree as es }
     import from jaclang.compiler.driver.compile_options { CompileOptions }
     fp = es_pass_fingerprint();

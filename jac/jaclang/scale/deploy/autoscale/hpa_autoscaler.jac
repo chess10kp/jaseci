@@ -1,3 +1,4 @@
+import from jaclang.scale._optdeps.kubernetes { AutoscalingV2Api, ApiException, client }
 import from jaclang.scale.deploy.autoscale.autoscaler {
     Autoscaler,
     AutoscalerSpec,
