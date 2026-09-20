@@ -20,7 +20,6 @@ test "cancelled flow does not fabricate CFG facts or schedule analysis" {
             "def answer() -> int { return 42; }\n", path, cancel_token=token
         );
         program.options.cancel_token = token;
-
         assert not require_product(
             program, module, CompilationProduct.ANALYSIS, cancel_token=token
         );
@@ -28,15 +27,12 @@ test "cancelled flow does not fabricate CFG facts or schedule analysis" {
             module, AnalysisFact.CFG_SUCC
         );
         assert not program.analysis.analyses_run.provides(module, AnalysisFact.TYPE_OF);
-        flow_task = program.analysis.product_tasks[id(module)][
-            CompilationProduct.FLOW
-        ];
+        flow_task = program.analysis.product_tasks[id(module)][CompilationProduct.FLOW];
         analysis_task = program.analysis.product_tasks[id(module)][
             CompilationProduct.ANALYSIS
         ];
         assert flow_task.state == TaskState.CANCELLED , flow_task.state;
         assert analysis_task.state == TaskState.CANCELLED , analysis_task.state;
-
         token.clear();
         assert require_product(program, module, CompilationProduct.ANALYSIS);
         assert program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC);
@@ -56,7 +52,6 @@ test "mid-schedule cancellation leaves products retryable" {
         );
         program.options.cancel_token = token;
         original = pass_driver.run_pass;
-
         def cancel_after_flow(
             pass_cls: type, ir_in: any, prog: JacProgram, **kwargs: any
         ) -> any {
@@ -66,22 +61,15 @@ test "mid-schedule cancellation leaves products retryable" {
             }
             return result;
         }
-
         with patch.object(pass_driver, "run_pass", cancel_after_flow) {
             assert not require_product(
-                program,
-                module,
-                CompilationProduct.ANALYSIS,
-                cancel_token=token
+                program, module, CompilationProduct.ANALYSIS, cancel_token=token
             );
         }
-
         assert token.is_set();
         assert program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC);
         assert not program.analysis.analyses_run.provides(module, AnalysisFact.TYPE_OF);
-        flow_task = program.analysis.product_tasks[id(module)][
-            CompilationProduct.FLOW
-        ];
+        flow_task = program.analysis.product_tasks[id(module)][CompilationProduct.FLOW];
         analysis_task = program.analysis.product_tasks[id(module)][
             CompilationProduct.ANALYSIS
         ];
@@ -89,7 +77,6 @@ test "mid-schedule cancellation leaves products retryable" {
         assert analysis_task.state == TaskState.CANCELLED , analysis_task.state;
         completed = program.analysis.completed_passes[id(module)];
         assert "CFGBuildPass" not in completed , completed;
-
         token.clear();
         assert require_product(program, module, CompilationProduct.ANALYSIS);
         assert program.analysis.analyses_run.provides(module, AnalysisFact.CFG_SUCC);

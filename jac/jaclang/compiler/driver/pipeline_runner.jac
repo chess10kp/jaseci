@@ -179,9 +179,7 @@ obj ModuleCompilation {
             and not self.options.symtab_ir_only
             and not self.parse_failed
             and not self.blocked
-            and product_ready(
-                self.program, self.module, CompilationProduct.ANALYSIS
-            )
+            and product_ready(self.program, self.module, CompilationProduct.ANALYSIS)
         ) {
             import from jaclang.compiler.frontend.module_facts {
                 ModuleFacts as _PtyMcp
