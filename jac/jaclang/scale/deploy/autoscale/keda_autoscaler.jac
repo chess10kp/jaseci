@@ -1,4 +1,9 @@
-import from jaclang.scale._optdeps.kubernetes { ApiException }
+import hashlib;
+import from jaclang.scale._optdeps.kubernetes {
+    client,
+    ApiException,
+    AutoscalingV2Api
+}
 import from jaclang.scale.deploy.autoscale.autoscaler {
     Autoscaler,
     AutoscalerSpec,
