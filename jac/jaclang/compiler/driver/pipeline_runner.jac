@@ -179,7 +179,9 @@ obj ModuleCompilation {
             and not self.options.symtab_ir_only
             and not self.parse_failed
             and not self.blocked
-            and product_ready(self.program, self.module, CompilationProduct.CLIENT)
+            and product_ready(
+                self.program, self.module, CompilationProduct.ANALYSIS
+            )
         ) {
             import from jaclang.compiler.frontend.module_facts {
                 ModuleFacts as _PtyMcp
@@ -338,7 +340,7 @@ obj ModuleCompilation {
                 or ModuleFacts.has_native_context_stmts(self.module);
             if needs_native
                 and not product_ready(
-                    self.program, self.module, CompilationProduct.NATIVE_IR
+                    self.program, self.module, CompilationProduct.ANALYSIS
                 ) {
                 if not require_product(
                     self.program,

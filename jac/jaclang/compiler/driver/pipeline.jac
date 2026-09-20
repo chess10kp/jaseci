@@ -151,7 +151,7 @@ def invalidate_client_product(program: JacProgram, module: Module) {
     }
 }
 
-glob PRODUCT_FACTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
+glob PRODUCT_REQUIREMENTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
          CompilationProduct.FLOW: (AnalysisFact.CFG_SUCC, ),
          CompilationProduct.ANALYSIS: (AnalysisFact.CFG_SUCC, AnalysisFact.TYPE_OF, ),
          CompilationProduct.CLIENT: (AnalysisFact.TYPE_OF, ),
@@ -159,15 +159,27 @@ glob PRODUCT_FACTS: dict[CompilationProduct, tuple[AnalysisFact, ...]] = {
 
      };
 
-def product_ready(
+def _product_requirements_met(
     program: JacProgram, module: Module, product: CompilationProduct
 ) -> bool {
-    for fact in PRODUCT_FACTS.get(product, ()) {
+    for fact in PRODUCT_REQUIREMENTS.get(product, ()) {
         if not program.analysis.analyses_run.provides(module, fact) {
             return False;
         }
     }
     return True;
+}
+
+def product_ready(
+    program: JacProgram, module: Module, product: CompilationProduct
+) -> bool {
+    if not _product_requirements_met(program, module, product) {
+        return False;
+    }
+    program.analysis.retain_tasks(module);
+    tasks = program.analysis.product_tasks.get(id(module));
+    task = tasks.get(product) if tasks is not None else None;
+    return task is None or task.state == TaskState.SUCCEEDED;
 }
 
 def require_product(
