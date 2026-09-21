@@ -18,10 +18,12 @@ import from _math_native {
 
 import from math { isfinite as _isf, isinf as _isi, isnan as _isn }
 
-def:priv _scaled(value: float, exponent: int) -> float {
-    if exponent == _CM_SCALE_UP {
-        return value * 9007199254740992.0;
-    }
+def _scale_up(value: float) -> float {
+    return value * 9007199254740992.0;
+}
+
+
+def _scale_down(value: float) -> float {
     return value * 7.450580596923828125e-9;
 }
 
@@ -40,14 +42,12 @@ glob _DBL_MAX: float = 1.7976931348623157e308,
      _CM_SQRT_LARGE_DOUBLE: float = 6.703904478183408e153,
      _CM_LOG_LARGE_DOUBLE: float = 708.3964185322641,
      _CM_SQRT_DBL_MIN: float = 1.4916681462400413e-154,
-     _CM_SCALE_UP: int = 2 * (_DBL_MANT_DIG // 2) + 1,
-     _CM_SCALE_DOWN: int = -((_CM_SCALE_UP + 1) // 2),
      _M_LN2: float = 0.6931471805599453094,
      _M_LN10: float = 2.302585092994045684,
      _EDOM: int = 1,
      _ERANGE: int = 2;
 
-def:priv _special_type(d: float) -> int {
+def _special_type(d: float) -> int {
     if _isf(d) {
         if d != 0.0 {
             return 4 if m_copysign(1.0, d) == 1.0 else 1;
@@ -60,7 +60,7 @@ def:priv _special_type(d: float) -> int {
     return 5 if m_copysign(1.0, d) == 1.0 else 0;
 }
 
-def:priv _sv_entry(
+def _sv_entry(
     table: list[list[tuple[float, float]]], z: complex
 ) -> tuple[float, float] {
     return table[_special_type(z.real)][_special_type(z.imag)];
@@ -799,7 +799,7 @@ glob _INF: float = inf,
 
      ];
 
-def:priv _raise_err(err: int) {
+def _raise_err(err: int) {
     if err == _EDOM {
         raise ValueError("math domain error");
     }
@@ -808,7 +808,7 @@ def:priv _raise_err(err: int) {
     }
 }
 
-def:priv _c_sqrt(z: complex) -> tuple[float, float, int] {
+def _c_sqrt(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         (re, im) = _sv_entry(_SQRT_SV, z);
         return (re, im, 0);
@@ -819,9 +819,9 @@ def:priv _c_sqrt(z: complex) -> tuple[float, float, int] {
     ax = m_fabs(z.real);
     ay = m_fabs(z.imag);
     if ax < _DBL_MIN and ay < _DBL_MIN {
-        ax = _scaled(ax, _CM_SCALE_UP);
-        ay_up = _scaled(ay, _CM_SCALE_UP);
-        s = _scaled(m_sqrt(ax + m_hypot(ax, ay_up)), _CM_SCALE_DOWN);
+        ax = _scale_up(ax);
+        ay_up = _scale_up(ay);
+        s = _scale_down(m_sqrt(ax + m_hypot(ax, ay_up)));
     } else {
         ax = ax / 8.0;
         s = 2.0 * m_sqrt(ax + m_hypot(ax, ay / 8.0));
@@ -833,7 +833,7 @@ def:priv _c_sqrt(z: complex) -> tuple[float, float, int] {
     return (d, m_copysign(s, z.imag), 0);
 }
 
-def:priv _c_log(z: complex) -> tuple[float, float, int] {
+def _c_log(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         (re, im) = _sv_entry(_LOG_SV, z);
         return (re, im, 0);
@@ -844,10 +844,7 @@ def:priv _c_log(z: complex) -> tuple[float, float, int] {
         re = m_log(m_hypot(ax / 2.0, ay / 2.0)) + _M_LN2;
     } elif ax < _DBL_MIN and ay < _DBL_MIN {
         if ax > 0.0 or ay > 0.0 {
-            re = (
-                m_log(m_hypot(_scaled(ax, _DBL_MANT_DIG), _scaled(ay, _DBL_MANT_DIG),))
-                - _DBL_MANT_DIG * _M_LN2
-            );
+            re = m_log(m_hypot(_scale_up(ax), _scale_up(ay))) - _DBL_MANT_DIG * _M_LN2;
         } else {
             return (-_INF, m_atan2(z.imag, z.real), _EDOM);
         }
@@ -864,7 +861,7 @@ def:priv _c_log(z: complex) -> tuple[float, float, int] {
     return (re, m_atan2(z.imag, z.real), 0);
 }
 
-def:priv _c_acos(z: complex) -> tuple[float, float, int] {
+def _c_acos(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         (re, im) = _sv_entry(_ACOS_SV, z);
         return (re, im, 0);
@@ -883,7 +880,7 @@ def:priv _c_acos(z: complex) -> tuple[float, float, int] {
     return (re, im, 0);
 }
 
-def:priv _c_acosh(z: complex) -> tuple[float, float, int] {
+def _c_acosh(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         (re, im) = _sv_entry(_ACOSH_SV, z);
         return (re, im, 0);
@@ -900,7 +897,7 @@ def:priv _c_acosh(z: complex) -> tuple[float, float, int] {
     return (re, im, 0);
 }
 
-def:priv _c_asinh(z: complex) -> tuple[float, float, int] {
+def _c_asinh(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         (re, im) = _sv_entry(_ASINH_SV, z);
         return (re, im, 0);
@@ -925,7 +922,7 @@ def:priv _c_asinh(z: complex) -> tuple[float, float, int] {
     return (re, im, 0);
 }
 
-def:priv _c_atanh(z: complex) -> tuple[float, float, int] {
+def _c_atanh(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         (re, im) = _sv_entry(_ATANH_SV, z);
         return (re, im, 0);
@@ -962,7 +959,7 @@ def:priv _c_atanh(z: complex) -> tuple[float, float, int] {
     return (re, im, err);
 }
 
-def:priv _c_cosh(z: complex) -> tuple[float, float, int] {
+def _c_cosh(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         if (_isi(z.real) and _isf(z.imag) and z.imag != 0.0) {
             if z.real > 0 {
@@ -995,7 +992,7 @@ def:priv _c_cosh(z: complex) -> tuple[float, float, int] {
     return (re, im, 0);
 }
 
-def:priv _c_sinh(z: complex) -> tuple[float, float, int] {
+def _c_sinh(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         if (_isi(z.real) and _isf(z.imag) and z.imag != 0.0) {
             if z.real > 0 {
@@ -1028,7 +1025,7 @@ def:priv _c_sinh(z: complex) -> tuple[float, float, int] {
     return (re, im, 0);
 }
 
-def:priv _c_exp(z: complex) -> tuple[float, float, int] {
+def _c_exp(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         if (_isi(z.real) and _isf(z.imag) and z.imag != 0.0) {
             if z.real > 0 {
@@ -1062,7 +1059,7 @@ def:priv _c_exp(z: complex) -> tuple[float, float, int] {
     return (re, im, 0);
 }
 
-def:priv _c_tanh(z: complex) -> tuple[float, float, int] {
+def _c_tanh(z: complex) -> tuple[float, float, int] {
     if not (_isf(z.real) and _isf(z.imag)) {
         if (_isi(z.real) and _isf(z.imag) and z.imag != 0.0) {
             if z.real > 0 {
@@ -1096,7 +1093,7 @@ def:priv _c_tanh(z: complex) -> tuple[float, float, int] {
     return (re, im, 0);
 }
 
-def:priv _c_abs(re: float, im: float) -> tuple[float, int] {
+def _c_abs(re: float, im: float) -> tuple[float, int] {
     r = m_hypot(re, im);
     if _isi(r) and _isf(re) and _isf(im) {
         return (r, _ERANGE);
@@ -1104,7 +1101,7 @@ def:priv _c_abs(re: float, im: float) -> tuple[float, int] {
     return (r, 0);
 }
 
-def:priv _close(
+def _close(
     a: complex, b: complex, rel_tol: float = 1e-09, abs_tol: float = 0.0
 ) -> bool {
     if rel_tol < 0.0 or abs_tol < 0.0 {
@@ -1124,7 +1121,7 @@ def:priv _close(
     return (diff <= rel_tol * abs_b or diff <= rel_tol * abs_a or diff <= abs_tol);
 }
 
-def:priv _rectangular(r: float, phi: float) -> complex {
+def _rectangular(r: float, phi: float) -> complex {
     if not (_isf(r) and _isf(phi)) {
         if _isi(r) and _isf(phi) and phi != 0.0 {
             if r > 0 {

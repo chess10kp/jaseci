@@ -67,6 +67,18 @@ impl NaIRGenPass._codegen_int_pow(
     return self.builder.load(result_alloca, name="pow.final");
 }
 
+impl NaIRGenPass._complex_aug_token(aug_op: str) -> (str | None) {
+    return {
+        "+=": Tok.PLUS,
+        "-=": Tok.MINUS,
+        "*=": Tok.STAR_MUL,
+        "/=": Tok.DIV,
+        "**=": Tok.STAR_POW
+    }.get(
+        aug_op
+    );
+}
+
 impl NaIRGenPass._emit_complex_value(re: ir.Value, im: ir.Value) -> ir.Value {
     i32 = ir.IntType(32);
     i64 = ir.IntType(64);
@@ -99,18 +111,14 @@ impl NaIRGenPass._codegen_complex_pow(
     i64 = ir.IntType(64);
     ctype_ptr = self.complex_struct_type.as_pointer();
 
-    if base.type != ctype_ptr {
-        base = self._emit_make_complex(base);
-    }
-    if exp.type != ctype_ptr {
-        exp = self._emit_make_complex(exp);
-    }
-    if base is None or exp is None {
+    _cb = base if base.type == ctype_ptr else self._emit_make_complex(base);
+    _ce = exp if exp.type == ctype_ptr else self._emit_make_complex(exp);
+    if _cb is None or _ce is None {
         return None;
     }
 
-    (ar, ai) = self._load_complex_parts(base);
-    (wr, wi) = self._load_complex_parts(exp);
+    (ar, ai) = self._load_complex_parts(_cb);
+    (wr, wi) = self._load_complex_parts(_ce);
 
     hypot_fn = self._get_or_declare_extern("hypot", f64, [f64, f64]);
     floor_fn = self._get_or_declare_extern("floor", f64, [f64]);
@@ -158,6 +166,7 @@ impl NaIRGenPass._codegen_complex_pow(
 
     self.builder.position_at_end(nonzero_bb);
     wr_floor = self.builder.call(floor_fn, [wr], name="cp.wrfloor");
+
     is_int_exp = self.builder.and_(
         self.builder.fcmp_ordered("==", wi, fzero, name="cp.wizero"),
         self.builder.and_(

@@ -2972,20 +2972,16 @@ impl NaIRGenPass._emit_binary_op(
 
     ctype_ptr = self.complex_struct_type.as_pointer();
     if left.type == ctype_ptr or right.type == ctype_ptr {
-        if left.type != ctype_ptr {
-            left = self._emit_make_complex(left);
-        }
-        if right.type != ctype_ptr {
-            right = self._emit_make_complex(right);
-        }
-        if left is None or right is None {
+        _lc = left if left.type == ctype_ptr else self._emit_make_complex(left);
+        _rc = right if right.type == ctype_ptr else self._emit_make_complex(right);
+        if _lc is None or _rc is None {
             return None;
         }
         if op == Tok.DIV {
-            return self._codegen_complex_div(left, right);
+            return self._codegen_complex_div(_lc, _rc);
         }
-        (ar, ai) = self._load_complex_parts(left);
-        (br, bi) = self._load_complex_parts(right);
+        (ar, ai) = self._load_complex_parts(_lc);
+        (br, bi) = self._load_complex_parts(_rc);
         rr: (ir.Value | None) = None;
         ri: (ir.Value | None) = None;
         if op == Tok.PLUS {

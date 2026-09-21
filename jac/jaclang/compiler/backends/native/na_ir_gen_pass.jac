@@ -1529,6 +1529,7 @@ walker NaIRGenPass {
 
     def _codegen_complex_div(left: ir.Value, right: ir.Value) -> (ir.Value | None);
     def _codegen_complex_pow(base: ir.Value, exp: ir.Value) -> (ir.Value | None);
+    def _complex_aug_token(aug_op: str) -> (str | None);
     def _codegen_pow(
         base: ir.Value,
         exp: ir.Value,

@@ -56,33 +56,55 @@ def:pub isfinite(x: float) -> bool {
     return not isnan(x) and not isinf(x);
 }
 
-# Internal libm-wrapper opcodes (int, not an enum: native enum member refs
-# do not yet resolve reliably outside constant-folded comparisons).
-# 0 acos, 1 acosh, 2 asin, 3 asinh, 4 atan, 5 atanh, 6 cbrt, 7 cos,
-# 8 cosh, 9 erf, 10 erfc, 11 exp, 12 exp2, 13 expm1, 14 fabs, 15 gamma,
-# 16 lgamma, 17 log1p, 18 sin, 19 sinh, 20 sqrt, 21 tan, 22 tanh,
-# 23 atan2, 24 copysign, 25 fmod, 26 remainder, 27 pow.
+glob _OP_ACOS: int = 0,
+     _OP_ACOSH: int = 1,
+     _OP_ASIN: int = 2,
+     _OP_ASINH: int = 3,
+     _OP_ATAN: int = 4,
+     _OP_ATANH: int = 5,
+     _OP_CBRT: int = 6,
+     _OP_COS: int = 7,
+     _OP_COSH: int = 8,
+     _OP_ERF: int = 9,
+     _OP_ERFC: int = 10,
+     _OP_EXP: int = 11,
+     _OP_EXP2: int = 12,
+     _OP_EXPM1: int = 13,
+     _OP_FABS: int = 14,
+     _OP_GAMMA: int = 15,
+     _OP_LGAMMA: int = 16,
+     _OP_LOG1P: int = 17,
+     _OP_SIN: int = 18,
+     _OP_SINH: int = 19,
+     _OP_SQRT: int = 20,
+     _OP_TAN: int = 21,
+     _OP_TANH: int = 22,
+     _OP_ATAN2: int = 23,
+     _OP_COPYSIGN: int = 24,
+     _OP_FMOD: int = 25,
+     _OP_REMAINDER: int = 26,
+     _OP_POW: int = 27;
 
 def _domain_msg(op: int, x: float) -> str {
-    if op == 0 or op == 2 {
+    if op == _OP_ACOS or op == _OP_ASIN {
         return "expected a number in range from -1 up to 1, got " + str(x);
     }
-    if op == 1 {
+    if op == _OP_ACOSH {
         return "expected argument value not less than 1, got " + str(x);
     }
-    if op == 5 {
+    if op == _OP_ATANH {
         return "expected a number between -1 and 1, got " + str(x);
     }
-    if op == 7 or op == 18 or op == 21 {
+    if op == _OP_COS or op == _OP_SIN or op == _OP_TAN {
         return "expected a finite input, got " + str(x);
     }
-    if op == 15 or op == 16 {
+    if op == _OP_GAMMA or op == _OP_LGAMMA {
         return "expected a noninteger or positive integer, got " + str(x);
     }
-    if op == 17 {
+    if op == _OP_LOG1P {
         return "expected argument value > -1, got " + str(x);
     }
-    if op == 20 {
+    if op == _OP_SQRT {
         return "expected a nonnegative input, got " + str(x);
     }
     return "math domain error";
@@ -94,16 +116,16 @@ def _check_unary(op: int, x: float, r: float) -> float {
         raise ValueError(_domain_msg(op, x));
     }
     if isinf(r) and isfinite(x) {
-        if (op == 15 or op == 16) and x <= 0.0 and x == m_floor(x) {
+        if (op == _OP_GAMMA or op == _OP_LGAMMA) and x <= 0.0 and x == m_floor(x) {
             raise ValueError(_domain_msg(op, x));
         }
-        if op == 8
-            or op == 11
-            or op == 12
-            or op == 13
-            or op == 15
-            or op == 16
-            or op == 19 {
+        if op == _OP_COSH
+            or op == _OP_EXP
+            or op == _OP_EXP2
+            or op == _OP_EXPM1
+            or op == _OP_GAMMA
+            or op == _OP_LGAMMA
+            or op == _OP_SINH {
             raise OverflowError("math range error");
         }
         raise ValueError(_domain_msg(op, x));
@@ -112,117 +134,117 @@ def _check_unary(op: int, x: float, r: float) -> float {
 }
 
 def:pub acos(x: float) -> float {
-    return _check_unary(0, x, m_acos(x));
+    return _check_unary(_OP_ACOS, x, m_acos(x));
 }
 
 
 def:pub acosh(x: float) -> float {
-    return _check_unary(1, x, m_acosh(x));
+    return _check_unary(_OP_ACOSH, x, m_acosh(x));
 }
 
 
 def:pub asin(x: float) -> float {
-    return _check_unary(2, x, m_asin(x));
+    return _check_unary(_OP_ASIN, x, m_asin(x));
 }
 
 
 def:pub asinh(x: float) -> float {
-    return _check_unary(3, x, m_asinh(x));
+    return _check_unary(_OP_ASINH, x, m_asinh(x));
 }
 
 
 def:pub atan(x: float) -> float {
-    return _check_unary(4, x, m_atan(x));
+    return _check_unary(_OP_ATAN, x, m_atan(x));
 }
 
 
 def:pub atanh(x: float) -> float {
-    return _check_unary(5, x, m_atanh(x));
+    return _check_unary(_OP_ATANH, x, m_atanh(x));
 }
 
 
 def:pub cbrt(x: float) -> float {
-    return _check_unary(6, x, m_cbrt(x));
+    return _check_unary(_OP_CBRT, x, m_cbrt(x));
 }
 
 
 def:pub cos(x: float) -> float {
-    return _check_unary(7, x, m_cos(x));
+    return _check_unary(_OP_COS, x, m_cos(x));
 }
 
 
 def:pub cosh(x: float) -> float {
-    return _check_unary(8, x, m_cosh(x));
+    return _check_unary(_OP_COSH, x, m_cosh(x));
 }
 
 
 def:pub erf(x: float) -> float {
-    return _check_unary(9, x, m_erf(x));
+    return _check_unary(_OP_ERF, x, m_erf(x));
 }
 
 
 def:pub erfc(x: float) -> float {
-    return _check_unary(10, x, m_erfc(x));
+    return _check_unary(_OP_ERFC, x, m_erfc(x));
 }
 
 
 def:pub exp(x: float) -> float {
-    return _check_unary(11, x, m_exp(x));
+    return _check_unary(_OP_EXP, x, m_exp(x));
 }
 
 
 def:pub exp2(x: float) -> float {
-    return _check_unary(12, x, m_exp2(x));
+    return _check_unary(_OP_EXP2, x, m_exp2(x));
 }
 
 
 def:pub expm1(x: float) -> float {
-    return _check_unary(13, x, m_expm1(x));
+    return _check_unary(_OP_EXPM1, x, m_expm1(x));
 }
 
 
 def:pub fabs(x: float) -> float {
-    return _check_unary(14, x, m_fabs(x));
+    return _check_unary(_OP_FABS, x, m_fabs(x));
 }
 
 
 def:pub gamma(x: float) -> float {
-    return _check_unary(15, x, m_tgamma(x));
+    return _check_unary(_OP_GAMMA, x, m_tgamma(x));
 }
 
 
 def:pub lgamma(x: float) -> float {
-    return _check_unary(16, x, m_lgamma(x));
+    return _check_unary(_OP_LGAMMA, x, m_lgamma(x));
 }
 
 
 def:pub log1p(x: float) -> float {
-    return _check_unary(17, x, m_log1p(x));
+    return _check_unary(_OP_LOG1P, x, m_log1p(x));
 }
 
 
 def:pub sin(x: float) -> float {
-    return _check_unary(18, x, m_sin(x));
+    return _check_unary(_OP_SIN, x, m_sin(x));
 }
 
 
 def:pub sinh(x: float) -> float {
-    return _check_unary(19, x, m_sinh(x));
+    return _check_unary(_OP_SINH, x, m_sinh(x));
 }
 
 
 def:pub sqrt(x: float) -> float {
-    return _check_unary(20, x, m_sqrt(x));
+    return _check_unary(_OP_SQRT, x, m_sqrt(x));
 }
 
 
 def:pub tan(x: float) -> float {
-    return _check_unary(21, x, m_tan(x));
+    return _check_unary(_OP_TAN, x, m_tan(x));
 }
 
 
 def:pub tanh(x: float) -> float {
-    return _check_unary(22, x, m_tanh(x));
+    return _check_unary(_OP_TANH, x, m_tanh(x));
 }
 
 def _float_to_int(r: float) -> int {
@@ -255,13 +277,13 @@ def:pub trunc(x: float) -> int {
 
 def _binary(op: int, x: float, y: float) -> float {
     r: float = 0.0;
-    if op == 23 {
+    if op == _OP_ATAN2 {
         r = m_atan2(x, y);
-    } elif op == 24 {
+    } elif op == _OP_COPYSIGN {
         r = m_copysign(x, y);
-    } elif op == 25 {
+    } elif op == _OP_FMOD {
         r = m_fmod(x, y);
-    } elif op == 26 {
+    } elif op == _OP_REMAINDER {
         r = m_remainder(x, y);
     } else {
         r = m_pow(x, y);
@@ -273,7 +295,7 @@ def _binary(op: int, x: float, y: float) -> float {
         return r;
     }
     if isinf(r) and isfinite(x) and isfinite(y) {
-        if op == 27 and x == 0.0 {
+        if op == _OP_POW and x == 0.0 {
             raise ValueError("math domain error");
         }
         raise OverflowError("math range error");
@@ -283,27 +305,27 @@ def _binary(op: int, x: float, y: float) -> float {
 
 
 def:pub atan2(y: float, x: float) -> float {
-    return _binary(23, y, x);
+    return _binary(_OP_ATAN2, y, x);
 }
 
 
 def:pub copysign(x: float, y: float) -> float {
-    return _binary(24, x, y);
+    return _binary(_OP_COPYSIGN, x, y);
 }
 
 
 def:pub fmod(x: float, y: float) -> float {
-    return _binary(25, x, y);
+    return _binary(_OP_FMOD, x, y);
 }
 
 
 def:pub remainder(x: float, y: float) -> float {
-    return _binary(26, x, y);
+    return _binary(_OP_REMAINDER, x, y);
 }
 
 
 def:pub pow(x: float, y: float) -> float {
-    return _binary(27, x, y);
+    return _binary(_OP_POW, x, y);
 }
 
 
@@ -421,10 +443,6 @@ def _gcd_all(*ints: int) -> int {
 }
 
 
-# Bounded-arity surface: the interop bridge cannot marshal a parameter pack,
-# so the variadic fold stays private behind defaulted extras (same pattern as
-# os.path.join). 0 is the gcd identity, so omitted slots are no-ops and the
-# zero-argument call still answers 0 like CPython.
 def:pub gcd(
     a: int = 0,
     b: int = 0,
@@ -461,8 +479,6 @@ def _lcm_all(*ints: int) -> int {
 }
 
 
-# 1 is the lcm identity, so omitted slots are no-ops and the zero-argument
-# call still answers 1 like CPython.
 def:pub lcm(
     a: int = 1,
     b: int = 1,
@@ -833,8 +849,6 @@ def _hypot_all(*coords: float) -> float {
 }
 
 
-# 0.0 is the hypot identity, so omitted slots are no-ops and the
-# zero-argument call still answers 0.0 like CPython.
 def:pub hypot(
     a: float = 0.0,
     b: float = 0.0,
@@ -897,7 +911,7 @@ def _iadd_fits(a: int, b: int) -> bool {
 }
 
 
-def:pub prod[T](data: list[T], *, start: int | float = 1) -> any {
+def:pub prod[T](data: list[T], *, start: int | float = 1) -> (int | float) {
     ri: int = 1;
     rf: float = 1.0;
     isint = True;
@@ -933,7 +947,7 @@ def:pub prod[T](data: list[T], *, start: int | float = 1) -> any {
 }
 
 
-def:pub sumprod[T](p: list[T], q: list[T]) -> any {
+def:pub sumprod[T](p: list[T], q: list[T]) -> (int | float) {
     if len(p) != len(q) {
         raise ValueError("Inputs are not the same length");
     }

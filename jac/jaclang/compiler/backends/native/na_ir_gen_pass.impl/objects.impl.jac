@@ -3942,13 +3942,11 @@ impl NaIRGenPass._codegen_field_aug_assign(
         isinstance(current.type, ir.PointerType)
         and current.type == self.complex_struct_type.as_pointer()
     ) {
-        _cplx_tok = {
-            "+=": Tok.PLUS,
-            "-=": Tok.MINUS,
-            "*=": Tok.STAR_MUL,
-            "/=": Tok.DIV
-        }.get(aug_op);
+        _cplx_tok = self._complex_aug_token(aug_op);
         if _cplx_tok is not None {
+            if _cplx_tok == Tok.STAR_POW {
+                return self._codegen_complex_pow(current, rhs);
+            }
             return self._emit_binary_op(_cplx_tok, current, rhs);
         }
         return None;
