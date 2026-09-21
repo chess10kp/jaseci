@@ -120,6 +120,24 @@ def _db_status(data_dir: str) -> int {
         console.print("state    : no store yet (created on first `jac run`)");
         return 0;
     }
+
+    records: (list[DbRecord] | None) = None;
+    dead: list[DbRecord] = [];
+    orphans: list[DbRecord] = [];
+    try {
+        found = _catalog_runtime(data_dir).databases();
+        dead = [
+            r
+            for r in found
+            if r.is_dead_scratch()
+        ];
+        orphans = [
+            r
+            for r in found
+            if r.is_reclaimable_orphan()
+        ];
+        records = found;
+    } except Exception {}
     store = _open_store(rt);
     try {
         store.begin(TxnIsolation.READ_COMMITTED);
@@ -133,6 +151,20 @@ def _db_status(data_dir: str) -> int {
         store.commit();
     } finally {
         store.close();
+    }
+    if records is not None {
+        if dead {
+            console.print(
+                f"dead scratch: {len(dead)} "
+                "(reclaimed by the next scratch allocation)"
+            );
+        }
+        if orphans {
+            console.print(
+                f"orphaned projects: {len(orphans)} "
+                "(reclaimed by the next cluster start)"
+            );
+        }
     }
     return 0;
 }

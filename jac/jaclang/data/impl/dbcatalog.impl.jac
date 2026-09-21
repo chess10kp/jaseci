@@ -264,11 +264,11 @@ def _record_of(row: any) -> DbRecord {
 }
 
 
-impl list_databases(conn: any) -> list[DbRecord] {
+impl list_databases(conn: any, prefix: str = DB_PREFIX) -> list[DbRecord] {
     ensure_registry(conn);
     rows = conn.run(
         _records_sql('d.datname LIKE :pattern'),
-        pattern=DB_PREFIX.replace('_', '\\_') + '%'
+        pattern=prefix.replace('_', '\\_') + '%'
     )
         or [];
     return [_record_of(row) for row in rows];

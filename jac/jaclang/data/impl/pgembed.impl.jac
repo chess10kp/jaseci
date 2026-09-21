@@ -689,11 +689,11 @@ impl PgRuntime._ensure_database -> None {
 
 
 impl PgRuntime._reap_scratch(conn: any) -> int {
-    import from jaclang.data.dbcatalog { list_databases }
+    import from jaclang.data.dbcatalog { SCRATCH_PREFIX, list_databases }
     try {
         records = [
             rec
-            for rec in list_databases(conn)
+            for rec in list_databases(conn, prefix=SCRATCH_PREFIX)
             if rec.is_scratch()
         ];
     } except Exception as e {
