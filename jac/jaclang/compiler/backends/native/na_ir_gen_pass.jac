@@ -81,7 +81,6 @@ import from jaclang.compiler.backends.native.na_constants {
     NATIVE_OSPATH_FUNCS,
     NATIVE_RANDOM_FUNCS,
     NATIVE_STRUCT_FUNCS,
-    NATIVE_TIME_FUNCS,
     RC_BUFFERED_BIT,
     RC_COLOR_BLACK,
     RC_COLOR_GRAY,
@@ -2190,8 +2189,6 @@ walker NaIRGenPass {
         little: bool
     ) -> (ir.Value | None);
 
-    def _emit_time_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
-    def _emit_clock_gettime(clock_id: int) -> tuple[ir.Value, ir.Value];
     def _emit_trace_fn(arch_name: str) -> None;
     def _register_trace_pair(dtor_fn: object, trace_fn: ir.Function) -> bool;
     def _finalize_trace_lookup -> None;

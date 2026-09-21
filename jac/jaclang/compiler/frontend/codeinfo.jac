@@ -251,7 +251,6 @@ glob NATIVE_STDLIB_EXTENSIONS: dict[str, str] = {"os": "_os_native"};
 glob NATIVE_SUPPORTED_STDLIB: set[str] = {
          "sys",
          "math",
-         "time",
          "os",
          "random",
          "struct",

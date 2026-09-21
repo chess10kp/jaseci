@@ -13,8 +13,7 @@ def:pub errno_message -> str {
     return strerror(i32(last_errno()));
 }
 
-def:pub raise_os_error(operation: str, path: str, code: int) {
-    message = operation + ": " + strerror(i32(code)) + ": " + path;
+def _raise_for_errno(code: int, message: str) {
     if code == 2 {
         raise FileNotFoundError(message);
     }
@@ -24,11 +23,16 @@ def:pub raise_os_error(operation: str, path: str, code: int) {
     if code == 20 {
         raise NotADirectoryError(message);
     }
-    if code == 21 {
-        raise IsADirectoryError(message);
-    }
     if code == 13 or code == 1 {
         raise PermissionError(message);
     }
     raise OSError(message);
+}
+
+def:pub raise_os_error(operation: str, path: str, code: int) {
+    _raise_for_errno(code, operation + ": " + strerror(i32(code)) + ": " + path);
+}
+
+def:pub raise_errno(code: int) {
+    _raise_for_errno(code, "[Errno " + str(code) + "] " + strerror(i32(code)));
 }

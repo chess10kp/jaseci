@@ -326,6 +326,7 @@
 "prim_textwrap.textwrap_cl" = "client"
 "prim_textwrap.textwrap_na" = "native"
 "prim_time.import:time" = "native"
+"prim_time.from:time" = "native"
 "prim_time.time_cl" = "client"
 "prim_time.time_na" = "native"
 "prim_tuple.tuple_cl" = "client"
