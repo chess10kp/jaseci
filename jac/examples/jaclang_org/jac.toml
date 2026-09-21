@@ -170,10 +170,16 @@ og_image = "https://jaclang.org/static/assets/og-card.png"
 twitter_card = "summary_large_image"
 twitter_image = "https://jaclang.org/static/assets/og-card.png"
 
-# Runs before first paint so dark-mode visitors never see a white flash on
-# load/reload. Mirrors init_theme() in core/site/ui/SiteShell.jac; the inline
-# background covers the canvas until styles.css arrives (dev mode especially).
+# Select the theme before first paint. Canvas follows color-scheme until the
+# brand background token loads; SiteShell then hands styling back to CSS.
 [[client.app_meta_data.scripts]]
 content = """
-(function(){try{var e=document.documentElement;var d=localStorage.getItem('jac-theme')!=='light';e.classList.toggle('dark',d);e.style.colorScheme=d?'dark':'light';e.style.backgroundColor=d?'oklch(0.145 0 0)':'oklch(1 0 0)';}catch(x){}})();
+(function () {
+    var dark = true;
+    try { dark = localStorage.getItem('jac-theme') !== 'light'; } catch (_) {}
+    var root = document.documentElement;
+    root.classList.toggle('dark', dark);
+    root.style.colorScheme = dark ? 'dark' : 'light';
+    root.style.backgroundColor = 'var(--background, Canvas)';
+})();
 """

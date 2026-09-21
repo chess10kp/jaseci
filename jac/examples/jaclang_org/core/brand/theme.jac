@@ -2,6 +2,15 @@ import from "@jac/runtime" { __getLocalStorage, __setLocalStorage }
 import from .tokens { Colors, dark_palette, light_palette }
 
 glob listeners: list[Callable[[bool], None]] = [];
+glob current_dark: bool = read_dark();
+
+def read_dark -> bool {
+    try {
+        return __getLocalStorage("jac-theme") != "light";
+    } except Exception {
+        return True;
+    }
+}
 
 obj Theme {
     has dark: bool,
@@ -10,7 +19,7 @@ obj Theme {
 }
 
 def:pub useTheme -> Theme {
-    has dark: bool = __getLocalStorage("jac-theme") != "light";
+    has dark: bool = current_dark;
     def changed(value: bool) {
         dark = value;
     }
@@ -23,8 +32,11 @@ def:pub useTheme -> Theme {
         ]; };
     }
     def toggle {
-        value = not dark;
-        __setLocalStorage("jac-theme", "dark" if value else "light");
+        value = not current_dark;
+        current_dark = value;
+        try {
+            __setLocalStorage("jac-theme", "dark" if value else "light");
+        } except Exception {}
         for listener in listeners {
             listener(value);
         }

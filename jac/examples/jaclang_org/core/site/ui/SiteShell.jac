@@ -1,20 +1,16 @@
 import from "@jac/runtime" { Outlet, useLocation }
+import from core.brand.theme { useTheme }
 import from core.site.ui.Navbar { Navbar }
 import from core.site.ui.Footer { Footer }
 
-def init_theme {
-    dark = localStorage.getItem("jac-theme") != "light";
-    document.documentElement.classList.toggle("dark", dark);
-    document.documentElement.style.setProperty(
-        "color-scheme", "dark" if dark else "light"
-    );
-    document.documentElement.style.backgroundColor = (
-        "oklch(0.145 0 0)" if dark else "oklch(1 0 0)"
-    );
-}
-
 def:pub SiteShell -> JsxElement {
-    init_theme();
+    theme = useTheme();
+    dark = theme.dark;
+    can with [dark] entry {
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.removeProperty("color-scheme");
+        document.documentElement.style.removeProperty("background-color");
+    }
     location = useLocation();
     in_app = (
         location.pathname.startswith("/jacyac")

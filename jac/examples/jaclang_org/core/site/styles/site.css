@@ -6,7 +6,12 @@ code, pre, kbd, .font-mono {
     font-family: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-html { scroll-behavior: smooth; }
+html {
+    scroll-behavior: smooth;
+    background-color: var(--background);
+    color-scheme: light;
+}
+html.dark { color-scheme: dark; }
 section[id] { scroll-margin-top: 4.5rem; }
 
 /* ---- scrollbars ---- */
