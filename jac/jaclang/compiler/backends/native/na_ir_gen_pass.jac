@@ -661,6 +661,10 @@ walker NaIRGenPass {
         nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
     ) -> (ir.Value | None);
 
+    def _emit_intrinsic_buffer_data(
+        nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
+    ) -> (ir.Value | None);
+
     def _native_module_call_target(nd: uni.FuncCall) -> tuple[str, str] | None;
     def _emit_unsupported_builtin_call(nd: uni.FuncCall, func_name: str) -> None;
     def _empty_ctor_args_of(nd: uni.FuncCall) -> list[TypeBase];
@@ -2189,6 +2193,17 @@ walker NaIRGenPass {
         total: int,
         little: bool
     ) -> (ir.Value | None);
+
+    def _emit_struct_copy_bytes(dst: ir.Value, src: ir.Value, n: ir.Value);
+    def _emit_struct_half_to_f64(hv: ir.Value) -> ir.Value;
+    def _emit_struct_f64_to_half(nd: uni.FuncCall, fv: ir.Value) -> ir.Value;
+    def _emit_struct_pack_fields(
+        nd: uni.FuncCall,
+        arg_vals: list[ir.Value],
+        fields: list[tuple[str, int, bool]],
+        little: bool,
+        data: ir.Value
+    ) -> bool;
 
     def _emit_time_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
     def _emit_clock_gettime(clock_id: int) -> tuple[ir.Value, ir.Value];
