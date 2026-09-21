@@ -144,6 +144,61 @@ import from c {
     );
 }
 
+
+# ---- generic AST field readers (shared by the per-type shims below) ----
+
+def _jac_read_list[T](
+    handle: u64, depth: int, read: Callable[[u64, int], T]
+) -> list[T] {
+    if jacpy_is_list(handle) == 0 {
+        raise TypeError("AST field must be a list");
+    }
+    result: list[T] = [];
+    for index in range(int(jacpy_sequence_size(handle))) {
+        item = jacpy_sequence_item(handle, i64(index));
+        if item == 0 {
+            raise runtime_failure();
+        }
+        try {
+            result.append(read(item, depth + 1));
+        } finally {
+            jacpy_release(item);
+        }
+    }
+    return result;
+}
+
+def _jac_field[T](
+    handle: u64, name: str, depth: int, optional: bool, read: Callable[[u64, int], T]
+) -> T {
+    value = jacpy_optional_field(handle, name) if optional else jacpy_field(handle, name);
+    if value == 0 {
+        raise runtime_failure();
+    }
+    try {
+        return read(value, depth);
+    } finally {
+        jacpy_release(value);
+    }
+}
+
+def _jac_read_opt[T](
+    handle: u64, depth: int, read: Callable[[u64, int], T]
+) -> T | None {
+    if jacpy_value_kind(handle) == 0 {
+        return None;
+    }
+    return read(handle, depth);
+}
+
+def _jac_read_as[T](handle: u64, depth: int, typ: type, tname: str) -> T {
+    result = read_node(handle, depth);
+    if not isinstance(result, typ) {
+        raise TypeError(f"AST field requires {tname}");
+    }
+    return result;
+}
+
 def ast_instance(handle: u64, name: str) -> bool {
     result = jacpy_ast_is(handle, name);
     if result < 0 {
@@ -157,209 +212,87 @@ def read_PyObj(handle: u64, depth: int) -> PyObj {
 }
 
 def field_PyObj(handle: u64, name: str, depth: int, optional: bool = False) -> PyObj {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_PyObj(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_PyObj);
 }
 
 def read_alias(handle: u64, depth: int) -> alias {
-    result = read_node(handle, depth);
-    if not isinstance(result, alias) {
-        raise TypeError("AST field requires alias");
-    }
-    return result as alias;
+    return _jac_read_as(handle, depth, alias, "alias");
 }
 
 def read_arg(handle: u64, depth: int) -> arg {
-    result = read_node(handle, depth);
-    if not isinstance(result, arg) {
-        raise TypeError("AST field requires arg");
-    }
-    return result as arg;
+    return _jac_read_as(handle, depth, arg, "arg");
 }
 
 def field_arg(handle: u64, name: str, depth: int, optional: bool = False) -> arg {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_arg(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_arg);
 }
 
 def read_arg_optional(handle: u64, depth: int) -> arg | None {
-    if jacpy_value_kind(handle) == 0 {
-        return None;
-    }
-    return read_arg(handle, depth);
+    return _jac_read_opt(handle, depth, read_arg);
 }
 
 def field_arg_optional(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> arg | None {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_arg_optional(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_arg_optional);
 }
 
 def read_arguments(handle: u64, depth: int) -> arguments {
-    result = read_node(handle, depth);
-    if not isinstance(result, arguments) {
-        raise TypeError("AST field requires arguments");
-    }
-    return result as arguments;
+    return _jac_read_as(handle, depth, arguments, "arguments");
 }
 
 def field_arguments(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> arguments {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_arguments(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_arguments);
 }
 
 def read_boolop(handle: u64, depth: int) -> boolop {
-    result = read_node(handle, depth);
-    if not isinstance(result, boolop) {
-        raise TypeError("AST field requires boolop");
-    }
-    return result as boolop;
+    return _jac_read_as(handle, depth, boolop, "boolop");
 }
 
 def field_boolop(handle: u64, name: str, depth: int, optional: bool = False) -> boolop {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_boolop(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_boolop);
 }
 
 def read_cmpop(handle: u64, depth: int) -> cmpop {
-    result = read_node(handle, depth);
-    if not isinstance(result, cmpop) {
-        raise TypeError("AST field requires cmpop");
-    }
-    return result as cmpop;
+    return _jac_read_as(handle, depth, cmpop, "cmpop");
 }
 
 def read_comprehension(handle: u64, depth: int) -> comprehension {
-    result = read_node(handle, depth);
-    if not isinstance(result, comprehension) {
-        raise TypeError("AST field requires comprehension");
-    }
-    return result as comprehension;
+    return _jac_read_as(handle, depth, comprehension, "comprehension");
 }
 
 def read_excepthandler(handle: u64, depth: int) -> excepthandler {
-    result = read_node(handle, depth);
-    if not isinstance(result, excepthandler) {
-        raise TypeError("AST field requires excepthandler");
-    }
-    return result as excepthandler;
+    return _jac_read_as(handle, depth, excepthandler, "excepthandler");
 }
 
 def read_expr(handle: u64, depth: int) -> expr {
-    result = read_node(handle, depth);
-    if not isinstance(result, expr) {
-        raise TypeError("AST field requires expr");
-    }
-    return result as expr;
+    return _jac_read_as(handle, depth, expr, "expr");
 }
 
 def field_expr(handle: u64, name: str, depth: int, optional: bool = False) -> expr {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_expr(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_expr);
 }
 
 def read_expr_optional(handle: u64, depth: int) -> expr | None {
-    if jacpy_value_kind(handle) == 0 {
-        return None;
-    }
-    return read_expr(handle, depth);
+    return _jac_read_opt(handle, depth, read_expr);
 }
 
 def field_expr_optional(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> expr | None {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_expr_optional(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_expr_optional);
 }
 
 def read_expr_context(handle: u64, depth: int) -> expr_context {
-    result = read_node(handle, depth);
-    if not isinstance(result, expr_context) {
-        raise TypeError("AST field requires expr_context");
-    }
-    return result as expr_context;
+    return _jac_read_as(handle, depth, expr_context, "expr_context");
 }
 
 def field_expr_context(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> expr_context {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_expr_context(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_expr_context);
 }
 
 def read_int(handle: u64, depth: int) -> int {
@@ -378,660 +311,209 @@ def read_int(handle: u64, depth: int) -> int {
 }
 
 def field_int(handle: u64, name: str, depth: int, optional: bool = False) -> int {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_int(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_int);
 }
 
 def read_int_optional(handle: u64, depth: int) -> int | None {
-    if jacpy_value_kind(handle) == 0 {
-        return None;
-    }
-    return read_int(handle, depth);
+    return _jac_read_opt(handle, depth, read_int);
 }
 
 def field_int_optional(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> int | None {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_int_optional(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_int_optional);
 }
 
 def read_keyword(handle: u64, depth: int) -> keyword {
-    result = read_node(handle, depth);
-    if not isinstance(result, keyword) {
-        raise TypeError("AST field requires keyword");
-    }
-    return result as keyword;
+    return _jac_read_as(handle, depth, keyword, "keyword");
 }
 
 def read_list_alias(handle: u64, depth: int) -> list[alias] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[alias] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_alias(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_alias);
 }
 
 def field_list_alias(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[alias] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_alias(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_alias);
 }
 
 def read_list_arg(handle: u64, depth: int) -> list[arg] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[arg] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_arg(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_arg);
 }
 
 def field_list_arg(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[arg] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_arg(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_arg);
 }
 
 def read_list_cmpop(handle: u64, depth: int) -> list[cmpop] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[cmpop] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_cmpop(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_cmpop);
 }
 
 def field_list_cmpop(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[cmpop] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_cmpop(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_cmpop);
 }
 
 def read_list_comprehension(handle: u64, depth: int) -> list[comprehension] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[comprehension] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_comprehension(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_comprehension);
 }
 
 def field_list_comprehension(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[comprehension] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_comprehension(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_comprehension);
 }
 
 def read_list_excepthandler(handle: u64, depth: int) -> list[excepthandler] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[excepthandler] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_excepthandler(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_excepthandler);
 }
 
 def field_list_excepthandler(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[excepthandler] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_excepthandler(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_excepthandler);
 }
 
 def read_list_expr_optional(handle: u64, depth: int) -> list[expr | None] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[expr | None] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_expr_optional(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_expr_optional);
 }
 
 def field_list_expr_optional(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[expr | None] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_expr_optional(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_expr_optional);
 }
 
 def read_list_expr(handle: u64, depth: int) -> list[expr] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[expr] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_expr(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_expr);
 }
 
 def field_list_expr(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[expr] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_expr(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_expr);
 }
 
 def read_list_keyword(handle: u64, depth: int) -> list[keyword] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[keyword] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_keyword(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_keyword);
 }
 
 def field_list_keyword(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[keyword] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_keyword(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_keyword);
 }
 
 def read_list_match_case(handle: u64, depth: int) -> list[match_case] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[match_case] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_match_case(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_match_case);
 }
 
 def field_list_match_case(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[match_case] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_match_case(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_match_case);
 }
 
 def read_list_pattern(handle: u64, depth: int) -> list[pattern] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[pattern] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_pattern(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_pattern);
 }
 
 def field_list_pattern(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[pattern] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_pattern(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_pattern);
 }
 
 def read_list_stmt(handle: u64, depth: int) -> list[stmt] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[stmt] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_stmt(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_stmt);
 }
 
 def field_list_stmt(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[stmt] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_stmt(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_stmt);
 }
 
 def read_list_str(handle: u64, depth: int) -> list[str] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[str] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_str(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_str);
 }
 
 def field_list_str(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[str] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_str(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_str);
 }
 
 def read_list_type_ignore(handle: u64, depth: int) -> list[type_ignore] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[type_ignore] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_type_ignore(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_type_ignore);
 }
 
 def field_list_type_ignore(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[type_ignore] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_type_ignore(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_type_ignore);
 }
 
 def read_list_type_param(handle: u64, depth: int) -> list[type_param] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[type_param] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_type_param(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_type_param);
 }
 
 def field_list_type_param(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[type_param] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_type_param(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_type_param);
 }
 
 def read_list_withitem(handle: u64, depth: int) -> list[withitem] {
-    if jacpy_is_list(handle) == 0 {
-        raise TypeError("AST field must be a list");
-    }
-    result: list[withitem] = [];
-    for index in range(int(jacpy_sequence_size(handle))) {
-        item = jacpy_sequence_item(handle, i64(index));
-        if item == 0 {
-            raise runtime_failure();
-        }
-        try {
-            result.append(read_withitem(item, depth + 1));
-        } finally {
-            jacpy_release(item);
-        }
-    }
-    return result;
+    return _jac_read_list(handle, depth, read_withitem);
 }
 
 def field_list_withitem(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> list[withitem] {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_list_withitem(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_list_withitem);
 }
 
 def read_match_case(handle: u64, depth: int) -> match_case {
-    result = read_node(handle, depth);
-    if not isinstance(result, match_case) {
-        raise TypeError("AST field requires match_case");
-    }
-    return result as match_case;
+    return _jac_read_as(handle, depth, match_case, "match_case");
 }
 
 def read_operator(handle: u64, depth: int) -> operator {
-    result = read_node(handle, depth);
-    if not isinstance(result, operator) {
-        raise TypeError("AST field requires operator");
-    }
-    return result as operator;
+    return _jac_read_as(handle, depth, operator, "operator");
 }
 
 def field_operator(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> operator {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_operator(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_operator);
 }
 
 def read_pattern(handle: u64, depth: int) -> pattern {
-    result = read_node(handle, depth);
-    if not isinstance(result, pattern) {
-        raise TypeError("AST field requires pattern");
-    }
-    return result as pattern;
+    return _jac_read_as(handle, depth, pattern, "pattern");
 }
 
 def field_pattern(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> pattern {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_pattern(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_pattern);
 }
 
 def read_pattern_optional(handle: u64, depth: int) -> pattern | None {
-    if jacpy_value_kind(handle) == 0 {
-        return None;
-    }
-    return read_pattern(handle, depth);
+    return _jac_read_opt(handle, depth, read_pattern);
 }
 
 def field_pattern_optional(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> pattern | None {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_pattern_optional(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_pattern_optional);
 }
 
 def read_stmt(handle: u64, depth: int) -> stmt {
-    result = read_node(handle, depth);
-    if not isinstance(result, stmt) {
-        raise TypeError("AST field requires stmt");
-    }
-    return result as stmt;
+    return _jac_read_as(handle, depth, stmt, "stmt");
 }
 
 def read_str(handle: u64, depth: int) -> str {
@@ -1042,88 +524,39 @@ def read_str(handle: u64, depth: int) -> str {
 }
 
 def field_str(handle: u64, name: str, depth: int, optional: bool = False) -> str {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_str(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_str);
 }
 
 def read_str_optional(handle: u64, depth: int) -> str | None {
-    if jacpy_value_kind(handle) == 0 {
-        return None;
-    }
-    return read_str(handle, depth);
+    return _jac_read_opt(handle, depth, read_str);
 }
 
 def field_str_optional(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> str | None {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_str_optional(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_str_optional);
 }
 
 def read_type_ignore(handle: u64, depth: int) -> type_ignore {
-    result = read_node(handle, depth);
-    if not isinstance(result, type_ignore) {
-        raise TypeError("AST field requires type_ignore");
-    }
-    return result as type_ignore;
+    return _jac_read_as(handle, depth, type_ignore, "type_ignore");
 }
 
 def read_type_param(handle: u64, depth: int) -> type_param {
-    result = read_node(handle, depth);
-    if not isinstance(result, type_param) {
-        raise TypeError("AST field requires type_param");
-    }
-    return result as type_param;
+    return _jac_read_as(handle, depth, type_param, "type_param");
 }
 
 def read_unaryop(handle: u64, depth: int) -> unaryop {
-    result = read_node(handle, depth);
-    if not isinstance(result, unaryop) {
-        raise TypeError("AST field requires unaryop");
-    }
-    return result as unaryop;
+    return _jac_read_as(handle, depth, unaryop, "unaryop");
 }
 
 def field_unaryop(
     handle: u64, name: str, depth: int, optional: bool = False
 ) -> unaryop {
-    value = jacpy_optional_field(handle, name)
-        if optional
-        else jacpy_field(handle, name);
-    if value == 0 {
-        raise runtime_failure();
-    }
-    try {
-        return read_unaryop(value, depth);
-    } finally {
-        jacpy_release(value);
-    }
+    return _jac_field(handle, name, depth, optional, read_unaryop);
 }
 
 def read_withitem(handle: u64, depth: int) -> withitem {
-    result = read_node(handle, depth);
-    if not isinstance(result, withitem) {
-        raise TypeError("AST field requires withitem");
-    }
-    return result as withitem;
+    return _jac_read_as(handle, depth, withitem, "withitem");
 }
 
 def read_node_Module(handle: u64, depth: int) -> Module {

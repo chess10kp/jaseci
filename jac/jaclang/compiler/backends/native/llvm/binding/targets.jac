@@ -63,10 +63,6 @@ def get_default_triple -> str {
     }
 }
 
-"""
-    Get the name of the host's CPU, suitable for using with
-    :meth:`Target.create_target_machine()`.
-    """
 glob _object_formats = {
          0: "Unknown",
          1: "COFF",
@@ -79,11 +75,6 @@ glob _object_formats = {
          8: "XCOFF"
      };
 
-"""
-    Get the object format for the given *triple* string (or the default
-    triple if omitted).
-    A string is returned
-    """
 """
     Create a TargetData instance for the given *layout* string.
     """

@@ -31,21 +31,3 @@ def _has_svml -> object {
         return True;
     }
 }
-
-"""
-    Returns "static" if the FFI support is statically linked against LLVM,
-    returns "dynamic" otherwise.
-    """
-"""
-    Returns "static" if the FFI support is statically linked against libstdc++,
-    returns "dynamic" otherwise.
-    """
-"""
-    Returns "wheel", "conda" or "unspecified"
-    """
-"""
-    Returns one of "on", "off" or "unknown". Depending on whether it is
-    determined that LLVM was build with assertions on, off, or is not known.
-    "Is not known" is typically from a dynamic linkage against LLVM in which
-    case it's not easily identified whether LLVM was built with assertions.
-    """
