@@ -361,7 +361,7 @@ impl BoundaryAnalysisPass._register_sv_import(
             ability_node = self._find_ability(parsed_mod, sym_name);
         }
         if ability_node is None
-            and (cross_app or caller_ctx == InteropContext.CLIENT) {
+            and (cross_app or caller_ctx != InteropContext.SERVER) {
             type_mod = (
                 provider_mod
                     if (provider_mod is not None and not provider_mod.stub_only)
@@ -1383,6 +1383,7 @@ impl BoundaryAnalysisPass.finish with exit {
         crosses_ctypes = (
             binding.source_context == InteropContext.SERVER
             and InteropContext.NATIVE in binding.callers
+            and binding.kind != 'type'
         );
         if not crosses_ctypes {
             continue;

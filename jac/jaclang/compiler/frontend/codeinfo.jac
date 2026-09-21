@@ -762,6 +762,7 @@ obj InteropManifest {
         native_transitive_keys: list[str] = [];
 
     has native_imports: list[InteropBinding] { getter; }
+    has callable_native_imports: list[InteropBinding] { getter; }
     has native_exports: list[InteropBinding] { getter; }
     has native_cross_module_imports: list[InteropBinding] { getter; }
     has native_dependency_sources: list[str] { getter; }
