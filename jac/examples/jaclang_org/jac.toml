@@ -160,6 +160,7 @@ description = "One language, one compiler, the whole stack. No glue. AI, graphs,
 keywords = "jac, jaclang, programming language, jaseci, object-spatial programming, by llm, full-stack"
 author = "Jaseci Labs"
 theme_color = "#ff6b35"
+meta_color_scheme = "light dark"
 icon = "/static/assets/jac-logo.svg"
 og_title = "The Jac Programming Language"
 og_description = "One language, one compiler, the whole stack. No glue. AI, graphs, persistence, APIs, UIs, and cloud deployment as language features."
@@ -169,17 +170,3 @@ og_site_name = "jaclang.org"
 og_image = "https://jaclang.org/static/assets/og-card.png"
 twitter_card = "summary_large_image"
 twitter_image = "https://jaclang.org/static/assets/og-card.png"
-
-# Select the theme before first paint. Canvas follows color-scheme until the
-# brand background token loads; SiteShell then hands styling back to CSS.
-[[client.app_meta_data.scripts]]
-content = """
-(function () {
-    var dark = true;
-    try { dark = localStorage.getItem('jac-theme') !== 'light'; } catch (_) {}
-    var root = document.documentElement;
-    root.classList.toggle('dark', dark);
-    root.style.colorScheme = dark ? 'dark' : 'light';
-    root.style.backgroundColor = 'var(--background, Canvas)';
-})();
-"""
