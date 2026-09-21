@@ -400,9 +400,11 @@ test "opening a scratch store reaps scratch databases of dead processes" {
 
 
 obj _PatternConn {
-    has patterns: list[str] = [];
+    has patterns: list[str] = [],
+        sqls: list[str] = [];
 
     def run(sql: str, pattern: str = '') -> list[str] {
+        self.sqls.append(sql);
         self.patterns.append(pattern);
         return [];
     }
@@ -420,6 +422,20 @@ test "list_databases binds an escaped literal prefix pattern" {
     assert conn.patterns[-1] == 'jac\\_scratch\\_%' , (
         f"the scratch scan must bind the escaped scratch prefix, not a "
         f"wildcard pattern: {conn.patterns[-1]!r}"
+    );
+}
+
+
+test "list_databases can skip the per-database size stat" {
+    import from jaclang.data.dbcatalog { list_databases }
+    conn = _PatternConn();
+    list_databases(conn);
+    assert 'pg_database_size' in conn.sqls[-1] , (
+        "the default catalog scan must still report database sizes"
+    );
+    list_databases(conn, with_size=False);
+    assert 'pg_database_size' not in conn.sqls[-1] , (
+        f"a size-free scan must not stat every database: {conn.sqls[-1]}"
     );
 }
 

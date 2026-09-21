@@ -116,8 +116,12 @@ def _db_status(data_dir: str) -> int {
     running = rt.is_running();
     console.print(f"data dir : {data_dir}");
     console.print(f"running  : {running}");
-    if not running and not os.path.isdir(data_dir) {
-        console.print("state    : no store yet (created on first `jac run`)");
+    if not running {
+        if os.path.isdir(data_dir) {
+            console.print("state    : stopped (the next `jac run` starts it)");
+        } else {
+            console.print("state    : no store yet (created on first `jac run`)");
+        }
         return 0;
     }
 
@@ -125,7 +129,7 @@ def _db_status(data_dir: str) -> int {
     dead: list[DbRecord] = [];
     orphans: list[DbRecord] = [];
     try {
-        found = _catalog_runtime(data_dir).databases();
+        found = _catalog_runtime(data_dir).databases(with_size=False);
         dead = [
             r
             for r in found
@@ -138,19 +142,23 @@ def _db_status(data_dir: str) -> int {
         ];
         records = found;
     } except Exception {}
-    store = _open_store(rt);
-    try {
-        store.begin(TxnIsolation.READ_COMMITTED);
-        rows = store.rows(
-            'SELECT kind, count(*) FROM anchors GROUP BY kind ORDER BY kind', {}
-        );
-        console.print(f"server   : PostgreSQL {store.server_version()}");
-        for (kind, cnt) in rows {
-            console.print(f"{kind:<12}: {cnt}");
+    if records is not None and all(rec.database != rt.database for rec in records) {
+        console.print("project  : no database yet (created on first `jac run`)");
+    } else {
+        store = _open_store(rt);
+        try {
+            store.begin(TxnIsolation.READ_COMMITTED);
+            rows = store.rows(
+                'SELECT kind, count(*) FROM anchors GROUP BY kind ORDER BY kind', {}
+            );
+            console.print(f"server   : PostgreSQL {store.server_version()}");
+            for (kind, cnt) in rows {
+                console.print(f"{kind:<12}: {cnt}");
+            }
+            store.commit();
+        } finally {
+            store.close();
         }
-        store.commit();
-    } finally {
-        store.close();
     }
     if records is not None {
         if dead {
@@ -237,7 +245,13 @@ def _db_list(data_dir: str) -> int {
         return 0;
     }
     rt = _catalog_runtime(data_dir);
-    records = rt.databases();
+    try {
+        records = rt.databases();
+    } except Exception {
+        console.print(f"data dir : {data_dir}");
+        console.print("state    : cluster is not running");
+        return 0;
+    }
     total = sum(rec.size_bytes for rec in records);
     console.print(f"data dir : {data_dir}");
     console.print(f"databases: {len(records)} ({_human_size(total)})");
@@ -404,7 +418,14 @@ def _db_drop(data_dir: str, database: str, yes: bool) -> int {
         return 1;
     }
     rt = _catalog_runtime(data_dir);
-    known = {rec.database: rec for rec in rt.databases()};
+    try {
+        known = {rec.database: rec for rec in rt.databases()};
+    } except Exception {
+        console.error(
+            "cluster is not running; start it with `jac run` or `jac db serve`"
+        );
+        return 1;
+    }
     if database not in known {
         console.error(f"no such database in {data_dir}: {database}");
         return 1;

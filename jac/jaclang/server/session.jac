@@ -188,6 +188,6 @@ obj Session(Memory) {
     def _drop_snapshot_reads -> None;
     def _materialize(row: AnchorRow) -> (Anchor | None);
     def _load_edges(nd: NodeAnchor) -> list[EdgeAnchor];
-    def _serialize(anchor: Anchor) -> AnchorRow;
+    def _serialize(anchor: Anchor, props: (any | None) = None) -> AnchorRow;
     def _evict_uncommitted -> None;
 }

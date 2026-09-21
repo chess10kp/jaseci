@@ -835,6 +835,8 @@ impl Session._flush_locked(full: bool) -> None {
         } else {
             candidates = list(self._dirty.keys());
         }
+        import from json { dumps }
+        import from jaclang.data.serializer { Serializer }
         rows: list[AnchorRow] = [];
         pending: list[tuple[Anchor, int]] = [];
         for id in candidates {
@@ -842,7 +844,15 @@ impl Session._flush_locked(full: bool) -> None {
             if anchor is None or not anchor.persistent or not anchor.is_populated() {
                 continue;
             }
-            h = _persist_hash(anchor);
+            props: any = None;
+            h = 0;
+            try {
+                props = Serializer.serialize(anchor, include_type=True);
+                if isinstance(props, dict) {
+                    props.pop('edges', None);
+                }
+                h = hash(dumps(props, sort_keys=True));
+            } except Exception {}
             if h != 0 and self._flushed_hash.get(id) == h and id not in self._dirty {
                 continue;
             }
@@ -851,7 +861,7 @@ impl Session._flush_locked(full: bool) -> None {
             if not JacRI.check_write_access(anchor, op_hint="field_write") {
                 continue;
             }
-            rows.append(self._serialize(anchor));
+            rows.append(self._serialize(anchor, props));
             pending.append((anchor, h));
         }
         if rows or self._deleted {
@@ -880,11 +890,13 @@ impl Session._flush_locked(full: bool) -> None {
 }
 
 
-impl Session._serialize(anchor: Anchor) -> AnchorRow {
+impl Session._serialize(anchor: Anchor, props: (any | None) = None) -> AnchorRow {
     import from jaclang.data.serializer { Serializer }
-    props = Serializer.serialize(anchor, include_type=True);
-    if isinstance(props, dict) {
-        props.pop('edges', None);
+    if props is None {
+        props = Serializer.serialize(anchor, include_type=True);
+        if isinstance(props, dict) {
+            props.pop('edges', None);
+        }
     }
     arch = anchor.archetype;
     arch_type = '';
