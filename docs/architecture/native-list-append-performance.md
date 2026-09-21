@@ -159,28 +159,61 @@ itself was smoke-tested and prints the before/after counter table.
 The release-note entry is
 [`9362.feature.md`](../../release_notes/unreleased/jaclang/9362.feature.md).
 
-## What remains separate: the V2 follow-up
+## V2: stack-constructed list headers (implemented and measured)
 
-A larger experiment constructed the list header on the stack for function-local
-lists and kept only the data buffer on the heap. It measured approximately:
+The V2 follow-up is now implemented: when the escape analysis in
+[`RcFactsPass`](../../jac/jaclang/compiler/passes/rc_facts_pass.jac) proves that
+a list display bound to a function-local never outlives its frame, the backend
+constructs the list header in an entry `alloca` slab and keeps only the data
+buffer on the heap. Scope-exit, loop-iteration, overwrite, and last-use releases
+route through a data-only helper (`__rc_release_list_data_<element>`) so the
+frame header is never freed. The safety posture is fail-leak, not fail-UAF: the
+header's refcount slot holds `RC_SENTINEL`, making retain/release no-ops if an
+analysis error ever stamps a list that does escape. Uses that could alias or
+escape — returning the list, passing it to user calls (except `len`), iterator
+materialization, augmented re-binding, boolean/composite expressions — refuse
+the stamp and fall back to today's heap `__list_new` path.
 
-- 2.7 cycles/iteration instead of 6.0;
-- a 55% improvement; and
-- store-buffer stalls falling from about 3.0 cycles/iteration to approximately
-  zero.
+### The prototype's claimed win did not reproduce
 
-That result directly attacks the store-buffer signature, but it is not safe to
-land as a local code-generation tweak. It requires escape analysis to prove
-that the header does not outlive the function or escape through an alias, plus
-a data-only release path that preserves ownership and destruction semantics.
-Until those invariants exist, the stack-header version remains a follow-up
-design rather than part of the shipped fix.
+The earlier experiment reported roughly 2.7 cycles/iteration versus the V1
+baseline, attributing the gain to eliminating per-append store-buffer pressure.
+A controlled interleaved A/B against the shipped V1 does not confirm this. On
+one pinned core, same binary pair, alternating runs (variance under 0.5%):
 
-## Short explanation
+| Workload | V1 cyc/it | V2 cyc/it | V1 inst/it | V2 inst/it | SB stalls/it |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Pure append (`x.append(i)` only) | 11.60 | 11.60 | 9.98 | 9.98 | 5.3 both |
+| Read-mixed (`s += x[i]` per iteration) | 11.33 | 14.39 | 14.98 | 13.98 | 4.1 / 4.3 |
+
+Findings:
+
+- **Pure append: no difference.** The hot loop after `clang -O2` performs the
+  same number of loads and stores either way; V1's heap header is a single
+  L1-resident cache line, so moving the header fields into the frame changes
+  addresses, not memory traffic. The prototype's 2.7 figure most plausibly
+  compared against the *pre-`#9362`* baseline shape (6.0 cycles/iteration),
+  not against shipped V1.
+- **Read-mixed: a measurable regression.** With a per-iteration element read
+  feeding an accumulator, the frame-header variant runs ~27% more cycles per
+  iteration despite one fewer instruction. The disassembly is consistent with a
+  stack/heap 4K-aliasing artifact between frame slots and the malloc'd data
+  buffer; the effect is address-layout dependent and did not appear in the
+  pure-append shape.
+
+What V2 as implemented still buys is allocation reduction, not cycle
+reduction: each escape-proven local list construction skips the header
+`malloc` and the header `free`, which lowers allocator traffic and GC pressure
+for short-lived-list-heavy code. It is not a churn-speed fix.
+
+### Short explanation (revised)
 
 Jac native lists were slower because list growth was fully inlined into the
-append loop. The resulting IR caused reloads, overflow-check work, and register
-spills, producing store-buffer and front-end stalls. Moving growth to a
-`noinline` helper cut the measured cost by 17%. The remaining 55% opportunity
-is the stack-constructed-header design, which needs escape analysis and a safe
-data-only release path before it can land.
+append loop; moving growth to a `noinline` helper cut the measured cost by 17%.
+The stack-constructed-header follow-up was implemented behind a proper escape
+analysis and measured neutral-to-negative against that shipped fix: the store
+and load counts per append are identical once the header is cache-resident, and
+the prototype's 55% figure did not survive a controlled A/B. The remaining
+opportunity for append-heavy code is small under `-O2` and, if pursued, lies
+elsewhere (for example, registerizing loop-carried list state at the Jac IR
+level) rather than in header placement.

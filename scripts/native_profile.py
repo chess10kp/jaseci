@@ -76,7 +76,7 @@ def ensure_miniperf(cache_dir: Path) -> Path:
     return bin_path
 
 
-def dump_ir(jac_file: Path, out_ll: Path) -> None:
+def dump_ir(jac_file: Path, out_ll: Path, suppress: list[str] | None = None) -> None:
     sys.path.insert(0, str(JAC_SRC))
     from jaclang.compiler.driver.program import JacProgram
     from jaclang.compiler.driver.compile_options import CompileOptions
@@ -86,7 +86,10 @@ def dump_ir(jac_file: Path, out_ll: Path) -> None:
     mod = prog.compile(
         file_path=str(jac_file),
         options=CompileOptions(
-            aot_mode=True, default_codespace="native", force_target_program=True
+            aot_mode=True,
+            default_codespace="native",
+            force_target_program=True,
+            suppress_codes=list(suppress or []),
         ),
     )
     errors = [str(e) for e in prog.errors_had]
@@ -162,6 +165,7 @@ def main() -> int:
     ap.add_argument("workload", type=Path, help=".jac workload to profile")
     ap.add_argument("--iters", type=int, default=100_000_000)
     ap.add_argument("--compare", nargs="*", default=[], help="extra binaries to profile for comparison")
+    ap.add_argument("--suppress", nargs="*", default=[], help="lint codes to suppress while dumping IR (e.g. E3012)")
     ap.add_argument("--out", type=Path, default=None, help="write raw JSON results here")
     args = ap.parse_args()
 
@@ -178,7 +182,7 @@ def main() -> int:
 
     ll = cache / f"{args.workload.stem}.ll"
     bin_ = cache / args.workload.stem
-    dump_ir(args.workload, ll)
+    dump_ir(args.workload, ll, suppress=args.suppress)
     build_binary(ll, bin_)
 
     results = {}
